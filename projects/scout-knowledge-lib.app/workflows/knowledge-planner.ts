@@ -1,4 +1,8 @@
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 
 function field(task: string, name: string): string | undefined {
   const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
@@ -29,6 +33,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     field(ctx.task, "app") ?? "/app/projects/scout-knowledge-lib.app";
   const projectDir =
     field(ctx.task, "project") ?? "/app/projects/scout-knowledge-lib";
+  const taskTreePath = resolveTaskTreePath(appDir);
   const prompt =
     `You are Scout maintaining the Scout Knowledge Library as a project.
 
@@ -43,7 +48,7 @@ tree, understand the trigger, and do the smallest useful maintenance step.
 
 Start by reading:
 - ${appDir}/project.json
-- ${appDir}/tasks/tree.json
+- ${taskTreePath}
 - ${projectDir}/README.md
 - ${projectDir}/knowledge/INDEX.md
 
@@ -52,7 +57,7 @@ Valid durable outcomes:
 - repair ${projectDir}/knowledge/INDEX.md navigation
 - add a source-grounded finding only when no existing note fits
 - write a compact report under ${projectDir}/reports/
-- update ${appDir}/tasks/tree.json when project understanding or next work changes
+- update the task tree when project understanding or next work changes
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.

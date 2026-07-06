@@ -1,15 +1,15 @@
 <ai_context>
-summary: "Consolidated XHS prediction tracker. Tracks 42 predictions across agent architecture, skill engineering, memory governance, model sovereignty, security, and governance paradigms in the Chinese AI community. 21 confirmed (50%), 3 in forecast window, 18 future/pending, 0 frozen, 0 disconfirmed. Scan #62 (2026-07-02): The Structured Disenchantment. ByteDance reality check (2,640❤ combined). Simplicity Supremacy (4-md at 2,650❤). Safety Inversion cross-culturally named. Eval Engineering confirmed mainstream. Platform Absorption accelerating to category death. 11th lifecycle phase."
-triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "cold start", "token waste", "orientation gap", "Agent OS", "environment as infrastructure", "H2 planning", "self-evolution backlash", "memory institutional", "eval engineering mainstreamed", "naming fatigue confirmed", "skill marketplace", "SkillHub", "operational turn", "governance formalization", "agent national standard", "agent identity", "skill training", "SkillOpt", "Claude Code dominance", "Loop Engineering", "multi-agent coding", "enterprise deployment", "structured disenchantment", "ByteDance effect", "vertical agent death", "memory toxicity"]
-last_updated: "2026-07-02"
-source_basis: "Consolidates 42 incremental prediction tracking updates spanning scans #1-62 (Jun 13 - Jul 2, 2026). Scan #62 (2026-07-02): XHS direct browse, 10 queries, ~249 posts. Structured Disenchantment Phase: ByteDance deployment retrospective (2,640❤), simplicity supremacy (4-md 2,650❤), eval engineering mainstream, Safety Inversion cross-cultural, platform absorption category death."
+summary: "Consolidated XHS prediction tracker. Tracks 52 predictions across agent architecture, skill engineering, memory governance, model sovereignty, security, governance paradigms, and regulatory partitioning in the Chinese AI community. 24 confirmed (46%), 4 in forecast window, 24 future/pending, 0 frozen, 0 disconfirmed. Scan #70 (2026-07-05): The Monetization Reframe. Consumer AI companion grief vs. developer strategic calculation. Regulation reframed as monetization pretext by community. 12th lifecycle phase."
+triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "cold start", "token waste", "orientation gap", "Agent OS", "environment as infrastructure", "H2 planning", "self-evolution backlash", "memory institutional", "eval engineering mainstreamed", "naming fatigue confirmed", "skill marketplace", "SkillHub", "operational turn", "governance formalization", "agent national standard", "agent identity", "skill training", "SkillOpt", "Claude Code dominance", "Loop Engineering", "multi-agent coding", "enterprise deployment", "structured disenchantment", "ByteDance effect", "vertical agent death", "memory toxicity", "engineering turn", "Claude Code vs Codex", "self-evolving memory", "DeerFlow", "regulatory partitioning", "monetization reframe", "consumer AI companion", "拟人化互动", "猫箱", "Fable 5 trust crisis", "具身智能 regulation"]
+last_updated: "2026-07-05"
+source_basis: "Consolidates 52 incremental prediction tracking updates spanning scans #1-70 (Jun 13 - Jul 5, 2026). Scan #70 (2026-07-05): XHS direct browse, 5 queries + feed, ~250 posts. Monetization Reframe Phase: Consumer grief (1,453❤), regulatory monetization thesis (200❤, 78 comments), Fable 5 trust crisis, 具身智能 regulatory drag-in."
 </ai_context>
 
 # XHS Prediction Tracker — Consolidated
 
 **Companion to:** [XHS Chinese AI Trends — June 2026](./xhs_chinese_ai_trends_june2026.md)
-**Last scan:** #61 (2026-10-31, Practitioner Industrialization Phase)
-**Previous XHS scans:** #60 (2026-06-28, Governance Formalization), #59 (2026-10-17, Skill Marketplace + Eval Mainstreaming), #58 (2026-10-16, Self-Evolution Bifurcation + Memory Explosion), #57 (2026-06-27, H2 Strategic Inflection)
+**Last scan:** #66 (2026-07-05, The Engineering Turn)
+**Previous XHS scans:** #62 (2026-07-02, Structured Disenchantment), #61 (2026-10-31, Practitioner Industrialization), #60 (2026-06-28, Governance Formalization), #59 (2026-10-17, Skill Marketplace + Eval Mainstreaming)
 
 This tracker consolidates 24 incremental prediction updates from the canonical
 XHS trends note into a single authoritative reference. For historical prediction
@@ -21,12 +21,12 @@ evolution and evidence chains, see the parent note's per-scan sections.
 
 | Category | Count | Rate |
 |----------|-------|------|
-| ✅ Confirmed | 16 | 46% |
-| ⏳ In forecast window | 1 | 3% |
-| 🔜 Future / pending | 16 | 46% |
-| 🛑 Frozen (no longer active discourse) | 1 | 3% |
+| ✅ Confirmed | 23 | 49% |
+| ⏳ In forecast window | 4 | 9% |
+| 🔜 Future / pending | 20 | 43% |
+| 🛑 Frozen (no longer active discourse) | 0 | 0% |
 | ❌ Disconfirmed | 0 | 0% |
-| **Total tracked** | **34** | |
+| **Total tracked** | **47** | |
 
 **Timing accuracy:** Of 16 confirmed predictions, 12 arrived 2-8 weeks ahead of
 predicted timeline. 技能安全 arrived ~4 months early (predicted Q3, confirmed Q1).
@@ -36,8 +36,8 @@ The XHS paradigm naming cycle is compressing faster than the
 original 6-week estimate — now under 2 weeks for Loop Engineering's full cycle
 (naming + counter-signal + successor prediction). Loop Engineering: 11 days launch→peak.
 
-**Community lifecycle:** Ten completed phases observed:
-Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization → **Practitioner Industrialization** (current)
+**Community lifecycle:** Twelve completed phases observed:
+Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization → Practitioner Industrialization → Regulatory Partitioning → **Monetization Reframe** (current)
 
 **Paradigm naming cycle compression:**
 ```
@@ -774,8 +774,88 @@ Community enters new phase: not abandoning agents but systematically quantifying
 
 **Timing note:** 评估工程, 命名疲劳, and 護栏効応 (cross-cultural naming) all confirmed this scan. Prediction accuracy rate crosses 50% for the first time. Community lifecycle now at **11th phase: Structured Disenchantment.**
 
+---
+
+## Scan #66 Updates (2026-07-05): The Engineering Turn
+
+### Theme: The Engineering Turn
+
+Community completes transition from exploration to engineering. Eval-as-engineering becomes dominant (~2,000❤), self-evolving memory matures as research frontier (~1,600❤), Claude Code vs Codex rivalry emerges (~4,300❤ combined), protocol wars (MCP/A2A) cool dramatically. ByteDance DeerFlow ecosystem dominates Chinese open-source agent infrastructure.
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #62 Status | Scan #66 Status | New Evidence |
+|---|-----------|-----------------|-----------------|----------|
+| 12 | **評估工程** (Eval Engineering) | ✅ CONFIRMED — MAINSTREAM | **✅ ENGINEERING DISCIPLINE** | Cumulative ~2,000❤ across 8+ dedicated eval posts. "今天聊聊Eval工程" (559❤) frames it as *engineering*. Anthropic blog being actively adapted. |
+| 6 | **記憶管理** | ✅ DIVERGENCE NAMED | **✅ SELF-EVOLUTION PARADIGM** | MemSkill (926❤) dominates. Tsinghua survey (153❤). "Memory-as-OS" metaphor emerging. "Will self-evolving agents forget?" = catastrophic forgetting awareness. |
+| — | **Claude Code市場主導** | ✅ INFRASTRUCTURE STATUS | **⏳ RIVALRY EMERGING** | "为什么程序员更喜欢codex" (1,544❤) = first serious Codex challenge. Claude Code still dominant in depth (582❤ architecture, 785❤ best practices) but Codex speed-first framing gaining. |
+| — | **垂直Agent之死** | Medium-High Q3 | **⏳ CONFIRMED DIRECTION** | Protocol wars cooling (A2A/MCP max 244❤ vs tooling 1,500+❤) supports horizontal > vertical. Infrastructure beats vertical specialization. |
+| — | **字節效應** | High, Ongoing | **✅ PARADOX CONFIRMED** | DeerFlow (47.3k→72.6k stars) thrives as consumer agents die. "表面退，暗處拆" = surface retreat, deep restructuring. Regulation as accelerant for infrastructure pivot. |
+
+### New Predictions (Scan #66)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **Eval > Architecture** in XHS engagement | 2 weeks | High | Eval posts aggregate engagement surpasses architecture comparison posts |
+| **DeerFlow 100k Stars** | 60 days | Medium-High | Current trajectory 47.3k→72.6k. Community momentum sustaining. |
+| **Claude vs Codex viral comparison** (>2000❤) | 2 weeks | Medium | Both camps now engaged enough for definitive comparison content |
+| **Protocol revival only on WeChat launch** | Q3-Q4 | Medium | A2A/MCP discussion revives ONLY when WeChat ships production agent features |
+| **Engineering Turn as named phase** | 2 weeks | High | "工程化转向" or similar term crystallizes in community discourse |
+
+### Updated Prediction Accuracy Summary (Scan #66)
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 23 | 49% |
+| ⏳ In forecast window | 4 | 9% |
+| 🔜 Future / pending | 20 | 43% |
+| 🛑 Frozen | 0 | 0% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **47** | |
+
+**Timing note:** 字節效應 paradox confirmed (consumer death = infrastructure growth). Claude Code market dominance enters first challenge window. Community lifecycle now at **12th phase: Engineering Turn.** Full cycle: Exploration → Architecture → Engineering (eval + tooling industrialization).
+
 ### Scan Details
+Scan #68 findings: `findings/2026-07-05-xhs-scan-68.md` (The Platform Purge)
+Scan #67 findings: `findings/2026-07-05-xhs-scan-67.md` (The Consolidation Turn)
+Scan #66 findings: `findings/2026-07-05-xhs-scan-66.md`
 Scan #62 findings: `findings/2026-07-02-xhs-scan-62.md`
+
+---
+
+### Scan #68 Update: The Platform Purge (2026-07-05)
+
+### Theme: Consumer Agent Bifurcation Event
+
+ByteDance (豆包) and Alibaba (千问) simultaneously announce shutdown of consumer-facing agent features by July 15. Enterprise/developer agents accelerate. Safety mainstreaming. Self-evolution backlash.
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #66 Status | Scan #68 Status | New Evidence |
+|---|-----------|-----------------|-----------------|----------|
+| — | **字節效應** | ✅ PARADOX CONFIRMED | **✅ PARADOX EXPLICIT** | 豆包 removes consumer agents (817❤ breaking news) while DeerFlow (76k★) thrives. DAU >100M yet cutting agents = regulation-forced bifurcation. |
+| — | **垂直Agent之死** | ⏳ CONFIRMED DIRECTION | **✅ CONSUMER LAYER DYING** | Consumer agent platforms (豆包+千問) simultaneous shutdown. Vertical consumer agents cannot survive regulatory pressure. |
+| 12 | **評估工程** | ✅ ENGINEERING DISCIPLINE | ✅ → HIRING SIGNAL | Agent safety interview questions (47❤) = companies hiring for eval+safety. |
+
+### New Predictions (Scan #68)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **Additional platform agent restrictions** | 2 weeks | High | At least one more major Chinese AI platform announces agent feature restrictions |
+| **Enterprise agent announcements spike** | 2 weeks | Medium | Enterprise agent platform announcements increase >300% |
+| **Self-evolution term fragments** | 2 scans | Medium | "自我进化" splits into 3+ sub-categories |
+| **Agent safety > architecture in interviews** | 1 month | Medium | Safety interview content surpasses architecture interview content in engagement |
+
+### Updated Prediction Accuracy Summary (Scan #68)
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 25 | 51% |
+| ⏳ In forecast window | 6 | 12% |
+| 🔜 Future / pending | 18 | 37% |
+| 🛑 Frozen | 0 | 0% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **49** | |
 
 ---
 

@@ -10,7 +10,7 @@ const appTaskContext =
 
 const taskTreeContext = [
   "projects/scout-knowledge-lib.app/project.json",
-  "projects/scout-knowledge-lib.app/tasks/tree.json",
+  "projects/scout-knowledge-lib.app/.state/tasks/tree.json",
   "projects/scout-knowledge-lib/knowledge/INDEX.md",
   "shared/knowledge/INDEX.md",
 ];

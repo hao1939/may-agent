@@ -1,8 +1,8 @@
 <ai_context>
-summary: "June 2026 XHS Chinese AI community trends: canonical synthesis of 7 named paradigm shifts — Loop Engineering, 古法编程 backlash, model-eats-harness debate, Skill Frameworks explosion, single-coordinator consensus, MCP discourse evolution, and the Structural Turn from behavioral to architectural governance. Includes 2024→2026 trajectory and production cross-validation. Chronological scan log (25 scans, Jun 14–19 + Jul 18) extracted to xhs-scan-log-june2026.md. Prediction tracking consolidated in xhs-prediction-tracker.md. Scan #62 (2026-07-02): Structured Disenchantment phase — ByteDance reality check, simplicity supremacy, cross-cultural Safety Inversion naming."
-triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, prompt engineering obsolescence, model sovereignty/resilience planning, or agent cost analysis."
-last_updated: "2026-07-02"
-source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-19, 2026), production cross-validation (KEs 1933-1984), and cross-source scans across HN, GitHub, and arXiv. Scan log extracted 2026-09-09 to keep canonical note under 800-line threshold. Scan #62 (2026-07-02) adds 11th lifecycle phase: Structured Disenchantment."
+summary: "June-July 2026 XHS Chinese AI community trends: canonical synthesis of paradigm shifts — Loop Engineering, 古法编程 backlash, model-eats-harness debate, Skill Frameworks explosion, single-coordinator consensus, MCP discourse evolution, Structural Turn, Structured Disenchantment, and the Harness-Memory Convergence. Scan #63 (2026-07-04): agent improvement surface migrating from text-layer to infrastructure-layer (source-code self-evolution via MOSS, OS-like memory management via EverMemOS, fast/slow/meta variable taxonomy from Tsinghua survey)."
+triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, prompt engineering obsolescence, model sovereignty/resilience planning, agent cost analysis, memory management architecture, or self-evolving agent systems."
+last_updated: "2026-07-06"
+source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-19, 2026), production cross-validation (KEs 1933-1984), and cross-source scans across HN, GitHub, and arXiv. Scan log extracted 2026-09-09 to keep canonical note under 800-line threshold; second extraction 2026-07-05 moved scans #61/#63/#64/#65/#67 to companion log. Scan #63 (2026-07-04) adds Harness-Memory Convergence phase. Scan #64 (2026-07-05) adds Normalization Plateau. Scan #67 (2026-07-05) adds Consolidation Turn. Scan #71 (2026-07-06) adds Temporal Turn — EdgeBench temporal scaling law, /goal vs /loop practitioner debate, DAA metric, Ng's 3-layer Loop, RAG commoditization, agent security mainstream."
 </ai_context>
 
 # XHS Chinese AI Community Trends — June 2026
@@ -568,43 +568,21 @@ Three predictions now entering their forecast windows: 护栏效应 (early Jul),
 
 ---
 
-## 10. The Practitioner Industrialization Phase (Scan #61, 2026-10-31)
+## Recent Scan Phases (Oct 2026 – Jul 2026)
 
-**Signal strength: Very High** (20,000+❤ across Claude Code posts alone)
+Five scan-phase sections have been extracted to the companion scan log.
+For full details on each phase, see:
 
-The community has entered a **tenth lifecycle phase**. The discourse shifted
-decisively from *what to build* to *how to build well with Claude Code*.
+→ **[XHS Cross-Source Scan Log — June 2026](./xhs-scan-log-june2026.md)**
 
-### Key structural transitions:
-
-**Tool dominance**: Claude Code achieved total category dominance (9,333❤
-tutorial = highest single-tool-post ever). The "which tool?" debate is over.
-
-**Engineering nomenclature**: Four stages explicitly named and sequenced:
-Prompt Engineering → Context Engineering (1,073❤) → Harness Engineering
-(declared "翻篇" = completed) → Loop Engineering (447❤ = currently dominant).
-Each stage optimizes a different layer: instruction → information → scaffolding
-→ feedback mechanism.
-
-**Multi-agent consensus**: "單agent寫代碼快被淘汰" (1,774❤) — single-agent
-coding declared nearly obsolete. No significant pushback.
-
-**Enterprise pain-sharing**: A new content genre emerged — deployment failure
-retrospectives with 53% retention across serial posts (1,254❤ + 663❤).
-
-**Self-evolving agents revived**: After being frozen in scan #59, self-evolving
-agents returned as a named paradigm (980❤) with empirical counter-evidence
-(361❤ "實錘Agent基本沒提升"). The counter keeps discourse honest.
-
-**MCP security Shanghai AI Lab monopoly**: 劉東瑞 published systematic
-analysis, benchmark (MCPTOOLBENCH++), and detection tool (MCPGuard).
-DCI ~10% independently validated on Chinese XHS.
-
-**New prediction**: **Eval Engineering as Stage 5** — the logical successor
-after Loop Engineering. When loops create feedback, the next question is
-"how do we know the loops improve things?" Window: Q1 2027.
-
-Full scan: [findings/2026-10-31-xhs-scan-61.md](./findings/2026-10-31-xhs-scan-61.md)
+| Phase | Scan | Date | Key signal |
+|-------|------|------|------------|
+| Practitioner Industrialization | #61 | 2026-10-31 | Claude Code total tool dominance (9,333❤); 4-stage engineering nomenclature named; Eval Engineering predicted as Stage 5 |
+| Harness-Memory Convergence | #63 | 2026-07-04 | Improvement surface migrating to infrastructure-layer (MOSS source-code evolution, EverMemOS 4-layer memory, Tsinghua self-evolution survey) |
+| Normalization Plateau | #64 | 2026-07-05 | Paradigm-naming fatigue; 4-MD memory consensus (2,673❤); 豆包/千问 consumer agent shutdowns; China GB agent standard |
+| Regulatory Kill Chain | #65 | 2026-07-05 | 拟人化暂行办法 identified as specific consumer-agent regulation; WeChat 小微 counter-signal; 3-tier market crystallized |
+| Consolidation Turn | #67 | 2026-07-05 | Meta-theory construction; mass education absorption (吴恩达 5,471❤); framework resets; agent security incident narratives (2,005❤) |
+| Temporal Turn | #71 | 2026-07-06 | Time as primary engineering axis: EdgeBench 72hr temporal scaling law (704❤), /goal vs /loop practitioner debate (686❤), DAA metric replacing Token (329❤), Ng's 3-layer Loop framework (992❤), RAG/workflow commoditization (187❤) |
 
 ---
 

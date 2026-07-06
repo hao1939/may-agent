@@ -23,6 +23,7 @@ June 2026 arXiv research, HN practitioner discourse, or XHS community signals.
 - [State-Level Access Controls](./agent-security-state-level-governance.md) — ITAR/Mythos, dual-use, infrastructure cost
 - [Agent Architectures](./agent-architectures.md) — harness engineering, sandboxing
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — protocol-layer security
+- [Scan #331: Install-Time Ceiling](./findings/2026-07-05-arxiv-github-scan-331.md) — security scanner industrialization (5 vendors, 22K+★) concentrated at install-time; runtime lifecycle governance gap at ∞:1
 
 ---
 
@@ -264,6 +265,19 @@ conditions:
   security. As Skills-as-Code proliferates (150k+ ★ on GitHub), runtime
   skill auditing becomes mandatory infrastructure.
 *(arXiv [2606.11671], Lan & Xiao, Jun 2026)*
+
+**July 2026 update — SkillCloak + SkillDetonate (2607.02357)**: Adversarial
+study confirms and extends RSA findings. SkillCloak (payload-preserving evasion)
+bypasses all 8 static scanners (SFS Packing >90%, Structural Obfuscation >80%)
+across 1,613 in-the-wild malicious skills. SkillDetonate (behavioral runtime
+auditor via sandbox execution + OS-boundary information-flow evidence) achieves
+**97% detection at 2% FPR**, sustaining 87% on real-world skills. Proves the
+static→runtime transition in skill security is empirically necessary, not just
+theoretically motivated. Also see SkillFuzz (2607.02345): composition-aware
+fuzzing discovers 1,000+ implicit intents from individually benign skills,
+with 80%+ confirmation on highest-risk compositions — extending ShareLock (§2.30)
+from deliberate to unintentional composition attacks.
+*(Scan #367, Jul 2026)*
 
 ## 2.17 Game-Theoretic Context Stability (GT-MCP)
 
@@ -755,7 +769,57 @@ catalog:
   is self-defeating (2606.30602). Design principle: safety requires dose-response
   curves, not monotonic application. (Scan #282)
 
-*(Extracted 2026-11-04; updated 2026-07-02)*
+- **Vera Automated Safety Testing** — 93.9% average attack success rate on 4
+  production agent frameworks (OpenClaw, Hermes, Codex, Claude Code) under
+  multi-channel attacks. 1,600 executable cases / 124 risk categories (2607.01793).
+  Proves L1 guard enforcement alone is functionally absent against structured
+  attack campaigns. (Scan #368)
+- **Behind the Refusal (Guardrail Reconnaissance)** — first black-box guardrail
+  detection methodology: 100% presence detection, F1=98% block-type
+  disambiguation via HTTP/lexical/timing signals (2607.02121). Guardrails are
+  transparent to attackers. (Scan #368)
+- **A-TMA Ghost Memory** — formalizes state coordination failure where old,
+  current, and transition facts coexist and mislead answer models; ATMA overlay
+  improves conflict accuracy +0.240 absolute (2607.01935). Memory-layer analog
+  of SkillFuzz composition attacks. (Scan #368)
+- **SkillCoach Process Rubrics** — self-evolving rubrics for 4-dimensional
+  skill-use evaluation (selection, following, composition, reflection);
+  separates process quality from accidental task success (2607.01874). (Scan #368)
+- **SafePyramid Policy Enforcement Ceiling** — GPT-5.5 achieves only 12.9%
+  exact-match on novel policy frameworks with 61,699 rules (2606.29887).
+  Policy composition is structurally hard. (Scan #368)
+- **Guard Miniaturization (HaloGuard + kNNGuard)** — L1 guard enforcement
+  commoditizing: 0.8B model beats 27B baselines (2607.02079); training-free
+  50-example guardrail runs 2.7x faster (2607.02072). (Scan #368)
+
+- **SkillCloak Static Scanner Evasion** — payload-preserving evasion framework
+  bypasses all 8 tested static skill scanners at >90% (SFS Packing) and >80%
+  (Structural Obfuscation). Tested across 1,613 in-the-wild malicious skills.
+  Static/appearance-based skill auditing is provably insufficient (2607.02357).
+  (Scan #375)
+- **SkillDetonate Runtime Behavioral Auditor** — sandbox-based runtime detection
+  using on-demand closure lift + marker-based taint analysis achieves 97%
+  detection at 2% FP, 87% on real-world malicious skills. Only behavioral
+  defense shown to withstand SkillCloak evasions (2607.02357). (Scan #375)
+- **SkillFuzz Composition Intent Discovery** — contract-guided MCTS fuzzer
+  discovers >1,000 implicit intents from individually benign skill compositions;
+  80%+ of highest-risk flagged compositions confirmed during execution.
+  Individual skill auditing provably insufficient (2607.02345). (Scan #375)
+- **UnderSpecBench Action Boundary Violations** — 55.8–67.8% of coding agent
+  runs violate at least one action boundary under underspecified instructions.
+  Agents guess rather than refuse/clarify. Completion-centric evaluation
+  overstates safe autonomy (2607.02294). (Scan #375)
+- **Steerability via Constraints** — traditional engineering controls (access
+  control, network policies, coding conventions) transfer directly to coding
+  agents; cheaper in tokens than agentic scaffolding. Backdoor detection
+  54.5%→90.9% with substrate constraints + 200-LoC docs CLI (2607.02389).
+  (Scan #375)
+- **Online Safety Monitoring (Simple Threshold)** — simple verifier-signal
+  thresholding with risk-control calibration matches complex sequential
+  hypothesis testing monitors. More infrastructure ≠ more safety (2607.02510).
+  (Scan #375)
+
+*(Extracted 2026-11-04; updated 2026-07-05)*
 
 ---
 

@@ -889,3 +889,44 @@ governance rules apply. Open-source runtimes are structurally necessary to
 prevent governance capture.
 
 Sources: GitHub API data (Jul 2026), HN ZCode (48751752), arXiv [2606.32025].
+
+## Production Architecture Dissection (July 2026 — Academic Validation)
+
+The "Dive into Claude Code" paper (arXiv 2604.14228v2, updated Jul 2 2026)
+provides the first rigorous academic decomposition of a production agent
+system's architecture, comparing Claude Code, OpenClaw, and Hermes Agent.
+
+**Core insight**: The agent loop is trivially a while-loop (call model, run
+tools, repeat). All architectural complexity lives in the boundary-enforcement
+infrastructure around the loop.
+
+**Five Human Values → Thirteen Design Principles → Implementation**:
+1. Human decision authority → per-action approval, permission tiers
+2. Safety, security, privacy → sandboxing, access control
+3. Reliable execution → error recovery, session persistence
+4. Capability amplification → tool integration, extensibility
+5. Contextual adaptability → context management, memory
+
+**Three deployment contexts produce three different boundary models**:
+
+| Component | Claude Code | OpenClaw | Hermes Agent |
+|-----------|------------|----------|--------------|
+| Safety | Per-action (7 modes + ML classifier) | Perimeter access control | Per-action across surfaces |
+| Runtime | Single CLI while-loop | Gateway control plane | Single process, role by entry point |
+| Context | 5-layer compaction (extends window) | Gateway-wide capabilities | Pluggable memory + model backends |
+| Extension | MCP, plugins, skills, hooks | Gateway-wide capabilities | Pluggable backends |
+| Storage | Append-only session | Gateway state | Entry-point-determined |
+
+**Boundary enforcement gap** (discovered scan #373): No deployed system
+enforces boundaries at the cross-temporal or cross-turn level. Per-action
+(Claude Code), per-perimeter (OpenClaw), and per-surface (Hermes) all miss
+the temporal dimension. Meta-harness repos (omnigent 6,215★) and stateful
+link-tracker monitors (2607.02514) are early attempts to fill this gap.
+
+**Key implication**: Agent architecture IS boundary architecture. The while-loop
+is nothing; the permission system, context pipeline, extensibility mechanisms,
+and session storage are everything. Deployment context (single-user CLI vs.
+multi-agent gateway vs. multi-surface platform) determines which boundary
+model is adopted, and no single model covers all boundary layers.
+
+Source: arXiv [2604.14228v2], scan #373.

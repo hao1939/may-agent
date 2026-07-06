@@ -8,6 +8,5 @@
     "id": "scout-knowledge-lib",
     "path": "../scout-knowledge-lib"
   },
-  "goal": "Discover AI trends from arXiv, HN, XHS, and GitHub; synthesize findings into reusable, source-grounded knowledge notes; deliver daily digests; and maintain library quality through deduplication, consolidation, and index health.",
-  "taskIndex": ["tasks/tree.json"]
+  "goal": "Discover AI trends from arXiv, HN, XHS, and GitHub; synthesize findings into reusable, source-grounded knowledge notes; deliver daily digests; and maintain library quality through deduplication, consolidation, and index health."
 }

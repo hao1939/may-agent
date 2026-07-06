@@ -6,7 +6,11 @@ import {
   statSync,
 } from "node:fs";
 import { join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 
 export const name = "library-health";
 export const description =
@@ -191,7 +195,7 @@ function buildPacket(ctx: WorkflowContext): {
   const sharedRouterIndexExists =
     lineCount(safeRead(join(sharedKnowledgeDir, "knowledge-index.json"))) > 0;
 
-  const treeText = safeRead(join(appDir, "tasks/tree.json"));
+  const treeText = safeRead(resolveTaskTreePath(appDir));
   const hasSharedConvergenceTask = treeText.includes(
     "shared-knowledge-convergence",
   );

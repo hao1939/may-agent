@@ -215,3 +215,14 @@ The system doesn't need better agents. It needs agents that can efficiently dete
 **EARS (arXiv 2606.18668)** provides production evidence that structured abstention restores system reliability. In a large-scale e-commerce MAS, reframing sub-agent abstention as an inter-agent communication protocol (exposing actionable failure states rather than merely going silent) improved overall response pass rate from 68.5% to 78.9%. This validates our core thesis — abstention is not a cost to minimize but a capability to preserve — and adds a key nuance: the fix for abstention decay is not making abstention *cheaper* but making it *informative*. See [findings/2026-09-10-hn-scan-77.md](findings/2026-09-10-hn-scan-77.md).
 
 **RACG (arXiv 2606.13884)** formalizes the gating mechanism: act, defer, or abstain based on counterfactual causal risk with distribution-free safety bounds. This provides the theoretical framework for Prediction P1 (structural intervention): compiled abstention gates should be risk-aware, not merely event-driven.
+
+## External Validation (2026-07-09)
+
+**Agentic Abstention (arXiv 2606.28733)** provides the strongest external validation yet — the first controlled, large-scale measurement of agent over-action. Across 13 LLM-as-agent systems, 2 agent scaffolds, and 28,000+ tasks:
+
+- Agents systematically fail to stop when stopping is correct (timely recall as low as 26.7% for Llama-3.3-70B on WebShop).
+- **Larger, more capable models sometimes perform worse at timely abstention** — confirming our maturity paradox prediction (P5) and the tool deference finding (2606.14476).
+- The gap is largest on tasks that *appear* feasible until the environment reveals otherwise — matching our production observation that agents burn 21+ ops before concluding "nothing to do."
+- **CONVOLVE**, a context engineering method, raises timely recall from 26.7 to 57.4 without parameter updates — validating our proposed compiled abstention gate (structural fix #1).
+
+This paper transforms our internal production observation into a measured, cross-system phenomenon. The Abstention Decay is not specific to our system; it is a structural property of LLM agents trained on completion and evaluated on action. See [findings/2026-07-09-arxiv-scan-401.md](findings/2026-07-09-arxiv-scan-401.md).

@@ -1,0 +1,288 @@
+{
+  "version": 1,
+  "project_lifecycle": "active",
+  "root_task_id": "project",
+  "active_task_id": null,
+  "active_task_ids": [],
+  "tasks": {
+    "project": {
+      "id": "project",
+      "parent_id": null,
+      "kind": "project",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Discover AI trends, synthesize source-grounded knowledge, and maintain a reusable library for all agents.",
+      "inputs": [
+        "knowledge/",
+        "knowledge/INDEX.md",
+        "reports/",
+        "agents/scout/AGENTS.md",
+        "agents/scout/heartbeat.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Scout can maintain the knowledge library through project events, not only heartbeat.",
+        "The library index remains useful for agents looking for reusable knowledge.",
+        "Maintenance favors consolidation, source grounding, and downstream reuse over creating shallow new files."
+      ],
+      "context": {
+        "migration_note": "2026-06-12: moved Scout knowledge library from /app/agents/scout/knowledge to /app/projects/scout-knowledge-lib/knowledge with a compatibility symlink at the old path.",
+        "domain_workspace": "/app/projects/scout-knowledge-lib",
+        "compatibility_path": "/app/agents/scout/knowledge",
+        "migration_first_principle": "First preserve and index existing knowledge. Consolidation happens only after source-aware review."
+      },
+      "state": "backlog",
+      "children": [
+        "ongoing-research",
+        "library-maintenance",
+        "existing-knowledge-migration",
+        "library-inventory-and-index",
+        "dedupe-and-quality",
+        "triage-inbox-imports",
+        "source-grounded-synthesis",
+        "adoption-and-reuse-feedback",
+        "fill-gap-agent-security",
+        "fill-gap-agent-testing-tooling"
+      ]
+    },
+    "ongoing-research": {
+      "id": "ongoing-research",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Continuously discover AI trends from multiple sources and synthesize findings into the knowledge library.",
+      "context": {
+        "note": "This is a perpetual process — there is always new knowledge to explore. Each child represents an ongoing source channel."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "library-maintenance": {
+      "id": "library-maintenance",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Periodic library health: consolidate new duplicates, update INDEX.md, archive stale findings, improve synthesis quality.",
+      "context": {
+        "note": "Triggered by knowledge-planner workflow when project.owner.requested events arrive. Not on a fixed schedule — reacts to library drift.",
+        "current_condition": "2026-07-06: (1) Oversized notes — all have documented tolerable-status reasons, no further split tasks warranted: xhs-scan-log-june2026.md 2,215 lines (companion log, append-only dated scans); agent-security-event-log.md 951 lines (append-only provenance log); hn-agent-operational-memory.md 941 lines (24 diverse small sections, splits fragment without benefit); agent-architectures.md 932 lines (50+ atomic 7-13 line sections at fragmentation limit); xhs-prediction-tracker.md 878 lines (companion file tracking 47 predictions with integral per-scan evidence chains — splitting breaks prediction→evidence continuity); agent-security-defense-architectures.md 836 lines (50+ atomic sections at fragmentation limit). (2) Unsourced backlog at ~212 findings after 34 sourcing batches plus 5 newly indexed scans (#396-#400). Steady-state: re-mark already-covered entries in small verified batches. (3) Scans indexed through #400 plus XHS #70 plus two cross-source syntheses plus the-discipline-import synthesis. 491 total findings files. Known scan-number collision #280 documented. (4) INDEX.md at ~757 lines, healthy. (5) Digest today.md archived+reset 2026-11-10. Fourth archive cycle. (6) Chinese regulatory partitioning arc (XHS #64-#70, Jul 2026): 《人工智能拟人化互动服务管理暂行办法》 forces consumer agent shutdowns while enterprise/developer agents accelerate; national agent interoperability standards (7 GB specs) published — not yet absorbed into agent-security-state-level-governance.md. (7) The Discipline Import synthesis (Jul 5) is a potential library-level finding: traditional SW engineering disciplines outperform agent-native innovations (2607.02389: 54.5%→90.9% backdoor detection). Extends Substrate Inversion and Compilation Gradient. Not yet sourced into canonical notes. (8) HN AI drought arc (#390-#399, 8 scans zero AI headlines) and Sovereignty Preference Cascade (#396-#400, stack crossing 2,400pts) are novel thematic clusters from recent scans — not yet covered by canonical notes but may warrant a section in hn-agent-operational-memory.md or agent-security-state-level-governance.md."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "existing-knowledge-migration": {
+      "id": "existing-knowledge-migration",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "scout",
+      "goal": "Move existing Scout knowledge into the project-owned domain workspace without losing provenance.",
+      "inputs": [
+        "agents/scout/knowledge/",
+        "projects/scout-second-brain-learning/outputs/"
+      ],
+      "outputs": [
+        "projects/scout-knowledge-lib/knowledge/",
+        "projects/scout-knowledge-lib/reports/migration/scout-second-brain-learning/",
+        "agents/scout/knowledge"
+      ],
+      "acceptance": [
+        "Existing knowledge files are preserved under the project workspace.",
+        "The old agent-local knowledge path remains available as a compatibility symlink.",
+        "Historical second-brain outputs are copied as migration evidence rather than merged blindly into durable notes."
+      ],
+      "state": "backlog",
+      "children": []
+    },
+    "library-inventory-and-index": {
+      "id": "library-inventory-and-index",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Review knowledge/INDEX.md and library navigation so agents can find existing notes before creating duplicates.",
+      "inputs": [
+        "knowledge/INDEX.md",
+        "knowledge/"
+      ],
+      "outputs": [
+        "knowledge/INDEX.md",
+        "reports/library-inventory-2026-06-12.md"
+      ],
+      "acceptance": [
+        "Index covers the current markdown notes in the library.",
+        "Index links validate against existing files.",
+        "Known duplicate clusters are recorded for task-tracked consolidation."
+      ],
+      "state": "backlog",
+      "children": []
+    },
+    "dedupe-and-quality": {
+      "id": "dedupe-and-quality",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Find duplicate, stale, or low-context knowledge notes and consolidate them without losing source-grounded findings.",
+      "inputs": [
+        "knowledge/"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
+      "acceptance": [
+        "At least one concrete duplicate/stale cluster is improved or an exact no-op reason is recorded.",
+        "No shallow bulk rewrites are made just to satisfy a metric."
+      ],
+      "state": "backlog",
+      "children": []
+    },
+    "triage-inbox-imports": {
+      "id": "triage-inbox-imports",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Triage the 89 research drafts in knowledge/inbox/ (imported 2026-06-13 from root cleanup). Decide per-file: merge unique findings into canonical notes, archive as provenance, or delete as noise.",
+      "inputs": [
+        "knowledge/inbox/app-research-cleanup-2026-06-13/",
+        "knowledge/inbox/app-docs-cleanup-2026-06-13/",
+        "knowledge/inbox/app-root-cleanup-2026-06-13/",
+        "knowledge/inbox/app-projects-cleanup-2026-06-13/"
+      ],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md",
+        "reports/inbox-triage.md"
+      ],
+      "acceptance": [
+        "Each inbox batch has a triage decision: merge, archive-as-provenance, or delete.",
+        "Unique findings from inbox files are merged into existing canonical notes rather than creating new top-level notes.",
+        "Inbox file count drops substantially after triage.",
+        "INDEX.md inbox section is updated to reflect triage progress."
+      ],
+      "context": {
+        "file_counts": "33 XHS (Jun 3-22), 29 HN (Jun 4-14), 25 arXiv (Jun 4-12), 2 GitHub trending",
+        "known_duplicate": "outputs/xhs-2026-06-22.md and research/xhs-2026-06-22.md are byte-identical",
+        "approach": "Process by source (XHS, HN, arXiv) not by import batch. Most are daily snapshots — extract net-new findings into canonical notes, archive the rest as dated provenance."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "source-grounded-synthesis": {
+      "id": "source-grounded-synthesis",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Fill library gaps identified during inbox triage — add named patterns and protocol coverage to canonical notes where existing notes are thin or silent.",
+      "inputs": [
+        "knowledge/",
+        "reports/inbox-triage-*.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/synthesis-review.md"
+      ],
+      "acceptance": [
+        "New or updated synthesis cites source context and links related notes.",
+        "Existing notes are updated before creating a new one.",
+        "Each gap identified in triage reports is addressed or explicitly deferred."
+      ],
+      "context": {
+        "gaps_from_triage": "arXiv: agent security/governance. GitHub: agent harness pattern, skills/plugins, MCP ecosystem, agent testing tooling. See reports/inbox-triage-arxiv-batch.md and reports/inbox-triage-github-batch.md.",
+        "remaining_gap": "All gaps resolved. Security/governance → fill-gap-agent-security (done 2026-07-15). Testing tooling → fill-gap-agent-testing-tooling (done 2026-07-16, section in agent-evaluation.md)."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "adoption-and-reuse-feedback": {
+      "id": "adoption-and-reuse-feedback",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Review whether Scout and other agents are reusing the library, then feed findings into library structure and task priorities.",
+      "inputs": [
+        "knowledge/",
+        "reports/",
+        "agents/scout/last-eval.md"
+      ],
+      "outputs": [
+        "reports/reuse-feedback.md",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Reuse/adoption evidence changes the next maintenance priority or records why no action is needed."
+      ],
+      "context": {
+        "metric_breach_2026-11-02": "scout.downstream-reference-files-7d dropped to 0 (threshold 1, target 3). Trend was at 1 for 4 prior measurements then fell to 0. Root cause likely: no other agent has referenced a library file in 7 days. Possible causes: (1) library files not discoverable (INDEX gap — partially addressed by indexing scans #249-#253 this session), (2) library content not actionable enough for operational agents (Knowledge Asymmetry synthesis identifies this structurally), (3) no active workflow consuming library. Next step: check shared/knowledge reference patterns and whether any agent workflow reads from this library path.",
+        "metric_recovered_2026-06-29": "scout.downstream-reference-files-7d recovered to 152 (target 3, threshold 1). Was at 0 for ~10 measurement cycles then jumped to 152. Alert #2252 resolved. The current value (152) far exceeds the target (3), suggesting either the measurement methodology was improved or library adoption has grown substantially. Consider recalibrating target upward if sustained."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "fill-gap-agent-security": {
+      "id": "fill-gap-agent-security",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Add a canonical note on agent security and governance patterns. Identified as the #1 cross-cutting theme in the arXiv inbox triage (238 papers) with no existing canonical note.",
+      "inputs": [
+        "knowledge/inbox/",
+        "reports/inbox-triage-arxiv-batch.md",
+        "knowledge/agent-architectures.md",
+        "knowledge/agent-protocols-mcp-a2a.md"
+      ],
+      "outputs": [
+        "knowledge/agent-security-governance.md",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "A canonical note covers agent security concerns: prompt injection, tool-use sandboxing, permission models, governance frameworks.",
+        "Content is source-grounded from arXiv provenance files, not generated from thin air.",
+        "Existing notes (architectures, protocols) are cross-linked where they touch security."
+      ],
+      "context": {
+        "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-arxiv-batch.md for paper-level evidence."
+      },
+      "state": "backlog",
+      "children": []
+    },
+    "fill-gap-agent-testing-tooling": {
+      "id": "fill-gap-agent-testing-tooling",
+      "parent_id": "project",
+      "kind": "work",
+      "priority": "P3",
+      "owner": "scout",
+      "goal": "Decide whether agent testing tooling warrants a canonical note or a section in agent-evaluation.md. Identified as a gap in GitHub inbox triage — testing frameworks, simulation harnesses, and CI patterns for agents.",
+      "inputs": [
+        "knowledge/agent-evaluation.md",
+        "reports/inbox-triage-github-batch.md",
+        "knowledge/inbox/"
+      ],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "Decision recorded: standalone note vs section in agent-evaluation.md.",
+        "If written, content cites specific tools/repos from GitHub provenance.",
+        "INDEX.md updated to reflect the new coverage."
+      ],
+      "context": {
+        "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-github-batch.md."
+      },
+      "state": "backlog",
+      "children": []
+    }
+  }
+}
