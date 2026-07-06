@@ -14,7 +14,7 @@ const appTaskContext =
 
 const taskTreeContext = [
   "projects/may-agent.app/project.json",
-  "projects/may-agent.app/tasks/tree.json",
+  "projects/may-agent.app/.state/tasks/tree.json",
   "projects/may-agent.app/docs/2a-design/project-app-v3.md",
   "projects/may-agent.app/docs/2a-design/events.md",
   "projects/may-agent.app/docs/2a-design/projects.md",

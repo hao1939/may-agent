@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 
 export const name = "platform-owner-review";
 export const description =
@@ -68,7 +72,7 @@ function depsDone(tasks: Record<string, TaskNode>, task: TaskNode): boolean {
 }
 
 function taskTreePacket(appDir: string): Record<string, unknown> {
-  const treePath = join(appDir, "tasks/tree.json");
+  const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return { available: false, path: treePath };
   const tree = parseJsonFile(treePath);
   const tasks = asRecord(tree.tasks) as Record<string, TaskNode>;
@@ -560,6 +564,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Build a compact summary for inline context (key signals only, not full data).
   const packetSummary = buildPacketSummary(packet);
+  const taskTreePath = resolveTaskTreePath(appDir);
 
   const prompt = [
     "You are the May-agent platform project owner.",
@@ -584,7 +589,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Start with these files:",
     `- ${packetPath}`,
     `- ${appDir}/project.json`,
-    `- ${appDir}/tasks/tree.json`,
+    `- ${taskTreePath}`,
     `- ${appDir}/app.ts`,
     `- ${appDir}/workflows/platform-owner-review.ts`,
     "",

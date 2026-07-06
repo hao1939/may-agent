@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { resolveTaskTreePath } from "@may-agent/sdk";
 import app from "../app";
 
 type Issue = {
@@ -243,9 +244,9 @@ function asStringArray(value: unknown): string[] {
 }
 
 function checkTaskTree(): void {
-  const treePath = resolve(appDir, "tasks/tree.json");
+  const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) {
-    addIssue("taskTree.missing", "tasks/tree.json is missing.");
+    addIssue("taskTree.missing", "task tree is missing.");
     return;
   }
 

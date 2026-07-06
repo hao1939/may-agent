@@ -4,7 +4,6 @@
   "status": "active",
   "type": "project-app",
   "priority": "P0",
-  "waitReason": "Reopened by human steering on 2026-06-14: may-agent.app should continuously collect platform failures/issues, feed them to the owner with a compact system-review packet, and turn real abnormal signals into task-tree work before claiming the platform is healthy.",
   "domainProject": {
     "id": "may-agent",
     "path": "../may-agent"
@@ -12,16 +11,10 @@
   "goal": "Drive the May-agent platform as a v3 project app: keep runtime contracts, event/session/task execution, persistence, SDK, shared UI, and project-app conventions coherent, tested, and reusable.",
   "strategy": [
     "Keep platform design and principles in this app's docs/ tree.",
-    "Use tasks/tree.json as the durable expression of project thinking, priorities, and accepted understanding.",
+    "Use the task tree as the durable expression of project thinking, priorities, and accepted understanding; the SDK owns its runtime file path.",
     "Use ../may-agent as the portable domain/runtime code workspace.",
     "Route human steering, metric signals, scheduled review, and abnormal runtime signals into event-based owner review.",
     "Before claiming platform health, inspect open alerts, recent failures, stale project state, task-tree state, evaluator findings, and communication failures.",
     "Keep runtime scratch in .state/ and fold durable decisions back into docs, tasks, or code."
-  ],
-  "taskIndex": ["tasks/tree.json"],
-  "currentFocus": {
-    "taskId": "ops-health",
-    "summary": "Owner review 2026-07-02T00:30Z. Verified session.end false-positive fix (ops-health-session-end-unhandled-false-positive, done). Post-fix: last 2 ops-health observations produced 0 signals (previously every hour was 1 signal). Owner session rate: 2 in last 2h (scheduled-project-review + owner-heartbeat), 4 in last 4h — within 6/day budget, down from 29/24h pre-fix. 2h runtime: 532 handler.completed, 1 handler.failed (evaluation-aftermath blocked, non-platform). Zero platform-owned failures. 2 open alerts both aks-rp-e2e-owned (#2312 blocked-path-count=46, #2167 slow-count-24h=5). project.json/runtime in sync. 77 tasks: 68 done, 9 backlog (all P2, no active/blocked/review). 14/14 app tests pass, TypeScript clean, integrity clean."
-  },
-  "updatedAt": "2026-07-02T00:30:00.000Z"
+  ]
 }
