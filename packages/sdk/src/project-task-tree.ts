@@ -462,6 +462,35 @@ function openLeafIds(tree: TaskTree): string[] {
     .map((task) => task.id);
 }
 
+function blockedOnlyWorkflowWaitStewardship(
+  tree: TaskTree,
+  task: TaskNode,
+): boolean {
+  if (!isWorkflowControllerTask(task)) return false;
+  const progress = contextObject(task).workflowProgress;
+  if (!progress || typeof progress !== "object" || Array.isArray(progress)) {
+    return false;
+  }
+  const record = progress as Record<string, unknown>;
+  const blockedWaitChildren = progressNumber(record, "blockedWaitChildren") ?? 0;
+  const unrepresentedNonTerminalCount = progressNumber(
+    record,
+    "unrepresentedNonTerminalCount",
+  );
+  if (blockedWaitChildren <= 0 || unrepresentedNonTerminalCount !== 0) {
+    return false;
+  }
+
+  const childStates = normalizeStringArray(task.children)
+    .map((id) => tree.tasks[id]?.status)
+    .filter((state): state is string => Boolean(state));
+  return (
+    childStates.length > 0 &&
+    childStates.every((state) => state === "blocked" || state === "done") &&
+    childStates.some((state) => state === "blocked")
+  );
+}
+
 function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
   const childStates = normalizeStringArray(task.children)
     .map((id) => tree.tasks[id]?.status)
@@ -478,7 +507,9 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
     if (isAssignedWorkflowController(task)) return "active";
     if (childStates.includes("active")) return "active";
     if (childStates.includes("review")) return "review";
-    if (holdBlocked) return "blocked";
+    if (holdBlocked || blockedOnlyWorkflowWaitStewardship(tree, task)) {
+      return "blocked";
+    }
     return "backlog";
   }
   if (childStates.includes("active")) return "active";

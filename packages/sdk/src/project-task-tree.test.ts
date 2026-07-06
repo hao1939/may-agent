@@ -11,6 +11,7 @@ import {
   dependenciesSatisfied,
   listRunnableBacklogTaskIds,
   markTaskDone,
+  summarizeTaskTree,
   peekTaskAssignments,
   planningPacket,
   pruneMissingChildren,
@@ -1604,6 +1605,201 @@ describe("project task tree SDK", () => {
 
     expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual([]);
     expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
+  });
+
+  test("rolls durable workflow controller to blocked when only blocked wait children remain", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-spec-verification-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "spec-loop-controller",
+          priority: "P1",
+          children: ["wait-spec-auth", "wait-spec-proof"],
+          goal: "Keep spec verification moving.",
+          outputs: [".state/spec-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              executionDrained: true,
+              noRefillNow: true,
+              strandedExhaustedResidueOnly: true,
+              reason:
+                "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
+              pending: 244,
+              dispatchablePending: 0,
+              strandedPending: 244,
+              running: 0,
+              error: 5,
+              retryBudgetExhausted: 5,
+              unrepresentedNonTerminalCount: 0,
+              blockedWaitChildren: 2,
+              openChildren: 0,
+              openFollowups: 0,
+              activeChildren: 0,
+              reviewChildren: 0,
+              waitingChildren: 0,
+              backlogChildren: 0,
+            },
+          },
+        },
+        "wait-spec-auth": {
+          id: "wait-spec-auth",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for GitHub auth restoration.",
+          outputs: ["evidence/archive/wait-spec-auth.md"],
+          acceptance: ["Auth restored"],
+          blocker: {
+            condition: "GitHub auth required",
+            category: "external-wait",
+          },
+        },
+        "wait-spec-proof": {
+          id: "wait-spec-proof",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for exact proof return.",
+          outputs: ["evidence/archive/wait-spec-proof.md"],
+          acceptance: ["Proof returned"],
+          blocker: {
+            condition: "proof required",
+            category: "external-wait",
+          },
+        },
+      },
+    });
+
+    const repair = repairTaskTreeRollups(config(appDir));
+    expect(repair.repaired).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "aks-spec-verification-loop",
+          from: "backlog",
+          to: "blocked",
+        }),
+      ]),
+    );
+
+    const summary = summarizeTaskTree(config(appDir));
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.active).toEqual([]);
+    expect(summary.frontier.blocked).toContain("aks-spec-verification-loop");
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks["aks-spec-verification-loop"].status).toBe("blocked");
+    expect(tree.tasks["aks-spec-verification-loop"].blocker).toMatchObject({
+      category: "child-blocked",
+    });
+  });
+
+  test("rolls durable workflow controller to blocked when only blocked waits plus done review residues remain", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["aks-feature-compact-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          workflow: "feature-compact-loop-controller",
+          priority: "P1",
+          children: ["wait-compact-proof", "accepted-review-residue"],
+          goal: "Keep feature compact planning current.",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason: "feature-compact loop state still has non-terminal features",
+              pending: 0,
+              running: 0,
+              done: 26,
+              blocked: 0,
+              error: 58,
+              retryBudgetExhausted: 55,
+              unrepresentedNonTerminalCount: 0,
+              activeGithubRuns: 0,
+              openChildren: 0,
+              openSupportChildren: 0,
+              blockedWaitChildren: 1,
+            },
+          },
+        },
+        "wait-compact-proof": {
+          id: "wait-compact-proof",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for exact compact proof return.",
+          outputs: ["evidence/archive/wait-compact-proof.md"],
+          acceptance: ["Proof returned"],
+          blocker: {
+            condition: "compact proof required",
+            category: "external-wait",
+          },
+        },
+        "accepted-review-residue": {
+          id: "accepted-review-residue",
+          parent_id: "aks-feature-compact-loop",
+          state: "done",
+          status: "done",
+          goal: "Accepted compact reconciliation review already closed.",
+          outputs: ["evidence/archive/accepted-review-residue.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const repair = repairTaskTreeRollups(config(appDir));
+    expect(repair.repaired).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "aks-feature-compact-loop",
+          from: "backlog",
+          to: "blocked",
+        }),
+      ]),
+    );
+
+    const summary = summarizeTaskTree(config(appDir));
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.active).toEqual([]);
+    expect(summary.frontier.blocked).toContain("aks-feature-compact-loop");
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("blocked");
+    expect(tree.tasks["aks-feature-compact-loop"].blocker).toMatchObject({
+      category: "child-blocked",
+    });
   });
 
   test("rollup parent refuses to archive unfinished child leaves", async () => {
