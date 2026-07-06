@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses."
-triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability"]
-last_updated: "2026-08-25"
-source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity)."
+summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Three market phases: below threshold (sovereignty = ideology), at threshold (sovereignty = optimization, top 1% today at $89K/engineer), above threshold (sovereignty = existential)."
+triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio"]
+last_updated: "2026-07-11"
+source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404."
 </ai_context>
 
 # The Token Economics Trap: Why Every AI Budget Is Wrong
@@ -269,6 +269,38 @@ irrelevant — when the cost floor is low enough, variance is tolerable.
 
 *(Source: [HN Scan #223](./findings/2026-10-29-hn-scan-223.md))*
 
+## The Cost Inversion Threshold (Jul 2026, Scan #404)
+
+The Token Economics Trap acquires an enterprise-grade quantitative substrate: **"When AI Costs More Than the Engineer"** (tomtunguz.com, Jul 2026) provides the first venture-capital-grade data mapping the cost trajectory:
+
+| Metric | Value | Source |
+|--------|-------|--------|
+| Anthropic compute/payroll ratio | **2.3×** | Forbes/Anthropic filings |
+| Top 1% AI spend per engineer | $89K/year (40% of loaded salary) | Industry survey 2026 |
+| Median company AI spend | $137/engineer/year | Industry survey 2026 |
+| Bull case 2029 | $596K/engineer (230% of salary) | Goldman Sachs projection |
+| Token consumption growth | **24× by 2030** | Goldman Sachs (agentic workflows) |
+| Anthropic revenue/employee | $14M | Forbes Global 2000 |
+
+**The Cost Inversion Threshold** is the point where AI infrastructure cost per engineer exceeds engineer total compensation. In the Goldman bull case, this occurs by 2029. Three market phases:
+
+1. **Below threshold** (median today: $137/year): API costs negligible, sovereignty is ideological, budgets don't need prediction
+2. **At threshold** (top 1% today: $89K/year = 40% of salary): sovereignty becomes a line-item optimization, Token Economics Trap is real
+3. **Above threshold** (bull 2029: $596K/year = 230% of salary): sovereignty becomes existential — the API bill exceeds the payroll
+
+**Connection to sovereignty stack**: HN sovereignty stack crossed 3,000pts at Scan #404, with physical hardware exceeding 1,100pts and local-first repos accelerating (jamesob/local-llm 954★, Godcoder 280★, caveman 85K★ token optimizer). The sovereignty preference and the economic necessity converge at the threshold: local inference stops being philosophical and becomes financially rational.
+
+**Resolution of the predictability problem**: The Token Economics Trap's Layer 1 (predictability collapse) is resolved differently depending on threshold position:
+- Below threshold: prediction doesn't matter (costs too low)
+- At threshold: prediction matters but is solvable (model tiering, budget enforcement)
+- Above threshold: prediction is insufficient — the *total cost* is the problem, regardless of its predictability
+
+The Goldman 24× token consumption projection (from chat → agentic workflows) suggests the bull case is not extreme: if agentic workflows consume 24× more tokens and pricing doesn't drop proportionally, the cost-inversion threshold arrives mechanically.
+
+**HN community behavior validates the threshold**: Simultaneously, the HN front page shows sovereignty-stack stories (3,126pts total) outweighing AI capability stories (397pts) by 7.9:1. Local-first tools, open-hardware initiatives, and "Right to Run Local AI" (549pts) are not contrarian — they're rational responses to a cost curve that's visible to the top 1% and approaching the rest.
+
+*(Source: [HN Scan #404](./findings/2026-07-11-hn-arxiv-github-scan-404.md), tomtunguz.com/ai-spend-breakeven-2029)*
+
 ---
 
-*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies.*
+*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold.*

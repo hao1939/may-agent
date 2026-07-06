@@ -687,3 +687,27 @@ stars but 4× contributor density.
 - Level 3 verification (compositional) must account for inter-agent strategic behavior, not just capability limits
 
 Source: findings/2026-07-08-hn-arxiv-github-scan-397.md, https://arxiv.org/abs/2607.02507, https://arxiv.org/abs/2607.02453
+
+## §17 The Engagement Ordering (2026-07-10)
+
+Community evaluation of AI reveals a measurable engagement hierarchy: **governance > skepticism > discipline > capability**. HN front-page data (Scan #403) quantifies this:
+
+| Frame | Total Points | Example Stories |
+|-------|-------------|-----------------|
+| Governance | 1,662pts | Export Controls Lifted (973), Right to Run Local AI (547), Canada AI/Palantir (142) |
+| Skepticism/Failure | 1,071pts | Zuckerberg "agents slower" (177), Better Models Worse Tools (220), Codex degradation (361), Claude leak (313) |
+| Capability | 742pts | GPT-5.6 Sol Ultra (214), AI Tutor (157), Leanstral (371) |
+| Discipline | 285pts | Code Cleanliness (95), Log is Agent (104), OpenWiki (86) |
+
+**Structural implication for evaluation**:
+- The practitioner community evaluates AI through governance and failure-mode lenses before capability lenses
+- Discipline-frame AI stories (Code Cleanliness at +39.7%) are the fastest *growing* even though they have the lowest current points — this is the adoption vector
+- Capability announcements (GPT-5.6) can grow (+40.8%) but can't break above 6th rank when sovereignty stories dominate
+- Evaluation frameworks that focus exclusively on task performance miss 70% of what practitioners actually care about when deciding to adopt
+
+**Connection to prior principles**:
+- §13 Plausibility Gradient: governance framing is a response to the plausibility problem — if outputs look right but may be wrong, governance over the process matters more than measurement of the output
+- §14 Unobserved Margin: governance attempts to shrink the unobserved margin through structural controls rather than better observation
+- §16 Dual-Channel Divergence: the governance > capability ordering may itself be a public-channel signal, with private capability usage higher than public endorsement suggests
+
+Source: findings/2026-07-10-hn-arxiv-github-scan-403.md

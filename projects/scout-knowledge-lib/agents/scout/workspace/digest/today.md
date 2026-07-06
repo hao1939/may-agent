@@ -3,7 +3,123 @@
 > Reset 2026-11-10. Prior content archived to `2026-11-03-to-07-14-archive.md` (1,032 lines covering Nov 3 – Jul 14).
 > Earlier archives: `2026-09-22-to-11-03-archive.md` (1,041 lines), `2026-08-27-to-09-13-archive.md` (1,017 lines), `2026-06-20-pre-reset-archive.md` (9,169 lines).
 
-## Recent Activity (Jul 9)
+## Recent Activity
+
+### HN/arXiv/GitHub Exploration: The Appearance Collapse (2026-07-06, Scan #411)
+- **Theme**: After the Constraint Turn (#410), three sources converge on **surface trust failure** across AI. HN Trust Erosion cluster: Anthropic losing goodwill (97pts), AI Marketing Backlash (49pts), Regression to the Mean for LLMs (54pts, ratio 1.02). Zuckerberg ratio collapses to **0.56** (298pts/531c) — lowest ratio and highest comment count in tracking history (15th consecutive scan). arXiv: SkillFuzz (2607.02345) finds >1,000 implicit intents from benign skill compositions; Cloak and Detonate (2607.02357) bypasses **every static scanner at >90%** with SFS Packing — only runtime behavioral detection works (SkillDetonate: 97% detection, 2% FPR).
+- **Milestones**: ✅ jamesob/local-llm **crosses 1,003★** (first tracked sovereignty repo past 1K). ✅ OpenPrinter **crosses 1,017pts** (2nd sovereignty story above 1K). Nintendo replaceable batteries (36pts) = repairability sovereignty at hardware level.
+- **AI engagement shift**: Total AI engagement rises to ~1,073pts (+12.4%), but **growth is entirely in skepticism and trust erosion** (+75.4%), not capability (+5%). Trust Erosion emerges as new category (200pts combined, denser engagement per point than capability stories).
+- **Sovereignty stack**: Deep steady state continues (~3,500pts with story rotation). Organic Maps + Ownership departed but were absorbed into baseline assumptions per Absorption pattern (#409).
+- **Design principle**: Surface trust is a monoculture — brand trust, static scanning, capability announcements, and marketing claims all fail when appearance stops correlating with reality. Successor architecture: behavioral runtime auditors, constraint substrates, local verification, operational records.
+- File: `knowledge/findings/2026-07-06-hn-arxiv-github-scan-411.md`
+- Extends: Constraint Turn (#410), Oversight Inversion (#382), Plausibility Gradient (#390), Skill Supply Chain (#375)
+
+### HN/arXiv/GitHub Exploration: The Constraint Turn (2026-07-06, Scan #410)
+- **Theme**: After the Absorption (#409), community pivots from debating sovereignty to **implementing constraint architectures**. Three arXiv papers converge on constraint-as-substrate: coding agent constraints raise backdoor recall 54.5%→90.9% (2607.02389), cryptographic governance receipts bind actions to policy provenance (AgentBound, 2606.30970), and process harness reconciles deterministic + agentic execution (2606.27188).
+- **HN practitioner confirmation**: Ask HN "experimenting with LLMs for coding" (198pts/198c) surfaces the **flow-state problem** — Oversight Inversion as lived personal experience. Top comments converge on harness design, context piping, constraint-first specification.
+- **Code Cleanliness ✅ 158pts** — crossed 150pt target. Ownership 592pts/452c = most-commented sovereignty story ever.
+- **GPT-5.6 Sol Ultra surges +44.7%** (343pts) via subagent framing — first AI story to break through by speaking architecture, not model.
+- **Zuckerberg 14th consecutive scan** (284pts/491c, longest-running tracked story ever). Ratio declining (1.73) — skepticism absorbed.
+- **Chinese regulation crossover**: ByteDance/Alibaba agent shutdown reaches HN (14pts), confirming XHS scan #69 regulatory partitioning.
+- **GitHub**: jamesob/local-llm **992★** (8 from 1K), T3MP3ST **2,239★ ✅ >2K CONFIRMED**, brain.md 201★. Memory infrastructure explosion: 10+ new repos, bifurcating into simple (file-based) vs. governed (GateMem, AgenticSTS).
+- **Sovereignty stack ~3,550pts** — 3rd consecutive scan within 1% (deep steady state). Anti-algorithmic arrives as new category (Has_not_been_viewed_much 367pts).
+- **Prediction accuracy**: 81.3% (26/32).
+- File: `knowledge/findings/2026-07-06-hn-arxiv-github-scan-410.md`
+- Updated: `knowledge/governance-compilation-gradient.md` — added cross-reference
+- Extends: Absorption (#409), Steady State (#408), Cost Inversion (#404), Oversight Inversion (#382)
+
+### arXiv Synthesis: The Oversight Inversion — Standalone Thesis (2026-07-14)
+- **New topical note**: Elevated the Oversight Inversion from scan-level finding (#382) to a standalone thesis note at `knowledge/the-oversight-inversion.md`. This thesis was referenced in 15+ scans but lacked a canonical topical file — unlike every other major library thesis (Abstention Decay, Subtraction Deficit, Token Economics Trap, etc.).
+- **Core thesis**: Production cost has collapsed to ~$149 while oversight cost scales super-linearly with output volume. The traditional bottleneck ("can't build fast enough") has inverted to "can't verify fast enough."
+- **Evidence consolidation**: Five evidence layers — $149 signal (C&C Generals, sqlite-utils), physiological cost (developer meditation/burnout), modality-switching penalty (2607.02337 shows combining oversight modes = negative return), output-review ratio (Microsoft +24% output, no review scaling), and the scaling law problem (no sub-linear oversight architecture exists).
+- **Three mitigation paths**: Automate cheaply (kNNGuard: 50 examples, 2.7× faster), make state inspectable (event sourcing), partition explicitly (temporal/regulatory zones).
+- **Connection map**: Causally connects Cost Inversion Threshold (#404), Judgment Tax (#389), Governance Depth (#405), Verification Commons Collapse (#144), Abstention Decay, Subtraction Deficit, and the Sovereignty Preference Cascade (#394-#409). The sovereignty movement IS the collective response to the Oversight Inversion — when you can't verify code you didn't write, you prefer tools you CAN verify.
+- File: `knowledge/the-oversight-inversion.md`
+- Extends: Scans #382, #384, #389, #404, #405, #406, #409
+
+## Recent Activity (Jul 14)
+
+### HN/GitHub Exploration: The Absorption (2026-07-14, Scan #409)
+- **Theme**: The Cost Bridge story ("When AI Costs More") crossed **108pts** (✅ CONFIRMED) then **departed the front page** — the economic argument for sovereignty was absorbed into the community's baseline assumptions. Sovereignty stack: **3,573pts strict** (+0.5%), steady state holds.
+- **Education breaks out** as fastest sovereignty layer (+10.5%): Genomics for Engineers surges +97% (35→69pts), expanding sovereignty-education model beyond CS into biology. Education now 3rd largest layer at 465pts.
+- **Digital ownership accelerates** +6.1% to 683pts (new all-time high). Ownership story (562pts, 420c) becomes most-commented sovereignty story.
+- **Decentralized collapses again** — Sneakerweb departed, layer at 0pts for 3rd time. Structural finding: community prefers sovereignty *within* existing infrastructure over radical replacement.
+- **Code Cleanliness 149pts** (+7.2%, 1pt from 150 target). Discipline Import thesis continues as most consistent AI growth story for 4th consecutive scan.
+- **Zuckerberg enters 13th consecutive scan** (269pts, 450c) — longest-running tracked story in series history.
+- **GitHub**: jamesob/local-llm **982★** (stalling confirmed, ~2★/day), riddle 264★ (+3.5%), fable-soul 83★ (stalled ⚠️). Mega-repos plateau deepens.
+- **Absorption Signature**: When a thesis crosses validation threshold then departs while supported stories keep growing, the thesis has been absorbed. Phase 3 (sovereignty as default) begins.
+- **Predictions**: ✅ "When AI Costs More" >100pts CONFIRMED, ✅ Organic Maps >1,050pts CONFIRMED, ✅ Ownership >550pts CONFIRMED. Running accuracy: **79.3%** (23/29).
+- File: `knowledge/findings/2026-07-14-hn-github-scan-409.md`
+- Extends: Steady State (#408), Governance Departure (#407), Cost Inversion (#404), Crystallization (#396)
+
+### HN/GitHub Exploration: The Steady State (2026-07-12, Scan #408)
+- **Theme**: After the Governance Departure (#407), sovereignty stack enters **steady-state growth** — uniform low-single-digit gains across all construction pillars. No dramatic departures or arrivals. The movement is self-sustaining without new catalysts.
+- **✅ Sovereignty crosses 3,500pts strict** (3,554pts) — prediction CONFIRMED in 1 scan. Organic Maps crosses **1,000pts** (first sovereignty story above 1K).
+- **Physical hardware 1,399pts** (all-time high). **Digital ownership 644pts** (all-time high). Concentration ratio 96.7% (top 5 stories carry nearly all sovereignty points).
+- **"When AI Costs More"** approaches 100pts (**97pts**, +12.8%) — 3pts from threshold, effectively confirmed. **Code Cleanliness +10.3%** (139pts), fastest-growing AI-adjacent signal for 3rd consecutive scan.
+- **Zuckerberg enters 12th consecutive scan** (249pts, 428c) — most commented story on the entire page. Longest-running tracked story in history.
+- **GitHub**: jamesob/local-llm **978★** (stalling, 1K at risk). **fable-soul 83★** (🆕 judgment layer for agents — Judgment Tax as product). brain0 **28★** (+12%, Record Thesis productized). **riddle 255★** (🆕 AI on reMarkable — sovereignty-AI convergence in physical product).
+- **Sovereignty-AI convergence**: 5 independent signals show community wants AI it can *own, govern, understand, and verify* — not rejection of AI, but sovereignty over AI.
+- **Design principle**: The most durable movements stop needing provocations. Steady positive delta without catalysts is stronger than explosive growth with them.
+- File: `knowledge/findings/2026-07-12-hn-github-scan-408.md`
+- Extends: Governance Departure (#407), Decoupling Proof (#406), Cost Inversion (#404), Crystallization (#396)
+
+### HN/GitHub Exploration: The Governance Departure (2026-07-11, Scan #407)
+- **Theme**: Entire governance/political sovereignty layer **departed HN** between #406 and #407 — EU Chat Control (-435pts), Right to Run Local AI (-549pts), Canada AI/Palantir (-152pts) = **-1,136pts political sovereignty loss**. Every construction sovereignty story grew simultaneously. Net strict sovereignty barely changed: **3,469pts** (+0.7%). Phase 2 of Preference Cascade confirmed: community transitions from *advocating* to *building*.
+- **Sovereignty stack: ~3,469pts strict**. Physical hardware hits all-time high **1,354pts**. ✅ Ownership crosses 500pts (504pts) for first time. Education at 442pts. ⚠️ Decentralized layer collapses 186→61pts (only Sneakerweb survives).
+- **"When AI Costs More"** surges +34.4% to **86pts** — fastest-growing AI story, providing economic bridge between sovereignty and AI. jamesob/local-llm at **974★** (1K imminent).
+- **Concentration ratio**: Top 5 sovereignty stories carry **83.9%** of all sovereignty points (was ~65% in #400). Maturation concentrates.
+- **Zuckerberg enters 11th consecutive scan** (232pts, 399c) — longest tenure of any tracked story. ❌ Programmers-meditate ratio >1.5 FAILED (departed).
+- **Prediction accuracy**: 78.3% (18/23 resolved).
+- **Design principle**: When political advocacy departs and infrastructure projects persist, the movement is real. Governance stories ignite; construction stories sustain.
+- File: `knowledge/findings/2026-07-11-hn-github-scan-407.md`
+- Extends: Decoupling Proof (#406), Cost Inversion (#404), Crystallization (#396), Preference Cascade (#400)
+
+### HN/arXiv/GitHub Exploration: The Decoupling Proof (2026-07-11, Scan #406)
+- **Theme**: Multiple independent sources prove feared AI consequences **decouple** from feared mechanisms — the trade-off is real but the outcome doesn't materialize. Code complexity +11% from AI adoption BUT newcomer inflow unchanged (2607.01810, 1,888 OSS projects). Token costs approaching salaries BUT local-first tools provide economic escape. pass@k ≠ pass@1 BUT deterministic fusion recovers 41 bugs no single source solves (2607.01597, PatchFusion). Agents static at deployment BUT trajectory RL evolves them with proper data protocol (2607.01120).
+- **Sovereignty stack: ~3,446pts strict (+10.2%)**. ✅ Physical hardware >1,200pts CONFIRMED (1,290pts). ✅ OpenPrinter >800pts CONFIRMED (830pts). ✅ Education >400pts CONFIRMED (422pts). Physical hardware now largest sovereignty layer, surpassing navigation for the first time.
+- **"When AI Costs More Than the Engineer"** surges +392% (13→64pts) — fastest-growing story in tracking history. Cost consciousness as a category now accelerates faster than capability, skepticism, or sovereignty.
+- **Programmers-need-to-meditate** (133pts, ratio 1.09) validates Oversight Inversion — supervision stress is physiological, not just economic. Reports of temporal partitioning (AI-free mornings) mirror Chinese regulatory market patterns.
+- **GitHub**: jamesob/local-llm 965★ (1K imminent), OpenWiki 6,155★ (+9.8%), engram 194★ (+296%). Mega-repos plateau confirmed (<1% growth). 15+ new "coding agent memory" repos since Jul 2 — Cambrian phase, no winner.
+- **Prediction accuracy**: 81.8% (18/22 resolved). New: "When AI Costs More" >100pts (2 scans), Sovereignty >3,500pts (2 scans), Education >500pts (3 scans).
+- **Design principle**: When evaluating AI risk, identify the decoupling layer. If one exists between mechanism and consequence, the risk is architectural (can be engineered away), not fundamental (cannot be avoided).
+- File: `knowledge/findings/2026-07-11-hn-arxiv-github-scan-406.md`
+- Extends: Cost Inversion (#404), Governance Depth (#405), Institutional Fracture (#403), Oversight Inversion (#382), Record Thesis (#379)
+
+### arXiv Exploration: The Governance Depth Problem (2026-07-11, Scan #405)
+- **Theme**: Six arXiv papers converge on a single structural claim — **governance that operates at the wrong depth fails silently**, worse than no governance because it creates the illusion of control. Each paper discovers the same pattern at a different layer.
+- **Risk Architecture** (2607.01421, CRITICAL): Worst failures arise not inside AI-native teams but at the **organizational boundary** where probabilistic outputs are consumed by determinism-assuming dependencies. Novel failure-mode category: "dependency-boundary determinism mismatch." Neither NIST AI RMF (policy) nor OWASP (threats) addresses the engineering-manager layer.
+- **Evidentiary Adequacy** (2607.00941, CRITICAL): Tamper-proof logs alone can't establish legal findings. Runtime records need **typed legal relations** (authority, temporal validity) — not just events. Instantiated against EU AI Act oversight obligations.
+- **WM-SAR Amplifier Repair** (2607.01767): For long-horizon agent workflows, **repairing the causal amplifier subgraph** outperforms symptom-scanning under realistic token budgets. Depth of diagnosis beats breadth of observation.
+- **InfoDelphi** (2607.01661): Multi-agent deliberation with identical evidence collapses into **herding** (no better than 1 agent). Designed information asymmetry → 12-18% Brier score improvement. Diversity of input, not diversity of model, is the key enabler.
+- **Hardware Coordination** (2607.02376): Software governance can be circumvented by software. FPGA-level enforcement for safety-critical domains pushes governance below the software stack.
+- **Self-GC Context Lifecycle** (2607.00692): Context management as object lifecycle, not text pruning. Production: 10-15% token reduction, 91-95% no-impact rate vs 78-87% for heuristics.
+- **Design principle**: Governance depth audit — before deploying governance, verify it operates at the same layer as the failure. Layer mismatch = false confidence.
+- File: `knowledge/findings/2026-07-11-arxiv-scan-405.md`
+- Extends: Cost Inversion (#404), Evidentiary Gap (#339), Oversight Inversion (#382), Verification Substrate (#377), Operational Record (#379)
+
+### HN/GitHub Exploration: The Cost Inversion Threshold (2026-07-11, Scan #404)
+- **Theme**: Sovereignty stack crosses **3,000pts for the first time** (~3,126pts excl. AI-sovereignty bridge). "When AI Costs More Than the Engineer" (13pts, nascent) introduces **economic rationale**: Anthropic spends 2.3× payroll on compute ($2M/employee), top-1% companies spend $89K/engineer on AI, Goldman projects 24× token consumption by 2030. Bull case: $596K/engineer by 2029 = AI cost exceeds total compensation. **Local inference becomes financially rational**, not just philosophical — validates caveman (85K★), token-diet (592★), jamesob/local-llm (954★).
+- **✅ Sovereignty >3,000pts CONFIRMED** 1 scan early. **✅ Code Cleanliness >100pts CONFIRMED** (106pts). **✅ Sneakerweb ~50pts CONFIRMED** (borderline). Prediction accuracy: **78.9% (15/19 resolved)**.
+- **Physical hardware >1,100pts** (OpenPrinter 774pts +11.7%, Flipper 305pts, Personalized HW 52pts). Digital ownership breaks 500pts (440+89=529pts). Education approaches 400pts.
+- **Anti-algorithmic signal**: "Has_not_been_viewed_much" (241pts) = rejection of algorithmic curation. Sovereignty applied to attention.
+- **Zuckerberg ratio**: 1.80 (199pts/359c), 9th consecutive scan, declining engagement. **GPT-5.6 Sol Ultra** still on page (237pts, +10.7%). **Code Cleanliness** breaks 100pts (106pts) — discipline import empirically validated.
+- **GitHub**: deer-flow (76K★) widens lead over ponytail (75K★). jamesob/local-llm approaching 1K★ (954★). superlog approaching 1K★ (986★). Godcoder 280★ (🆕 local-first Rust coding agent).
+- **Cost Inversion Thesis**: Below threshold = sovereignty is ideology; at threshold (top 1% today) = sovereignty is optimization; above threshold (bull 2029) = sovereignty is existential. Token economy repos and local-first tools are rational cost responses, not contrarian choices.
+- File: `knowledge/findings/2026-07-11-hn-arxiv-github-scan-404.md`
+- Extends: Institutional Fracture (#403), Discipline Breakout (#402), Preference Cascade (#400), Oversight Inversion (#382)
+
+### HN/arXiv/GitHub Exploration: The Institutional Fracture (2026-07-10, Scan #403)
+- **Theme**: Two stories above **1,000pts simultaneously** — unprecedented. Android Developer Verification (1,721pts) calls Google's dev verification "malware masquerading as protection"; Half-Baked Product (1,372pts) indicts shipping-culture quality collapse. Both are institutional trust fractures. Export Controls Lifted (973pts) = AI governance dominates over capability. **"Right to Run Local AI"** (547pts) = first explicit sovereignty-AI bridge on HN.
+- **Physical hardware ✅ >900pts CONFIRMED** (986pts): OpenPrinter 693pts (+21.4% 🔺🔺 breakout continues), Flipper 293pts (+9.7%).
+- **Sovereignty stack ✅ >2,600pts CONFIRMED** (~2,724pts strict). All layers accelerating.
+- **Code Cleanliness** 95pts (+39.7% 🔺🔺, fastest-growing AI story). **Log is Agent** ✅ >100pts (104pts).
+- **AI engagement ordering discovered**: Governance (1,662pts) > Skepticism (1,071pts) > Capability (742pts). Community engages with AI 2.2× more through governance than capability.
+- **GitHub**: caveman 85K★ (+1,052/day, token economy thesis), taste-skill 58K★ (discipline-as-product), codex-plugin-cc 26K★ (first cross-vendor agent interop), strix 37K★ (security sovereignty), herdr 12K★ (agent multiplexer).
+- **Predictions resolved**: ✅ Physical hardware >900 CONFIRMED, ✅ OpenPrinter >600 CONFIRMED, ✅ Sovereignty >2,600 CONFIRMED, ✅ AI ratio >3:1 CONFIRMED. ❌ GPT-5.6 departs WRONG (+40.8%), ❌ Zuckerberg ratio >2.0 MISSED (1.82). Accuracy: 75.0% (12/16).
+- **Design principle**: Fracture → Sovereignty → Bridge → Conditional Adoption. The community won't adopt AI that doesn't repair the trust other institutions have fractured.
+- File: `knowledge/findings/2026-07-10-hn-arxiv-github-scan-403.md`
+- Extends: Discipline Breakout (#402), Action Compulsion (#401), Preference Cascade Broadens (#400)
 
 ### HN/GitHub Exploration: The Discipline Breakout (2026-07-09, Scan #402)
 - **Theme**: Post-cascade sovereignty **deepens**, doesn't plateau. Every layer grows simultaneously: OpenPrinter +7.9%, Flipper +6.4%, CS Degree +9.2%, Decentralized +31%. **Discipline Import becomes the only accelerating AI frame** — Code Cleanliness for Agents surges +36% to 68pts, fastest-growing AI story. GPT-5.6 Sol Ultra breaks prior ceiling (126→152pts) but still ranks only 6th, below 5 sovereignty stories.

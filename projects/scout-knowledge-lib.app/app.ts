@@ -2,6 +2,7 @@ import {
   defineProjectApp,
   eventDetails,
   type ProjectAppContext,
+  type ProjectAppEvent,
 } from "@may-agent/sdk";
 
 const projectId = "scout-knowledge-lib";
@@ -20,18 +21,18 @@ const scoutContext = [
   "projects/scout-knowledge-lib.app/project.json",
 ];
 
-function ownerRequested(
-  reason: string,
-  params: unknown = {},
-): Record<string, unknown> {
+function eventParams(params: unknown): Record<string, unknown> {
+  return params && typeof params === "object" && !Array.isArray(params)
+    ? (params as Record<string, unknown>)
+    : {};
+}
+
+function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   return {
     type: "project.owner.requested",
     project: projectId,
     reason,
-    params:
-      params && typeof params === "object" && !Array.isArray(params)
-        ? (params as Record<string, unknown>)
-        : {},
+    params: eventParams(params),
   };
 }
 
@@ -374,7 +375,7 @@ export default defineProjectApp({
         return {
           type: "project.library_health.tick",
           project: projectId,
-          params,
+          params: eventParams(params),
         };
       },
     },
@@ -385,7 +386,7 @@ export default defineProjectApp({
       event(params) {
         const source =
           params && typeof params === "object" && "source" in params
-            ? (params as Record<string, unknown>).source
+            ? String((params as Record<string, unknown>).source ?? "arxiv")
             : "arxiv";
         return {
           type: "scout.explore",

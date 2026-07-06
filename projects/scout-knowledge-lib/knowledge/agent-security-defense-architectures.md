@@ -819,7 +819,18 @@ catalog:
   hypothesis testing monitors. More infrastructure ≠ more safety (2607.02510).
   (Scan #375)
 
-*(Extracted 2026-11-04; updated 2026-07-05)*
+*(Extracted 2026-11-04; updated 2026-07-06)*
+
+### Cross-reference: The Appearance Collapse (Scan #411)
+
+Scan #411 elevates the SkillFuzz/SkillCloak/SkillDetonate findings (#375) into
+a broader thesis: **surface trust fails everywhere simultaneously** — brand
+trust (Anthropic goodwill erosion, 97pts HN), marketing trust (AI-first
+backlash, 49pts), benchmark trust (Regression to the Mean, 54pts), and static
+scanning trust (>90% bypass). Only behavioral runtime detection works. The
+Appearance Collapse establishes behavioral evidence as the successor to
+appearance-based security at every layer. See:
+[findings/2026-07-06-hn-arxiv-github-scan-411.md](./findings/2026-07-06-hn-arxiv-github-scan-411.md)
 
 ---
 
