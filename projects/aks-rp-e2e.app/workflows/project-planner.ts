@@ -12,6 +12,7 @@ import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
+  appendToolJournal,
   assignTask,
   createTask,
   drainTaskAssignments,
@@ -39,10 +40,15 @@ import {
   triggerBlock,
   triggerValue,
 } from "./lib/workflow-input.ts";
+import {
+  defaultSpecLoopStatePath,
+  type SpecLoopState,
+  type SpecLoopSpecState,
+} from "./lib/spec-loop-store.ts";
 
 export const name = "project-planner";
 export const description =
-  "Wake the project owner to plan in tasks/tree.json, then emit explicit project.task.assigned events.";
+  "Wake the project owner to plan in the task tree, then emit explicit worker assignments or durable loop controller ticks.";
 
 type SessionWorkflowContext = WorkflowContext & {
   runAgentSession?: (
@@ -75,11 +81,29 @@ const loopControllerTaskIds = new Set([
   "aks-spec-verification-loop",
 ]);
 
+const loopControllerTaskActions = new Map([
+  ["aks-feature-reference-loop", "feature-reference-loop"],
+  ["aks-feature-compact-loop", "feature-compact-loop"],
+  ["aks-spec-verification-loop", "spec-loop"],
+]);
+
+const loopControllerWorkflowActions = new Map([
+  ["feature-reference-loop-controller", "feature-reference-loop"],
+  ["feature-compact-loop-controller", "feature-compact-loop"],
+  ["spec-loop-controller", "spec-loop"],
+]);
+
 const loopControllerManagedChildWorkflows = new Set([
   "feature-reference-collector",
   "feature-compact-planner",
   "single-spec-verifier",
 ]);
+
+type LoopControllerPulse = {
+  taskId: string;
+  action: string;
+  reason: string;
+};
 
 function isLoopOwnedChildTask(config: TaskTreeConfig, taskId: string): boolean {
   if (loopControllerTaskIds.has(taskId)) return false;
@@ -113,18 +137,54 @@ function plannerAssignableBacklogTaskIds(config: TaskTreeConfig): string[] {
   );
 }
 
+function loopControllerActionForTask(
+  config: TaskTreeConfig,
+  taskId: string,
+): string | null {
+  const taskAction = loopControllerTaskActions.get(taskId);
+  if (taskAction) return taskAction;
+
+  const task = readTask(config, taskId);
+  const workflow = typeof task?.workflow === "string" ? task.workflow : "";
+  return loopControllerWorkflowActions.get(workflow) ?? null;
+}
+
 function assignPlannerRunnableBacklogTasks(
   config: TaskTreeConfig,
   input: { worker?: string } = {},
-): void {
+): LoopControllerPulse[] {
+  const controllerPulses: LoopControllerPulse[] = [];
+
   for (const taskId of plannerAssignableBacklogTaskIds(config)) {
+    const controllerAction = loopControllerActionForTask(config, taskId);
+    if (controllerAction) {
+      controllerPulses.push({
+        taskId,
+        action: controllerAction,
+        reason: "planner-refill",
+      });
+      continue;
+    }
+
     try {
+      prepareFreshSessionForTerminalRuntime(config, taskId);
       assignTask(config, { taskId, worker: input.worker });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes("Worker capacity is full")) break;
     }
   }
+
+  if (controllerPulses.length > 0) {
+    appendToolJournal(config, {
+      kind: "planner_loop_controller_pulses_requested",
+      task_ids: controllerPulses.map((pulse) => pulse.taskId),
+      actions: controllerPulses.map((pulse) => pulse.action),
+      reason: "planner refill found runnable durable loop controller root(s)",
+    });
+  }
+
+  return controllerPulses;
 }
 
 type ReviewDecision = "accept" | "redo" | "followup" | "blocked" | "escalate";
@@ -324,6 +384,88 @@ function hasRunningPlannerSession(
   }
 }
 
+function runtimeSessionDbPath(appDir: string): string {
+  const configured = plannerStateDbPath(appDir);
+  if (existsSync(configured)) return configured;
+  const defaultRuntimePath = "/app/.state/may.db";
+  return existsSync(defaultRuntimePath) ? defaultRuntimePath : configured;
+}
+
+function runtimeSessionIsTerminal(appDir: string, sessionId: string): boolean {
+  if (!sessionId) return false;
+  const dbPath = runtimeSessionDbPath(appDir);
+  if (!existsSync(dbPath)) return false;
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const row = db
+      .query(
+        `
+          select status, outcome, endedAt
+          from sessions
+          where sessionId = ?
+          limit 1
+        `,
+      )
+      .get(sessionId) as {
+      status?: unknown;
+      outcome?: unknown;
+      endedAt?: unknown;
+    } | null;
+    if (!row) return false;
+    const status = typeof row.status === "string" ? row.status : "";
+    const outcome = typeof row.outcome === "string" ? row.outcome : "";
+    if (typeof row.endedAt === "number" && Number.isFinite(row.endedAt)) {
+      return true;
+    }
+    return ["done", "error", "failed", "cancelled", "canceled"].includes(
+      status || outcome,
+    );
+  } catch {
+    return false;
+  } finally {
+    db.close();
+  }
+}
+
+function prepareFreshSessionForTerminalRuntime(
+  config: TaskTreeConfig,
+  taskId: string,
+): boolean {
+  const task = readTask(config, taskId);
+  const sessionId =
+    typeof task?.session_id === "string" ? task.session_id.trim() : "";
+  if (!sessionId || !runtimeSessionIsTerminal(config.appDir, sessionId)) {
+    return false;
+  }
+
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const latestTask = tree.tasks[taskId];
+    if (!latestTask) return false;
+    const currentState = String(latestTask.status ?? latestTask.state ?? "");
+    if (currentState !== "backlog") return false;
+    if (latestTask.session_id !== sessionId) return false;
+
+    latestTask.session_id = undefined;
+    latestTask.trace = {
+      ...(latestTask.trace ?? {}),
+      stale_active_fresh_session: true,
+      stale_active_requeue_reason:
+        "planner detected stored task session is already terminal before assignment",
+      previous_session_id: sessionId,
+    };
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "terminal_task_session_cleared_before_assignment",
+      task_id: taskId,
+      previous_session_id: sessionId,
+      reason:
+        "planner detected stored task session is already terminal before assignment",
+    });
+    return true;
+  });
+}
+
 function plannerSessionId(step: "event_review" | "planning_update"): string {
   const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
   const suffix = Math.random().toString(36).slice(2, 8);
@@ -413,7 +555,7 @@ function recentHumanSteering(ctx: WorkflowContext): Record<string, unknown>[] {
 
 function humanSteeringBlock(events: Record<string, unknown>[]): string {
   if (!events.length) return "";
-  return `\n\n## Pending Human Steering Overrides\n\nThese high-priority human steering events are durable planner input. Review them before routine watchdog/refill work. If a steering event asks for a concrete tree correction, either make that correction in tasks/tree.json or record an explicit refusal/blocker in the tree.\n\n\`\`\`json\n${JSON.stringify(events, null, 2)}\n\`\`\``;
+  return `\n\n## Pending Human Steering Overrides\n\nThese high-priority human steering events are durable planner input. Review them before routine watchdog/refill work. If a steering event asks for a concrete tree correction, either make that correction with the task-tree tools or record an explicit refusal/blocker in the tree.\n\n\`\`\`json\n${JSON.stringify(events, null, 2)}\n\`\`\``;
 }
 
 function buildPlannerPrompt(input: {
@@ -466,6 +608,11 @@ Core operating model:
   unsupported, non-terminal, or contradictory, repair/replace/retry through a
   concrete task. Mark blocked only after you have exact external evidence and a
   concrete resume condition.
+- Do not mark an active assigned task done/replaced/cancelled while its current
+  attempt has started. Active means a worker may still emit
+  project.task.completed. Wait for that completion, use requeue-active only
+  for a stale/non-running attempt, or create separate follow-up/problem work
+  without closing the active assignment.
 - Failure/blocking is first-class project work. When a review task exposes a
   blocker or failure, classify the problem, create or link one visible
   problem-solving task in the tree, and let the problem-solver event loop work
@@ -519,7 +666,7 @@ Core operating model:
 - Treat the task tree as the project-specific source of truth. Read root and
   lane context before deciding that the project is complete or blocked.
 - Project-specific progress signals, completion criteria, gap reconciliation,
-  execution intent, and user steering belong in tasks/tree.json as task context
+  execution intent, and user steering belong in the task tree as task context
   or standing tasks, not in this workflow prompt.
 - This is a bounded planning pass, but it should do enough work to make the
   next project state clear. Review worker progress first. Then create
@@ -575,6 +722,11 @@ Core operating model:
   it before routine watchdog/refill work. If the user points out a missing root
   task/lane, either create the missing task under the requested parent or record
   a concrete refusal/blocker in the tree.
+- Project-scoped learning.feedback is evaluator feedback about how the
+  project is running. If the trigger payload names projectId/project
+  aks-rp-e2e, classify it like any other abnormal signal: create/link repair
+  work, record an exact wait, escalate, or record an accepted no-op. If it names
+  another project, record a no-op reason and do not mutate this task tree.
 - Domain repo commits are planner checkpoints, not worker actions and not a
   separate event loop. When done task output has accumulated in
   ${input.projectDir}, use the checkpoint helper, review dirty files against the
@@ -590,6 +742,7 @@ Use these commands from the app directory:
 - bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO]
 - bun run task-tree mark-done <task-id> --summary "why the review is accepted"
 - bun run task-tree mark-done <task-id> --resolution replaced --summary "why this blocked leaf is replaced by the family-level wait"
+- bun run task-tree requeue-active <task-id> --reason "why the active attempt is stale or not running" [--fresh-session]
 - bun run task-tree rollup-parent <parent-id> --summary "what this branch now knows and what remains" [--archive-done <child-id> ...] [--limit 50]
 - bun run task-tree compact-done --limit 50  # recovery only; prefer rollup-parent after owner summary
 - bun run task-tree assign <task-id> [--worker ${input.agent}]
@@ -614,14 +767,14 @@ If those files or referenced scenario definitions answer the question, update
 or create source-backed spec/replay/model work instead of owner-send or
 response-await tasks.
 
-Do not edit ${input.appDir}/tasks/tree.json directly. Use the task-tree commands
+Do not edit the runtime task tree file directly. Use the task-tree commands
 so updates take the tree lock, repair rollups, keep kanban in sync, and avoid
 overwriting newer planner/watchdog changes. If the current primitive is not
 enough, create a focused app-tooling task under the relevant lane instead of
 hand-writing the tree.
 Do not rewrite ${input.appDir}/project.json or convert it to markdown. It is an
 app manifest, not the planning workspace. Put project thinking, focus state,
-review findings, and follow-up work in tasks/tree.json through task-tree tools.
+review findings, and follow-up work in the task tree through task-tree tools.
 
 Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
@@ -653,12 +806,13 @@ function buildEventReviewPrompt(input: {
 
 This is step 1 of 2 for a planner wake. React to the event and compact packet,
 inspect related context only when needed, and produce a concise event review for
-the next planning step. Do not edit tasks/tree.json and do not assign tasks in
+the next planning step. Do not edit the task tree and do not assign tasks in
 this step.
 
 Keep this review bounded. Prefer the packet over rediscovery. Use at most three
-read-only commands unless the trigger is a task completion, human steering, or a
-metric/stale-active event that clearly needs deeper evidence.
+read-only commands unless the trigger is a task completion, human steering,
+project-scoped learning feedback, or a metric/stale-active event that clearly
+needs deeper evidence.
 
 Focus:
 - What woke the planner?
@@ -669,7 +823,7 @@ Focus:
   problemKey, and should planning create/link a visible problem-solving task,
   retry affected work, or mark an escalation?
 - Is there stale active work, misleading completion, real blocker, human
-  steering, metric breach, or normal refill?
+  steering, project-scoped learning feedback, metric breach, or normal refill?
 - If this is blocked-frontier review, which parent group or repeated blocker
   group from blocked_frontier_summary should the owner burn down first?
 - Did blocked_action_warnings flag passive response-await or source-exactness
@@ -745,6 +899,86 @@ function dispatchAssignedTasks(
       // Local tests may not provide a dispatcher.
     }
   }
+}
+
+function dispatchLoopControllerPulses(
+  ctx: WorkflowContext,
+  pulses: LoopControllerPulse[],
+): void {
+  for (const pulse of pulses) {
+    try {
+      ctx.dispatchEvent("project.task.tick", {
+        target: { project: "aks-rp-e2e", taskId: pulse.taskId },
+        project: "aks-rp-e2e",
+        taskId: pulse.taskId,
+        task_id: pulse.taskId,
+        action: pulse.action,
+        reason: pulse.reason,
+        requested_by: "project-planner",
+      });
+    } catch {
+      // Local tests may not provide a dispatcher.
+    }
+  }
+}
+
+function splitLoopControllerAssignments(
+  config: TaskTreeConfig,
+  assignments: TaskAssignment[],
+): {
+  workerAssignments: TaskAssignment[];
+  controllerPulses: LoopControllerPulse[];
+} {
+  const workerAssignments: TaskAssignment[] = [];
+  const controllerPulses: LoopControllerPulse[] = [];
+  for (const assignment of assignments) {
+    const action = loopControllerActionForTask(config, assignment.taskId);
+    if (!action) {
+      workerAssignments.push(assignment);
+      continue;
+    }
+    controllerPulses.push({
+      taskId: assignment.taskId,
+      action,
+      reason: "planner-assignment-bridge",
+    });
+  }
+  return { workerAssignments, controllerPulses };
+}
+
+function plannerProgressTaskIds(input: {
+  assignments: TaskAssignment[];
+  controllerPulses: LoopControllerPulse[];
+}): string[] {
+  return [
+    ...input.assignments.map((assignment) => assignment.taskId),
+    ...input.controllerPulses.map((pulse) => pulse.taskId),
+  ];
+}
+
+function plannerProgressMessage(input: {
+  prefix: string;
+  assignments: TaskAssignment[];
+  controllerPulses: LoopControllerPulse[];
+}): string {
+  const parts = [];
+  if (input.assignments.length > 0) {
+    parts.push(
+      `assigned ${input.assignments.length} task(s): ${input.assignments
+        .map((assignment) => assignment.taskId)
+        .slice(0, 8)
+        .join(", ")}`,
+    );
+  }
+  if (input.controllerPulses.length > 0) {
+    parts.push(
+      `pulsed ${input.controllerPulses.length} loop controller(s): ${input.controllerPulses
+        .map((pulse) => pulse.taskId)
+        .slice(0, 8)
+        .join(", ")}`,
+    );
+  }
+  return `${input.prefix} ${parts.join("; ")}.`;
 }
 
 function taskState(task: NonNullable<ReturnType<typeof readTask>>): string {
@@ -859,6 +1093,296 @@ function taskContext(
     !Array.isArray(task.context)
     ? (task.context as Record<string, unknown>)
     : {};
+}
+
+function readJsonFile<T>(path: string, fallback: T): T {
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function specLoopStateForReview(config: TaskTreeConfig): SpecLoopState | null {
+  const path = defaultSpecLoopStatePath(config.appDir);
+  if (!existsSync(path)) return null;
+  return readJsonFile<SpecLoopState | null>(path, null);
+}
+
+function specFamily(specId: string): string {
+  return (
+    specId
+      .replace(/^spec\./, "")
+      .split(".")[0]
+      ?.trim() || "unknown"
+  );
+}
+
+function representedSpecIdsForReviewTask(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): string[] {
+  const ids = new Set<string>();
+  const context = taskContext(task);
+  for (const key of ["representedSpecIds", "specIds"]) {
+    for (const value of stringList(context[key])) ids.add(value);
+  }
+  const specId = stringValue(context.specId);
+  if (specId) ids.add(specId);
+  for (const scope of taskStringList(task, "conflict_scope")) {
+    if (scope.startsWith("spec:")) {
+      const scopedSpecId = scope.slice("spec:".length).trim();
+      if (scopedSpecId) ids.add(scopedSpecId);
+    }
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function specLoopMaxDirectAttempts(
+  config: TaskTreeConfig,
+  state: SpecLoopState,
+): number {
+  const loopTask = readTask(
+    config,
+    state.loopTaskId || "aks-spec-verification-loop",
+  );
+  const value = loopTask
+    ? taskContext(loopTask).maxDirectAttemptsPerSpec
+    : null;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 3;
+}
+
+function canDirectlyRunSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  if (spec.status === "pending" || spec.status === "done") {
+    return !spec.lastRunUrl || (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+  }
+  if (spec.status !== "error" && spec.status !== "fail") return false;
+  return (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+}
+
+function isRetryExhaustedSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  const status = spec.status || "pending";
+  if (status === "pending") {
+    return !canDirectlyRunSpec(state, specId, maxDirectAttemptsPerSpec);
+  }
+  if (status !== "error" && status !== "fail") return false;
+  return (spec.attempts ?? 0) >= maxDirectAttemptsPerSpec;
+}
+
+function taskHasStructuredBlocker(
+  task: NonNullable<ReturnType<typeof readTask>> | undefined,
+): boolean {
+  return !!task?.blocker && typeof task.blocker === "object";
+}
+
+function specLoopSpecHasStructuredSuccessor(
+  spec: SpecLoopSpecState | undefined,
+): boolean {
+  if (!spec) return false;
+  const record = spec as SpecLoopSpecState & {
+    successorDisposition?: unknown;
+    resumeCondition?: unknown;
+  };
+  if (
+    typeof record.successorDisposition === "string" &&
+    record.successorDisposition.trim()
+  ) {
+    return true;
+  }
+  if (
+    typeof record.resumeCondition === "string" &&
+    record.resumeCondition.trim()
+  ) {
+    return true;
+  }
+  return !!spec.review && typeof spec.review === "object";
+}
+
+function specLoopFollowupGroupKeys(
+  task: NonNullable<ReturnType<typeof readTask>> | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+  if (!task) return keys;
+  const context = taskContext(task);
+  if (context.specLoopFollowup === true) {
+    const status = context.status;
+    const family = context.featureFamily;
+    if (typeof status === "string" && typeof family === "string") {
+      keys.add(`${status}:${family}`);
+    }
+  }
+  for (const scope of taskStringList(task, "conflict_scope")) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("spec-loop-followup:")) continue;
+    const [, statusPart, familyPart] = trimmed.split(":");
+    if (statusPart?.trim() && familyPart?.trim()) {
+      keys.add(`${statusPart.trim()}:${familyPart.trim()}`);
+    }
+  }
+  return keys;
+}
+
+function taskTextMentionsSpecId(
+  task: NonNullable<ReturnType<typeof readTask>> | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    acceptance: task.acceptance,
+    inputs: task.inputs,
+    context: task.context,
+    blocker: task.blocker,
+  }).toLowerCase();
+  return haystack.includes(specId.toLowerCase());
+}
+
+function taskTextMentionCountsAsSpecOwner(
+  task: NonNullable<ReturnType<typeof readTask>> | undefined,
+  specId: string,
+): boolean {
+  if (!taskTextMentionsSpecId(task, specId)) return false;
+  return taskState(task) !== "blocked" || taskHasStructuredBlocker(task);
+}
+
+function specLoopExactOwnerTaskId(input: {
+  config: TaskTreeConfig;
+  state: SpecLoopState;
+  specId: string;
+  excludeTaskId?: string;
+}): string | null {
+  const spec = input.state.specs?.[input.specId];
+  const tree = readTaskTree(input.config);
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  const isRepresenting = (
+    task: NonNullable<ReturnType<typeof readTask>> | undefined,
+  ): task is NonNullable<ReturnType<typeof readTask>> =>
+    !!task &&
+    task.id !== input.excludeTaskId &&
+    representingStates.has(taskState(task));
+
+  const taskIds = new Set<string>();
+  if (typeof spec?.taskId === "string" && spec.taskId.trim()) {
+    taskIds.add(spec.taskId.trim());
+  }
+  for (const task of Object.values(tree.tasks ?? {})) {
+    if (!isRepresenting(task)) continue;
+    if (
+      taskStringList(task, "conflict_scope").includes(`spec:${input.specId}`)
+    ) {
+      taskIds.add(task.id);
+      continue;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      taskIds.add(task.id);
+    }
+  }
+
+  for (const taskId of taskIds) {
+    const task = tree.tasks?.[taskId];
+    if (!isRepresenting(task)) continue;
+    if (
+      taskStringList(task, "conflict_scope").includes(`spec:${input.specId}`)
+    ) {
+      return taskId;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) return taskId;
+    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+    if (
+      spec?.taskId === taskId &&
+      specLoopSpecHasStructuredSuccessor(spec) &&
+      taskHasStructuredBlocker(task)
+    ) {
+      return taskId;
+    }
+  }
+
+  return null;
+}
+
+function representedSpecLoopFollowupGroups(input: {
+  config: TaskTreeConfig;
+  excludeTaskId?: string;
+}): Set<string> {
+  const tree = readTaskTree(input.config);
+  const represented = new Set<string>();
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  for (const task of Object.values(tree.tasks ?? {})) {
+    if (task.id === input.excludeTaskId) continue;
+    if (!representingStates.has(taskState(task))) continue;
+    for (const key of specLoopFollowupGroupKeys(task)) represented.add(key);
+  }
+  return represented;
+}
+
+function specLoopAcceptStructuralGaps(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+}): string[] {
+  if (taskContext(input.task).specLoopFollowup !== true) return [];
+  const state = specLoopStateForReview(input.config);
+  if (!state?.specs) return [];
+  const representedSpecIds = representedSpecIdsForReviewTask(input.task).filter(
+    (specId) => !!state.specs?.[specId],
+  );
+  if (representedSpecIds.length === 0) return [];
+
+  const maxDirectAttempts = specLoopMaxDirectAttempts(input.config, state);
+  const representedGroups = representedSpecLoopFollowupGroups({
+    config: input.config,
+    excludeTaskId: input.task.id,
+  });
+  const unowned: string[] = [];
+  for (const specId of representedSpecIds) {
+    if (!isRetryExhaustedSpec(state, specId, maxDirectAttempts)) continue;
+    const status = state.specs[specId]?.status || "pending";
+    const groupStatus = status === "pending" ? "pending" : status;
+    if (representedGroups.has(`${groupStatus}:${specFamily(specId)}`)) {
+      continue;
+    }
+    if (
+      specLoopExactOwnerTaskId({
+        config: input.config,
+        state,
+        specId,
+        excludeTaskId: input.task.id,
+      })
+    ) {
+      continue;
+    }
+    unowned.push(specId);
+  }
+  return unowned;
 }
 
 function uniqueTaskId(config: TaskTreeConfig, base: string): string {
@@ -1022,6 +1546,41 @@ function applyReviewedTaskEvent(
   ];
 
   if (decision === "accept") {
+    const unownedSpecIds = specLoopAcceptStructuralGaps({ config, task });
+    if (unownedSpecIds.length > 0) {
+      const followupSummary = `Spec-loop accept cannot close ${taskId}: ${unownedSpecIds.length} represented retry-drained spec(s) still lack an open structural owner: ${unownedSpecIds
+        .slice(0, 8)
+        .join(", ")}.`;
+      const successorTaskId = createReviewedSuccessor({
+        config,
+        task,
+        decision: "followup",
+        attemptId,
+        summary: followupSummary,
+        findings: [
+          ...findings,
+          `Unowned represented specs: ${unownedSpecIds.join(", ")}`,
+        ],
+        feedback: [
+          ...feedback,
+          "Create or link an exact open holder task for every represented retry-drained spec before accepting this follow-up.",
+        ],
+        suggestedFollowups: [followupSummary, ...suggestedFollowups],
+      });
+      markTaskDone(config, {
+        taskId,
+        resolution: "completed",
+        summary: `Reviewer decision accept converted to followup; successor ${successorTaskId}: ${followupSummary}`,
+      });
+      return {
+        handled: true,
+        applied: true,
+        decision: "followup",
+        taskId,
+        successorTaskId,
+        message: `Applied review for ${taskId}; converted accept to followup ${successorTaskId}.`,
+      };
+    }
     markTaskDone(config, { taskId, summary });
     return {
       handled: true,
@@ -1235,6 +1794,7 @@ function settledActiveNoopResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  quickControllerPulses: LoopControllerPulse[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   const noHumanSteering = input.humanSteering.length === 0;
@@ -1248,6 +1808,7 @@ function settledActiveNoopResult(input: {
   const settledAfterCompletion =
     reason === "task-completed" &&
     input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
     noRunnableOrReviewFrontier &&
     hasActiveOrBlockedFrontier &&
@@ -1264,12 +1825,14 @@ function settledActiveNoopResult(input: {
   );
   const settledWithActiveWork =
     input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
     hasOnlyActiveFrontier &&
     input.packet.frontier.blocked.length === 0;
   const routineLearningTickCoveredByActiveWork =
     reason === "regular-learning-tick" &&
     input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
     hasOnlyActiveFrontier;
   if (
@@ -1336,11 +1899,13 @@ function staleRunnableBacklogNoopResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  quickControllerPulses: LoopControllerPulse[];
 }): string | null {
   if (routineRefillReason(input.rawTask) !== "watchdog-runnable-backlog")
     return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
+  if (input.quickControllerPulses.length > 0) return null;
 
   const triggerIds = triggerRunnableBacklogTaskIds(input.rawTask);
   if (triggerIds.length === 0) return null;
@@ -1418,11 +1983,13 @@ function staleReviewPendingNoopResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  quickControllerPulses: LoopControllerPulse[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   if (reason !== "watchdog-review-pending") return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
+  if (input.quickControllerPulses.length > 0) return null;
 
   const triggerTasks = triggerReviewTasks(input.rawTask);
   if (triggerTasks.length === 0) return null;
@@ -1468,6 +2035,8 @@ type TriggerBlockedTask = {
   blocker: string;
   resumeAt?: string;
   resumeCondition?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 };
 
 function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
@@ -1499,6 +2068,20 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
                 .resume_condition === "string"
             ? ((entry as { resume_condition?: string }).resume_condition ?? "")
             : "";
+      const fallbackAt =
+        typeof (entry as { fallbackAt?: unknown }).fallbackAt === "string"
+          ? ((entry as { fallbackAt?: string }).fallbackAt ?? "")
+          : typeof (entry as { fallback_at?: unknown }).fallback_at === "string"
+            ? ((entry as { fallback_at?: string }).fallback_at ?? "")
+            : "";
+      const fallbackAction =
+        typeof (entry as { fallbackAction?: unknown }).fallbackAction ===
+        "string"
+          ? ((entry as { fallbackAction?: string }).fallbackAction ?? "")
+          : typeof (entry as { fallback_action?: unknown }).fallback_action ===
+              "string"
+            ? ((entry as { fallback_action?: string }).fallback_action ?? "")
+            : "";
       return {
         taskId,
         blocker,
@@ -1506,15 +2089,28 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
         ...(resumeCondition.trim()
           ? { resumeCondition: resumeCondition.trim() }
           : {}),
+        ...(fallbackAt.trim() ? { fallbackAt: fallbackAt.trim() } : {}),
+        ...(fallbackAction.trim()
+          ? { fallbackAction: fallbackAction.trim() }
+          : {}),
       };
     })
     .filter((entry): entry is TriggerBlockedTask => Boolean(entry));
 }
 
-function futureResumeAt(task: TriggerBlockedTask): number | null {
-  if (!task.resumeAt) return null;
-  const ts = Date.parse(task.resumeAt);
+function futureTimestamp(value: string | undefined): number | null {
+  if (!value) return null;
+  const ts = Date.parse(value);
   return Number.isFinite(ts) && ts > Date.now() ? ts : null;
+}
+
+function futureBlockedWatchAt(task: TriggerBlockedTask): number | null {
+  const candidates = [
+    futureTimestamp(task.resumeAt),
+    futureTimestamp(task.fallbackAt),
+  ].filter((ts): ts is number => typeof ts === "number");
+  if (candidates.length === 0) return null;
+  return Math.min(...candidates);
 }
 
 function blockedFrontierFutureWaitNoopResult(input: {
@@ -1522,11 +2118,13 @@ function blockedFrontierFutureWaitNoopResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  quickControllerPulses: LoopControllerPulse[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   if (reason !== "watchdog-blocked-frontier-review") return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
+  if (input.quickControllerPulses.length > 0) return null;
   if (input.packet.active_task_ids.length > 0) return null;
   if (input.packet.frontier.runnable.length > 0) return null;
   if (input.packet.frontier.review.length > 0) return null;
@@ -1540,15 +2138,13 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (triggerIds.length !== input.packet.frontier.blocked.length) return null;
   if (triggerIds.some((taskId) => !liveBlocked.has(taskId))) return null;
 
-  const futureResumeDates = blockedTasks
-    .map(futureResumeAt)
+  const futureWatchDates = blockedTasks
+    .map(futureBlockedWatchAt)
     .filter((ts): ts is number => typeof ts === "number");
-  if (futureResumeDates.length !== blockedTasks.length) return null;
+  if (futureWatchDates.length !== blockedTasks.length) return null;
 
-  const earliestResumeAt = new Date(
-    Math.min(...futureResumeDates),
-  ).toISOString();
-  return `Blocked-frontier wake is already represented by structured future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited follow-up window is ${earliestResumeAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
+  const earliestWatchAt = new Date(Math.min(...futureWatchDates)).toISOString();
+  return `Blocked-frontier wake is already represented by structured future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited watch window is ${earliestWatchAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
 }
 
 function singleAssignmentShortCircuitResult(input: {
@@ -1556,6 +2152,7 @@ function singleAssignmentShortCircuitResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
+  quickControllerPulses: LoopControllerPulse[];
   aggressivePush: boolean;
 }): string | null {
   if (input.aggressivePush) return null;
@@ -1570,14 +2167,23 @@ function singleAssignmentShortCircuitResult(input: {
     return null;
   }
   if (input.humanSteering.length > 0) return null;
-  if (input.quickAssignments.length === 0) return null;
+  if (
+    input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0
+  )
+    return null;
   if (input.packet.frontier.review.length > 0) return null;
   if ((input.packet.frontier.waiting ?? []).length > 0) return null;
-  if (input.packet.active_task_ids.length === 0) return null;
+  if (
+    input.packet.active_task_ids.length === 0 &&
+    input.quickControllerPulses.length === 0
+  )
+    return null;
 
-  const assignedTaskIds = input.quickAssignments.map(
-    (assignment) => assignment.taskId,
-  );
+  const assignedTaskIds = plannerProgressTaskIds({
+    assignments: input.quickAssignments,
+    controllerPulses: input.quickControllerPulses,
+  });
   return `Bounded ${reason} wake already achieved a truthful refill/assignment (${assignedTaskIds.join(", ")}) with no remaining human-steering or review frontier. Short-circuiting after the first deterministic refill/bounded successor assignment.`;
 }
 
@@ -1588,13 +2194,20 @@ function appendNoopPlannerRun(input: {
   packet: TaskPlanningPacket;
   initialRepair: ReturnType<typeof repairTaskTreeRollups>;
   assignedTaskIds?: string[];
+  pulsedControllerTaskIds?: string[];
 }): void {
+  const assignedTaskIds = input.assignedTaskIds ?? [];
+  const pulsedControllerTaskIds = input.pulsedControllerTaskIds ?? [];
   appendPlannerRun(input.appDir, {
     kind: "planner_wake",
-    status: input.assignedTaskIds?.length ? "assigned" : "idle",
+    status:
+      assignedTaskIds.length || pulsedControllerTaskIds.length
+        ? "assigned"
+        : "idle",
     ran_agent: false,
     steps: input.steps,
-    assigned_task_ids: input.assignedTaskIds ?? [],
+    assigned_task_ids: assignedTaskIds,
+    pulsed_controller_task_ids: pulsedControllerTaskIds,
     repaired_rollups: input.initialRepair.repaired,
     active_task_ids: input.packet.active_task_ids,
     result: input.result,
@@ -1605,7 +2218,7 @@ function syncPlannerProjectReadout(config: TaskTreeConfig): void {
   try {
     syncProjectReadout(config);
   } catch {
-    // Keep planner progress authoritative in tasks/tree.json even when
+    // Keep planner progress authoritative in the task tree even when
     // project.json summary refresh fails; the next wake can retry.
   }
 }
@@ -1633,15 +2246,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = parseTriggerEvent(ctx.task);
   const reviewedApply = applyReviewedTaskEvent(config, trigger);
   if (reviewedApply.handled) {
-    assignPlannerRunnableBacklogTasks(config, { worker });
-    const assignments = drainTaskAssignments(config);
+    const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
+      worker,
+    });
+    const drainedAssignments = drainTaskAssignments(config);
+    const bridgedAssignments = splitLoopControllerAssignments(
+      config,
+      drainedAssignments,
+    );
+    const assignments = bridgedAssignments.workerAssignments;
+    controllerPulses.push(...bridgedAssignments.controllerPulses);
     dispatchAssignedTasks(ctx, assignments);
+    dispatchLoopControllerPulses(ctx, controllerPulses);
     const finalRepair = repairTaskTreeRollups(config);
     syncPlannerProjectReadout(config);
     const packet = planningPacket(config);
+    const progressTaskIds = plannerProgressTaskIds({
+      assignments,
+      controllerPulses,
+    });
     appendPlannerRun(appDir, {
       kind: "planner_wake",
-      status: assignments.length
+      status: progressTaskIds.length
         ? "assigned"
         : reviewedApply.applied
           ? "settled"
@@ -1651,49 +2277,75 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? ["task-reviewed-apply", "quick-refill"]
         : ["task-reviewed-stale-noop"],
       assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+      pulsed_controller_task_ids: controllerPulses.map((pulse) => pulse.taskId),
       repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
       active_task_ids: packet.active_task_ids,
       result: reviewedApply.message,
     });
     return ctx.done(
-      assignments.length
-        ? `${reviewedApply.message} Planner assigned ${assignments.length} task(s): ${assignments
-            .map((assignment) => assignment.taskId)
-            .slice(0, 8)
-            .join(", ")}.`
+      progressTaskIds.length
+        ? `${reviewedApply.message} ${plannerProgressMessage({
+            prefix: "Planner",
+            assignments,
+            controllerPulses,
+          })}`
         : reviewedApply.message,
     );
   }
   const stallReviewedApply = applyStallReviewedEvent(config, trigger);
   if (stallReviewedApply.handled && stallReviewedApply.applied) {
-    assignPlannerRunnableBacklogTasks(config, { worker });
-    const assignments = drainTaskAssignments(config);
+    const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
+      worker,
+    });
+    const drainedAssignments = drainTaskAssignments(config);
+    const bridgedAssignments = splitLoopControllerAssignments(
+      config,
+      drainedAssignments,
+    );
+    const assignments = bridgedAssignments.workerAssignments;
+    controllerPulses.push(...bridgedAssignments.controllerPulses);
     dispatchAssignedTasks(ctx, assignments);
+    dispatchLoopControllerPulses(ctx, controllerPulses);
     const finalRepair = repairTaskTreeRollups(config);
     syncPlannerProjectReadout(config);
     const packet = planningPacket(config);
+    const progressTaskIds = plannerProgressTaskIds({
+      assignments,
+      controllerPulses,
+    });
     appendPlannerRun(appDir, {
       kind: "planner_wake",
-      status: assignments.length ? "assigned" : "settled",
+      status: progressTaskIds.length ? "assigned" : "settled",
       ran_agent: false,
       steps: ["stall-reviewed-apply", "quick-refill"],
       assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+      pulsed_controller_task_ids: controllerPulses.map((pulse) => pulse.taskId),
       repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
       active_task_ids: packet.active_task_ids,
       result: stallReviewedApply.message,
     });
     return ctx.done(
-      assignments.length
-        ? `${stallReviewedApply.message} Planner assigned ${assignments.length} task(s): ${assignments
-            .map((assignment) => assignment.taskId)
-            .slice(0, 8)
-            .join(", ")}.`
+      progressTaskIds.length
+        ? `${stallReviewedApply.message} ${plannerProgressMessage({
+            prefix: "Planner",
+            assignments,
+            controllerPulses,
+          })}`
         : stallReviewedApply.message,
     );
   }
-  assignPlannerRunnableBacklogTasks(config, { worker });
-  const quickAssignments = drainTaskAssignments(config);
+  const quickControllerPulses = assignPlannerRunnableBacklogTasks(config, {
+    worker,
+  });
+  const quickDrainedAssignments = drainTaskAssignments(config);
+  const quickBridgedAssignments = splitLoopControllerAssignments(
+    config,
+    quickDrainedAssignments,
+  );
+  const quickAssignments = quickBridgedAssignments.workerAssignments;
+  quickControllerPulses.push(...quickBridgedAssignments.controllerPulses);
   dispatchAssignedTasks(ctx, quickAssignments);
+  dispatchLoopControllerPulses(ctx, quickControllerPulses);
   syncPlannerProjectReadout(config);
   let packet = planningPacket(config);
 
@@ -1703,6 +2355,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
+    quickControllerPulses,
   });
   if (noopResult) {
     appendNoopPlannerRun({
@@ -1720,6 +2373,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
+    quickControllerPulses,
   });
   if (staleRunnableNoop) {
     appendNoopPlannerRun({
@@ -1738,6 +2392,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
+    quickControllerPulses,
   });
   if (staleReviewNoop) {
     appendNoopPlannerRun({
@@ -1755,6 +2410,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
+    quickControllerPulses,
     aggressivePush,
   });
   if (singleAssignmentNoop) {
@@ -1765,6 +2421,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       packet,
       initialRepair,
       assignedTaskIds: quickAssignments.map((assignment) => assignment.taskId),
+      pulsedControllerTaskIds: quickControllerPulses.map(
+        (pulse) => pulse.taskId,
+      ),
     });
     return ctx.done(singleAssignmentNoop);
   }
@@ -1774,6 +2433,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
+    quickControllerPulses,
   });
   if (blockedFrontierFutureWaitNoop) {
     appendNoopPlannerRun({
@@ -1787,10 +2447,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (
-    quickAssignments.length > 0 &&
+    (quickAssignments.length > 0 || quickControllerPulses.length > 0) &&
     humanSteering.length === 0 &&
     packet.frontier.review.length === 0 &&
-    packet.active_task_ids.length >= config.maxConcurrent
+    (packet.active_task_ids.length >= config.maxConcurrent ||
+      quickControllerPulses.length > 0)
   ) {
     appendPlannerRun(appDir, {
       kind: "planner_wake",
@@ -1800,27 +2461,37 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       assigned_task_ids: quickAssignments.map(
         (assignment) => assignment.taskId,
       ),
+      pulsed_controller_task_ids: quickControllerPulses.map(
+        (pulse) => pulse.taskId,
+      ),
       repaired_rollups: initialRepair.repaired,
       active_task_ids: packet.active_task_ids,
       result:
-        "Quick refill assigned runnable backlog tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
+        "Quick refill assigned runnable backlog tasks or pulsed durable loop controllers; skipped owner-agent planning for this routine wake.",
     });
     return ctx.done(
-      `Planner quick-refill assigned ${quickAssignments.length} task(s): ${quickAssignments
-        .map((assignment) => assignment.taskId)
-        .slice(0, 8)
-        .join(", ")}.`,
+      plannerProgressMessage({
+        prefix: "Planner quick-refill",
+        assignments: quickAssignments,
+        controllerPulses: quickControllerPulses,
+      }),
     );
   }
 
   if (hasRunningPlannerSession(appDir, agent, "")) {
     appendPlannerRun(appDir, {
       kind: "planner_wake",
-      status: quickAssignments.length ? "assigned" : "idle",
+      status:
+        quickAssignments.length || quickControllerPulses.length
+          ? "assigned"
+          : "idle",
       ran_agent: false,
       steps: ["planner-session-dedupe-noop"],
       assigned_task_ids: quickAssignments.map(
         (assignment) => assignment.taskId,
+      ),
+      pulsed_controller_task_ids: quickControllerPulses.map(
+        (pulse) => pulse.taskId,
       ),
       repaired_rollups: initialRepair.repaired,
       active_task_ids: packet.active_task_ids,
@@ -1828,11 +2499,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         "Skipped owner-agent planning because another workflow:project-planner session is already running for this owner; rely on the in-flight planner wake instead of starting an overlapping owner session.",
     });
     return ctx.done(
-      quickAssignments.length
-        ? `Planner dedupe assigned ${quickAssignments.length} task(s) while another owner-planner session is already running: ${quickAssignments
-            .map((assignment) => assignment.taskId)
-            .slice(0, 8)
-            .join(", ")}.`
+      quickAssignments.length || quickControllerPulses.length
+        ? plannerProgressMessage({
+            prefix:
+              "Planner dedupe made refill progress while another owner-planner session is already running:",
+            assignments: quickAssignments,
+            controllerPulses: quickControllerPulses,
+          })
         : "Planner dedupe skipped owner-agent planning because another workflow:project-planner session is already running for this owner.",
     );
   }
@@ -1868,7 +2541,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       sessionId: planningUpdateSessionId,
       timeoutMs: timeoutFromEnv(
         "AKS_RP_E2E_PLANNER_UPDATE_TIMEOUT_MS",
-        240_000,
+        360_000,
       ),
       prompt: buildPlannerPrompt({
         appDir,
@@ -1894,27 +2567,41 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   syncPlannerProjectReadout(config);
   packet = planningPacket(config);
 
-  let ownerAssignments = drainTaskAssignments(config);
+  const ownerDrainedAssignments = drainTaskAssignments(config);
+  const ownerBridgedAssignments = splitLoopControllerAssignments(
+    config,
+    ownerDrainedAssignments,
+  );
+  let ownerAssignments = ownerBridgedAssignments.workerAssignments;
+  const ownerControllerPulses = ownerBridgedAssignments.controllerPulses;
   dispatchAssignedTasks(ctx, ownerAssignments);
+  dispatchLoopControllerPulses(ctx, ownerControllerPulses);
+  const controllerPulses = [...quickControllerPulses, ...ownerControllerPulses];
   const assignments = [...quickAssignments, ...ownerAssignments];
-  const runStatus = assignments.length ? "assigned" : "settled";
+  const progressTaskIds = plannerProgressTaskIds({
+    assignments,
+    controllerPulses,
+  });
+  const runStatus = progressTaskIds.length ? "assigned" : "settled";
   appendPlannerRun(appDir, {
     kind: "planner_wake",
     status: runStatus,
     ran_agent: true,
     steps: ["event-review", "planning-update"],
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+    pulsed_controller_task_ids: controllerPulses.map((pulse) => pulse.taskId),
     repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
     active_task_ids: packet.active_task_ids,
     event_review: resultText(eventReviewResult).slice(0, 2000),
     result: resultText(plannerResult).slice(0, 4000),
   });
 
-  const plannerMessage = assignments.length
-    ? `Planner assigned ${assignments.length} task(s): ${assignments
-        .map((assignment) => assignment.taskId)
-        .slice(0, 8)
-        .join(", ")}. Agent result: ${resultText(plannerResult)}`
+  const plannerMessage = progressTaskIds.length
+    ? `${plannerProgressMessage({
+        prefix: "Planner",
+        assignments,
+        controllerPulses,
+      })} Agent result: ${resultText(plannerResult)}`
     : `Planner assigned no tasks. Agent ran event-review and planning-update. Result: ${resultText(plannerResult)}`;
   if ((plannerResult as { status?: string }).status === "escalated")
     return ctx.escalate(plannerMessage);

@@ -30,6 +30,7 @@ import {
 } from "./lib/workflow-input.ts";
 import {
   defaultSpecLoopStatePath,
+  importNewerSpecLoopMirrorRows,
   loadSpecLoopState,
   orderedPendingSpecIds,
   safeTaskIdForSpec,
@@ -82,6 +83,14 @@ function taskText(task: TaskNode): string {
     .map((value) => (typeof value === "string" ? value : ""))
     .filter(Boolean)
     .join("\n");
+}
+
+function taskConflictScopes(task: TaskNode): string[] {
+  return Array.isArray((task as { conflict_scope?: unknown }).conflict_scope)
+    ? (task as { conflict_scope: unknown[] }).conflict_scope.filter(
+        (scope): scope is string => typeof scope === "string",
+      )
+    : [];
 }
 
 function staleNonDirectLiveErrorNeedsLiveRun(task: TaskNode): boolean {
@@ -275,6 +284,78 @@ function taskStatus(task: TaskNode | undefined): string {
   return String(task?.status ?? task?.state ?? "");
 }
 
+function taskTrace(task: TaskNode | undefined): Record<string, unknown> {
+  return task?.trace &&
+    typeof task.trace === "object" &&
+    !Array.isArray(task.trace)
+    ? (task.trace as Record<string, unknown>)
+    : {};
+}
+
+function traceString(task: TaskNode | undefined, key: string): string {
+  const value = taskTrace(task)[key];
+  return typeof value === "string" ? value : "";
+}
+
+function timestampMs(value: unknown): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function hasReviewedPendingSuccessor(
+  specState: SpecLoopState["specs"][string] | undefined,
+  child: TaskNode,
+): boolean {
+  if (!specState) return false;
+  const stateRecord = specState as Record<string, unknown>;
+  const normalizedFromStatus =
+    typeof stateRecord.normalizedFromStatus === "string"
+      ? stateRecord.normalizedFromStatus
+      : "";
+  const successorDisposition =
+    typeof stateRecord.successorDisposition === "string"
+      ? stateRecord.successorDisposition
+      : "";
+  const normalizedAt = timestampMs(stateRecord.normalizedAt);
+  const review =
+    specState.review &&
+    typeof specState.review === "object" &&
+    !Array.isArray(specState.review)
+      ? (specState.review as Record<string, unknown>)
+      : null;
+  const reviewedAt =
+    timestampMs(review?.reviewedAt) ??
+    timestampMs(review?.updatedAt) ??
+    normalizedAt;
+  if (!reviewedAt || normalizedFromStatus !== "error") return false;
+  const action =
+    typeof review?.lastAction === "string"
+      ? review.lastAction.toLowerCase()
+      : "";
+  const normalizedDisposition = successorDisposition.toLowerCase();
+  const pendingDisposition = normalizedDisposition.includes("pending");
+  const waitDisposition = normalizedDisposition.includes("wait");
+  const pendingAction = action.includes("keep pending");
+  if (!pendingDisposition && !waitDisposition && !pendingAction) return false;
+
+  const childTerminalAt = Math.max(
+    timestampMs(traceString(child, "reviewed_at")) ?? 0,
+    timestampMs(traceString(child, "last_worker_completed_at")) ?? 0,
+    timestampMs(traceString(child, "worker_started_at")) ?? 0,
+  );
+  return reviewedAt > childTerminalAt;
+}
+
+function isOpenTaskStatus(status: string): boolean {
+  return (
+    status === "active" ||
+    status === "backlog" ||
+    status === "review" ||
+    status === "waiting"
+  );
+}
+
 function isSpecLoopChild(task: TaskNode | undefined): task is TaskNode {
   if (!task || task.workflow !== "single-spec-verifier") return false;
   const specId = taskContext(task).specId;
@@ -412,6 +493,117 @@ function openFollowupCount(
     }).length;
 }
 
+function representedFollowupGroupKeys(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): Set<string> {
+  const keys = new Set<string>();
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!isRepresentingFollowupStatus(taskStatus(child))) continue;
+    for (const key of specLoopFollowupGroupKeys(child)) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+function taskHasStructuredBlocker(task: TaskNode | undefined): boolean {
+  return !!(task as { blocker?: unknown } | undefined)?.blocker;
+}
+
+function specLoopSpecHasStructuredSuccessor(
+  spec: SpecLoopState["specs"][string] | undefined,
+): boolean {
+  if (!spec) return false;
+  const record = spec as Record<string, unknown>;
+  if (
+    typeof record.successorDisposition === "string" &&
+    record.successorDisposition.trim()
+  ) {
+    return true;
+  }
+  if (
+    typeof record.resumeCondition === "string" &&
+    record.resumeCondition.trim()
+  ) {
+    return true;
+  }
+  return !!spec.review && typeof spec.review === "object";
+}
+
+function exactSpecLoopOwnerTaskId(input: {
+  tasks: Record<string, TaskNode>;
+  state: SpecLoopState;
+  specId: string;
+}): string | null {
+  const spec = input.state.specs[input.specId];
+  const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
+    !!task && isRepresentingFollowupStatus(taskStatus(task));
+
+  const taskIds = new Set<string>();
+  if (typeof spec?.taskId === "string" && spec.taskId.trim()) {
+    taskIds.add(spec.taskId.trim());
+  }
+  for (const task of Object.values(input.tasks)) {
+    if (!isRepresenting(task)) continue;
+    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
+      taskIds.add(task.id);
+    }
+  }
+
+  for (const taskId of taskIds) {
+    const task = input.tasks[taskId];
+    if (!isRepresenting(task)) continue;
+    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
+      return taskId;
+    }
+    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+    if (
+      spec?.taskId === taskId &&
+      specLoopSpecHasStructuredSuccessor(spec) &&
+      taskHasStructuredBlocker(task)
+    ) {
+      return taskId;
+    }
+  }
+
+  return null;
+}
+
+function exactRepresentedSpecIds(input: {
+  tasks: Record<string, TaskNode>;
+  state: SpecLoopState;
+}): Set<string> {
+  const ids = new Set<string>();
+  for (const specId of Object.keys(input.state.specs)) {
+    if (exactSpecLoopOwnerTaskId({ ...input, specId })) ids.add(specId);
+  }
+  return ids;
+}
+
+function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
+  const keys = new Set<string>();
+  if (!task) return keys;
+  if (isSpecLoopFollowupChild(task)) {
+    const context = taskContext(task);
+    const status = context.status;
+    const family = context.featureFamily;
+    if (typeof status === "string" && typeof family === "string") {
+      keys.add(`${status}:${family}`);
+    }
+  }
+  for (const scope of taskConflictScopes(task)) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("spec-loop-followup:")) continue;
+    const [, statusPart, familyPart] = trimmed.split(":");
+    if (statusPart?.trim() && familyPart?.trim()) {
+      keys.add(`${statusPart.trim()}:${familyPart.trim()}`);
+    }
+  }
+  return keys;
+}
+
 function blockedWaitChildCount(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
@@ -505,6 +697,7 @@ type NonPassSpecGroup = {
   family: string;
   count: number;
   specIds: string[];
+  sampledSpecIds: string[];
 };
 
 function safeTaskIdPart(value: string): string {
@@ -586,10 +779,12 @@ function nonPassSpecGroups(
       family,
       count: 0,
       specIds: [],
+      sampledSpecIds: [],
     };
     group.count += 1;
-    if (group.specIds.length < input.maxSpecSamples) {
-      group.specIds.push(specId);
+    group.specIds.push(specId);
+    if (group.sampledSpecIds.length < input.maxSpecSamples) {
+      group.sampledSpecIds.push(specId);
     }
     groups.set(key, group);
   }
@@ -610,6 +805,41 @@ function nonPassSpecGroups(
 
 function followupTaskId(group: NonPassSpecGroup): string {
   return `reconcile-spec-loop-${safeTaskIdPart(group.status)}-${safeTaskIdPart(group.family)}`;
+}
+
+function isRepresentingFollowupStatus(status: string): boolean {
+  return isOpenTaskStatus(status) || status === "blocked";
+}
+
+function existingRepresentingSpecLoopFollowupTaskId(
+  tasks: Record<string, TaskNode>,
+  group: NonPassSpecGroup,
+): string | null {
+  const groupKey = `${group.status}:${group.family}`;
+  const deterministicTask = tasks[followupTaskId(group)];
+  if (
+    deterministicTask &&
+    isRepresentingFollowupStatus(taskStatus(deterministicTask))
+  ) {
+    return deterministicTask.id;
+  }
+  for (const task of Object.values(tasks)) {
+    if (!isRepresentingFollowupStatus(taskStatus(task))) continue;
+    if (specLoopFollowupGroupKeys(task).has(groupKey)) return task.id;
+  }
+  return null;
+}
+
+function nextAvailableTaskId(
+  tasks: Record<string, TaskNode>,
+  baseTaskId: string,
+): string {
+  if (!tasks[baseTaskId]) return baseTaskId;
+  for (let index = 2; index < 1_000; index += 1) {
+    const candidate = `${baseTaskId}-${index}`;
+    if (!tasks[candidate]) return candidate;
+  }
+  return `${baseTaskId}-${Date.now()}`;
 }
 
 function materializeSpecLoopFollowups(
@@ -637,15 +867,25 @@ function materializeSpecLoopFollowups(
   );
   if (hasRunnableWork) return [];
   const groups = nonPassSpecGroups(input.state, {
-    maxGroups: input.maxGroups,
+    maxGroups: Math.max(input.maxGroups, Object.keys(input.state.specs).length),
     maxSpecSamples: input.maxSpecSamples,
     maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
   });
   const createdTaskIds: string[] = [];
   for (const group of groups) {
-    const taskId = followupTaskId(group);
     const latestTree = readTaskTree(config);
-    if (latestTree.tasks[taskId]) continue;
+    if (existingRepresentingSpecLoopFollowupTaskId(latestTree.tasks, group)) {
+      continue;
+    }
+    const allSpecsHaveExactOwners = group.specIds.every((specId) =>
+      exactSpecLoopOwnerTaskId({
+        tasks: latestTree.tasks,
+        state: input.state,
+        specId,
+      }),
+    );
+    if (allSpecsHaveExactOwners) continue;
+    const taskId = nextAvailableTaskId(latestTree.tasks, followupTaskId(group));
     createTask(config, {
       id: taskId,
       parentId: input.loopTask.id,
@@ -657,11 +897,11 @@ function materializeSpecLoopFollowups(
         `target:${input.target}`,
         `branch:${input.branch}`,
         `state:${input.stateRef}`,
-        ...group.specIds.map((specId) => `spec:${specId}`),
+        ...group.sampledSpecIds.map((specId) => `spec:${specId}`),
       ],
       outputs: [input.stateRef, "evidence/archive/", "features/", "specs/"],
       acceptance: [
-        "Every sampled non-pass spec has a concrete root-cause classification.",
+        "Every affected non-pass spec has a concrete root-cause classification.",
         "Every fixable test/spec/runtime issue was repaired and queued for a meaningful live rerun.",
         "If no bounded repo-local fix remains, an escalation task records the exact owner/environment/product reason, affected specs, attempted fixes, and resume condition.",
         "Relevant spec-loop state, spec/model files, or evidence notes were updated to match that pass/fix/escalate decision.",
@@ -675,7 +915,8 @@ function materializeSpecLoopFollowups(
         status: group.status,
         featureFamily: group.family,
         totalSpecCount: group.count,
-        sampledSpecIds: group.specIds,
+        sampledSpecIds: group.sampledSpecIds,
+        representedSpecIds: group.specIds,
         stateRef: input.stateRef,
         target: input.target,
         branch: input.branch,
@@ -688,6 +929,21 @@ function materializeSpecLoopFollowups(
 
 function policyFollowupTaskId(specId: string): string {
   return `repair-spec-loop-policy-${safeTaskIdPart(specFamily(specId))}`;
+}
+
+function existingOpenPolicyFollowupTaskId(
+  tasks: Record<string, TaskNode>,
+  specId: string,
+): string | null {
+  const family = specFamily(specId);
+  for (const task of Object.values(tasks)) {
+    if (!isSpecLoopFollowupChild(task)) continue;
+    const context = taskContext(task);
+    if (context.policyFollowup !== true) continue;
+    if (context.featureFamily !== family) continue;
+    if (isOpenTaskStatus(taskStatus(task))) return task.id;
+  }
+  return null;
 }
 
 function createOrUpdatePolicyFollowup(
@@ -704,10 +960,16 @@ function createOrUpdatePolicyFollowup(
   const taskId = policyFollowupTaskId(input.specId);
   const now = new Date().toISOString();
   let created = false;
+  let resolvedTaskId = taskId;
   withTreeLock(config, () => {
     const tree = readTaskTree(config);
-    const existing = tree.tasks[taskId];
+    const openTaskId = existingOpenPolicyFollowupTaskId(
+      tree.tasks,
+      input.specId,
+    );
+    const existing = openTaskId ? tree.tasks[openTaskId] : undefined;
     if (existing) {
+      resolvedTaskId = existing.id;
       const context = taskContext(existing);
       const sampledSpecIds = Array.isArray(context.sampledSpecIds)
         ? context.sampledSpecIds.filter(
@@ -741,7 +1003,7 @@ function createOrUpdatePolicyFollowup(
       saveTaskTreeWithKanbanSnapshot(config, tree);
       appendToolJournal(config, {
         kind: "spec_loop_policy_followup_updated",
-        task_id: taskId,
+        task_id: existing.id,
         spec_id: input.specId,
         reason: input.reason,
       });
@@ -750,8 +1012,11 @@ function createOrUpdatePolicyFollowup(
     created = true;
   });
   if (created) {
+    const latestTree = readTaskTree(config);
+    const availableTaskId = nextAvailableTaskId(latestTree.tasks, taskId);
+    resolvedTaskId = availableTaskId;
     createTask(config, {
-      id: taskId,
+      id: availableTaskId,
       parentId: input.loopTask.id,
       priority: "P1",
       goal: `Repair spec-loop execution policy failures for the ${specFamily(input.specId)} feature family so affected specs can run live on GitHub without private AKS RP source or Azure CLI fallback.`,
@@ -784,8 +1049,9 @@ function createOrUpdatePolicyFollowup(
         branch: input.branch,
       },
     });
+    return { taskId: availableTaskId, created };
   }
-  return { taskId, created };
+  return { taskId: resolvedTaskId, created };
 }
 
 function releaseStaleRunningSpecs(input: {
@@ -873,6 +1139,13 @@ function syncOpenChildStatuses(input: {
         });
         continue;
       }
+      if (hasReviewedPendingSuccessor(specState, child)) {
+        updateSpecLoopSpec(input.state, specId, {
+          status: "pending",
+          taskId: child.id,
+        });
+        continue;
+      }
       if (
         (current === "pending" || current === "running") &&
         specState?.taskId !== child.id
@@ -929,11 +1202,14 @@ function specLoopWorkflowProgress(input: {
   backlogChildren: number;
   openSpecVerifierChildren: number;
   openFollowups: number;
+  representedFollowupGroupKeys?: Set<string>;
+  exactRepresentedSpecIds?: Set<string>;
   blockedWaitChildren: number;
   created: number;
   createdFollowups: number;
   assigned: number;
   reconciledArchivedNonLiveErrors: number;
+  importedMirrorRows: number;
   targetRunning: number;
   maxDirectAttemptsPerSpec: number;
   backendBlocker?: string;
@@ -969,17 +1245,39 @@ function specLoopWorkflowProgress(input: {
   const completionReady =
     residuePending === 0 && residueRunning === 0 && nonPass === 0;
   const surplusRunning = Math.max(0, residueRunning - input.targetRunning);
-  const groupedNonPassResidue = residueError + residueFail + residuePrOpen;
-  const groupedResidue = strandedPending + groupedNonPassResidue;
   const retryBudgetExhausted = retryBudgetExhaustedCount({
     state: input.state,
     maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
   });
+  let unrepresentedGroupedResidue = 0;
+  for (const [specId, spec] of Object.entries(input.state.specs)) {
+    const status = spec.status || "pending";
+    const groupedPending =
+      status === "pending" &&
+      !canDirectlyRunSpec({
+        state: input.state,
+        specId,
+        maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+      });
+    if (
+      status !== "error" &&
+      status !== "fail" &&
+      status !== "pr_open" &&
+      !groupedPending
+    ) {
+      continue;
+    }
+    const groupStatus = groupedPending ? "pending" : status;
+    const groupKey = `${groupStatus}:${specFamily(specId)}`;
+    if (
+      !input.representedFollowupGroupKeys?.has(groupKey) &&
+      !input.exactRepresentedSpecIds?.has(specId)
+    ) {
+      unrepresentedGroupedResidue += 1;
+    }
+  }
   const unrepresentedNonTerminalCount =
-    dispatchablePending +
-    residueRunning +
-    done +
-    (input.openFollowups > 0 ? 0 : groupedResidue);
+    dispatchablePending + residueRunning + done + unrepresentedGroupedResidue;
   const exactWaitOnlyFrontier =
     input.openChildren === 0 &&
     input.activeChildren === 0 &&
@@ -1062,6 +1360,9 @@ function specLoopWorkflowProgress(input: {
     backlogChildren: input.backlogChildren,
     openSpecVerifierChildren: input.openSpecVerifierChildren,
     openFollowups: input.openFollowups,
+    representedFollowupGroups: [
+      ...(input.representedFollowupGroupKeys ?? new Set<string>()),
+    ].sort((a, b) => a.localeCompare(b)),
     blockedWaitChildren: input.blockedWaitChildren,
     frontierSummary,
     lastPulseCreated: input.created,
@@ -1069,6 +1370,7 @@ function specLoopWorkflowProgress(input: {
     lastPulseAssigned: input.assigned,
     lastPulseReconciledArchivedNonLiveErrors:
       input.reconciledArchivedNonLiveErrors,
+    lastPulseImportedMirrorRows: input.importedMirrorRows,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -1205,6 +1507,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     windowSize,
     statePath: stateRef.startsWith("/") ? stateRef : join(appDir, stateRef),
   });
+  const projectStatePath = join(
+    projectDir,
+    ".state",
+    "spec-loop",
+    "state.json",
+  );
+  const importedMirror = importNewerSpecLoopMirrorRows(state, projectStatePath);
 
   const completedTaskId =
     trigger?.type === "project.task.completed" || isSpecLoopTick(trigger)
@@ -1469,12 +1778,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: latestTree.tasks,
     state,
   });
-  const projectStatePath = join(
-    projectDir,
-    ".state",
-    "spec-loop",
-    "state.json",
-  );
   saveSpecLoopState(statePath, state, [projectStatePath]);
   const frontierCounts = latestLoopTask
     ? frontierOpenChildStatuses(latestLoopTask, latestTree.tasks)
@@ -1494,6 +1797,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const blockedWaitChildren = latestLoopTask
     ? blockedWaitChildCount(latestLoopTask, latestTree.tasks)
     : 0;
+  const exactOwnedSpecIds = exactRepresentedSpecIds({
+    tasks: latestTree.tasks,
+    state,
+  });
   updateControllerWorkflowProgress({
     appDir,
     projectDir,
@@ -1509,9 +1816,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       created: createdTaskIds.length,
       assigned: assignments.length,
       openFollowups,
+      representedFollowupGroupKeys: latestLoopTask
+        ? representedFollowupGroupKeys(latestLoopTask, latestTree.tasks)
+        : new Set<string>(),
+      exactRepresentedSpecIds: exactOwnedSpecIds,
       blockedWaitChildren,
       createdFollowups: allCreatedFollowupTaskIds.length,
       reconciledArchivedNonLiveErrors,
+      importedMirrorRows: importedMirror.imported,
       targetRunning,
       maxDirectAttemptsPerSpec,
       backendBlocker,
@@ -1546,6 +1858,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     requeuedMissingLocalResults
       ? `Requeued ${requeuedMissingLocalResults} terminal spec(s) with missing local result artifacts.`
       : "",
+    importedMirror.imported
+      ? `Imported ${importedMirror.imported} newer domain mirror row(s): ${importedMirror.specIds.slice(0, 5).join(", ")}.`
+      : "",
     backendBlocker ? `Backend blocked: ${backendBlocker}` : "",
     dispatchHold ? `Dispatch held: ${dispatchHold}` : "",
     `Target running spec workflows: ${targetRunning}.`,
@@ -1567,6 +1882,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
     requeued_missing_local_result_count: requeuedMissingLocalResults,
+    imported_mirror_spec_ids: importedMirror.specIds,
     accepted_review_task_ids: acceptedReviewChildren,
     state_path: statePath,
   });

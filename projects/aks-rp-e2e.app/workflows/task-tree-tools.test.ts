@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -19,6 +20,7 @@ import {
   updateTaskOutputs,
   updateTaskText,
 } from "./lib/task-tree-tools.ts";
+import { reopenControllerRootWhenIncomplete } from "./lib/loop-controller-repair.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-task-tree-tools-"));
@@ -26,6 +28,28 @@ async function makeProject() {
   await mkdir(join(dir, "tasks"), { recursive: true });
   await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
+}
+
+async function writeSpecLoopState(
+  projectDir: string,
+  specs: Record<string, Record<string, unknown>>,
+) {
+  await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+  await writeFile(
+    join(projectDir, ".state", "spec-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 5,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
 }
 
 function config(projectDir: string) {
@@ -41,7 +65,7 @@ describe("task tree tools", () => {
   test("allows owner-decided ordinary task creation directly under root", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -77,7 +101,7 @@ describe("task tree tools", () => {
 
     expect(task.parent_id).toBe("project");
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks.project.children).toEqual(["dated-frontier-20260615"]);
   });
@@ -103,7 +127,7 @@ describe("task tree tools", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -136,7 +160,7 @@ describe("task tree tools", () => {
       { pathId: "path.feature-a.create", reason: "no-parent-task" },
     ]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks.project.children).toEqual([]);
   });
@@ -169,7 +193,7 @@ describe("task tree tools", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -214,7 +238,7 @@ describe("task tree tools", () => {
       },
     ]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["spec-runner-and-replays"].children).toEqual([]);
   });
@@ -243,7 +267,7 @@ describe("task tree tools", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -324,7 +348,7 @@ describe("task tree tools", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -405,7 +429,7 @@ describe("task tree tools", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -453,7 +477,7 @@ describe("task tree tools", () => {
       recursive: true,
     });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -545,7 +569,7 @@ describe("task tree tools", () => {
   test("planning packet flags passive response waits and source-exactness overblocks", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -626,10 +650,75 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for exact human-owned external waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["exact-human-holder", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "exact-human-holder": {
+              id: "exact-human-holder",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Preserve the exact authorization wait for the private cluster path; resume only when human approval returns with explicit subscription and location.",
+              outputs: ["evidence/archive/exact-holder.md"],
+              acceptance: ["exact holder remains visible"],
+              blocker: {
+                condition:
+                  "Blocked on owner approval and explicit subscription/location tuple; resume only when the human operator returns the exact execute authorization.",
+                category: "external-wait",
+                owner: "human",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("repairs parent rollups and lifecycle from active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -687,7 +776,7 @@ describe("task tree tools", () => {
     });
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.project_lifecycle).toBe("active");
     expect(tree.active_task_id).toBe("feature-status-reconciliation");
@@ -698,7 +787,7 @@ describe("task tree tools", () => {
     expect(tree.tasks.project.status).toBeUndefined();
 
     const kanban = JSON.parse(
-      await readFile(join(projectDir, "tasks", "kanban.json"), "utf8"),
+      await readFile(projectRuntimePaths(projectDir).kanbanPath, "utf8"),
     );
     expect(kanban.kanban.column_counts["in-progress"]).toBe(1);
   });
@@ -706,7 +795,7 @@ describe("task tree tools", () => {
   test("prunes missing child references from a named parent", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -754,7 +843,7 @@ describe("task tree tools", () => {
     });
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks.project.children).toEqual(["live-child"]);
   });
@@ -762,7 +851,7 @@ describe("task tree tools", () => {
   test("task saves automatically repair parent rollups and snapshot", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -814,7 +903,7 @@ describe("task tree tools", () => {
     });
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.project_lifecycle).toBe("active");
     expect(tree.active_task_id).toBeNull();
@@ -824,7 +913,7 @@ describe("task tree tools", () => {
     expect(tree.tasks.project.state).toBe("review");
 
     const kanban = JSON.parse(
-      await readFile(join(projectDir, "tasks", "kanban.json"), "utf8"),
+      await readFile(projectRuntimePaths(projectDir).kanbanPath, "utf8"),
     );
     expect(kanban.tree_updated_at).toBe(tree.updated_at);
     expect(kanban.kanban.column_counts.review).toBe(1);
@@ -834,7 +923,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -908,10 +997,12 @@ describe("task tree tools", () => {
       protected: 1,
       remainingTotal: 4,
     });
-    expect(result.archivePath).toMatch(/^tasks\/archive\/done-leaves-/);
+    expect(result.archivePath).toMatch(
+      /^\.state\/tasks\/archive\/done-leaves-/,
+    );
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(Array.isArray(tree.tasks)).toBe(false);
     expect(tree.tasks["done-free"]).toBeUndefined();
@@ -931,7 +1022,7 @@ describe("task tree tools", () => {
   test("marks review work done and unlocks dependent backlog", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -995,7 +1086,7 @@ describe("task tree tools", () => {
     });
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["review-leaf"].state).toBe("done");
     expect(tree.tasks["review-leaf"].context.acceptance_note).toBe(
@@ -1006,16 +1097,171 @@ describe("task tree tools", () => {
     expect(tree.tasks.project.state).toBe("backlog");
 
     const kanban = JSON.parse(
-      await readFile(join(projectDir, "tasks", "kanban.json"), "utf8"),
+      await readFile(projectRuntimePaths(projectDir).kanbanPath, "utf8"),
     );
     expect(kanban.kanban.column_counts.backlog).toBe(1);
     expect(kanban.kanban.column_counts.done).toBe(1);
   });
 
+  test("refuses to close spec-loop follow-up when represented retry-drained specs lack an open owner", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["review-leaf"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "review-leaf": {
+              id: "review-leaf",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: [],
+              goal: "review spec-loop follow-up",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["review accepted"],
+              conflict_scope: ["spec-loop-followup:pending:cost-analysis"],
+              inputs: ["spec:spec.cost-analysis.vm-prerelease-source-seed"],
+              context: {
+                specLoopFollowup: true,
+                status: "pending",
+                featureFamily: "cost-analysis",
+                representedSpecIds: [
+                  "spec.cost-analysis.vm-prerelease-source-seed",
+                ],
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeSpecLoopState(projectDir, {
+      "spec.cost-analysis.vm-prerelease-source-seed": {
+        status: "pending",
+        attempts: 3,
+        taskId: "review-leaf",
+        lastRunId: null,
+        lastRunUrl: "https://github.example/runs/1",
+        lastResultPath: "runs/test-results/cost-analysis.json",
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        successorDisposition: "environment-blocker-pending-followup",
+        resumeCondition: "underlay kubeconfig is available",
+        review: { decision: "blocked" },
+      },
+    });
+
+    expect(() =>
+      markTaskDone(config(projectDir), {
+        taskId: "review-leaf",
+        summary: "mentions an environment wait but does not create one",
+      }),
+    ).toThrow(/cannot be marked done/);
+  });
+
+  test("allows closing spec-loop follow-up when an exact open holder owns the represented spec", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["review-leaf", "wait-leaf"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "review-leaf": {
+              id: "review-leaf",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: [],
+              goal: "review spec-loop follow-up",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["review accepted"],
+              conflict_scope: ["spec-loop-followup:pending:defender-profile"],
+              inputs: ["spec:spec.defender-profile.vm-prerelease-matrix"],
+              context: {
+                specLoopFollowup: true,
+                status: "pending",
+                featureFamily: "defender-profile",
+                representedSpecIds: [
+                  "spec.defender-profile.vm-prerelease-matrix",
+                ],
+              },
+            },
+            "wait-leaf": {
+              id: "wait-leaf",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              children: [],
+              goal: "Wait for GitHub auth-preflight repair.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["auth preflight repaired"],
+              conflict_scope: [
+                "spec:spec.defender-profile.vm-prerelease-matrix",
+              ],
+              blocker: { category: "external-wait" },
+              resumeCondition: "GitHub auth preflight succeeds.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeSpecLoopState(projectDir, {
+      "spec.defender-profile.vm-prerelease-matrix": {
+        status: "pending",
+        attempts: 3,
+        taskId: null,
+        lastRunId: null,
+        lastRunUrl: "https://github.example/runs/2",
+        lastResultPath: "runs/test-results/defender.json",
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        successorDisposition: "workflow-auth-preflight-blocker",
+        resumeCondition: "GitHub auth preflight succeeds.",
+        review: { decision: "blocked" },
+      },
+    });
+
+    const done = markTaskDone(config(projectDir), {
+      taskId: "review-leaf",
+      summary: "exact holder owns the remaining wait",
+    });
+
+    expect(done.state).toBe("done");
+  });
+
   test("replaces outputs on an existing task and preserves other metadata", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1076,7 +1322,7 @@ describe("task tree tools", () => {
     expect(updated.conflict_scope).toEqual(["feature:managedsystem"]);
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["promotion-task"].outputs).toEqual([
       "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
@@ -1101,7 +1347,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1209,7 +1455,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1270,7 +1516,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1354,7 +1600,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1397,7 +1643,7 @@ describe("task tree tools", () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1459,7 +1705,7 @@ describe("task tree tools", () => {
   test("updates existing task text fields and preserves outputs/conflict scope", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1516,7 +1762,7 @@ describe("task tree tools", () => {
     expect(updated.conflict_scope).toEqual(["feature:test"]);
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["blocked-task"].goal).toBe("new goal");
     expect(tree.tasks["blocked-task"].acceptance).toEqual(["new acceptance"]);
@@ -1536,7 +1782,7 @@ describe("task tree tools", () => {
   test("updates only accepted-review metadata fields on an existing task", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1602,7 +1848,7 @@ describe("task tree tools", () => {
     expect((updated.context as { keep?: string }).keep).toBe("preserve-me");
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["accepted-task"].state).toBe("done");
     expect(tree.tasks["accepted-task"].goal).toBe(
@@ -1633,7 +1879,7 @@ describe("task tree tools", () => {
   test("refuses normal done review when workflow progress says acceptance is incomplete", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1698,7 +1944,7 @@ describe("task tree tools", () => {
   test("refuses parent rollup for an incomplete workflow controller", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1753,7 +1999,7 @@ describe("task tree tools", () => {
     ).toThrow(/cannot be archived by parent rollup/);
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["workflow-task"]).toBeDefined();
     expect(tree.tasks.project.children).toEqual(["workflow-task"]);
@@ -1762,7 +2008,7 @@ describe("task tree tools", () => {
   test("allows parent rollup for a completed workflow controller", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1816,7 +2062,7 @@ describe("task tree tools", () => {
 
     expect(result.archivedTaskIds).toEqual(["workflow-task"]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["workflow-task"]).toBeUndefined();
     expect(tree.tasks.project.children).toEqual([]);
@@ -1825,7 +2071,7 @@ describe("task tree tools", () => {
   test("refuses parent rollup for durable loop roots even when completion-ready", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1879,7 +2125,7 @@ describe("task tree tools", () => {
     ).toThrow(/durable loop root/);
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["aks-feature-reference-loop"]).toBeDefined();
     expect(tree.tasks.project.children).toEqual(["aks-feature-reference-loop"]);
@@ -1888,7 +2134,7 @@ describe("task tree tools", () => {
   test("repair-rollups reopens durable loop roots with incomplete progress", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1943,7 +2189,7 @@ describe("task tree tools", () => {
       "aks-feature-reference-loop",
     ]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const task = tree.tasks["aks-feature-reference-loop"];
     expect(task.state).toBe("backlog");
@@ -1957,7 +2203,7 @@ describe("task tree tools", () => {
   test("repair-rollups reopens stale durable wait roots that omit unrepresented residue", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2032,7 +2278,7 @@ describe("task tree tools", () => {
       "aks-spec-verification-loop",
     ]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const task = tree.tasks["aks-spec-verification-loop"];
     expect(task.state).toBe("backlog");
@@ -2043,7 +2289,7 @@ describe("task tree tools", () => {
   test("repair-rollups preserves blocked-only durable loop wait stewardship roots", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2164,10 +2410,30 @@ describe("task tree tools", () => {
 
     expect(result.reopenedDurableLoopRoots).toEqual([]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["aks-feature-compact-loop"].state).toBe("blocked");
     expect(tree.tasks["aks-spec-verification-loop"].state).toBe("blocked");
+    expect(tree.tasks["aks-feature-compact-loop"].blocker).toMatchObject({
+      category: "child-blocked",
+      observed_by: {
+        trigger: "task_tree_rollup_repaired",
+      },
+    });
+    expect(tree.tasks["aks-spec-verification-loop"].blocker).toMatchObject({
+      category: "child-blocked",
+      observed_by: {
+        trigger: "task_tree_rollup_repaired",
+      },
+    });
+    expect(
+      (tree.tasks["aks-feature-compact-loop"].blocker as Record<string, unknown>)
+        .fallback_at,
+    ).toBeTruthy();
+    expect(
+      (tree.tasks["aks-spec-verification-loop"].blocker as Record<string, unknown>)
+        .next_check_at,
+    ).toBeTruthy();
     expect(
       tree.tasks["aks-feature-compact-loop"].trace?.reopened_by,
     ).toBeUndefined();
@@ -2176,10 +2442,155 @@ describe("task tree tools", () => {
     ).toBeUndefined();
   });
 
+  test("reopenControllerRootWhenIncomplete adds observer and fallback metadata for child-blocked stewardship", () => {
+    const task = {
+      id: "aks-spec-verification-loop",
+      owner: "aks-explorer",
+      workflow: "spec-loop-controller",
+      state: "review",
+      status: "review",
+      children: ["wait-alpha", "wait-beta"],
+      trace: {},
+    } as any;
+    const progress: Record<string, unknown> = {
+      completionReady: false,
+      noRefillNow: true,
+      reason: "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
+      blockedWaitChildren: 2,
+      unrepresentedNonTerminalCount: 0,
+      running: 0,
+      openChildren: 0,
+      openSpecVerifierChildren: 0,
+      openFollowups: 0,
+      activeChildren: 0,
+      reviewChildren: 0,
+      waitingChildren: 0,
+      backlogChildren: 0,
+    };
+
+    const reopened = reopenControllerRootWhenIncomplete({
+      task,
+      progress,
+      reason: "controller root must stay blocked as an exact wait steward",
+    });
+
+    expect(reopened).toBe(true);
+    expect(task.state).toBe("blocked");
+    expect(task.blocker).toMatchObject({
+      category: "child-blocked",
+      waiting_for: {
+        type: "child.task.blocked",
+        taskId: "aks-spec-verification-loop",
+        childTaskIds: ["wait-alpha", "wait-beta"],
+      },
+      observed_by: {
+        workflow: "spec-loop-controller",
+        trigger: "project.task.tick",
+      },
+    });
+    expect((task.blocker as Record<string, unknown>).next_check_at).toBeTruthy();
+    expect((task.blocker as Record<string, unknown>).fallback_at).toBeTruthy();
+    expect((task.blocker as Record<string, unknown>).fallback_action).toBeTruthy();
+  });
+
+  test("repair-rollups reopens blocked durable loop root when a child is active", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "active-spec-followup",
+          active_task_ids: ["active-spec-followup"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal", "active-spec-followup"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  reason:
+                    "spec-loop execution residue is drained and the remaining frontier is exact wait stewardship",
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "active-spec-followup": {
+              id: "active-spec-followup",
+              parent_id: "aks-spec-verification-loop",
+              state: "active",
+              status: "active",
+              goal: "Repair a spec.",
+              outputs: ["evidence/archive/active-spec.md"],
+              acceptance: ["Repair reviewed"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.reopenedDurableLoopRoots).toEqual([]);
+    expect(result.repaired).toContainEqual({
+      taskId: "aks-spec-verification-loop",
+      from: "blocked",
+      to: "active",
+    });
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("active");
+    expect(tree.tasks["aks-spec-verification-loop"].blocker).toBeUndefined();
+    expect(
+      tree.tasks["aks-spec-verification-loop"].trace?.reopened_by,
+    ).toBeUndefined();
+  });
+
   test("repair-rollups preserves blocked-only durable loop wait stewardship roots even with active/review/waiting/backlog counters explicitly zero", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2300,7 +2711,7 @@ describe("task tree tools", () => {
 
     expect(result.reopenedDurableLoopRoots).toEqual([]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["aks-feature-compact-loop"].state).toBe("blocked");
     expect(tree.tasks["aks-spec-verification-loop"].state).toBe("blocked");
@@ -2315,7 +2726,7 @@ describe("task tree tools", () => {
   test("assigns incomplete non-leaf workflow controller roots", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2380,7 +2791,7 @@ describe("task tree tools", () => {
 
     expect(assignment.taskId).toBe("aks-feature-compact-loop");
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["aks-feature-compact-loop"].state).toBe("active");
     expect(tree.active_task_ids).toEqual(["aks-feature-compact-loop"]);
@@ -2389,7 +2800,7 @@ describe("task tree tools", () => {
   test("suppresses paused durable controllers from runnable backlog", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2461,7 +2872,7 @@ describe("task tree tools", () => {
   test("repair-rollups reopens spec-loop stranded exhausted residue", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2543,7 +2954,7 @@ describe("task tree tools", () => {
       "aks-spec-verification-loop",
     ]);
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const task = tree.tasks["aks-spec-verification-loop"];
     expect(task.state).toBe("backlog");

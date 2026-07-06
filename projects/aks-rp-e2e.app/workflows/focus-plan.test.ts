@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -13,7 +14,7 @@ async function makeWorkspace(options?: { leafState?: string }) {
   await mkdir(join(appDir, ".state"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,

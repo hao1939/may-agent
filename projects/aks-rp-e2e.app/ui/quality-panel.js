@@ -2207,6 +2207,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
     nextTargetId,
     "bootstrap-profile-byo-acr-lifecycle",
     "bootstrap-profile-managed-acr-lifecycle",
+    "managedsystem-pool",
     "workload-autoscaler-vpa-upgrade-survival-runtime",
     "managedsystem-pool-rest-add-existing",
     "workload-autoscaler-vpa-cert-renewal-runtime",
@@ -2240,10 +2241,19 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
     .sort((a, b) => {
       const as = testSpecForPath(a.id) ? -10 : 0;
       const bs = testSpecForPath(b.id) ? -10 : 0;
+      const af = rowByFeatureId[a.featureId]?.feature;
+      const bf = rowByFeatureId[b.featureId]?.feature;
+      const ag = af ? featureGroupMeta(af).id : "";
+      const bg = bf ? featureGroupMeta(bf).id : "";
+      const afocus =
+        focusIds.has(a.featureId) || (ag && focusIds.has(ag)) ? -20 : 0;
+      const bfocus =
+        focusIds.has(b.featureId) || (bg && focusIds.has(bg)) ? -20 : 0;
       return (
+        afocus +
         as +
         statusPriority.indexOf(a.status) -
-        (bs + statusPriority.indexOf(b.status))
+        (bfocus + bs + statusPriority.indexOf(b.status))
       );
     })
     .slice(0, 64);

@@ -13,9 +13,9 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import puppeteer from "puppeteer-core";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { createServer } from "node:net";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 
 const appRoot = resolve(import.meta.dirname, "..");
 const projectRoot = resolve(import.meta.dirname, "../../aks-rp-e2e");
@@ -23,6 +23,11 @@ const browserPath =
   process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome";
 
 type PostedComment = { path?: string; comment?: string };
+type SpecIndexFixture = {
+  specs: Array<Record<string, unknown>>;
+  specFiles: string[];
+  specByFile: Map<string, Record<string, unknown>>;
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -35,6 +40,57 @@ async function projectFile(path: string) {
   if (path.startsWith(".app/"))
     return readFile(join(appRoot, path.slice(".app/".length)), "utf8");
   return readFile(join(projectRoot, path), "utf8");
+}
+
+let specIndexFixture: SpecIndexFixture | null = null;
+
+async function buildSpecIndexFixture(): Promise<SpecIndexFixture> {
+  if (specIndexFixture) return specIndexFixture;
+  const featuresRoot = join(projectRoot, "features");
+  const entries = await readdir(featuresRoot, {
+    recursive: true,
+    withFileTypes: true,
+  });
+  const specFiles = entries
+    .filter((entry) => {
+      const fullPath = join(entry.parentPath, entry.name);
+      return entry.isFile() && /\/specs\/[^/]+\.json$/.test(fullPath);
+    })
+    .map((entry) => join(entry.parentPath, entry.name))
+    .sort((a, b) => a.localeCompare(b));
+  const specs: Array<Record<string, unknown>> = [];
+  const specByFile = new Map<string, Record<string, unknown>>();
+  for (const file of specFiles) {
+    const spec = JSON.parse(await readFile(file, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const specFile = basename(file);
+    const normalized = { ...spec, file: specFile };
+    specs.push(normalized);
+    specByFile.set(specFile, normalized);
+  }
+  specIndexFixture = {
+    specs,
+    specFiles: specs.map((spec) => String(spec.file || "")),
+    specByFile,
+  };
+  return specIndexFixture;
+}
+
+async function testSpecIndexContent() {
+  const fixture = await buildSpecIndexFixture();
+  return JSON.stringify({
+    specs: fixture.specs,
+    specFiles: fixture.specFiles,
+  });
+}
+
+async function testSpecFileContent(file: string) {
+  const fixture = await buildSpecIndexFixture();
+  const spec = fixture.specByFile.get(basename(file));
+  if (!spec) throw new Error(`Spec fixture not found: ${file}`);
+  return JSON.stringify(spec);
 }
 
 async function getFreePort() {
@@ -107,9 +163,27 @@ describe("dedicated feature page — managedsystem-pool", () => {
           const relative = decodeURIComponent(
             url.pathname.replace(/^\/projects\/aks-rp-e2e\//, ""),
           );
+          if (relative === "specs/index.json") {
+            return new Response(await testSpecIndexContent(), {
+              headers: { "content-type": "application/json; charset=utf-8" },
+            });
+          }
+          if (/^specs\/[^/]+\.json$/.test(relative)) {
+            try {
+              return new Response(
+                await testSpecFileContent(relative.replace(/^specs\//, "")),
+                {
+                  headers: {
+                    "content-type": "application/json; charset=utf-8",
+                  },
+                },
+              );
+            } catch {
+              return new Response("not found", { status: 404 });
+            }
+          }
           if (
             relative === "model/knowledge-map/views/path-summary.json" ||
-            relative === "specs/index.json" ||
             /^scenarios\/test-specs\/[^/]+\.json$/.test(relative)
           ) {
             try {
@@ -212,11 +286,18 @@ describe("dedicated feature page — managedsystem-pool", () => {
             [
               "model/knowledge-map/model.json",
               "model/knowledge-map/views/path-summary.json",
-              "specs/index.json",
             ].includes(file)
           ) {
             return jsonResponse({ content: await projectFile(file) });
           }
+          if (file === "specs/index.json")
+            return jsonResponse({
+              content: await testSpecIndexContent(),
+            });
+          if (/^specs\/[^/]+\.json$/.test(file))
+            return jsonResponse({
+              content: await testSpecFileContent(file.replace(/^specs\//, "")),
+            });
           return jsonResponse({ error: `Unexpected artifact ${file}` }, 404);
         }
 

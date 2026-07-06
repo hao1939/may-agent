@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -49,7 +50,7 @@ describe("task worker", () => {
   test("persists a stable session id for spec-runner leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -134,12 +135,14 @@ describe("task worker", () => {
     expect(result.status).toBe("done");
     expect(observedSessionId).toBe("s_task_spec-task");
     expect(observedPrompt).toContain("task-tree set-outputs");
-    expect(observedPrompt).toContain("Never edit tasks/tree.json directly");
+    expect(observedPrompt).toContain(
+      "Never edit the runtime task tree file directly",
+    );
     expect(observedPrompt).toContain("Source workspace: /app/sources/aks-rp");
     expect(observedPrompt).toContain("first source authority");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].session_id).toBe("s_task_spec-task");
     expect(updated.tasks["spec-task"].session_history).toContain(
@@ -163,7 +166,7 @@ describe("task worker", () => {
   test("completion helpers accept legacy state-only active tasks", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -224,7 +227,7 @@ describe("task worker", () => {
     expect(completed.ok).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["state-only-task"].state).toBe("review");
     expect(updated.tasks["state-only-task"].trace.last_worker_result).toBe(
@@ -235,7 +238,7 @@ describe("task worker", () => {
   test("ignores obsolete completion when owner already removed assigned task", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -300,7 +303,7 @@ describe("task worker", () => {
       },
       runAgent: async () => ({ status: "success" }),
       runAgentSession: async () => {
-        const treePath = join(projectDir, "tasks", "tree.json");
+        const treePath = resolveTaskTreePath(projectDir);
         const tree = JSON.parse(await readFile(treePath, "utf8"));
         delete tree.tasks["spec-task"];
         tree.tasks.project.children = [];
@@ -321,7 +324,7 @@ describe("task worker", () => {
     expect(result.message).toContain("ignored obsolete completion");
     expect(dispatched).toHaveLength(0);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"]).toBeUndefined();
     const journal = await readFile(
@@ -334,7 +337,7 @@ describe("task worker", () => {
   test("keeps blocked worker results reviewable for the owner", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -407,7 +410,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].state).toBe("review");
     expect(updated.tasks["spec-task"].status).toBeUndefined();
@@ -427,7 +430,7 @@ describe("task worker", () => {
   test("does not treat generic session success as task done", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -500,7 +503,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].state).toBe("review");
     expect(updated.tasks["spec-task"].status).toBeUndefined();
@@ -519,7 +522,7 @@ describe("task worker", () => {
   test("prefers status when assistant text is present but empty", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -593,7 +596,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("blocked");
     expect(updated.tasks["spec-task"].trace.last_worker_summary).toBe("error");
@@ -639,7 +642,7 @@ describe("task worker", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -727,7 +730,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("done");
     expect(updated.tasks["spec-task"].trace.last_worker_summary).toContain(
@@ -736,17 +739,17 @@ describe("task worker", () => {
     expect(updated.tasks["spec-task"].trace.last_worker_evidence).toEqual([
       "evidence/archive/example.md",
     ]);
-    const projectJson = JSON.parse(
-      await readFile(join(projectDir, "project.json"), "utf8"),
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(projectDir).projectStatePath, "utf8"),
     );
-    expect(projectJson.currentState.activeTaskId).toBeNull();
-    expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
-    expect(projectJson.currentState.metrics.reviewLeafCount).toBe(1);
-    expect(projectJson.currentState.metrics.blockedLeafCount).toBe(0);
-    expect(projectJson.currentFocus.activeTaskIds).toEqual(["spec-task"]);
-    expect(projectJson.currentFocus.proposedTaskIds).toEqual(["spec-task"]);
-    expect(String(projectJson.currentFocus.summary)).toContain(
-      "non-done tasks/tree.json leaves first",
+    expect(projectState.currentState.activeTaskId).toBeNull();
+    expect(projectState.currentState.metrics.activeLeafCount).toBe(0);
+    expect(projectState.currentState.metrics.reviewLeafCount).toBe(1);
+    expect(projectState.currentState.metrics.blockedLeafCount).toBe(0);
+    expect(projectState.currentFocus.activeTaskIds).toEqual(["spec-task"]);
+    expect(projectState.currentFocus.proposedTaskIds).toEqual(["spec-task"]);
+    expect(String(projectState.currentFocus.summary)).toContain(
+      "non-done task-tree leaves first",
     );
     expect(dispatched[0]).toMatchObject({
       type: "project.task.completed",
@@ -763,7 +766,7 @@ describe("task worker", () => {
   test("prefers runtime errorMessage when assistant turn is empty", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -839,7 +842,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("blocked");
     expect(updated.tasks["spec-task"].trace.last_worker_summary).toBe(
@@ -859,7 +862,7 @@ describe("task worker", () => {
   test("ignores duplicate assignment events for the same started attempt", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -954,7 +957,7 @@ describe("task worker", () => {
   test("routes tasks with app workflow to that workflow", async () => {
     const projectDir = await makeProject();
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(
         {
           version: 1,

@@ -15,6 +15,7 @@
     "format:check": "bun x prettier --check .",
     "metrics:register": "bun run ./scripts/register-project-metrics.ts",
     "metrics:sample": "bun run ./scripts/project-metrics.ts",
+    "health": "bun run ./scripts/project-health.ts",
     "domain:checkpoint": "bun run ./scripts/domain-checkpoint.ts",
     "spec-loop": "bun run ./scripts/spec-loop.ts",
     "tasks:summary": "bun run ./scripts/task-summary.ts",

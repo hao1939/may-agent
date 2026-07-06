@@ -11,7 +11,14 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResult,
+  workflowResultVersion,
+  type StructuredWorkflowResult,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   buildTaskTreeConfig,
   completeStartedAttempt,
@@ -42,6 +49,27 @@ import type { TaskNode } from "./lib/task-tree-store.ts";
 export const name = "feature-reference-collector";
 export const description =
   "Collect Microsoft Learn and Azure REST API spec references for one AKS feature.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "feature-reference-collector-v1",
+  input: {
+    required: ["task.context.featureKey", "task.context.packetPath"],
+    optional: [
+      "task.context.capabilityId",
+      "task.context.referenceFixtureDir",
+      "task.context.stateRef",
+      "task.context.loopTaskId",
+    ],
+    description:
+      "Collect official public documentation and API references for one feature packet.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["subject", "status", "artifacts", "checks", "problem"],
+    description:
+      "Reports whether official references were collected and where the draft was written.",
+  },
+};
 
 type ReferenceHit = {
   source: "learn" | "api";
@@ -340,6 +368,7 @@ function completion(
     attemptId: string;
     claim: "done" | "partial";
     summary: string;
+    workflowResult?: StructuredWorkflowResult;
   },
 ): WorkflowResult {
   const completed = completeStartedAttempt(config, {
@@ -353,9 +382,46 @@ function completion(
       attemptId: input.attemptId,
       result: input.claim,
       summary: input.summary,
+      workflowResult:
+        input.workflowResult ?? referenceCollectorResult(input.task, input),
     });
   }
   return ctx.done(input.summary);
+}
+
+function referenceCollectorResult(
+  task: TaskNode,
+  input: {
+    claim: "done" | "partial";
+    summary: string;
+    artifacts?: string[];
+    checks?: StructuredWorkflowResult["checks"];
+    problem?: { category: string; diagnosis: string; resumeCondition?: string };
+  },
+): StructuredWorkflowResult {
+  const context = taskContext(task);
+  const featureKey = contextString(task, "featureKey", task.id);
+  const capabilityId = contextString(task, "capabilityId", featureKey);
+  return workflowResult({
+    workflow: name,
+    workflowVersion: workflowContract.version,
+    subject: {
+      kind: "feature",
+      id: featureKey,
+      capabilityId,
+    },
+    status: input.claim === "done" ? "done" : "partial",
+    summary: input.summary,
+    artifacts: input.artifacts,
+    checks: input.checks,
+    problem: input.problem ?? null,
+    inputFingerprint: {
+      featureKey,
+      packetPath:
+        typeof context.packetPath === "string" ? context.packetPath : "",
+      capabilityId,
+    },
+  });
 }
 
 function collectorPrompt(input: {
@@ -460,6 +526,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       attemptId,
       claim: "partial",
       summary,
+      workflowResult: referenceCollectorResult(task, {
+        claim: "partial",
+        summary,
+        problem: {
+          category: "feature-reference-task-input",
+          diagnosis: summary,
+        },
+      }),
     });
   }
 
@@ -494,6 +568,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         attemptId,
         claim: "partial",
         summary,
+        workflowResult: referenceCollectorResult(task, {
+          claim: "partial",
+          summary,
+          problem: {
+            category: "feature-reference-fixture-match",
+            diagnosis: summary,
+          },
+        }),
       });
     }
   } else {
@@ -516,6 +598,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         attemptId,
         claim: "partial",
         summary,
+        workflowResult: referenceCollectorResult(task, {
+          claim: "partial",
+          summary,
+          problem: {
+            category: "feature-reference-agent-output",
+            diagnosis: summary,
+          },
+        }),
       });
     }
     hits = extractReferenceHitsFromText(
@@ -560,6 +650,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       attemptId,
       claim: "partial",
       summary,
+      workflowResult: referenceCollectorResult(task, {
+        claim: "partial",
+        summary,
+        artifacts: [relativeOutput],
+        checks: quality.missing.map((missing) => ({
+          name: `reference-${missing}`,
+          status: "fail",
+          detail: `Draft is missing ${missing}.`,
+        })),
+        problem: {
+          category: "feature-reference-quality",
+          diagnosis: summary,
+        },
+      }),
     });
   }
   const summary = `Collected official feature references for ${featureKey}: ${relativeOutput}.`;
@@ -575,5 +679,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     attemptId,
     claim: "done",
     summary,
+    workflowResult: referenceCollectorResult(task, {
+      claim: "done",
+      summary,
+      artifacts: [relativeOutput],
+      checks: [
+        { name: "official-learn-reference", status: "pass" },
+        { name: "official-api-reference", status: "pass" },
+      ],
+    }),
   });
 }

@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -40,9 +41,17 @@ async function makeProject() {
 
 async function writeFakeCompactRunner(
   projectDir: string,
-  options: { packageStatus?: string } = {},
+  options: {
+    packageStatus?: string;
+    livePolicyOk?: boolean;
+    liveAdmissionOk?: boolean;
+    diagnosticsOverride?: Record<string, unknown>;
+  } = {},
 ) {
   const packageStatus = options.packageStatus ?? "ready";
+  const livePolicyOk = options.livePolicyOk ?? true;
+  const liveAdmissionOk = options.liveAdmissionOk ?? true;
+  const diagnosticsOverride = options.diagnosticsOverride ?? {};
   await writeFile(
     join(projectDir, "package.json"),
     JSON.stringify(
@@ -73,13 +82,19 @@ const planPath = \`\${base}.plan.json\`;
 const summaryPath = \`\${base}.summary.md\`;
 const diagnosticsPath = \`\${base}.diagnostics.json\`;
 mkdirSync(dirname(planPath), { recursive: true });
-writeFileSync(planPath, JSON.stringify({ id: \`feature-compact-\${capability}-\${target}\`, kind: "feature-compact-plan" }, null, 2));
+writeFileSync(planPath, JSON.stringify({
+  id: \`feature-compact-\${capability}-\${target}\`,
+  kind: "feature-compact-plan",
+  selectedSpecIds: ["spec.windows.node-pool-create"]
+}, null, 2));
 writeFileSync(summaryPath, \`# \${capability} compact\\n\`);
 writeFileSync(diagnosticsPath, JSON.stringify({
   packageStatus: ${JSON.stringify(packageStatus)},
   planPath,
   summaryPath,
-  metrics: { specsSelected: 1, clustersNeeded: 1, baselineClusterCount: 1, clustersSaved: 0 }
+  selectedSpecIds: ["spec.windows.node-pool-create"],
+  metrics: { specsSelected: 1, clustersNeeded: 1, baselineClusterCount: 1, clustersSaved: 0 },
+  ...${JSON.stringify(diagnosticsOverride, null, 2)}
 }, null, 2));
 console.log(\`[feature-compact] feature=\${capability}\`);
 console.log(\`[feature-compact] plan=\${planPath}\`);
@@ -92,6 +107,32 @@ console.log(\`[feature-compact] diagnostics=\${diagnosticsPath}\`);
     join(projectDir, "runner", "fake-execute.ts"),
     `#!/usr/bin/env bun
 console.log("[test-executor] test-result=runs/test-results/feature-compact-windows-staging_000001");
+`,
+    "utf8",
+  );
+  await writeFile(
+    join(projectDir, "runner", "check-private-source-policy.ts"),
+    `#!/usr/bin/env bun
+if (${JSON.stringify(livePolicyOk)}) {
+  console.log("Live execution dependency policy passed for selected specs.");
+  process.exit(0);
+}
+console.error("Live execution dependency policy failed:");
+console.error("- features/windows/tests/node-pool.ts:1 spec.windows.node-pool-create: selected scenario test depends on mounted private AKS RP source; make it self-contained before workflow execution");
+process.exit(1);
+`,
+    "utf8",
+  );
+  await writeFile(
+    join(projectDir, "runner", "check-live-admission.ts"),
+    `#!/usr/bin/env bun
+if (${JSON.stringify(liveAdmissionOk)}) {
+  console.log("Live admission policy passed for selected specs.");
+  process.exit(0);
+}
+console.error("Live admission policy failed:");
+console.error("- spec.windows.node-pool-create: source-check-only: Spec is not directly live-executable by the single-spec runner.");
+process.exit(1);
 `,
     "utf8",
   );
@@ -323,7 +364,7 @@ function config(projectDir: string, maxConcurrent = 5) {
 
 async function writeRootTree(projectDir: string) {
   await writeFile(
-    join(projectDir, "tasks", "tree.json"),
+    resolveTaskTreePath(projectDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -425,7 +466,7 @@ describe("feature compact loop", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("Created 1 child task");
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const loop = tree.tasks["aks-feature-compact-loop"];
     expect(loop.children).toHaveLength(1);
@@ -447,6 +488,174 @@ describe("feature compact loop", () => {
     ).toBe(false);
   });
 
+  test("controller sends non-retryable compact errors to support follow-up without planner retry", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      retryable: false,
+      retryReason: "Exact external prerequisite is missing.",
+      attempts: 0,
+      lastSummary: "Exact external prerequisite is missing.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    const assignment = assignTask(config(projectDir), {
+      taskId: "aks-feature-compact-loop",
+    });
+    const dispatched: Array<Record<string, unknown>> = [];
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          ...assignment,
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(_type: string, payload: Record<string, unknown>) {
+        dispatched.push(payload);
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Created 0 child task");
+    expect(result.message).toContain("Created 1 grouped compact repair task");
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    const loop = tree.tasks["aks-feature-compact-loop"];
+    expect(
+      loop.children.filter(
+        (childId: string) =>
+          tree.tasks[childId]?.workflow === "feature-compact-planner",
+      ),
+    ).toHaveLength(0);
+    const supportChildren = loop.children.filter(
+      (childId: string) =>
+        tree.tasks[childId]?.context?.featureCompactFollowup === true,
+    );
+    expect(supportChildren).toHaveLength(1);
+    expect(tree.tasks[supportChildren[0]].context.errorClass).toBe(
+      "compact-error",
+    );
+    expect(dispatched).toHaveLength(1);
+  });
+
+  test("controller requeues stale package-gate errors when current compact plan is live-ready", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    await mkdir(join(projectDir, "features", "windows", "compact"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "windows", "compact", "staging.plan.json"),
+      JSON.stringify(
+        {
+          liveDispatchGate: {
+            allowed: true,
+            packageStatus: "ready",
+            reason: "current compact plan is ready",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      attempts: 2,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastSummary:
+        "Feature compact package is incomplete for windows. Compact package selected 1 of 2 feature spec(s).",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "aks-feature-compact-loop",
+    });
+    const dispatched: Array<Record<string, unknown>> = [];
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          ...assignment,
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(_type: string, payload: Record<string, unknown>) {
+        dispatched.push(payload);
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Reset 1 stale package-gate error");
+    const updatedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(updatedState.features.windows).toMatchObject({
+      status: "running",
+      attempts: 1,
+      retryable: true,
+      retryReason: null,
+    });
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    const compactChildren = tree.tasks[
+      "aks-feature-compact-loop"
+    ].children.filter(
+      (childId: string) =>
+        tree.tasks[childId]?.workflow === "feature-compact-planner",
+    );
+    expect(compactChildren).toHaveLength(1);
+    expect(dispatched).toHaveLength(1);
+  });
+
   test("controller caps compact planner children by live GitHub capacity", async () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "features", "linux", "specs"), {
@@ -463,7 +672,7 @@ describe("feature compact loop", () => {
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].context.windowSize = 3;
     tree.tasks["aks-feature-compact-loop"].context.githubActiveRunLimit = 1;
@@ -524,7 +733,7 @@ describe("feature compact loop", () => {
     await writeFakeCompactRunner(projectDir);
     const restoreGh = await installFakeGh(projectDir, "success");
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -630,7 +839,7 @@ describe("feature compact loop", () => {
     await writeFakeCompactRunner(projectDir);
     const restoreGh = await installFakeGh(projectDir, "failure");
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -734,7 +943,7 @@ describe("feature compact loop", () => {
       resultCategory: "environment_blocker",
     });
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -824,7 +1033,7 @@ describe("feature compact loop", () => {
     const restoreGh = await installFakeGh(projectDir, "success");
     process.env.FAKE_GH_DISPATCH_FAIL = "1";
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -932,7 +1141,7 @@ describe("feature compact loop", () => {
     await writeFakeCompactRunner(projectDir);
     const restoreGh = await installFakeGh(projectDir, "success");
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows-followup",
@@ -1013,7 +1222,7 @@ describe("feature compact loop", () => {
       resultSurface: "check-validation",
     });
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -1109,7 +1318,7 @@ describe("feature compact loop", () => {
       sharedClusterCleanupStarted: false,
     });
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -1202,7 +1411,7 @@ describe("feature compact loop", () => {
     const restoreGh = await installFakeGh(projectDir, "success");
     process.env.FAKE_GH_REJECT_METADATA = "1";
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -1308,7 +1517,7 @@ describe("feature compact loop", () => {
     await writeFakeCompactRunner(projectDir, { packageStatus: "partial" });
     const restoreGh = await installFakeGh(projectDir, "success");
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -1388,7 +1597,7 @@ describe("feature compact loop", () => {
     expect(state.features.windows.lastDispatchMetadataPath).toBeNull();
     expect(state.features.windows.lastWorkflowLoopKey).toBeNull();
     expect(String(state.features.windows.lastSummary)).toContain(
-      "live GitHub dispatch is intentionally blocked until the package becomes ready",
+      "Feature compact package for windows is partial.",
     );
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0].result).toBe("partial");
@@ -1401,10 +1610,339 @@ describe("feature compact loop", () => {
     );
   });
 
+  test("planner trusts maintained diagnostics feature spec count over stale task specCount", async () => {
+    const projectDir = await makeProject();
+    await writeFakeCompactRunner(projectDir, {
+      packageStatus: "ready",
+      diagnosticsOverride: {
+        feature: { specCount: 1 },
+        metrics: {
+          specsSelected: 1,
+          clustersNeeded: 1,
+          baselineClusterCount: 1,
+          clustersSaved: 0,
+        },
+        selectedSpecIds: ["spec.windows.node-pool-create"],
+        materialization: {
+          status: "ready",
+          runnableSpecCount: 1,
+          unrunnableSpecIds: [],
+        },
+      },
+    });
+    const restoreGh = await installFakeGh(projectDir, "success");
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "compact-feature-windows",
+    ];
+    tree.tasks["compact-feature-windows"] = {
+      id: "compact-feature-windows",
+      parent_id: "aks-feature-compact-loop",
+      state: "backlog",
+      status: "backlog",
+      workflow: "feature-compact-planner",
+      priority: "P1",
+      children: [],
+      goal: "Generate compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Package checked"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      context: {
+        featureKey: "windows",
+        capabilityId: "windows",
+        target: "staging",
+        checkParallel: 5,
+        stateRef: ".state/feature-compact-loop/state.json",
+        loopTaskId: "aks-feature-compact-loop",
+        specCount: 2,
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "compact-feature-windows",
+    });
+    const completedEvents: Array<Record<string, unknown>> = [];
+    try {
+      const result = await executePlanner({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          if (type === "project.task.completed") completedEvents.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Workflow run: 123 https://github.example/runs/123",
+      );
+    } finally {
+      restoreGh();
+    }
+
+    const state = JSON.parse(
+      await readFile(
+        join(projectDir, ".state", "feature-compact-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.features.windows.status).toBe("done");
+    expect(String(state.features.windows.lastSummary)).not.toContain(
+      "selected 1 of 2 feature spec(s)",
+    );
+    expect(completedEvents).toHaveLength(1);
+    expect(completedEvents[0].result).toBe("done");
+  });
+
+  test("planner preserves selectionBlocker diagnostics in blocked package state writeback", async () => {
+    const projectDir = await makeProject();
+    await writeFakeCompactRunner(projectDir, {
+      packageStatus: "blocked",
+      diagnosticsOverride: {
+        selectionBlocker: {
+          kind: "pipeline-only-proof-ceiling",
+          reason:
+            "The compact package is blocked because stronger same-path proof requires an authoritative pipeline surface.",
+          remainingSpecIds: ["spec.windows.node-pool-create"],
+          resumeCondition:
+            "Reopen only if an authoritative pipeline artifact is returned or the owner reclassifies the carrier.",
+        },
+        liveDispatchGate: {
+          allowed: false,
+          reason:
+            "Compact package is blocked; no live-ready member set remains after compact eligibility filtering.",
+        },
+      },
+    });
+    const restoreGh = await installFakeGh(projectDir, "success");
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "compact-feature-windows",
+    ];
+    tree.tasks["compact-feature-windows"] = {
+      id: "compact-feature-windows",
+      parent_id: "aks-feature-compact-loop",
+      state: "backlog",
+      status: "backlog",
+      workflow: "feature-compact-planner",
+      priority: "P1",
+      children: [],
+      goal: "Generate compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Package checked"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      context: {
+        featureKey: "windows",
+        capabilityId: "windows",
+        target: "staging",
+        checkParallel: 5,
+        stateRef: ".state/feature-compact-loop/state.json",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "compact-feature-windows",
+    });
+    const completedEvents: Array<Record<string, unknown>> = [];
+    try {
+      await executePlanner({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          if (type === "project.task.completed") completedEvents.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+    } finally {
+      restoreGh();
+    }
+
+    const state = JSON.parse(
+      await readFile(
+        join(projectDir, ".state", "feature-compact-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.features.windows).toMatchObject({
+      status: "error",
+      retryable: false,
+      retryReason:
+        "Reopen only if an authoritative pipeline artifact is returned or the owner reclassifies the carrier.",
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
+      lastResultPath:
+        "runs/test-results/feature-compact-windows-staging_000001",
+    });
+    expect(String(state.features.windows.lastSummary)).toContain(
+      "Exact blocker: pipeline-only-proof-ceiling.",
+    );
+    expect(String(state.features.windows.lastSummary)).toContain(
+      "Live dispatch gate: Compact package is blocked; no live-ready member set remains after compact eligibility filtering.",
+    );
+    expect(String(state.features.windows.lastSummary)).not.toContain(
+      "live GitHub dispatch is intentionally blocked until the package becomes ready",
+    );
+    expect(completedEvents).toHaveLength(1);
+    expect(completedEvents[0].problem).toMatchObject({
+      action: "request",
+      category: "feature-compact-package-status",
+      resumeCondition:
+        "Reopen only if an authoritative pipeline artifact is returned or the owner reclassifies the carrier.",
+    });
+    expect(JSON.stringify(completedEvents[0])).toContain(
+      "pipeline-only-proof-ceiling",
+    );
+  });
+
+  test("planner blocks live dispatch when selected specs fail live policy", async () => {
+    const projectDir = await makeProject();
+    await writeFakeCompactRunner(projectDir, { liveAdmissionOk: false });
+    const restoreGh = await installFakeGh(projectDir, "success");
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "compact-feature-windows",
+    ];
+    tree.tasks["compact-feature-windows"] = {
+      id: "compact-feature-windows",
+      parent_id: "aks-feature-compact-loop",
+      state: "backlog",
+      status: "backlog",
+      workflow: "feature-compact-planner",
+      priority: "P1",
+      children: [],
+      goal: "Generate compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Package checked"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      context: {
+        featureKey: "windows",
+        capabilityId: "windows",
+        target: "staging",
+        checkParallel: 5,
+        stateRef: ".state/feature-compact-loop/state.json",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "compact-feature-windows",
+    });
+    const completedEvents: Array<Record<string, unknown>> = [];
+    try {
+      const result = await executePlanner({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          if (type === "project.task.completed") completedEvents.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("Feature compact live policy failed");
+    } finally {
+      restoreGh();
+    }
+
+    const state = JSON.parse(
+      await readFile(
+        join(projectDir, ".state", "feature-compact-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.features.windows).toMatchObject({
+      status: "error",
+      retryable: true,
+      retryReason:
+        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying GitHub dispatch.",
+      lastWorkflowRunId: null,
+      lastWorkflowRunUrl: null,
+      lastDispatchMetadataPath: null,
+      lastWorkflowLoopKey: null,
+    });
+    expect(String(state.features.windows.lastSummary)).toContain(
+      "GitHub dispatch skipped",
+    );
+    expect(completedEvents).toHaveLength(1);
+    expect(completedEvents[0].problem).toMatchObject({
+      action: "request",
+      category: "feature-compact-live-policy",
+    });
+    try {
+      await readFile(
+        join(projectDir, ".state", "fake-gh-dispatches.jsonl"),
+        "utf8",
+      );
+      throw new Error("expected no GitHub dispatch log");
+    } catch (error) {
+      expect(String(error)).toContain("ENOENT");
+    }
+  });
+
   test("controller accepts completed compact package reviews only after live proof", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",
@@ -1499,7 +2037,7 @@ describe("feature compact loop", () => {
   test("controller marks drained blocked-wait compact frontier as no-refill stewardship", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].state = "active";
     tree.tasks["aks-feature-compact-loop"].status = "active";
@@ -1591,10 +2129,300 @@ describe("feature compact loop", () => {
     ).toBeTruthy();
   });
 
+  test("controller represents staging capacity errors as blocked wait follow-ups", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Exact staging capacity wait for windows: westus2 managed-cluster capacity was 161/161 before mutation. Rerun only after capacity frees or quota changes.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    const waitTask = updated.tasks["reconcile-compact-loop-staging-capacity"];
+    expect(waitTask).toBeTruthy();
+    expect(waitTask.state).toBe("blocked");
+    expect(waitTask.blocker.category).toBe("external-wait");
+    expect(waitTask.blocker.blocked_at).toBeTruthy();
+    expect(waitTask.blocker.waiting_for).toMatchObject({
+      type: "azure.capacity.available",
+      target: "staging",
+      resource: "managedClusters",
+    });
+    expect(waitTask.blocker.waiting_for.featureKeys).toContain("windows");
+    expect(waitTask.blocker.observed_by).toMatchObject({
+      workflow: "feature-compact-loop-controller",
+      trigger: "project.task.tick",
+    });
+    expect(waitTask.blocker.observation_method).toContain("compact-loop tick");
+    expect(waitTask.blocker.next_check_at).toBeTruthy();
+    expect(waitTask.blocker.resume_condition).toContain(
+      "managed-cluster headroom returns",
+    );
+    expect(waitTask.blocker.fallback_at).toBeTruthy();
+    expect(waitTask.blocker.fallback_action).toContain("Recheck");
+    expect(waitTask.conflict_scope).toContain("feature-compact:windows");
+    expect(waitTask.context.errorClass).toBe("staging-capacity");
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      openSupportChildren: 0,
+      blockedWaitChildren: 1,
+      blocked: 1,
+      error: 0,
+      retryBudgetExhausted: 0,
+      blockedWaitBlockedCount: 1,
+      unrepresentedNonTerminalCount: 0,
+    });
+
+    await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+    const repulsed = JSON.parse(await readFile(treePath, "utf8"));
+    const capacityWaits = Object.values(repulsed.tasks).filter(
+      (task: any) => task.context?.errorClass === "staging-capacity",
+    );
+    expect(capacityWaits).toHaveLength(1);
+  });
+
+  test("controller does not recreate grouped follow-up for feature with exact open successor", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-compact-windows-capacity",
+    ];
+    tree.tasks["wait-compact-windows-capacity"] = {
+      id: "wait-compact-windows-capacity",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P2",
+      children: [],
+      goal: "Carry exact windows capacity wait.",
+      inputs: [],
+      outputs: ["evidence/archive/wait-compact-windows-capacity.md"],
+      acceptance: ["Resume when capacity returns."],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      blocker: {
+        condition: "windows capacity wait",
+        category: "external-wait",
+        owner: "operator",
+        resume_condition: "capacity returns",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Exact staging capacity wait for windows: westus2 managed-cluster capacity was 161/161 before mutation. Rerun only after capacity frees or quota changes.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["reconcile-compact-loop-staging-capacity"]).toBe(
+      undefined,
+    );
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      blockedWaitChildren: 1,
+      retryBudgetExhausted: 1,
+      unrepresentedNonTerminalCount: 0,
+    });
+  });
+
+  test("controller treats feature-compact-followup conflict scope as open grouped representation", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "diagnose-compact-capacity-family",
+    ];
+    tree.tasks["diagnose-compact-capacity-family"] = {
+      id: "diagnose-compact-capacity-family",
+      parent_id: "aks-feature-compact-loop",
+      state: "active",
+      status: "active",
+      priority: "P1",
+      children: [],
+      goal: "Diagnose compact capacity family.",
+      inputs: [],
+      outputs: ["evidence/archive/diagnose-compact-capacity-family.md"],
+      acceptance: ["Classify capacity family."],
+      forbidden: [],
+      conflict_scope: ["feature-compact-followup:staging-capacity"],
+      depends_on: [],
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Exact staging capacity wait for windows: westus2 managed-cluster capacity was 161/161 before mutation. Rerun only after capacity frees or quota changes.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["reconcile-compact-loop-staging-capacity"]).toBe(
+      undefined,
+    );
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress
+        .representedSupportErrorClasses,
+    ).toContain("staging-capacity");
+  });
+
   test("controller creates a new support follow-up when prior error-class follow-up is done", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].state = "active";
     tree.tasks["aks-feature-compact-loop"].status = "active";
@@ -1680,10 +2508,134 @@ describe("feature compact loop", () => {
     });
   });
 
+  test("controller support follow-up only represents its own compact error class", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "features", "linux", "specs"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "network", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "linux.yaml"),
+      "capabilityId: linux\nstatus: draft\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "network.yaml"),
+      "capabilityId: network\nstatus: draft\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "linux", "specs", "node-pool.json"),
+      JSON.stringify({ id: "spec.linux.node-pool-create" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "network", "specs", "cni.json"),
+      JSON.stringify({ id: "spec.network.cni" }),
+      "utf8",
+    );
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "reconcile-compact-loop-package-partial",
+    ];
+    tree.tasks["aks-feature-compact-loop"].context.maxCompactFollowupGroups = 1;
+    tree.tasks["reconcile-compact-loop-package-partial"] = {
+      id: "reconcile-compact-loop-package-partial",
+      parent_id: "aks-feature-compact-loop",
+      state: "backlog",
+      status: "backlog",
+      priority: "P1",
+      children: [],
+      goal: "Current package-partial reconciliation wave.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Classify package partials"],
+      forbidden: [],
+      conflict_scope: ["feature-compact-followup:package-partial"],
+      depends_on: [],
+      context: {
+        featureCompactFollowup: true,
+        errorClass: "package-partial",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    for (const featureKey of ["linux", "windows"]) {
+      updateFeatureCompactItem(state, featureKey, {
+        status: "error",
+        taskId: `compact-feature-${featureKey}`,
+        attempts: 2,
+        lastSummary: `Feature compact package for ${featureKey} is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.`,
+      });
+    }
+    updateFeatureCompactItem(state, "network", {
+      status: "error",
+      taskId: "compact-feature-network",
+      attempts: 2,
+      lastSummary:
+        "Feature compact live GitHub workflow failed for network. Run id 12345.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: false,
+      error: 3,
+      openSupportChildren: 1,
+      representedSupportErrorClasses: ["package-partial"],
+      unrepresentedNonTerminalCount: 1,
+    });
+  });
+
   test("controller does not duplicate timestamped support follow-up for same error class", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].state = "active";
     tree.tasks["aks-feature-compact-loop"].status = "active";
@@ -1800,10 +2752,10 @@ describe("feature compact loop", () => {
     ).toBeUndefined();
   });
 
-  test("controller does not recreate current terminal support follow-up for same error class", async () => {
+  test("controller recreates support follow-up when terminal class task leaves feature error unresolved", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
 
     const statePath = join(
       projectDir,
@@ -1888,16 +2840,483 @@ describe("feature compact loop", () => {
         task.context?.featureCompactFollowup === true &&
         task.context?.errorClass === "package-partial",
     );
-    expect(packagePartialFollowups).toHaveLength(1);
+    expect(packagePartialFollowups).toHaveLength(2);
+    const successor = packagePartialFollowups.find(
+      (task: any) => task.id !== "reconcile-compact-loop-package-partial",
+    ) as any;
+    expect(successor).toBeTruthy();
+    expect(successor.state).toBe("active");
     expect(
-      updated.tasks["reconcile-compact-loop-package-partial-299901010000"],
-    ).toBeUndefined();
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      representedSupportErrorClasses: ["package-partial"],
+      unrepresentedNonTerminalCount: 0,
+    });
+  });
+
+  test("controller does not let archived terminal follow-up hide retry-drained feature errors", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    await mkdir(join(projectDir, "tasks", "archive"), { recursive: true });
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const archiveBundle = {
+      version: 1,
+      generated_at: "2999-01-01T00:00:00.000Z",
+      tasks: [
+        {
+          id: "reconcile-compact-loop-package-partial-archived",
+          parent_id: "aks-feature-compact-loop",
+          state: "done",
+          status: "done",
+          resolution: "completed",
+          done_at: "2999-01-01T00:00:00.000Z",
+          priority: "P1",
+          children: [],
+          goal: "Archived package-partial reconciliation wave.",
+          inputs: [],
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["Classified archived package partials"],
+          forbidden: [],
+          conflict_scope: ["feature-compact-followup:package-partial"],
+          depends_on: [],
+          context: {
+            featureCompactFollowup: true,
+            errorClass: "package-partial",
+            totalFeatureCount: 1,
+            sampledFeatureKeys: ["windows"],
+          },
+        },
+      ],
+    };
+    await writeFile(
+      join(projectDir, "tasks", "archive", "done-leaves-test.json"),
+      `${JSON.stringify(archiveBundle, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      updated.tasks["reconcile-compact-loop-package-partial"],
+    ).toBeTruthy();
+    expect(updated.tasks["reconcile-compact-loop-package-partial"].state).toBe(
+      "active",
+    );
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      representedSupportErrorClasses: ["package-partial"],
+      unrepresentedNonTerminalCount: 0,
+    });
+  });
+
+  test("controller prefers durable feature error class over stale capacity wording", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      errorClass: "runtime-product-lineage",
+      retryable: false,
+      retryReason:
+        "Superseded by accepted same-path runtime/product nonpass lineage; rerun only after meaningful product change.",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Feature compact live workflow is waiting on staging capacity for windows because managed clusters are full.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    const capacityFollowups = Object.values(updated.tasks).filter(
+      (task: any) => task.context?.errorClass === "staging-capacity",
+    );
+    expect(capacityFollowups).toHaveLength(0);
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      representedSupportErrorClasses: [],
+      unrepresentedNonTerminalCount: 1,
+      retryBudgetExhausted: 1,
+    });
+  });
+
+  test("completed support task can reset exhausted compact retry budget with structured directive", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "repair-compact-package-partial",
+    ];
+    tree.tasks["repair-compact-package-partial"] = {
+      id: "repair-compact-package-partial",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      done_at: "2999-01-01T00:00:00.000Z",
+      priority: "P1",
+      children: [],
+      goal: "Repair package partial root cause.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Root cause fixed"],
+      forbidden: [],
+      conflict_scope: ["feature-compact-followup:package-partial"],
+      depends_on: [],
+      context: {
+        compactRetryReset: {
+          errorClass: "package-partial",
+          reason: "shared compact package generator now produces a ready plan",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Reset compact retry budget for 1 feature(s)",
+    );
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      retryBudgetExhausted: 0,
+      lastPulseCreated: 1,
+    });
+    const savedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(savedState.features.windows).toMatchObject({
+      status: "running",
+      attempts: 1,
+      taskId: "compact-feature-windows",
+    });
+  });
+
+  test("completed exact compact repair can infer retry reset from accepted rerun text", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "repair-compact-windows-ready-package",
+    ];
+    tree.tasks["repair-compact-windows-ready-package"] = {
+      id: "repair-compact-windows-ready-package",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      done_at: "2999-01-01T00:00:00.000Z",
+      priority: "P1",
+      children: [],
+      goal: "Repair windows compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Root cause fixed"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      result:
+        "Windows compact package is ready and the next bounded live rerun should prove the repaired path.",
+      trace: {
+        last_worker_summary:
+          "Fixed the windows compact package. Do not retry the package repair itself; current repo truth is ready package plus next bounded live rerun.",
+        review_summary:
+          "Accepted repair: package is ready and should be requeued for live verification.",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Reset compact retry budget for 1 feature(s)",
+    );
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
+    const savedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(savedState.features.windows).toMatchObject({
+      status: "running",
+      attempts: 1,
+      taskId: "compact-feature-windows",
+    });
+  });
+
+  test("completed compact classification without retry intent does not requeue feature", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "classify-compact-windows-no-rerun",
+    ];
+    tree.tasks["classify-compact-windows-no-rerun"] = {
+      id: "classify-compact-windows-no-rerun",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      done_at: "2999-01-01T00:00:00.000Z",
+      priority: "P1",
+      children: [],
+      goal: "Classify windows compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Classified"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      result:
+        "Windows compact package is classified as external wait; no rerun is truthful until product rollout lands.",
+      trace: {
+        review_summary:
+          "Accepted classification and no-rerun condition for windows.",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).not.toContain("Reset compact retry budget");
+    const savedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(savedState.features.windows).toMatchObject({
+      status: "error",
+      attempts: 2,
+      taskId: "compact-feature-windows",
+    });
   });
 
   test("blocked support wait suppresses duplicate planner-child creation for the same feature", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].state = "active";
     tree.tasks["aks-feature-compact-loop"].status = "active";
@@ -1996,10 +3415,136 @@ describe("feature compact loop", () => {
     });
   });
 
+  test("blocked support wait can suppress duplicate planner-child creation via sampled feature keys", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-compact-auth-family",
+    ];
+    tree.tasks["wait-compact-auth-family"] = {
+      id: "wait-compact-auth-family",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P2",
+      children: [],
+      goal: "Hold the exact compact auth-preflight wait for oidc-issuer.",
+      inputs: ["feature:oidc-issuer"],
+      outputs: ["evidence/archive/wait-compact-auth-family.md"],
+      acceptance: ["Auth surface recovers or ref changes"],
+      forbidden: [],
+      conflict_scope: ["feature-compact-followup:live-workflow"],
+      depends_on: [],
+      context: {
+        featureCompactFollowup: true,
+        errorClass: "live-workflow",
+        sampledFeatureKeys: ["oidc-issuer"],
+      },
+      blocker: {
+        condition: "auth preflight unavailable",
+        category: "external-wait",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    await mkdir(join(projectDir, "features", "oidc-issuer", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "oidc-issuer.yaml"),
+      "capabilityId: oidc-issuer\nstatus: draft\n",
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "oidc-issuer",
+        "specs",
+        "default-by-version.json",
+      ),
+      JSON.stringify({ id: "spec.oidc-issuer.default-by-version" }),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+      refreshFromProject: true,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "done",
+      taskId: "compact-feature-windows",
+      attempts: 1,
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastLiveProofVersion: "live-aks-proof-v2",
+      lastSummary:
+        "Feature compact package done for windows; live GitHub workflow passed.",
+    });
+    updateFeatureCompactItem(state, "oidc-issuer", {
+      status: "error",
+      taskId: "compact-feature-oidc-issuer",
+      attempts: 1,
+      lastSummary:
+        "Feature compact live workflow failed for oidc-issuer. Run id 28618848728.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Created 0 child task(s)");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["compact-feature-oidc-issuer"]).toBeUndefined();
+    expect(
+      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+    ).toMatchObject({
+      blockedWaitChildren: 1,
+      representedFeatureKeys: ["oidc-issuer"],
+      unrepresentedNonTerminalCount: 0,
+      lastPulseCreated: 0,
+    });
+  });
+
   test("controller closes recorded terminal compact attempts without unbounded retry", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].context.maxDirectAttemptsPerFeature =
       2;
@@ -2109,6 +3654,212 @@ describe("feature compact loop", () => {
     ).toBe(true);
   });
 
+  test("controller does not let terminal class followup hide retry-drained feature errors", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].context.maxDirectAttemptsPerFeature =
+      2;
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "reconcile-compact-loop-package-partial",
+    ];
+    tree.tasks["reconcile-compact-loop-package-partial"] = {
+      id: "reconcile-compact-loop-package-partial",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      priority: "P1",
+      children: [],
+      goal: "Reconcile package-partial compact errors.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Classified current package-partial errors."],
+      forbidden: [],
+      conflict_scope: ["feature-compact-followup:package-partial"],
+      depends_on: [],
+      result: "No bounded repo-local repair was found.",
+      context: {
+        featureCompactFollowup: true,
+        errorClass: "package-partial",
+        totalFeatureCount: 1,
+        sampledFeatureKeys: ["windows"],
+        stateRef: ".state/feature-compact-loop/state.json",
+        target: "staging",
+        branch: "dev",
+      },
+      trace: {
+        reviewed_at: "2026-07-03T00:10:00.000Z",
+        review_summary: "Accepted package-partial classification.",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      attempts: 2,
+      errorClass: "package-partial",
+      retryable: true,
+      taskId: "compact-feature-windows",
+      updatedAt: "2026-07-03T00:00:00.000Z",
+      lastSummary:
+        "windows compact package remains partial; no live GitHub proof exists.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Created 1 grouped compact repair task");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    const children = updated.tasks["aks-feature-compact-loop"].children;
+    const successor = children.find(
+      (childId: string) =>
+        childId.startsWith("reconcile-compact-loop-package-partial-") &&
+        childId !== "reconcile-compact-loop-package-partial",
+    );
+    expect(successor).toBeTruthy();
+    expect(updated.tasks[successor].context).toMatchObject({
+      featureCompactFollowup: true,
+      errorClass: "package-partial",
+      totalFeatureCount: 1,
+      sampledFeatureKeys: ["windows"],
+    });
+  });
+
+  test("controller preserves exact feature summary when terminal planner child is stale generic package gate", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "compact-feature-windows",
+    ];
+    tree.tasks["compact-feature-windows"] = {
+      id: "compact-feature-windows",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      workflow: "feature-compact-planner",
+      priority: "P1",
+      children: [],
+      goal: "Generate compact package.",
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Package checked"],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      result:
+        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      trace: {
+        last_worker_result: "partial",
+        last_worker_summary:
+          "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+      },
+      context: {
+        featureKey: "windows",
+        capabilityId: "windows",
+        target: "staging",
+        stateRef: ".state/feature-compact-loop/state.json",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 1,
+      retryReason:
+        "Either reclassify the listed specs out of reviewed-exception with accepted new evidence, or intentionally change the compact live-ready filter contract to include reviewed-exception members.",
+      lastSummary:
+        "Feature compact package for windows remains partial because compactEligibility intentionally quarantines reviewed-exception spec.windows.example. Keep the exact blocker-specific summary instead of the generic package-ready placeholder.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const savedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(savedState.features.windows.lastSummary).toBe(
+      "Feature compact package for windows remains partial because compactEligibility intentionally quarantines reviewed-exception spec.windows.example. Keep the exact blocker-specific summary instead of the generic package-ready placeholder.",
+    );
+    expect(savedState.features.windows.lastSummary).not.toContain(
+      "live GitHub dispatch is intentionally blocked until the package becomes ready",
+    );
+  });
+
   test("state save does not downgrade a live-proven compact feature", async () => {
     const projectDir = await makeProject();
     const statePath = join(
@@ -2159,6 +3910,68 @@ describe("feature compact loop", () => {
     });
   });
 
+  test("project refresh preserves blocked compact feature state", async () => {
+    const projectDir = await makeProject();
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "blocked",
+      errorClass: "staging-capacity",
+      blockerOwner: "operator",
+      blockedAt: "2026-07-05T00:00:00.000Z",
+      waitingFor: {
+        type: "azure.capacity.available",
+        target: "staging",
+      },
+      waitingCondition: "Resume when staging capacity returns.",
+      observedBy: {
+        workflow: "feature-compact-loop-controller",
+      },
+      observationMethod: "Recheck capacity on each loop tick.",
+      nextCheckAt: "2026-07-05T00:10:00.000Z",
+      fallbackAt: "2026-07-05T06:00:00.000Z",
+      fallbackAction: "Recheck staging capacity.",
+      lastCheckedAt: "2026-07-05T00:00:00.000Z",
+    });
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const { state: refreshed } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+
+    expect(refreshed.features.windows).toMatchObject({
+      status: "blocked",
+      errorClass: "staging-capacity",
+      blockerOwner: "operator",
+      waitingFor: {
+        type: "azure.capacity.available",
+        target: "staging",
+      },
+      waitingCondition: "Resume when staging capacity returns.",
+      observedBy: {
+        workflow: "feature-compact-loop-controller",
+      },
+      observationMethod: "Recheck capacity on each loop tick.",
+      nextCheckAt: "2026-07-05T00:10:00.000Z",
+      fallbackAction: "Recheck staging capacity.",
+    });
+  });
+
   test("project refresh preserves unchanged feature compact timestamps", async () => {
     const projectDir = await makeProject();
     const statePath = join(
@@ -2194,6 +4007,70 @@ describe("feature compact loop", () => {
     expect(refreshed.features.windows.updatedAt).toBe(
       "2026-01-01T00:00:00.000Z",
     );
+  });
+
+  test("project refresh preserves structured reconciliation metadata", async () => {
+    const projectDir = await makeProject();
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      rootCauseClassification:
+        "repo-local-package-ready-live-proof-already-queued",
+      ownerReason:
+        "Current feature summary already narrowed the frontier to run-artifact review.",
+      attemptedFixes: [
+        "Recorded the exact queued same-path rerun review boundary.",
+      ],
+      nextStepClassification:
+        "review already-queued same-path run before any rerun decision",
+      resumeCondition:
+        "Resume only after reviewing the queued workflow artifacts.",
+      evidencePaths: ["evidence/archive/example.md"],
+      reviewEvidencePath: "evidence/archive/example.md",
+      verificationBlocker: "Another duplicate dispatch would be untruthful.",
+      summary:
+        "Windows compact frontier is already narrowed to queued-run review.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const { state: refreshed } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+
+    expect(refreshed.features.windows).toMatchObject({
+      rootCauseClassification:
+        "repo-local-package-ready-live-proof-already-queued",
+      ownerReason:
+        "Current feature summary already narrowed the frontier to run-artifact review.",
+      attemptedFixes: [
+        "Recorded the exact queued same-path rerun review boundary.",
+      ],
+      nextStepClassification:
+        "review already-queued same-path run before any rerun decision",
+      resumeCondition:
+        "Resume only after reviewing the queued workflow artifacts.",
+      evidencePaths: ["evidence/archive/example.md"],
+      reviewEvidencePath: "evidence/archive/example.md",
+      verificationBlocker: "Another duplicate dispatch would be untruthful.",
+      summary:
+        "Windows compact frontier is already narrowed to queued-run review.",
+    });
   });
 
   test("controller keeps running feature when recorded GitHub run is active", async () => {
@@ -2280,10 +4157,392 @@ describe("feature compact loop", () => {
     }
   });
 
+  test("controller reconciles completed orphaned GitHub run before releasing running feature", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const restoreGh = await installFakeGh(projectDir, "success");
+    const fakeGhState = process.env.FAKE_GH_STATE;
+    if (!fakeGhState) throw new Error("missing fake gh state path");
+    await writeFile(
+      fakeGhState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "completed",
+            conclusion: "success",
+            url: "https://github.example/runs/123",
+            createdAt: new Date().toISOString(),
+            displayTitle:
+              "AKS RP E2E features/windows/compact/staging.plan.json staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "running",
+      taskId: "compact-feature-windows",
+      attempts: 1,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastSummary:
+        "Live compact workflow was dispatched before the task attempt became obsolete.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("Reconciled 1 completed GitHub compact");
+      expect(result.message).not.toContain("Released 1 stale running");
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features.windows).toMatchObject({
+        status: "done",
+        lastWorkflowRunId: "123",
+        lastLiveProofVersion: "live-aks-proof-v2",
+      });
+      expect(saved.features.windows.lastSummary).toContain(
+        "Reconciled completed compact GitHub run 123",
+      );
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller backfills stale error row from completed GitHub live proof", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const restoreGh = await installFakeGh(projectDir, "success");
+    const fakeGhState = process.env.FAKE_GH_STATE;
+    if (!fakeGhState) throw new Error("missing fake gh state path");
+    await writeFile(
+      fakeGhState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "completed",
+            conclusion: "success",
+            url: "https://github.example/runs/123",
+            createdAt: new Date().toISOString(),
+            displayTitle:
+              "AKS RP E2E features/windows/compact/staging.plan.json staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      retryable: true,
+      attempts: 2,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastLiveProofVersion: null,
+      lastSummary:
+        "Feature compact live workflow did not prove a live Azure pass for windows.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Backfilled 1 stale compact error run(s).",
+      );
+      expect(result.message).toContain("Created 0 child task(s).");
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features.windows).toMatchObject({
+        status: "done",
+        attempts: 2,
+        lastWorkflowRunId: "123",
+        lastLiveProofVersion: "live-aks-proof-v2",
+      });
+      expect(saved.features.windows.lastSummary).toContain(
+        "Backfilled completed compact GitHub run 123",
+      );
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller does not repeatedly backfill an already inspected failing run", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const restoreGh = await installFakeGh(projectDir, "success");
+    const fakeGhState = process.env.FAKE_GH_STATE;
+    if (!fakeGhState) throw new Error("missing fake gh state path");
+    await writeFile(
+      fakeGhState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "completed",
+            conclusion: "success",
+            url: "https://github.example/runs/123",
+            createdAt: new Date().toISOString(),
+            displayTitle:
+              "AKS RP E2E features/windows/compact/staging.plan.json staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      retryable: true,
+      attempts: 2,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastLiveProofVersion: null,
+      lastSummary:
+        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).not.toContain("Backfilled 1 stale");
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features.windows).toMatchObject({
+        status: "error",
+        lastWorkflowRunId: "123",
+        lastLiveProofVersion: null,
+      });
+      expect(saved.features.windows.lastSummary).toBe(
+        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+      );
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller preserves exact retryReason when backfilling a completed nonpassing run without capacity classification", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const restoreGh = await installFakeGh(projectDir, "failure", {
+      resultStatus: "nonpassing",
+      resultReason:
+        "Run artifact bundle is incomplete; only workflow metadata and dispatch inputs were materialized locally.",
+      resultCategory: "workflow_artifact_gap",
+    });
+    const fakeGhState = process.env.FAKE_GH_STATE;
+    if (!fakeGhState) throw new Error("missing fake gh state path");
+    await writeFile(
+      fakeGhState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "completed",
+            conclusion: "failure",
+            url: "https://github.example/runs/123",
+            createdAt: new Date().toISOString(),
+            displayTitle:
+              "AKS RP E2E features/windows/compact/staging.plan.json staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      retryable: true,
+      attempts: 2,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastLiveProofVersion: null,
+      retryReason:
+        "Recover and review the exact failed run artifact/log surface before any successor rerun.",
+      lastSummary: "Feature compact live workflow did not pass for windows.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Backfilled 1 stale compact error run(s).",
+      );
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features.windows).toMatchObject({
+        status: "error",
+        lastWorkflowRunId: "123",
+        lastLiveProofVersion: null,
+        retryReason:
+          "Recover and review the exact failed run artifact/log surface before any successor rerun.",
+      });
+      expect(String(saved.features.windows.lastSummary)).toContain(
+        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+      );
+    } finally {
+      restoreGh();
+    }
+  });
+
   test("controller sync does not downgrade live proof from stale completed partial child", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-compact-loop"].children = [
       "compact-feature-windows",

@@ -211,6 +211,7 @@ describe("app event contract", () => {
         "escalation.dismissed",
         "metric.breach",
         "metric.recovered",
+        "learning.feedback",
         "coverage.gap.detected",
       ]),
     );
@@ -299,6 +300,9 @@ describe("app event contract", () => {
       "aks-rp-e2e-project-stall-review",
     ]);
     expect(handlersForEvent("escalation.resolved")).toEqual([
+      "aks-rp-e2e-project-planner",
+    ]);
+    expect(handlersForEvent("learning.feedback")).toEqual([
       "aks-rp-e2e-project-planner",
     ]);
   });

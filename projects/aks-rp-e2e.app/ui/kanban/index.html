@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AKS RP E2E - Project Task Tree</title>
+    <title>AKS RP E2E - Project Status</title>
     <style>
       :root {
         --bg: #0d1117;
@@ -101,6 +101,337 @@
         max-width: 1500px;
         margin: 0 auto;
         padding: 18px 20px 28px;
+      }
+      .process-overview {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .process-hero {
+        display: grid;
+        gap: 12px;
+      }
+      .process-status-set {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .process-pill {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 7px;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .process-pill strong {
+        color: var(--muted);
+        font-weight: 550;
+      }
+      .process-good {
+        color: var(--green);
+      }
+      .process-warn {
+        color: var(--yellow);
+      }
+      .process-bad {
+        color: var(--red);
+      }
+      .process-stats {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(90px, 1fr));
+        gap: 8px;
+      }
+      .process-stat {
+        min-width: 0;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 8px;
+      }
+      .process-stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+      .process-stat-label {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+      .process-stat-good .process-stat-value {
+        color: var(--green);
+      }
+      .process-stat-warn .process-stat-value {
+        color: var(--yellow);
+      }
+      .activity-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .bottleneck-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .lead-readout {
+        grid-column: 1 / -1;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--muted);
+        border-radius: 6px;
+        background: var(--bg);
+        padding: 10px 12px;
+        display: grid;
+        gap: 5px;
+      }
+      .lead-ok {
+        border-left-color: var(--green);
+      }
+      .lead-watch {
+        border-left-color: var(--yellow);
+      }
+      .lead-bad {
+        border-left-color: var(--red);
+      }
+      .lead-title {
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+      .lead-detail,
+      .lead-next {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .lead-next strong {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .bottleneck-card {
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--muted);
+        border-radius: 6px;
+        background: var(--bg);
+        padding: 10px;
+        display: grid;
+        gap: 7px;
+      }
+      .bottleneck-ok {
+        border-left-color: var(--green);
+      }
+      .bottleneck-watch {
+        border-left-color: var(--yellow);
+      }
+      .bottleneck-bad {
+        border-left-color: var(--red);
+      }
+      .bottleneck-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: baseline;
+        min-width: 0;
+      }
+      .bottleneck-name {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+      .bottleneck-value {
+        font-size: 20px;
+        font-weight: 750;
+        line-height: 1;
+      }
+      .bottleneck-ok .bottleneck-value {
+        color: var(--green);
+      }
+      .bottleneck-watch .bottleneck-value {
+        color: var(--yellow);
+      }
+      .bottleneck-bad .bottleneck-value {
+        color: var(--red);
+      }
+      .bottleneck-question,
+      .bottleneck-meaning,
+      .bottleneck-action,
+      .bottleneck-candidates {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .bottleneck-question {
+        color: var(--fg);
+      }
+      .bottleneck-action strong,
+      .bottleneck-candidates strong {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .bottleneck-actions {
+        display: flex;
+        justify-content: flex-start;
+      }
+      .activity-stage {
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--muted);
+        border-radius: 6px;
+        background: var(--bg);
+        padding: 8px;
+      }
+      .activity-good {
+        border-left-color: var(--green);
+      }
+      .activity-warn {
+        border-left-color: var(--yellow);
+      }
+      .activity-stage-label,
+      .coverage-label {
+        color: var(--muted);
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .activity-stage-value {
+        font-weight: 650;
+        margin-top: 2px;
+      }
+      .activity-stage-detail,
+      .coverage-evidence,
+      .coverage-expected,
+      .issue-uncertainty,
+      .issue-response {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .process-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      .process-panel {
+        display: grid;
+        gap: 10px;
+      }
+      .coverage-list,
+      .loop-list,
+      .issue-list {
+        display: grid;
+        gap: 8px;
+      }
+      .coverage-row,
+      .loop-row,
+      .issue-row {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--muted);
+        border-radius: 6px;
+        background: var(--bg);
+        padding: 9px;
+      }
+      .coverage-row {
+        grid-template-columns:
+          minmax(170px, 1.2fr) minmax(120px, 0.9fr)
+          minmax(80px, 0.5fr) minmax(90px, 0.5fr)
+          minmax(180px, 1.2fr) auto;
+      }
+      .coverage-complete {
+        border-left-color: var(--green);
+      }
+      .coverage-partial,
+      .coverage-inferred {
+        border-left-color: var(--yellow);
+      }
+      .coverage-not-implemented,
+      .coverage-missing {
+        border-left-color: var(--orange);
+      }
+      .coverage-surface,
+      .loop-title,
+      .issue-key {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+      .coverage-actions,
+      .issue-actions {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .loop-row {
+        grid-template-columns:
+          minmax(150px, 0.9fr) minmax(100px, 0.6fr)
+          minmax(160px, 0.9fr) minmax(220px, 1.4fr) auto;
+      }
+      .loop-good {
+        border-left-color: var(--green);
+      }
+      .loop-warn {
+        border-left-color: var(--yellow);
+      }
+      .loop-bad {
+        border-left-color: var(--red);
+      }
+      .loop-id,
+      .issue-group {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        overflow-wrap: anywhere;
+      }
+      .loop-state {
+        display: grid;
+        align-content: start;
+        gap: 4px;
+      }
+      .loop-counts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-content: start;
+      }
+      .loop-counts span {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 11px;
+        padding: 1px 6px;
+        white-space: nowrap;
+      }
+      .loop-reason {
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .issue-row {
+        grid-template-columns:
+          minmax(170px, 0.9fr) minmax(190px, 1fr)
+          minmax(190px, 1fr) minmax(130px, 0.7fr)
+          minmax(150px, 0.8fr) minmax(190px, 1fr) auto;
+      }
+      .issue-p0 {
+        border-left-color: var(--red);
+      }
+      .issue-p1,
+      .issue-p2 {
+        border-left-color: var(--yellow);
+      }
+      .issue-p3 {
+        border-left-color: var(--muted);
       }
       .summary-grid {
         display: grid;
@@ -682,6 +1013,21 @@
         align-content: start;
         gap: 10px;
       }
+      .steer-help {
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 9px 10px;
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .steer-help strong {
+        color: var(--fg);
+        font-weight: 650;
+      }
       .steer-box textarea,
       .steering-panel textarea {
         width: 100%;
@@ -722,8 +1068,25 @@
       }
       @media (max-width: 1100px) {
         .summary-grid,
-        .lower-grid {
+        .lower-grid,
+        .process-grid {
           grid-template-columns: 1fr;
+        }
+        .process-stats {
+          grid-template-columns: repeat(3, minmax(90px, 1fr));
+        }
+        .activity-strip,
+        .bottleneck-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .coverage-row,
+        .loop-row,
+        .issue-row {
+          grid-template-columns: 1fr;
+        }
+        .coverage-actions,
+        .issue-actions {
+          justify-content: flex-start;
         }
         .metric-groups {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -745,6 +1108,14 @@
         }
         .metrics {
           grid-template-columns: repeat(2, minmax(80px, 1fr));
+        }
+        .process-stats,
+        .activity-strip,
+        .bottleneck-strip {
+          grid-template-columns: 1fr;
+        }
+        .process-status-set {
+          justify-content: flex-start;
         }
         .metric-groups,
         .metric-footer {
@@ -768,9 +1139,9 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <div class="brand-title">AKS RP E2E - Project Task Tree</div>
+        <div class="brand-title">AKS RP E2E - Project Status</div>
         <div class="brand-subtitle">
-          Agent thinking, accepted knowledge, execution projection, and steering
+          Where work is moving, where it is stuck, and what to check next
         </div>
       </div>
       <nav class="nav">

@@ -12,7 +12,14 @@ import {
   statSync,
 } from "node:fs";
 import { join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResult,
+  workflowResultVersion,
+  type StructuredWorkflowResult,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   buildTaskTreeConfig,
   completeStartedAttempt,
@@ -55,6 +62,29 @@ import type { TaskCompletionClaim } from "./lib/task-tree-tools.ts";
 export const name = "feature-compact-planner";
 export const description =
   "Generate and check one feature compact test package.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "feature-compact-planner-v1",
+  input: {
+    required: ["task.context.featureKey or compact-feature-* task id"],
+    optional: [
+      "task.context.capabilityId",
+      "task.context.target",
+      "task.context.liveParallel",
+      "task.context.githubWorkflow",
+      "task.context.branch",
+      "task.context.stateRef",
+    ],
+    description:
+      "Generate one feature compact plan, run generated tests, and live-prove the plan through GitHub Actions.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["subject", "status", "artifacts", "metrics", "problem", "details"],
+    description:
+      "Reports generated compact artifacts, local check status, live proof status, and exact repair category when not done.",
+  },
+};
 
 type CommandResult = {
   ok: boolean;
@@ -83,6 +113,23 @@ type Diagnostics = {
     runnableSpecCount?: number;
     unrunnableSpecIds?: string[];
   };
+  selectionBlocker?: {
+    kind?: string;
+    reason?: string;
+    remainingSpecIds?: string[];
+    resumeCondition?: string;
+  };
+  liveDispatchGate?: {
+    allowed?: boolean;
+    reason?: string;
+    packageStatus?: string;
+    readySpecIds?: string[];
+    excludedSpecIds?: string[];
+  };
+};
+
+type CompactPlan = {
+  selectedSpecIds?: string[];
 };
 
 type ProjectResult = {
@@ -116,7 +163,7 @@ type LiveResultProof = {
   detail: string;
 };
 
-const liveAksProofVersion = "live-aks-proof-v2";
+export const liveAksProofVersion = "live-aks-proof-v2";
 
 const clearLiveWorkflowState = {
   lastWorkflowRunId: null,
@@ -425,7 +472,7 @@ function validateLiveResult(input: {
   };
 }
 
-function capacityPreflightReason(proof: LiveResultProof): string | null {
+export function capacityPreflightReason(proof: LiveResultProof): string | null {
   const result = proof.result;
   if (!result) return null;
   const specResults = Array.isArray(result.specResults)
@@ -459,7 +506,7 @@ function capacityPreflightReason(proof: LiveResultProof): string | null {
     : null;
 }
 
-function inspectLiveWorkflowArtifacts(input: {
+export function inspectLiveWorkflowArtifacts(input: {
   client: GitHubClient;
   projectDir: string;
   appDir: string;
@@ -563,11 +610,13 @@ function compactCoverageProblem(input: {
   diagnostics: Diagnostics;
   expectedSpecCount: number;
 }): string | null {
+  const maintainedSpecCount =
+    input.diagnostics.feature?.specCount ?? input.expectedSpecCount;
   const selected =
     input.diagnostics.metrics?.specsSelected ??
     input.diagnostics.selectedSpecIds?.length;
-  if (selected !== input.expectedSpecCount) {
-    return `Compact package selected ${selected ?? "unknown"} of ${input.expectedSpecCount} feature spec(s).`;
+  if (selected !== maintainedSpecCount) {
+    return `Compact package selected ${selected ?? "unknown"} of ${maintainedSpecCount} feature spec(s).`;
   }
   const unrunnable = input.diagnostics.materialization?.unrunnableSpecIds ?? [];
   if (unrunnable.length > 0) {
@@ -580,10 +629,106 @@ function compactCoverageProblem(input: {
     return `Compact package materialization status is ${input.diagnostics.materialization.status}.`;
   }
   const runnable = input.diagnostics.materialization?.runnableSpecCount;
-  if (runnable !== undefined && runnable !== input.expectedSpecCount) {
-    return `Compact package materialized ${runnable} runnable spec(s), expected ${input.expectedSpecCount}.`;
+  if (runnable !== undefined && runnable !== maintainedSpecCount) {
+    return `Compact package materialized ${runnable} runnable spec(s), expected ${maintainedSpecCount}.`;
   }
   return null;
+}
+
+function blockerSummaryFragment(diagnostics: Diagnostics): string {
+  const kind = diagnostics.selectionBlocker?.kind?.trim();
+  const reason = diagnostics.selectionBlocker?.reason?.trim();
+  const gateReason = diagnostics.liveDispatchGate?.reason?.trim();
+  const remaining = diagnostics.selectionBlocker?.remainingSpecIds?.filter(
+    (specId): specId is string =>
+      typeof specId === "string" && specId.trim().length > 0,
+  );
+
+  const pieces = [
+    kind ? `Exact blocker: ${kind}.` : "",
+    reason ? `Reason: ${reason}` : "",
+    gateReason ? `Live dispatch gate: ${gateReason}` : "",
+    remaining?.length
+      ? `Affected member${remaining.length === 1 ? "" : "s"}: ${remaining.join(", ")}.`
+      : "",
+  ].filter(Boolean);
+
+  return pieces.join(" ");
+}
+
+function blockerRetryReason(diagnostics: Diagnostics): string {
+  const resumeCondition = diagnostics.selectionBlocker?.resumeCondition?.trim();
+  const gateReason = diagnostics.liveDispatchGate?.reason?.trim();
+  const reason = diagnostics.selectionBlocker?.reason?.trim();
+  return (
+    resumeCondition ||
+    gateReason ||
+    reason ||
+    "Compact package is not ready; rerun only after excluded or quarantined members are repaired, promoted, or reclassified."
+  );
+}
+
+function selectedSpecIdsForPlan(projectDir: string, planRel: string): string[] {
+  const plan = readJson<CompactPlan | null>(join(projectDir, planRel), null);
+  return Array.isArray(plan?.selectedSpecIds)
+    ? plan.selectedSpecIds.filter(
+        (specId): specId is string =>
+          typeof specId === "string" && specId.trim().length > 0,
+      )
+    : [];
+}
+
+function checkCompactLivePolicy(input: {
+  projectDir: string;
+  planRel: string;
+  diagnostics: Diagnostics;
+}): CommandResult {
+  const selectedSpecIds = [
+    ...new Set([
+      ...(input.diagnostics.selectedSpecIds ?? []),
+      ...selectedSpecIdsForPlan(input.projectDir, input.planRel),
+    ]),
+  ].filter((specId) => specId.trim().length > 0);
+
+  if (selectedSpecIds.length === 0) {
+    return {
+      ok: false,
+      status: 1,
+      stdout: "",
+      stderr:
+        "Compact live policy failed: generated plan has no selectedSpecIds to validate before live dispatch.",
+    };
+  }
+
+  const scripts = [
+    "check-private-source-policy.ts",
+    "check-live-admission.ts",
+  ].filter((script) => existsSync(join(input.projectDir, "runner", script)));
+  for (const script of scripts) {
+    const result = runCommand(
+      input.projectDir,
+      "bun",
+      [`runner/${script}`, "--specs", selectedSpecIds.join(",")],
+      120_000,
+    );
+    if (result.ok) continue;
+    return {
+      ...result,
+      stderr: [
+        `Compact live policy script failed: runner/${script}`,
+        result.stderr,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  }
+
+  return {
+    ok: true,
+    status: 0,
+    stdout: `Compact live policy passed for ${selectedSpecIds.length} selected spec(s).`,
+    stderr: "",
+  };
 }
 
 function workflowRunMatches(input: {
@@ -734,6 +879,7 @@ function completion(
       diagnosis?: string;
       resumeCondition?: string;
     };
+    workflowResult?: StructuredWorkflowResult;
   },
 ): WorkflowResult {
   const completed = completeStartedAttempt(config, {
@@ -749,9 +895,59 @@ function completion(
       summary: input.summary,
       evidence: input.evidence,
       problem: input.problem,
+      workflowResult:
+        input.workflowResult ?? featureCompactResult(input.task, input),
     });
   }
   return ctx.done(input.summary);
+}
+
+function featureCompactResult(
+  task: TaskNode,
+  input: {
+    claim: TaskCompletionClaim;
+    summary: string;
+    evidence?: string[];
+    problem?: {
+      action: "none" | "request";
+      category?: string;
+      diagnosis?: string;
+      resumeCondition?: string;
+    };
+  },
+): StructuredWorkflowResult {
+  const { featureKey, capabilityId } = featureCompactIdentity(task);
+  const target = contextString(task, "target", "staging");
+  const problem =
+    input.problem?.action === "request" && input.problem.category
+      ? {
+          category: input.problem.category,
+          diagnosis: input.problem.diagnosis ?? input.summary,
+          resumeCondition: input.problem.resumeCondition,
+        }
+      : null;
+  return workflowResult({
+    workflow: name,
+    workflowVersion: workflowContract.version,
+    subject: {
+      kind: "compact",
+      id: featureKey || task.id,
+      capabilityId: capabilityId || featureKey || null,
+    },
+    status: input.claim === "done" ? "done" : problem ? "partial" : "partial",
+    summary: input.summary,
+    artifacts: input.evidence?.filter(Boolean),
+    problem,
+    inputFingerprint: {
+      featureKey,
+      capabilityId,
+      target,
+    },
+    details: {
+      target,
+      taskClaim: input.claim,
+    },
+  });
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -861,6 +1057,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const blocked = generate.stderr.includes("No feature-owned specs");
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      retryable: blocked ? false : true,
+      retryReason: blocked
+        ? "No feature-owned specs are available for this compact package."
+        : null,
       ...clearLiveWorkflowState,
       lastSummary: summary,
     });
@@ -938,6 +1138,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Feature compact package is incomplete for ${featureKey}. ${coverageProblem} Plan: ${planRel}. Diagnostics: ${diagnosticsRel}.`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      retryable: false,
+      retryReason:
+        "Compact package coverage is incomplete; rerun only after coverage is repaired.",
       ...clearLiveWorkflowState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -974,6 +1177,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Generated tests failed for ${featureKey}. ${commandSummary("bun run execute --check", check)}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      retryable: true,
+      retryReason: null,
       ...clearLiveWorkflowState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -997,8 +1202,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (diagnostics.packageStatus && diagnostics.packageStatus !== "ready") {
+    const blockerSummary = blockerSummaryFragment(diagnostics);
+    const retryReason = blockerRetryReason(diagnostics);
+    const resumeCondition =
+      diagnostics.selectionBlocker?.resumeCondition?.trim() ||
+      "Regenerate the compact package only after excluded or quarantined members are repaired, promoted, or reclassified so packageStatus becomes ready.";
     const summary = [
-      `Feature compact package for ${featureKey} is ${diagnostics.packageStatus}; live GitHub dispatch is intentionally blocked until the package becomes ready.`,
+      `Feature compact package for ${featureKey} is ${diagnostics.packageStatus}.`,
+      blockerSummary,
       `Plan: ${planRel}.`,
       `Summary: ${summaryRel}.`,
       `Diagnostics: ${diagnosticsRel}.`,
@@ -1008,6 +1219,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       .join(" ");
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      retryable: false,
+      retryReason,
       ...clearLiveWorkflowState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -1028,8 +1241,57 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         action: "request",
         category: "feature-compact-package-status",
         diagnosis: summary,
+        resumeCondition,
+      },
+    });
+  }
+
+  const livePolicy = checkCompactLivePolicy({
+    projectDir,
+    planRel,
+    diagnostics,
+  });
+  if (!livePolicy.ok) {
+    const summary = [
+      `Feature compact live policy failed for ${featureKey}; GitHub dispatch skipped.`,
+      `Plan: ${planRel}.`,
+      `Summary: ${summaryRel}.`,
+      `Diagnostics: ${diagnosticsRel}.`,
+      resultPath ? `Check result: ${resultPath}.` : "",
+      commandSummary(
+        "bun runner/check-private-source-policy.ts && bun runner/check-live-admission.ts",
+        livePolicy,
+      ),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      retryable: true,
+      retryReason:
+        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying GitHub dispatch.",
+      ...clearLiveWorkflowState,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: resultPath,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [planRel, summaryRel, diagnosticsRel, resultPath ?? ""].filter(
+        Boolean,
+      ),
+      problem: {
+        action: "request",
+        category: "feature-compact-live-policy",
+        diagnosis: summary,
         resumeCondition:
-          "Regenerate the compact package only after excluded or quarantined members are repaired, promoted, or reclassified so packageStatus becomes ready.",
+          "Retry only after the selected compact scenario tests pass runner/check-private-source-policy.ts and runner/check-live-admission.ts.",
       },
     });
   }
@@ -1088,6 +1350,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Live compact dispatch is waiting for GitHub workflow capacity for ${featureKey}. ${dispatchCapacity.detail}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
+      retryable: false,
+      retryReason:
+        "GitHub workflow capacity is full; retry only after active workflow slots are available.",
       ...clearLiveRunState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -1324,6 +1589,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         .join(" ");
       updateFeatureCompactItem(state, featureKey, {
         status: "error",
+        retryable: false,
+        retryReason:
+          "Staging AKS managed-cluster capacity is full; retry only after capacity returns, quota changes, or target reroute is accepted.",
         lastPlanPath: planRel,
         lastSummaryPath: summaryRel,
         lastDiagnosticsPath: diagnosticsRel,

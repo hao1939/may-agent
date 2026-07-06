@@ -9,6 +9,8 @@ agents/*/workspace/**
 agents/*/last-eval.md
 agents/*/last-session.md
 node_modules/
+tasks/tree.json
+tasks/kanban.json
 tasks/archive/*.json
 tasks/*.bak*
 workflows/.may-runtime-module-*.mjs

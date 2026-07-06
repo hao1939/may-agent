@@ -6,8 +6,13 @@
  * completion.
  */
 
-import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResult,
+  type StructuredWorkflowResult,
+  type WorkflowContext,
+  type WorkflowResult,
+  type WorkflowResultStatus,
+} from "@may-agent/sdk";
 import {
   readTaskTree,
   taskEventSnapshot,
@@ -163,10 +168,6 @@ export function buildTaskTreeConfig(
         field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
       maxConcurrent: configuredMaxConcurrent,
     }),
-    appDir,
-    projectDir,
-    treePath: join(appDir, "tasks", "tree.json"),
-    journalPath: join(appDir, ".state", "journal.jsonl"),
     worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
     maxConcurrent: configuredMaxConcurrent,
   };
@@ -191,7 +192,7 @@ the domain workspace and report what the project owner should add to the tree.
 If the assigned task is a bounded existing-task metadata repair that explicitly
 names supported task-tree commands such as \`task-tree set-outputs\` or
 \`task-tree update-text\`, you may run only those exact commands against the
-named existing task ids. Never edit tasks/tree.json directly, and do not
+named existing task ids. Never edit the runtime task tree file directly, and do not
 add/reassign/accept/reject tasks from this session.
 
 Use the task as the context container. Read the relevant domain files, do the
@@ -220,6 +221,28 @@ App: ${input.appDir}
 Domain workspace: ${input.projectDir}
 Source workspace: ${input.sourceDir}
 Attempt: ${input.attemptId}
+
+Loop state paths in task inputs or outputs, such as
+\`.state/spec-loop/state.json\` and
+\`.state/feature-compact-loop/state.json\`, are app-owned state paths rooted at
+${input.appDir}. The domain workspace may contain mirrored snapshots for
+human/domain review, but controller-visible loop state must be updated through
+the app path unless the task explicitly says otherwise. Domain feature/spec
+files, compact packages, test code, run artifacts, and evidence notes stay
+rooted at ${input.projectDir}.
+
+Before any worker-initiated live GitHub dispatch for single specs or compact
+feature reruns, run the local live dependency and admission policies against
+the exact spec set from ${input.projectDir}. Use both commands:
+
+  bun runner/check-private-source-policy.ts --specs <comma-separated-spec-ids>
+  bun runner/check-live-admission.ts --specs <comma-separated-spec-ids>
+
+If either policy fails, do not dispatch the workflow. Repair the selected
+scenario tests so they are self-contained and live-admissible, or finish
+partial/blocked with the exact policy output and resume condition. A GitHub run
+that fails only because either local policy would have failed is not acceptable
+completion evidence.
 
 Assigned task:
 \`\`\`json
@@ -264,6 +287,50 @@ function workerResultFromSession(
   return "blocked";
 }
 
+function workflowStatusFromClaim(
+  claim: TaskCompletionClaim,
+): WorkflowResultStatus {
+  if (claim === "done") return "done";
+  if (claim === "blocked") return "blocked";
+  return "partial";
+}
+
+function completionWorkflowResult(
+  task: TaskNode,
+  input: {
+    result: TaskCompletionClaim;
+    summary: string;
+    evidence: string[];
+    problem: TaskProblemRoute;
+  },
+): StructuredWorkflowResult {
+  const problem =
+    input.problem.action === "request" && input.problem.category
+      ? {
+          category: input.problem.category,
+          diagnosis: input.problem.diagnosis ?? input.summary,
+          resumeCondition: input.problem.resumeCondition,
+        }
+      : null;
+  return workflowResult({
+    workflow:
+      typeof task.workflow === "string" && task.workflow.trim()
+        ? task.workflow.trim()
+        : "default-task-worker",
+    subject: {
+      kind: "task",
+      id: task.id,
+    },
+    status: workflowStatusFromClaim(input.result),
+    summary: input.summary,
+    artifacts: input.evidence,
+    problem,
+    details: {
+      taskClaim: input.result,
+    },
+  });
+}
+
 export function emitTaskCompleted(
   ctx: WorkflowContext,
   task: TaskNode,
@@ -274,6 +341,7 @@ export function emitTaskCompleted(
     evidence?: string[];
     review?: TaskReviewRoute;
     problem?: TaskProblemRoute;
+    workflowResult?: StructuredWorkflowResult;
   },
 ): void {
   const evidence = input.evidence ?? [];
@@ -284,6 +352,14 @@ export function emitTaskCompleted(
   const problem = input.problem ?? {
     action: "none" as const,
   };
+  const structuredResult =
+    input.workflowResult ??
+    completionWorkflowResult(task, {
+      result: input.result,
+      summary: input.summary,
+      evidence,
+      problem,
+    });
   const completion = {
     taskId: task.id,
     task_id: task.id,
@@ -296,6 +372,8 @@ export function emitTaskCompleted(
     evidence_refs: evidence,
     review,
     problem,
+    workflowResult: structuredResult,
+    workflow_result: structuredResult,
   };
   try {
     ctx.dispatchEvent("project.task.completed", {
@@ -311,6 +389,8 @@ export function emitTaskCompleted(
       evidence_refs: evidence,
       review,
       problem,
+      workflowResult: structuredResult,
+      workflow_result: structuredResult,
       completion,
     });
     const controllerTick = completionControllerTick(task, {

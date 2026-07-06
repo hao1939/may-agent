@@ -109,8 +109,28 @@ export function reopenControllerRootWhenIncomplete(input: {
             : "controller is paused on exact blocked wait stewardship",
         category: "child-blocked",
         owner: input.task.owner,
+        blocked_at: now,
+        waiting_for: {
+          type: "child.task.blocked",
+          taskId: input.task.id,
+          childTaskIds: (input.task.children ?? []).filter(Boolean),
+        },
+        observed_by: {
+          workflow: input.task.workflow ?? "loop-controller",
+          trigger: "project.task.tick",
+        },
+        observation_method:
+          "Durable loop controller recomputes blocked wait stewardship from current child states and workflow progress on each controller pulse.",
+        next_check_at: new Date(
+          Date.parse(now) + 10 * 60_000,
+        ).toISOString(),
         resume_condition:
           "Resume when one of the exact blocked wait children resolves or is replaced.",
+        fallback_at: new Date(
+          Date.parse(now) + 24 * 3_600_000,
+        ).toISOString(),
+        fallback_action:
+          "If child-blocked stewardship still holds at fallback time, rerun the controller pulse or owner review and refresh the blocker metadata or reopen a concrete child follow-up.",
       }
     : undefined;
   input.task.resolution = undefined;

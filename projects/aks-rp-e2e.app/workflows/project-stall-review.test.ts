@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -21,7 +22,7 @@ function triggerEvent(event: Record<string, unknown>): string {
 
 async function writeTree(appDir: string) {
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -208,7 +209,7 @@ describe("project stall review", () => {
     });
 
     const updatedTree = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(updatedTree.tasks["aks-spec-verification-loop"].state).toBe(
       "backlog",
@@ -293,7 +294,7 @@ describe("project stall review", () => {
     });
 
     const updatedTree = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(updatedTree.tasks["aks-spec-verification-loop"].state).toBe("done");
   });
@@ -301,7 +302,7 @@ describe("project stall review", () => {
   test("fallback mode preserves exact blocked wait stewardship without pulsing loop controllers", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,

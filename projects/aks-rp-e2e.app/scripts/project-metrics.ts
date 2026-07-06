@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
@@ -7,28 +8,11 @@ import {
   summarizeTaskTree,
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
-
-type TaskNode = {
-  id?: string;
-  parent_id?: string;
-  state?: string;
-  status?: string;
-  kind?: string;
-  goal?: string;
-  children?: string[];
-  depends_on?: string[];
-  session_id?: string;
-  workflow?: string;
-  context?: Record<string, unknown>;
-  updated_at?: string;
-  trace?: Record<string, unknown>;
-  attempts?: unknown[];
-};
-
-type TaskTree = {
-  tasks?: Record<string, TaskNode>;
-  project_lifecycle?: string;
-};
+import {
+  readTaskTree,
+  type TaskNode,
+  type TaskTree,
+} from "../workflows/lib/task-tree-store.ts";
 
 type ModelStatus = {
   features?: {
@@ -86,15 +70,41 @@ type SpecMetrics = {
   unknown: number;
 };
 
+type MetricSampleOutput = {
+  value: number;
+  sampleSize?: number;
+  measuredAt?: number;
+  note?: unknown;
+};
+
+type StaleActiveTaskInfo = {
+  taskId: string;
+  sessionId: string | null;
+  restartReason: string;
+};
+
+type AssignmentStateMismatchInfo = {
+  correlationKey: string;
+  taskId: string;
+  attemptId: string | null;
+  taskState: string | null;
+};
+
 type SpecLoopState = {
+  loopTaskId?: string;
   specs?: Record<
     string,
     {
       status?: string;
+      attempts?: number;
+      lastRunUrl?: string | null;
       taskId?: string | null;
       activeAttemptId?: string | null;
       activeTaskSessionId?: string | null;
       heartbeatAt?: string | null;
+      successorDisposition?: string | null;
+      resumeCondition?: string | null;
+      review?: Record<string, unknown> | null;
     }
   >;
 };
@@ -156,8 +166,9 @@ function listFiles(
 }
 
 function timestampOf(task: TaskNode): number | null {
+  const taskRecord = task as TaskNode & { updated_at?: string };
   const candidates = [
-    task.updated_at,
+    taskRecord.updated_at,
     typeof task.trace?.rolled_up_at === "string"
       ? task.trace.rolled_up_at
       : undefined,
@@ -176,9 +187,14 @@ function timestampOf(task: TaskNode): number | null {
 }
 
 function loadTaskTree(): TaskTree {
-  return readJson<TaskTree>(join(effectiveAppDir, "tasks", "tree.json"), {
-    tasks: {},
-  });
+  return readTaskTree(
+    taskTreeConfig({
+      appDir: effectiveAppDir,
+      projectDir,
+      worker: "aks-explorer",
+      maxConcurrent: desiredParallelism,
+    }),
+  );
 }
 
 function taskState(task: TaskNode): string {
@@ -193,6 +209,37 @@ function taskState(task: TaskNode): string {
 
 function isLeaf(task: TaskNode): boolean {
   return (task.children ?? []).length === 0;
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringRecordField(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): string {
+  if (!record) return "";
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function objectRecordField(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): Record<string, unknown> | null {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = record[key];
+    const nested = recordValue(value);
+    if (nested) return nested;
+  }
+  return null;
 }
 
 function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
@@ -210,7 +257,7 @@ function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
 }
 
 function archivedCompletedTaskIds24h(): Set<string> {
-  const archiveDir = join(effectiveAppDir, "tasks", "archive");
+  const archiveDir = join(effectiveAppDir, ".state", "tasks", "archive");
   const completed = new Set<string>();
   for (const path of listFiles(
     archiveDir,
@@ -230,6 +277,7 @@ function archivedCompletedTaskIds24h(): Set<string> {
 
 function taskCounts() {
   const tree = loadTaskTree();
+  const taskMap = tree.tasks ?? {};
   const tasks = Object.values(tree.tasks ?? {});
   let frontier: {
     runnable: string[];
@@ -264,8 +312,51 @@ function taskCounts() {
   const completed24h = completed24hTaskIds.size;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
-  const blockedLeaves = tasks.filter(
+  const assignmentStateMismatch = openTaskAssignmentStateMismatchCount(tree);
+  const blockedLeafTasks = tasks.filter(
     (task) => isLeaf(task) && taskState(task) === "blocked",
+  );
+  const blockedLeaves = blockedLeafTasks.length;
+  const blockedMissingWaitingFor = blockedLeafTasks.filter((task) => {
+    const blocker = recordValue(task.blocker);
+    return !objectRecordField(blocker, ["waiting_for", "waitingFor"]);
+  }).length;
+  const blockedMissingObserver = blockedLeafTasks.filter((task) => {
+    const blocker = recordValue(task.blocker);
+    return (
+      !objectRecordField(blocker, ["observed_by", "observedBy"]) ||
+      !stringRecordField(blocker, [
+        "observation_method",
+        "observationMethod",
+      ]) ||
+      !stringRecordField(blocker, ["next_check_at", "nextCheckAt"])
+    );
+  }).length;
+  const blockedMissingResumeCondition = blockedLeafTasks.filter((task) => {
+    const blocker = recordValue(task.blocker);
+    return !stringRecordField(blocker, [
+      "resume_condition",
+      "resumeCondition",
+      "waitingCondition",
+    ]);
+  }).length;
+  const blockedMissingOwner = blockedLeafTasks.filter((task) => {
+    const blocker = recordValue(task.blocker);
+    return !stringRecordField(blocker, ["owner"]);
+  }).length;
+  const blockedMissingFallback = blockedLeafTasks.filter((task) => {
+    const blocker = recordValue(task.blocker);
+    return (
+      !stringRecordField(blocker, ["fallback_at", "fallbackAt"]) ||
+      !stringRecordField(blocker, ["fallback_action", "fallbackAction"])
+    );
+  }).length;
+  const childRefs = new Set<string>();
+  for (const task of Object.values(taskMap)) {
+    for (const childId of task.children ?? []) childRefs.add(childId);
+  }
+  const roots = tasks.filter(
+    (task) => task.id && !childRefs.has(task.id),
   ).length;
   return {
     total: tasks.length,
@@ -275,11 +366,18 @@ function taskCounts() {
     active: frontier?.active.length ?? byStatus.get("active") ?? 0,
     activeRunning,
     activeStale,
+    assignmentStateMismatch,
     review: frontier?.review.length ?? byStatus.get("review") ?? 0,
     backlog: byStatus.get("backlog") ?? 0,
     blocked: blockedLeaves,
+    blockedMissingWaitingFor,
+    blockedMissingObserver,
+    blockedMissingResumeCondition,
+    blockedMissingOwner,
+    blockedMissingFallback,
     done: byStatus.get("done") ?? 0,
     completed24h,
+    taskTreeProblemCount: (roots === 1 ? 0 : 1) + assignmentStateMismatch,
     projectClosed:
       tree.project_lifecycle === "closed" ||
       tree.project_lifecycle === "review" ||
@@ -291,6 +389,54 @@ function taskCounts() {
           tree.tasks.project.state ?? tree.tasks.project.status ?? "",
         )),
   };
+}
+
+function openTaskAssignmentStateMismatchDetails(
+  tree: TaskTree,
+): AssignmentStateMismatchInfo[] {
+  if (!existsSync(stateDbPath)) return [];
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    const rows = db
+      .query(
+        `
+        select correlation_key
+        from event_pair_runs
+        where pair_name = 'project.task'
+          and status in ('open', 'orphan')
+      `,
+      )
+      .all() as Array<{ correlation_key?: unknown }>;
+    const mismatches: AssignmentStateMismatchInfo[] = [];
+    for (const row of rows) {
+      const key =
+        typeof row.correlation_key === "string" ? row.correlation_key : "";
+      const taskId = key.split(":")[0]?.trim();
+      const attemptId = key.includes(":")
+        ? key.slice(key.indexOf(":") + 1).trim() || null
+        : null;
+      if (!taskId) continue;
+      const task = tree.tasks?.[taskId];
+      const currentTaskState = task ? taskState(task) : null;
+      if (!task || currentTaskState !== "active") {
+        mismatches.push({
+          correlationKey: key,
+          taskId,
+          attemptId,
+          taskState: currentTaskState,
+        });
+      }
+    }
+    return mismatches;
+  } catch {
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
+function openTaskAssignmentStateMismatchCount(tree: TaskTree): number {
+  return openTaskAssignmentStateMismatchDetails(tree).length;
 }
 
 function loadModelStatus(): ModelStatus {
@@ -440,6 +586,279 @@ function hasOpenSpecVerificationWork(
     tasks.activeRunning > 0 ||
     tasks.review > 0
   );
+}
+
+function loadSpecLoopState(): SpecLoopState {
+  return readJson<SpecLoopState>(
+    join(effectiveAppDir, ".state", "spec-loop", "state.json"),
+    { specs: {} },
+  );
+}
+
+function taskContext(task: TaskNode | undefined): Record<string, unknown> {
+  return task?.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+    ? task.context
+    : {};
+}
+
+function taskConflictScopes(task: TaskNode | undefined): string[] {
+  const scopes = (task as { conflict_scope?: unknown } | undefined)
+    ?.conflict_scope;
+  return Array.isArray(scopes)
+    ? scopes.filter((scope): scope is string => typeof scope === "string")
+    : [];
+}
+
+function specFamily(specId: string): string {
+  return (
+    specId
+      .replace(/^spec\./, "")
+      .split(".")[0]
+      ?.trim() || "unknown"
+  );
+}
+
+function specLoopTask(
+  tree: TaskTree,
+  state: SpecLoopState,
+): TaskNode | undefined {
+  const taskId = state.loopTaskId || "aks-spec-verification-loop";
+  return tree.tasks?.[taskId];
+}
+
+function specLoopMaxDirectAttempts(
+  tree: TaskTree,
+  state: SpecLoopState,
+): number {
+  const task = specLoopTask(tree, state);
+  const value = taskContext(task).maxDirectAttemptsPerSpec;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 3;
+}
+
+function canDirectlyRunSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  if (spec.status === "pending" || spec.status === "done") {
+    return !spec.lastRunUrl || (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+  }
+  if (spec.status !== "error" && spec.status !== "fail") return false;
+  return (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+}
+
+function isRetryExhaustedSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  const status = spec.status || "pending";
+  if (status === "pending") {
+    return !canDirectlyRunSpec(state, specId, maxDirectAttemptsPerSpec);
+  }
+  if (status !== "error" && status !== "fail") return false;
+  return (spec.attempts ?? 0) >= maxDirectAttemptsPerSpec;
+}
+
+function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
+  const keys = new Set<string>();
+  if (!task) return keys;
+  const context = taskContext(task);
+  if (context.specLoopFollowup === true) {
+    const status = context.status;
+    const family = context.featureFamily;
+    if (typeof status === "string" && typeof family === "string") {
+      keys.add(`${status}:${family}`);
+    }
+  }
+  for (const scope of taskConflictScopes(task)) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("spec-loop-followup:")) continue;
+    const [, statusPart, familyPart] = trimmed.split(":");
+    if (statusPart?.trim() && familyPart?.trim()) {
+      keys.add(`${statusPart.trim()}:${familyPart.trim()}`);
+    }
+  }
+  return keys;
+}
+
+function representedSpecLoopFollowupGroups(tree: TaskTree): Set<string> {
+  const represented = new Set<string>();
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  for (const task of Object.values(tree.tasks ?? {})) {
+    if (!representingStates.has(taskState(task))) continue;
+    for (const key of specLoopFollowupGroupKeys(task)) {
+      represented.add(key);
+    }
+  }
+  return represented;
+}
+
+function taskHasStructuredBlocker(task: TaskNode | undefined): boolean {
+  return !!task?.blocker && typeof task.blocker === "object";
+}
+
+function taskTextMentionsSpecId(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  const taskRecord = task as TaskNode & {
+    acceptance?: unknown;
+    inputs?: unknown;
+  };
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    acceptance: taskRecord.acceptance,
+    inputs: taskRecord.inputs,
+    context: task.context,
+    blocker: task.blocker,
+  }).toLowerCase();
+  return haystack.includes(specId.toLowerCase());
+}
+
+function taskTextMentionCountsAsSpecOwner(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!taskTextMentionsSpecId(task, specId)) return false;
+  return taskState(task) !== "blocked" || taskHasStructuredBlocker(task);
+}
+
+function specLoopSpecHasStructuredSuccessor(
+  spec: NonNullable<SpecLoopState["specs"]>[string] | undefined,
+): boolean {
+  if (!spec) return false;
+  if (
+    typeof spec.successorDisposition === "string" &&
+    spec.successorDisposition.trim()
+  ) {
+    return true;
+  }
+  if (typeof spec.resumeCondition === "string" && spec.resumeCondition.trim()) {
+    return true;
+  }
+  return !!spec.review && typeof spec.review === "object";
+}
+
+function exactSpecLoopOwnerTaskId(input: {
+  tree: TaskTree;
+  state: SpecLoopState;
+  specId: string;
+}): string | null {
+  const spec = input.state.specs?.[input.specId];
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
+    !!task && representingStates.has(taskState(task));
+
+  const taskIds = new Set<string>();
+  if (typeof spec?.taskId === "string" && spec.taskId.trim()) {
+    taskIds.add(spec.taskId.trim());
+  }
+  for (const task of Object.values(input.tree.tasks ?? {})) {
+    if (!isRepresenting(task)) continue;
+    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
+      taskIds.add(task.id ?? "");
+      continue;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      taskIds.add(task.id ?? "");
+    }
+  }
+
+  for (const taskId of taskIds) {
+    const task = input.tree.tasks?.[taskId];
+    if (!isRepresenting(task)) continue;
+    if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
+      return taskId;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      return taskId;
+    }
+    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+    if (
+      spec?.taskId === taskId &&
+      specLoopSpecHasStructuredSuccessor(spec) &&
+      taskHasStructuredBlocker(task)
+    ) {
+      return taskId;
+    }
+  }
+
+  return null;
+}
+
+function specLoopRecoveryStats(): {
+  retryExhausted: number;
+  recoveryUnowned: number;
+  recoveryUnownedSpecIds: string[];
+} {
+  const state = loadSpecLoopState();
+  const tree = loadTaskTree();
+  const maxDirectAttempts = specLoopMaxDirectAttempts(tree, state);
+  const represented = representedSpecLoopFollowupGroups(tree);
+  let retryExhausted = 0;
+  let recoveryUnowned = 0;
+  const recoveryUnownedSpecIds: string[] = [];
+  for (const [specId, spec] of Object.entries(state.specs ?? {})) {
+    if (!isRetryExhaustedSpec(state, specId, maxDirectAttempts)) continue;
+    retryExhausted += 1;
+    const status = spec.status || "pending";
+    const groupStatus = status === "pending" ? "pending" : status;
+    if (
+      !represented.has(`${groupStatus}:${specFamily(specId)}`) &&
+      !exactSpecLoopOwnerTaskId({ tree, state, specId })
+    ) {
+      recoveryUnowned += 1;
+      recoveryUnownedSpecIds.push(specId);
+    }
+  }
+  return { retryExhausted, recoveryUnowned, recoveryUnownedSpecIds };
+}
+
+function unpublishedGitChangeCount(repoDir: string): number {
+  const result = spawnSync("git", ["status", "--porcelain=v1", "--branch"], {
+    cwd: repoDir,
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+  if (result.status !== 0) return 0;
+  let count = 0;
+  for (const line of result.stdout.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    if (line.startsWith("## ")) {
+      const ahead = line.match(/\[ahead (\d+)/);
+      if (ahead) count += Number.parseInt(ahead[1], 10) || 0;
+      continue;
+    }
+    count += 1;
+  }
+  return count;
 }
 
 function countReplays(): number {
@@ -624,10 +1043,17 @@ function loadVerifierLivenessByTaskId(): Map<
   return byTaskId;
 }
 
+function countsAsExecutableActiveLeaf(task: TaskNode): boolean {
+  if (!isLeaf(task)) return false;
+  if (taskState(task) !== "active") return false;
+  if (task.kind === "focus_plan") return false;
+  return true;
+}
+
 function activeLeafTasks(): TaskNode[] {
   const tree = loadTaskTree();
-  return Object.values(tree.tasks ?? {}).filter(
-    (task) => isLeaf(task) && taskState(task) === "active",
+  return Object.values(tree.tasks ?? {}).filter((task) =>
+    countsAsExecutableActiveLeaf(task),
   );
 }
 
@@ -648,6 +1074,44 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   return false;
 }
 
+function activeTaskHasFreshGitHubRun(task: TaskNode): boolean {
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  if (!taskId) return false;
+  const workspaceDir = join(projectDir, "workspace", taskId);
+  const runStatusFiles = listFiles(
+    workspaceDir,
+    (path) =>
+      extname(path) === ".json" &&
+      path.split("/").pop()?.startsWith("run-status") === true,
+  );
+  if (runStatusFiles.length === 0) return false;
+
+  let freshestMs = Number.NEGATIVE_INFINITY;
+  let freshestStatus = "";
+  for (const path of runStatusFiles) {
+    const payload = readJson<Record<string, unknown>>(path, {});
+    const nested = recordValue(payload.json) ?? payload;
+    const status =
+      typeof nested.status === "string" ? nested.status.trim().toLowerCase() : "";
+    const updatedAt =
+      typeof nested.updated_at === "string"
+        ? nested.updated_at
+        : typeof nested.run_started_at === "string"
+          ? nested.run_started_at
+          : "";
+    const updatedMs = updatedAt ? Date.parse(updatedAt) : Number.NaN;
+    if (!Number.isFinite(updatedMs) || updatedMs < freshestMs) continue;
+    freshestMs = updatedMs;
+    freshestStatus = status;
+  }
+
+  if (!Number.isFinite(freshestMs)) return false;
+  if (!["queued", "pending", "waiting", "requested", "in_progress"].includes(freshestStatus)) {
+    return false;
+  }
+  return Date.now() - freshestMs <= staleActiveNoActivityMs;
+}
+
 function activeTaskRestartReason(task: TaskNode): string | null {
   const taskId = typeof task.id === "string" ? task.id.trim() : "";
   const sessionId =
@@ -664,7 +1128,6 @@ function activeTaskRestartReason(task: TaskNode): string | null {
   if (
     task.workflow === "single-spec-verifier" &&
     verifier &&
-    verifier.activeTaskSessionId === sessionId &&
     verifier.activeAttemptId === currentAttemptId
   ) {
     const heartbeatMs = verifier.heartbeatAt
@@ -700,13 +1163,27 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     const featureReason = sessionRestartReasonFromRow(featureRow);
     if (featureReason === null) return null;
     if (featureReason !== "session-not-running") return featureReason;
+
+    if (activeTaskHasFreshGitHubRun(task)) return null;
   }
   return reason;
 }
 
+function staleActiveTaskDetails(): StaleActiveTaskInfo[] {
+  return activeLeafTasks().flatMap((task) => {
+    const restartReason = activeTaskRestartReason(task);
+    const taskId = typeof task.id === "string" ? task.id.trim() : "";
+    const sessionId =
+      typeof task.session_id === "string" && task.session_id.trim()
+        ? task.session_id.trim()
+        : null;
+    if (!restartReason || !taskId) return [];
+    return [{ taskId, sessionId, restartReason }];
+  });
+}
+
 function staleActiveTaskCount(): number {
-  return activeLeafTasks().filter((task) => activeTaskRestartReason(task))
-    .length;
+  return staleActiveTaskDetails().length;
 }
 
 function runningActiveTaskCount(): number {
@@ -873,104 +1350,199 @@ function isSlowPlannerRun(run: PlannerRun): boolean {
   );
 }
 
-function valueFor(metricId: string): number {
+function metricSampleOutputFor(metricId: string): MetricSampleOutput {
   const tasks = taskCounts();
   const model = modelStatus();
   const pathStatus = model.paths?.byStatus ?? {};
   const featureStatus = model.features?.byStatus ?? {};
   const pathGaps = pathGapCount();
   const specs = specMetrics();
+  const specRecovery = specLoopRecoveryStats();
   const openGaps = pathGaps + specs.unverified;
   const live = liveRuns24h();
   const plannerRecent = recentPlannerRuns(24);
 
-  const values: Record<string, () => number> = {
-    "aks-rp-e2e.task.ready-count": () => tasks.runnable,
-    "aks-rp-e2e.task.active-count": () => tasks.active,
-    "aks-rp-e2e.task.stale-active-count": () => tasks.activeStale,
-    "aks-rp-e2e.task.blocked-count": () => tasks.blocked,
-    "aks-rp-e2e.task.completed-24h": () => tasks.completed24h,
-    "aks-rp-e2e.task.no-work-with-gaps": () =>
-      !tasks.projectClosed &&
-      tasks.runnable === 0 &&
-      tasks.activeRunning === 0 &&
-      openGaps > 0
-        ? 1
-        : 0,
-    "aks-rp-e2e.task.ready-starvation-with-gaps": () =>
-      !tasks.projectClosed &&
-      tasks.runnable === 0 &&
-      tasks.activeRunning === 0 &&
-      tasks.review === 0 &&
-      openGaps > 0
-        ? 1
-        : 0,
-    "aks-rp-e2e.task.capacity-underfilled-with-gaps": () =>
-      !tasks.projectClosed &&
-      tasks.runnable + tasks.activeRunning < Math.max(1, desiredParallelism) &&
-      openGaps > 0
-        ? 1
-        : 0,
-    "aks-rp-e2e.task.stale-active-with-gaps": () =>
-      !tasks.projectClosed && tasks.activeStale > 0 && openGaps > 0 ? 1 : 0,
-    "aks-rp-e2e.model.unknown-path-count": () =>
-      (pathStatus.unknown ?? 0) + (pathStatus["source-enumerated"] ?? 0),
-    "aks-rp-e2e.model.failed-path-count": () => pathStatus.fail ?? 0,
-    "aks-rp-e2e.model.blocked-path-count": () => pathStatus.blocked ?? 0,
-    "aks-rp-e2e.feature.unknown-count": () =>
-      (featureStatus.unknown ?? 0) + (featureStatus.partial ?? 0),
-    "aks-rp-e2e.spec.total-count": () => countSpecs(),
-    "aks-rp-e2e.spec.verified-count": () => specs.verified,
-    "aks-rp-e2e.spec.reviewed-exception-count": () => specs.reviewedException,
-    "aks-rp-e2e.spec.unverified-count": () => specs.unverified,
-    "aks-rp-e2e.spec.failed-count": () => specs.failed,
-    "aks-rp-e2e.spec.blocked-count": () => specs.blocked,
-    "aks-rp-e2e.spec.ready-count": () => specs.ready,
-    "aks-rp-e2e.spec.draft-count": () => specs.draft,
-    "aks-rp-e2e.spec.unverified-without-work": () =>
-      !tasks.projectClosed &&
-      specs.unverified > 0 &&
-      !hasOpenSpecVerificationWork(tasks)
-        ? 1
-        : 0,
-    "aks-rp-e2e.replay.script-count": () => countReplays(),
-    "aks-rp-e2e.run.live-started-24h": () => live.length,
-    "aks-rp-e2e.run.live-succeeded-24h": () =>
-      live.filter((run) =>
+  const values: Record<string, () => MetricSampleOutput> = {
+    "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
+    "aks-rp-e2e.task.active-count": () => ({ value: tasks.active }),
+    "aks-rp-e2e.task.stale-active-count": () => ({ value: tasks.activeStale }),
+    "aks-rp-e2e.task.blocked-count": () => ({ value: tasks.blocked }),
+    "aks-rp-e2e.task.completed-24h": () => ({ value: tasks.completed24h }),
+    "aks-rp-e2e.task.no-work-with-gaps": () => ({
+      value:
+        !tasks.projectClosed &&
+        tasks.runnable === 0 &&
+        tasks.activeRunning === 0 &&
+        openGaps > 0
+          ? 1
+          : 0,
+    }),
+    "aks-rp-e2e.task.ready-starvation-with-gaps": () => ({
+      value:
+        !tasks.projectClosed &&
+        tasks.runnable === 0 &&
+        tasks.activeRunning === 0 &&
+        tasks.review === 0 &&
+        openGaps > 0
+          ? 1
+          : 0,
+    }),
+    "aks-rp-e2e.task.capacity-underfilled-with-gaps": () => ({
+      value:
+        !tasks.projectClosed &&
+        tasks.runnable + tasks.activeRunning < Math.max(1, desiredParallelism) &&
+        openGaps > 0
+          ? 1
+          : 0,
+    }),
+    "aks-rp-e2e.task.stale-active-with-gaps": () => ({
+      value:
+        !tasks.projectClosed && tasks.activeStale > 0 && openGaps > 0 ? 1 : 0,
+    }),
+    "aks-rp-e2e.process.unowned-work-count": () => {
+      const staleActiveTasks = staleActiveTaskDetails();
+      const assignmentMismatches = openTaskAssignmentStateMismatchDetails(
+        loadTaskTree(),
+      );
+      const value = tasks.projectClosed
+        ? 0
+        : staleActiveTasks.length +
+          assignmentMismatches.length +
+          specRecovery.recoveryUnowned;
+      return {
+        value,
+        sampleSize:
+          staleActiveTasks.length +
+          assignmentMismatches.length +
+          specRecovery.recoveryUnownedSpecIds.length,
+        note: JSON.stringify({
+          sampledAt: new Date().toISOString(),
+          staleActiveTaskIds: staleActiveTasks.map((task) => task.taskId),
+          staleActiveTaskSessions: staleActiveTasks.map((task) => ({
+            taskId: task.taskId,
+            sessionId: task.sessionId,
+            restartReason: task.restartReason,
+          })),
+          assignmentMismatchKeys: assignmentMismatches.map(
+            (mismatch) => mismatch.correlationKey,
+          ),
+          assignmentMismatchTasks: assignmentMismatches,
+          recoveryUnownedSpecIds: specRecovery.recoveryUnownedSpecIds,
+        }),
+      };
+    },
+    "aks-rp-e2e.process.assignment-state-mismatch-count": () => ({
+      value: tasks.projectClosed ? 0 : tasks.assignmentStateMismatch,
+    }),
+    "aks-rp-e2e.process.unpublished-change-count": () => ({
+      value: unpublishedGitChangeCount(projectDir),
+    }),
+    "aks-rp-e2e.process.integrity.task-tree-problem-count": () => ({
+      value: tasks.taskTreeProblemCount,
+    }),
+    "aks-rp-e2e.process.blocked.missing-waiting-for-count": () => ({
+      value: tasks.blockedMissingWaitingFor,
+    }),
+    "aks-rp-e2e.process.blocked.missing-observer-count": () => ({
+      value: tasks.blockedMissingObserver,
+    }),
+    "aks-rp-e2e.process.blocked.missing-resume-condition": () => ({
+      value: tasks.blockedMissingResumeCondition,
+    }),
+    "aks-rp-e2e.process.blocked.missing-owner-count": () => ({
+      value: tasks.blockedMissingOwner,
+    }),
+    "aks-rp-e2e.process.blocked.missing-fallback-count": () => ({
+      value: tasks.blockedMissingFallback,
+    }),
+    "aks-rp-e2e.model.unknown-path-count": () => ({
+      value: (pathStatus.unknown ?? 0) + (pathStatus["source-enumerated"] ?? 0),
+    }),
+    "aks-rp-e2e.model.failed-path-count": () => ({
+      value: pathStatus.fail ?? 0,
+    }),
+    "aks-rp-e2e.model.blocked-path-count": () => ({
+      value: pathStatus.blocked ?? 0,
+    }),
+    "aks-rp-e2e.feature.unknown-count": () => ({
+      value: (featureStatus.unknown ?? 0) + (featureStatus.partial ?? 0),
+    }),
+    "aks-rp-e2e.spec.total-count": () => ({ value: countSpecs() }),
+    "aks-rp-e2e.spec.verified-count": () => ({ value: specs.verified }),
+    "aks-rp-e2e.spec.reviewed-exception-count": () => ({
+      value: specs.reviewedException,
+    }),
+    "aks-rp-e2e.spec.unverified-count": () => ({ value: specs.unverified }),
+    "aks-rp-e2e.spec.failed-count": () => ({ value: specs.failed }),
+    "aks-rp-e2e.spec.blocked-count": () => ({ value: specs.blocked }),
+    "aks-rp-e2e.spec.ready-count": () => ({ value: specs.ready }),
+    "aks-rp-e2e.spec.draft-count": () => ({ value: specs.draft }),
+    "aks-rp-e2e.spec.retry-exhausted-count": () => ({
+      value: specRecovery.retryExhausted,
+    }),
+    "aks-rp-e2e.spec.recovery-unowned-count": () => ({
+      value: specRecovery.recoveryUnowned,
+    }),
+    "aks-rp-e2e.spec.unverified-without-work": () => ({
+      value:
+        !tasks.projectClosed &&
+        specs.unverified > 0 &&
+        !hasOpenSpecVerificationWork(tasks)
+          ? 1
+          : 0,
+    }),
+    "aks-rp-e2e.replay.script-count": () => ({ value: countReplays() }),
+    "aks-rp-e2e.run.live-started-24h": () => ({ value: live.length }),
+    "aks-rp-e2e.run.live-succeeded-24h": () => ({
+      value: live.filter((run) =>
         ["pass", "passed", "success", "succeeded"].includes(run.status ?? ""),
       ).length,
-    "aks-rp-e2e.run.live-failed-24h": () =>
-      live.filter((run) =>
+    }),
+    "aks-rp-e2e.run.live-failed-24h": () => ({
+      value: live.filter((run) =>
         ["fail", "failed", "infra_failed", "blocked"].includes(
           run.status ?? "",
         ),
       ).length,
-    "aks-rp-e2e.run.live-idle-with-runnable-work": () =>
-      !tasks.projectClosed &&
-      countReplays() > 0 &&
-      specs.unverified > 0 &&
-      hasLiveExecutionRunnableBacklog() &&
-      live.length === 0
-        ? 1
-        : 0,
-    "aks-rp-e2e.planner.timeout-24h": () =>
-      plannerTimeoutStreak24h(plannerRecent),
-    "aks-rp-e2e.planner.slow-count-24h": () =>
-      plannerRecent.filter((run) => isSlowPlannerRun(run)).length,
-    "aks-rp-e2e.artifact.duplicate-group-count": () => duplicateArtifactCount(),
+    }),
+    "aks-rp-e2e.run.live-idle-with-runnable-work": () => ({
+      value:
+        !tasks.projectClosed &&
+        countReplays() > 0 &&
+        specs.unverified > 0 &&
+        hasLiveExecutionRunnableBacklog() &&
+        live.length === 0
+          ? 1
+          : 0,
+    }),
+    "aks-rp-e2e.planner.timeout-24h": () => ({
+      value: plannerTimeoutStreak24h(plannerRecent),
+    }),
+    "aks-rp-e2e.planner.slow-count-24h": () => ({
+      value: plannerRecent.filter((run) => isSlowPlannerRun(run)).length,
+    }),
+    "aks-rp-e2e.artifact.duplicate-group-count": () => ({
+      value: duplicateArtifactCount(),
+    }),
   };
 
   const compute = values[metricId];
   if (!compute) {
     throw new Error(`Unknown metric id: ${metricId}`);
   }
-  return compute();
+  return { measuredAt: Date.now(), ...compute() };
 }
 
 const metricId = process.argv[2];
 if (!metricId || metricId === "--help" || metricId === "-h") {
-  console.error("Usage: bun run metrics:sample <metric-id>");
+  console.error("Usage: bun run metrics:sample <metric-id> [--json]");
   process.exit(2);
 }
 
-console.log(valueFor(metricId));
+const asJson = process.argv.includes("--json");
+const sample = metricSampleOutputFor(metricId);
+if (asJson) {
+  console.log(JSON.stringify(sample));
+} else {
+  console.log(sample.value);
+}

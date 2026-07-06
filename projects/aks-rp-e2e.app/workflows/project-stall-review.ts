@@ -8,7 +8,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { resolveTaskTreePath, type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
 import { defaultFeatureCompactLoopStatePath } from "./lib/feature-compact-loop-store.ts";
 import { defaultFeatureReferenceLoopStatePath } from "./lib/feature-reference-loop-store.ts";
 import { defaultSpecLoopStatePath } from "./lib/spec-loop-store.ts";
@@ -130,7 +130,7 @@ function parseInput(raw: string, defaultAgent: string): StallReviewConfig {
   return {
     appDir,
     projectDir,
-    treePath: join(appDir, "tasks", "tree.json"),
+    treePath: resolveTaskTreePath(appDir),
     agent: field(raw, "owner") ?? field(raw, "agent") ?? defaultAgent,
     maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
     maxLoopPulses: Number(field(raw, "maxLoopPulses") ?? 3),

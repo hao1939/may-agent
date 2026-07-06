@@ -10,7 +10,7 @@ const appTaskContext =
 
 const taskTreeContext = [
   "projects/aks-rp-e2e.app/project.json",
-  "projects/aks-rp-e2e.app/tasks/tree.json",
+  "projects/aks-rp-e2e.app/.state/tasks/tree.json",
   "projects/aks-rp-e2e.app/tasks/README.md",
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go",
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go",
@@ -63,6 +63,40 @@ export default defineProjectApp({
           type: "project.watchdog.check.requested",
           target: { project: projectId },
           data: { project: projectId },
+        },
+      ],
+    },
+    {
+      id: "durable-loop-pulse",
+      enabled: true,
+      intervalMs: 600_000,
+      emits: [
+        {
+          type: "project.task.tick",
+          target: { project: projectId, taskId: specLoopTaskId },
+          action: "spec-loop",
+          data: {
+            project: projectId,
+            reason: "scheduled-durable-loop-pulse",
+          },
+        },
+        {
+          type: "project.task.tick",
+          target: { project: projectId, taskId: featureReferenceLoopTaskId },
+          action: "feature-reference-loop",
+          data: {
+            project: projectId,
+            reason: "scheduled-durable-loop-pulse",
+          },
+        },
+        {
+          type: "project.task.tick",
+          target: { project: projectId, taskId: featureCompactLoopTaskId },
+          action: "feature-compact-loop",
+          data: {
+            project: projectId,
+            reason: "scheduled-durable-loop-pulse",
+          },
         },
       ],
     },
@@ -161,7 +195,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Owner loop. Wakes the project owner, which updates tasks/tree.json and explicitly assigns worker tasks.",
+        "Owner loop. Wakes the project owner, which updates the task tree and explicitly assigns worker tasks.",
       handler: {
         workflow: "project-planner",
         includeEvent: true,
@@ -188,6 +222,8 @@ export default defineProjectApp({
         { type: "escalation.dismissed", owner: "agent:aks-explorer" },
         { type: "metric.breach", owner: "agent:aks-explorer" },
         { type: "metric.recovered", owner: "agent:aks-explorer" },
+        { type: "learning.feedback", owner: "agent:aks-explorer" },
+        { type: "learning.feedback", owner: "agent:aks-reviewer" },
         { type: "coverage.gap.detected", target: { project: projectId } },
       ],
       emits: [
@@ -277,7 +313,11 @@ export default defineProjectApp({
         task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 1_800_000,
       },
-      emits: ["project.planning.requested", "project.stall.review.requested"],
+      emits: [
+        "project.planning.requested",
+        "project.stall.review.requested",
+        "project.task.tick",
+      ],
       context: taskTreeContext,
     },
     {
@@ -448,6 +488,7 @@ export default defineProjectApp({
       "project.test_run.completed",
       "metric.breach",
       "metric.recovered",
+      "learning.feedback",
       "escalation.resolved",
       "escalation.dismissed",
       "coverage.gap.detected",

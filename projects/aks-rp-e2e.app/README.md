@@ -14,6 +14,32 @@ aks-rp-e2e.app/  # May-agent app: tasks, workflows, agents, UI, steering
 how May-agent drives that project through events, workflows, task-tree state,
 and UI integration.
 
+## Knowledge Layers
+
+The project has two kinds of knowledge:
+
+- AKS knowledge model: source-backed feature behavior, API/design/doc claims,
+  generated test intent, specs, scenario behavior, compact plans,
+  resource/state DAGs, live test results, and known gaps. Ground truth comes
+  from authorized docs, design docs, API specs, and approved product contracts;
+  `../aks-rp-e2e` is executable workspace and evidence, not ground truth by
+  itself. The app owns the model so it can generate, verify, compact, and
+  investigate AKS tests.
+- Project operating knowledge: task breakdown, workflow routing, loop ledgers,
+  review/stall handling, retries, exact waits, and planner decisions. Durable
+  project operating knowledge belongs in this app.
+
+The bridge is a normal task workflow:
+
+```text
+task -> workflow -> domain command/artifact -> workflowResult
+     -> project.task.completed -> task-reviewer -> project-planner
+```
+
+Workflow code collects facts and writes scoped artifacts. The agent/reviewer
+judges whether the result satisfies the goal. The planner owns task-tree
+mutation. See `design/project-knowledge-layers.md` for the full picture.
+
 ## Workspace Binding
 
 The app declaration in `app.ts` points at the sibling domain repo:
@@ -163,6 +189,7 @@ Useful commands:
 - `bun run typecheck` - run `tsc` for the app boundary.
 - `bun run test` - run stable workflow and replanning tests.
 - `bun run test:ui` - run state-sensitive UI e2e tests.
+- `bun run health` - print the read-only project health report.
 - `bun run tasks:summary` - print task-tree counts and roots.
 
 ## Focus Plan Cadence
@@ -202,6 +229,12 @@ metrics. Do not treat `project.json` summaries or root ceiling-era context as
 authoritative signals that the project is completed, at ceiling, or safe to
 stop reviewing.
 
+Use `bun run health` for the canonical operator readout. It joins the live task
+tree, assignment queue, journal, planner/reviewer traces, and durable loop
+progress into one status: `complete`, `moving`, `attention`, or `stalled`.
+`bun run health --json` exposes the same facts as structured data for metrics,
+workflow triage, or UI surfaces.
+
 Manual actions exposed by `app.ts`:
 
 - `request-focus-plan` - ask for a new or refreshed focus proposal.
@@ -218,11 +251,14 @@ Spec-loop operator commands:
 
 ## Active Design Proposals
 
+- `design/project-knowledge-layers.md` - overview of the AKS knowledge model
+  versus project operating knowledge and how workflows bridge them.
+- `design/project-observability.md` - read-only project health contract for
+  understanding whether the app is moving and what needs inspection.
 - `design/spec-verification-loop.md` - proposal for a task-workflow-routed
   single-spec verification loop over the AKS RP E2E spec set.
-- `design/reusable-business-workflows.md` - proposal for reusable feature
-  reference research, spec test authoring, and feature compact packaging
-  workflows that loops and manual tasks can share.
+- `design/reusable-task-workflows.md` - design for reusable task workflows,
+  optional workflow input/output contracts, and structured workflow results.
 
 ## Runtime Reload
 

@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveTaskTreePath } from "@may-agent/sdk";
 
 type ProjectJson = {
   domainProject?: {
@@ -116,7 +117,7 @@ function loadAppContext(appDir: string): {
     projectJson?.domainProject?.path ?? "../aks-rp-e2e",
   );
   const taskTree = readJson<TaskTree>(
-    resolve(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
   ) ?? {
     tasks: {},
   };
@@ -210,12 +211,27 @@ function featureSignalsFromSpecPath(
   try {
     const fullPath = resolve(projectDir, specPath);
     const spec = JSON.parse(readFileSync(fullPath, "utf-8")) as {
+      id?: unknown;
       featureId?: unknown;
       featurePathIds?: unknown;
+      probeRef?: unknown;
     };
     const signals: string[] = [];
+    if (typeof spec.id === "string" && spec.id.trim()) {
+      signals.push(`spec:${spec.id.trim()}`);
+    }
     if (typeof spec.featureId === "string" && spec.featureId.trim()) {
       signals.push(`feature:${spec.featureId.trim()}`);
+    }
+    if (typeof spec.probeRef === "string" && spec.probeRef.trim()) {
+      const probeName = spec.probeRef
+        .trim()
+        .split("/")
+        .pop()
+        ?.replace(/\.ts$/, "");
+      if (probeName) {
+        signals.push(`replay:${probeName}`);
+      }
     }
     if (Array.isArray(spec.featurePathIds)) {
       for (const featurePathId of spec.featurePathIds) {
@@ -229,6 +245,24 @@ function featureSignalsFromSpecPath(
   } catch {
     return [];
   }
+}
+
+function featureRootedSiblingSpecPaths(path: string): string[] {
+  const parts = path.split("/");
+  if (parts[0] !== "features" || parts[2] !== "tests" || !parts[3]) {
+    return [];
+  }
+
+  const baseName = parts[3].replace(/\.ts$/, "");
+  const candidates = new Set<string>([
+    `features/${parts[1]}/specs/${baseName}.json`,
+  ]);
+  if (baseName.endsWith(".test")) {
+    candidates.add(
+      `features/${parts[1]}/specs/${baseName.slice(0, -".test".length)}.json`,
+    );
+  }
+  return [...candidates];
 }
 
 function derivedPathSignals(projectDir: string, path: string): string[] {
@@ -248,6 +282,26 @@ function derivedPathSignals(projectDir: string, path: string): string[] {
       .replace(/^replays\//, "specs/")
       .replace(/\.ts$/, ".json");
     signals = featureSignalsFromSpecPath(projectDir, siblingSpecPath);
+  }
+
+  if (
+    parts[0] === "features" &&
+    parts[2] === "specs" &&
+    parts[3]?.endsWith(".json")
+  ) {
+    signals = featureSignalsFromSpecPath(projectDir, path);
+  }
+
+  if (
+    parts[0] === "features" &&
+    parts[2] === "tests" &&
+    parts[3]?.endsWith(".ts")
+  ) {
+    const siblingSignals = featureRootedSiblingSpecPaths(path).flatMap(
+      (siblingSpecPath) =>
+        featureSignalsFromSpecPath(projectDir, siblingSpecPath),
+    );
+    signals = [...signals, ...siblingSignals];
   }
 
   const normalized = [
@@ -441,6 +495,17 @@ function isRootExactPathCarrier(task: RelatedTask): boolean {
   );
 }
 
+function isBoundedSelfCarrier(
+  task: RelatedTask,
+  boundedSliceLabel?: string,
+): boolean {
+  return Boolean(
+    boundedSliceLabel &&
+    task.id === boundedSliceLabel &&
+    ["active", "review"].includes(task.status),
+  );
+}
+
 function summarizeFiles(
   changes: GitChange[],
   taskTree: TaskTree,
@@ -458,7 +523,11 @@ function summarizeFiles(
       change.path,
     );
     const carrierTasks = boundedMode
-      ? related.filter((task) => isRootExactPathCarrier(task))
+      ? related.filter(
+          (task) =>
+            isRootExactPathCarrier(task) ||
+            isBoundedSelfCarrier(task, options.boundedSliceLabel),
+        )
       : [];
     const activeOrReview = related.filter(
       (task) =>

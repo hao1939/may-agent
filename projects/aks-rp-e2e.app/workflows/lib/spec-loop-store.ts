@@ -37,6 +37,7 @@ export type SpecLoopSpecState = {
   activeWorkflowRunId?: string | null;
   heartbeatAt?: string | null;
   updatedAt: string;
+  review?: Record<string, unknown>;
 };
 
 export type SpecLoopState = {
@@ -312,6 +313,70 @@ export function saveSpecLoopState(
     if (!mirror || mirror === path) continue;
     writeJson(mirror, state);
   }
+}
+
+function timestampMs(value: unknown): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function specReviewTimestamp(
+  spec: SpecLoopSpecState | undefined,
+): number | null {
+  const review = spec?.review;
+  if (!review || typeof review !== "object" || Array.isArray(review)) {
+    return null;
+  }
+  return (
+    timestampMs((review as Record<string, unknown>).reviewedAt) ??
+    timestampMs((review as Record<string, unknown>).updatedAt)
+  );
+}
+
+function specUpdatedTimestamp(spec: SpecLoopSpecState | undefined): number {
+  return (
+    Math.max(
+      timestampMs(spec?.updatedAt) ?? 0,
+      specReviewTimestamp(spec) ?? 0,
+    ) || 0
+  );
+}
+
+/**
+ * Import newer rows from the project-local mirror back into the app-owned loop
+ * state. The app state is the controller source of truth, but bounded worker
+ * tasks often run from the domain workspace and may update the mirrored
+ * `.state/spec-loop/state.json` there. Without this import, their accepted
+ * state writeback is overwritten on the next controller pulse.
+ */
+export function importNewerSpecLoopMirrorRows(
+  state: SpecLoopState,
+  mirrorPath: string,
+): { imported: number; specIds: string[] } {
+  if (!existsSync(mirrorPath)) return { imported: 0, specIds: [] };
+  const mirror = readJson<SpecLoopState | null>(mirrorPath, null);
+  if (!mirror?.specs || typeof mirror.specs !== "object") {
+    return { imported: 0, specIds: [] };
+  }
+
+  const importedSpecIds: string[] = [];
+  for (const [specId, mirrorSpec] of Object.entries(mirror.specs)) {
+    if (!state.specs[specId]) continue;
+    if (
+      specUpdatedTimestamp(mirrorSpec) <=
+      specUpdatedTimestamp(state.specs[specId])
+    ) {
+      continue;
+    }
+    state.specs[specId] = normalizeSpecLoopSpecState({
+      ...state.specs[specId],
+      ...mirrorSpec,
+    });
+    importedSpecIds.push(specId);
+  }
+
+  return { imported: importedSpecIds.length, specIds: importedSpecIds };
 }
 
 export function orderedPendingSpecIds(state: SpecLoopState): string[] {

@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,7 +21,7 @@ async function writeTree(
   input: { state?: string; attemptId?: string } = {},
 ) {
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -80,24 +81,30 @@ function completionEvent(
   input: {
     taskId?: string;
     attemptId?: string;
+    result?: string;
+    summary?: string;
+    evidenceRefs?: string[];
   } = {},
 ): Record<string, unknown> {
   const taskId = input.taskId ?? "review-task";
   const attemptId = input.attemptId ?? "attempt-1";
+  const result = input.result ?? "done";
+  const summary = input.summary ?? "GitHub live workflow passed.";
+  const evidenceRefs = input.evidenceRefs ?? ["runs/test-results/test-1"];
   return {
     type: "project.task.completed",
     target: { project: "aks-rp-e2e", taskId },
     project: "aks-rp-e2e",
     taskId,
     attemptId,
-    result: "done",
-    summary: "GitHub live workflow passed.",
+    result,
+    summary,
     completion: {
       taskId,
       attemptId,
-      result: "done",
-      summary: "GitHub live workflow passed.",
-      evidenceRefs: ["runs/test-results/test-1"],
+      result,
+      summary,
+      evidenceRefs,
     },
   };
 }
@@ -240,7 +247,7 @@ describe("task reviewer", () => {
     } as any);
 
     const tree = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     ) as { tasks: Record<string, any> };
     expect(plannerResult.status).toBe("done");
     expect(plannerResult.message).toContain(
@@ -279,6 +286,54 @@ describe("task reviewer", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("not review");
     expect(dispatched).toEqual([]);
+  });
+
+  test("emits redo without reviewer session for empty worker completion", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "blocked",
+            summary: "Agent ended with an empty assistant turn",
+            evidenceRefs: [],
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "redo",
+        confidence: "high",
+        findings: ["worker-empty-assistant-turn", "worker-no-evidence"],
+      },
+    });
   });
 
   test("falls back to escalate review when reviewer output is malformed", async () => {

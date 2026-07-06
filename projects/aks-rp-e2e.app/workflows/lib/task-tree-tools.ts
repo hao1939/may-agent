@@ -32,6 +32,11 @@ import {
   exactBlockedWaitStewardshipProgress,
   runnableDurableLoopProgress,
 } from "./durable-loop-wait-stewardship.ts";
+import {
+  defaultSpecLoopStatePath,
+  type SpecLoopSpecState,
+  type SpecLoopState,
+} from "./spec-loop-store.ts";
 
 export {
   appendPlannerRun,
@@ -123,6 +128,284 @@ function workflowProgressBlocksCompletion(task: TaskNode): string | null {
   return `${reason}.${pending}${running}${blocked}`.trim();
 }
 
+function stringValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function representedSpecIdsForTask(task: TaskNode): string[] {
+  const ids = new Set<string>();
+  const context = taskContext(task);
+  for (const key of ["representedSpecIds", "sampledSpecIds", "specIds"]) {
+    for (const value of normalizeStringArray(context[key])) ids.add(value);
+  }
+  const specId = stringValue(context.specId);
+  if (specId) ids.add(specId);
+  for (const input of normalizeStringArray(task.inputs)) {
+    if (input.startsWith("spec:")) {
+      const scopedSpecId = input.slice("spec:".length).trim();
+      if (scopedSpecId) ids.add(scopedSpecId);
+    }
+  }
+  for (const scope of normalizeStringArray(task.conflict_scope)) {
+    if (scope.startsWith("spec:")) {
+      const scopedSpecId = scope.slice("spec:".length).trim();
+      if (scopedSpecId) ids.add(scopedSpecId);
+    }
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function specFamily(specId: string): string {
+  return (
+    specId
+      .replace(/^spec\./, "")
+      .split(".")[0]
+      ?.trim() || "unknown"
+  );
+}
+
+function specLoopMaxDirectAttempts(
+  tree: ReturnType<typeof readTaskTree>,
+  state: SpecLoopState,
+): number {
+  const loopTask = tree.tasks[state.loopTaskId || "aks-spec-verification-loop"];
+  const value = loopTask
+    ? taskContext(loopTask).maxDirectAttemptsPerSpec
+    : null;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 3;
+}
+
+function canDirectlyRunSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  if (spec.status === "pending" || spec.status === "done") {
+    return !spec.lastRunUrl || (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+  }
+  if (spec.status !== "error" && spec.status !== "fail") return false;
+  return (spec.attempts ?? 0) < maxDirectAttemptsPerSpec;
+}
+
+function isRetryExhaustedSpec(
+  state: SpecLoopState,
+  specId: string,
+  maxDirectAttemptsPerSpec: number,
+): boolean {
+  const spec = state.specs?.[specId];
+  if (!spec) return false;
+  const status = spec.status || "pending";
+  if (status === "pending") {
+    return !canDirectlyRunSpec(state, specId, maxDirectAttemptsPerSpec);
+  }
+  if (status !== "error" && status !== "fail") return false;
+  return (spec.attempts ?? 0) >= maxDirectAttemptsPerSpec;
+}
+
+function specLoopSpecHasStructuredSuccessor(
+  spec: SpecLoopSpecState | undefined,
+): boolean {
+  if (!spec) return false;
+  const record = spec as SpecLoopSpecState & {
+    successorDisposition?: unknown;
+    resumeCondition?: unknown;
+  };
+  if (
+    typeof record.successorDisposition === "string" &&
+    record.successorDisposition.trim()
+  ) {
+    return true;
+  }
+  if (
+    typeof record.resumeCondition === "string" &&
+    record.resumeCondition.trim()
+  ) {
+    return true;
+  }
+  return !!spec.review && typeof spec.review === "object";
+}
+
+function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
+  const keys = new Set<string>();
+  if (!task) return keys;
+  const context = taskContext(task);
+  if (context.specLoopFollowup === true) {
+    const status = context.status;
+    const family = context.featureFamily;
+    if (typeof status === "string" && typeof family === "string") {
+      keys.add(`${status}:${family}`);
+    }
+  }
+  for (const scope of normalizeStringArray(task.conflict_scope)) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("spec-loop-followup:")) continue;
+    const [, statusPart, familyPart] = trimmed.split(":");
+    if (statusPart?.trim() && familyPart?.trim()) {
+      keys.add(`${statusPart.trim()}:${familyPart.trim()}`);
+    }
+  }
+  return keys;
+}
+
+function taskHasStructuredBlocker(task: TaskNode | undefined): boolean {
+  return !!task?.blocker && typeof task.blocker === "object";
+}
+
+function taskTextMentionsSpecId(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    acceptance: task.acceptance,
+    inputs: task.inputs,
+    context: task.context,
+    blocker: task.blocker,
+  }).toLowerCase();
+  return haystack.includes(specId.toLowerCase());
+}
+
+function taskTextMentionCountsAsSpecOwner(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!taskTextMentionsSpecId(task, specId)) return false;
+  return nodeState(task) !== "blocked" || taskHasStructuredBlocker(task);
+}
+
+function exactSpecLoopOwnerTaskId(input: {
+  tree: ReturnType<typeof readTaskTree>;
+  state: SpecLoopState;
+  specId: string;
+  excludeTaskId: string;
+}): string | null {
+  const spec = input.state.specs?.[input.specId];
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
+    !!task &&
+    task.id !== input.excludeTaskId &&
+    representingStates.has(nodeState(task));
+
+  const taskIds = new Set<string>();
+  if (typeof spec?.taskId === "string" && spec.taskId.trim()) {
+    taskIds.add(spec.taskId.trim());
+  }
+  for (const task of Object.values(input.tree.tasks ?? {})) {
+    if (!isRepresenting(task)) continue;
+    if (
+      normalizeStringArray(task.conflict_scope).includes(`spec:${input.specId}`)
+    ) {
+      taskIds.add(task.id);
+      continue;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      taskIds.add(task.id);
+    }
+  }
+
+  for (const taskId of taskIds) {
+    const task = input.tree.tasks?.[taskId];
+    if (!isRepresenting(task)) continue;
+    if (
+      normalizeStringArray(task.conflict_scope).includes(`spec:${input.specId}`)
+    ) {
+      return taskId;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      return taskId;
+    }
+    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+    if (
+      spec?.taskId === taskId &&
+      specLoopSpecHasStructuredSuccessor(spec) &&
+      taskHasStructuredBlocker(task)
+    ) {
+      return taskId;
+    }
+  }
+
+  return null;
+}
+
+function representedSpecLoopFollowupGroups(input: {
+  tree: ReturnType<typeof readTaskTree>;
+  excludeTaskId: string;
+}): Set<string> {
+  const represented = new Set<string>();
+  const representingStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  for (const task of Object.values(input.tree.tasks ?? {})) {
+    if (task.id === input.excludeTaskId) continue;
+    if (!representingStates.has(nodeState(task))) continue;
+    for (const key of specLoopFollowupGroupKeys(task)) represented.add(key);
+  }
+  return represented;
+}
+
+function specLoopCompletionStructuralGaps(input: {
+  config: TaskTreeConfig;
+  task: TaskNode;
+}): string[] {
+  if (taskContext(input.task).specLoopFollowup !== true) return [];
+  const statePath = defaultSpecLoopStatePath(input.config.appDir);
+  if (!existsSync(statePath)) return [];
+  const state = readJsonFile<SpecLoopState | null>(statePath, null);
+  if (!state?.specs) return [];
+  const representedSpecIds = representedSpecIdsForTask(input.task).filter(
+    (specId) => !!state.specs?.[specId],
+  );
+  if (representedSpecIds.length === 0) return [];
+
+  const tree = readTaskTree(input.config);
+  const maxDirectAttempts = specLoopMaxDirectAttempts(tree, state);
+  const representedGroups = representedSpecLoopFollowupGroups({
+    tree,
+    excludeTaskId: input.task.id,
+  });
+  const unowned: string[] = [];
+  for (const specId of representedSpecIds) {
+    if (!isRetryExhaustedSpec(state, specId, maxDirectAttempts)) continue;
+    const status = state.specs[specId]?.status || "pending";
+    const groupStatus = status === "pending" ? "pending" : status;
+    if (representedGroups.has(`${groupStatus}:${specFamily(specId)}`)) {
+      continue;
+    }
+    if (
+      exactSpecLoopOwnerTaskId({
+        tree,
+        state,
+        specId,
+        excludeTaskId: input.task.id,
+      })
+    ) {
+      continue;
+    }
+    unowned.push(specId);
+  }
+  return unowned;
+}
+
 const durableLoopTaskIds = new Set([
   "aks-spec-verification-loop",
   "aks-feature-reference-loop",
@@ -131,6 +414,27 @@ const durableLoopTaskIds = new Set([
 
 function nodeState(task: TaskNode | undefined): string {
   return String(task?.status ?? task?.state ?? "");
+}
+
+function traceRecord(task: TaskNode): Record<string, unknown> {
+  return task.trace &&
+    typeof task.trace === "object" &&
+    !Array.isArray(task.trace)
+    ? (task.trace as Record<string, unknown>)
+    : {};
+}
+
+function traceString(task: TaskNode, key: string): string {
+  const value = traceRecord(task)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function activeStartedAttempt(task: TaskNode): string | null {
+  if (nodeState(task) !== "active") return null;
+  const currentAttemptId = traceString(task, "current_attempt_id");
+  const startedAttemptId = traceString(task, "worker_started_attempt_id");
+  if (!currentAttemptId || currentAttemptId !== startedAttemptId) return null;
+  return currentAttemptId;
 }
 
 function dependencyReferences(tree: TaskTree): Set<string> {
@@ -193,7 +497,17 @@ function reopenIncompleteDurableLoopRoots(config: TaskTreeConfig): string[] {
     for (const taskId of durableLoopTaskIds) {
       const task = tree.tasks[taskId];
       if (!task) continue;
-      const blocked = workflowProgressBlocksCompletion(task);
+      const childStates = normalizeStringArray(task.children).map((childId) =>
+        nodeState(tree.tasks[childId]),
+      );
+      const blocked =
+        workflowProgressBlocksCompletion(task) ??
+        (nodeState(task) === "blocked" &&
+        childStates.some((state) =>
+          ["active", "review", "backlog"].includes(state),
+        )
+          ? `Durable loop root is blocked while child rollup is ${childStates.includes("active") ? "active" : childStates.includes("review") ? "review" : "backlog"}`
+          : null);
       if (!blocked) continue;
       const status = nodeState(task);
       if (status === "backlog" || status === "active") continue;
@@ -243,10 +557,23 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
 > & {
   reopenedDurableLoopRoots: string[];
 } {
-  const result = sdkRepairTaskTreeRollups(config);
+  const initialResult = sdkRepairTaskTreeRollups(config);
   const reopenedDurableLoopRoots = reopenIncompleteDurableLoopRoots(config);
+  const finalResult = reopenedDurableLoopRoots.length
+    ? sdkRepairTaskTreeRollups(config)
+    : initialResult;
   return {
-    ...result,
+    ...finalResult,
+    changed:
+      initialResult.changed ||
+      finalResult.changed ||
+      reopenedDurableLoopRoots.length > 0,
+    repaired: [
+      ...new Set([
+        ...(initialResult.repaired ?? []),
+        ...(finalResult.repaired ?? []),
+      ]),
+    ],
     reopenedDurableLoopRoots,
   };
 }
@@ -316,6 +643,12 @@ export function markTaskDone(
 ): TaskNode {
   const task = readTask(config, input.taskId);
   if (!task) throw new Error(`Task not found: ${input.taskId}`);
+  const activeAttemptId = activeStartedAttempt(task);
+  if (activeAttemptId) {
+    throw new Error(
+      `Task ${task.id} is active with current started attempt ${activeAttemptId}; do not mark it done/replaced/cancelled from owner cleanup. Wait for worker completion, use requeue-active for a stale attempt, or create separate follow-up work without closing the active assignment.`,
+    );
+  }
   if (durableLoopTaskIds.has(task.id)) {
     const blocked = workflowProgressBlocksCompletion(task);
     if (blocked) {
@@ -330,6 +663,16 @@ export function markTaskDone(
     if (blocked) {
       throw new Error(
         `Task ${task.id} cannot be marked done because ${blocked}. Use --resolution replaced/cancelled only when intentionally closing or replacing the task.`,
+      );
+    }
+    const unownedSpecIds = specLoopCompletionStructuralGaps({ config, task });
+    if (unownedSpecIds.length > 0) {
+      throw new Error(
+        `Spec-loop follow-up ${task.id} cannot be marked done while represented retry-drained spec(s) lack an open structural owner: ${unownedSpecIds
+          .slice(0, 8)
+          .join(
+            ", ",
+          )}. Create or link an exact open holder, escalation, rerun, or terminal disposition first.`,
       );
     }
   }
@@ -699,6 +1042,20 @@ function includesAny(text: string, signals: string[]): boolean {
   return signals.some((signal) => text.includes(signal));
 }
 
+function isHumanOwnedExternalWait(task: TaskNode): boolean {
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+  const category =
+    typeof blocker.category === "string"
+      ? blocker.category.trim().toLowerCase()
+      : "";
+  const owner =
+    typeof blocker.owner === "string" ? blocker.owner.trim().toLowerCase() : "";
+  return category === "external-wait" && owner === "human";
+}
+
 function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
@@ -808,6 +1165,9 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           "required",
         ]);
       if (environmentBlocked) {
+        if (isHumanOwnedExternalWait(task)) {
+          continue;
+        }
         warnings.push({
           kind: "environment-overblock",
           taskId: task.id,

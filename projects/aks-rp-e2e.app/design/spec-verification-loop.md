@@ -14,6 +14,11 @@ The loop should keep working without asking the LLM planner to repeatedly pick
 the next spec. The task tree remains the visible control plane, while a small
 deterministic workflow keeps a bounded set of spec leaves moving.
 
+This is one concrete instance of the knowledge split described in
+`project-knowledge-layers.md`: the loop ledger and retry/frontier policy are
+project operating knowledge, while accepted spec fixes, live pass evidence, and
+feature/model updates are AKS test knowledge.
+
 The completion bar is intentionally strict: every single spec needs a live
 `pass`. Catalog-level dispositions such as deprecated, product-gap, or
 environment-constrained may inform the fix/escalation work, but they do not
@@ -106,11 +111,12 @@ Each child leaf verifies one spec:
 
 ## Event Flow
 
-The loop uses the existing task event path.
+The loop root is a durable controller task. It is not a concrete worker leaf.
+The canonical way to wake it is `project.task.tick` with a concrete task target
+and an explicit top-level action.
 
 ```text
-project.task.assigned taskId=aks-spec-verification-loop
-  -> task workflow router
+project.task.tick taskId=aks-spec-verification-loop action=spec-loop
   -> spec-loop-controller pulse
   -> create/fill 3-5 child spec leaves
   -> emit project.task.assigned for runnable child leaves
@@ -129,8 +135,13 @@ project.task.completed taskId=verify-spec-A
   -> loop task can be pulsed again to refill the window
 ```
 
-No new loop-specific event family is needed. The preferred pulse event is the
-generic task-targeted form:
+`project.task.assigned` remains the worker path for executable child leaves.
+If a loop root is accidentally assigned, the planner may bridge that assignment
+back into a controller tick as compatibility behavior, but producers should not
+rely on the worker to consume durable loop roots.
+
+No new loop-specific event family is needed. The pulse event is the generic
+task-targeted form:
 
 ```json
 {
@@ -214,6 +225,14 @@ accepted terminal owner disposition. Retry-drained or direct-run-ineligible
 pending records must create grouped follow-up work; they must not be hidden by a
 `stranded` or retry-budget-exhausted flag.
 
+The simple operating rule is: unfinished work must have an owner. A spec that
+has exhausted direct retries is not finished, but it may not be visible as a
+task yet because it lives in the loop ledger. The controller must turn those
+ledger records into visible grouped recovery tasks, exact waits, escalations, or
+passing results. A pulse cap may limit direct verifier dispatch, but it must not
+leave retry-drained feature families without any recovery owner when direct
+execution is drained.
+
 ## Controller Workflow
 
 `spec-loop-controller` is deterministic. It should:
@@ -224,7 +243,9 @@ pending records must create grouped follow-up work; they must not be hidden by a
 - count open child leaves under the loop parent;
 - create verifier child leaves until the configured direct-run window is full;
 - create grouped follow-up leaves for retry-drained `pending`, `error`, and
-  `fail` records when no direct verifier work can be launched;
+  `fail` records when no direct verifier work can be launched; grouped
+  follow-ups are compact by feature family, but all affected specs must be
+  recorded in task context so ownership is durable;
 - assign runnable child leaves;
 - update compact loop counters;
 - pause on circuit breakers;

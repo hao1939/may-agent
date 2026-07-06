@@ -18,6 +18,7 @@ import {
   requeueStaleActiveTasks,
   repairTaskTreeRollups,
   rollupParent,
+  saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
   updateAcceptedReviewMetadata,
   updateArchivedTaskOutputs,
@@ -28,6 +29,11 @@ import {
   type TaskCompletionClaim,
   writeKanbanSnapshot,
 } from "../workflows/lib/task-tree-tools.ts";
+import {
+  readTaskTree,
+  withTreeLock,
+  type TaskNode,
+} from "../workflows/lib/task-tree-store.ts";
 
 function usage(): never {
   console.error(`Usage:
@@ -36,6 +42,7 @@ function usage(): never {
   bun run task-tree kanban
   bun run task-tree kanban-snapshot
   bun run task-tree repair-rollups
+  bun run task-tree repair-blocked-contracts [--dry-run]
   bun run task-tree prune-missing-children <parent-id>
   bun run task-tree compact-done [--limit N]
   bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
@@ -158,6 +165,260 @@ function blockerOptions(): {
   };
 }
 
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringField(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): string {
+  if (!record) return "";
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function objectField(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): Record<string, unknown> | null {
+  if (!record) return null;
+  for (const key of keys) {
+    const nested = recordValue(record[key]);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function taskTrace(task: TaskNode): Record<string, unknown> | null {
+  return recordValue((task as { trace?: unknown }).trace);
+}
+
+function blockerText(blocker: unknown): string {
+  if (typeof blocker === "string") return blocker.trim();
+  const record = recordValue(blocker);
+  if (!record) return "";
+  return [
+    stringField(record, ["condition"]),
+    stringField(record, ["resume_condition", "resumeCondition"])
+      ? `Resume: ${stringField(record, ["resume_condition", "resumeCondition"])}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function conditionText(text: string): string {
+  return text.replace(/\s+Resume:\s+.*$/is, "").trim() || text.trim();
+}
+
+function resumeCondition(
+  text: string,
+  blocker: Record<string, unknown> | null,
+) {
+  const existing = stringField(blocker, [
+    "resume_condition",
+    "resumeCondition",
+    "waitingCondition",
+  ]);
+  if (existing) return existing;
+  const match = text.match(/\bResume:\s*(.+)$/is);
+  if (match?.[1]?.trim()) return match[1].trim();
+  return "Resume when the stated blocker condition is no longer true and the owner records the concrete evidence.";
+}
+
+function inferBlockedCategory(text: string): string {
+  const lower = text.toLowerCase();
+  if (
+    lower.includes("github") ||
+    lower.includes("workflow") ||
+    lower.includes("artifact") ||
+    lower.includes("log")
+  ) {
+    return "external-wait";
+  }
+  if (
+    lower.includes("product") ||
+    lower.includes("source") ||
+    lower.includes("environment") ||
+    lower.includes("capacity") ||
+    lower.includes("quota") ||
+    lower.includes("operator") ||
+    lower.includes("human")
+  ) {
+    return "external-wait";
+  }
+  return "blocked-wait";
+}
+
+function inferWaitingFor(
+  taskId: string,
+  text: string,
+): Record<string, unknown> {
+  const lower = text.toLowerCase();
+  const runId = text.match(/\b(?:run|workflow run)\s+(\d{6,})\b/i)?.[1];
+  if (runId) {
+    return {
+      type: "github.workflow_run.completed",
+      runId,
+      taskId,
+    };
+  }
+  if (
+    lower.includes("capacity") ||
+    lower.includes("quota") ||
+    lower.includes("headroom")
+  ) {
+    return {
+      type: "azure.capacity.available",
+      taskId,
+    };
+  }
+  if (
+    lower.includes("product fix") ||
+    lower.includes("product/source fix") ||
+    lower.includes("successful repro") ||
+    lower.includes("fresh success")
+  ) {
+    return {
+      type: "product_or_source_fix.available",
+      taskId,
+    };
+  }
+  if (
+    lower.includes("source") ||
+    lower.includes("evidence") ||
+    lower.includes("proof") ||
+    lower.includes("artifact") ||
+    lower.includes("log") ||
+    lower.includes("api spec") ||
+    lower.includes("doc")
+  ) {
+    return {
+      type: "evidence.available",
+      taskId,
+    };
+  }
+  if (
+    lower.includes("environment") ||
+    lower.includes("dns") ||
+    lower.includes("auth") ||
+    lower.includes("identity") ||
+    lower.includes("kubeconfig")
+  ) {
+    return {
+      type: "environment.available",
+      taskId,
+    };
+  }
+  return {
+    type: "blocker.resolved",
+    taskId,
+  };
+}
+
+function addMinutes(iso: string, minutes: number): string {
+  return new Date(Date.parse(iso) + minutes * 60_000).toISOString();
+}
+
+function addHours(iso: string, hours: number): string {
+  return new Date(Date.parse(iso) + hours * 3_600_000).toISOString();
+}
+
+function repairBlockedContracts(dryRun: boolean) {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const now = new Date().toISOString();
+    const repaired: string[] = [];
+    const unchanged: string[] = [];
+    for (const task of Object.values(tree.tasks ?? {})) {
+      const taskId = task.id;
+      if (!taskId || (task.status ?? task.state) !== "blocked") continue;
+      if ((task.children ?? []).length > 0) continue;
+      const blocker = recordValue(task.blocker);
+      const text = blockerText(task.blocker);
+      if (!text && blocker) {
+        unchanged.push(taskId);
+        continue;
+      }
+      const hasFullContract =
+        objectField(blocker, ["waiting_for", "waitingFor"]) &&
+        objectField(blocker, ["observed_by", "observedBy"]) &&
+        stringField(blocker, ["observation_method", "observationMethod"]) &&
+        stringField(blocker, ["next_check_at", "nextCheckAt"]) &&
+        stringField(blocker, ["owner"]) &&
+        stringField(blocker, ["fallback_at", "fallbackAt"]) &&
+        stringField(blocker, ["fallback_action", "fallbackAction"]);
+      if (hasFullContract) {
+        unchanged.push(taskId);
+        continue;
+      }
+      const trace = taskTrace(task);
+      const blockedAt =
+        stringField(blocker, ["blocked_at", "blockedAt"]) ||
+        stringField(trace, ["blocked_at", "created_at", "assigned_at"]) ||
+        now;
+      const condition =
+        stringField(blocker, ["condition"]) || conditionText(text);
+      const existingOwner = stringField(blocker, ["owner"]);
+      const owner =
+        existingOwner ||
+        (typeof task.owner === "string" && task.owner.trim()
+          ? task.owner.trim()
+          : "aks-explorer");
+      (task as { blocker?: unknown }).blocker = {
+        ...(blocker ?? {}),
+        condition,
+        category:
+          stringField(blocker, ["category"]) || inferBlockedCategory(text),
+        owner,
+        blocked_at: blockedAt,
+        waiting_for:
+          objectField(blocker, ["waiting_for", "waitingFor"]) ??
+          inferWaitingFor(taskId, text),
+        observed_by: objectField(blocker, ["observed_by", "observedBy"]) ?? {
+          workflow: "project-planner",
+          schedule: "blocked-frontier-owner-review",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          stringField(blocker, ["observation_method", "observationMethod"]) ||
+          "Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+        next_check_at:
+          stringField(blocker, ["next_check_at", "nextCheckAt"]) ||
+          addMinutes(now, 10),
+        resume_condition: resumeCondition(text, blocker),
+        fallback_at:
+          stringField(blocker, ["fallback_at", "fallbackAt"]) ||
+          addHours(now, 24),
+        fallback_action:
+          stringField(blocker, ["fallback_action", "fallbackAction"]) ||
+          "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
+      };
+      task.trace = {
+        ...(recordValue(task.trace) ?? {}),
+        blocked_contract_repaired_at: now,
+      } as typeof task.trace;
+      repaired.push(taskId);
+    }
+    if (!dryRun && repaired.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+    }
+    return {
+      dryRun,
+      repairedCount: repaired.length,
+      unchangedCount: unchanged.length,
+      repaired,
+      unchanged,
+    };
+  });
+}
+
 const appDir = resolve(
   process.env.APP_DIR ??
     dirname(fileURLToPath(import.meta.url)).replace(/\/scripts$/, ""),
@@ -195,6 +456,10 @@ if (command === "summary") {
   console.log(JSON.stringify(writeKanbanSnapshot(config), null, 2));
 } else if (command === "repair-rollups") {
   console.log(JSON.stringify(repairTaskTreeRollups(config), null, 2));
+} else if (command === "repair-blocked-contracts") {
+  console.log(
+    JSON.stringify(repairBlockedContracts(hasFlag("--dry-run")), null, 2),
+  );
 } else if (command === "prune-missing-children") {
   const parentId = process.argv[3];
   if (!parentId) usage();

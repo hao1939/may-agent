@@ -2,6 +2,7 @@
  * feature-compact-loop-controller — bounded controller for feature compact packages.
  */
 
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
@@ -45,14 +46,19 @@ import {
 import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
 import {
   activeWorkflowRuns,
+  getWorkflowRun,
   resolveGitHubClient,
+  type GitHubClient,
 } from "./lib/github-actions.ts";
+import {
+  capacityPreflightReason,
+  inspectLiveWorkflowArtifacts,
+  liveAksProofVersion,
+} from "./feature-compact-planner.ts";
 
 export const name = "feature-compact-loop-controller";
 export const description =
   "Keep a bounded frontier of feature compact planning tasks.";
-
-const liveAksProofVersion = "live-aks-proof-v2";
 
 function isFeatureCompactLoopTick(trigger: TriggerEvent | null): boolean {
   return (
@@ -75,6 +81,14 @@ function taskTrace(task: TaskNode): Record<string, unknown> {
     !Array.isArray(task.trace)
     ? (task.trace as Record<string, unknown>)
     : {};
+}
+
+function taskConflictScopes(task: TaskNode): string[] {
+  return Array.isArray((task as { conflict_scope?: unknown }).conflict_scope)
+    ? (task as { conflict_scope: unknown[] }).conflict_scope.filter(
+        (scope): scope is string => typeof scope === "string",
+      )
+    : [];
 }
 
 function traceString(task: TaskNode, key: string): string {
@@ -258,6 +272,37 @@ function openSupportChildCount(
     }).length;
 }
 
+function representedSupportErrorClasses(
+  loopTask: TaskNode,
+  tasks: Record<string, TaskNode>,
+): Set<string> {
+  const classes = new Set<string>();
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child || isFeatureCompactChild(child)) continue;
+    const status = taskStatus(child);
+    if (status === "done") continue;
+    const context = taskContext(child);
+    const errorClass = context.errorClass;
+    if (
+      context.featureCompactFollowup === true &&
+      typeof errorClass === "string" &&
+      errorClass.trim()
+    ) {
+      classes.add(errorClass.trim());
+    }
+    for (const scope of taskConflictScopes(child)) {
+      const trimmed = scope.trim();
+      if (!trimmed.startsWith("feature-compact-followup:")) continue;
+      const scopedClass = trimmed
+        .slice("feature-compact-followup:".length)
+        .trim();
+      if (scopedClass) classes.add(scopedClass);
+    }
+  }
+  return classes;
+}
+
 function blockedWaitChildCount(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
@@ -268,9 +313,62 @@ function blockedWaitChildCount(
     .filter((task) => taskStatus(task) === "blocked").length;
 }
 
+function featureKeysRepresentedByTask(input: {
+  task: TaskNode;
+  knownFeatureKeys?: Iterable<string>;
+}): Set<string> {
+  const keys = new Set<string>();
+  const context = taskContext(input.task);
+
+  const explicitFeatureKey = context.featureKey;
+  if (typeof explicitFeatureKey === "string" && explicitFeatureKey.trim()) {
+    keys.add(explicitFeatureKey.trim());
+  }
+
+  const sampledFeatureKeys = context.sampledFeatureKeys;
+  if (Array.isArray(sampledFeatureKeys)) {
+    for (const sampledFeatureKey of sampledFeatureKeys) {
+      if (typeof sampledFeatureKey === "string" && sampledFeatureKey.trim()) {
+        keys.add(sampledFeatureKey.trim());
+      }
+    }
+  }
+
+  for (const scope of taskConflictScopes(input.task)) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("feature-compact:")) continue;
+    const featureKey = trimmed.slice("feature-compact:".length).trim();
+    if (featureKey) keys.add(featureKey);
+  }
+
+  const knownFeatureKeys = [...(input.knownFeatureKeys ?? [])].filter(Boolean);
+  if (knownFeatureKeys.length > 0) {
+    const searchable = [
+      input.task.id,
+      input.task.goal,
+      ...(input.task.inputs ?? []).filter(
+        (value): value is string => typeof value === "string",
+      ),
+      ...(input.task.outputs ?? []).filter(
+        (value): value is string => typeof value === "string",
+      ),
+    ]
+      .join("\n")
+      .toLowerCase();
+    for (const featureKey of knownFeatureKeys) {
+      if (searchable.includes(featureKey.toLowerCase())) {
+        keys.add(featureKey);
+      }
+    }
+  }
+
+  return keys;
+}
+
 function blockedWaitFeatureKeys(
   loopTask: TaskNode,
   tasks: Record<string, TaskNode>,
+  knownFeatureKeys?: Iterable<string>,
 ): Set<string> {
   const keys = new Set<string>();
   for (const childId of loopTask.children ?? []) {
@@ -278,29 +376,60 @@ function blockedWaitFeatureKeys(
     if (!child || isFeatureCompactChild(child)) continue;
     if (taskStatus(child) !== "blocked") continue;
 
-    const explicitFeatureKey = taskContext(child).featureKey;
-    if (typeof explicitFeatureKey === "string" && explicitFeatureKey.trim()) {
-      keys.add(explicitFeatureKey.trim());
+    for (const featureKey of featureKeysRepresentedByTask({
+      task: child,
+      knownFeatureKeys,
+    })) {
+      keys.add(featureKey);
+    }
+  }
+  return keys;
+}
+
+function blockedSupportFeatureKeysForErrorClass(
+  loopTask: TaskNode | undefined,
+  tasks: Record<string, TaskNode>,
+  errorClass: string,
+): Set<string> {
+  const keys = new Set<string>();
+  if (!loopTask) return keys;
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child || isFeatureCompactChild(child)) continue;
+    if (taskStatus(child) !== "blocked") continue;
+    if (taskContext(child).errorClass !== errorClass) continue;
+
+    const featureKey = taskContext(child).featureKey;
+    if (typeof featureKey === "string" && featureKey.trim()) {
+      keys.add(featureKey.trim());
     }
 
-    const conflictScope = Array.isArray(
-      (child as { conflict_scope?: unknown }).conflict_scope,
-    )
-      ? (child as { conflict_scope: unknown[] }).conflict_scope
-      : [];
-    for (const scope of conflictScope) {
-      if (typeof scope !== "string") continue;
+    for (const scope of taskConflictScopes(child)) {
       const trimmed = scope.trim();
       if (!trimmed.startsWith("feature-compact:")) continue;
-      const featureKey = trimmed.slice("feature-compact:".length).trim();
-      if (featureKey) keys.add(featureKey);
+      const scopedFeatureKey = trimmed.slice("feature-compact:".length).trim();
+      if (scopedFeatureKey) keys.add(scopedFeatureKey);
     }
   }
   return keys;
 }
 
 function compactErrorClass(item: FeatureCompactItemState): string {
+  const durableErrorClass =
+    typeof item.errorClass === "string" ? item.errorClass.trim() : "";
+  if (durableErrorClass) return durableErrorClass;
+
+  const retryReason = (item.retryReason ?? "").toLowerCase();
   const summary = (item.lastSummary ?? "").toLowerCase();
+  const text = `${retryReason}\n${summary}`;
+
+  if (
+    summary.includes("shared-fixture carrier") ||
+    summary.includes("shared fixture carrier") ||
+    summary.includes("carrier gap")
+  ) {
+    return "shared-fixture-carrier-gap";
+  }
   if (summary.includes("partial") || summary.includes("not ready")) {
     return "package-partial";
   }
@@ -311,12 +440,21 @@ function compactErrorClass(item: FeatureCompactItemState): string {
     return "check-failure";
   }
   if (
-    summary.includes("github") ||
-    summary.includes("workflow") ||
-    summary.includes("dispatch") ||
-    summary.includes("run id")
+    /\breviewed-exception\b/.test(text) ||
+    /\bpipeline\b/.test(text) ||
+    /\barm64\b/.test(text) ||
+    /\bk8s?>?=?.*1\.34\b/.test(text) ||
+    /\bkubernetes>?=?.*1\.34\b/.test(text)
   ) {
-    return "live-workflow";
+    return "reviewed-exception";
+  }
+  if (
+    /\bruntime\/product\b/.test(text) ||
+    /\bowner-review lineage\b/.test(text) ||
+    /\bnonpass lineage\b/.test(text) ||
+    /\bmeaningful remediator runtime\/product change\b/.test(text)
+  ) {
+    return "runtime-product-lineage";
   }
   if (
     summary.includes("capacity") ||
@@ -324,6 +462,14 @@ function compactErrorClass(item: FeatureCompactItemState): string {
     summary.includes("managed clusters")
   ) {
     return "staging-capacity";
+  }
+  if (
+    summary.includes("github") ||
+    summary.includes("workflow") ||
+    summary.includes("dispatch") ||
+    summary.includes("run id")
+  ) {
+    return "live-workflow";
   }
   if (summary.includes("cleanup")) return "cleanup";
   return "compact-error";
@@ -336,19 +482,42 @@ type CompactFollowupGroup = {
   lastFeatureUpdatedAt: string;
 };
 
+function compactErrorNeedsFollowup(
+  item:
+    | FeatureCompactItemState
+    | { status?: string; attempts?: number; retryable?: boolean | null },
+  maxDirectAttemptsPerFeature: number,
+): boolean {
+  return (
+    item.status === "error" &&
+    ((item.attempts ?? 0) >= maxDirectAttemptsPerFeature ||
+      item.retryable === false)
+  );
+}
+
 function compactFollowupGroups(
   state: FeatureCompactLoopState,
-  input: { maxDirectAttemptsPerFeature: number; maxGroups: number },
+  input: {
+    maxDirectAttemptsPerFeature: number;
+    maxGroups: number;
+    representedFeatureKeys?: Set<string>;
+  },
 ): CompactFollowupGroup[] {
   const groups = new Map<string, CompactFollowupGroup>();
   for (const [featureKey, item] of Object.entries(state.features)) {
     if (
-      item.status !== "error" ||
-      (item.attempts ?? 0) < input.maxDirectAttemptsPerFeature
+      !compactErrorNeedsFollowup(item, input.maxDirectAttemptsPerFeature) ||
+      input.representedFeatureKeys?.has(featureKey)
     ) {
       continue;
     }
     const errorClass = compactErrorClass(item);
+    if (
+      errorClass === "reviewed-exception" ||
+      errorClass === "runtime-product-lineage"
+    ) {
+      continue;
+    }
     const group = groups.get(errorClass) ?? {
       errorClass,
       count: 0,
@@ -413,20 +582,331 @@ function compactFollowupTaskCoversGroup(
   return true;
 }
 
-function terminalCompactFollowupIsCurrent(
+type CompactRetryResetDirective = {
+  errorClass?: string;
+  featureKeys: string[];
+  reason: string;
+  resetAttemptsTo: number;
+  includeBlockedWaits: boolean;
+};
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringArrayValue(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function compactRetryResetDirectivesFromValue(
+  value: unknown,
+): CompactRetryResetDirective[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  const directives: CompactRetryResetDirective[] = [];
+  for (const entry of values) {
+    const record = recordValue(entry);
+    if (!record) continue;
+    const featureKeys = [
+      ...stringArrayValue(record.featureKeys),
+      ...stringArrayValue(record.features),
+      ...stringArrayValue(record.featureKey),
+    ];
+    const errorClass =
+      typeof record.errorClass === "string" && record.errorClass.trim()
+        ? record.errorClass.trim()
+        : undefined;
+    if (!errorClass && featureKeys.length === 0) continue;
+
+    const resetAttemptsTo =
+      typeof record.resetAttemptsTo === "number" &&
+      Number.isFinite(record.resetAttemptsTo) &&
+      record.resetAttemptsTo >= 0
+        ? Math.floor(record.resetAttemptsTo)
+        : 0;
+    const reason =
+      typeof record.reason === "string" && record.reason.trim()
+        ? record.reason.trim()
+        : "retry budget reset requested by completed compact repair task";
+
+    directives.push({
+      errorClass,
+      featureKeys: [...new Set(featureKeys)],
+      reason,
+      resetAttemptsTo,
+      includeBlockedWaits: record.includeBlockedWaits === true,
+    });
+  }
+  return directives;
+}
+
+function compactRetryResetDirectives(
   task: TaskNode,
-  group: CompactFollowupGroup,
+): CompactRetryResetDirective[] {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  const workflowResult = recordValue(trace.workflowResult);
+  const details = recordValue(workflowResult?.details);
+  return [
+    ...compactRetryResetDirectivesFromValue(context.compactRetryReset),
+    ...compactRetryResetDirectivesFromValue(context.compactRetryResets),
+    ...compactRetryResetDirectivesFromValue(trace.compactRetryReset),
+    ...compactRetryResetDirectivesFromValue(trace.compactRetryResets),
+    ...compactRetryResetDirectivesFromValue(workflowResult?.compactRetryReset),
+    ...compactRetryResetDirectivesFromValue(details?.compactRetryReset),
+  ];
+}
+
+function taskTextValues(value: unknown): string[] {
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  if (Array.isArray(value)) {
+    return value
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function inferredCompactRetryResetDirective(
+  task: TaskNode,
+): CompactRetryResetDirective | null {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  const reviewedTask = recordValue(context.reviewedTask);
+  const featureKeys = new Set<string>();
+
+  const directFeatureKey = context.featureKey;
+  if (typeof directFeatureKey === "string" && directFeatureKey.trim()) {
+    featureKeys.add(directFeatureKey.trim());
+  }
+  for (const scope of taskConflictScopes(task)) {
+    const trimmed = scope.trim();
+    if (!trimmed.startsWith("feature-compact:")) continue;
+    const featureKey = trimmed.slice("feature-compact:".length).trim();
+    if (featureKey) featureKeys.add(featureKey);
+  }
+
+  // Grouped family tasks must opt in with structured compactRetryReset. Their
+  // text often says "classified" or "no rerun"; inferring a family-wide retry
+  // would create noisy live work.
+  if (
+    context.featureCompactFollowup === true &&
+    typeof context.errorClass === "string" &&
+    featureKeys.size === 0
+  ) {
+    return null;
+  }
+  if (featureKeys.size === 0) return null;
+
+  const text = [
+    task.result,
+    context.acceptance_note,
+    trace.last_worker_summary,
+    trace.review_summary,
+    reviewedTask?.summary,
+    ...taskTextValues(reviewedTask?.findings),
+    ...taskTextValues(reviewedTask?.feedback),
+    ...taskTextValues(reviewedTask?.suggestedFollowups),
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join("\n")
+    .toLowerCase();
+
+  const hasRetryIntent =
+    /\b(requeue|requeued|rerun|retry|retrying)\b/.test(text) ||
+    /\b(live[- ]dispatchable|live dispatch ready|live proof|live verification)\b/.test(
+      text,
+    ) ||
+    /\b(package is ready|ready package|package.*ready|fixed|repaired|resolved)\b/.test(
+      text,
+    );
+  const hasNoRetryIntent =
+    /\b(no|not|without)\b[^.\n]{0,80}\b(rerun|requeue|dispatch|live run|live proof|live verification)\b/.test(
+      text,
+    ) ||
+    /\b(do not|don't)\b[^.\n]{0,80}\b(rerun|requeue|dispatch|live run|live proof|live verification)\b/.test(
+      text,
+    ) ||
+    /\b(no-rerun|no broad .*rerun|not truthful.*rerun)\b/.test(text);
+
+  if (!hasRetryIntent || hasNoRetryIntent) return null;
+
+  return {
+    featureKeys: [...featureKeys],
+    reason:
+      "accepted compact repair indicates the exact feature is ready for another live proof attempt",
+    resetAttemptsTo: 0,
+    includeBlockedWaits: false,
+  };
+}
+
+function allCompactRetryResetDirectives(
+  task: TaskNode,
+): CompactRetryResetDirective[] {
+  const explicit = compactRetryResetDirectives(task);
+  const inferred = inferredCompactRetryResetDirective(task);
+  return inferred ? [...explicit, inferred] : explicit;
+}
+
+function compactRetryResetMatches(
+  directive: CompactRetryResetDirective,
+  featureKey: string,
+  item: FeatureCompactItemState,
 ): boolean {
-  if (!compactFollowupTaskCoversGroup(task, group)) return false;
-  if (task.resolution === "cancelled") return false;
+  if (directive.featureKeys.length > 0) {
+    return directive.featureKeys.includes(featureKey);
+  }
+  return Boolean(
+    directive.errorClass && compactErrorClass(item) === directive.errorClass,
+  );
+}
 
-  const terminalAt =
-    taskTimestamp(task, "done_at") ?? taskTimestamp(task, "reviewed_at");
-  if (terminalAt === null) return false;
+function readJsonFile(path: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
-  const lastFeatureUpdatedAt = Date.parse(group.lastFeatureUpdatedAt);
-  if (!Number.isFinite(lastFeatureUpdatedAt)) return false;
-  return terminalAt >= lastFeatureUpdatedAt;
+function currentPlanAllowsLiveDispatch(input: {
+  projectDir: string;
+  featureKey: string;
+  item: FeatureCompactItemState;
+  target: string;
+}): boolean {
+  const planPath =
+    input.item.lastPlanPath ||
+    `features/${input.featureKey}/compact/${input.target}.plan.json`;
+  const absolutePlanPath = join(input.projectDir, planPath);
+  if (!existsSync(absolutePlanPath)) return false;
+  const plan = readJsonFile(absolutePlanPath);
+  const gate = recordValue(plan?.liveDispatchGate);
+  return gate?.allowed === true;
+}
+
+function stalePackageGateSummary(summary: string | null | undefined): boolean {
+  const normalized = (summary ?? "").toLowerCase();
+  return (
+    normalized.includes("compact package is incomplete") ||
+    normalized.includes("feature compact package is incomplete") ||
+    (normalized.includes("feature compact package for") &&
+      (normalized.includes(" is partial;") ||
+        normalized.includes(" is blocked;")) &&
+      normalized.includes(
+        "live github dispatch is intentionally blocked until the package becomes ready",
+      ))
+  );
+}
+
+function reconcileReadyCompactArtifacts(input: {
+  projectDir: string;
+  state: FeatureCompactLoopState;
+  target: string;
+}): string[] {
+  const resetFeatureKeys: string[] = [];
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (item.status !== "error") continue;
+    if (!stalePackageGateSummary(item.lastSummary)) continue;
+    if (
+      !currentPlanAllowsLiveDispatch({
+        projectDir: input.projectDir,
+        featureKey,
+        item,
+        target: input.target,
+      })
+    ) {
+      continue;
+    }
+    updateFeatureCompactItem(input.state, featureKey, {
+      status: "pending",
+      retryable: true,
+      retryReason: null,
+      taskId: null,
+      attempts: 0,
+      lastWorkflowRunId: null,
+      lastWorkflowRunUrl: null,
+      lastWorkflowLoopKey: null,
+      lastDispatchMetadataPath: null,
+      lastLiveProofVersion: null,
+      lastSummary: `Reset compact feature ${featureKey}: current compact plan is live-dispatchable, so the previous package-gate error is stale and needs a fresh live proof.`,
+    });
+    resetFeatureKeys.push(featureKey);
+  }
+  return resetFeatureKeys.sort((a, b) => a.localeCompare(b));
+}
+
+function applyCompactRetryResets(input: {
+  loopTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+  state: FeatureCompactLoopState;
+  maxDirectAttemptsPerFeature: number;
+  blockedWaits: Set<string>;
+}): string[] {
+  if (!input.loopTask) return [];
+  const resetFeatureKeys = new Set<string>();
+  for (const childId of input.loopTask.children ?? []) {
+    const child = input.tasks[childId];
+    if (!child || isFeatureCompactChild(child)) continue;
+    if (taskStatus(child) !== "done") continue;
+
+    for (const directive of allCompactRetryResetDirectives(child)) {
+      const terminalAt =
+        taskTimestamp(child, "done_at") ??
+        taskTimestamp(child, "reviewed_at") ??
+        taskTimestamp(child, "last_worker_completed_at");
+      if (terminalAt === null) continue;
+
+      for (const [featureKey, item] of Object.entries(input.state.features)) {
+        if (item.status !== "error") continue;
+        if (
+          item.retryable !== false &&
+          (item.attempts ?? 0) < input.maxDirectAttemptsPerFeature
+        ) {
+          continue;
+        }
+        if (
+          input.blockedWaits.has(featureKey) &&
+          !directive.includeBlockedWaits
+        ) {
+          continue;
+        }
+        if (!compactRetryResetMatches(directive, featureKey, item)) continue;
+
+        const itemUpdatedAt = Date.parse(item.updatedAt || "");
+        if (Number.isFinite(itemUpdatedAt) && terminalAt < itemUpdatedAt) {
+          continue;
+        }
+
+        updateFeatureCompactItem(input.state, featureKey, {
+          status: "pending",
+          taskId: null,
+          attempts: directive.resetAttemptsTo,
+          lastWorkflowRunId: null,
+          lastWorkflowRunUrl: null,
+          lastWorkflowLoopKey: null,
+          lastDispatchMetadataPath: null,
+          lastSummary: `Reset compact retry budget for ${featureKey} after ${child.id}: ${directive.reason}`,
+        });
+        resetFeatureKeys.add(featureKey);
+      }
+    }
+  }
+  return [...resetFeatureKeys].sort((a, b) => a.localeCompare(b));
 }
 
 function existingOpenCompactFollowupTaskId(
@@ -434,26 +914,17 @@ function existingOpenCompactFollowupTaskId(
   group: CompactFollowupGroup,
 ): string | null {
   for (const task of Object.values(tasks)) {
-    if (!compactFollowupTaskCoversGroup(task, group)) continue;
-
     const status = taskStatus(task);
     if (status !== "done" && status !== "blocked" && status !== "cancelled") {
-      return task.id;
+      if (compactFollowupTaskCoversGroup(task, group)) return task.id;
+      if (
+        taskConflictScopes(task).includes(
+          `feature-compact-followup:${group.errorClass}`,
+        )
+      ) {
+        return task.id;
+      }
     }
-  }
-  return null;
-}
-
-function existingCurrentTerminalCompactFollowupTaskId(
-  tasks: Record<string, TaskNode>,
-  group: CompactFollowupGroup,
-): string | null {
-  for (const task of Object.values(tasks)) {
-    const status = taskStatus(task);
-    if (status !== "done" && status !== "blocked" && status !== "cancelled") {
-      continue;
-    }
-    if (terminalCompactFollowupIsCurrent(task, group)) return task.id;
   }
   return null;
 }
@@ -463,7 +934,6 @@ function nextCompactFollowupTaskId(
   group: CompactFollowupGroup,
 ): string | null {
   if (existingOpenCompactFollowupTaskId(tasks, group)) return null;
-  if (existingCurrentTerminalCompactFollowupTaskId(tasks, group)) return null;
 
   const base = compactFollowupTaskId(group);
   const existing = tasks[base];
@@ -504,22 +974,28 @@ function materializeFeatureCompactFollowups(
     branch: string;
     maxDirectAttemptsPerFeature: number;
     maxGroups: number;
+    representedFeatureKeys?: Set<string>;
   },
 ): string[] {
   const groups = compactFollowupGroups(input.state, {
     maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
     maxGroups: input.maxGroups,
+    representedFeatureKeys: input.representedFeatureKeys,
   });
   const createdTaskIds: string[] = [];
   for (const group of groups) {
     const latestTree = readTaskTree(config);
     const taskId = nextCompactFollowupTaskId(latestTree.tasks, group);
     if (!taskId) continue;
+    if (latestTree.tasks[taskId]) continue;
+    const isCapacityWait = group.errorClass === "staging-capacity";
     createTask(config, {
       id: taskId,
       parentId: input.loopTask.id,
-      priority: "P1",
-      goal: `Reconcile ${group.count} retry-drained feature compact error(s) in the ${group.errorClass} family, repair what is fixable, and requeue live proof only after a meaningful package/runtime change.`,
+      priority: isCapacityWait ? "P2" : "P1",
+      goal: isCapacityWait
+        ? `Hold ${group.count} feature compact package(s) on exact ${input.target} capacity wait until managed-cluster headroom returns or quota changes.`
+        : `Reconcile ${group.count} retry-drained feature compact error(s) in the ${group.errorClass} family, repair what is fixable, and requeue live proof only after a meaningful package/runtime change.`,
       inputs: [
         `errorClass:${group.errorClass}`,
         `target:${input.target}`,
@@ -528,14 +1004,25 @@ function materializeFeatureCompactFollowups(
         ...group.featureKeys.map((featureKey) => `feature:${featureKey}`),
       ],
       outputs: [input.stateRef, "features/", "evidence/archive/"],
-      acceptance: [
-        "Every sampled compact feature has a concrete root-cause classification.",
-        "Every fixable package, planner, generated-test, or workflow issue was repaired and the affected feature was requeued for a meaningful live run.",
-        "If no bounded repo-local fix remains, an exact escalation or wait records owner/environment/product reason, affected features, attempted fixes, and resume condition.",
-        "Feature compact state and feature-owned compact artifacts were updated to match the repair, requeue, or escalation decision.",
-      ],
+      acceptance: isCapacityWait
+        ? [
+            "This wait remains truthful only while sampled compact features already have exact staging capacity evidence.",
+            "Resume only after managed-cluster headroom returns, quota changes, or an explicit reroute target is accepted.",
+            "Do not reset retry budget or dispatch live proof while this wait condition remains true.",
+          ]
+        : [
+            "Every sampled compact feature has a concrete root-cause classification.",
+            "Every fixable package, planner, generated-test, or workflow issue was repaired and the affected feature was requeued for a meaningful live run.",
+            "If no bounded repo-local fix remains, an exact escalation or wait records owner/environment/product reason, affected features, attempted fixes, and resume condition.",
+            "Feature compact state and feature-owned compact artifacts were updated to match the repair, requeue, or escalation decision.",
+          ],
       conflict_scope: [
         `feature-compact-followup:${group.errorClass}`,
+        ...(isCapacityWait
+          ? group.featureKeys.map(
+              (featureKey) => `feature-compact:${featureKey}`,
+            )
+          : []),
         ...group.featureKeys
           .slice(0, 8)
           .map((featureKey) => `feature:${featureKey}`),
@@ -550,6 +1037,96 @@ function materializeFeatureCompactFollowups(
         branch: input.branch,
       },
     });
+    const createdTree = readTaskTree(config);
+    if (!createdTree.tasks[taskId]) continue;
+    if (isCapacityWait) {
+      const tree = createdTree;
+      const task = tree.tasks[taskId];
+      const blockedAt = new Date().toISOString();
+      const nextCheckAt = new Date(
+        Date.parse(blockedAt) + 10 * 60 * 1000,
+      ).toISOString();
+      const fallbackAt = new Date(
+        Date.parse(blockedAt) + 6 * 60 * 60 * 1000,
+      ).toISOString();
+      const reason = `Blocked on ${input.target} managed-cluster capacity for feature compact live proof: ${group.featureKeys.join(", ")}.`;
+      const waitingCondition =
+        "Resume when staging managed-cluster headroom returns, quota changes, or an accepted reroute target is written into the compact plan target.";
+      const waitingFor = {
+        type: "azure.capacity.available",
+        target: input.target,
+        resource: "managedClusters",
+        scope: "feature-compact-live-proof",
+        featureKeys: group.featureKeys,
+      };
+      const observedBy = {
+        workflow: "feature-compact-loop-controller",
+        trigger: "project.task.tick",
+      };
+      const observationMethod =
+        "On each compact-loop tick, recheck staging managed-cluster headroom and reroute evidence before dispatching more compact live proof.";
+      if (task) {
+        task.state = "blocked";
+        task.status = "blocked";
+        task.blocker = {
+          condition: reason,
+          category: "external-wait",
+          owner: "operator",
+          blocked_at: blockedAt,
+          waiting_for: waitingFor,
+          observed_by: observedBy,
+          observation_method: observationMethod,
+          next_check_at: nextCheckAt,
+          resume_condition: waitingCondition,
+          resume_action:
+            "Rerun the compact loop controller after capacity returns or the accepted reroute target is configured.",
+          fallback_at: fallbackAt,
+          fallback_action:
+            "Recheck managed-cluster capacity and escalate to the operator if the wait is still true.",
+          evidence: group.featureKeys.map(
+            (featureKey) => `feature-compact:${featureKey}`,
+          ),
+        } as typeof task.blocker;
+        task.trace = {
+          ...(task.trace ?? {}),
+          blocked_at: blockedAt,
+        };
+        saveTaskTreeWithKanbanSnapshot(config, tree);
+      }
+      for (const featureKey of group.featureKeys) {
+        updateFeatureCompactItem(input.state, featureKey, {
+          status: "blocked",
+          errorClass: group.errorClass,
+          retryable: false,
+          retryReason: waitingCondition,
+          blockedAt,
+          blockedReason: reason,
+          waitingFor,
+          waitingCondition,
+          observedBy,
+          observationMethod,
+          nextCheckAt,
+          resumeCondition: waitingCondition,
+          blockerOwner: "operator",
+          fallbackAt,
+          fallbackAction:
+            "Recheck managed-cluster capacity and escalate to the operator if the wait is still true.",
+          resumeAction:
+            "Rerun the compact loop controller after capacity returns or the accepted reroute target is configured.",
+          blockedScope: {
+            kind: "feature",
+            ids: [featureKey],
+          },
+          blockedFingerprint: {
+            errorClass: group.errorClass,
+            target: input.target,
+            branch: input.branch,
+            featureKey,
+          },
+          lastCheckedAt: blockedAt,
+        });
+      }
+    }
     createdTaskIds.push(taskId);
   }
   return createdTaskIds;
@@ -569,6 +1146,42 @@ function existingFeatureKeys(
     const featureKey = taskContext(child).featureKey;
     if (typeof featureKey === "string" && featureKey.trim())
       keys.add(featureKey.trim());
+  }
+  return keys;
+}
+
+function openFeatureScopedChildKeys(
+  loopTask: TaskNode | undefined,
+  tasks: Record<string, TaskNode>,
+): Set<string> {
+  const keys = new Set<string>();
+  if (!loopTask) return keys;
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child) continue;
+    const status = taskStatus(child);
+    if (status === "done" || status === "cancelled") continue;
+
+    const featureKey = taskContext(child).featureKey;
+    if (typeof featureKey === "string" && featureKey.trim()) {
+      keys.add(featureKey.trim());
+    }
+
+    const sampledFeatureKeys = taskContext(child).sampledFeatureKeys;
+    if (Array.isArray(sampledFeatureKeys)) {
+      for (const sampledFeatureKey of sampledFeatureKeys) {
+        if (typeof sampledFeatureKey === "string" && sampledFeatureKey.trim()) {
+          keys.add(sampledFeatureKey.trim());
+        }
+      }
+    }
+
+    for (const scope of taskConflictScopes(child)) {
+      const trimmed = scope.trim();
+      if (!trimmed.startsWith("feature-compact:")) continue;
+      const scopedFeatureKey = trimmed.slice("feature-compact:".length).trim();
+      if (scopedFeatureKey) keys.add(scopedFeatureKey);
+    }
   }
   return keys;
 }
@@ -660,6 +1273,261 @@ function releaseStaleRunningFeatures(input: {
   return released;
 }
 
+function compactPlanPath(input: {
+  featureKey: string;
+  item: FeatureCompactItemState;
+  target: string;
+}): string {
+  return (
+    input.item.lastPlanPath ||
+    `features/${input.item.capabilityId || input.featureKey}/compact/${input.target}.plan.json`
+  );
+}
+
+function shouldBackfillCompletedErrorRun(
+  item: FeatureCompactItemState,
+): boolean {
+  if (item.status !== "error") return false;
+  if (!item.lastWorkflowRunId) return false;
+  if (item.lastLiveProofVersion === liveAksProofVersion) return false;
+  if (
+    compactErrorClass(item) === "staging-capacity" &&
+    item.retryable === false
+  )
+    return false;
+
+  const summary = (item.lastSummary ?? "").toLowerCase();
+  if (
+    summary.includes("backfilled completed compact github run") ||
+    summary.includes("reconciled completed compact github run")
+  ) {
+    return false;
+  }
+  return (
+    compactErrorClass(item) === "live-workflow" ||
+    summary.includes("did not pass") ||
+    summary.includes("did not prove a live azure pass") ||
+    summary.includes("live proof is still failing") ||
+    summary.includes("workflow run did not complete successfully") ||
+    summary.includes("github artifact download failed") ||
+    summary.includes("no top-level result.json")
+  );
+}
+
+function applyCompletedWorkflowRunProof(input: {
+  state: FeatureCompactLoopState;
+  featureKey: string;
+  item: FeatureCompactItemState;
+  runId: string;
+  runUrl: string | null;
+  planRel: string;
+  proof: ReturnType<typeof inspectLiveWorkflowArtifacts>;
+  summaryPrefix: string;
+}): void {
+  if (input.proof.ok) {
+    const summary = [
+      `${input.summaryPrefix} ${input.runId} for ${input.featureKey}; live proof passed.`,
+      `Plan: ${input.planRel}.`,
+      input.proof.resultPath
+        ? `Live test result: ${input.proof.resultPath}.`
+        : "",
+      input.runUrl ? `Workflow run: ${input.runUrl}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    updateFeatureCompactItem(input.state, input.featureKey, {
+      status: "done",
+      retryable: true,
+      retryReason: null,
+      taskId: input.item.taskId,
+      lastPlanPath: input.planRel,
+      lastResultPath: input.proof.resultPath ?? input.item.lastResultPath,
+      lastWorkflowRunId: input.runId,
+      lastWorkflowRunUrl: input.runUrl,
+      lastLiveProofVersion: liveAksProofVersion,
+      lastSummary: summary,
+    });
+    return;
+  }
+
+  const capacityReason = capacityPreflightReason(input.proof);
+  const isCapacity = Boolean(capacityReason);
+  const summary = isCapacity
+    ? [
+        `${input.summaryPrefix} ${input.runId} for ${input.featureKey}; staging capacity is still blocking live proof.`,
+        `Plan: ${input.planRel}.`,
+        capacityReason,
+        input.proof.resultPath
+          ? `GitHub artifact result: ${input.proof.resultPath}.`
+          : "",
+        input.runUrl ? `Workflow run: ${input.runUrl}.` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : [
+        `${input.summaryPrefix} ${input.runId} for ${input.featureKey}; live proof is still failing.`,
+        `Plan: ${input.planRel}.`,
+        input.proof.detail,
+        input.proof.resultPath
+          ? `GitHub artifact result: ${input.proof.resultPath}.`
+          : "",
+        input.runUrl ? `Workflow run: ${input.runUrl}.` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+  updateFeatureCompactItem(input.state, input.featureKey, {
+    status: "error",
+    retryable: isCapacity ? false : true,
+    retryReason: isCapacity
+      ? "Staging AKS managed-cluster capacity is full; retry only after capacity returns, quota changes, or target reroute is accepted."
+      : input.item.retryReason?.trim() || null,
+    taskId: input.item.taskId,
+    lastPlanPath: input.planRel,
+    lastResultPath: input.proof.resultPath ?? input.item.lastResultPath,
+    lastWorkflowRunId: input.runId,
+    lastWorkflowRunUrl: input.runUrl,
+    lastLiveProofVersion: null,
+    lastSummary: summary,
+  });
+}
+
+function reconcileCompletedWorkflowRuns(input: {
+  client: GitHubClient;
+  projectDir: string;
+  appDir: string;
+  state: FeatureCompactLoopState;
+  target: string;
+  existing: Set<string>;
+  activeWorkflowRunIds: Set<string>;
+}): { reconciled: string[]; protectedRunIds: string[] } {
+  const reconciled: string[] = [];
+  const protectedRunIds: string[] = [];
+
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (item.status !== "running") continue;
+    if (input.existing.has(featureKey)) continue;
+    const runId = item.lastWorkflowRunId;
+    if (!runId) continue;
+    if (input.activeWorkflowRunIds.has(runId)) continue;
+
+    const run = getWorkflowRun({
+      client: input.client,
+      projectDir: input.projectDir,
+      runId,
+    });
+    if (run && run.status !== "completed") {
+      protectedRunIds.push(runId);
+      continue;
+    }
+    if (!run) continue;
+
+    const planRel = compactPlanPath({
+      featureKey,
+      item,
+      target: input.target,
+    });
+    const proof = inspectLiveWorkflowArtifacts({
+      client: input.client,
+      projectDir: input.projectDir,
+      appDir: input.appDir,
+      runId,
+      featureKey,
+      planRel,
+    });
+    applyCompletedWorkflowRunProof({
+      state: input.state,
+      featureKey,
+      item,
+      runId,
+      runUrl: run.url ?? item.lastWorkflowRunUrl ?? null,
+      planRel,
+      proof,
+      summaryPrefix: "Reconciled completed compact GitHub run",
+    });
+    reconciled.push(featureKey);
+  }
+
+  return { reconciled, protectedRunIds };
+}
+
+function backfillCompletedErrorWorkflowRuns(input: {
+  client: GitHubClient;
+  projectDir: string;
+  appDir: string;
+  state: FeatureCompactLoopState;
+  target: string;
+  existing: Set<string>;
+  activeWorkflowRunIds: Set<string>;
+  maxFeatures: number;
+}): { backfilled: string[]; protectedRunIds: string[] } {
+  const backfilled: string[] = [];
+  const protectedRunIds: string[] = [];
+
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (backfilled.length >= input.maxFeatures) break;
+    if (!shouldBackfillCompletedErrorRun(item)) continue;
+    if (input.existing.has(featureKey)) continue;
+    const runId = item.lastWorkflowRunId;
+    if (!runId) continue;
+    if (input.activeWorkflowRunIds.has(runId)) continue;
+
+    const run = getWorkflowRun({
+      client: input.client,
+      projectDir: input.projectDir,
+      runId,
+    });
+    if (run && run.status !== "completed") {
+      protectedRunIds.push(runId);
+      continue;
+    }
+    if (!run) continue;
+
+    const planRel = compactPlanPath({
+      featureKey,
+      item,
+      target: input.target,
+    });
+    const proof = inspectLiveWorkflowArtifacts({
+      client: input.client,
+      projectDir: input.projectDir,
+      appDir: input.appDir,
+      runId,
+      featureKey,
+      planRel,
+    });
+    applyCompletedWorkflowRunProof({
+      state: input.state,
+      featureKey,
+      item,
+      runId,
+      runUrl: run.url ?? item.lastWorkflowRunUrl ?? null,
+      planRel,
+      proof,
+      summaryPrefix: "Backfilled completed compact GitHub run",
+    });
+    backfilled.push(featureKey);
+  }
+
+  return { backfilled, protectedRunIds };
+}
+
+function preferredFeatureSummary(input: {
+  existingSummary: string | null | undefined;
+  childSummary: string;
+}): string {
+  const existingSummary = input.existingSummary?.trim() || "";
+  const childSummary = input.childSummary.trim();
+  if (!childSummary) return existingSummary;
+  if (
+    stalePackageGateSummary(childSummary) &&
+    existingSummary &&
+    !stalePackageGateSummary(existingSummary)
+  ) {
+    return existingSummary;
+  }
+  return childSummary;
+}
+
 function syncOpenChildStatuses(input: {
   loopTask: TaskNode | undefined;
   tasks: Record<string, TaskNode>;
@@ -696,7 +1564,10 @@ function syncOpenChildStatuses(input: {
           ? {
               status: "done",
               taskId: child.id,
-              lastSummary: summary || item?.lastSummary,
+              lastSummary: preferredFeatureSummary({
+                existingSummary: item?.lastSummary,
+                childSummary: summary,
+              }),
             }
           : {
               status: "error",
@@ -721,7 +1592,10 @@ function syncOpenChildStatuses(input: {
       updateFeatureCompactItem(input.state, featureKey, {
         status: "error",
         taskId: child.id,
-        lastSummary: summary || input.state.features[featureKey]?.lastSummary,
+        lastSummary: preferredFeatureSummary({
+          existingSummary: input.state.features[featureKey]?.lastSummary,
+          childSummary: summary,
+        }),
       });
     }
   }
@@ -743,10 +1617,18 @@ function dispatchAssignment(
 }
 
 function compactLoopWorkflowProgress(input: {
-  state: { features: Record<string, { status?: string; attempts?: number }> };
+  state: {
+    features: Record<
+      string,
+      { status?: string; attempts?: number; retryable?: boolean | null }
+    >;
+  };
   openChildren: number;
   openSupportChildren: number;
   blockedWaitChildren: number;
+  blockedWaitFeatureKeys?: Set<string>;
+  representedFeatureKeys?: Set<string>;
+  representedSupportErrorClasses?: Set<string>;
   created: number;
   assigned: number;
   maxDirectAttemptsPerFeature: number;
@@ -761,23 +1643,62 @@ function compactLoopWorkflowProgress(input: {
   }
   const pending = counts.pending ?? 0;
   const running = counts.running ?? 0;
+  const blocked = counts.blocked ?? 0;
   const error = counts.error ?? 0;
   const retryBudgetExhausted = Object.values(input.state.features).filter(
     (feature) =>
       feature.status === "error" &&
       (feature.attempts ?? 0) >= input.maxDirectAttemptsPerFeature,
   ).length;
+  const blockedWaitErrorCount = Object.entries(input.state.features).filter(
+    ([featureKey, feature]) =>
+      feature.status === "error" &&
+      input.blockedWaitFeatureKeys?.has(featureKey),
+  ).length;
+  const blockedWaitBlockedCount = Object.entries(input.state.features).filter(
+    ([featureKey, feature]) =>
+      feature.status === "blocked" &&
+      input.blockedWaitFeatureKeys?.has(featureKey),
+  ).length;
+  const representedFeatureErrorCount = Object.entries(
+    input.state.features,
+  ).filter(
+    ([featureKey, feature]) =>
+      feature.status === "error" &&
+      input.representedFeatureKeys?.has(featureKey),
+  ).length;
+  const representedSupportErrorCount = Object.values(
+    input.state.features,
+  ).filter(
+    (feature) =>
+      feature.status === "error" &&
+      input.representedSupportErrorClasses?.has(
+        compactErrorClass(feature as FeatureCompactItemState),
+      ),
+  ).length;
+  const unrepresentedErrorCount = Math.max(
+    0,
+    error -
+      blockedWaitErrorCount -
+      representedFeatureErrorCount -
+      representedSupportErrorCount,
+  );
+  const unrepresentedBlockedCount = Math.max(
+    0,
+    blocked - blockedWaitBlockedCount,
+  );
   const unrepresentedNonTerminalCount =
-    pending + running + (input.openSupportChildren > 0 ? 0 : error);
+    pending + running + unrepresentedErrorCount + unrepresentedBlockedCount;
   const noRefillNow =
     pending === 0 &&
     running === 0 &&
     input.openChildren === 0 &&
     input.openSupportChildren === 0 &&
     unrepresentedNonTerminalCount === 0 &&
-    error === retryBudgetExhausted &&
+    (blocked > 0 || error === retryBudgetExhausted) &&
     input.blockedWaitChildren > 0;
-  const completionReady = pending === 0 && running === 0 && error === 0;
+  const completionReady =
+    pending === 0 && running === 0 && error === 0 && blocked === 0;
   return {
     completionReady,
     dispatchHeld: input.dispatchHold ? true : undefined,
@@ -793,15 +1714,26 @@ function compactLoopWorkflowProgress(input: {
     pending,
     running,
     done: counts.done ?? 0,
+    blocked,
     error,
     retryBudgetExhausted,
     maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
+    blockedWaitBlockedCount,
+    blockedWaitErrorCount,
+    unrepresentedBlockedCount,
+    unrepresentedErrorCount,
     unrepresentedNonTerminalCount,
     activeGithubRuns: input.activeGithubRuns,
     githubActiveRunLimit: input.githubActiveRunLimit,
     openChildren: input.openChildren,
     openSupportChildren: input.openSupportChildren,
     blockedWaitChildren: input.blockedWaitChildren,
+    representedSupportErrorClasses: [
+      ...(input.representedSupportErrorClasses ?? new Set<string>()),
+    ].sort((a, b) => a.localeCompare(b)),
+    representedFeatureKeys: [
+      ...(input.representedFeatureKeys ?? new Set<string>()),
+    ].sort((a, b) => a.localeCompare(b)),
     lastPulseCreated: input.created,
     lastPulseAssigned: input.assigned,
     updatedAt: new Date().toISOString(),
@@ -958,7 +1890,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         client: githubAccess.client,
         projectDir,
         branch,
-      })
+      }).filter((run) => run.status !== "completed")
     : [];
   const activeGithubRuns = activeGithubRunList.length;
   const activeGithubRunIds = new Set(
@@ -967,7 +1899,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       .filter((runId): runId is number => typeof runId === "number")
       .map((runId) => String(runId)),
   );
-  const dispatchHold = !githubAccess.client
+  let dispatchHold = !githubAccess.client
     ? (githubAccess.reason ??
       "GitHub Actions access is unavailable for live compact verification.")
     : activeGithubRuns >= githubActiveRunLimit
@@ -993,6 +1925,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "maxCompactSupportAssignments",
     3,
   );
+  const maxCompletedErrorBackfill = numberContext(
+    loopTask,
+    "maxCompletedErrorBackfill",
+    20,
+  );
   const githubWaitTimeoutMinutes = numberContext(
     loopTask,
     "githubWaitTimeoutMinutes",
@@ -1010,6 +1947,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     windowSize,
     statePath: stateRef.startsWith("/") ? stateRef : join(appDir, stateRef),
     featureKeys,
+  });
+  const reconciledReadyArtifacts = reconcileReadyCompactArtifacts({
+    projectDir,
+    state,
+    target,
   });
 
   const completedTaskId =
@@ -1064,23 +2006,74 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     : refreshedTree;
   const postAcceptLoopTask = postAcceptTree.tasks[loopTask.id];
   const alreadyOpen = openChildCount(postAcceptLoopTask, postAcceptTree.tasks);
-  const plannerSlotLimit = compactPlannerSlotLimit({
-    windowSize,
-    activeGithubRuns,
-    githubActiveRunLimit,
-    dispatchHold,
-  });
   const existing = existingFeatureKeys(
     postAcceptLoopTask,
     postAcceptTree.tasks,
   );
+  const knownFeatureKeys = Object.keys(state.features);
   const blockedWaits = postAcceptLoopTask
-    ? blockedWaitFeatureKeys(postAcceptLoopTask, postAcceptTree.tasks)
+    ? blockedWaitFeatureKeys(
+        postAcceptLoopTask,
+        postAcceptTree.tasks,
+        knownFeatureKeys,
+      )
     : new Set<string>();
+  const capacityWaits = blockedSupportFeatureKeysForErrorClass(
+    postAcceptLoopTask,
+    postAcceptTree.tasks,
+    "staging-capacity",
+  );
+  if (!dispatchHold && capacityWaits.size > 0 && activeGithubRuns > 0) {
+    dispatchHold = `feature-compact loop live dispatch held because staging capacity wait evidence exists for ${capacityWaits.size} feature(s) and ${activeGithubRuns} GitHub live run(s) are still in progress; wait for cleanup before probing more compact packages`;
+  }
+  const plannerSlotLimit = Math.min(
+    compactPlannerSlotLimit({
+      windowSize,
+      activeGithubRuns,
+      githubActiveRunLimit,
+      dispatchHold,
+    }),
+    capacityWaits.size > 0 ? 1 : Number.POSITIVE_INFINITY,
+  );
+  const completedWorkflowRunReconcile = githubAccess.client
+    ? reconcileCompletedWorkflowRuns({
+        client: githubAccess.client,
+        projectDir,
+        appDir,
+        state,
+        target,
+        existing: new Set<string>([...existing, ...blockedWaits]),
+        activeWorkflowRunIds: activeGithubRunIds,
+      })
+    : { reconciled: [], protectedRunIds: [] };
+  const completedErrorRunBackfill = githubAccess.client
+    ? backfillCompletedErrorWorkflowRuns({
+        client: githubAccess.client,
+        projectDir,
+        appDir,
+        state,
+        target,
+        existing: new Set<string>([...existing, ...blockedWaits]),
+        activeWorkflowRunIds: activeGithubRunIds,
+        maxFeatures: maxCompletedErrorBackfill,
+      })
+    : { backfilled: [], protectedRunIds: [] };
+  const protectedWorkflowRunIds = new Set<string>([
+    ...activeGithubRunIds,
+    ...completedWorkflowRunReconcile.protectedRunIds,
+    ...completedErrorRunBackfill.protectedRunIds,
+  ]);
   const releasedStaleRunning = releaseStaleRunningFeatures({
     state,
     existing: new Set<string>([...existing, ...blockedWaits]),
-    activeWorkflowRunIds: activeGithubRunIds,
+    activeWorkflowRunIds: protectedWorkflowRunIds,
+  });
+  const retryResetFeatureKeys = applyCompactRetryResets({
+    loopTask: postAcceptLoopTask,
+    tasks: postAcceptTree.tasks,
+    state,
+    maxDirectAttemptsPerFeature,
+    blockedWaits,
   });
   const pending = dispatchHold
     ? []
@@ -1166,6 +2159,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         branch,
         maxDirectAttemptsPerFeature,
         maxGroups: maxCompactFollowupGroups,
+        representedFeatureKeys: openFeatureScopedChildKeys(
+          postAcceptLoopTask,
+          postAcceptTree.tasks,
+        ),
       })
     : [];
 
@@ -1231,12 +2228,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: latestTree.tasks,
     state,
   });
+  const latestRepresentedFeatureKeys = openFeatureScopedChildKeys(
+    latestLoopTask,
+    latestTree.tasks,
+  );
+  const latestRepresentedSupportErrorClasses = new Set<string>([
+    ...(latestLoopTask
+      ? representedSupportErrorClasses(latestLoopTask, latestTree.tasks)
+      : new Set<string>()),
+  ]);
   const finalReleasedStaleRunning = releaseStaleRunningFeatures({
     state,
     existing: latestLoopTask
       ? existingFeatureKeys(latestLoopTask, latestTree.tasks)
       : new Set<string>(),
-    activeWorkflowRunIds: activeGithubRunIds,
+    activeWorkflowRunIds: protectedWorkflowRunIds,
   });
   saveFeatureCompactLoopState(statePath, state);
   updateControllerWorkflowProgress({
@@ -1254,6 +2260,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       blockedWaitChildren: latestLoopTask
         ? blockedWaitChildCount(latestLoopTask, latestTree.tasks)
         : 0,
+      blockedWaitFeatureKeys: latestLoopTask
+        ? blockedWaitFeatureKeys(
+            latestLoopTask,
+            latestTree.tasks,
+            knownFeatureKeys,
+          )
+        : new Set<string>(),
+      representedFeatureKeys: latestRepresentedFeatureKeys,
+      representedSupportErrorClasses: latestRepresentedSupportErrorClasses,
       created: createdTaskIds.length,
       assigned: assignments.length,
       maxDirectAttemptsPerFeature,
@@ -1282,8 +2297,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     acceptedRecordedChildren.length
       ? `Accepted ${acceptedRecordedChildren.length} recorded compact package review(s).`
       : "",
+    reconciledReadyArtifacts.length
+      ? `Reset ${reconciledReadyArtifacts.length} stale package-gate error(s) whose current compact plan is live-dispatchable.`
+      : "",
+    completedWorkflowRunReconcile.reconciled.length
+      ? `Reconciled ${completedWorkflowRunReconcile.reconciled.length} completed GitHub compact run(s).`
+      : "",
+    completedErrorRunBackfill.backfilled.length
+      ? `Backfilled ${completedErrorRunBackfill.backfilled.length} stale compact error run(s).`
+      : "",
     releasedStaleRunning + finalReleasedStaleRunning
       ? `Released ${releasedStaleRunning + finalReleasedStaleRunning} stale running feature(s).`
+      : "",
+    retryResetFeatureKeys.length
+      ? `Reset compact retry budget for ${retryResetFeatureKeys.length} feature(s).`
       : "",
     `Tracked features: ${Object.keys(state.features).length}.`,
   ]
@@ -1299,6 +2326,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
     accepted_review_task_ids: acceptedRecordedChildren,
+    retry_reset_feature_keys: retryResetFeatureKeys,
+    reconciled_ready_artifact_feature_keys: reconciledReadyArtifacts,
+    reconciled_completed_workflow_feature_keys:
+      completedWorkflowRunReconcile.reconciled,
+    backfilled_completed_error_workflow_feature_keys:
+      completedErrorRunBackfill.backfilled,
+    protected_workflow_run_ids: completedWorkflowRunReconcile.protectedRunIds,
+    protected_error_backfill_workflow_run_ids:
+      completedErrorRunBackfill.protectedRunIds,
     released_stale_running_count:
       releasedStaleRunning + finalReleasedStaleRunning,
     state_path: statePath,

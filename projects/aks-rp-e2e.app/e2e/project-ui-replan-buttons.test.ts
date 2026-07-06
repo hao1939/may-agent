@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import puppeteer from "puppeteer-core";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { createServer } from "node:net";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
   kanbanTaskTreeState,
   taskTreeConfig,
@@ -17,6 +17,12 @@ const selectedPathIds = [
   "path.managedsystem.mode-immutability",
   "path.managedsystem.delete-existing",
 ];
+
+type SpecIndexFixture = {
+  specs: Array<Record<string, unknown>>;
+  specFiles: string[];
+  specByFile: Map<string, Record<string, unknown>>;
+};
 
 type PostedComment = {
   path?: string;
@@ -51,6 +57,57 @@ async function projectFile(path: string) {
   if (path.startsWith(".app/"))
     return readFile(join(appRoot, path.slice(".app/".length)), "utf8");
   return readFile(join(projectRoot, path), "utf8");
+}
+
+let specIndexFixture: SpecIndexFixture | null = null;
+
+async function buildSpecIndexFixture(): Promise<SpecIndexFixture> {
+  if (specIndexFixture) return specIndexFixture;
+  const featuresRoot = join(projectRoot, "features");
+  const entries = await readdir(featuresRoot, {
+    recursive: true,
+    withFileTypes: true,
+  });
+  const specFiles = entries
+    .filter((entry) => {
+      const fullPath = join(entry.parentPath, entry.name);
+      return entry.isFile() && /\/specs\/[^/]+\.json$/.test(fullPath);
+    })
+    .map((entry) => join(entry.parentPath, entry.name))
+    .sort((a, b) => a.localeCompare(b));
+  const specs: Array<Record<string, unknown>> = [];
+  const specByFile = new Map<string, Record<string, unknown>>();
+  for (const file of specFiles) {
+    const spec = JSON.parse(await readFile(file, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const specFile = basename(file);
+    const normalized = { ...spec, file: specFile };
+    specs.push(normalized);
+    specByFile.set(specFile, normalized);
+  }
+  specIndexFixture = {
+    specs,
+    specFiles: specs.map((spec) => String(spec.file || "")),
+    specByFile,
+  };
+  return specIndexFixture;
+}
+
+async function testSpecIndexContent() {
+  const fixture = await buildSpecIndexFixture();
+  return JSON.stringify({
+    specs: fixture.specs,
+    specFiles: fixture.specFiles,
+  });
+}
+
+async function testSpecFileContent(file: string) {
+  const fixture = await buildSpecIndexFixture();
+  const spec = fixture.specByFile.get(basename(file));
+  if (!spec) throw new Error(`Spec fixture not found: ${file}`);
+  return JSON.stringify(spec);
 }
 
 async function waitFor(assertion: () => boolean, message: string) {
@@ -160,9 +217,27 @@ describe("project UI replanning buttons e2e", () => {
           const relative = decodeURIComponent(
             url.pathname.replace(/^\/projects\/aks-rp-e2e\//, ""),
           );
+          if (relative === "specs/index.json") {
+            return new Response(await testSpecIndexContent(), {
+              headers: { "content-type": "application/json; charset=utf-8" },
+            });
+          }
+          if (/^specs\/[^/]+\.json$/.test(relative)) {
+            try {
+              return new Response(
+                await testSpecFileContent(relative.replace(/^specs\//, "")),
+                {
+                  headers: {
+                    "content-type": "application/json; charset=utf-8",
+                  },
+                },
+              );
+            } catch {
+              return new Response("not found", { status: 404 });
+            }
+          }
           if (
             relative === "model/knowledge-map/views/path-summary.json" ||
-            relative === "specs/index.json" ||
             /^scenarios\/test-specs\/[^/]+\.json$/.test(relative)
           ) {
             try {
@@ -319,13 +394,34 @@ describe("project UI replanning buttons e2e", () => {
               "model/knowledge-map/model.json",
               "model/knowledge-map/views/path-summary.json",
               "specs/index.json",
+              ".state/tasks/tree.json",
+              ".state/tasks/kanban.json",
+              ".app/.state/tasks/tree.json",
+              ".app/.state/tasks/kanban.json",
               ".app/tasks/tree.json",
               "tasks/tree.json",
               "tasks/kanban.json",
-            ].includes(file)
+            ].includes(file) &&
+            !/^specs\/[^/]+\.json$/.test(file)
           ) {
             return jsonResponse({ error: `Unexpected artifact ${file}` }, 404);
           }
+          if (file === "specs/index.json")
+            return jsonResponse({
+              content: await testSpecIndexContent(),
+            });
+          if (/^specs\/[^/]+\.json$/.test(file))
+            return jsonResponse({
+              content: await testSpecFileContent(file.replace(/^specs\//, "")),
+            });
+          if (file === ".state/tasks/tree.json")
+            return jsonResponse({
+              content: await projectFile(".app/.state/tasks/tree.json"),
+            });
+          if (file === ".state/tasks/kanban.json")
+            return jsonResponse({
+              content: await projectFile(".app/.state/tasks/kanban.json"),
+            });
           if (file === "tasks/tree.json")
             return jsonResponse({
               content: await projectFile(".app/tasks/tree.json"),
@@ -361,7 +457,7 @@ describe("project UI replanning buttons e2e", () => {
               ? (body.data as Record<string, unknown>)
               : {};
           if (
-            body.type === "project.owner.requested" &&
+            body.type === "project.planning.requested" &&
             bodyData.reason === "human-steering"
           ) {
             comments.push(body as PostedComment);
@@ -595,17 +691,23 @@ describe("project UI replanning buttons e2e", () => {
         '[data-testid="kanban-page"]',
         (el) => el.textContent || "",
       );
-      expect(text).toContain("Current Work");
-      expect(text).toContain("Project Metrics");
-      expect(text).toContain("Health And Progress");
+      expect(text).toContain("Start Here");
+      expect(text).toContain("Is The Project Moving?");
+      expect(text).toContain("What This Page Can See");
+      expect(text).toContain("Trust And Blind Spots");
+      expect(text).toContain("Long-Running Queues");
+      expect(text).toContain("What The System Is Working On");
+      expect(text).toContain("Things Worth Checking");
+      expect(text).toContain("Raw Facts With Hints");
+      expect(text).toContain("Raw Sensor Details");
+      expect(text).toContain("Metrics Behind The Bottleneck Cards");
       expect(text).toContain("Unknown paths");
-      expect(text).toContain("Open Alerts");
-      expect(text).toContain("Kanban Board");
-      expect(text).toContain("Backlog");
+      expect(text).toContain("task cards");
       expect(text).toContain("In Progress");
-      expect(text).toContain("Archive");
-      expect(text).toContain("Task Tree");
-      expect(text).toContain("Human Steering");
+      expect(text).toContain("Selected Node");
+      expect(text).toContain("Task Feedback");
+      expect(text).toContain("Human Action");
+      expect(text).toContain("Send A Planner Request");
 
       const metricText = await page.$eval(
         '[data-testid="project-metrics"]',
@@ -613,6 +715,30 @@ describe("project UI replanning buttons e2e", () => {
       );
       expect(metricText).toContain("66");
       expect(metricText).toContain("live execution idle with runnable work");
+
+      const coverageText = await page.$eval(
+        '[data-testid="coverage-readout"]',
+        (el) => el.textContent || "",
+      );
+      expect(coverageText).toContain("Task tree");
+      expect(coverageText).toContain("Runtime trace");
+      expect(coverageText).toContain("not implemented");
+
+      const loopText = await page.$eval(
+        '[data-testid="durable-loop-readout"]',
+        (el) => el.textContent || "",
+      );
+      expect(loopText).toContain("Spec loop");
+      expect(loopText).toContain("Reference loop");
+      expect(loopText).toContain("Compact loop");
+
+      const issuesText = await page.$eval(
+        '[data-testid="potential-issues"]',
+        (el) => el.textContent || "",
+      );
+      expect(issuesText).toContain("Raw Fact");
+      expect(issuesText).toContain("Confidence");
+      expect(issuesText).toContain("Clear Condition");
 
       const { tree, kanban } = kanbanTaskTreeState(
         taskTreeConfig({
@@ -708,7 +834,7 @@ describe("project UI replanning buttons e2e", () => {
         () => comments.length === before + 1,
         "kanban steering comment was not posted",
       );
-      expect(comments.at(-1)?.type).toBe("project.owner.requested");
+      expect(comments.at(-1)?.type).toBe("project.planning.requested");
       expect(comments.at(-1)?.urgency).toBe("high");
       expect(comments.at(-1)?.data?.project).toBe("aks-rp-e2e");
       expect(comments.at(-1)?.data?.reason).toBe("human-steering");
@@ -734,6 +860,36 @@ describe("project UI replanning buttons e2e", () => {
       expect(comments.at(-1)?.data?.params?.comment).toContain(
         "action: review_metrics",
       );
+
+      await page.evaluate(() => {
+        const processPanel = document.querySelector(
+          '[data-testid="durable-loop-readout"]',
+        );
+        const button = [
+          ...(processPanel?.querySelectorAll("button") || []),
+        ].find((el) => el.textContent?.trim() === "Review Loop");
+        (button as HTMLButtonElement | undefined)?.click();
+      });
+      const loopReviewTextarea = await page.$eval(
+        '[data-testid="global-steer-textarea"]',
+        (el) => (el as HTMLTextAreaElement).value,
+      );
+      expect(loopReviewTextarea).toContain("action: review_loop");
+
+      await page.evaluate(() => {
+        const coveragePanel = document.querySelector(
+          '[data-testid="coverage-readout"]',
+        );
+        const button = [
+          ...(coveragePanel?.querySelectorAll("button") || []),
+        ].find((el) => el.textContent?.trim() === "Review Observability Gap");
+        (button as HTMLButtonElement | undefined)?.click();
+      });
+      const gapReviewTextarea = await page.$eval(
+        '[data-testid="global-steer-textarea"]',
+        (el) => (el as HTMLTextAreaElement).value,
+      );
+      expect(gapReviewTextarea).toContain("action: review_observability_gap");
     } finally {
       await browser.close();
     }
@@ -991,8 +1147,20 @@ describe("project UI replanning buttons e2e", () => {
           { timeout: 5_000 },
         );
 
-        // Re-render happens; check which primary button appears
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Re-render happens asynchronously after selection; wait for a primary action.
+        await page.waitForFunction(
+          () =>
+            [
+              ...document.querySelectorAll(
+                '[data-testid="selected-workbench"] button.aks-btn-primary',
+              ),
+            ].some((el) =>
+              ["Replan Selected", "Review / Plan Selected"].includes(
+                el.textContent?.trim() || "",
+              ),
+            ),
+          { timeout: 5_000 },
+        );
         const workbenchButtons = await page.$$eval(
           '[data-testid="selected-workbench"] button.aks-btn-primary',
           (els) => els.map((el) => el.textContent?.trim() || ""),
@@ -1398,7 +1566,7 @@ describe("project UI replanning buttons e2e", () => {
       expect(restCardText).toContain(
         "ManagedSystem pool add-existing lifecycle",
       );
-      expect(restCardText).toContain("target.staging-rest-request");
+      expect(restCardText).toContain("variant.staging-rest-replay");
 
       expect(restCardText).not.toContain("Review Request");
 

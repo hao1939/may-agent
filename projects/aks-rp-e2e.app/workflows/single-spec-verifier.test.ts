@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   chmod,
@@ -7,7 +8,7 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assignTask, taskTreeConfig } from "./lib/task-tree-tools.ts";
@@ -63,7 +64,7 @@ async function makeProject() {
     "utf8",
   );
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -389,7 +390,7 @@ describe("single-spec-verifier", () => {
       expect(unzipCalls.trim().length).toBeGreaterThan(0);
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -425,6 +426,92 @@ describe("single-spec-verifier", () => {
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
       delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
     }
+  });
+
+  test("skips GitHub dispatch when local live policy fails", async () => {
+    const { appDir, projectDir } = await makeProject();
+    await mkdir(join(projectDir, "runner"), { recursive: true });
+    await writeFile(
+      join(projectDir, "runner", "check-private-source-policy.ts"),
+      [
+        "const specIndex = process.argv.indexOf('--spec');",
+        "const specId = specIndex >= 0 ? process.argv[specIndex + 1] : '';",
+        "console.log(`dependency policy passed for ${specId}`);",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "runner", "check-live-admission.ts"),
+      [
+        "const specIndex = process.argv.indexOf('--spec');",
+        "const specId = specIndex >= 0 ? process.argv[specIndex + 1] : '';",
+        "console.error('Live admission policy failed:');",
+        "console.error(`- ${specId}: selected spec has missing carrier metadata`);",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "aks-explorer",
+      maxConcurrent: 1,
+    });
+    const assignment = assignTask(config, {
+      taskId: "verify-spec-net-integration-authorized-ip-ranges",
+    });
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        triggerText({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          ...assignment,
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Local live policy failed");
+    expect(result.message).toContain("GitHub workflow dispatch skipped");
+    expect(result.message).toContain("missing carrier metadata");
+    expect(
+      existsSync(
+        join(
+          appDir,
+          ".state",
+          "spec-loop",
+          "dispatches",
+          `verify-spec-net-integration-authorized-ip-ranges-${assignment.attemptId}.json`,
+        ),
+      ),
+    ).toBeFalse();
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+    const task = tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
+    expect(task.trace.last_worker_result).toBe("partial");
+    expect(task.trace.last_worker_summary).toContain(
+      "Local live policy failed",
+    );
+
+    const state = await readSpecState(appDir);
+    expect(state.status).toBe("error");
+    expect(state.activeWorkflowRunId).toBeNull();
+    expect(state.lastRunId).toBeNull();
   });
 
   test("accepts top-level artifactRefs that only point at spec-runner status.json", async () => {
@@ -566,7 +653,7 @@ describe("single-spec-verifier", () => {
       expect(result.message).not.toContain("artifact-routing-mismatch");
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -662,7 +749,7 @@ describe("single-spec-verifier", () => {
       );
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -876,7 +963,7 @@ describe("single-spec-verifier", () => {
       expect(dispatchCalls[1].join(" ")).toContain('"timeout_minutes":"110"');
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -1061,7 +1148,7 @@ describe("single-spec-verifier", () => {
       taskId: "verify-spec-net-integration-authorized-ip-ranges",
     });
 
-    const treePath = join(appDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(appDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["verify-spec-net-integration.authorized-ip-ranges"];
     tree.tasks["verify-spec-net-integration-authorized-ip-ranges"].context = {
@@ -1429,7 +1516,7 @@ describe("single-spec-verifier", () => {
       ).toBeFalse();
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -1585,7 +1672,7 @@ describe("single-spec-verifier", () => {
       expect((await readFile(unzipLog, "utf8")).trim()).toBe("");
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -1821,7 +1908,7 @@ describe("single-spec-verifier", () => {
       expect((await readFile(unzipLog, "utf8")).trim()).toBe("");
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -1935,7 +2022,7 @@ describe("single-spec-verifier", () => {
       expect(result.message).not.toContain("artifact-routing-mismatch");
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -2051,7 +2138,7 @@ describe("single-spec-verifier", () => {
       expect(result.message).toContain("artifact family=");
 
       const tree = JSON.parse(
-        await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+        await readFile(resolveTaskTreePath(appDir), "utf8"),
       );
       const task =
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
@@ -2107,7 +2194,7 @@ describe("single-spec-verifier", () => {
     mkdirSync(join(appDir, "tasks"), { recursive: true });
     mkdirSync(join(appDir, ".state", "spec-loop"), { recursive: true });
     writeFileSync(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,

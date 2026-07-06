@@ -47,6 +47,8 @@ type StructuredReview = {
   suggestedFollowups: string[];
 };
 
+const EMPTY_ASSISTANT_TURN = "Agent ended with an empty assistant turn";
+
 function taskState(task: TaskNode): string {
   const state = task.status ?? task.state;
   return typeof state === "string" ? state : "backlog";
@@ -171,6 +173,42 @@ function structuredReviewFromText(text: string): StructuredReview {
     feedback: stringList(parsed.feedback),
     suggestedFollowups: stringList(parsed.suggestedFollowups),
   };
+}
+
+function completionSummary(completion: Record<string, unknown>): string {
+  for (const key of ["summary", "message", "result"]) {
+    const value = completion[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function evidenceRefs(completion: Record<string, unknown>): string[] {
+  return stringList(completion.evidenceRefs).concat(
+    stringList(completion.evidence_refs),
+  );
+}
+
+function deterministicReviewForCompletion(
+  completion: Record<string, unknown>,
+): StructuredReview | null {
+  if (
+    completionSummary(completion) === EMPTY_ASSISTANT_TURN &&
+    evidenceRefs(completion).length === 0
+  ) {
+    return {
+      decision: "redo",
+      confidence: "high",
+      summary:
+        "Worker attempt produced an empty assistant turn and no evidence, so the task must be retried instead of accepted or treated as a real blocked wait.",
+      findings: ["worker-empty-assistant-turn", "worker-no-evidence"],
+      feedback: [
+        "Retry the same task with a fresh session and require a concrete result: evidence, a repo-local change, or an exact external wait with owner and resume condition.",
+      ],
+      suggestedFollowups: [],
+    };
+  }
+  return null;
 }
 
 function reviewerSessionId(taskId: string, attemptId: string): string {
@@ -380,29 +418,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence_refs: triggerValue(trigger, "evidence_refs"),
         };
 
-  let reviewerResult: unknown;
-  try {
-    reviewerResult = await runReviewer({
-      ctx,
-      agent,
-      sessionId: reviewerSessionId(taskId, attemptId),
-      prompt: buildReviewPrompt({
-        appDir,
-        projectDir,
-        task,
-        completion,
-        trigger: triggerBlock(ctx.task),
-      }),
-    });
-  } catch (error) {
-    reviewerResult = {
-      status: "error",
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
+  let review = deterministicReviewForCompletion(completion);
+  if (!review) {
+    let reviewerResult: unknown;
+    try {
+      reviewerResult = await runReviewer({
+        ctx,
+        agent,
+        sessionId: reviewerSessionId(taskId, attemptId),
+        prompt: buildReviewPrompt({
+          appDir,
+          projectDir,
+          task,
+          completion,
+          trigger: triggerBlock(ctx.task),
+        }),
+      });
+    } catch (error) {
+      reviewerResult = {
+        status: "error",
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
 
-  const reviewText = resultText(reviewerResult);
-  const review = structuredReviewFromText(reviewText);
+    const reviewText = resultText(reviewerResult);
+    review = structuredReviewFromText(reviewText);
+  }
   try {
     emitTaskReviewed(ctx, { task, attemptId, completion, review });
   } catch {

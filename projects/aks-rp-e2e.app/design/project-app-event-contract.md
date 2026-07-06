@@ -344,6 +344,7 @@ does not replace `project.task.completed` when a task owns the run.
 | `project.approval.requested`                          | `approval-dispatch`                 | Create a human-facing approval message.           |
 | `project.approval.submitted`                          | `project-planner`                   | Reconcile a human approval decision.              |
 | `project.test_run.completed`                          | `project-planner`                   | Reconcile an out-of-band test backend result.     |
+| `learning.feedback` for project agents                | `project-planner`                   | Reconcile evaluator findings about project work.  |
 
 Fresh worker completions route to read-only review first. The planner consumes
 only the structured `project.task.reviewed` result in the normal path. Watchdog
@@ -360,6 +361,7 @@ they affect project state:
 - `project.test_run.completed`
 - `metric.breach`
 - `metric.recovered`
+- `learning.feedback`
 - `escalation.resolved`
 - `escalation.dismissed`
 - `coverage.gap.detected`
@@ -398,6 +400,92 @@ external, environment, product, or human waits with exact resume conditions. It
 is not a normal test result class. Spec/test execution records should use
 `pass`, `fail`, or `error` plus exact root cause and resume/retry condition in
 structured fields.
+
+`blocked` has the same meaning in task-tree leaves and durable loop ledgers:
+work cannot continue now, but the work is still owned and has a known resume
+path. A blocked item is not done, and it is not an unclassified error.
+
+Every new blocked item must carry structured fields:
+
+```json
+{
+  "blockedAt": "2026-07-05T00:00:00.000Z",
+  "reason": "Why work stopped now.",
+  "waitingFor": {
+    "type": "github.workflow_run.completed",
+    "runId": "123",
+    "runUrl": "https://github.com/.../actions/runs/123",
+    "workflow": "aks-rp-e2e-plan-execute.yaml",
+    "branch": "dev",
+    "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
+  },
+  "owner": "human | azure | product | github | project | external",
+  "observedBy": {
+    "workflow": "feature-compact-loop-controller",
+    "trigger": "project.task.tick"
+  },
+  "observationMethod": "Poll GitHub Actions run API and inspect artifacts.",
+  "nextCheckAt": "2026-07-05T00:10:00.000Z",
+  "fallbackAt": "2026-07-06T00:00:00.000Z",
+  "fallbackAction": "Recheck, escalate, reclassify, or create repair work.",
+  "scope": {
+    "kind": "task | spec | feature | compact-package | family",
+    "ids": ["spec.example"]
+  },
+  "evidence": ["runs/test-results/example", "evidence/archive/example.md"],
+  "resumeAction": "Rerun, regenerate, review artifact, or reclassify.",
+  "fingerprint": {
+    "sourceRef": "dev@...",
+    "target": "staging",
+    "planPath": "features/example/compact/staging.plan.json"
+  },
+  "lastCheckedAt": "2026-07-05T00:00:00.000Z"
+}
+```
+
+Task-tree blockers should store the same contract under `blocker` using the
+existing snake_case aliases where needed:
+
+```json
+{
+  "blocker": {
+    "condition": "Why work stopped now.",
+    "category": "external-wait",
+    "owner": "github",
+    "blocked_at": "2026-07-05T00:00:00.000Z",
+    "waiting_for": {
+      "type": "github.workflow_run.completed",
+      "runId": "123",
+      "runUrl": "https://github.com/.../actions/runs/123",
+      "workflow": "aks-rp-e2e-plan-execute.yaml",
+      "branch": "dev",
+      "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
+    },
+    "observed_by": {
+      "workflow": "feature-compact-loop-controller",
+      "trigger": "project.task.tick"
+    },
+    "observation_method": "Poll GitHub Actions run API and inspect artifacts.",
+    "next_check_at": "2026-07-05T00:10:00.000Z",
+    "resume_condition": "Resume when GitHub run 123 has completed and the artifact verdict is known.",
+    "resume_action": "Review returned artifact and rerun the exact plan.",
+    "fallback_at": "2026-07-06T00:00:00.000Z",
+    "fallback_action": "Escalate if no artifact has returned.",
+    "evidence": ["evidence/archive/example.md"]
+  }
+}
+```
+
+Loop ledgers should preserve `status=blocked` for records that satisfy this
+contract. They must not normalize a valid blocked record back to `error`.
+`error` means repair or diagnosis is still needed; `blocked` means the wait is
+understood and represented until `waitingFor` becomes true, fallback time, or
+fingerprint change.
+
+For GitHub workflow-result waits, `waitingFor.runId` is required. Without the
+run id, the item is not waiting for workflow completion; it is waiting for an
+earlier condition such as dispatch permission, workflow input/schema repair,
+run lookup/discovery, or Azure capacity.
 
 ## Compatibility Notes
 

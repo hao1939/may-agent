@@ -21,6 +21,9 @@ export type FeatureCompactRecord = {
 
 export type FeatureCompactItemState = FeatureCompactRecord & {
   status: FeatureCompactStatus;
+  errorClass?: string | null;
+  retryable?: boolean | null;
+  retryReason?: string | null;
   taskId?: string | null;
   attempts: number;
   lastPlanPath: string | null;
@@ -33,6 +36,29 @@ export type FeatureCompactItemState = FeatureCompactRecord & {
   lastDispatchMetadataPath: string | null;
   lastLiveProofVersion: string | null;
   lastSummary: string | null;
+  rootCauseClassification?: string | null;
+  ownerReason?: string | null;
+  attemptedFixes?: string[] | null;
+  nextStepClassification?: string | null;
+  resumeCondition?: string | null;
+  blockedAt?: string | null;
+  blockedReason?: string | null;
+  waitingFor?: Record<string, unknown> | null;
+  waitingCondition?: string | null;
+  observedBy?: Record<string, unknown> | null;
+  observationMethod?: string | null;
+  nextCheckAt?: string | null;
+  blockerOwner?: string | null;
+  fallbackAt?: string | null;
+  fallbackAction?: string | null;
+  resumeAction?: string | null;
+  blockedScope?: { kind: string; ids: string[] } | null;
+  blockedFingerprint?: Record<string, string> | null;
+  lastCheckedAt?: string | null;
+  evidencePaths?: string[] | null;
+  reviewEvidencePath?: string | null;
+  verificationBlocker?: string | null;
+  summary?: string | null;
   updatedAt: string;
 };
 
@@ -65,9 +91,68 @@ function safeKey(value: string): string {
   );
 }
 
+function normalizeSpecStatus(value: unknown): string {
+  return typeof value === "string"
+    ? value
+        .trim()
+        .toLowerCase()
+        .replace(/[_\s]+/g, "-")
+    : "";
+}
+
+function shouldCountFeatureOwnedSpec(specPath: string): boolean {
+  try {
+    const body = JSON.parse(readFileSync(specPath, "utf-8")) as {
+      status?: unknown;
+      specState?: unknown;
+      supersededBy?: unknown;
+      relatedSpecs?: {
+        canonicalProductPath?: {
+          relationship?: unknown;
+          id?: unknown;
+        };
+      };
+    };
+    const status = normalizeSpecStatus(body.status);
+    const specState = normalizeSpecStatus(body.specState);
+    const isSuperseded = status === "superseded" || specState === "superseded";
+    if (!isSuperseded) return true;
+
+    const canonicalProductPath = body.relatedSpecs?.canonicalProductPath;
+    if (
+      canonicalProductPath &&
+      normalizeSpecStatus(canonicalProductPath.relationship) ===
+        "canonical-product-path" &&
+      typeof canonicalProductPath.id === "string" &&
+      canonicalProductPath.id.trim()
+    ) {
+      return false;
+    }
+
+    const featureId = specPath.split("/").slice(-3, -2)[0] ?? "";
+    const supersededBy =
+      typeof body.supersededBy === "string"
+        ? body.supersededBy
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean)
+        : [];
+    if (supersededBy.length === 0 || !featureId) return true;
+
+    const crossFeatureSuperseded = supersededBy.every(
+      (ref) => !ref.startsWith(`spec.${featureId}.`),
+    );
+    return !crossFeatureSuperseded;
+  } catch {
+    return true;
+  }
+}
+
 function countJsonSpecs(dir: string): number {
   if (!existsSync(dir)) return 0;
-  return readdirSync(dir).filter((name) => name.endsWith(".json")).length;
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".json"))
+    .filter((name) => shouldCountFeatureOwnedSpec(join(dir, name))).length;
 }
 
 function normalizeStatus(value: unknown): FeatureCompactStatus {
@@ -75,11 +160,11 @@ function normalizeStatus(value: unknown): FeatureCompactStatus {
     value === "pending" ||
     value === "running" ||
     value === "done" ||
+    value === "blocked" ||
     value === "error"
   ) {
     return value;
   }
-  if (value === "blocked") return "error";
   if (value === "ready" || value === "partial") return "pending";
   return "pending";
 }
@@ -91,6 +176,7 @@ function normalizeExistingItem(
   return {
     ...item,
     status: normalizeStatus(item.status),
+    errorClass: (item as FeatureCompactItemState).errorClass ?? null,
     lastWorkflowRunId: item.lastWorkflowRunId ?? null,
     lastWorkflowRunUrl: item.lastWorkflowRunUrl ?? null,
     lastWorkflowLoopKey:
@@ -99,7 +185,40 @@ function normalizeExistingItem(
       (item as FeatureCompactItemState).lastDispatchMetadataPath ?? null,
     lastLiveProofVersion:
       (item as FeatureCompactItemState).lastLiveProofVersion ?? null,
+    retryable:
+      (item as FeatureCompactItemState).retryable === false ? false : true,
+    retryReason: (item as FeatureCompactItemState).retryReason ?? null,
     taskId: (item as FeatureCompactItemState).taskId ?? null,
+    rootCauseClassification:
+      (item as FeatureCompactItemState).rootCauseClassification ?? null,
+    ownerReason: (item as FeatureCompactItemState).ownerReason ?? null,
+    attemptedFixes: (item as FeatureCompactItemState).attemptedFixes ?? null,
+    nextStepClassification:
+      (item as FeatureCompactItemState).nextStepClassification ?? null,
+    resumeCondition: (item as FeatureCompactItemState).resumeCondition ?? null,
+    blockedAt: (item as FeatureCompactItemState).blockedAt ?? null,
+    blockedReason: (item as FeatureCompactItemState).blockedReason ?? null,
+    waitingFor: (item as FeatureCompactItemState).waitingFor ?? null,
+    waitingCondition:
+      (item as FeatureCompactItemState).waitingCondition ?? null,
+    observedBy: (item as FeatureCompactItemState).observedBy ?? null,
+    observationMethod:
+      (item as FeatureCompactItemState).observationMethod ?? null,
+    nextCheckAt: (item as FeatureCompactItemState).nextCheckAt ?? null,
+    blockerOwner: (item as FeatureCompactItemState).blockerOwner ?? null,
+    fallbackAt: (item as FeatureCompactItemState).fallbackAt ?? null,
+    fallbackAction: (item as FeatureCompactItemState).fallbackAction ?? null,
+    resumeAction: (item as FeatureCompactItemState).resumeAction ?? null,
+    blockedScope: (item as FeatureCompactItemState).blockedScope ?? null,
+    blockedFingerprint:
+      (item as FeatureCompactItemState).blockedFingerprint ?? null,
+    lastCheckedAt: (item as FeatureCompactItemState).lastCheckedAt ?? null,
+    evidencePaths: (item as FeatureCompactItemState).evidencePaths ?? null,
+    reviewEvidencePath:
+      (item as FeatureCompactItemState).reviewEvidencePath ?? null,
+    verificationBlocker:
+      (item as FeatureCompactItemState).verificationBlocker ?? null,
+    summary: (item as FeatureCompactItemState).summary ?? null,
   };
 }
 
@@ -211,6 +330,9 @@ export function loadFeatureCompactLoopState(input: {
     features[record.featureKey] = {
       ...record,
       status: normalizeStatus(existing?.status),
+      errorClass: existing?.errorClass ?? null,
+      retryable: existing?.retryable === false ? false : true,
+      retryReason: existing?.retryReason ?? null,
       taskId: existing?.taskId ?? null,
       attempts: existing?.attempts ?? 0,
       lastPlanPath: existing?.lastPlanPath ?? null,
@@ -223,6 +345,29 @@ export function loadFeatureCompactLoopState(input: {
       lastDispatchMetadataPath: existing?.lastDispatchMetadataPath ?? null,
       lastLiveProofVersion: existing?.lastLiveProofVersion ?? null,
       lastSummary: existing?.lastSummary ?? null,
+      rootCauseClassification: existing?.rootCauseClassification ?? null,
+      ownerReason: existing?.ownerReason ?? null,
+      attemptedFixes: existing?.attemptedFixes ?? null,
+      nextStepClassification: existing?.nextStepClassification ?? null,
+      resumeCondition: existing?.resumeCondition ?? null,
+      blockedAt: existing?.blockedAt ?? null,
+      blockedReason: existing?.blockedReason ?? null,
+      waitingFor: existing?.waitingFor ?? null,
+      waitingCondition: existing?.waitingCondition ?? null,
+      observedBy: existing?.observedBy ?? null,
+      observationMethod: existing?.observationMethod ?? null,
+      nextCheckAt: existing?.nextCheckAt ?? null,
+      blockerOwner: existing?.blockerOwner ?? null,
+      fallbackAt: existing?.fallbackAt ?? null,
+      fallbackAction: existing?.fallbackAction ?? null,
+      resumeAction: existing?.resumeAction ?? null,
+      blockedScope: existing?.blockedScope ?? null,
+      blockedFingerprint: existing?.blockedFingerprint ?? null,
+      lastCheckedAt: existing?.lastCheckedAt ?? null,
+      evidencePaths: existing?.evidencePaths ?? null,
+      reviewEvidencePath: existing?.reviewEvidencePath ?? null,
+      verificationBlocker: existing?.verificationBlocker ?? null,
+      summary: existing?.summary ?? null,
       updatedAt: existing?.updatedAt ?? now,
     };
   }
@@ -280,9 +425,11 @@ export function orderedPendingFeatureCompactKeys(
   state: FeatureCompactLoopState,
 ): string[] {
   return Object.keys(state.features)
-    .filter((featureKey) =>
-      ["pending", "error"].includes(String(state.features[featureKey]?.status)),
-    )
+    .filter((featureKey) => {
+      const feature = state.features[featureKey];
+      if (feature?.status === "pending") return true;
+      return feature?.status === "error" && feature.retryable !== false;
+    })
     .sort((a, b) => a.localeCompare(b));
 }
 
@@ -291,6 +438,7 @@ export function updateFeatureCompactItem(
   featureKey: string,
   patch: Partial<FeatureCompactItemState>,
 ): void {
+  const now = new Date().toISOString();
   const previous = state.features[featureKey] ?? {
     featureKey,
     capabilityId: featureKey,
@@ -298,6 +446,9 @@ export function updateFeatureCompactItem(
     specsDir: `features/${featureKey}/specs`,
     specCount: 0,
     status: "pending" as const,
+    errorClass: null,
+    retryable: true,
+    retryReason: null,
     taskId: null,
     attempts: 0,
     lastPlanPath: null,
@@ -310,9 +461,35 @@ export function updateFeatureCompactItem(
     lastDispatchMetadataPath: null,
     lastLiveProofVersion: null,
     lastSummary: null,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
   };
   const normalizedPatch = { ...patch };
+  if (
+    normalizedPatch.status === "pending" ||
+    normalizedPatch.status === "running"
+  ) {
+    normalizedPatch.retryable ??= true;
+    normalizedPatch.retryReason ??= null;
+    normalizedPatch.blockedAt ??= null;
+    normalizedPatch.blockedReason ??= null;
+    normalizedPatch.waitingFor ??= null;
+    normalizedPatch.waitingCondition ??= null;
+    normalizedPatch.observedBy ??= null;
+    normalizedPatch.observationMethod ??= null;
+    normalizedPatch.nextCheckAt ??= null;
+    normalizedPatch.blockerOwner ??= null;
+    normalizedPatch.fallbackAt ??= null;
+    normalizedPatch.fallbackAction ??= null;
+    normalizedPatch.resumeAction ??= null;
+    normalizedPatch.blockedScope ??= null;
+    normalizedPatch.blockedFingerprint ??= null;
+    normalizedPatch.lastCheckedAt ??= null;
+  }
+  if (normalizedPatch.status === "blocked") {
+    normalizedPatch.retryable ??= false;
+    normalizedPatch.blockedAt ??= previous.blockedAt ?? now;
+    normalizedPatch.lastCheckedAt ??= now;
+  }
   if (
     normalizedPatch.status &&
     normalizedPatch.status !== "done" &&
@@ -323,6 +500,6 @@ export function updateFeatureCompactItem(
   state.features[featureKey] = {
     ...previous,
     ...normalizedPatch,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
   };
 }

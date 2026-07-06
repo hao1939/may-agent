@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -370,7 +371,7 @@ describe("project execution engine", () => {
     expect(result.message).toContain("Created blocked review task");
 
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.project_lifecycle).toBe("closed");
     expect(tree.active_task_id).toBe("blocked-frontier-review");
@@ -448,7 +449,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -474,7 +475,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("accepted");
@@ -554,7 +555,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -591,7 +592,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("ready");
     expect(updated.tasks["task-b"].status).toBe("ready");
@@ -673,7 +674,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -710,7 +711,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["review-a"].status).toBe("ready");
     expect(updated.tasks["review-b"].status).toBe("ready");
@@ -772,7 +773,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -808,7 +809,7 @@ describe("project execution engine", () => {
       ),
     ).toHaveLength(0);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("ready");
   });
@@ -884,7 +885,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -910,7 +911,7 @@ describe("project execution engine", () => {
     );
     expect(requestedTaskIds(dispatched)).toEqual(["local-check", "task-a"]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("ready");
     expect(updated.tasks["task-a"].lease_expires_at).toBeUndefined();
@@ -973,7 +974,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -996,7 +997,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(requestedTaskIds(dispatched)).toEqual(["bootstrap-live"]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["bootstrap-live"].status).toBe("ready");
   });
@@ -1057,7 +1058,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1072,7 +1073,7 @@ describe("project execution engine", () => {
         maxConcurrent: 3,
         dispatched,
         runAgent: async () => {
-          const treePath = join(projectDir, "tasks", "tree.json");
+          const treePath = resolveTaskTreePath(projectDir);
           const current = JSON.parse(readFileSync(treePath, "utf8"));
           current.tasks["kms-rerun"].status = "ready";
           current.tasks["kms-rerun"].blocker = undefined;
@@ -1099,7 +1100,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(requestedTaskIds(dispatched)).toEqual(["kms-rerun"]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["kms-rerun"].status).toBe("ready");
     expect(updated.tasks["kms-rerun"].blocker).toBeUndefined();
@@ -1185,7 +1186,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1226,7 +1227,7 @@ describe("project execution engine", () => {
     ).toBeUndefined();
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["stuck-task"].status).toBe("active");
     expect(updated.tasks["stuck-task"].lease_expires_at).toBeTruthy();
@@ -1324,7 +1325,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1358,7 +1359,7 @@ describe("project execution engine", () => {
     expect(requestedTaskIds(dispatched)).toEqual(["ready-task"]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["fresh-task"].status).toBe("active");
     expect(updated.tasks["fresh-task"].session_id).toBe("fresh-zero-op");
@@ -1456,7 +1457,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1491,7 +1492,7 @@ describe("project execution engine", () => {
     expect(requestedTaskIds(dispatched)).toEqual(["ready-task"]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["active-task"].status).toBe("active");
     expect(updated.tasks["active-task"].session_id).toBe("active-zero-op");
@@ -1552,7 +1553,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1577,7 +1578,7 @@ describe("project execution engine", () => {
       "smart-execution-frontier-steering",
     ]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["smart-execution-frontier-steering"].status).toBe(
       "ready",
@@ -1629,7 +1630,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1641,7 +1642,7 @@ describe("project execution engine", () => {
         maxConcurrent: 3,
         runAgent: async (_agent, prompt) => {
           prompts.push(prompt);
-          const treePath = join(projectDir, "tasks", "tree.json");
+          const treePath = resolveTaskTreePath(projectDir);
           const current = JSON.parse(readFileSync(treePath, "utf8"));
           current.tasks.project.children = [
             ...current.tasks.project.children,
@@ -1692,7 +1693,7 @@ describe("project execution engine", () => {
       ),
     ).toBe(true);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-control"]).toBeUndefined();
     expect(updated.tasks["project-planning-loop"]).toBeUndefined();
@@ -1747,7 +1748,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1762,7 +1763,7 @@ describe("project execution engine", () => {
         },
         runAgent: async (_agent, prompt) => {
           expect(prompt).toContain("id: project-planner-control-loop");
-          const treePath = join(projectDir, "tasks", "tree.json");
+          const treePath = resolveTaskTreePath(projectDir);
           const current = JSON.parse(readFileSync(treePath, "utf8"));
           current.tasks.project.status = "decomposed";
           current.tasks.project.children = [
@@ -1799,7 +1800,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(["ready", "active"]).toContain(updated.tasks["next-task"].status);
     expect(updated.tasks.project.status).toBe("decomposed");
@@ -1897,7 +1898,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1906,7 +1907,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-control"].status).toBe("superseded");
     expect(updated.tasks["project-planning-loop"].status).toBe("superseded");
@@ -1974,7 +1975,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -1997,7 +1998,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(requestedTaskIds(dispatched).sort()).toEqual(["task-a", "task-b"]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("ready");
     expect(updated.tasks["task-b"].status).toBe("ready");
@@ -2078,7 +2079,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2104,7 +2105,7 @@ describe("project execution engine", () => {
       "ready-model-task",
     ]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["active-model-task"].status).toBe("active");
     expect(updated.tasks["ready-model-task"].status).toBe("ready");
@@ -2187,7 +2188,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2214,7 +2215,7 @@ describe("project execution engine", () => {
     ]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["active-review"].status).toBe("active");
     expect(updated.tasks["ready-domain-task"].status).toBe("ready");
@@ -2311,7 +2312,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2336,7 +2337,7 @@ describe("project execution engine", () => {
       "smart-execution-frontier-steering",
     ]);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["active-model-task"].status).toBe("active");
     expect(updated.tasks["model-rework"].status).toBe("ready");
@@ -2414,7 +2415,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2457,7 +2458,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("ready");
     expect(updated.tasks["task-b"].status).toBe("ready");
@@ -2519,7 +2520,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2552,7 +2553,7 @@ describe("project execution engine", () => {
       ),
     ).toBe(false);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks.downstream.status).toBe("ready");
     expect(updated.tasks.downstream.gates).toBeUndefined();
@@ -2645,7 +2646,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2678,7 +2679,7 @@ describe("project execution engine", () => {
       ),
     ).toBe(false);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["upstream-parent"].status).toBe("accepted");
     expect(updated.tasks.downstream.status).toBe("ready");
@@ -2741,7 +2742,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2779,7 +2780,7 @@ describe("project execution engine", () => {
       ),
     ).toBe(false);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks.downstream.status).toBe("proposed");
     expect(updated.tasks.downstream.blocker).toContain(
@@ -2831,7 +2832,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2864,7 +2865,7 @@ describe("project execution engine", () => {
       ),
     ).toBe(false);
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["index-task"].status).toBe("ready");
     expect(updated.tasks["index-task"].gates).toBeUndefined();
@@ -2931,7 +2932,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -2968,7 +2969,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].conflict_scope).toEqual(["replays/a.ts"]);
     expect(updated.tasks["task-b"].conflict_scope).toEqual(["replays/b.ts"]);
@@ -3034,7 +3035,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3075,7 +3076,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["stale-review"].status).toBe("ready");
     expect(updated.tasks["stale-review"].lease_expires_at).toBeUndefined();
@@ -3140,7 +3141,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3179,7 +3180,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-a"].claimed_by).toBeUndefined();
@@ -3246,7 +3247,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3265,7 +3266,7 @@ describe("project execution engine", () => {
         }),
         summarize: (output) => {
           if (!injectedConcurrentCompletion) {
-            const treePath = join(projectDir, "tasks", "tree.json");
+            const treePath = resolveTaskTreePath(projectDir);
             const current = JSON.parse(readFileSync(treePath, "utf8"));
             current.tasks["task-b"].status = "accepted";
             delete current.tasks["task-b"].claimed_by;
@@ -3303,7 +3304,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("accepted");
@@ -3361,7 +3362,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3395,7 +3396,7 @@ describe("project execution engine", () => {
     ).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.active_task_id).not.toBe("live-task");
     expect(updated.tasks["live-task"].status).toBe("blocked");
@@ -3459,7 +3460,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3492,7 +3493,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["feedback-rollup"].status).toBe("ready");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
@@ -3550,7 +3551,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3586,7 +3587,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["feedback-rollup"].status).toBe("ready");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
@@ -3648,7 +3649,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3681,7 +3682,7 @@ describe("project execution engine", () => {
     ).toBe(false);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["staging-execution-feedback-rollup-v2"].status).toBe(
       "ready",
@@ -3743,7 +3744,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3768,7 +3769,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["feedback-rollup"].verification.verdict).toBe(
       "rejected",
@@ -3819,7 +3820,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3828,7 +3829,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.active_task_id).toBe("blocked-frontier-review");
     expect(updated.tasks["blocked-frontier-review"].status).toBe("ready");
@@ -3880,7 +3881,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3909,7 +3910,7 @@ describe("project execution engine", () => {
     ).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("decomposed");
     expect(updated.tasks["task-a"].verification.verdict).toBe("rejected");
@@ -3974,7 +3975,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -3993,7 +3994,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a-rework-review"].status).toBe("ready");
     expect(updated.tasks["task-a-rework-review"].verification.verdict).toBe(
@@ -4072,7 +4073,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4088,7 +4089,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a-rework-review"].status).toBe("superseded");
     expect(updated.tasks["task-a-rework-review"].attempts).toHaveLength(2);
@@ -4139,7 +4140,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4164,7 +4165,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["validation-task"].verification.verdict).toBe(
       "rejected",
@@ -4278,7 +4279,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4296,7 +4297,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["replay-task"].verification.verdict).toBe("rejected");
     expect(updated.tasks["replay-task"].verification.reason).toContain(
@@ -4409,7 +4410,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4426,7 +4427,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["live-replay"].verification.verdict).toBe("rejected");
     expect(updated.tasks["live-replay"].verification.reason).toContain(
@@ -4482,7 +4483,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4501,7 +4502,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["errored-task"].verification.verdict).toBe("rejected");
     expect(updated.tasks["errored-task"].status).toBe("decomposed");
@@ -4554,7 +4555,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4573,7 +4574,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["interrupted-output-task"].verification.verdict).toBe(
       "rejected",
@@ -4628,7 +4629,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4651,7 +4652,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
       "rejected",
@@ -4707,7 +4708,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4717,7 +4718,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("human/input question");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["credential-question"].status).toBe("blocked");
     expect(updated.tasks["credential-question-blocker-review"]).toBeUndefined();
@@ -4779,7 +4780,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4788,7 +4789,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["parent-task"].status).toBe("decomposed");
     expect(updated.active_task_id).toBe("child-task");
@@ -4849,7 +4850,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4874,7 +4875,7 @@ describe("project execution engine", () => {
     expect(prompts[0]).toContain("id: interrupted-task");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["interrupted-task"].status).toBe("accepted");
     expect(updated.tasks["ready-task"].status).toBe("ready");
@@ -4956,7 +4957,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -4968,7 +4969,7 @@ describe("project execution engine", () => {
         maxAttempts: 1,
         runAgent: async (_agent, prompt) => {
           prompts.push(prompt);
-          const treePath = join(projectDir, "tasks", "tree.json");
+          const treePath = resolveTaskTreePath(projectDir);
           const current = JSON.parse(readFileSync(treePath, "utf8"));
           current.tasks.project.children = [
             ...current.tasks.project.children,
@@ -5021,7 +5022,7 @@ describe("project execution engine", () => {
     ).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -5076,7 +5077,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5095,7 +5096,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
       "rejected",
@@ -5245,7 +5246,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5272,7 +5273,7 @@ describe("project execution engine", () => {
     ).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -5434,7 +5435,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5443,7 +5444,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -5523,7 +5524,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5545,7 +5546,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -5617,7 +5618,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5636,7 +5637,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["accepted-work-rework-review"].status).toBe(
       "accepted",
@@ -5730,7 +5731,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5739,7 +5740,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["ui-task"].status).toBe("accepted");
     expect(updated.tasks["ui-task"].blocker).toBeUndefined();
@@ -5850,7 +5851,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -5861,7 +5862,7 @@ describe("project execution engine", () => {
     expect(result.message).toContain("project-planning-loop");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-frontier-replan"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
@@ -6022,7 +6023,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6033,7 +6034,7 @@ describe("project execution engine", () => {
     expect(result.message).toContain("project-planning-loop");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -6193,7 +6194,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6204,7 +6205,7 @@ describe("project execution engine", () => {
     expect(result.message).toContain("project-planning-loop-run");
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
@@ -6347,7 +6348,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6356,7 +6357,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop-run"].status).toBe(
       "superseded",
@@ -6503,7 +6504,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6512,7 +6513,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-planning-loop-run-3"].status).toBe("active");
     expect(updated.tasks["project-planning-loop-run-2"].status).toBe(
@@ -6566,7 +6567,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6575,7 +6576,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["local-check"].status).toBe("ready");
     expect(updated.active_task_id).toBe("local-check");
@@ -6709,7 +6710,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6718,7 +6719,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
       "accepted",
@@ -6784,7 +6785,7 @@ describe("project execution engine", () => {
       },
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6820,7 +6821,7 @@ describe("project execution engine", () => {
     ).toBe(true);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("ready");
@@ -6990,7 +6991,7 @@ describe("project execution engine", () => {
       tasks,
     };
     await writeFile(
-      join(projectDir, "tasks", "tree.json"),
+      resolveTaskTreePath(projectDir),
       `${JSON.stringify(tree, null, 2)}\n`,
       "utf8",
     );
@@ -6999,7 +7000,7 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     // The rework review should be superseded
     expect(updated.tasks[reworkId].status).toBe("superseded");

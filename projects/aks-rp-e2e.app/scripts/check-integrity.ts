@@ -1,8 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-import app from "../app.ts";
+import { exactBlockedWaitStewardshipProgress } from "../workflows/lib/durable-loop-wait-stewardship.ts";
+import { resolveTaskTreePath } from "@may-agent/sdk";
 
 type AgentConfig = {
   name?: string;
@@ -121,7 +123,8 @@ type TaskTree = {
   active_task_id?: string | null;
 };
 
-const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const defaultAppDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const appDir = resolve(process.env.PROJECT_APP_DIR ?? defaultAppDir);
 const domainWorkflowNames = new Set(["spec-runner"]);
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -178,7 +181,9 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function readJson<T>(relativePath: string): T | null {
-  const absolutePath = join(appDir, relativePath);
+  const absolutePath = isAbsolute(relativePath)
+    ? relativePath
+    : join(appDir, relativePath);
   try {
     return JSON.parse(readFileSync(absolutePath, "utf-8")) as T;
   } catch (err) {
@@ -199,6 +204,18 @@ function readOptionalJson<T>(relativePath: string): T | null {
       `${relativePath} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
     );
     return null;
+  }
+}
+
+async function loadProjectApp(): Promise<ProjectApp> {
+  try {
+    const module = await import(pathToFileURL(join(appDir, "app.ts")).href);
+    return module.default as ProjectApp;
+  } catch (err) {
+    fail(
+      `app.ts could not be loaded from ${appDir}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return {};
   }
 }
 
@@ -291,6 +308,51 @@ function validatePackageJson(): void {
       fail(`package.json missing script "${scriptName}"`);
     }
   }
+}
+
+function validateNoTrackedProjectAppRuntimeFiles(): void {
+  const runtimePathspecs = [
+    "projects/*.app/.state/**",
+    "projects/*.app/tasks/tree.json",
+    "projects/*.app/tasks/kanban.json",
+    "projects/*.app/agents/*/last-session.md",
+    "projects/*.app/agents/*/last-eval.md",
+    "projects/*.app/agents/*/last_heartbeat_brief.md",
+    "projects/*.app/agents/*/workflows/.may-runtime-module-*.mjs",
+  ];
+  let tracked = "";
+  try {
+    const repoRoot = execFileSync("git", [
+      "-C",
+      appDir,
+      "rev-parse",
+      "--show-toplevel",
+    ])
+      .toString("utf8")
+      .trim();
+    tracked = execFileSync("git", [
+      "-C",
+      repoRoot,
+      "ls-files",
+      ...runtimePathspecs,
+    ]).toString("utf8");
+  } catch (err) {
+    warn(
+      `could not check git-tracked project-app runtime files: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return;
+  }
+
+  const files = tracked
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (files.length === 0) return;
+  fail(
+    `project-app runtime files must not be tracked by git: ${files.join(", ")}`,
+  );
 }
 
 function validateProjectAndApp(
@@ -748,10 +810,20 @@ function validateTaskTree(
     return (task.children ?? []).length === 0;
   }
 
-  function workflowProgressIncomplete(task: TaskNode): boolean {
+  function workflowProgress(task: TaskNode): Record<string, unknown> | null {
     const context = record(task.context);
-    const progress = record(context.workflowProgress);
-    return progress.completionReady === false;
+    const progress = context.workflowProgress;
+    return progress && typeof progress === "object" && !Array.isArray(progress)
+      ? (progress as Record<string, unknown>)
+      : null;
+  }
+
+  function workflowProgressIncomplete(task: TaskNode): boolean {
+    return workflowProgress(task)?.completionReady === false;
+  }
+
+  function blockedWaitStewardship(task: TaskNode): boolean {
+    return exactBlockedWaitStewardshipProgress(workflowProgress(task));
   }
 
   function isWorkflowControllerTask(task: TaskNode): boolean {
@@ -781,6 +853,9 @@ function validateTaskTree(
       if (taskState(task) === "active") return "active";
       if (childStates.includes("active")) return "active";
       if (childStates.includes("review")) return "review";
+      if (blockedWaitStewardship(task) && childStates.includes("blocked")) {
+        return "blocked";
+      }
       return "backlog";
     }
     if (childStates.includes("active")) return "active";
@@ -916,10 +991,11 @@ function validateDurableLoopTasks(tree: TaskTree | null): void {
   }
 }
 
+validateNoTrackedProjectAppRuntimeFiles();
 validatePackageJson();
-const projectApp = app as ProjectApp;
+const projectApp = await loadProjectApp();
 const projectJson = readJson<ProjectJson>("project.json");
-const taskTree = readJson<TaskTree>("tasks/tree.json");
+const taskTree = readJson<TaskTree>(resolveTaskTreePath(appDir));
 const owner = inferOwner(projectJson);
 const workflowNames = listWorkflowNames();
 

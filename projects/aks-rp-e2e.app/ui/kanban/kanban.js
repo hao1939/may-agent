@@ -1,5 +1,5 @@
 const APP_PATH = "projects/aks-rp-e2e.app";
-const TASK_TREE_FILE = "aks-rp-e2e.app/tasks/tree.json";
+const TASK_TREE_FILE = "aks-rp-e2e.app/.state/tasks/tree.json";
 
 let state = {
   tree: null,
@@ -36,6 +36,22 @@ function taskColor(stateName) {
 }
 
 const METRIC_GROUPS = [
+  {
+    title: "Process Bottlenecks",
+    description: "Where work can stop moving even when the board looks busy.",
+    metrics: [
+      [
+        "aks-rp-e2e.process.integrity.task-tree-problem-count",
+        "Tree integrity",
+      ],
+      ["aks-rp-e2e.process.unpublished-change-count", "Project repo stale"],
+      ["aks-rp-e2e.process.unowned-work-count", "Unowned work"],
+      ["aks-rp-e2e.task.stale-active-count", "Stale active"],
+      ["aks-rp-e2e.task.capacity-underfilled-with-gaps", "Underfilled"],
+      ["aks-rp-e2e.task.no-work-with-gaps", "No work"],
+      ["aks-rp-e2e.planner.slow-count-24h", "Planner slow"],
+    ],
+  },
   {
     title: "Flow",
     description: "Is the project owner keeping executable work moving?",
@@ -96,6 +112,88 @@ const METRIC_FALLBACKS = {
   "aks-rp-e2e.task.ready-count": (stats) => stats.backlog,
   "aks-rp-e2e.task.blocked-count": (stats) => stats.blocked,
 };
+
+const DURABLE_LOOPS = [
+  {
+    id: "aks-spec-verification-loop",
+    label: "Spec loop",
+    owner: "spec-loop-controller",
+    expected:
+      "Every non-terminal spec has verifier work, repair work, exact wait, or terminal disposition.",
+  },
+  {
+    id: "aks-feature-reference-loop",
+    label: "Reference loop",
+    owner: "feature-reference-loop-controller",
+    expected:
+      "Every feature has official reference collection complete or accepted terminal disposition.",
+  },
+  {
+    id: "aks-feature-compact-loop",
+    label: "Compact loop",
+    owner: "feature-compact-loop-controller",
+    expected:
+      "Every feature compact package is passing live, represented by repair/wait work, or terminal.",
+  },
+];
+
+function numberOrZero(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function objectValue(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+}
+
+function parseTime(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function latestTimestamp(values) {
+  let latest = null;
+  for (const value of values) {
+    const ms = parseTime(value);
+    if (ms == null) continue;
+    if (!latest || ms > latest.ms) latest = { ms, value };
+  }
+  return latest?.value || null;
+}
+
+function formatTime(value) {
+  if (!value) return "unknown";
+  const ms = parseTime(value);
+  if (ms == null) return String(value);
+  return new Date(ms)
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d+Z$/, "Z");
+}
+
+function formatAge(value) {
+  const ms = parseTime(value);
+  if (ms == null) return "unknown";
+  const delta = Math.max(0, Date.now() - ms);
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function formatCount(value) {
+  return formatMetricValue(value);
+}
 
 function taskState(task) {
   const raw = task?.state || task?.status || "unknown";
@@ -579,16 +677,16 @@ async function loadMetrics() {
 async function loadData() {
   const [taskData, kanbanData] = await Promise.all([
     fetchJson(
-      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`,
+      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent(".state/tasks/tree.json")}`,
     ),
     fetchJson(
-      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/kanban.json")}`,
+      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent(".state/tasks/kanban.json")}`,
     ),
   ]);
   state.tree = JSON.parse(taskData.content || "{}");
   const kanbanSnapshot = JSON.parse(kanbanData.content || "{}");
   if (!kanbanSnapshot?.kanban?.card_ids_by_column)
-    throw new Error("tasks/kanban.json is missing the task-tool projection");
+    throw new Error("runtime task board snapshot is missing the task-tool projection");
   state.kanban = kanbanSnapshot.kanban;
   await loadMetrics();
   state.kanbanSource = "task-tree-tools snapshot";
@@ -628,6 +726,369 @@ function firstTaskIdByColumn(tree, column) {
 function primaryActiveTask(tree) {
   const activeId = (tree?.active_task_ids || [])[0] || tree?.active_task_id;
   return activeId ? tree.tasks?.[activeId] || null : null;
+}
+
+function workflowProgress(task) {
+  return objectValue(objectValue(task?.context).workflowProgress);
+}
+
+function taskRoots(tree) {
+  const tasks = tree?.tasks || {};
+  return Object.values(tasks)
+    .filter((task) => !task.parent_id || !tasks[task.parent_id])
+    .map((task) => task.id)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function leavesByState(tree, stateName) {
+  return Object.values(tree?.tasks || {})
+    .filter((task) => isLeaf(task) && taskState(task) === stateName)
+    .sort(taskSort(tree));
+}
+
+function allMetricAlerts() {
+  return state.metricAlerts.length > 0
+    ? state.metricAlerts
+    : (state.metrics || []).filter((metric) => metric.alertOpen);
+}
+
+function metricById(id) {
+  return projectMetricsById().get(id) || null;
+}
+
+function processStatusTone(status) {
+  if (status === "Broken" || status === "Failing") return "bad";
+  if (status === "Attention" || status === "Unknown") return "warn";
+  return "good";
+}
+
+function loopReports(tree) {
+  return DURABLE_LOOPS.map((loop) => {
+    const task = tree?.tasks?.[loop.id] || null;
+    const progress = workflowProgress(task);
+    const updatedAt =
+      progress.updatedAt || task?.updated_at || tree?.updated_at;
+    const unrepresented = numberOrNull(progress.unrepresentedNonTerminalCount);
+    const error = numberOrZero(progress.error ?? progress.residueError);
+    const pending = numberOrZero(progress.pending ?? progress.residuePending);
+    const running = numberOrZero(progress.running ?? progress.residueRunning);
+    const done = numberOrZero(progress.done);
+    const retryBudgetExhausted = numberOrZero(progress.retryBudgetExhausted);
+    const completionReady =
+      typeof progress.completionReady === "boolean"
+        ? progress.completionReady
+        : null;
+    const openChildren = numberOrZero(progress.openChildren);
+    const activeGithubRuns = numberOrZero(progress.activeGithubRuns);
+    const represented = unrepresented === 0 && completionReady === false;
+    const status =
+      completionReady === true
+        ? "complete"
+        : unrepresented != null && unrepresented > 0
+          ? "unrepresented"
+          : represented
+            ? "represented"
+            : task
+              ? taskState(task)
+              : "missing";
+    return {
+      ...loop,
+      task,
+      state: task ? taskState(task) : "missing",
+      progress,
+      completionReady,
+      pending,
+      running,
+      done,
+      error,
+      retryBudgetExhausted,
+      unrepresented,
+      openChildren,
+      activeGithubRuns,
+      represented,
+      status,
+      reason: progress.reason || "",
+      updatedAt,
+    };
+  });
+}
+
+function buildCoverageRows(tree, loops) {
+  const roots = taskRoots(tree);
+  const loopUpdatedAt = latestTimestamp(loops.map((loop) => loop.updatedAt));
+  const metricUpdatedAt = latestTimestamp(
+    (state.metrics || []).map((metric) => metric.updated_at),
+  );
+  const rows = [
+    {
+      surface: "Task tree",
+      expected:
+        "Current task state, active frontier, owners, waits, and task evidence.",
+      observed: `${Object.keys(tree?.tasks || {}).length} tasks, ${roots.length} root(s)`,
+      freshness: tree?.updated_at ? formatAge(tree.updated_at) : "unknown",
+      coverage: roots.length === 1 ? "complete" : "partial",
+      blindSpot:
+        roots.length === 1
+          ? "Tree structure is observable; semantic correctness still depends on review."
+          : "Extra roots can hide work outside the intended project tree.",
+      evidence: "tasks/tree.json",
+      action: roots.length === 1 ? "" : "Request Planner Review",
+      actionKind: roots.length === 1 ? "" : "planner",
+      key: "coverage.task-tree",
+    },
+    {
+      surface: "Metrics",
+      expected: "Registered sensors expose trends and alert state.",
+      observed:
+        state.metricWarning ||
+        `${state.metrics.length} metric(s), ${allMetricAlerts().length} open alert(s)`,
+      freshness: metricUpdatedAt
+        ? formatAge(metricUpdatedAt)
+        : state.metricWarning
+          ? "missing"
+          : "unknown",
+      coverage: state.metricWarning
+        ? "missing"
+        : state.metrics.length
+          ? "partial"
+          : "unknown",
+      blindSpot: state.metricWarning
+        ? "Metric-discovered issues may be invisible until metrics load."
+        : "Metrics are sampled sensors; absence of alert is not complete proof.",
+      evidence: "/api/metrics",
+      action: state.metricWarning ? "Review Observability Gap" : "",
+      actionKind: state.metricWarning ? "observability" : "",
+      key: "coverage.metrics",
+    },
+    {
+      surface: "Loop ledgers",
+      expected:
+        "Durable loop state can prove unfinished records are represented by work, waits, or terminal disposition.",
+      observed: `${loops.length} loop root(s) via workflowProgress`,
+      freshness: loopUpdatedAt ? formatAge(loopUpdatedAt) : "unknown",
+      coverage: "inferred",
+      blindSpot:
+        "The UI trusts workflowProgress and does not independently scan every .state loop record yet.",
+      evidence: "tasks/tree.json context.workflowProgress",
+      action: "Challenge Classification",
+      actionKind: "challenge",
+      key: "coverage.loop-ledgers",
+    },
+    {
+      surface: "Runtime trace",
+      expected: "Emitted events can be matched to handler and workflow runs.",
+      observed: "No browser-readable process route trace yet.",
+      freshness: "missing",
+      coverage: "not implemented",
+      blindSpot:
+        "Event black holes may exist even when the task tree appears to move.",
+      evidence: "future .state/process-routes.jsonl",
+      action: "Review Observability Gap",
+      actionKind: "observability",
+      key: "coverage.runtime-trace",
+    },
+    {
+      surface: "Static graph",
+      expected:
+        "App schedules, events, handlers, workflows, and terminal outputs are route-checked.",
+      observed: "Static graph readout is not browser-readable yet.",
+      freshness: "missing",
+      coverage: "not implemented",
+      blindSpot:
+        "Unhandled emitted events or unguarded cycles may not be visible on this page.",
+      evidence: "app.ts and workflow metadata",
+      action: "Review Observability Gap",
+      actionKind: "observability",
+      key: "coverage.static-graph",
+    },
+  ];
+  return rows;
+}
+
+function buildProcessIssues(tree, loops) {
+  const roots = taskRoots(tree);
+  const issues = [];
+  if (roots.length !== 1) {
+    issues.push({
+      key: "process.integrity.task-tree-root-count",
+      group: "Process mismatch",
+      severity: "P1",
+      rawFact: `${roots.length} root task(s): ${roots.join(", ") || "none"}`,
+      hint: "The project process expects exactly one reachable task-tree root.",
+      confidence: "known",
+      owner: "project-planner",
+      currentAttempt: roots.slice(0, 3).join(", "),
+      uncertainty:
+        "The UI has not decided whether the extra root is legacy residue or active drift.",
+      evidence: "tasks/tree.json",
+      requiredResponse: "Request planner review if this is not already owned.",
+      clearCondition: "task tree root count is exactly 1",
+      action: "Request Planner Review",
+      actionKind: "planner",
+      taskId: roots.find((id) => id !== tree?.root_task_id) || roots[0],
+    });
+  }
+
+  for (const loop of loops) {
+    if (loop.unrepresented != null && loop.unrepresented > 0) {
+      issues.push({
+        key: `${loop.id}.unrepresented`,
+        group: "Process mismatch",
+        severity: "P0",
+        rawFact: `${loop.unrepresented} unrepresented non-terminal record(s)`,
+        hint: "Unfinished durable loop records should be visible as work, exact wait, or terminal disposition.",
+        confidence: "inferred",
+        owner: `${loop.owner} -> project-planner`,
+        currentAttempt: loop.task?.id || loop.id,
+        uncertainty:
+          "The UI reads workflowProgress; full ledger-level proof needs the loop state file.",
+        evidence: "tasks/tree.json context.workflowProgress",
+        requiredResponse:
+          "Review loop representation and create repair/wait work if needed.",
+        clearCondition: "unrepresentedNonTerminalCount = 0",
+        action: "Review Loop",
+        actionKind: "loop",
+        taskId: loop.task?.id,
+        loopId: loop.id,
+      });
+    }
+    if (
+      loop.completionReady === false &&
+      (loop.error > 0 || loop.retryBudgetExhausted > 0) &&
+      !(loop.unrepresented != null && loop.unrepresented > 0)
+    ) {
+      issues.push({
+        key: `${loop.id}.nonterminal-errors`,
+        group: "Failure cluster",
+        severity: "P2",
+        rawFact: `${loop.error} error(s), ${loop.retryBudgetExhausted} retry-budget-exhausted, ${loop.activeGithubRuns} active GitHub run(s)`,
+        hint: loop.represented
+          ? "The loop claims non-terminal errors are represented, but result work is not complete."
+          : "The loop has non-terminal error records.",
+        confidence: loop.represented ? "inferred" : "known",
+        owner: loop.owner,
+        currentAttempt: loop.task?.id || loop.id,
+        uncertainty:
+          "Human may need to challenge whether each error is correctly classified and represented.",
+        evidence: "tasks/tree.json context.workflowProgress",
+        requiredResponse:
+          "Only intervene if the representation or classification looks wrong.",
+        clearCondition:
+          "error records are classified into repair, exact wait, terminal disposition, or passing proof",
+        action: "Challenge Classification",
+        actionKind: "challenge",
+        taskId: loop.task?.id,
+        loopId: loop.id,
+      });
+    }
+  }
+
+  for (const alert of allMetricAlerts().slice(0, 8)) {
+    const id = alert.metricId || alert.metric_id || alert.id;
+    const metric = metricById(id);
+    const current = metric?.current ?? alert.current;
+    const threshold = metric?.threshold ?? alert.threshold;
+    issues.push({
+      key: `metric.${id}`,
+      group: "Metric-discovered",
+      severity: metric?.priority || alert.priority || "P2",
+      rawFact: `${id}: current ${formatMetricValue(current)}${threshold == null ? "" : `, threshold ${formatMetricValue(threshold)}`}`,
+      hint: alert.message || alert.alertMessage || metric?.description || id,
+      confidence: metric ? "known" : "inferred",
+      owner: metric?.owner || "project-planner",
+      currentAttempt: alert.alertId || alert.alert_id || "open metric alert",
+      uncertainty:
+        "Metric breach needs owner classification before it becomes repair, wait, escalation, or no-op.",
+      evidence: "/api/metrics",
+      requiredResponse:
+        "Review the signal only if the owner has not already converted it to work.",
+      clearCondition: "metric alert resolves or has accepted no-op/owned work",
+      action: "Review Signal",
+      actionKind: "signal",
+    });
+  }
+
+  issues.push(
+    {
+      key: "coverage.runtime-trace",
+      group: "Coverage gap",
+      severity: "P2",
+      rawFact: "Runtime route trace is not available in the browser readout.",
+      hint: "The page cannot prove every emitted event reached its handler.",
+      confidence: "known",
+      owner: "project-stall-review",
+      currentAttempt: "observability design gap",
+      uncertainty:
+        "Event black holes may exist outside the current task-tree view.",
+      evidence: "future .state/process-routes.jsonl",
+      requiredResponse:
+        "Decide whether this visibility gap needs implementation now.",
+      clearCondition: "runtime route trace is readable and correlated",
+      action: "Review Observability Gap",
+      actionKind: "observability",
+    },
+    {
+      key: "coverage.static-graph",
+      group: "Coverage gap",
+      severity: "P2",
+      rawFact:
+        "Static app graph check is not available in the browser readout.",
+      hint: "The page cannot prove app event routes are all handled or terminal.",
+      confidence: "known",
+      owner: "project-planner",
+      currentAttempt: "observability design gap",
+      uncertainty:
+        "Unhandled events may be invisible until static graph readout exists.",
+      evidence: "app.ts and workflow metadata",
+      requiredResponse: "Review graph readout implementation priority.",
+      clearCondition: "static graph reports zero unhandled internal events",
+      action: "Review Observability Gap",
+      actionKind: "observability",
+    },
+  );
+
+  return issues;
+}
+
+function buildProcessOverview(tree) {
+  const stats = taskStats(tree);
+  const loops = loopReports(tree);
+  const issues = buildProcessIssues(tree, loops);
+  const coverage = buildCoverageRows(tree, loops);
+  const roots = taskRoots(tree);
+  const activeTasks = (tree.active_task_ids || [])
+    .map((id) => tree.tasks?.[id])
+    .filter(Boolean);
+  const reviewLeaves = leavesByState(tree, "review");
+  const blockedLeaves = leavesByState(tree, "blocked");
+  const alerts = allMetricAlerts();
+  const latestLoopAt = latestTimestamp(loops.map((loop) => loop.updatedAt));
+  const lastMovement = latestTimestamp([tree.updated_at, latestLoopAt]);
+  const processStatus =
+    issues.some((issue) => issue.severity === "P0") || roots.length === 0
+      ? "Broken"
+      : issues.length || alerts.length || roots.length !== 1
+        ? "Attention"
+        : "Healthy";
+  const resultStatus = loops.some((loop) => loop.error > 0)
+    ? "Attention"
+    : loops.every((loop) => loop.completionReady === true)
+      ? "Healthy"
+      : "Unknown";
+  return {
+    stats,
+    loops,
+    issues,
+    coverage,
+    roots,
+    activeTasks,
+    reviewLeaves,
+    blockedLeaves,
+    alerts,
+    lastMovement,
+    processStatus,
+    resultStatus,
+  };
 }
 
 function renderMetric(label, value, color = "") {
@@ -682,6 +1143,241 @@ function metricValueFor(id, stats) {
     metric: null,
     value: fallback ? fallback(stats) : null,
   };
+}
+
+function metricNumberValue(id, stats) {
+  const { value } = metricValueFor(id, stats);
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function activeTasksWithoutStartedWorker(tree) {
+  const now = Date.now();
+  return (tree?.active_task_ids || [])
+    .map((id) => tree.tasks?.[id])
+    .filter(Boolean)
+    .filter((task) => !task.trace?.worker_started_at)
+    .map((task) => {
+      const assignedAt = parseTime(task.trace?.assigned_at);
+      return {
+        task,
+        assignedAgeMs: assignedAt == null ? null : now - assignedAt,
+      };
+    })
+    .sort((a, b) => (b.assignedAgeMs || 0) - (a.assignedAgeMs || 0));
+}
+
+function bottleneckTone(value, warnAt = 1, badAt = 1) {
+  if (value == null) return "watch";
+  if (value >= badAt) return "bad";
+  if (value >= warnAt) return "watch";
+  return "ok";
+}
+
+function compactCandidateIds(tasks, limit = 3) {
+  const ids = tasks
+    .filter(Boolean)
+    .map((task) => task.id || task.task?.id)
+    .filter(Boolean)
+    .slice(0, limit);
+  return ids.length ? ids.join(", ") : "none";
+}
+
+function buildBottleneckRows(tree, overview) {
+  const stats = overview.stats;
+  const activeTasks = overview.activeTasks;
+  const activeNoStart = activeTasksWithoutStartedWorker(tree);
+  const unrepresentedLoops = overview.loops.filter(
+    (loop) => Number(loop.unrepresented) > 0,
+  );
+  const rootCount = overview.roots.length;
+  const unpublished = metricNumberValue(
+    "aks-rp-e2e.process.unpublished-change-count",
+    stats,
+  );
+  const unowned = metricNumberValue(
+    "aks-rp-e2e.process.unowned-work-count",
+    stats,
+  );
+  const staleActive = metricNumberValue(
+    "aks-rp-e2e.task.stale-active-count",
+    stats,
+  );
+  const underfilled = metricNumberValue(
+    "aks-rp-e2e.task.capacity-underfilled-with-gaps",
+    stats,
+  );
+  const noWork = metricNumberValue("aks-rp-e2e.task.no-work-with-gaps", stats);
+  const slowPlanner = metricNumberValue(
+    "aks-rp-e2e.planner.slow-count-24h",
+    stats,
+  );
+  const activeFanout = activeTasks.length;
+
+  return [
+    {
+      key: "task-tree-integrity",
+      signalKey: "process.integrity.task-tree-root-count",
+      name: "Task tree valid?",
+      value: rootCount,
+      tone: rootCount === 1 ? "ok" : "bad",
+      rank: 100,
+      question: "Does the task tree have exactly one project root?",
+      meaning:
+        "Multiple roots can hide work outside the intended project tree, so process status cannot be fully trusted.",
+      action:
+        rootCount === 1
+          ? "no action"
+          : "ask planner to repair or intentionally archive the extra root",
+      candidates: overview.roots.join(", ") || "none",
+    },
+    {
+      key: "github-visible",
+      signalKey: "aks-rp-e2e.process.unpublished-change-count",
+      name: "GitHub has project repo?",
+      value: unpublished,
+      tone: bottleneckTone(unpublished),
+      rank: 90,
+      question: "Were aks-rp-e2e repo changes committed and pushed?",
+      meaning:
+        "This only checks the aks-rp-e2e repo that GitHub workflows run. App UI and task-state changes in aks-rp-e2e.app take effect locally and are not counted here.",
+      action:
+        unpublished && unpublished > 0
+          ? "commit and push intended aks-rp-e2e repo changes, or discard unintended churn"
+          : "no action",
+      candidates: "git status in /app/projects/aks-rp-e2e",
+    },
+    {
+      key: "owned-work",
+      signalKey: "aks-rp-e2e.process.unowned-work-count",
+      name: "Work has owners?",
+      value: unowned,
+      tone: bottleneckTone(unowned),
+      rank: 90,
+      question: "Does every unfinished item have a task, wait, or escalation?",
+      meaning:
+        "This catches loop ledger work that exists but has no visible owner.",
+      action:
+        unowned && unowned > 0
+          ? "pulse the loop or create recovery/wait work"
+          : "no action",
+      candidates: compactCandidateIds(
+        unrepresentedLoops.map((loop) => loop.task),
+      ),
+    },
+    {
+      key: "worker-liveness",
+      signalKey: "aks-rp-e2e.task.stale-active-count",
+      name: "Workers alive?",
+      value: staleActive,
+      tone: bottleneckTone(staleActive),
+      rank: 80,
+      question: "Are active tasks actually attached to running workers?",
+      meaning:
+        "If this is high, the board says active but the work is not really moving.",
+      action:
+        staleActive && staleActive > 0
+          ? "requeue stale active tasks or restart workers"
+          : "no action",
+      candidates: compactCandidateIds(activeNoStart.map((row) => row.task)),
+    },
+    {
+      key: "planner-speed",
+      signalKey: "aks-rp-e2e.planner.slow-count-24h",
+      name: "Planner slow?",
+      value: slowPlanner,
+      tone: bottleneckTone(slowPlanner, 1, 10),
+      rank: 70,
+      question: "Is planner/review taking too long to apply results?",
+      meaning:
+        "Slow planner runs usually mean review fanout, large state diffs, or unclear next actions.",
+      action:
+        slowPlanner && slowPlanner > 0
+          ? "inspect recent planner runs and reduce broad review fanout"
+          : "no action",
+      candidates: compactCandidateIds(overview.reviewLeaves),
+    },
+    {
+      key: "active-fanout",
+      signalKey: "local.active-fanout",
+      name: "Too much at once?",
+      value: activeFanout,
+      tone: activeFanout > 50 ? "bad" : activeFanout > 20 ? "watch" : "ok",
+      rank: 50,
+      question: "Did we activate more work than humans/workers can process?",
+      meaning:
+        "Large active fanout can make the project look busy while review and planner throughput becomes the bottleneck.",
+      action:
+        activeFanout > 20
+          ? "let active work drain or throttle assignment waves"
+          : "no action",
+      candidates: compactCandidateIds(activeTasks),
+    },
+    {
+      key: "work-assigned",
+      signalKey: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
+      name: "Enough work assigned?",
+      value:
+        underfilled == null && noWork == null
+          ? null
+          : (underfilled || 0) + (noWork || 0),
+      tone: bottleneckTone((underfilled || 0) + (noWork || 0)),
+      rank: 60,
+      question: "Are there gaps but no runnable or active work?",
+      meaning:
+        "This points to planner/dispatcher starvation instead of worker slowness.",
+      action:
+        (underfilled || 0) + (noWork || 0) > 0
+          ? "ask planner to refill concrete runnable work"
+          : "no action",
+      candidates: compactCandidateIds(leavesByState(tree, "backlog")),
+    },
+  ];
+}
+
+function renderBottleneckCard(row) {
+  return `<div class="bottleneck-card bottleneck-${esc(row.tone)}" data-bottleneck="${attrEsc(row.key)}">
+    <div class="bottleneck-top">
+      <div class="bottleneck-name">${esc(row.name)}</div>
+      <div class="bottleneck-value">${esc(formatMetricValue(row.value))}</div>
+    </div>
+    <div class="bottleneck-question">${esc(row.question)}</div>
+    <div class="bottleneck-meaning">${esc(row.meaning)}</div>
+    <div class="bottleneck-candidates"><strong>Candidates:</strong> ${esc(row.candidates)}</div>
+    <div class="bottleneck-action"><strong>Next:</strong> ${esc(row.action)}</div>
+    <div class="bottleneck-actions"><button class="btn" onclick="prefillBottleneckReview('${attrEsc(row.key)}')" title="Prepare a planner review request for this signal">Prepare Review</button></div>
+  </div>`;
+}
+
+function bottleneckPriority(row) {
+  const toneScore = { bad: 3, watch: 2, ok: 1 }[row.tone] || 0;
+  const valueScore = Number(row.value);
+  const rank = Number(row.rank);
+  return (
+    toneScore * 1_000_000 +
+    (Number.isFinite(rank) ? rank * 1_000 : 0) +
+    (Number.isFinite(valueScore) ? valueScore : 0)
+  );
+}
+
+function renderLeadReadout(bottlenecks) {
+  const lead = [...bottlenecks]
+    .filter((row) => row.tone !== "ok")
+    .sort((a, b) => bottleneckPriority(b) - bottleneckPriority(a))[0];
+
+  if (!lead) {
+    return `<div class="lead-readout lead-ok" data-testid="process-lead">
+      <div class="lead-title">First read: no process bottleneck is firing.</div>
+      <div class="lead-detail">The board may still contain normal work, but the main sensors do not show stale GitHub-run project repo state, unowned work, stale workers, planner starvation, or overload.</div>
+      <div class="lead-next"><strong>Next:</strong> use the raw sections below if the result still feels wrong.</div>
+    </div>`;
+  }
+
+  return `<div class="lead-readout lead-${esc(lead.tone)}" data-testid="process-lead">
+    <div class="lead-title">First check: ${esc(lead.question)} Raw count: ${esc(formatMetricValue(lead.value))}.</div>
+    <div class="lead-detail">${esc(lead.meaning)} Candidates: ${esc(lead.candidates)}.</div>
+    <div class="lead-next"><strong>Next:</strong> ${esc(lead.action)}.</div>
+  </div>`;
 }
 
 function snapshotValue(snapshot) {
@@ -824,14 +1520,248 @@ function renderMetricAlerts() {
   </div>`;
 }
 
+function renderStatusPill(label, status) {
+  return `<span class="process-pill process-${processStatusTone(status)}"><strong>${esc(label)}</strong>${esc(status)}</span>`;
+}
+
+function renderProcessMetric(label, value, tone = "") {
+  return `<div class="process-stat ${tone ? `process-stat-${tone}` : ""}">
+    <div class="process-stat-value">${esc(value)}</div>
+    <div class="process-stat-label">${esc(label)}</div>
+  </div>`;
+}
+
+function renderActivityStage(label, value, detail, tone = "good") {
+  return `<div class="activity-stage activity-${tone}">
+    <div class="activity-stage-label">${esc(label)}</div>
+    <div class="activity-stage-value">${esc(value)}</div>
+    <div class="activity-stage-detail">${esc(detail)}</div>
+  </div>`;
+}
+
+function renderCoverageRow(row) {
+  return `<div class="coverage-row coverage-${String(row.coverage || "").replace(/\s+/g, "-")}">
+    <div>
+      <div class="coverage-surface">${esc(row.surface)}</div>
+      <div class="coverage-expected">${esc(row.expected)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Observed</div>
+      <div>${esc(row.observed)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Freshness</div>
+      <div>${esc(row.freshness)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Coverage</div>
+      <span class="pill">${esc(row.coverage)}</span>
+    </div>
+    <div>
+      <div class="coverage-label">Blind Spot</div>
+      <div>${esc(row.blindSpot)}</div>
+      <div class="coverage-evidence">${esc(row.evidence)}</div>
+    </div>
+    <div class="coverage-actions">
+      ${
+        row.action
+          ? `<button class="btn" onclick="prefillCoverageAction('${attrEsc(row.key)}', '${attrEsc(row.actionKind)}')">${esc(row.action)}</button>`
+          : `<span class="muted">No user action</span>`
+      }
+    </div>
+  </div>`;
+}
+
+function renderLoopRow(loop) {
+  const statusTone =
+    loop.status === "complete"
+      ? "good"
+      : loop.status === "unrepresented"
+        ? "bad"
+        : "warn";
+  const compactReason = loop.reason
+    ? loop.reason.length > 180
+      ? `${loop.reason.slice(0, 180)}...`
+      : loop.reason
+    : "No loop reason recorded.";
+  return `<div class="loop-row loop-${statusTone}" data-loop-id="${attrEsc(loop.id)}">
+    <div>
+      <div class="loop-title">${esc(loop.label)}</div>
+      <div class="loop-id">${esc(loop.id)}</div>
+    </div>
+    <div class="loop-state">
+      <span class="pill">${esc(loop.status)}</span>
+      <span class="muted">${loop.completionReady === true ? "complete" : loop.completionReady === false ? "incomplete" : "unknown"}</span>
+    </div>
+    <div class="loop-counts">
+      <span>pending ${esc(formatCount(loop.pending))}</span>
+      <span>running ${esc(formatCount(loop.running))}</span>
+      <span>done ${esc(formatCount(loop.done))}</span>
+      <span>error ${esc(formatCount(loop.error))}</span>
+      <span>unrepresented ${esc(loop.unrepresented == null ? "unknown" : formatCount(loop.unrepresented))}</span>
+    </div>
+    <div>
+      <div class="coverage-label">Raw Fact</div>
+      <div class="loop-reason">${esc(compactReason)}</div>
+      <div class="coverage-evidence">updated ${esc(formatAge(loop.updatedAt))} | ${esc(loop.owner)}</div>
+    </div>
+    <div class="coverage-actions">
+      <button class="btn" onclick="selectTask('${attrEsc(loop.id)}')">Open Task</button>
+      <button class="btn" onclick="prefillReviewLoop('${attrEsc(loop.id)}')">Review Loop</button>
+      <button class="btn" onclick="prefillChallengeClassification('${attrEsc(loop.id)}')">Challenge</button>
+    </div>
+  </div>`;
+}
+
+function renderIssueRow(issue) {
+  const taskAction =
+    issue.taskId && state.tree?.tasks?.[issue.taskId]
+      ? `<button class="btn" onclick="selectTask('${attrEsc(issue.taskId)}')">Open Task</button>`
+      : "";
+  const actionButton =
+    issue.actionKind === "loop"
+      ? `<button class="btn" onclick="prefillReviewLoop('${attrEsc(issue.loopId || issue.taskId || issue.key)}')">${esc(issue.action)}</button>`
+      : issue.actionKind === "observability"
+        ? `<button class="btn" onclick="prefillObservabilityGap('${attrEsc(issue.key)}')">${esc(issue.action)}</button>`
+        : issue.actionKind === "challenge"
+          ? `<button class="btn" onclick="prefillChallengeClassification('${attrEsc(issue.loopId || issue.taskId || issue.key)}')">${esc(issue.action)}</button>`
+          : issue.actionKind === "signal"
+            ? `<button class="btn" onclick="prefillSignalReview('${attrEsc(issue.key)}')">${esc(issue.action)}</button>`
+            : `<button class="btn" onclick="prefillPlannerReview('${attrEsc(issue.key)}')">${esc(issue.action)}</button>`;
+  return `<div class="issue-row issue-${esc(String(issue.severity).toLowerCase())}">
+    <div>
+      <div class="issue-key">${esc(issue.key)}</div>
+      <div class="issue-group">${esc(issue.group)} | ${esc(issue.severity)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Raw Fact</div>
+      <div>${esc(issue.rawFact)}</div>
+      <div class="coverage-evidence">${esc(issue.evidence)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Hint</div>
+      <div>${esc(issue.hint)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Confidence</div>
+      <span class="pill">${esc(issue.confidence)}</span>
+      <div class="issue-uncertainty">${esc(issue.uncertainty)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Owner And Attempt</div>
+      <div>${esc(issue.owner)}</div>
+      <div class="coverage-evidence">${esc(issue.currentAttempt)}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Clear Condition</div>
+      <div>${esc(issue.clearCondition)}</div>
+      <div class="issue-response">${esc(issue.requiredResponse)}</div>
+    </div>
+    <div class="issue-actions">${taskAction}${actionButton}</div>
+  </div>`;
+}
+
+function renderProcessOverview(tree) {
+  const overview = buildProcessOverview(tree);
+  const bottlenecks = buildBottleneckRows(tree, overview);
+  const hotBottlenecks = bottlenecks.filter((row) => row.tone !== "ok").length;
+  const activeNames = overview.activeTasks
+    .slice(0, 4)
+    .map((task) => task.id)
+    .join(", ");
+  const loopUpdates = overview.loops
+    .map((loop) => `${loop.label}: ${formatAge(loop.updatedAt)}`)
+    .join(" | ");
+  const issueLimit = 8;
+  const issues = overview.issues.slice(0, issueLimit);
+  return `<section class="process-overview" data-testid="process-overview">
+    <div class="panel process-hero">
+      <div class="panel-head">
+        <div>
+          <div class="kicker">Start Here</div>
+          <div class="title">Is The Project Moving?</div>
+          <div class="muted">Read this from left to right. The cards show where work can get stuck, the raw count, likely candidates, and the next check.</div>
+        </div>
+        <div class="process-status-set">
+          ${renderStatusPill("Process", overview.processStatus)}
+          ${renderStatusPill("AKS Results", overview.resultStatus)}
+        </div>
+      </div>
+      <div class="bottleneck-strip" data-testid="process-bottlenecks">
+        ${renderLeadReadout(bottlenecks)}
+        ${bottlenecks.map(renderBottleneckCard).join("")}
+      </div>
+      <div class="process-stats">
+        ${renderProcessMetric("last movement", overview.lastMovement ? formatAge(overview.lastMovement) : "unknown", "neutral")}
+        ${renderProcessMetric("bottlenecks", hotBottlenecks, hotBottlenecks ? "warn" : "good")}
+        ${renderProcessMetric("open signals", overview.issues.length, overview.issues.length ? "warn" : "good")}
+        ${renderProcessMetric("active work", overview.activeTasks.length, overview.activeTasks.length ? "good" : "neutral")}
+        ${renderProcessMetric("pending review", overview.reviewLeaves.length, overview.reviewLeaves.length ? "warn" : "good")}
+        ${renderProcessMetric("exact waits", overview.blockedLeaves.length, overview.blockedLeaves.length ? "warn" : "good")}
+      </div>
+      <div class="activity-strip">
+        ${renderActivityStage("Planner", state.metrics.length ? "observable" : "inferred", `tree updated ${formatAge(tree.updated_at)}`, "good")}
+        ${renderActivityStage("Worker", overview.activeTasks.length ? "active" : "idle", activeNames || "no active task ids", overview.activeTasks.length ? "good" : "warn")}
+        ${renderActivityStage("Reviewer", overview.reviewLeaves.length ? "waiting" : "clear", `${overview.reviewLeaves.length} review leaf/leaves`, overview.reviewLeaves.length ? "warn" : "good")}
+        ${renderActivityStage("Loop control", "active", loopUpdates || "no loop roots", "good")}
+      </div>
+    </div>
+
+    <div class="process-grid">
+      <section class="panel process-panel" data-testid="coverage-readout">
+        <div class="panel-head">
+          <div>
+            <div class="kicker">What This Page Can See</div>
+            <div class="title">Trust And Blind Spots</div>
+            <div class="muted">Use this to know whether a green status is real proof or only a partial readout.</div>
+          </div>
+          <span class="pill">${overview.coverage.filter((row) => row.coverage !== "complete").length} gap(s)</span>
+        </div>
+        <div class="coverage-list">
+          ${overview.coverage.map(renderCoverageRow).join("")}
+        </div>
+      </section>
+
+      <section class="panel process-panel" data-testid="durable-loop-readout">
+        <div class="panel-head">
+          <div>
+            <div class="kicker">Long-Running Queues</div>
+            <div class="title">What The System Is Working On</div>
+            <div class="muted">Each loop must turn unfinished records into active work, review work, exact waits, escalations, or pass results.</div>
+          </div>
+          <span class="pill">${overview.loops.filter((loop) => loop.completionReady !== true).length} incomplete</span>
+        </div>
+        <div class="loop-list">
+          ${overview.loops.map(renderLoopRow).join("")}
+        </div>
+      </section>
+    </div>
+
+    <section class="panel process-panel" data-testid="potential-issues">
+      <div class="panel-head">
+        <div>
+          <div class="kicker">Things Worth Checking</div>
+          <div class="title">Raw Facts With Hints</div>
+          <div class="muted">These rows are not final judgment. They are facts plus hints so a human can challenge or confirm the system.</div>
+        </div>
+        <span class="pill">${overview.issues.length} issue row(s)</span>
+      </div>
+      <div class="issue-list">
+        ${issues.length ? issues.map(renderIssueRow).join("") : `<div class="empty">No issue observed from the browser readout. Check coverage before treating this as complete.</div>`}
+        ${overview.issues.length > issueLimit ? `<div class="empty">${overview.issues.length - issueLimit} more issue row(s)</div>` : ""}
+      </div>
+    </section>
+  </section>`;
+}
+
 function renderProjectMetrics(tree) {
   const stats = taskStats(tree);
   return `<section class="panel metrics-panel" data-testid="project-metrics">
     <div class="panel-head">
       <div>
-        <div class="kicker">Project Metrics</div>
-        <div class="title">Health And Progress</div>
-        <div class="muted">Registered project metrics plus task-tree fallback counts. These are the signals the owner and humans use to decide whether to refill, repair, verify, or escalate.</div>
+        <div class="kicker">Raw Sensor Details</div>
+        <div class="title">Metrics Behind The Bottleneck Cards</div>
+        <div class="muted">Use this when the start-here cards point to a problem and you need the exact metric, threshold, and trend.</div>
       </div>
       <span class="pill">${state.metrics.length ? `${state.metrics.length} metrics` : "metrics offline"}</span>
     </div>
@@ -904,7 +1834,7 @@ function renderSummary(tree) {
     <div class="panel current-panel">
       <div class="panel-head">
         <div>
-          <div class="kicker">Current Work</div>
+          <div class="kicker">Running Now</div>
           <div class="title">${esc(activeTitle)}</div>
         </div>
         <span class="pill" style="color:${taskColor(taskState(active))}">${active ? esc(kanbanLabel(active)) : "Idle"}</span>
@@ -928,18 +1858,24 @@ function renderSummary(tree) {
     </div>
     <div class="panel steering-panel">
       <div>
-        <div class="kicker">Human Steering</div>
-        <div class="title">Send Project Feedback</div>
-        <div class="muted">Use this for project-level direction. Select a task below when the feedback should attach to a specific node.</div>
+        <div class="kicker">Human Action</div>
+        <div class="title">Send A Planner Request</div>
+        <div class="muted">Use this when you want the project owner to inspect raw facts and turn them into work, an exact wait, an escalation, or an accepted no-op.</div>
       </div>
-      <textarea id="global-steer-text" data-testid="global-steer-textarea" placeholder="Tell the project owner what to review, refill, split, verify, or prioritize next."></textarea>
+      <div class="steer-help" data-testid="planner-request-help">
+        <strong>How this works</strong>
+        <div>Buttons like Prepare Review fill this box with a complete request. You can send it as-is, or add context before sending.</div>
+        <div>Send To Planner posts a planning event. The agent does not answer in this textarea; refresh the page to see follow-up as changed tasks, review rows, waits, escalations, or messages.</div>
+        <div>If the agent needs human input, it should create a visible human-needed task, escalation, or message with a clear resume condition.</div>
+      </div>
+      <textarea id="global-steer-text" data-testid="global-steer-textarea" placeholder="Prepared requests appear here. You can send them as-is or add context."></textarea>
       <div class="actions">
         <button class="btn btn-primary" onclick="sendSteering('global-steer-text', 'global-send-status')" data-testid="send-global-steering">Send To Planner</button>
         <button class="btn" onclick="prefillAdvance()">Advance</button>
         <button class="btn" onclick="prefillReviewFrontier()">Blocked</button>
         <button class="btn" onclick="prefillMetricReview()">Metrics</button>
       </div>
-      <div class="status" id="global-send-status" data-testid="global-send-status"></div>
+      <div class="status" id="global-send-status" data-testid="global-send-status">No request prepared yet.</div>
     </div>
   </section>`;
 }
@@ -1029,8 +1965,8 @@ function renderKanban(tree) {
   return `<section class="panel" data-testid="kanban-board">
     <div class="panel-head">
       <div>
-        <div class="kicker">Execution Board</div>
-        <div class="title">Kanban Board</div>
+        <div class="kicker">Task Board</div>
+        <div class="title">Open Work By State</div>
       </div>
       <span class="muted">leaf task cards from ${TASK_TREE_FILE}${state.kanbanSource ? ` via ${esc(state.kanbanSource)}` : ""}</span>
     </div>
@@ -1054,9 +1990,9 @@ function renderTree(tree) {
   return `<section class="panel" data-testid="task-breakdown">
     <div class="panel-head">
       <div>
-        <div class="kicker">Project Thinking</div>
+        <div class="kicker">Full Breakdown</div>
         <div class="title">Task Tree</div>
-        <div class="muted">Agent plan, done knowledge, open work, and task-linked human steering.</div>
+        <div class="muted">Use this when you need the parent/child context behind a board card or bottleneck candidate.</div>
       </div>
       <span class="muted">${esc(tree.project_lifecycle || "active")}</span>
     </div>
@@ -1250,6 +2186,7 @@ function render() {
     return;
   }
   root.innerHTML = [
+    renderProcessOverview(tree),
     renderSummary(tree),
     renderProjectMetrics(tree),
     renderKanban(tree),
@@ -1287,12 +2224,17 @@ function setSteerText(text, textareaId = "steer-text") {
   }
 }
 
+function setInputStatus(text, statusId = "global-send-status") {
+  const status = document.getElementById(statusId);
+  if (status) status.textContent = text;
+}
+
 function prefillAdvance() {
   const active = primaryActiveTask(state.tree);
   state.selectedTaskId = active?.id || state.selectedTaskId;
   render();
   setSteerText(
-    `[resume] Advance aks-rp-e2e through aks-rp-e2e.app/tasks/tree.json.\n\nCurrent task: ${active?.id || "none"}\n\nUse the task tree as the project thinking surface. Keep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims and record done knowledge before closing tasks.`,
+    `[resume] Advance aks-rp-e2e through the task tree.\n\nCurrent task: ${active?.id || "none"}\n\nUse the task tree as the project thinking surface. Keep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims and record done knowledge before closing tasks.`,
     "global-steer-text",
   );
 }
@@ -1325,7 +2267,7 @@ function prefillMetricReview() {
     })
     .join("\n");
   setSteerText(
-    `[metric-steer] aks-rp-e2e project health review\n\naction: review_metrics\n\nReview the project metrics and task tree together. If a metric indicates starvation, duplicate work, idle live execution, or blocked knowledge paths, update aks-rp-e2e.app/tasks/tree.json with concrete backlog, repair, unblock, or verification work. Do not add synthetic tracking-only tasks unless they clarify the actual project plan.\n\nOpen alerts:\n${alertLines || "- none"}`,
+    `[metric-steer] aks-rp-e2e project health review\n\naction: review_metrics\n\nReview the project metrics and task tree together. If a metric indicates starvation, duplicate work, idle live execution, or blocked knowledge paths, update the task tree with concrete backlog, repair, unblock, or verification work. Do not add synthetic tracking-only tasks unless they clarify the actual project plan.\n\nOpen alerts:\n${alertLines || "- none"}`,
     "global-steer-text",
   );
 }
@@ -1344,12 +2286,85 @@ function prefillExecutionReview() {
   );
 }
 
+function prefillPlannerReview(signalKey = "process-review") {
+  const overview = buildProcessOverview(state.tree);
+  const issue = overview.issues.find((row) => row.key === signalKey);
+  setSteerText(
+    `[process-steer] aks-rp-e2e planner review\n\naction: request_planner_review\n\nReview the process readout row and update the task tree only if there is concrete repair, exact wait, terminal disposition, or accepted no-op work to record.\n\nSignal: ${signalKey}\nRaw fact: ${issue?.rawFact || "see process overview"}\nSystem hint: ${issue?.hint || "planner review requested from Kanban process surface"}\nConfidence: ${issue?.confidence || "inferred"}\nUncertainty: ${issue?.uncertainty || "not specified"}\nClear condition: ${issue?.clearCondition || "the owner records an explicit decision or the signal clears"}\n\nDo not hide the raw fact behind a broad status. If the next step is deterministic and safe, perform it; otherwise create exact owned work or an exact wait.`,
+    "global-steer-text",
+  );
+}
+
+function prefillSignalReview(signalKey = "metric-discovered") {
+  const overview = buildProcessOverview(state.tree);
+  const issue = overview.issues.find((row) => row.key === signalKey);
+  setSteerText(
+    `[process-steer] aks-rp-e2e signal review\n\naction: review_signal\n\nReview this metric or signal as a raw fact plus hint. Decide whether it is already owned, needs repair work, needs exact wait/escalation, or is an accepted no-op.\n\nSignal: ${signalKey}\nRaw fact: ${issue?.rawFact || "see metric alert"}\nSystem hint: ${issue?.hint || "metric-discovered signal"}\nOwner: ${issue?.owner || "project-planner"}\nClear condition: ${issue?.clearCondition || "metric clears or owned work/no-op is recorded"}`,
+    "global-steer-text",
+  );
+}
+
+function prefillBottleneckReview(key = "process-bottleneck") {
+  const overview = buildProcessOverview(state.tree);
+  const row = buildBottleneckRows(state.tree, overview).find(
+    (item) => item.key === key,
+  );
+  setSteerText(
+    `[process-steer] aks-rp-e2e bottleneck review\n\naction: review_bottleneck\n\nReview this project bottleneck using the raw count and candidates. Decide whether it is already healthy, needs repair work, needs throttling, needs an aks-rp-e2e repo commit/push, or needs an exact wait/escalation.\n\nBottleneck: ${row?.name || key}\nSignal: ${row?.signalKey || key}\nRaw value: ${row?.value ?? "unknown"}\nQuestion: ${row?.question || "where is work stuck?"}\nMeaning: ${row?.meaning || "not recorded"}\nCandidate tasks/sessions: ${row?.candidates || "none"}\nSuggested next check: ${row?.action || "inspect process state"}\n\nDo not hide the raw number. If the signal is real, update the task tree with concrete owned work or publish/discard aks-rp-e2e repo changes. If it is already handled, record why it is safe.`,
+    "global-steer-text",
+  );
+  setInputStatus(
+    "Planner request prepared. Send it as-is, or add what you want the planner to consider.",
+  );
+}
+
+function prefillReviewLoop(loopId) {
+  const loop = loopReports(state.tree).find((item) => item.id === loopId);
+  setSteerText(
+    `[process-steer] aks-rp-e2e durable loop review\n\naction: review_loop\n\nReview the durable loop raw facts and decide whether the loop is correctly moving, exactly waiting, represented by repair work, or missing owned work.\n\nLoop: ${loopId}\nExpected: ${loop?.expected || "non-terminal records must be represented"}\nRaw fact: pending=${loop?.pending ?? "unknown"}, running=${loop?.running ?? "unknown"}, done=${loop?.done ?? "unknown"}, error=${loop?.error ?? "unknown"}, unrepresented=${loop?.unrepresented ?? "unknown"}\nConfidence: ${loop?.unrepresented === 0 ? "inferred from workflowProgress" : "known from workflowProgress"}\nReason: ${loop?.reason || "none recorded"}\nClear condition: completionReady=true, or every non-terminal record is represented by active work, review work, exact wait, escalation, or terminal disposition.\n\nPreserve raw evidence and do not mark blocked/wait as complete unless the exact resume condition is recorded.`,
+    "global-steer-text",
+  );
+}
+
+function prefillObservabilityGap(key = "coverage-gap") {
+  const overview = buildProcessOverview(state.tree);
+  const coverage = overview.coverage.find((row) => row.key === key);
+  const issue = overview.issues.find((row) => row.key === key);
+  setSteerText(
+    `[process-steer] aks-rp-e2e observability gap review\n\naction: review_observability_gap\n\nReview whether this missing/stale/inferred visibility is acceptable for current project operation. If not, create the smallest repair task that makes the raw fact observable.\n\nCoverage row: ${key}\nSurface: ${coverage?.surface || "unknown"}\nExpected: ${coverage?.expected || issue?.hint || "expected observation missing"}\nObserved: ${coverage?.observed || issue?.rawFact || "not observed"}\nCoverage: ${coverage?.coverage || issue?.confidence || "unknown"}\nBlind spot: ${coverage?.blindSpot || issue?.uncertainty || "unknown"}\nEvidence: ${coverage?.evidence || issue?.evidence || "not recorded"}\nClear condition: ${issue?.clearCondition || "coverage row becomes complete or an accepted terminal visibility gap is recorded"}`,
+    "global-steer-text",
+  );
+}
+
+function prefillCoverageAction(key, actionKind) {
+  if (actionKind === "challenge") {
+    prefillChallengeClassification(key);
+    return;
+  }
+  if (actionKind === "observability") {
+    prefillObservabilityGap(key);
+    return;
+  }
+  prefillPlannerReview(key);
+}
+
+function prefillChallengeClassification(key = "classification") {
+  const overview = buildProcessOverview(state.tree);
+  const issue = overview.issues.find((row) => row.key === key);
+  const loop = loopReports(state.tree).find((item) => item.id === key);
+  const coverage = overview.coverage.find((row) => row.key === key);
+  setSteerText(
+    `[process-steer] aks-rp-e2e challenge classification\n\naction: challenge_classification\n\nChallenge the system hint using raw evidence. Re-evaluate the row and either keep the classification with evidence, change it, create repair/wait work, or record an accepted no-op.\n\nRow: ${key}\nRaw fact: ${issue?.rawFact || coverage?.observed || (loop ? `pending=${loop.pending}, error=${loop.error}, unrepresented=${loop.unrepresented}` : "see selected process row")}\nSystem hint: ${issue?.hint || coverage?.blindSpot || loop?.reason || "classification needs review"}\nConfidence: ${issue?.confidence || coverage?.coverage || (loop ? "inferred" : "unknown")}\nUncertainty: ${issue?.uncertainty || coverage?.blindSpot || "human challenge requested"}\nEvidence: ${issue?.evidence || coverage?.evidence || "task tree"}\nExpected re-evaluation condition: ${issue?.clearCondition || "classification is backed by evidence or changed into owned work/no-op"}`,
+    "global-steer-text",
+  );
+}
+
 function prefillSelected(action) {
   const task = selectedTask();
   if (!task) return;
   const escalation = taskEscalation(task);
   const prompts = {
-    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's state, evidence, done knowledge, blockers, and parent rollup. Tell me whether it is correctly represented in aks-rp-e2e.app/tasks/tree.json and what should happen next.`,
+    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's state, evidence, done knowledge, blockers, and parent rollup. Tell me whether it is correctly represented in the task tree and what should happen next.`,
     split: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: split\n\nIf this task is too broad or blocked ambiguously, split it into smaller executable child tasks. Preserve safety gates, forbidden actions, and evidence links.`,
     challenge: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: challenge\n\nChallenge this task state. Check whether the claim is over-closed, under-specified, blocked for the wrong reason, or missing a concrete next step.`,
     escalate: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: escalate\n\nReview whether this task is blocked by a real ownership boundary. If yes, create or refresh a task-linked escalation with owner, requested action, evidence, and resume condition. If local rework is possible, do not escalate; create backlog follow-up work instead.\n\nCurrent blocker: ${taskBlocker(task) || "none"}`,
@@ -1393,10 +2408,11 @@ async function sendSteering(
       },
     };
     const body = {
-      type: "project.owner.requested",
+      type: "project.planning.requested",
       source: "web-ui",
       owner: "agent:aks-explorer",
       urgency: "high",
+      target: { project: eventData.project },
       project: eventData.project,
       reason: eventData.reason,
       data: eventData,
@@ -1413,8 +2429,8 @@ async function sendSteering(
     if (status)
       status.textContent =
         data.workflowStarted || data.triggered
-          ? "Planning request sent."
-          : "Planning request accepted.";
+          ? "Planner request sent. Refresh shortly; follow-up should appear as task-tree, wait, escalation, or message changes."
+          : "Planner request accepted. Refresh shortly to check follow-up.";
   } catch (error) {
     if (status)
       status.textContent = `Failed: ${error?.message || String(error)}`;
@@ -1450,6 +2466,13 @@ window.prefillReviewFrontier = prefillReviewFrontier;
 window.prefillMetricReview = prefillMetricReview;
 window.prefillBacklogRefill = prefillBacklogRefill;
 window.prefillExecutionReview = prefillExecutionReview;
+window.prefillPlannerReview = prefillPlannerReview;
+window.prefillSignalReview = prefillSignalReview;
+window.prefillBottleneckReview = prefillBottleneckReview;
+window.prefillReviewLoop = prefillReviewLoop;
+window.prefillObservabilityGap = prefillObservabilityGap;
+window.prefillCoverageAction = prefillCoverageAction;
+window.prefillChallengeClassification = prefillChallengeClassification;
 window.prefillSelected = prefillSelected;
 window.sendSteering = sendSteering;
 

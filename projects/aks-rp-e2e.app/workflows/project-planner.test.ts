@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
@@ -81,7 +82,7 @@ async function makeWorkspace() {
     "utf8",
   );
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -156,12 +157,14 @@ async function writeReviewTree(
     attemptId?: string;
     status?: string;
     context?: Record<string, unknown>;
+    conflictScope?: string[];
+    extraTasks?: Record<string, any>;
   } = {},
 ) {
   const taskId = input.taskId ?? "review-task";
   const attemptId = input.attemptId ?? "attempt-1";
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -191,7 +194,7 @@ async function writeReviewTree(
             goal: "Review me",
             outputs: ["runs/test-results/review-task.json"],
             acceptance: ["review accepted"],
-            conflict_scope: ["scope.review-task"],
+            conflict_scope: input.conflictScope ?? ["scope.review-task"],
             context: input.context,
             session_id: "s_task_review_task",
             result: "worker result",
@@ -201,7 +204,30 @@ async function writeReviewTree(
               last_worker_summary: "worker says done",
             },
           },
+          ...(input.extraTasks ?? {}),
         },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
+async function writeSpecLoopState(
+  appDir: string,
+  specs: Record<string, Record<string, unknown>>,
+) {
+  await mkdir(join(appDir, ".state", "spec-loop"), { recursive: true });
+  await writeFile(
+    join(appDir, ".state", "spec-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 5,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs,
       },
       null,
       2,
@@ -212,7 +238,7 @@ async function writeReviewTree(
 
 async function readTaskTreeJson(appDir: string) {
   return JSON.parse(
-    await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+    await readFile(resolveTaskTreePath(appDir), "utf8"),
   ) as { tasks: Record<string, any> };
 }
 
@@ -422,6 +448,120 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("turns accepted spec-loop follow-up reviews into successor work when represented specs remain unowned", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      context: {
+        specLoopFollowup: true,
+        representedSpecIds: ["spec.cost-analysis.vm-prerelease-source-seed"],
+      },
+      conflictScope: ["spec-loop-followup:pending:cost-analysis"],
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.cost-analysis.vm-prerelease-source-seed": {
+        status: "pending",
+        attempts: 4,
+        taskId: "closed-cost-analysis-review",
+        lastRunId: null,
+        lastRunUrl: "https://github.example/runs/1",
+        lastResultPath: "runs/test-results/cost-analysis.json",
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        successorDisposition: "environment-blocker-pending-followup",
+        resumeCondition: "underlay kubeconfig is available",
+        review: { decision: "blocked" },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted because the result mentions a wait task, but no durable holder exists.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("converted accept to followup");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(tree.tasks["review-task-followup"].state).toBe("active");
+    expect(tree.tasks["review-task-followup"].goal).toContain(
+      "Spec-loop accept cannot close",
+    );
+  });
+
+  test("allows accepted spec-loop follow-up reviews when represented specs have an open exact holder", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      context: {
+        specLoopFollowup: true,
+        representedSpecIds: ["spec.defender-profile.vm-prerelease-matrix"],
+      },
+      conflictScope: ["spec-loop-followup:pending:defender-profile"],
+      extraTasks: {
+        "wait-shared-github-auth-preflight-401-family-spec-defender": {
+          id: "wait-shared-github-auth-preflight-401-family-spec-defender",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Wait for shared GitHub auth-preflight repair.",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["auth-preflight repaired"],
+          conflict_scope: ["spec:spec.defender-profile.vm-prerelease-matrix"],
+          blocker: { category: "external-wait" },
+          resumeCondition: "GitHub auth preflight succeeds.",
+        },
+      },
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.defender-profile.vm-prerelease-matrix": {
+        status: "pending",
+        attempts: 4,
+        taskId: null,
+        lastRunId: null,
+        lastRunUrl: "https://github.example/runs/2",
+        lastResultPath: "runs/test-results/defender.json",
+        lastPrUrl: null,
+        updatedAt: new Date().toISOString(),
+        successorDisposition: "workflow-auth-preflight-blocker",
+        resumeCondition: "GitHub auth preflight succeeds.",
+        review: { decision: "blocked" },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Exact holder owns the remaining wait.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Applied accept review for review-task");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(tree.tasks["review-task-followup"]).toBeUndefined();
+  });
+
   test("ignores stale reviewed task attempts without owner-agent planning", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir);
@@ -512,7 +652,7 @@ describe("project owner workflow", () => {
       "utf8",
     );
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -599,7 +739,7 @@ describe("project owner workflow", () => {
   test("runs owner review when worker results are pending even with runnable backlog work", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -711,7 +851,7 @@ describe("project owner workflow", () => {
   test("runs owner refill when active work underfills capacity", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -807,7 +947,7 @@ describe("project owner workflow", () => {
   test("quick-refills clear backlog work without owner session when capacity is filled", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -896,7 +1036,7 @@ describe("project owner workflow", () => {
   test("quick-refill does not assign loop-owned child tasks directly", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1007,7 +1147,7 @@ describe("project owner workflow", () => {
   test("quick-refill assigns loop support follow-up tasks", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1100,10 +1240,10 @@ describe("project owner workflow", () => {
     expect(tree.tasks["reconcile-spec-loop-error-fleet"].state).toBe("active");
   });
 
-  test("quick-refill can assign a loop controller root", async () => {
+  test("quick-refill pulses a loop controller root", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1197,17 +1337,167 @@ describe("project owner workflow", () => {
 
     const tree = await readTaskTreeJson(appDir);
     expect(result.status).toBe("done");
-    expect(dispatched.map((event) => event.payload.taskId)).toEqual([
-      "aks-feature-reference-loop",
+    expect(dispatched).toEqual([
+      expect.objectContaining({
+        type: "project.task.tick",
+        payload: expect.objectContaining({
+          action: "feature-reference-loop",
+          taskId: "aks-feature-reference-loop",
+          task_id: "aks-feature-reference-loop",
+          target: {
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-reference-loop",
+          },
+        }),
+      }),
     ]);
-    expect(tree.tasks["aks-feature-reference-loop"].state).toBe("active");
+    expect(result.message).toContain(
+      "pulsed 1 loop controller(s): aks-feature-reference-loop",
+    );
+    expect(tree.tasks["aks-feature-reference-loop"].state).toBe("backlog");
     expect(tree.tasks["collect-feature-reference-a"].state).toBe("backlog");
+  });
+
+  test("quick-refill creates a fresh worker session when the stored session is terminal", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dbPath = join(appDir, ".state", "may.db");
+    const db = new Database(dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        agent text not null,
+        task text not null,
+        status text not null,
+        kind text,
+        source text,
+        parentSessionId text,
+        requestId text,
+        workflowRunId text,
+        projectId text,
+        startedAt integer not null,
+        endedAt integer,
+        error text,
+        outcome text,
+        opCount integer default 0,
+        stepLabel text,
+        lastActivityAt integer
+      )
+    `);
+    db.query(
+      `insert into sessions (
+        sessionId, agent, task, status, kind, source, startedAt, endedAt, outcome
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "s_task_backlog-task",
+      "aks-explorer",
+      "previous worker run",
+      "done",
+      "workflow",
+      "workflow:task-worker",
+      Date.now() - 10_000,
+      Date.now() - 5_000,
+      "done",
+    );
+    db.close();
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Run after a previous terminal session.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+              session_id: "s_task_backlog-task",
+              session_history: ["s_task_backlog-task"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const priorDb = process.env.MAY_DB_PATH;
+    process.env.MAY_DB_PATH = dbPath;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 1",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async () => ({
+          status: "success",
+          message: "owner should not run",
+        }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].payload.taskId).toBe("backlog-task");
+      expect(String(dispatched[0].payload.sessionId)).toStartWith(
+        "s_task_backlog-task_retry_",
+      );
+      expect(dispatched[0].payload.sessionId).not.toBe("s_task_backlog-task");
+
+      const tree = await readTaskTreeJson(appDir);
+      expect(tree.tasks["backlog-task"].trace.previous_session_id).toBe(
+        "s_task_backlog-task",
+      );
+      expect(tree.tasks["backlog-task"].trace.stale_active_fresh_session).toBe(
+        true,
+      );
+    } finally {
+      if (priorDb === undefined) delete process.env.MAY_DB_PATH;
+      else process.env.MAY_DB_PATH = priorDb;
+    }
   });
 
   test("short-circuits task-completed wake after first bounded successor assignment", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1312,7 +1602,7 @@ describe("project owner workflow", () => {
   test("short-circuits watchdog-capacity-underfilled wake after first refill assignment even below maxConcurrent", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1409,7 +1699,7 @@ describe("project owner workflow", () => {
   test("quick refill synchronizes project.json live readout from non-done tree leaves", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1512,26 +1802,26 @@ describe("project owner workflow", () => {
     expect(prompts).toHaveLength(0);
     expect(dispatched).toHaveLength(0);
 
-    const projectJson = JSON.parse(
-      await readFile(join(appDir, "project.json"), "utf8"),
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    expect(projectJson.currentState.activeTaskId).toBeNull();
-    expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
-    expect(projectJson.currentState.metrics.blockedLeafCount).toBe(1);
-    expect(projectJson.currentState.metrics.reviewLeafCount).toBe(0);
-    expect(projectJson.currentState.metrics.waitingLeafCount).toBe(0);
-    expect(projectJson.currentState.metrics.runnableLeafCount).toBe(0);
-    expect(projectJson.currentFocus.activeTaskIds).toEqual(["blocked-wait"]);
-    expect(projectJson.currentFocus.proposedTaskIds).toEqual(["blocked-wait"]);
-    expect(projectJson.currentFocus.focusPlanId).toBeUndefined();
-    expect(projectJson.currentFocus.focusPlanStatus).toBeUndefined();
-    expect(String(projectJson.currentState.summary)).toContain(
+    expect(projectState.currentState.activeTaskId).toBeNull();
+    expect(projectState.currentState.metrics.activeLeafCount).toBe(0);
+    expect(projectState.currentState.metrics.blockedLeafCount).toBe(1);
+    expect(projectState.currentState.metrics.reviewLeafCount).toBe(0);
+    expect(projectState.currentState.metrics.waitingLeafCount).toBe(0);
+    expect(projectState.currentState.metrics.runnableLeafCount).toBe(0);
+    expect(projectState.currentFocus.activeTaskIds).toEqual(["blocked-wait"]);
+    expect(projectState.currentFocus.proposedTaskIds).toEqual(["blocked-wait"]);
+    expect(projectState.currentFocus.focusPlanId).toBeUndefined();
+    expect(projectState.currentFocus.focusPlanStatus).toBeUndefined();
+    expect(String(projectState.currentState.summary)).toContain(
       "blocked-only exact wait stewardship",
     );
-    expect(String(projectJson.currentFocus.summary)).toContain(
+    expect(String(projectState.currentFocus.summary)).toContain(
       "blocked-only wait stewardship",
     );
-    expect(String(projectJson.currentFocus.nextAction)).toContain(
+    expect(String(projectState.currentFocus.nextAction)).toContain(
       "Preserve the exact blocked waits",
     );
   });
@@ -1544,7 +1834,7 @@ describe("project owner workflow", () => {
       "utf8",
     );
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1641,7 +1931,7 @@ describe("project owner workflow", () => {
   test("short-circuits blocked-frontier review when all blocked leaves are future-dated exact waits", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1715,9 +2005,11 @@ describe("project owner workflow", () => {
                 taskId: "blocked-a",
                 blocker:
                   "Blocked only on returned authoritative proof or the first owner follow-up on or after 2099-06-26.",
-                resumeAt: "2099-06-26T00:00:00.000Z",
                 resumeCondition:
                   "Resume when returned proof arrives or the follow-up window opens.",
+                fallbackAt: "2099-06-26T00:00:00.000Z",
+                fallbackAction:
+                  "Recheck returned proof and escalate if it is still missing.",
               },
               {
                 taskId: "blocked-b",
@@ -1726,6 +2018,9 @@ describe("project owner workflow", () => {
                 resumeAt: "2099-06-27T00:00:00.000Z",
                 resumeCondition:
                   "Resume when approval proof arrives or the follow-up window opens.",
+                fallbackAt: "2099-06-28T00:00:00.000Z",
+                fallbackAction:
+                  "Recheck approval proof and escalate if it is still missing.",
               },
             ],
             blockedCount: 2,
@@ -1768,7 +2063,7 @@ describe("project owner workflow", () => {
   test("does not skip blocked-frontier owner review from prose-only dates", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -1921,7 +2216,7 @@ describe("project owner workflow", () => {
   test("wakes owner for watchdog-stale active work without mutating task state", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2008,7 +2303,7 @@ describe("project owner workflow", () => {
     expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(updated.tasks["stale-task"].state).toBe("active");
     expect(updated.tasks["stale-task"].status).toBeUndefined();
@@ -2024,7 +2319,7 @@ describe("project owner workflow", () => {
   test("skips owner session for false-positive stale-active watchdog review", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2135,7 +2430,7 @@ describe("project owner workflow", () => {
   test("skips owner session for false-positive stale-active watchdog review even with unrelated blocked frontier", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2247,7 +2542,7 @@ describe("project owner workflow", () => {
     expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(updated.tasks["blocked-task"].state).toBe("blocked");
     expect(updated.tasks["blocked-task"].blocker).toBe(
@@ -2272,7 +2567,7 @@ describe("project owner workflow", () => {
     const { appDir, projectDir } = await makeWorkspace();
     const treeUpdatedAt = "2026-06-17T20:30:13.409Z";
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2391,7 +2686,7 @@ describe("project owner workflow", () => {
   test("skips owner session for stale watchdog-review-pending packets after review is already settled", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2505,7 +2800,7 @@ describe("project owner workflow", () => {
   test("skips owner session for stale watchdog-review-pending packets even when unrelated live review backlog remains", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2636,7 +2931,7 @@ describe("project owner workflow", () => {
     const { appDir, projectDir } = await makeWorkspace();
     const treeUpdatedAt = "2026-06-18T01:52:39.649Z";
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2817,7 +3112,7 @@ describe("project owner workflow", () => {
   test("skips owner session for already-settled task completion while active work runs", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -2915,7 +3210,7 @@ describe("project owner workflow", () => {
   test("skips owner session for regular-learning tick when active work already covers the frontier", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3019,7 +3314,7 @@ describe("project owner workflow", () => {
   test("skips owner session for already-settled task completion when completedTaskId is nested under trigger data.params", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3119,7 +3414,7 @@ describe("project owner workflow", () => {
   test("skips owner session for already-settled task completion when only blocked frontier remains", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3253,7 +3548,7 @@ describe("project owner workflow", () => {
     db.close();
 
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3352,7 +3647,7 @@ describe("project owner workflow", () => {
   test("short-circuits planner-timeout-underfilled-frontier wake after first refill assignment", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3458,7 +3753,7 @@ describe("project owner workflow", () => {
       "utf8",
     );
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3530,7 +3825,7 @@ describe("project owner workflow", () => {
     expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(Object.keys(updated.tasks).sort()).toEqual([
       "project",
@@ -3558,7 +3853,7 @@ describe("project owner workflow", () => {
       "utf8",
     );
     await writeFile(
-      join(appDir, "tasks", "tree.json"),
+      resolveTaskTreePath(appDir),
       `${JSON.stringify(
         {
           version: 1,
@@ -3656,7 +3951,7 @@ describe("project owner workflow", () => {
     expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
-      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
     expect(Object.keys(updated.tasks).sort()).toEqual([
       "go-e2ev3-source-discovery",

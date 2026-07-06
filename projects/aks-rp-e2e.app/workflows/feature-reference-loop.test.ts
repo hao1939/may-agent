@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -46,7 +47,7 @@ function config(projectDir: string, maxConcurrent = 5) {
 
 async function writeRootTree(projectDir: string, loopContext = {}) {
   await writeFile(
-    join(projectDir, "tasks", "tree.json"),
+    resolveTaskTreePath(projectDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -240,7 +241,7 @@ status: draft
     expect(result.status).toBe("done");
     expect(result.message).toContain("Created 1 child task");
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const loop = tree.tasks["aks-feature-reference-loop"];
     expect(loop.children).toHaveLength(1);
@@ -275,7 +276,7 @@ status: draft
     await writeRootTree(projectDir, {
       orphanedAssignmentMinAgeMs: 0,
     });
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-localdns",
@@ -368,7 +369,7 @@ status: draft
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "repair-feature-reference-localdns-20260627",
@@ -479,7 +480,7 @@ Virtualmachines agentpool documentation defines supported usage scenarios for VM
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-virtualmachines-agentpool",
@@ -580,7 +581,7 @@ Virtualmachines agentpool documentation defines supported usage scenarios for VM
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-aad-rbac",
@@ -867,7 +868,7 @@ status: draft
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-virtualmachines-auto-zone-single-sku",
@@ -1026,7 +1027,7 @@ status: draft
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-aad-rbac",
@@ -1169,7 +1170,7 @@ status: draft
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-aad-rbac",
@@ -1472,7 +1473,7 @@ status: draft
       taskId: null,
     });
     const tree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(
       tree.tasks["aks-feature-reference-loop"].context.workflowProgress,
@@ -1557,7 +1558,7 @@ status: draft
 
     expect(result.status).toBe("done");
     const updatedTree = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(
       updatedTree.tasks["aks-feature-reference-loop"].context.workflowProgress,
@@ -1579,7 +1580,7 @@ status: draft
   test("controller keeps completion open when non-held running features remain", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-beta",
@@ -1978,7 +1979,7 @@ status: draft
       "utf8",
     );
     await writeRootTree(projectDir);
-    const treePath = join(projectDir, "tasks", "tree.json");
+    const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
     tree.tasks["aks-feature-reference-loop"].children = [
       "collect-feature-reference-node-pool-config",

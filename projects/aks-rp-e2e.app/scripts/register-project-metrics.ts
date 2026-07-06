@@ -20,7 +20,9 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(appDir, "..", "..");
 const dbPath = resolve(process.env.MAY_DB_PATH ?? `${rootDir}/.state/may.db`);
 const sampleCommand = (id: string) =>
-  `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts ${id}`;
+  id === "aks-rp-e2e.process.unowned-work-count"
+    ? `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts ${id} --json`
+    : `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts ${id}`;
 
 const metrics: MetricDef[] = [
   {
@@ -106,6 +108,110 @@ const metrics: MetricDef[] = [
     priority: "P0",
     description:
       "P0 stuck signal: the task tree says work is active, but at least one active leaf has no healthy worker session while model path gaps or unverified specs remain. This catches restart/recovery holes where active task-tree state masks an idle project.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.unowned-work-count",
+    name: "AKS RP E2E unfinished work without active owner",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: unfinished work exists but is not actively owned by a healthy worker, recovery task, exact wait, or accepted terminal disposition. This intentionally covers both task-tree leaves and loop-ledger records, because some dead work can be hidden in loop state before a task exists.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.assignment-state-mismatch-count",
+    name: "AKS RP E2E assignment state mismatch count",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a project.task assignment pair is still open or orphaned, but the task is no longer active or no longer exists. This means task state moved without the closing completion/recovery event and needs planner or runtime repair.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.unpublished-change-count",
+    name: "AKS RP E2E project repo changes not visible to GitHub",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: the aks-rp-e2e project repo has dirty files or local commits that have not been pushed, so GitHub workflows may be running against stale test code, specs, plans, or artifacts. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.integrity.task-tree-problem-count",
+    name: "AKS RP E2E task tree integrity problems",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: the task tree has structural integrity problems such as a root count other than one. This can hide work outside the intended project tree, so planner repair or intentional archive/disposition is required.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.blocked.missing-waiting-for-count",
+    name: "AKS RP E2E blocked tasks missing wait target",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a blocked leaf does not name the exact condition it is waiting for. Blocked is not parked work; add waiting_for or convert the task back into actionable work.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.blocked.missing-observer-count",
+    name: "AKS RP E2E blocked tasks missing observer",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a blocked leaf does not say who checks the wait, how they check it, or when the next check happens. Add observed_by, observation_method, and next_check_at or reopen the work.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.blocked.missing-owner-count",
+    name: "AKS RP E2E blocked tasks missing owner",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a blocked leaf does not name the owner responsible for the wait. Add owner or convert the task back into actionable work.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.blocked.missing-fallback-count",
+    name: "AKS RP E2E blocked tasks missing fallback",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a blocked leaf does not say when waiting stops being acceptable and what fallback action should happen. Add fallback_at and fallback_action or reopen the work.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -276,6 +382,30 @@ const metrics: MetricDef[] = [
     priority: "P3",
     description:
       "Dashboard burn-down counter: specs that still need replay/readiness work before live verification. Not an interrupting alert — the real health signals are spec.unverified-without-work (P0, fires when no verification work is planned) and task.no-work-with-gaps (P0, fires when no work at all while gaps remain). Calibrated threshold 200→999999 and priority P2→P3 on 2026-06-14: threshold=200 on a 335-spec burn-down creates a permanent P2 alert that interrupts without adding value; trend is positive (265→256).",
+  },
+  {
+    id: "aks-rp-e2e.spec.retry-exhausted-count",
+    name: "AKS RP E2E retry-drained specs",
+    type: "gauge",
+    target: 0,
+    threshold: 999999,
+    unit: "count",
+    alertOp: ">",
+    priority: "P3",
+    description:
+      "Dashboard counter: specs that exhausted direct retry and now require grouped recovery, exact wait, escalation, or a fresh meaningful fix before another run.",
+  },
+  {
+    id: "aks-rp-e2e.spec.recovery-unowned-count",
+    name: "AKS RP E2E retry-drained specs without recovery owner",
+    type: "gauge",
+    target: 0,
+    threshold: 999999,
+    unit: "count",
+    alertOp: ">",
+    priority: "P3",
+    description:
+      "Debug component for process.unowned-work-count: retry-drained spec-loop records that are not represented by an open recovery, exact wait, or escalation task.",
   },
   {
     id: "aks-rp-e2e.spec.unverified-without-work",

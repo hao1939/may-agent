@@ -1,3 +1,4 @@
+import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -49,7 +50,7 @@ async function makeFixture(options?: {
   );
 
   await writeFile(
-    join(appDir, "tasks", "tree.json"),
+    resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
         version: 1,
@@ -164,6 +165,41 @@ describe("task-tree CLI", () => {
     );
   });
 
+  test("mark-done refuses to close an active started attempt", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf-8")) as {
+      tasks: Record<string, Record<string, unknown>>;
+    };
+    tree.tasks["active-task"].trace = {
+      current_attempt_id: "attempt-active-1",
+      worker_started_attempt_id: "attempt-active-1",
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const result = await runTaskTree(
+      [
+        "mark-done",
+        "active-task",
+        "--resolution",
+        "replaced",
+        "--summary",
+        "owner cleanup should not close an active assignment",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "active with current started attempt attempt-active-1",
+    );
+  });
+
   test("add and update-text support structured blocker resume metadata", async () => {
     const fixture = await makeFixture();
 
@@ -231,11 +267,80 @@ describe("task-tree CLI", () => {
     });
 
     const tree = JSON.parse(
-      await readFile(join(fixture.appDir, "tasks", "tree.json"), "utf8"),
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
     );
     expect(tree.tasks["blocked-task"].blocker).toMatchObject({
       condition: "Waiting for returned operator proof.",
       resume_at: "2099-06-27T00:00:00.000Z",
     });
+  });
+
+  test("repair-blocked-contracts backfills explicit wait and observer fields", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "github-wait",
+        "--parent",
+        "project",
+        "--goal",
+        "Wait for same-run evidence.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "same-run evidence reviewed",
+        "--state",
+        "blocked",
+        "--blocker",
+        "Blocked until GitHub Actions run 28702280698 returns authoritative logs. Resume: Resume when run 28702280698 has reviewed same-run logs.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+    expect(typeof JSON.parse(add.stdout).blocker).toBe("string");
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repairedCount: 1,
+      repaired: ["github-wait"],
+    });
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["github-wait"].blocker).toMatchObject({
+      condition:
+        "Blocked until GitHub Actions run 28702280698 returns authoritative logs.",
+      owner: "aks-explorer",
+      waiting_for: {
+        type: "github.workflow_run.completed",
+        runId: "28702280698",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        schedule: "blocked-frontier-owner-review",
+      },
+      resume_condition:
+        "Resume when run 28702280698 has reviewed same-run logs.",
+    });
+    expect(tree.tasks["github-wait"].blocker.next_check_at).toBeTruthy();
+    expect(tree.tasks["github-wait"].blocker.fallback_at).toBeTruthy();
+    expect(tree.tasks["github-wait"].blocker.fallback_action).toContain(
+      "owner recovery",
+    );
   });
 });

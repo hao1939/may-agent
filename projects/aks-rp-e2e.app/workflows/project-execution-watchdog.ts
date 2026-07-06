@@ -14,7 +14,7 @@ import {
   defaultSpecLoopStatePath,
   type SpecLoopState,
 } from "./lib/spec-loop-store.ts";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { resolveTaskTreePath, type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
 import {
   normalizeTaskTreeInPlace,
   withTreeLock,
@@ -25,6 +25,10 @@ import {
   listRunnableBacklogTaskIds,
   waitingBacklogTaskSnapshots,
 } from "./lib/task-tree-tools.ts";
+import {
+  completeStartedAttempt,
+  emitTaskCompleted,
+} from "./default-task-worker.ts";
 import { syncProjectReadout } from "./lib/project-readout-sync.ts";
 import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
 import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
@@ -69,7 +73,15 @@ type OpenTaskSnapshot = {
   blocker?: unknown;
   resumeAt?: string;
   resumeCondition?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
   reasons?: string[];
+};
+
+type TerminalSessionRecovery = {
+  sessionId: string;
+  summary: string;
+  evidence: string[];
 };
 
 type WatchdogTreeSnapshot = {
@@ -107,7 +119,7 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   return {
     appDir,
     projectDir,
-    treePath: join(appDir, "tasks", "tree.json"),
+    treePath: resolveTaskTreePath(appDir),
     stateDbPath: field(raw, "stateDb") ?? "/app/.state/may.db",
     specLoopStatePath:
       field(raw, "specLoopState") ?? defaultSpecLoopStatePath(appDir),
@@ -145,9 +157,18 @@ function isLeaf(task: TaskTree["tasks"][string]): boolean {
   return (task.children ?? []).length === 0;
 }
 
+function countsAsExecutableActiveLeaf(
+  task: TaskTree["tasks"][string],
+): boolean {
+  if (!isLeaf(task)) return false;
+  if ((task.status ?? task.state ?? "backlog") !== "active") return false;
+  if (task.kind === "focus_plan") return false;
+  return true;
+}
+
 function activeLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
-  return Object.values(tree.tasks).filter(
-    (task) => isLeaf(task) && task.status === "active",
+  return Object.values(tree.tasks).filter((task) =>
+    countsAsExecutableActiveLeaf(task),
   );
 }
 
@@ -221,6 +242,25 @@ function openTaskSnapshots(
             resumeCondition: blockerStringField(task.blocker, [
               "resumeCondition",
               "resume_condition",
+            ]),
+          }
+        : {}),
+      ...(blockerStringField(task.blocker, ["fallbackAt", "fallback_at"])
+        ? {
+            fallbackAt: blockerStringField(task.blocker, [
+              "fallbackAt",
+              "fallback_at",
+            ]),
+          }
+        : {}),
+      ...(blockerStringField(task.blocker, [
+        "fallbackAction",
+        "fallback_action",
+      ])
+        ? {
+            fallbackAction: blockerStringField(task.blocker, [
+              "fallbackAction",
+              "fallback_action",
             ]),
           }
         : {}),
@@ -550,12 +590,10 @@ function activeTaskRestartReason(
   task: ActiveTaskSnapshot,
 ): string | null {
   if (task.workflow === "single-spec-verifier" && task.verifierLiveness) {
-    const sameSession =
-      task.verifierLiveness.activeTaskSessionId === task.sessionId;
     const sameAttempt =
       !!task.currentAttemptId &&
       task.verifierLiveness.activeAttemptId === task.currentAttemptId;
-    if (sameSession && sameAttempt) {
+    if (sameAttempt) {
       const heartbeatMs = task.verifierLiveness.heartbeatAt
         ? Date.parse(task.verifierLiveness.heartbeatAt)
         : Number.NaN;
@@ -600,6 +638,137 @@ function staleActiveTasks(
   return stale.sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
 
+function terminalDoneSessionRecovery(
+  dbPath: string,
+  sessionId: string,
+): TerminalSessionRecovery | null {
+  if (!sessionId || !existsSync(dbPath)) return null;
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const session = db
+      .query(
+        `
+        select *
+        from sessions
+        where sessionId = ?
+        limit 1
+      `,
+      )
+      .get(sessionId) as Record<string, unknown> | null;
+    if (!session) return null;
+    const status = typeof session.status === "string" ? session.status : "";
+    const outcome = typeof session.outcome === "string" ? session.outcome : "";
+    const error = typeof session.error === "string" ? session.error : "";
+    if (
+      error ||
+      (!["done", "success"].includes(status) &&
+        !["done", "success"].includes(outcome))
+    ) {
+      return null;
+    }
+
+    let summary = `Recovered completed worker session ${sessionId}.`;
+    const evidence: string[] = [];
+    try {
+      const endRows = db
+        .query(
+          `
+          select event_type, data
+          from events
+          where data like ?
+            and event_type in ('session.end', 'session.receipt')
+          order by timestamp desc
+          limit 10
+        `,
+        )
+        .all(`%"sessionId":"${sessionId}"%`) as Array<{
+        event_type?: unknown;
+        data?: unknown;
+      }>;
+      for (const row of endRows) {
+        const parsed =
+          typeof row.data === "string"
+            ? (JSON.parse(row.data) as Record<string, unknown>)
+            : null;
+        if (!parsed) continue;
+        if (
+          !summary.startsWith("Recovered completed worker session") &&
+          row.event_type !== "session.receipt"
+        ) {
+          continue;
+        }
+        if (typeof parsed.summary === "string" && parsed.summary.trim()) {
+          summary = parsed.summary.trim();
+        }
+        const refs = Array.isArray(parsed.evidence) ? parsed.evidence : [];
+        for (const ref of refs) {
+          if (
+            ref &&
+            typeof ref === "object" &&
+            !Array.isArray(ref) &&
+            typeof (ref as Record<string, unknown>).ref === "string"
+          ) {
+            evidence.push((ref as Record<string, string>).ref);
+          }
+        }
+      }
+    } catch {
+      // Missing events table or malformed historical payloads should not block
+      // recovering the task state from the terminal session row.
+    }
+
+    return { sessionId, summary, evidence: [...new Set(evidence)] };
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
+function recoverTerminalDoneActiveTasks(
+  ctx: WorkflowContext,
+  config: WatchdogConfig,
+  treeConfig: TaskTreeConfig,
+  tasks: ActiveTaskSnapshot[],
+): string[] {
+  const recovered: string[] = [];
+  for (const task of tasks) {
+    if (!task.taskId || !task.currentAttemptId || !task.sessionId) continue;
+    const recovery = terminalDoneSessionRecovery(
+      config.stateDbPath,
+      task.sessionId,
+    );
+    if (!recovery) continue;
+    const completion = completeStartedAttempt(treeConfig, {
+      taskId: task.taskId,
+      attemptId: task.currentAttemptId,
+      claim: "done",
+      summary: recovery.summary,
+      evidence: recovery.evidence,
+    });
+    if (!completion.ok) continue;
+    emitTaskCompleted(ctx, completion.task, {
+      attemptId: task.currentAttemptId,
+      result: "done",
+      summary: recovery.summary,
+      evidence: recovery.evidence,
+      review: {
+        required: true,
+        reason: "watchdog-recovered-terminal-worker-session",
+      },
+    });
+    recovered.push(task.taskId);
+  }
+  if (recovered.length > 0) {
+    try {
+      syncProjectReadout(treeConfig);
+    } catch {
+      // Recovery already updated the durable task tree; readout can catch up.
+    }
+  }
+  return recovered;
+}
+
 function emitOwnerRequested(
   ctx: WorkflowContext,
   config: WatchdogConfig,
@@ -640,6 +809,36 @@ function emitStallReviewRequested(
   }
 }
 
+function emitLoopTicks(
+  ctx: WorkflowContext,
+  loops: DurableLoopLiveness[],
+  reason: string,
+): number {
+  let emitted = 0;
+  for (const loop of loops) {
+    try {
+      ctx.dispatchEvent("project.task.tick", {
+        target: { project: "aks-rp-e2e", taskId: loop.taskId },
+        project: "aks-rp-e2e",
+        action: loop.action,
+        taskId: loop.taskId,
+        task_id: loop.taskId,
+        reason,
+        requested_by: "project-execution-watchdog",
+        durableLoopLiveness: loop,
+      });
+      emitted += 1;
+    } catch {
+      // Local tests may not provide a dispatcher.
+    }
+  }
+  return emitted;
+}
+
+function loopTickDetails(count: number): Record<string, unknown> {
+  return count > 0 ? { loopTickCount: count } : {};
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const config = parseInput(ctx.task, ctx.agent);
   const sharedConfig = buildTaskTreeConfig(config);
@@ -658,6 +857,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     () => {
       const tree = readTree(config.treePath);
       if (!tree) return null;
+      if (Object.keys(tree.tasks ?? {}).length === 0) return null;
       const verifierByTaskId = loadVerifierLivenessByTaskId(
         config.specLoopStatePath,
       );
@@ -690,11 +890,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ...snapshot,
     staleActiveTasks: staleActiveTasks(config, snapshot.activeTasks),
   };
+  const recoveredTerminalTasks = recoverTerminalDoneActiveTasks(
+    ctx,
+    config,
+    sharedConfig,
+    snapshot.activeTasks,
+  );
+  if (recoveredTerminalTasks.length > 0) {
+    return ctx.done(
+      `Watchdog recovered completed active task(s): ${recoveredTerminalTasks.join(", ")}.`,
+    );
+  }
+  const loopsNeedingAttention = recovery.durableLoopLiveness.filter(
+    (loop) => loop.needsAttention,
+  );
+  const loopsNeedingPulse = loopsNeedingAttention.filter(
+    (loop) => loop.taskStatus === "backlog",
+  );
+  const loopTickCount = emitLoopTicks(
+    ctx,
+    loopsNeedingPulse,
+    "watchdog-durable-loop-needs-attention",
+  );
 
   if (recovery.staleActiveTasks.length > 0) {
     const reason = "watchdog-stale-active-review";
     emitOwnerRequested(ctx, config, reason, {
       staleActiveTasks: recovery.staleActiveTasks,
+      ...loopTickDetails(loopTickCount),
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
@@ -704,6 +927,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     emitOwnerRequested(ctx, config, reason, {
       reviewTasks: recovery.reviewTasks.slice(0, 20),
       reviewCount: recovery.reviewTasks.length,
+      ...loopTickDetails(loopTickCount),
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
@@ -714,24 +938,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       runnableBacklogTaskIds: recovery.runnableBacklogTaskIds,
       runnableBacklogTreeUpdatedAt: recovery.runnableBacklogTreeUpdatedAt,
       runnableBacklogSnapshotAt: recovery.runnableBacklogSnapshotAt,
+      ...loopTickDetails(loopTickCount),
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
 
-  const stalledLoops = recovery.durableLoopLiveness.filter(
-    (loop) => loop.needsAttention,
-  );
   if (
-    stalledLoops.length > 0 &&
+    loopsNeedingAttention.length > 0 &&
     recovery.activeCount === 0 &&
     recovery.reviewTasks.length === 0
   ) {
     const reason = "watchdog-durable-loop-stall";
     emitStallReviewRequested(ctx, config, reason, {
       mode: "fallback",
-      durableLoopLiveness: stalledLoops,
+      durableLoopLiveness: loopsNeedingAttention,
       blockedCount: recovery.blockedTasks.length,
       waitingBacklogCount: recovery.waitingBacklogTasks.length,
+      ...loopTickDetails(loopTickCount),
       instruction:
         "Collect the project liveness packet and ask the owner agent to judge why durable loop state still has unfinished work but the normal frontier is not producing motion.",
     });
@@ -756,6 +979,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     emitOwnerRequested(ctx, config, reason, {
       blockedTasks: recovery.blockedTasks.slice(0, 20),
       blockedCount: recovery.blockedTasks.length,
+      ...loopTickDetails(loopTickCount),
       ...waitingBacklogDetails,
       instruction:
         "Review blocked and dependency-waiting tasks before treating underfilled capacity as idle. Push sampled blockers toward done, rework, a visible problem task, or an exact external ask/resume condition.",
@@ -765,7 +989,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (recovery.activeCount > 0 && recovery.activeCount < config.maxConcurrent) {
     const reason = "watchdog-capacity-underfilled";
-    emitOwnerRequested(ctx, config, reason);
+    emitOwnerRequested(ctx, config, reason, loopTickDetails(loopTickCount));
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
 
@@ -779,7 +1003,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const reason = recovery.needsRefill
       ? "watchdog-settled-active-project-refill"
       : "watchdog-open-work-reconcile";
-    emitOwnerRequested(ctx, config, reason);
+    emitOwnerRequested(ctx, config, reason, loopTickDetails(loopTickCount));
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
 

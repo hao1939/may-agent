@@ -197,6 +197,80 @@ function contextOptionalText(task: TaskNode, key: string): string {
   return "";
 }
 
+function optionalBooleanContext(task: TaskNode, key: string): boolean | null {
+  const value = taskContext(task)[key];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes"].includes(normalized)) return true;
+    if (["false", "0", "no"].includes(normalized)) return false;
+  }
+  return null;
+}
+
+function shouldPreflightSpecExecutionPolicy(input: {
+  projectDir: string;
+  task: TaskNode;
+}): boolean {
+  const explicit = optionalBooleanContext(
+    input.task,
+    "specExecutionPolicyPreflight",
+  );
+  if (explicit !== null) return explicit;
+  return ["check-private-source-policy.ts", "check-live-admission.ts"].some(
+    (script) => existsSync(join(input.projectDir, "runner", script)),
+  );
+}
+
+type SpecExecutionPolicyResult = { ok: true } | { ok: false; reason: string };
+
+function compactCommandOutput(output: string): string {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 2_000);
+}
+
+function checkSpecExecutionPolicy(input: {
+  projectDir: string;
+  specId: string;
+  enabled: boolean;
+}): SpecExecutionPolicyResult {
+  if (!input.enabled) return { ok: true };
+  const scripts = [
+    "check-private-source-policy.ts",
+    "check-live-admission.ts",
+  ].filter((script) => existsSync(join(input.projectDir, "runner", script)));
+  for (const script of scripts) {
+    const result = spawnSync(
+      "bun",
+      [`runner/${script}`, "--spec", input.specId],
+      {
+        cwd: input.projectDir,
+        encoding: "utf8",
+        timeout: 30_000,
+        env: commandEnv(),
+      },
+    );
+    if (result.status === 0 && !result.error) continue;
+    const output = compactCommandOutput(
+      [result.stderr, result.stdout, result.error?.message]
+        .filter(Boolean)
+        .join("\n"),
+    );
+    return {
+      ok: false,
+      reason:
+        output ||
+        `${script} failed with status ${String(result.status ?? "unknown")}`,
+    };
+  }
+  return { ok: true };
+}
+
 function runCommand(
   cwd: string,
   command: string,
@@ -1459,6 +1533,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       activeWorkflowRunId: reusableWorkflowRunId || null,
       heartbeatAt: new Date().toISOString(),
     });
+  }
+
+  const policy = checkSpecExecutionPolicy({
+    projectDir,
+    specId,
+    enabled: shouldPreflightSpecExecutionPolicy({ projectDir, task }),
+  });
+  if (policy.ok === false) {
+    const summary = `Local live policy failed for ${specId}; GitHub workflow dispatch skipped. ${policy.reason}`;
+    publishState({
+      status: "error",
+      activeAttemptId: null,
+      activeTaskSessionId: null,
+      activeWorkflowRunId: null,
+      heartbeatAt: new Date().toISOString(),
+    });
+    const completion = completeStartedAttempt(config, {
+      taskId,
+      attemptId,
+      claim: "partial",
+      summary,
+    });
+    if (completion.ok) {
+      emitTaskCompleted(ctx, completion.task, {
+        attemptId,
+        result: "partial",
+        summary,
+      });
+    }
+    return ctx.done(summary);
   }
 
   const github = resolveGitHubClient(projectDir);

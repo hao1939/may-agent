@@ -6,8 +6,14 @@
 AKS feature packets and collects public, official reference material for each
 feature. The loop exists because Go scenario tests are useful implementation
 signals, but they are not the whole feature contract. The feature model needs
-authorized API and product documentation references so test failures can be
-classified against expected behavior instead of only against current test code.
+authorized API, product documentation, and design references so test failures
+can be classified against expected behavior instead of only against current test
+code.
+
+This loop is one instance of the knowledge split described in
+`project-knowledge-layers.md`: official sources define the AKS knowledge model
+owned by the app, existing repo tests are evidence/context, and queue state,
+attempts, and retry policy are project operating knowledge.
 
 The loop collects:
 
@@ -17,6 +23,7 @@ The loop collects:
 - behavior expectations that scenario tests should assert,
 - Azure REST API contract references,
 - Microsoft Learn usage and behavior references,
+- AKS design or approved feature-contract references when available,
 - contradictions or gaps against existing specs, scenario tests, or feature
   packets.
 
@@ -26,6 +33,8 @@ The loop treats these as authoritative public sources:
 
 - Microsoft Learn documentation under `learn.microsoft.com`;
 - Azure REST API specs under `Azure/azure-rest-api-specs`;
+- AKS design documents or approved feature contracts when available to the
+  project;
 - existing repo feature packets, specs, model files, and scenario tests as
   local context, not as public authority.
 

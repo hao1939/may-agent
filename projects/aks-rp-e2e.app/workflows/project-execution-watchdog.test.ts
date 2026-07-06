@@ -7,7 +7,7 @@ import { execute } from "./project-execution-watchdog.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-watchdog-"));
-  await mkdir(join(dir, ".state"), { recursive: true });
+  await mkdir(join(dir, ".state", "tasks"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await writeFile(
     join(dir, "project.json"),
@@ -65,7 +65,7 @@ async function writeTree(
     ...extra,
   };
   await writeFile(
-    join(projectDir, "tasks", "tree.json"),
+    join(projectDir, ".state", "tasks", "tree.json"),
     `${JSON.stringify(tree, null, 2)}\n`,
     "utf8",
   );
@@ -264,7 +264,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     const projectJson = JSON.parse(
-      await readFile(join(projectDir, "project.json"), "utf8"),
+      await readFile(join(projectDir, ".state", "project-state.json"), "utf8"),
     );
     expect(projectJson.currentState.activeTaskId).toBeNull();
     expect(projectJson.currentState.metrics.activeLeafCount).toBe(0);
@@ -275,6 +275,61 @@ describe("project execution watchdog", () => {
     expect(projectJson.currentFocus.focusPlanStatus).toBeUndefined();
     expect(String(projectJson.currentState.summary)).toContain(
       "blocked-only exact wait stewardship",
+    );
+  });
+
+  test("current focus nextAction names only active leaves even when review leaves also exist", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "project.json"),
+      `${JSON.stringify(
+        {
+          id: "test-project",
+          owner: "aks-explorer",
+          status: "active",
+          currentState: {
+            summary: "stale summary",
+            activeTaskId: "old-active",
+            metrics: {
+              activeLeafCount: 9,
+              blockedLeafCount: 0,
+              reviewLeafCount: 7,
+              waitingLeafCount: 6,
+              runnableLeafCount: 5,
+            },
+          },
+          currentFocus: {
+            summary: "stale focus",
+            nextAction: "stale next action",
+            activeTaskIds: ["old-active"],
+            proposedTaskIds: ["old-active", "done-focus"],
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "active-task": task("active-task", "active"),
+      "review-task": task("review-task", "review"),
+    });
+
+    const result = await execute(context({ projectDir }));
+
+    expect(result.status).toBe("done");
+    const projectJson = JSON.parse(
+      await readFile(join(projectDir, ".state", "project-state.json"), "utf8"),
+    );
+    expect(projectJson.currentFocus.activeTaskIds).toEqual([
+      "active-task",
+      "review-task",
+    ]);
+    expect(String(projectJson.currentFocus.nextAction)).toContain(
+      "Finish the current active live-frontier leaf/leaves first: active-task.",
+    );
+    expect(String(projectJson.currentFocus.nextAction)).not.toContain(
+      "review-task",
     );
   });
 
@@ -311,7 +366,7 @@ describe("project execution watchdog", () => {
     ]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["backlog-task"].state).toBe("backlog");
   });
@@ -546,6 +601,71 @@ describe("project execution watchdog", () => {
     ]);
   });
 
+  test("pulses an incomplete backlogged durable loop before owner review", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "aks-feature-compact-loop": task("aks-feature-compact-loop", "backlog", {
+        workflow: "feature-compact-loop-controller",
+        context: {
+          workflowProgress: {
+            completionReady: false,
+            reason: "feature compact loop has stale nonterminal work",
+            unrepresentedNonTerminalCount: 1,
+          },
+        },
+      }),
+    });
+    await mkdir(join(projectDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          loopTaskId: "aks-feature-compact-loop",
+          windowSize: 1,
+          cursor: 0,
+          features: {
+            windows: {
+              featureKey: "windows",
+              capabilityId: "windows",
+              status: "error",
+              attempts: 1,
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toEqual({
+      type: "project.task.tick",
+      payload: expect.objectContaining({
+        action: "feature-compact-loop",
+        taskId: "aks-feature-compact-loop",
+        reason: "watchdog-durable-loop-needs-attention",
+        target: { project: "aks-rp-e2e", taskId: "aks-feature-compact-loop" },
+      }),
+    });
+    expect(dispatched[1]).toEqual({
+      type: "project.planning.requested",
+      payload: expect.objectContaining({
+        reason: "watchdog-runnable-backlog",
+        runnableBacklogTaskIds: ["aks-feature-compact-loop"],
+        loopTickCount: 1,
+      }),
+    });
+  });
+
   test("wakes owner for dependency-waiting backlog even without blocked leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -640,12 +760,72 @@ describe("project execution watchdog", () => {
     ]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-task"].state).toBe("active");
     expect(updated.tasks["active-task"].trace?.stale_active_restart_count).toBe(
       undefined,
     );
+  });
+
+  test("recovers an active task when the worker session finished but workflow bookkeeping was interrupted", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_done",
+      status: "done",
+      outcome: "done",
+      opCount: 12,
+      startedAt: Date.now() - 120_000,
+      lastActivityAt: Date.now() - 60_000,
+    });
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_done",
+          trace: {
+            current_attempt_id: "attempt-1",
+            worker_started_attempt_id: "attempt-1",
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog recovered completed active task(s): active-task.",
+    );
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.task.completed",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      taskId: "active-task",
+      attemptId: "attempt-1",
+      result: "done",
+      review: {
+        required: true,
+        reason: "watchdog-recovered-terminal-worker-session",
+      },
+    });
+
+    const updated = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["active-task"].state).toBe("review");
+    expect(updated.tasks["active-task"].trace.last_worker_result).toBe("done");
   });
 
   test("wakes owner for an active leaf whose runtime session has error outcome", async () => {
@@ -843,7 +1023,7 @@ describe("project execution watchdog", () => {
     ]);
 
     const updated = JSON.parse(
-      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-task"].state).toBe("active");
     expect(updated.tasks["active-task"].blocker).toBeUndefined();
@@ -1054,6 +1234,85 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("treats single-spec verifier with fresh heartbeat as active after task-session handoff", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "verify-spec-example": task("verify-spec-example", "active", {
+          workflow: "single-spec-verifier",
+          session_id: "s_task_verify-spec-example_retry_2",
+          trace: {
+            current_attempt_id: "a_test",
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "verify-spec-example",
+        active_task_ids: ["verify-spec-example"],
+      },
+    );
+    await writeSpecLoopState(projectDir, {
+      specId: "spec.example",
+      taskId: "verify-spec-example",
+      activeAttemptId: "a_test",
+      activeTaskSessionId: null,
+      activeWorkflowRunId: "123456",
+      heartbeatAt: new Date().toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${join(projectDir, "missing.db")}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: { reason: "watchdog-capacity-underfilled" },
+    });
+  });
+
+  test("ignores active focus-plan leaves when checking stale active work", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "focus-branch": task("focus-branch", "active", {
+          kind: "focus_plan",
+        }),
+      },
+      {
+        active_task_id: "focus-branch",
+        active_task_ids: ["focus-branch"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: { reason: "watchdog-open-work-reconcile" },
+    });
+  });
+
   test("wakes owner when open work has no runnable backlog leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -1107,6 +1366,8 @@ describe("project execution watchdog", () => {
           resume_condition:
             "Resume when proof lands or the follow-up window opens.",
           resume_at: "2099-06-26T00:00:00.000Z",
+          fallback_at: "2099-06-27T00:00:00.000Z",
+          fallback_action: "Recheck the operator ask.",
         },
       }),
     });
@@ -1128,6 +1389,8 @@ describe("project execution watchdog", () => {
             resumeAt: "2099-06-26T00:00:00.000Z",
             resumeCondition:
               "Resume when proof lands or the follow-up window opens.",
+            fallbackAt: "2099-06-27T00:00:00.000Z",
+            fallbackAction: "Recheck the operator ask.",
           },
         ],
       },

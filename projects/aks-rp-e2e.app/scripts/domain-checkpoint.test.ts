@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -354,6 +354,99 @@ describe("domain checkpoint helper", () => {
     });
   });
 
+  test("bounded sub-slice mode treats the currently executing checkpoint task as a non-blocking carrier", () => {
+    const taskTree = {
+      tasks: {
+        "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705":
+          {
+            id: "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705",
+            state: "active",
+            conflict_scope: [
+              "repo-hygiene:domain-unpublished-change",
+              "feature:virtualmachines-agentpool",
+            ],
+          },
+      },
+    };
+
+    const changes = [
+      {
+        status: "M",
+        path: "features/virtualmachines-agentpool/specs/virtualmachines-mixed-sku-rest-scale.json",
+        slice: "feature:virtualmachines-agentpool",
+      },
+      {
+        status: "M",
+        path: "features/virtualmachines-agentpool/tests/virtualmachines-mixed-sku-rest-scale.ts",
+        slice: "feature:virtualmachines-agentpool",
+      },
+    ];
+
+    const unbounded = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      changes,
+    });
+    const bounded = summarizeDomainCheckpoint({
+      projectDir: "/tmp/aks-rp-e2e",
+      taskTree,
+      changes,
+      boundedSliceLabel:
+        "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705",
+    });
+
+    expect(
+      unbounded.files.find(
+        (file) =>
+          file.path ===
+          "features/virtualmachines-agentpool/specs/virtualmachines-mixed-sku-rest-scale.json",
+      ),
+    ).toMatchObject({
+      recommendation: "hold",
+      active_or_review_tasks: [
+        {
+          id: "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705",
+          status: "active",
+          matched_by: ["scope"],
+        },
+      ],
+      carrier_tasks: [],
+    });
+    expect(
+      bounded.files.find(
+        (file) =>
+          file.path ===
+          "features/virtualmachines-agentpool/specs/virtualmachines-mixed-sku-rest-scale.json",
+      ),
+    ).toMatchObject({
+      recommendation: "candidate",
+      active_or_review_tasks: [],
+      carrier_tasks: [
+        {
+          id: "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705",
+          status: "active",
+          matched_by: ["scope"],
+        },
+      ],
+    });
+    expect(
+      bounded.slices.find(
+        (slice) => slice.slice === "feature:virtualmachines-agentpool",
+      ),
+    ).toMatchObject({
+      recommendation: "candidate",
+      active_or_review_tasks: [],
+      blocked_tasks: [],
+      carrier_tasks: [
+        "checkpoint-virtualmachines-mixed-sku-source-authority-slice-20260705",
+      ],
+      files: [
+        "features/virtualmachines-agentpool/specs/virtualmachines-mixed-sku-rest-scale.json",
+        "features/virtualmachines-agentpool/tests/virtualmachines-mixed-sku-rest-scale.ts",
+      ],
+    });
+  });
+
   test("recognizes derived knowledge-map package slices independently from global model", () => {
     const taskTree = {
       tasks: {
@@ -487,6 +580,176 @@ describe("domain checkpoint helper", () => {
       blocked_tasks: [],
       accepted_tasks: ["done-owner"],
     });
+  });
+
+  test("derives exact spec-level signals for feature-rooted workload-identity specs and tests", () => {
+    const projectDir = mkdtempSync(
+      join(tmpdir(), "domain-checkpoint-feature-rooted-"),
+    );
+
+    try {
+      mkdirSync(join(projectDir, "features/workload-identity/specs"), {
+        recursive: true,
+      });
+      mkdirSync(join(projectDir, "features/workload-identity/tests"), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(
+          projectDir,
+          "features/workload-identity/specs/workload-identity-no-oidc-negative.json",
+        ),
+        JSON.stringify({
+          id: "spec.workload-identity.no-oidc-negative",
+          featureId: "workload-identity-public-api-create",
+          featurePathIds: ["path.workload-identity.no-oidc-negative"],
+          probeRef:
+            "features/workload-identity/tests/workload-identity-no-oidc-negative.ts",
+        }),
+      );
+      writeFileSync(
+        join(
+          projectDir,
+          "features/workload-identity/specs/workload-identity-runtime-token-projection-windows.json",
+        ),
+        JSON.stringify({
+          id: "spec.workload-identity.runtime-token-projection-windows",
+          featureId: "workload-identity-runtime-token-projection-windows",
+          featurePathIds: [
+            "path.workload-identity.runtime-token-projection-windows.staging-pass",
+          ],
+          probeRef:
+            "features/workload-identity/tests/workload-identity-runtime-token-projection-windows.ts",
+        }),
+      );
+      writeFileSync(
+        join(
+          projectDir,
+          "features/workload-identity/tests/workload-identity-no-oidc-negative.ts",
+        ),
+        "export {};\n",
+      );
+      writeFileSync(
+        join(
+          projectDir,
+          "features/workload-identity/tests/workload-identity-runtime-token-projection-windows.ts",
+        ),
+        "export {};\n",
+      );
+
+      const taskTree = {
+        tasks: {
+          "no-oidc-holder": {
+            id: "no-oidc-holder",
+            state: "blocked",
+            conflict_scope: ["spec:spec.workload-identity.no-oidc-negative"],
+          },
+          "windows-done": {
+            id: "windows-done",
+            state: "done",
+            conflict_scope: [
+              "spec:spec.workload-identity.runtime-token-projection-windows",
+            ],
+          },
+        },
+      };
+
+      const summary = summarizeDomainCheckpoint({
+        projectDir,
+        taskTree,
+        changes: [
+          {
+            status: "M",
+            path: "features/workload-identity/specs/workload-identity-no-oidc-negative.json",
+            slice: "feature:workload-identity",
+          },
+          {
+            status: "M",
+            path: "features/workload-identity/tests/workload-identity-no-oidc-negative.ts",
+            slice: "feature:workload-identity",
+          },
+          {
+            status: "M",
+            path: "features/workload-identity/specs/workload-identity-runtime-token-projection-windows.json",
+            slice: "feature:workload-identity",
+          },
+          {
+            status: "M",
+            path: "features/workload-identity/tests/workload-identity-runtime-token-projection-windows.ts",
+            slice: "feature:workload-identity",
+          },
+        ],
+      });
+
+      expect(
+        summary.files.find(
+          (file) =>
+            file.path ===
+            "features/workload-identity/specs/workload-identity-no-oidc-negative.json",
+        ),
+      ).toMatchObject({
+        recommendation: "hold",
+        blocked_tasks: [
+          {
+            id: "no-oidc-holder",
+            status: "blocked",
+            matched_by: ["scope"],
+          },
+        ],
+      });
+      expect(
+        summary.files.find(
+          (file) =>
+            file.path ===
+            "features/workload-identity/tests/workload-identity-no-oidc-negative.ts",
+        ),
+      ).toMatchObject({
+        recommendation: "hold",
+        blocked_tasks: [
+          {
+            id: "no-oidc-holder",
+            status: "blocked",
+            matched_by: ["scope"],
+          },
+        ],
+      });
+      expect(
+        summary.files.find(
+          (file) =>
+            file.path ===
+            "features/workload-identity/specs/workload-identity-runtime-token-projection-windows.json",
+        ),
+      ).toMatchObject({
+        recommendation: "candidate",
+        blocked_tasks: [],
+        accepted_tasks: [
+          {
+            id: "windows-done",
+            status: "done",
+            matched_by: ["scope"],
+          },
+        ],
+      });
+      expect(
+        summary.files.find(
+          (file) =>
+            file.path ===
+            "features/workload-identity/tests/workload-identity-runtime-token-projection-windows.ts",
+        ),
+      ).toMatchObject({
+        recommendation: "candidate",
+        blocked_tasks: [],
+        accepted_tasks: [
+          {
+            id: "windows-done",
+            status: "done",
+            matched_by: ["scope"],
+          },
+        ],
+      });
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true });
+    }
   });
 
   test("resolves accepted ownership from archived done-leaf tasks", () => {
