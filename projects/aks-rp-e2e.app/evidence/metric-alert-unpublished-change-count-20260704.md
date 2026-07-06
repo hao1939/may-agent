@@ -214,3 +214,84 @@ Current owner-session evidence confirms the writer is still active:
 The metric is correctly measuring a **real current breach**. But the breach is presently one coherent active-writer surface: 20 tracked compact-summary files written by the current retry worker, with no ahead commits yet published and no evidence that this triage session can safely publish or revert the files without racing the live task-worker sessions. Because the current changes belong to active owner workflows already represented in the project frontier, the truthful final operation is **waiting_with_evidence** rather than a forced checkpoint or stale-resolution claim.
 
 Next validation should occur on the next `metrics-snapshot` after the running compact reconciliation sessions drain or after a deliberate compact-summary checkpoint lands in `/app/projects/aks-rp-e2e`.
+
+## Refresh — 2026-07-06T18:20Z current triage verdict for alert 2575
+
+Current direct checks show the alert is still real and has widened beyond the earlier 20-path summary-only slice:
+
+- runtime metric sample via `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts aks-rp-e2e.process.unpublished-change-count` returned `42`
+- direct domain-repo status in `/app/projects/aks-rp-e2e` shows branch `dev...origin/dev` with no ahead marker
+- `git status --porcelain=v1 --branch` plus `git status --short | wc -l` counts exactly `42` changed tracked paths, matching the metric sample
+- the current dirty surface is no longer summary-only: it now includes compact summaries, compact plan/diagnostics JSON, and spec JSON updates
+
+Representative current paths:
+
+- `features/custom-node-config/compact/staging.diagnostics.json`
+- `features/custom-node-config/compact/staging.plan.json`
+- `features/deployment-safeguards/specs/deployment-safeguards-vpa-interop.json`
+- `features/managementplane-addon/compact/staging.summary.md`
+- `features/network-cni/specs/network-cni-cilium-enterprise-addon-lifecycle.json`
+- `features/virtualmachine-prerelease-row60-legacy-addon-disable-scaling/specs/managementplane-addon-vm-prerelease-httpapplicationrouting-disable-scaling.json`
+
+Current owner-session evidence confirms these repo writes still belong to active owner workflows rather than stale abandoned residue:
+
+- `s_task_reconcile-compact-loop-live-workflow-202607061819` — `running` (`workflow:task-worker`)
+- `s_task_verify-compact-deployment-safeguards-deployment-safeguards_vpa-interop-202607061819` — `running` (`workflow:task-worker`)
+- `s_task_verify-compact-fleet-fleet_hubless-rpapi-lifecycle-202607061819` — `running` (`workflow:task-worker`)
+- `s_project_planner_planning_update_20260706181731_mo46v2` — `running` (`workflow:project-planner`)
+
+### Updated judgment for alert 2575
+
+The metric is correctly measuring a **real current breach**. But the current 42-path unpublished surface is still being actively mutated by live compact/spec/planner sessions, and it spans multiple ownership slices rather than one coherent forgotten checkpoint. Because this triage session does not have a safe way to stop those writers or publish only one truthful completed slice, forcing a commit, revert, or manual alert resolution here would risk collapsing active work into a misleading hygiene action.
+
+Therefore the correct final operation remains **waiting_with_evidence**: the evidence file is refreshed with the current 42-path state, the alert stays visible, and the next honest validation remains the next `metrics-snapshot` after the active compact/spec sessions drain or after one deliberate checkpoint lands in `/app/projects/aks-rp-e2e`.
+
+## Refresh — 2026-07-06T02:27Z current triage verdict for alert 2575
+
+Current direct checks show the alert is still real and now matches the metric snapshot exactly at `80`:
+
+- runtime metric sample via `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts aks-rp-e2e.process.unpublished-change-count` returned `80`
+- direct domain-repo status in `/app/projects/aks-rp-e2e` shows branch `dev...origin/dev` with no ahead marker
+- `git status --short | wc -l` counts exactly `80` changed tracked paths, matching the metric sample
+- the dirty surface is broad rather than summary-only, spanning compact outputs, spec JSON, test TS, knowledge-map state, and one evidence artifact
+
+Current dirty-surface breakdown from `git diff --name-only`:
+
+- compact summary files: `36`
+- compact diagnostics files: `22`
+- compact plan files: `5`
+- spec JSON files: `5`
+- test TS files: `4`
+- knowledge-map generated view files: `6`
+- knowledge-map model file: `1`
+- evidence archive files: `1`
+
+Representative current paths:
+
+- `features/aad-rbac/compact/staging.summary.md`
+- `features/custom-node-config/compact/staging.plan.json`
+- `features/kms-etcd-encryption/tests/kms-v2plus-managed-hsm.ts`
+- `features/network-cni/specs/network-cni-cilium-enterprise-addon-lifecycle.json`
+- `features/workload-autoscaler/specs/workload-autoscaler-keda-upgrade-survival.json`
+- `model/knowledge-map/model.json`
+- `evidence/archive/reconcile-spec-loop-pending-kms-20260706.md`
+
+Spot diffs confirm this is still live owner work, not stale forgotten residue:
+
+- `features/aad-rbac/compact/staging.summary.md` keeps receiving new compact reconciliation review blocks as late as `2026-07-06T21:44:30Z`
+- `features/network-cni/specs/network-cni-cilium-enterprise-addon-lifecycle.json` adds a new `acceptedExecutionPosture`, narrowed runtime preflight, and updated execute-mode semantics
+- `model/knowledge-map/model.json` changes durable verdict surfaces, including flipping `workload-autoscaler-keda-upgrade-survival` from `pass` to `blocked` with new evidence references and blocked behavior assertions
+
+Current owner-session evidence confirms the repo surface is still being actively mutated by live sessions rather than awaiting a safe hygiene-only publish:
+
+- `s_project_planner_planning_update_20260706222815_idecr0` — `running` (`workflow:project-planner`), last activity `1783376928361`
+- `s_task_repair-storage-csi-controller-visible-state-rehome-20260706c` — `running` (`workflow:task-worker`), last activity `1783376934968`
+- `s_task_rerun-spec-deployment-safeguards-vpa-interop-repaired-carrier-20260706_retry_20260706221613` — `running` (`workflow:task-worker`), last activity `1783376288939`
+- `s_task_rerun-spec-deployment-safeguards-vpa-interop-repaired-carrier-20260706` — `running` (`workflow:task-worker`), last activity `1783376527772`
+- legacy planner session `s_project_planner_planning_update_20260704123650_2aut9d` still remains `running`
+
+### Updated judgment for alert 2575 at 80
+
+The metric is correctly measuring a **real current breach**. But the present 80-path unpublished surface is a mixed active frontier: ongoing compact reconciliation writebacks, substantive spec/test/model edits, and fresh evidence work are all being changed by still-running owner sessions. Because the branch is not ahead of origin, there is no simple "push unpublished commits" fix; because multiple live slices are still mutating the same worktree, there is also no safe truthful checkpoint or revert available from this triage session.
+
+Therefore the correct final operation is still **waiting_with_evidence**: refresh the evidence, keep the alert visible, and wait for the next `metrics-snapshot` after the active planner/task-worker sessions drain or after one deliberate checkpoint isolates a publishable slice in `/app/projects/aks-rp-e2e`.
