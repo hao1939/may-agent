@@ -1,6 +1,10 @@
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   field,
   parseTriggerEvent,
@@ -198,8 +202,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         packetPath: repoPacketPath,
         packetAbsolutePath: absolutePacketPath,
         pathId,
-        appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
-        projectState: "/app/projects/aks-rp-e2e.app/project.json",
+        appTaskTree: resolveTaskTreePath(appDir),
+        projectState: join(appDir, ".state", "project-state.json"),
       },
       dedupKey: `aks-rp-e2e:approval-dispatch:${pathId}:${requestedAction}:${repoPacketPath}`,
     });

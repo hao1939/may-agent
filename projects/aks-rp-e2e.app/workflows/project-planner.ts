@@ -1441,7 +1441,7 @@ function createReviewedSuccessor(input: {
     inputs: [`Reviewed task: ${input.task.id}`, `Attempt: ${input.attemptId}`],
     outputs: taskStringList(input.task, "outputs").length
       ? taskStringList(input.task, "outputs")
-      : ["tasks/tree.json"],
+      : ["task tree"],
     acceptance: isBlocked
       ? [
           "The external wait or escalation has a concrete result, or a replacement runnable task is created.",

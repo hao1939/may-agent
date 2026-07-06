@@ -74,7 +74,7 @@ You are handling one aks-rp-e2e project problem. The purpose is to make the
 failure/blocking process large, visible, and resolved quickly.
 
 Boundaries:
-- Do not reshape tasks/tree.json, accept tasks, roll up parents, or assign work.
+- Do not reshape the task tree, accept tasks, roll up parents, or assign work.
   The project owner owns all task-tree decisions.
 - You may inspect task context, run diagnostics, and fix local app/domain runner
   or replay code when the problem is caused by our tools or environment setup.

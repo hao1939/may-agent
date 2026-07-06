@@ -133,17 +133,17 @@ async function makeFixture() {
 
   await writeFile(
     join(appDir, "workflows", "feature-reference-loop-controller.ts"),
-    "export const name = 'feature-reference-loop-controller';\n",
+    "export const name = 'feature-reference-loop-controller';\nexport const workflowContract = { workflow: name, version: 'test' };\n",
     "utf8",
   );
   await writeFile(
     join(appDir, "workflows", "spec-loop-controller.ts"),
-    "export const name = 'spec-loop-controller';\n",
+    "export const name = 'spec-loop-controller';\nexport const workflowContract = { workflow: name, version: 'test' };\n",
     "utf8",
   );
   await writeFile(
     join(appDir, "workflows", "feature-compact-loop-controller.ts"),
-    "export const name = 'feature-compact-loop-controller';\n",
+    "export const name = 'feature-compact-loop-controller';\nexport const workflowContract = { workflow: name, version: 'test' };\n",
     "utf8",
   );
 

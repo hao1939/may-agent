@@ -17,6 +17,7 @@ type SpecFile = {
   featurePathIds?: string[];
   status?: string;
   specState?: string;
+  supersededBy?: string;
 };
 
 export type SpecLoopSpecStatus =
@@ -38,6 +39,15 @@ export type SpecLoopSpecState = {
   heartbeatAt?: string | null;
   updatedAt: string;
   review?: Record<string, unknown>;
+  catalogStatus?: string;
+  catalogSpecState?: string;
+  terminalDisposition?: boolean;
+  successorDisposition?: string;
+  successorStateReason?: string;
+  resumeCondition?: string;
+  retryResetAt?: string;
+  retryResetByTaskId?: string;
+  retryResetReason?: string;
 };
 
 export type SpecLoopState = {
@@ -75,6 +85,7 @@ export type SpecRecord = {
   featurePathIds: string[];
   status?: string;
   specState?: string;
+  supersededBy?: string | null;
   terminalDisposition: boolean;
 };
 
@@ -182,11 +193,93 @@ export function loadSpecs(projectDir: string): SpecRecord[] {
           : [],
         status: spec.status,
         specState: spec.specState,
+        supersededBy:
+          typeof spec.supersededBy === "string" && spec.supersededBy.trim()
+            ? spec.supersededBy.trim()
+            : null,
         terminalDisposition: isTerminalSpecDisposition(spec),
       };
     })
     .filter((spec) => spec.id)
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function safeDispositionPart(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
+function terminalSpecPatch(
+  spec: SpecRecord,
+  now: string,
+): Partial<SpecLoopSpecState> {
+  const status = normalizedStatus(spec.status);
+  const specState = normalizedStatus(spec.specState);
+  const disposition = status || specState || "terminal-disposition";
+  const successor = spec.supersededBy?.trim();
+  if (successor) {
+    return {
+      catalogStatus: spec.status,
+      catalogSpecState: spec.specState,
+      terminalDisposition: true,
+      successorDisposition: `superseded-by-${safeDispositionPart(successor)}`,
+      successorStateReason: `Catalog marks this spec as superseded by ${successor}; keep it visible in the ledger but route live verification through the successor unless the alias gains a distinct product contract.`,
+      resumeCondition: `Resume direct live verification only if this alias gains a distinct source-backed product contract; otherwise verify ${successor}.`,
+      review: {
+        classification: "catalog_superseded_alias",
+        lastRootCause: `Catalog marks this spec as superseded by ${successor}.`,
+        lastAction:
+          "Do not schedule this alias as ordinary runnable pending work; keep it represented and route verification through the successor.",
+        reviewedAt: now,
+      },
+    };
+  }
+  return {
+    catalogStatus: spec.status,
+    catalogSpecState: spec.specState,
+    terminalDisposition: true,
+    successorDisposition: `catalog-${safeDispositionPart(disposition)}`,
+    successorStateReason: `Catalog marks this spec with terminal disposition ${disposition}; keep it visible in the ledger but do not blindly rerun the same shape.`,
+    resumeCondition:
+      "Resume direct live verification only after the catalog disposition is removed, narrowed into a runnable spec, or paired with an owner-approved repair path.",
+    review: {
+      classification: "catalog_terminal_disposition",
+      lastRootCause: `Catalog marks this spec with terminal disposition ${disposition}.`,
+      lastAction:
+        "Do not schedule this as ordinary runnable pending work; create or keep owner/model repair work until it becomes runnable or the disposition is accepted.",
+      reviewedAt: now,
+    },
+  };
+}
+
+function applyCatalogDisposition(
+  stateSpec: SpecLoopSpecState,
+  catalogSpec: SpecRecord,
+  now: string,
+): SpecLoopSpecState {
+  const base = {
+    ...stateSpec,
+    catalogStatus: catalogSpec.status,
+    catalogSpecState: catalogSpec.specState,
+    terminalDisposition: catalogSpec.terminalDisposition,
+  };
+  if (!catalogSpec.terminalDisposition || stateSpec.status === "pass") {
+    return base;
+  }
+  const alreadyReviewed =
+    !!stateSpec.review ||
+    !!stateSpec.successorDisposition ||
+    !!stateSpec.resumeCondition;
+  return alreadyReviewed
+    ? base
+    : {
+        ...base,
+        ...terminalSpecPatch(catalogSpec, now),
+      };
 }
 
 export function devInfraCorePrioritySpecIds(projectDir: string): string[] {
@@ -259,6 +352,11 @@ export function loadSpecLoopState(input: {
         heartbeatAt: null,
         updatedAt: now,
       };
+      state.specs[spec.id] = applyCatalogDisposition(
+        state.specs[spec.id],
+        spec,
+        now,
+      );
     }
     for (const spec of Object.values(state.specs)) {
       spec.taskId ??= null;
@@ -275,22 +373,26 @@ export function loadSpecLoopState(input: {
   const prioritySpecIds = devInfraCorePrioritySpecIds(input.projectDir);
   const specs: Record<string, SpecLoopSpecState> = {};
   for (const spec of loadSpecs(input.projectDir)) {
-    specs[spec.id] = {
-      status: "pending",
-      taskId: null,
-      attempts: 0,
-      lastRunId: null,
-      lastRunUrl: null,
-      lastResultPath: null,
-      lastPrUrl: null,
-      lastWorkflowLoopKey: null,
-      lastDispatchMetadataPath: null,
-      activeAttemptId: null,
-      activeTaskSessionId: null,
-      activeWorkflowRunId: null,
-      heartbeatAt: null,
-      updatedAt: now,
-    };
+    specs[spec.id] = applyCatalogDisposition(
+      {
+        status: "pending",
+        taskId: null,
+        attempts: 0,
+        lastRunId: null,
+        lastRunUrl: null,
+        lastResultPath: null,
+        lastPrUrl: null,
+        lastWorkflowLoopKey: null,
+        lastDispatchMetadataPath: null,
+        activeAttemptId: null,
+        activeTaskSessionId: null,
+        activeWorkflowRunId: null,
+        heartbeatAt: null,
+        updatedAt: now,
+      },
+      spec,
+      now,
+    );
   }
   const state: SpecLoopState = {
     loopTaskId: input.loopTaskId,

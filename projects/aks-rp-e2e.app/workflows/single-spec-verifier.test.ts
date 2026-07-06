@@ -248,6 +248,15 @@ artifact_result = artifact_dir / "result.json"
 artifact_result.write_text(json.dumps({
   "status": status,
   "specId": spec_id,
+  **({"probeEvidence": {
+    "status": os.environ.get("TEST_CHILD_EVIDENCE_STATUS"),
+    "assertions": [{
+      "name": os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME", "child-failed-assertion"),
+      "ok": False,
+      "verdictImpact": os.environ.get("TEST_CHILD_FAILED_ASSERTION_IMPACT", "preflight"),
+      "detail": os.environ.get("TEST_CHILD_FAILED_ASSERTION_DETAIL", "child assertion failed"),
+    }]
+  }} if os.environ.get("TEST_CHILD_EVIDENCE_STATUS") or os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME") else {}),
 }, indent=2), encoding="utf-8")
 artifact_ref_kind = os.environ.get("TEST_ARTIFACT_REF_KIND", "result")
 artifact_ref_path = f"runs/test-results/single-{artifact_family}_123456/artifacts/{artifact_family}/spec-runner/{artifact_ref_kind}.json"
@@ -264,6 +273,15 @@ artifact_result.write_text(json.dumps({
   "status": status,
   "specId": spec_id,
   **({"phase": child_phase} if child_phase else {}),
+  **({"probeEvidence": {
+    "status": os.environ.get("TEST_CHILD_EVIDENCE_STATUS"),
+    "assertions": [{
+      "name": os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME", "child-failed-assertion"),
+      "ok": False,
+      "verdictImpact": os.environ.get("TEST_CHILD_FAILED_ASSERTION_IMPACT", "preflight"),
+      "detail": os.environ.get("TEST_CHILD_FAILED_ASSERTION_DETAIL", "child assertion failed"),
+    }]
+  }} if os.environ.get("TEST_CHILD_EVIDENCE_STATUS") or os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME") else {}),
 }, indent=2), encoding="utf-8")
 omit_top_level_spec_results = os.environ.get("TEST_TOP_LEVEL_SPEC_RESULTS", "present") == "empty"
 top_level_payload = {
@@ -320,6 +338,72 @@ afterEach(async () => {
 });
 
 describe("single-spec-verifier", () => {
+  test("runs direct workflow input without requiring a task assignment", async () => {
+    const { appDir, projectDir, binDir } = await makeProject();
+    await writeFile(
+      join(binDir, "bun"),
+      `#!/bin/sh
+if [ "$1" != "run" ] || [ "$2" != "spec" ]; then
+  echo "unexpected bun args: $*" >&2
+  exit 2
+fi
+mkdir -p runs/test-results/direct_123
+cat > runs/test-results/direct_123/result.json <<'JSON'
+{
+  "status": "pass",
+  "specResults": [
+    {
+      "specId": "spec.net-integration.authorized-ip-ranges",
+      "status": "pass",
+      "reason": "direct proof passed"
+    }
+  ]
+}
+JSON
+echo "[test-executor] test-result=runs/test-results/direct_123"
+exit 0
+`,
+      "utf8",
+    );
+    await chmod(join(binDir, "bun"), 0o755);
+
+    const originalPath = process.env.PATH || "";
+    process.env.PATH = `${binDir}:${originalPath}`;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "specId: spec.net-integration.authorized-ip-ranges",
+          "target: staging",
+          "mode: dry-run",
+          "timeoutMinutes: 1",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.workflow).toBe("single-spec-verifier");
+      expect(result.subject).toEqual({
+        kind: "spec",
+        id: "spec.net-integration.authorized-ip-ranges",
+      });
+      expect(result.artifacts).toContain("runs/test-results/direct_123");
+      expect(result.details.command).toContain(
+        "bun run spec spec.net-integration.authorized-ip-ranges --target staging --dry-run",
+      );
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  });
+
   test("dispatches and classifies a workflow run via GitHub REST fallback when gh is unavailable", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
@@ -886,6 +970,97 @@ describe("single-spec-verifier", () => {
       delete process.env.TEST_CREATED_AT;
       delete process.env.TEST_DISPLAY_TITLE;
       delete process.env.TEST_RESULT_STATUS;
+      delete process.env.TEST_RUN_VIEW_COUNTER;
+      delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
+      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+    }
+  });
+
+  test("fails closed when passed artifact has gated child evidence", async () => {
+    const { appDir, projectDir, binDir } = await makeProject();
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "aks-explorer",
+      maxConcurrent: 1,
+    });
+    const assignment = assignTask(config, {
+      taskId: "verify-spec-net-integration-authorized-ip-ranges",
+    });
+
+    const originalPath = process.env.PATH || "";
+    const curlLog = join(appDir, ".state", "curl.log");
+    const unzipLog = join(appDir, ".state", "unzip.log");
+    const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
+    process.env.PATH = `${binDir}:${originalPath}`;
+    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_UNZIP_LOG = unzipLog;
+    process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
+    process.env.TEST_DISPATCH_STATUS = "204";
+    process.env.TEST_DISPATCH_RESPONSE = "";
+    process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
+    process.env.TEST_DISPLAY_TITLE =
+      "Single spec: spec.net-integration.authorized-ip-ranges";
+    process.env.TEST_RESULT_STATUS = "passed";
+    process.env.TEST_CHILD_EVIDENCE_STATUS = "gated";
+    process.env.TEST_CHILD_FAILED_ASSERTION_NAME = "jumpbox-key-preflight";
+    process.env.TEST_CHILD_FAILED_ASSERTION_DETAIL =
+      "requires AKS_RP_E2E_JUMPBOX_SSH_PRIVATE_KEY";
+
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 1",
+          triggerText({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("classified as error");
+      expect(result.message).toContain(
+        "same-spec artifact did not produce a live pass",
+      );
+      expect(result.message).toContain("child evidence status=gated");
+      expect(result.message).toContain("jumpbox-key-preflight");
+      const state = JSON.parse(
+        await readFile(
+          join(appDir, ".state", "spec-loop", "state.json"),
+          "utf8",
+        ),
+      );
+      expect(
+        state.specs["spec.net-integration.authorized-ip-ranges"].status,
+      ).toBe("error");
+    } finally {
+      process.env.PATH = originalPath;
+      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_UNZIP_LOG;
+      delete process.env.TEST_DISPATCH_COUNTER;
+      delete process.env.TEST_DISPATCH_STATUS;
+      delete process.env.TEST_DISPATCH_RESPONSE;
+      delete process.env.TEST_DISPATCH_STATUSES;
+      delete process.env.TEST_DISPATCH_RESPONSES;
+      delete process.env.TEST_CREATED_AT;
+      delete process.env.TEST_DISPLAY_TITLE;
+      delete process.env.TEST_RESULT_STATUS;
+      delete process.env.TEST_CHILD_EVIDENCE_STATUS;
+      delete process.env.TEST_CHILD_FAILED_ASSERTION_NAME;
+      delete process.env.TEST_CHILD_FAILED_ASSERTION_IMPACT;
+      delete process.env.TEST_CHILD_FAILED_ASSERTION_DETAIL;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
       delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;

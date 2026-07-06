@@ -703,7 +703,7 @@ export function rollupParent(
     if (!task) continue;
     if (durableLoopTaskIds.has(task.id)) {
       throw new Error(
-        `Task ${task.id} is a durable loop root and cannot be archived by parent rollup. Keep it in tasks/tree.json until an explicit retirement operation is implemented.`,
+        `Task ${task.id} is a durable loop root and cannot be archived by parent rollup. Keep it in the task tree until an explicit retirement operation is implemented.`,
       );
     }
     const blocked = workflowProgressBlocksCompletion(task);

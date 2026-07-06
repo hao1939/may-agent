@@ -139,7 +139,13 @@ describe("task worker", () => {
       "Never edit the runtime task tree file directly",
     );
     expect(observedPrompt).toContain("Source workspace: /app/sources/aks-rp");
-    expect(observedPrompt).toContain("first source authority");
+    expect(observedPrompt).toContain("context, not ground truth");
+    expect(observedPrompt).toContain("commit it, push it to the target");
+    expect(observedPrompt).toContain(
+      "then verify it with the GitHub workflow",
+    );
+    expect(observedPrompt).toContain("App-only notes, memos");
+    expect(observedPrompt).toContain("do not fix those");
 
     const updated = JSON.parse(
       await readFile(resolveTaskTreePath(projectDir), "utf8"),

@@ -1,7 +1,7 @@
 /**
  * project-execution-watchdog — liveness observer for aks-rp-e2e.
  *
- * The project owner owns tasks/tree.json. This workflow only observes runtime
+ * The project owner owns the task tree. This workflow only observes runtime
  * sessions and wakes the owner when review is needed.
  */
 
@@ -69,7 +69,14 @@ type ActiveTaskSnapshot = {
 
 type OpenTaskSnapshot = {
   taskId: string;
+  parentId?: string | null;
+  workflow?: string;
   updatedAt?: string;
+  reviewKind?: string;
+  resultSummary?: string;
+  lastWorkerResult?: string;
+  lastWorkerSummary?: string;
+  terminalGitHubWaitReview?: Record<string, unknown>;
   blocker?: unknown;
   resumeAt?: string;
   resumeCondition?: string;
@@ -217,6 +224,46 @@ function blockerStringField(
   return undefined;
 }
 
+function taskRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function compactText(value: unknown, limit = 700): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  return value.trim().replace(/\s+/g, " ").slice(0, limit);
+}
+
+function reviewSnapshotFields(
+  task: TaskTree["tasks"][string],
+): Partial<OpenTaskSnapshot> {
+  const context = taskRecord(task.context);
+  const trace = taskRecord(task.trace);
+  const terminalGitHubWaitReview = taskRecord(
+    context?.terminalGitHubWaitReview,
+  );
+  const lastWorkerResult = compactText(trace?.last_worker_result, 120);
+  const lastWorkerSummary = compactText(trace?.last_worker_summary);
+  return {
+    ...(typeof task.parent_id === "string" || task.parent_id === null
+      ? { parentId: task.parent_id }
+      : {}),
+    ...(typeof task.workflow === "string" && task.workflow.trim()
+      ? { workflow: task.workflow.trim() }
+      : {}),
+    reviewKind: terminalGitHubWaitReview
+      ? "terminal-github-wait"
+      : lastWorkerResult || lastWorkerSummary
+        ? "worker-completion"
+        : "manual-review",
+    ...(compactText(task.result) ? { resultSummary: compactText(task.result) } : {}),
+    ...(lastWorkerResult ? { lastWorkerResult } : {}),
+    ...(lastWorkerSummary ? { lastWorkerSummary } : {}),
+    ...(terminalGitHubWaitReview ? { terminalGitHubWaitReview } : {}),
+  };
+}
+
 function openTaskSnapshots(
   tree: TaskTree,
   state: "review" | "blocked",
@@ -224,6 +271,7 @@ function openTaskSnapshots(
   return leafTasksByStatus(tree, state)
     .map((task) => ({
       taskId: task.id,
+      ...(state === "review" ? reviewSnapshotFields(task) : {}),
       ...(taskUpdatedAt(task) ? { updatedAt: taskUpdatedAt(task) } : {}),
       ...(task.blocker !== undefined ? { blocker: task.blocker } : {}),
       ...(blockerStringField(task.blocker, ["resumeAt", "resume_at"])
@@ -845,8 +893,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   try {
     syncProjectReadout(sharedConfig);
   } catch {
-    // Watchdog should still observe/wake from tasks/tree.json even if compact
-    // project.json summary refresh fails on this pulse.
+    // Watchdog should still observe/wake from the task tree even if compact
+    // project-state summary refresh fails on this pulse.
   }
   const runnableBacklogTaskIds = listRunnableBacklogTaskIds(
     sharedConfig,

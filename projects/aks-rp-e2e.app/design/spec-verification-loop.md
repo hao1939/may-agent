@@ -14,25 +14,55 @@ The loop should keep working without asking the LLM planner to repeatedly pick
 the next spec. The task tree remains the visible control plane, while a small
 deterministic workflow keeps a bounded set of spec leaves moving.
 
+The workflow is responsible for the normal repair path. Humans should not need
+to patch each failing spec by hand. If the evidence shows the issue is in test
+code, generated tests, runner behavior, compact planning, workflow YAML, target
+environment wiring, or spec execution behavior, the worker must repair the
+`aks-rp-e2e` domain repo, commit and push the change to the target branch, then
+verify it with the GitHub live workflow. Changes in `aks-rp-e2e.app` can fix
+orchestration, UI, recovery, metrics, and task routing only; they do not make
+GitHub spec runs use new domain test code.
+
 This is one concrete instance of the knowledge split described in
 `project-knowledge-layers.md`: the loop ledger and retry/frontier policy are
 project operating knowledge, while accepted spec fixes, live pass evidence, and
 feature/model updates are AKS test knowledge.
 
 The completion bar is intentionally strict: every single spec needs a live
-`pass`. Catalog-level dispositions such as deprecated, product-gap, or
-environment-constrained may inform the fix/escalation work, but they do not
-close the spec-loop ledger. A historical `done` entry is treated as legacy
-state and reopened for live verification unless it already has `pass`.
+`pass`. Catalog-level dispositions such as deprecated, product-gap, superseded,
+or environment-constrained may inform the fix/escalation work, but they do not
+close the spec-loop ledger.
+
+Those dispositions also must not be confused with ordinary runnable pending
+work. If the catalog says a spec is superseded or otherwise terminal, the loop
+keeps it visible as pending but seeds a structured reason and resume condition.
+The controller can then create or reuse repair/model/owner work instead of
+rerunning the same known-bad shape. A historical `done` entry is treated as
+legacy state and reopened unless it already has `pass`, but a catalog terminal
+row still carries its disposition metadata when reopened.
 
 ## Core Decision
 
-Every assigned task should run through a workflow.
+The single-spec verification workflow is the reusable experience. A task is
+only needed when the app must track the work across time.
+
+Direct human/agent use:
+
+```text
+specId + target + mode
+  -> single-spec verification workflow
+  -> repo-native spec command / GitHub backend
+  -> structured result and artifact refs
+```
+
+App-managed loop use:
 
 ```text
 project.task.assigned
   -> task workflow router
-  -> task.workflow ?? default-task-worker
+  -> task.workflow=single-spec-verifier
+  -> task.context carries specId + target + tracking fields
+  -> same single-spec verification workflow
   -> normalize workflow result into task state
 ```
 
@@ -43,6 +73,9 @@ This keeps the task tree untyped:
 
 - parent/child structure still defines breakdown and rollup;
 - `workflow` only defines how a task executes;
+- direct workflow input can execute the same work without creating a task;
+- task context is an adapter around the same workflow input, plus tracking-only
+  fields such as `loopTaskId` and `stateRef`;
 - no task `kind` is required for loop routing;
 - no loop-specific event family is required.
 
@@ -225,6 +258,15 @@ accepted terminal owner disposition. Retry-drained or direct-run-ineligible
 pending records must create grouped follow-up work; they must not be hidden by a
 `stranded` or retry-budget-exhausted flag.
 
+Exact waits are not passive parking. On every pulse, the controller must inspect
+wait leaves that name a GitHub workflow run. If the run is still active, the wait
+can remain blocked. If the run is terminal, the controller must move the wait
+leaf to review with the run id, conclusion, URL, and named specs attached. Code
+only collects this signal; the reviewing agent decides whether the terminal run
+proves a pass, needs a domain repair/rerun, or should be replaced by a fresh
+external wait with the current waiting condition. A wait must not keep saying it
+is waiting for a GitHub run that already finished.
+
 The simple operating rule is: unfinished work must have an owner. A spec that
 has exhausted direct retries is not finished, but it may not be visible as a
 task yet because it lives in the loop ledger. The controller must turn those
@@ -258,10 +300,11 @@ When the spec queue is drained and non-pass results remain, the controller
 materializes grouped follow-up leaves under the same loop task. The grouping key
 is `status + feature family`, for example `error/aad-rbac` or
 `error/app-routing`. These follow-up leaves are repo-local reconciliation
-tasks: they classify root cause, repair specs/model/evidence when possible, and
-create rerun work only after a blocker changes or a concrete test/spec fix makes
-the rerun meaningful. This keeps the task tree pushing without exploding one
-task per failed spec.
+tasks: they classify root cause, repair `aks-rp-e2e` specs/tests/runner/model
+files when possible, push the domain fix, and create rerun work only after a
+blocker changes or a concrete test/spec fix makes the rerun meaningful. App
+evidence is an audit trail, not the fix. This keeps the task tree pushing
+without exploding one task per failed spec.
 
 ## Single Spec Verifier Workflow
 
@@ -280,8 +323,11 @@ task per failed spec.
    - `error`: workflow, runner, scenario-test, helper defect, or any external,
      environment, product, or source issue that prevents a live pass.
 6. Apply a bounded local fix or model proposal when safe.
-7. Open a PR when code/model changes are ready.
-8. Complete the leaf with links to the workflow run, result artifact, test
+7. Commit/push the `aks-rp-e2e` change when the fix is in domain test/spec
+   code, then rerun the GitHub workflow against the pushed commit.
+8. Open a PR when code/model changes need review instead of direct branch
+   update.
+9. Complete the leaf with links to the workflow run, result artifact, test
    result notes, and PR when present.
 
 `lastRunUrl` is the durable GitHub Actions workflow link and should be present
@@ -299,6 +345,80 @@ test must create and clean up its own AKS cluster through ARM REST helpers.
 Live test code should use `ARM_ACCESS_TOKEN`, GitHub OIDC, or managed identity
 with ARM REST. It must not shell out to `az`, use `azure/login`, depend on
 Azure CLI account state, or read private AKS RP source code.
+
+## Reusable Per-Spec Recipe
+
+Each spec should move through the same small loop. The implementation can be
+AKS-specific, but the control shape is reusable for other projects.
+
+```text
+audit spec -> generate test -> run test -> review result -> update model -> close or create exact follow-up
+```
+
+1. Audit the spec.
+   - Confirm the spec file is discoverable from `features/<feature>/specs/`.
+   - Confirm it names the user scenario, product inputs, expected behavior,
+     assertions, scenario test, and feature path ids.
+   - Confirm the scenario test is standalone: it can create and clean up its own
+     resources for the target environment.
+   - Run live-admission and private-source policy checks before any cloud run.
+
+2. Generate the test.
+   - Use the normal documented command path, for example
+     `bun run spec <spec-id> --dry-run` for local validation or
+     `bun run spec <spec-id>` for live verification.
+   - The generated Vitest file is temporary execution material. The durable
+     source remains the spec, scenario test, target profile, and result.
+   - Generation must write the fixed target into the run/plan. Execution should
+     not guess subscription, region, API version, or identity from ambient local
+     state.
+
+3. Run the test and repair issues.
+   - Dry-run proves discovery, target wiring, generated Vitest structure, and
+     scenario-test wiring without Azure resource changes.
+   - Live run is the verification bar. It must create real resources when the
+     spec requires them and must clean them after the run.
+   - Classify non-pass results by the thing that needs work: spec/model gap,
+     scenario-test bug, runner bug, environment capacity/auth issue, or product
+     behavior mismatch.
+   - Small local runner/test fixes are applied in `aks-rp-e2e`, committed,
+     pushed, and verified by GitHub. A local check or app memo is not enough.
+   - Ambiguous product or model decisions become explicit follow-up tasks with
+     the run link, result path, waiting condition, and fallback.
+
+4. Update or correct the model.
+   - Run `bun run model-update <run-dir>` after result review.
+   - The updater must consume the current executor result shape:
+     `result.json.specResults[]`, structured artifact refs, and the catalog
+     feature path mapping.
+   - The accepted model is changed only when the result and model-impact policy
+     allow it. Otherwise the updater writes a proposal for review.
+
+5. Close the spec.
+   - A spec-loop ledger row closes only on a live `pass` with durable result
+     evidence and any needed accepted model update or reviewed no-op proposal.
+   - Dry-run pass, product-gap classification, environment issue, or retry
+     exhaustion does not close the ledger by itself.
+   - If it cannot close, the loop must create visible owned work: a repair task,
+     exact wait, escalation, or PR. No non-pass spec should remain only as a
+     hidden ledger entry.
+
+Reusable parts:
+
+- queue/frontier control: bounded dispatch, retry budget, exact wait ownership,
+  and progress counters;
+- per-item worker shape: audit, execute, collect artifacts, classify, update
+  model proposal, close/follow-up;
+- result contract: structured run id, item id, status, reason, artifact refs,
+  and model-impact recommendation;
+- closure rule: only close when the project-specific pass bar is met.
+
+AKS-specific parts:
+
+- spec schema and feature folder layout;
+- Azure target profiles, ARM auth, quota/capacity checks, and cleanup policy;
+- scenario-test libraries and AKS product assertions;
+- knowledge-map update logic and AKS feature path ids.
 
 ## State File
 

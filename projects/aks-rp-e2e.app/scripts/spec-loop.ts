@@ -75,7 +75,7 @@ if (command === "seed") {
       "../aks-rp-e2e/specs/index.json",
       "../aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt",
     ],
-    outputs: [".state/spec-loop/state.json", "tasks/tree.json"],
+    outputs: [".state/spec-loop/state.json", "task tree"],
     acceptance: [
       "Controller pulses keep a bounded child frontier filled from pending specs.",
       "Dev Infra Core selectors are scheduled before the remaining spec backlog.",

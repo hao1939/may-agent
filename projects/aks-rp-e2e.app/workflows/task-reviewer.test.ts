@@ -157,7 +157,7 @@ describe("task reviewer", () => {
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("Task Review Mode");
-    expect(prompts[0]).toContain("Do not mutate tasks/tree.json");
+    expect(prompts[0]).toContain("Do not mutate the task tree");
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
       type: "project.task.reviewed",

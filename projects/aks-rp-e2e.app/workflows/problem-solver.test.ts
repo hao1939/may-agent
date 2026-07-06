@@ -61,7 +61,7 @@ describe("problem solver", () => {
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("Problem Solver Mode");
-    expect(prompts[0]).toContain("Do not reshape tasks/tree.json");
+    expect(prompts[0]).toContain("Do not reshape the task tree");
     expect(prompts[0]).toContain("Source workspace: /app/sources/aks-rp");
     expect(prompts[0]).toContain("Do not escalate missing source");
     expect(dispatched).toHaveLength(1);

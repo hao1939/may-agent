@@ -4,7 +4,12 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResultVersion,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   appendToolJournal,
   assignTask,
@@ -49,6 +54,7 @@ import {
   getWorkflowRun,
   resolveGitHubClient,
   type GitHubClient,
+  type GitHubWorkflowRun,
 } from "./lib/github-actions.ts";
 import {
   capacityPreflightReason,
@@ -59,6 +65,25 @@ import {
 export const name = "feature-compact-loop-controller";
 export const description =
   "Keep a bounded frontier of feature compact planning tasks.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "feature-compact-loop-controller-v1",
+  input: {
+    required: [
+      "project.task.tick action=feature-compact-loop",
+      "target.taskId",
+    ],
+    optional: ["maxConcurrent", "task.context.windowSize"],
+    description:
+      "Pulse the feature compact loop root, reconcile planner results, and fill the bounded compact-planner frontier.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["summary", "task.context.workflowProgress"],
+    description:
+      "Updates loop progress, creates or assigns compact-planner children, and keeps non-terminal feature compact records represented by work or exact waits.",
+  },
+};
 
 function isFeatureCompactLoopTick(trigger: TriggerEvent | null): boolean {
   return (
@@ -311,6 +336,370 @@ function blockedWaitChildCount(
     .map((childId) => tasks[childId])
     .filter((task) => !!task && !isFeatureCompactChild(task))
     .filter((task) => taskStatus(task) === "blocked").length;
+}
+
+function taskText(task: TaskNode): string {
+  return [
+    task.id,
+    task.goal,
+    ...(Array.isArray(task.acceptance) ? task.acceptance : []),
+    ...(Array.isArray(task.inputs) ? task.inputs : []),
+    ...(Array.isArray(task.outputs) ? task.outputs : []),
+    task.blocker && typeof task.blocker === "object"
+      ? JSON.stringify(task.blocker)
+      : "",
+    task.context && typeof task.context === "object"
+      ? JSON.stringify(task.context)
+      : "",
+  ]
+    .filter((part): part is string => typeof part === "string")
+    .join("\n");
+}
+
+function readSpecStatuses(appDir: string): Map<string, string> {
+  const state = readJsonFile(join(appDir, ".state", "spec-loop", "state.json"));
+  const specs =
+    state?.specs &&
+    typeof state.specs === "object" &&
+    !Array.isArray(state.specs)
+      ? (state.specs as Record<string, unknown>)
+      : {};
+  const statuses = new Map<string, string>();
+  for (const [specId, value] of Object.entries(specs)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const status = (value as Record<string, unknown>).status;
+      if (typeof status === "string") statuses.set(specId, status);
+    }
+  }
+  return statuses;
+}
+
+function specIdsNamedByTask(
+  task: TaskNode | undefined,
+  knownSpecIds: Iterable<string>,
+): string[] {
+  if (!task) return [];
+  const named = new Set<string>();
+  for (const scope of taskConflictScopes(task)) {
+    const specId = scope.trim().replace(/^spec:/, "");
+    if (scope.startsWith("spec:")) named.add(specId);
+  }
+  const text = taskText(task);
+  for (const specId of knownSpecIds) {
+    if (text.includes(specId)) named.add(specId);
+  }
+  return [...named].sort((a, b) => a.localeCompare(b));
+}
+
+function closeStalePassedSpecBlockedWaitChildren(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    appDir: string;
+    loopTaskId: string;
+  },
+): string[] {
+  const specStatuses = readSpecStatuses(input.appDir);
+  if (specStatuses.size === 0) return [];
+  const closedTaskIds: string[] = [];
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const loopTask = tree.tasks[input.loopTaskId];
+    if (!loopTask) return;
+    const now = new Date().toISOString();
+    for (const childId of loopTask.children ?? []) {
+      const child = tree.tasks[childId];
+      if (!child || taskStatus(child) !== "blocked") continue;
+      const namedSpecIds = specIdsNamedByTask(child, specStatuses.keys());
+      if (namedSpecIds.length === 0) continue;
+      if (
+        !namedSpecIds.every((specId) => specStatuses.get(specId) === "pass")
+      ) {
+        continue;
+      }
+      child.status = "done";
+      child.state = "done";
+      child.done_at = now;
+      child.done_by = "feature-compact-loop-controller";
+      child.resolution = "completed";
+      child.result = `Closed stale compact blocked wait because every named spec already has live pass evidence: ${namedSpecIds.join(", ")}.`;
+      child.blocker = undefined;
+      child.trace = {
+        ...(child.trace ?? {}),
+        stale_wait_closed_at: now,
+        stale_wait_closed_by: "feature-compact-loop-controller",
+        stale_wait_closed_reason:
+          "all spec ids named by this compact wait are already pass in spec-loop state",
+        stale_wait_spec_ids: namedSpecIds,
+      };
+      closedTaskIds.push(childId);
+    }
+    if (closedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+    }
+  });
+  if (closedTaskIds.length > 0) {
+    appendToolJournal(config, {
+      kind: "feature_compact_loop_stale_blocked_waits_closed",
+      task_id: input.loopTaskId,
+      closed_task_ids: closedTaskIds,
+    });
+  }
+  return closedTaskIds;
+}
+
+type TerminalCompactGitHubWaitCandidate = {
+  taskId: string;
+  runId: string;
+  featureKeys: string[];
+  namedSpecIds: string[];
+};
+
+type TerminalCompactGitHubWaitHarvest = {
+  harvestedTaskIds: string[];
+  terminalRunIds: string[];
+  lookupMissRunIds: string[];
+  checkedRunIds: string[];
+};
+
+function runIdFromCompactWaitTask(task: TaskNode): string {
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker?.waiting_for);
+  const structuredRunId = stringField(waitingFor, "runId");
+  if (/^\d{6,}$/.test(structuredRunId)) return structuredRunId;
+
+  const context = taskContext(task);
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+    "lastWorkflowRunId",
+  ]) {
+    const value = context[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+
+  const trace = taskTrace(task);
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+    "lastWorkflowRunId",
+  ]) {
+    const value = trace[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    inputs: task.inputs,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+  });
+  const match = haystack.match(
+    /\b(?:github\s+)?(?:workflow\s+)?run(?:\s+id|Id)?["':\s-]+(\d{6,})\b/i,
+  );
+  return match?.[1] ?? "";
+}
+
+function terminalCompactGitHubWaitCandidates(input: {
+  loopTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+  state: FeatureCompactLoopState;
+  knownSpecIds: Iterable<string>;
+  limit: number;
+}): TerminalCompactGitHubWaitCandidate[] {
+  if (!input.loopTask) return [];
+  const candidates: TerminalCompactGitHubWaitCandidate[] = [];
+  const seenTaskIds = new Set<string>();
+  const knownFeatureKeys = Object.keys(input.state.features);
+  for (const childId of input.loopTask.children ?? []) {
+    if (candidates.length >= input.limit) break;
+    const child = input.tasks[childId];
+    if (!child || seenTaskIds.has(childId) || isFeatureCompactChild(child)) {
+      continue;
+    }
+    const status = taskStatus(child);
+    if (status !== "blocked" && status !== "waiting") continue;
+    const runId = runIdFromCompactWaitTask(child);
+    if (!runId) continue;
+    candidates.push({
+      taskId: childId,
+      runId,
+      featureKeys: [
+        ...featureKeysRepresentedByTask({
+          task: child,
+          knownFeatureKeys,
+        }),
+      ].sort((a, b) => a.localeCompare(b)),
+      namedSpecIds: specIdsNamedByTask(child, input.knownSpecIds),
+    });
+    seenTaskIds.add(childId);
+  }
+  return candidates;
+}
+
+function terminalRunSummary(run: GitHubWorkflowRun): string {
+  return [
+    `status=${run.status ?? "unknown"}`,
+    `conclusion=${run.conclusion ?? "unknown"}`,
+    run.url ? `url=${run.url}` : "",
+    run.displayTitle ? `title=${run.displayTitle}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
+export function harvestTerminalCompactGitHubWaits(input: {
+  config: ReturnType<typeof buildTaskTreeConfig>;
+  projectDir: string;
+  appDir: string;
+  loopTaskId: string;
+  state: FeatureCompactLoopState;
+  client: GitHubClient;
+  limit: number;
+  getRun?: (runId: string) => GitHubWorkflowRun | null;
+}): TerminalCompactGitHubWaitHarvest {
+  const specStatuses = readSpecStatuses(input.appDir);
+  const snapshot = readTaskTree(input.config);
+  const candidates = terminalCompactGitHubWaitCandidates({
+    loopTask: snapshot.tasks[input.loopTaskId],
+    tasks: snapshot.tasks,
+    state: input.state,
+    knownSpecIds: specStatuses.keys(),
+    limit: input.limit,
+  });
+  const checkedRunIds: string[] = [];
+  const lookupMissRunIds: string[] = [];
+  const terminalByTaskId = new Map<string, GitHubWorkflowRun>();
+
+  for (const candidate of candidates) {
+    checkedRunIds.push(candidate.runId);
+    const run =
+      input.getRun?.(candidate.runId) ??
+      getWorkflowRun({
+        client: input.client,
+        projectDir: input.projectDir,
+        runId: candidate.runId,
+      });
+    if (!run) {
+      lookupMissRunIds.push(candidate.runId);
+      continue;
+    }
+    if (run.status !== "completed") continue;
+    terminalByTaskId.set(candidate.taskId, run);
+  }
+
+  const harvestedTaskIds: string[] = [];
+  const terminalRunIds: string[] = [];
+  if (terminalByTaskId.size === 0) {
+    return {
+      harvestedTaskIds,
+      terminalRunIds,
+      lookupMissRunIds,
+      checkedRunIds,
+    };
+  }
+
+  withTreeLock(input.config, () => {
+    const tree = readTaskTree(input.config);
+    const now = new Date().toISOString();
+    for (const candidate of candidates) {
+      const run = terminalByTaskId.get(candidate.taskId);
+      if (!run) continue;
+      const child = tree.tasks[candidate.taskId];
+      if (!child) continue;
+      const status = taskStatus(child);
+      if (status !== "blocked" && status !== "waiting") continue;
+      if (runIdFromCompactWaitTask(child) !== candidate.runId) continue;
+
+      const previousBlocker = child.blocker;
+      child.status = "review";
+      child.state = "review";
+      child.blocker = undefined;
+      child.result = [
+        `GitHub workflow run ${candidate.runId} is terminal; review the compact run artifact/result and update feature compact state or replace this wait with the current exact blocker.`,
+        terminalRunSummary(run),
+        candidate.featureKeys.length
+          ? `Feature keys: ${candidate.featureKeys.join(", ")}.`
+          : "",
+        candidate.namedSpecIds.length
+          ? `Named specs: ${candidate.namedSpecIds.join(", ")}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      child.context = {
+        ...taskContext(child),
+        terminalGitHubWaitReview: {
+          runId: candidate.runId,
+          runStatus: run.status ?? null,
+          runConclusion: run.conclusion ?? null,
+          runUrl: run.url ?? null,
+          runTitle: run.displayTitle ?? null,
+          featureKeys: candidate.featureKeys,
+          namedSpecIds: candidate.namedSpecIds,
+          observedAt: now,
+        },
+      };
+      child.trace = {
+        ...(child.trace ?? {}),
+        terminal_github_wait_observed_at: now,
+        terminal_github_wait_run_id: candidate.runId,
+        terminal_github_wait_run_status: run.status ?? null,
+        terminal_github_wait_run_conclusion: run.conclusion ?? null,
+        terminal_github_wait_run_url: run.url ?? null,
+        previous_blocker_before_terminal_github_wait_review: previousBlocker,
+      };
+      for (const featureKey of candidate.featureKeys) {
+        const feature = input.state.features[featureKey];
+        if (
+          !feature ||
+          feature.status === "done" ||
+          feature.status === "running"
+        ) {
+          continue;
+        }
+        updateFeatureCompactItem(input.state, featureKey, {
+          taskId: child.id,
+          lastWorkflowRunId: candidate.runId,
+          lastWorkflowRunUrl: run.url ?? feature.lastWorkflowRunUrl ?? null,
+          lastCheckedAt: now,
+          lastSummary: `Terminal GitHub wait observed by feature compact loop controller for run ${candidate.runId}; review task ${child.id} now owns the result.`,
+          observedBy: {
+            workflow: name,
+            taskId: child.id,
+            runId: candidate.runId,
+            runStatus: run.status ?? null,
+            runConclusion: run.conclusion ?? null,
+            runUrl: run.url ?? null,
+            observedAt: now,
+          },
+        });
+      }
+      harvestedTaskIds.push(child.id);
+      terminalRunIds.push(candidate.runId);
+    }
+    if (harvestedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(input.config, tree);
+    }
+  });
+
+  if (harvestedTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "feature_compact_loop_terminal_github_waits_harvested",
+      task_id: input.loopTaskId,
+      harvested_task_ids: harvestedTaskIds,
+      terminal_run_ids: terminalRunIds,
+    });
+  }
+  return { harvestedTaskIds, terminalRunIds, lookupMissRunIds, checkedRunIds };
 }
 
 function featureKeysRepresentedByTask(input: {
@@ -594,6 +983,14 @@ function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function stringField(
+  record: Record<string, unknown> | null | undefined,
+  key: string,
+): string {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
 }
 
 function stringArrayValue(value: unknown): string[] {
@@ -1631,6 +2028,8 @@ function compactLoopWorkflowProgress(input: {
   representedSupportErrorClasses?: Set<string>;
   created: number;
   assigned: number;
+  harvestedTerminalGitHubWaits?: number;
+  checkedTerminalGitHubWaits?: number;
   maxDirectAttemptsPerFeature: number;
   dispatchHold?: string;
   activeGithubRuns?: number;
@@ -1728,6 +2127,8 @@ function compactLoopWorkflowProgress(input: {
     openChildren: input.openChildren,
     openSupportChildren: input.openSupportChildren,
     blockedWaitChildren: input.blockedWaitChildren,
+    harvestedTerminalGitHubWaits: input.harvestedTerminalGitHubWaits,
+    checkedTerminalGitHubWaits: input.checkedTerminalGitHubWaits,
     representedSupportErrorClasses: [
       ...(input.representedSupportErrorClasses ?? new Set<string>()),
     ].sort((a, b) => a.localeCompare(b)),
@@ -1948,6 +2349,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     statePath: stateRef.startsWith("/") ? stateRef : join(appDir, stateRef),
     featureKeys,
   });
+  const closedStaleBlockedWaitTaskIds = closeStalePassedSpecBlockedWaitChildren(
+    config,
+    {
+      appDir,
+      loopTaskId: loopTask.id,
+    },
+  );
+  const terminalGitHubWaitHarvest = githubAccess.client
+    ? harvestTerminalCompactGitHubWaits({
+        config,
+        projectDir,
+        appDir,
+        loopTaskId: loopTask.id,
+        state,
+        client: githubAccess.client,
+        limit: numberContext(loopTask, "terminalGitHubWaitHarvestLimit", 25),
+      })
+    : {
+        harvestedTaskIds: [],
+        terminalRunIds: [],
+        lookupMissRunIds: [],
+        checkedRunIds: [],
+      };
   const reconciledReadyArtifacts = reconcileReadyCompactArtifacts({
     projectDir,
     state,
@@ -2271,6 +2695,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       representedSupportErrorClasses: latestRepresentedSupportErrorClasses,
       created: createdTaskIds.length,
       assigned: assignments.length,
+      harvestedTerminalGitHubWaits:
+        terminalGitHubWaitHarvest.harvestedTaskIds.length,
+      checkedTerminalGitHubWaits:
+        terminalGitHubWaitHarvest.checkedRunIds.length,
       maxDirectAttemptsPerFeature,
       dispatchHold,
       activeGithubRuns,
@@ -2312,6 +2740,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     retryResetFeatureKeys.length
       ? `Reset compact retry budget for ${retryResetFeatureKeys.length} feature(s).`
       : "",
+    closedStaleBlockedWaitTaskIds.length
+      ? `Closed ${closedStaleBlockedWaitTaskIds.length} stale compact blocked wait child task(s) whose named specs already passed.`
+      : "",
+    terminalGitHubWaitHarvest.harvestedTaskIds.length
+      ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal GitHub wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
+      : "",
     `Tracked features: ${Object.keys(state.features).length}.`,
   ]
     .filter(Boolean)
@@ -2327,6 +2761,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     requeued_orphaned_task_ids: requeuedOrphaned,
     accepted_review_task_ids: acceptedRecordedChildren,
     retry_reset_feature_keys: retryResetFeatureKeys,
+    closed_stale_blocked_wait_task_ids: closedStaleBlockedWaitTaskIds,
+    terminal_github_wait_harvested_task_ids:
+      terminalGitHubWaitHarvest.harvestedTaskIds,
+    terminal_github_wait_terminal_run_ids:
+      terminalGitHubWaitHarvest.terminalRunIds,
+    terminal_github_wait_checked_run_ids:
+      terminalGitHubWaitHarvest.checkedRunIds,
+    terminal_github_wait_lookup_miss_run_ids:
+      terminalGitHubWaitHarvest.lookupMissRunIds,
     reconciled_ready_artifact_feature_keys: reconciledReadyArtifacts,
     reconciled_completed_workflow_feature_keys:
       completedWorkflowRunReconcile.reconciled,

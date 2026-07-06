@@ -615,7 +615,7 @@ export function buildProjectHealth(
       "planner assigns runnable task-tree leaves or pulses durable loop roots",
       "task-worker runs the task workflow and writes a structured completion claim",
       "task-reviewer judges the claim",
-      "planner applies accept, redo, follow-up, block, or escalation back to tasks/tree.json",
+      "planner applies accept, redo, follow-up, block, or escalation back to the task tree",
     ],
     frontier,
     movement,

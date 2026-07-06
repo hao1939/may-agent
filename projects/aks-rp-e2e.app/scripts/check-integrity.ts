@@ -232,6 +232,17 @@ function listWorkflowNames(): Set<string> {
   );
 }
 
+function workflowExportsContract(workflowName: string): boolean {
+  const path = join(appDir, "workflows", `${workflowName}.ts`);
+  if (!existsSync(path)) return false;
+  try {
+    const text = readFileSync(path, "utf-8");
+    return /\bexport\s+const\s+workflowContract\b/.test(text);
+  } catch {
+    return false;
+  }
+}
+
 function configuredAgentName(dirName: string): string | null {
   const agentJsonPath = join(appDir, "agents", dirName, "agent.json");
   if (!existsSync(agentJsonPath)) return dirName;
@@ -708,8 +719,8 @@ function validateTaskTree(
   if (!tree) return;
   const tasks = tree.tasks ?? {};
   const taskIds = new Set(Object.keys(tasks));
-  if (taskIds.size === 0) fail("tasks/tree.json has no tasks");
-  if (!tree.root_task_id) fail("tasks/tree.json missing root_task_id");
+  if (taskIds.size === 0) fail("task tree has no tasks");
+  if (!tree.root_task_id) fail("task tree missing root_task_id");
   else if (!tasks[tree.root_task_id])
     fail(`root_task_id ${tree.root_task_id} is missing from tasks`);
 
@@ -754,6 +765,16 @@ function validateTaskTree(
     ) {
       fail(`task ${taskId} references unknown workflow ${task.workflow}`);
     }
+    if (
+      task.workflow &&
+      appWorkflowNames.has(task.workflow) &&
+      !["task-worker", "default-task-worker"].includes(task.workflow) &&
+      !workflowExportsContract(task.workflow)
+    ) {
+      fail(
+        `task ${taskId} references workflow ${task.workflow}, but workflows/${task.workflow}.ts does not export workflowContract`,
+      );
+    }
   }
 
   for (const [taskId, task] of Object.entries(tasks)) {
@@ -793,16 +814,16 @@ function validateTaskTree(
       (candidate.children ?? []).includes(id),
     );
   });
-  if (roots.length === 0) fail("tasks/tree.json has no root task");
+  if (roots.length === 0) fail("task tree has no root task");
   if (roots.length !== 1) {
     fail(
-      `tasks/tree.json must have exactly one root, found ${roots
+      `task tree must have exactly one root, found ${roots
         .map((task) => task.id ?? "(missing)")
         .join(", ")}`,
     );
   } else if (roots[0].id !== tree.root_task_id) {
     fail(
-      `tasks/tree.json root by children (${roots[0].id}) must match root_task_id ${tree.root_task_id}`,
+      `task tree root by children (${roots[0].id}) must match root_task_id ${tree.root_task_id}`,
     );
   }
 
@@ -938,7 +959,7 @@ function validateDurableLoopTasks(tree: TaskTree | null): void {
     const task = tasks[contract.taskId];
     if (contract.required && !task) {
       fail(
-        `${contract.name} task ${contract.taskId} must remain in tasks/tree.json until the loop is explicitly retired`,
+        `${contract.name} task ${contract.taskId} must remain in the task tree until the loop is explicitly retired`,
       );
     }
     if (task && task.workflow !== contract.workflow) {
@@ -966,7 +987,7 @@ function validateDurableLoopTasks(tree: TaskTree | null): void {
 
     if (!task) {
       fail(
-        `${contract.name} has ${incomplete} pending/running item(s) in ${contract.stateRef}, but ${contract.taskId} is missing from tasks/tree.json`,
+        `${contract.name} has ${incomplete} pending/running item(s) in ${contract.stateRef}, but ${contract.taskId} is missing from the task tree`,
       );
       continue;
     }

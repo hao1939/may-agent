@@ -3,7 +3,12 @@
  */
 
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResultVersion,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   appendToolJournal,
   assignTask,
@@ -51,6 +56,25 @@ import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-ste
 export const name = "feature-reference-loop-controller";
 export const description =
   "Keep a bounded frontier of official feature-reference collection tasks.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "feature-reference-loop-controller-v1",
+  input: {
+    required: [
+      "project.task.tick action=feature-reference-loop",
+      "target.taskId",
+    ],
+    optional: ["maxConcurrent", "task.context.windowSize"],
+    description:
+      "Pulse the feature reference loop root, reconcile collector results, and fill the bounded reference-collector frontier.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["summary", "task.context.workflowProgress"],
+    description:
+      "Updates loop progress, creates or assigns collector children, and keeps non-terminal features represented by work or exact waits.",
+  },
+};
 
 function isFeatureReferenceLoopTick(trigger: TriggerEvent | null): boolean {
   return (

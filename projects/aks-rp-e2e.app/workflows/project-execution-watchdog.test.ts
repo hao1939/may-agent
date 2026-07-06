@@ -1445,6 +1445,9 @@ describe("project execution watchdog", () => {
           reviewTasks: [
             {
               taskId: "review-task",
+              parentId: "project",
+              reviewKind: "worker-completion",
+              lastWorkerResult: "done",
               updatedAt: "2026-06-20T00:00:00.000Z",
             },
           ],
@@ -1452,6 +1455,62 @@ describe("project execution watchdog", () => {
         },
       },
     ]);
+  });
+
+  test("backfills terminal GitHub wait review context for planner action", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "terminal-run-review": task("terminal-run-review", "review", {
+        parent_id: "aks-spec-verification-loop",
+        result:
+          "GitHub workflow run 123456789 is terminal; review the run artifact/result.",
+        context: {
+          terminalGitHubWaitReview: {
+            runId: "123456789",
+            runStatus: "completed",
+            runConclusion: "failure",
+            runUrl: "https://github.example/runs/123456789",
+            namedSpecIds: ["spec.example"],
+          },
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog emitted project.planning.requested: watchdog-review-pending.",
+    });
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-review-pending",
+        reviewTasks: [
+          {
+            taskId: "terminal-run-review",
+            parentId: "aks-spec-verification-loop",
+            reviewKind: "terminal-github-wait",
+            resultSummary:
+              "GitHub workflow run 123456789 is terminal; review the run artifact/result.",
+            terminalGitHubWaitReview: {
+              runId: "123456789",
+              runStatus: "completed",
+              runConclusion: "failure",
+              runUrl: "https://github.example/runs/123456789",
+              namedSpecIds: ["spec.example"],
+            },
+          },
+        ],
+        reviewCount: 1,
+      },
+    });
   });
 
   test("leaves running active leaves alone when capacity is full", async () => {

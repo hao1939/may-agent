@@ -11,7 +11,14 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResult,
+  workflowResultVersion,
+  type StructuredWorkflowResult,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   readTaskTree,
   withTreeLock,
@@ -48,6 +55,30 @@ import {
 export const name = "single-spec-verifier";
 export const description =
   "Dispatch and review one run-single-spec GitHub workflow execution.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "single-spec-verifier-v1",
+  input: {
+    required: ["specId or task.context.specId"],
+    optional: [
+      "target",
+      "mode",
+      "task.context.githubWorkflow",
+      "task.context.branch",
+      "task.context.timeoutMinutes",
+      "task.context.stateRef",
+      "task.context.loopTaskId",
+    ],
+    description:
+      "Verify one AKS RP E2E spec. Direct input runs the repo-native spec command; task input dispatches and reviews the configured GitHub single-spec workflow.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["subject", "status", "artifacts", "checks", "problem", "details"],
+    description:
+      "Reports spec verification status, result artifacts, backend details, and exact problem information when the spec did not pass.",
+  },
+};
 
 type CommandResult = {
   ok: boolean;
@@ -113,6 +144,15 @@ type SpecRunnerArtifact = {
   specId?: string;
   status?: string;
   phase?: string;
+  probeEvidence?: {
+    status?: string;
+    assertions?: Array<{
+      name?: string;
+      ok?: boolean;
+      verdictImpact?: string;
+      detail?: string;
+    }>;
+  };
 };
 
 type ArtifactIdentityInspection = {
@@ -131,6 +171,8 @@ type ArtifactIdentityInspection = {
   childSpecId: string;
   childStatus: string;
   childPhase: string;
+  childEvidenceStatus: string;
+  childFailedVerdictAssertions: string[];
   topLevelStatus: string;
   topLevelSpecResultsCount: number;
   sameSpecChildEvidence: boolean;
@@ -1127,6 +1169,27 @@ function readArtifactIdentity(input: {
   const childPhase = String(
     childResultArtifact?.phase ?? childStatusArtifact?.phase ?? "",
   ).trim();
+  const childEvidenceStatus = String(
+    childResultArtifact?.probeEvidence?.status ??
+      childStatusArtifact?.probeEvidence?.status ??
+      "",
+  ).trim();
+  const childFailedVerdictAssertions = (
+    childResultArtifact?.probeEvidence?.assertions ??
+    childStatusArtifact?.probeEvidence?.assertions ??
+    []
+  )
+    .filter(
+      (assertion) =>
+        assertion?.ok === false &&
+        ["preflight", "claim"].includes(
+          String(assertion.verdictImpact ?? "").trim().toLowerCase(),
+        ),
+    )
+    .map((assertion) =>
+      [assertion.name, assertion.detail].filter(Boolean).join(": "),
+    )
+    .filter(Boolean);
   const sameSpecChildEvidence =
     !!childSpecId && childSpecId === input.expectedSpecId;
   const sameSpecAggregationFailure =
@@ -1187,6 +1250,8 @@ function readArtifactIdentity(input: {
     childSpecId,
     childStatus,
     childPhase,
+    childEvidenceStatus,
+    childFailedVerdictAssertions,
     topLevelStatus,
     topLevelSpecResultsCount,
     sameSpecChildEvidence,
@@ -1282,6 +1347,196 @@ function classifyProjectResult(
   };
 }
 
+function directInputSpecId(
+  rawTask: string,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): string {
+  return (
+    triggerString(trigger, "specId") ||
+    triggerString(trigger, "spec_id") ||
+    triggerString(trigger, "spec") ||
+    field(rawTask, "specId") ||
+    field(rawTask, "spec_id") ||
+    field(rawTask, "spec") ||
+    ""
+  ).trim();
+}
+
+function directInputMode(
+  rawTask: string,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): "live" | "dry-run" | "check" {
+  const raw = (triggerString(trigger, "mode") || field(rawTask, "mode") || "")
+    .trim()
+    .toLowerCase();
+  if (raw === "check") return "check";
+  if (
+    raw === "dry-run" ||
+    raw === "dryrun" ||
+    raw === "dry_run" ||
+    triggerString(trigger, "dryRun").toLowerCase() === "true" ||
+    field(rawTask, "dryRun")?.toLowerCase() === "true"
+  ) {
+    return "dry-run";
+  }
+  return "live";
+}
+
+function directInputTarget(
+  rawTask: string,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): string {
+  return (
+    triggerString(trigger, "target") ||
+    field(rawTask, "target") ||
+    "staging"
+  ).trim();
+}
+
+function directInputTimeoutMs(
+  rawTask: string,
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): number {
+  const raw =
+    triggerString(trigger, "timeoutMinutes") ||
+    triggerString(trigger, "timeout_minutes") ||
+    field(rawTask, "timeoutMinutes") ||
+    field(rawTask, "timeout_minutes") ||
+    "";
+  const minutes = Number.parseInt(raw, 10);
+  return Number.isFinite(minutes) && minutes > 0
+    ? minutes * 60_000
+    : 3 * 60 * 60_000;
+}
+
+function lastDirectResultDir(output: string): string {
+  const matches = [...output.matchAll(/runs\/test-results\/[A-Za-z0-9_.-]+/g)];
+  return matches.length ? matches[matches.length - 1][0] : "";
+}
+
+function directSpecVerifierResult(input: {
+  specId: string;
+  target: string;
+  mode: "live" | "dry-run" | "check";
+  args: string[];
+  command: CommandResult;
+  resultDir: string;
+  resultPath: string;
+  classification: ReturnType<typeof classifyProjectResult>;
+}): StructuredWorkflowResult {
+  const passed = input.classification.loopStatus === "pass";
+  const problem = passed
+    ? null
+    : {
+        category: "single-spec-verification",
+        diagnosis: input.classification.reason,
+        resumeCondition:
+          input.mode === "live"
+            ? "rerun after the reported spec, scenario, runner, environment, or product issue is fixed"
+            : "rerun live verification after dry-run/check issues are fixed",
+      };
+  return workflowResult({
+    workflow: name,
+    workflowVersion: workflowContract.version,
+    subject: {
+      kind: "spec",
+      id: input.specId,
+    },
+    status: passed ? "done" : "partial",
+    summary: [
+      `Direct ${input.mode} verification for ${input.specId} classified as ${input.classification.loopStatus}.`,
+      input.classification.reason,
+      input.resultDir ? `Result: ${input.resultDir}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    artifacts: [input.resultDir, input.resultPath].filter(Boolean),
+    checks: [
+      {
+        name: "repo-native-spec-command",
+        status: input.command.ok ? "pass" : "fail",
+      },
+    ],
+    problem,
+    inputFingerprint: {
+      specId: input.specId,
+      target: input.target,
+      mode: input.mode,
+    },
+    details: {
+      backend: "repo-native-command",
+      command: ["bun", ...input.args].join(" "),
+      exitStatus: input.command.status,
+      liveVerified: input.mode === "live" && passed,
+      stdout: input.command.stdout.slice(-4_000),
+      stderr: input.command.stderr.slice(-4_000),
+      error: input.command.error,
+    },
+  });
+}
+
+function executeDirectSpecVerification(input: {
+  projectDir: string;
+  specId: string;
+  target: string;
+  mode: "live" | "dry-run" | "check";
+  timeoutMs: number;
+}): StructuredWorkflowResult {
+  const args = ["run", "spec", input.specId, "--target", input.target];
+  if (input.mode === "dry-run") args.push("--dry-run");
+  if (input.mode === "check") args.push("--check");
+  const result = spawnSync("bun", args, {
+    cwd: input.projectDir,
+    encoding: "utf8",
+    timeout: input.timeoutMs,
+    env: commandEnv(),
+  });
+  const command: CommandResult = {
+    ok: result.status === 0 && !result.error,
+    status: result.status,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    error: result.error?.message,
+  };
+  const output = [command.stdout, command.stderr, command.error]
+    .filter(Boolean)
+    .join("\n");
+  const resultDir = lastDirectResultDir(output);
+  const resultPath = resultDir
+    ? join(input.projectDir, resultDir, "result.json")
+    : "";
+  const parsedResult = resultPath ? readProjectResult(resultPath) : null;
+  const syntheticResult: ProjectResult = {
+    status: command.ok ? "pass" : "error",
+    specResults: [
+      {
+        specId: input.specId,
+        status: command.ok ? "pass" : "error",
+        reason:
+          compactCommandOutput(output) ||
+          (command.ok
+            ? "Repo-native spec command completed successfully."
+            : "Repo-native spec command failed before writing a parseable result."),
+        artifactRefs: resultDir ? [resultDir] : [],
+      },
+    ],
+  };
+  const classification = classifyProjectResult(
+    parsedResult ?? syntheticResult,
+    input.specId,
+  );
+  return directSpecVerifierResult({
+    specId: input.specId,
+    target: input.target,
+    mode: input.mode,
+    args,
+    command,
+    resultDir,
+    resultPath,
+    classification,
+  });
+}
+
 function knownWorkflowRunId(task: TaskNode): string {
   const value =
     contextOptionalText(task, "knownWorkflowRunId") ||
@@ -1372,6 +1627,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
 
   if (trigger?.type !== "project.task.assigned") {
+    const specId = directInputSpecId(ctx.task, trigger);
+    if (specId) {
+      return executeDirectSpecVerification({
+        projectDir,
+        specId,
+        target: directInputTarget(ctx.task, trigger),
+        mode: directInputMode(ctx.task, trigger),
+        timeoutMs: directInputTimeoutMs(ctx.task, trigger),
+      }) as unknown as WorkflowResult;
+    }
     return ctx.done(
       `Single-spec verifier ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.assigned.`,
     );
@@ -1838,12 +2103,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           "same-loop/same-spec child evidence exists while top-level result.json remained empty or omitted specResults[0].specId",
         ]
           .filter(Boolean)
-          .join("; "),
-      }
-    : identityMismatch
+            .join("; "),
+        }
+    : identity?.sameSpecChildEvidence &&
+        (identity.childEvidenceStatus.toLowerCase() === "gated" ||
+          identity.childFailedVerdictAssertions.length > 0)
       ? {
           loopStatus: "error" as SpecLoopSpecStatus,
-          claim: "blocked" as const,
+          claim: "partial" as const,
+          reason: [
+            `same-spec artifact did not produce a live pass for ${specId}`,
+            `run=${runId}`,
+            identity.childEvidenceStatus
+              ? `child evidence status=${identity.childEvidenceStatus}`
+              : "",
+            identity.childFailedVerdictAssertions.length
+              ? `failed verdict assertions=${identity.childFailedVerdictAssertions.join(" | ")}`
+              : "",
+            identity.childResultPath ? `child result=${identity.childResultPath}` : "",
+          ]
+            .filter(Boolean)
+            .join("; "),
+        }
+      : identityMismatch
+        ? {
+            loopStatus: "error" as SpecLoopSpecStatus,
+            claim: "blocked" as const,
           reason: [
             `artifact-routing-mismatch for ${specId}`,
             `run=${runId}`,

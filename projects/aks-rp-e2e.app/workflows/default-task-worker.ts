@@ -210,12 +210,11 @@ Your summary is review material, not routing protocol. Do not rely on special
 phrases to trigger follow-up behavior; state the result, evidence, diagnosis, and
 resume condition plainly.
 
-Mounted AKS RP Go source is available at ${input.sourceDir}. Treat it as the
-first source authority for e2ev3 scenario/source work. If task context says
-"source-holder", "external source", "missing handwritten source", "devbox", or
-"authoritative source" is blocking progress, first inspect this mounted source
-tree with targeted reads/searches. Do not report source unavailable unless the
-relevant files are also absent or insufficient under this source root.
+Mounted AKS RP Go source may be available at ${input.sourceDir}. Treat it as
+context, not ground truth. Ground truth for expected AKS behavior comes from
+official docs, public API specs, accepted design docs, and live test results.
+Use the domain workspace as the place where runnable specs, scenario tests,
+runner code, compact plans, workflow YAML, and feature knowledge are fixed.
 
 App: ${input.appDir}
 Domain workspace: ${input.projectDir}
@@ -243,6 +242,15 @@ scenario tests so they are self-contained and live-admissible, or finish
 partial/blocked with the exact policy output and resume condition. A GitHub run
 that fails only because either local policy would have failed is not acceptable
 completion evidence.
+
+For spec-loop or compact-loop repair tasks, the app is only the organizer. If
+the root cause is test code, generated tests, runner behavior, compact planner,
+workflow YAML, live target/env wiring, or spec execution behavior, make the fix
+in the domain workspace (${input.projectDir}), commit it, push it to the target
+branch, then verify it with the GitHub workflow that runs the affected spec or
+compact plan. App-only notes, memos, or task-state updates do not fix those
+failures and are not enough to claim success. Update app evidence only as an
+audit trail after the domain fix is pushed and verified.
 
 Assigned task:
 \`\`\`json

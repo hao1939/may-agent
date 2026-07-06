@@ -1,10 +1,10 @@
-# Reusable Task Workflows
+# Reusable Workflows
 
 Status: accepted design direction
 
 ## Purpose
 
-Long-running loops and manual tasks repeat the same project work:
+Long-running loops and direct human requests repeat the same project work:
 
 ```text
 feature -> collect official doc/API behavior references
@@ -12,38 +12,50 @@ spec    -> create or repair executable scenario tests
 feature -> create, check, and live-prove compact test plans
 ```
 
-These should all use normal task workflows. A loop decides which item needs work
-next; the assigned workflow owns how that work is done, what artifacts it
-writes, and what structured result it reports.
+These should all use the same workflow experience. A workflow owns how that
+work is done, what artifacts it writes, and what structured result it reports.
+A task is only the app's tracking wrapper when work needs ownership, retry,
+UI visibility, blocked-state handling, or later recovery.
 
 This document covers the project-operating workflow mechanism. The durable AKS
 test knowledge produced by those workflows still belongs in the portable domain
 workspace. The boundary is described in `project-knowledge-layers.md`.
 
-The target shape is:
+The app-managed target shape is:
 
 ```text
-loop/manual/planner task
+loop/planner task
   -> task.workflow=<workflow file under workflows/>
+  -> task context carries the same workflow input plus tracking fields
   -> workflow updates scoped artifacts or state
   -> workflow emits project.task.completed with structured fields
   -> task-reviewer judges the completion
   -> planner applies accept/retry/follow-up/escalation
 ```
 
+The direct human/agent shape is:
+
+```text
+human instruction with structured input
+  -> workflow file under workflows/
+  -> domain command, GitHub run, or scoped artifact update
+  -> structured workflowResult and concise human summary
+```
+
 There is no separate workflow category. Controllers, collectors, verifiers,
-planners, and future authoring workflows are all task workflows.
+planners, and future authoring workflows are all reusable workflows. Some are
+usually called through tasks; some can also be called directly by an agent.
 
 ## Knowledge Boundary
 
-Task workflows are the bridge between operating work and AKS test knowledge:
+Workflows are the bridge between operating work and AKS test knowledge:
 
 ```text
-task context
+task context or direct instruction input
   -> workflow under workflows/
   -> domain command, GitHub run, or scoped artifact update
   -> structured workflowResult
-  -> reviewer/planner decision
+  -> reviewer/planner decision when the app is tracking the work
 ```
 
 The workflow may know how to generate a spec, collect references, verify a
@@ -64,11 +76,13 @@ ledger, review result, and next operating move.
    The declaration lives in the workflow file as `workflowContract`. There is no
    registry file and no category-specific contract marker.
 
-3. The assigned task carries the input.
+3. Direct input and task context carry the same workflow input.
 
-   Required inputs should come from `task.context`, task id conventions, or the
-   triggering event. A workflow should fail with a structured problem when its
-   required input is missing.
+   Required inputs should come from direct structured input or the task
+   adapter's context. A task may add tracking-only fields such as `loopTaskId`,
+   `stateRef`, attempt ids, or review/ownership metadata. These fields must not
+   change the meaning of the underlying work. A workflow should fail with a
+   structured problem when its required work input is missing.
 
 4. Every task completion is structured.
 
@@ -156,6 +170,30 @@ This is documentation and a local affordance for tests or integrity checks. The
 `input` and `output` objects may be as simple or detailed as the workflow needs;
 there is no central schema registry and no new workflow type.
 
+## Task Adapter
+
+When the app uses a workflow through a task, the task is an adapter around the
+same workflow input:
+
+```json
+{
+  "workflow": "single-spec-verifier",
+  "context": {
+    "specId": "spec.localdns.cluster-topology",
+    "target": "staging",
+    "mode": "live",
+    "loopTaskId": "aks-spec-verification-loop",
+    "stateRef": ".state/spec-loop/state.json"
+  }
+}
+```
+
+`specId`, `target`, and `mode` are work input. `loopTaskId` and `stateRef` are
+tracking input for the app-managed adapter. Direct human/agent use supplies the
+work input without the tracking fields. The workflow should keep the business
+logic in one place and let the adapter handle task completion, loop ledger
+updates, retries, blocked-state recording, and review routing.
+
 ## Current Workflow Inventory
 
 `feature-reference-collector`
@@ -167,9 +205,10 @@ missing or incomplete.
 
 `single-spec-verifier`
 
-Dispatches and reviews one GitHub live run for a single spec. It should keep
-reporting run ids, artifact refs, spec status, and live-pass evidence in
-structured completion fields.
+Verifies one spec and classifies the result. Direct use runs the repo-native
+`bun run spec <spec-id>` path and returns a structured result. Task-backed use
+dispatches and reviews the configured GitHub single-spec workflow, then updates
+the spec-loop ledger and emits task completion.
 
 `feature-compact-planner`
 
@@ -220,10 +259,10 @@ exact features. A controller applies the reset only when the completed repair
 task is newer than the feature's current error record, then resets attempts and
 lets normal loop scheduling create the next proof attempt.
 
-## Manual Usage
+## Direct Human/Agent Usage
 
 The same workflow should work when assigned by a loop, by the planner, or by a
-manual task:
+direct human instruction:
 
 ```text
 collect references for localdns
@@ -231,8 +270,21 @@ verify spec.localdns.cluster-topology
 build compact package for workload-identity
 ```
 
-Manual tasks should still provide normal `task.context` inputs and should still
-complete through `project.task.completed`.
+Direct usage should provide the same essential input, but it should not require
+a task when the work can be completed now:
+
+```text
+workflow: single-spec-verifier
+specId: spec.localdns.cluster-topology
+target: staging
+mode: live
+```
+
+The workflow returns the same kind of structured result and artifact refs. The
+agent reports that result to the human. If the direct run cannot finish and the
+project must remember it, then the agent or app may create a task with the same
+workflow input. The task is for tracking unfinished work, not for making the
+workflow executable.
 
 ## Idempotency
 
@@ -257,16 +309,18 @@ changed.
 
 ## Review And Ownership
 
-Task workflows may edit scoped domain artifacts, but they do not accept their
-own work:
+Workflows may edit scoped domain artifacts, but app-tracked workflow results do
+not accept their own work:
 
 ```text
 task workflow -> project.task.completed -> task-reviewer -> planner
 ```
 
-The reviewer checks whether the completion satisfies the task acceptance
-criteria. The planner remains the task-tree mutation owner: it accepts the
-result, asks for rework, creates follow-up tasks, or records an exact wait.
+For task-backed work, the reviewer checks whether the completion satisfies the
+task acceptance criteria. The planner remains the task-tree mutation owner: it
+accepts the result, asks for rework, creates follow-up tasks, or records an
+exact wait. For direct human/agent work, the agent gives the human the
+structured result and only creates a task when follow-up tracking is needed.
 
 ## Integrity
 
@@ -285,7 +339,7 @@ Integrity checks should stay lightweight:
 The design is working when the same workflow can be reused in all three places:
 
 ```text
-manual targeted task
+direct human/agent instruction
 loop-generated child task
 planner-generated repair task
 ```

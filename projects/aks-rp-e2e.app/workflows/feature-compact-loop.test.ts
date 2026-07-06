@@ -8,7 +8,10 @@ import {
   peekTaskAssignments,
   taskTreeConfig,
 } from "./lib/task-tree-tools.ts";
-import { execute as executeController } from "./feature-compact-loop-controller.ts";
+import {
+  execute as executeController,
+  harvestTerminalCompactGitHubWaits,
+} from "./feature-compact-loop-controller.ts";
 import { execute as executePlanner } from "./feature-compact-planner.ts";
 import {
   loadFeatureCompactLoopState,
@@ -4629,6 +4632,322 @@ describe("feature compact loop", () => {
       status: "done",
       lastWorkflowRunId: "123",
       lastLiveProofVersion: "live-aks-proof-v2",
+    });
+  });
+
+  test("closes stale compact waits when every named spec already has live pass evidence", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-storage-csi-two-spec-live-run-review",
+      "wait-storage-csi-mixed-frontier",
+    ];
+    tree.tasks["wait-storage-csi-two-spec-live-run-review"] = {
+      id: "wait-storage-csi-two-spec-live-run-review",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P2",
+      children: [],
+      goal: "Wait for run 28775604245 covering spec.storage-csi.disk-resize and spec.storage-csi.disk-xfs.",
+      inputs: [],
+      outputs: [],
+      acceptance: [
+        "Review spec.storage-csi.disk-resize and spec.storage-csi.disk-xfs.",
+      ],
+      forbidden: [],
+      conflict_scope: ["feature:storage-csi"],
+      depends_on: [],
+      blocker: {
+        condition:
+          "Waiting for GitHub run 28775604245 terminal artifacts for the two-spec storage-csi slice.",
+      },
+    };
+    tree.tasks["wait-storage-csi-mixed-frontier"] = {
+      id: "wait-storage-csi-mixed-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P2",
+      children: [],
+      goal: "Wait for storage-csi frontier covering spec.storage-csi.disk-resize and spec.storage-csi.csidrivers.",
+      inputs: [],
+      outputs: [],
+      acceptance: [
+        "Do not close while spec.storage-csi.csidrivers is still pending.",
+      ],
+      forbidden: [],
+      conflict_scope: ["feature:storage-csi"],
+      depends_on: [],
+      blocker: {
+        condition: "Waiting for a mixed storage-csi frontier to change.",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 5,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.storage-csi.disk-resize": {
+              status: "pass",
+              lastRunId: "28793232048",
+            },
+            "spec.storage-csi.disk-xfs": {
+              status: "pass",
+              lastRunId: "28791413293",
+            },
+            "spec.storage-csi.csidrivers": {
+              status: "pending",
+              lastRunId: "28417939305",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Closed 1 stale compact blocked wait");
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      updated.tasks["wait-storage-csi-two-spec-live-run-review"],
+    ).toMatchObject({
+      state: "done",
+      done_by: "feature-compact-loop-controller",
+      resolution: "completed",
+    });
+    expect(
+      updated.tasks["wait-storage-csi-two-spec-live-run-review"].trace
+        .stale_wait_spec_ids,
+    ).toEqual(["spec.storage-csi.disk-resize", "spec.storage-csi.disk-xfs"]);
+    expect(updated.tasks["wait-storage-csi-mixed-frontier"]).toMatchObject({
+      state: "blocked",
+    });
+  });
+
+  test("controller moves terminal GitHub compact waits to review", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-compact-windows-run",
+    ];
+    tree.tasks["wait-compact-windows-run"] = {
+      id: "wait-compact-windows-run",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P1",
+      children: [],
+      goal: "Wait for windows compact GitHub workflow run 123456789 to finish.",
+      inputs: ["feature:windows", "spec.windows.node-pool-create"],
+      outputs: [],
+      acceptance: ["Review terminal workflow result."],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      context: {
+        featureCompactFollowup: true,
+        errorClass: "live-workflow",
+        sampledFeatureKeys: ["windows"],
+      },
+      blocker: {
+        category: "external-wait",
+        condition: "Waiting for GitHub workflow run 123456789.",
+        waiting_for: {
+          type: "github.workflow_run.completed",
+          runId: "123456789",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          specs: {
+            "spec.windows.node-pool-create": {
+              status: "error",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "wait-compact-windows-run",
+      attempts: 2,
+      lastSummary: "Waiting for compact live workflow.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = harvestTerminalCompactGitHubWaits({
+      config: config(projectDir),
+      projectDir,
+      appDir: projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      state,
+      client: { kind: "gh" },
+      limit: 10,
+      getRun: (runId) => ({
+        databaseId: Number(runId),
+        status: "completed",
+        conclusion: "failure",
+        url: "https://github.example/runs/123456789",
+        displayTitle: "Compact windows staging",
+      }),
+    });
+
+    expect(result.harvestedTaskIds).toEqual(["wait-compact-windows-run"]);
+    expect(result.terminalRunIds).toEqual(["123456789"]);
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["wait-compact-windows-run"]).toMatchObject({
+      state: "review",
+      context: {
+        terminalGitHubWaitReview: {
+          runId: "123456789",
+          runStatus: "completed",
+          runConclusion: "failure",
+          featureKeys: ["windows"],
+          namedSpecIds: ["spec.windows.node-pool-create"],
+        },
+      },
+    });
+    expect(updated.tasks["wait-compact-windows-run"].blocker).toBeUndefined();
+    expect(state.features.windows).toMatchObject({
+      taskId: "wait-compact-windows-run",
+      lastWorkflowRunId: "123456789",
+      lastWorkflowRunUrl: "https://github.example/runs/123456789",
+      observedBy: {
+        workflow: "feature-compact-loop-controller",
+        taskId: "wait-compact-windows-run",
+        runId: "123456789",
+      },
+    });
+  });
+
+  test("controller leaves active GitHub compact waits blocked", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-compact-windows-run",
+    ];
+    tree.tasks["wait-compact-windows-run"] = {
+      id: "wait-compact-windows-run",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P1",
+      children: [],
+      goal: "Wait for windows compact GitHub workflow run 123456789 to finish.",
+      inputs: ["feature:windows"],
+      outputs: [],
+      acceptance: ["Review terminal workflow result."],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      blocker: {
+        category: "external-wait",
+        condition: "Waiting for GitHub workflow run 123456789.",
+        waiting_for: {
+          type: "github.workflow_run.completed",
+          runId: "123456789",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+
+    const result = harvestTerminalCompactGitHubWaits({
+      config: config(projectDir),
+      projectDir,
+      appDir: projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      state,
+      client: { kind: "gh" },
+      limit: 10,
+      getRun: (runId) => ({
+        databaseId: Number(runId),
+        status: "in_progress",
+        conclusion: null,
+      }),
+    });
+
+    expect(result.harvestedTaskIds).toEqual([]);
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["wait-compact-windows-run"]).toMatchObject({
+      state: "blocked",
+      status: "blocked",
     });
   });
 });

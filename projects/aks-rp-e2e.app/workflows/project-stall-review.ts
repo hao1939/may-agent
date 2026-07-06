@@ -404,7 +404,7 @@ You are judging why the aks-rp-e2e project is not moving.
 Division of responsibility:
 - Workflow code collected the packet below and applied only mechanical repair.
 - You judge the root cause and the next project move.
-- Do not mutate tasks/tree.json from this diagnostic session. The planner will
+- Do not mutate the task tree from this diagnostic session. The planner will
   consume project.stall.reviewed and make task-tree decisions.
 - Use the durable task tree, loop state, and recent journal facts. Do not treat
   lack of perfect information as a reason to block; recommend the best concrete

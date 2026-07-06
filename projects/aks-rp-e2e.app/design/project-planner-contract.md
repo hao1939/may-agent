@@ -41,8 +41,13 @@ Task completion review is split from general planning:
 5. Only after pending reviewed decisions are applied should the planner refill
    or widen work.
 
-The watchdog remains a fallback for stale review leaves where
-`project.task.reviewed` was lost or never emitted.
+The watchdog remains a fallback for review leaves where `project.task.reviewed`
+was lost, never emitted, or was never the right source. Some workflows can move
+work directly to `review` after collecting an objective signal, such as a
+terminal GitHub run for a durable-loop wait. In that case the watchdog must
+backfill a `watchdog-review-pending` planner wake with enough context for the
+planner to act: task id, parent/loop id, review kind, run id/conclusion/URL when
+available, named specs or affected items, and the current task result summary.
 
 Project-level liveness fallback is split from routine planning:
 
@@ -327,15 +332,17 @@ Task states remain the canonical five-state set:
 - `done`
 - `blocked`
 
-`review` means a worker finished and the task is waiting for owner acceptance.
-The preferred path out of `review` is:
+`review` means work has produced a result or signal and is waiting for owner
+acceptance. The preferred path for worker completions is:
 
 ```text
 project.task.completed -> task-reviewer -> project.task.reviewed -> planner
 ```
 
-The planner may still directly inspect stale review leaves on watchdog wakes,
-but that is recovery behavior, not the normal completion path.
+The planner may also directly inspect watchdog-backfilled review leaves. For
+worker completions this is recovery behavior; for controller-created review
+leaves it is the normal path because there may be no `project.task.completed`
+event.
 
 `active` means the current assignment is owned by a worker attempt. If
 `trace.current_attempt_id` matches `trace.worker_started_attempt_id`, the

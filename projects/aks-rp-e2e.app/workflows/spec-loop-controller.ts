@@ -5,7 +5,12 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  workflowResultVersion,
+  type WorkflowContext,
+  type WorkflowIoContract,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   appendToolJournal,
   assignTask,
@@ -47,12 +52,31 @@ import {
 import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
 import {
   activeWorkflowRuns,
+  getWorkflowRun,
   resolveGitHubClient,
+  type GitHubClient,
+  type GitHubWorkflowRun,
 } from "./lib/github-actions.ts";
 
 export const name = "spec-loop-controller";
 export const description =
   "Keep a bounded frontier of single-spec verification leaves under a loop task.";
+export const workflowContract: WorkflowIoContract = {
+  workflow: name,
+  version: "spec-loop-controller-v1",
+  input: {
+    required: ["project.task.tick action=spec-loop", "target.taskId"],
+    optional: ["maxConcurrent", "task.context.windowSize"],
+    description:
+      "Pulse the spec verification loop root, reconcile child results, and fill the bounded single-spec verifier frontier.",
+  },
+  output: {
+    version: workflowResultVersion,
+    fields: ["summary", "task.context.workflowProgress"],
+    description:
+      "Updates loop progress, creates or assigns verifier children, and keeps non-terminal specs represented by work or exact waits.",
+  },
+};
 
 function isSpecLoopTick(trigger: TriggerEvent | null): boolean {
   return (
@@ -297,6 +321,11 @@ function traceString(task: TaskNode | undefined, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function stringField(record: Record<string, unknown> | null, key: string): string {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
 function timestampMs(value: unknown): number | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const parsed = Date.parse(value);
@@ -512,6 +541,29 @@ function taskHasStructuredBlocker(task: TaskNode | undefined): boolean {
   return !!(task as { blocker?: unknown } | undefined)?.blocker;
 }
 
+function taskTextMentionsSpecId(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    acceptance: task.acceptance,
+    inputs: task.inputs,
+    context: task.context,
+    blocker: task.blocker,
+  }).toLowerCase();
+  return haystack.includes(specId.toLowerCase());
+}
+
+function taskTextMentionCountsAsSpecOwner(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!taskTextMentionsSpecId(task, specId)) return false;
+  return taskStatus(task) !== "blocked" || taskHasStructuredBlocker(task);
+}
+
 function specLoopSpecHasStructuredSuccessor(
   spec: SpecLoopState["specs"][string] | undefined,
 ): boolean {
@@ -549,6 +601,10 @@ function exactSpecLoopOwnerTaskId(input: {
     if (!isRepresenting(task)) continue;
     if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
       taskIds.add(task.id);
+      continue;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
+      taskIds.add(task.id);
     }
   }
 
@@ -556,6 +612,9 @@ function exactSpecLoopOwnerTaskId(input: {
     const task = input.tasks[taskId];
     if (!isRepresenting(task)) continue;
     if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
+      return taskId;
+    }
+    if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
       return taskId;
     }
     if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
@@ -582,6 +641,298 @@ function exactRepresentedSpecIds(input: {
   return ids;
 }
 
+function specIdsNamedByTask(
+  task: TaskNode | undefined,
+  state: SpecLoopState,
+): string[] {
+  if (!task) return [];
+  const named = new Set<string>();
+  for (const scope of taskConflictScopes(task)) {
+    const specId = scope.trim().replace(/^spec:/, "");
+    if (scope.startsWith("spec:") && state.specs[specId]) named.add(specId);
+  }
+  for (const specId of Object.keys(state.specs)) {
+    if (taskTextMentionsSpecId(task, specId)) named.add(specId);
+  }
+  return [...named].sort((a, b) => a.localeCompare(b));
+}
+
+function closeStalePassedBlockedWaitChildren(
+  config: ReturnType<typeof buildTaskTreeConfig>,
+  input: {
+    loopTaskId: string;
+    state: SpecLoopState;
+  },
+): string[] {
+  const closedTaskIds: string[] = [];
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const loopTask = tree.tasks[input.loopTaskId];
+    if (!loopTask) return;
+    const now = new Date().toISOString();
+    for (const childId of loopTask.children ?? []) {
+      const child = tree.tasks[childId];
+      if (!child || taskStatus(child) !== "blocked") continue;
+      const namedSpecIds = specIdsNamedByTask(child, input.state);
+      if (namedSpecIds.length === 0) continue;
+      if (
+        !namedSpecIds.every(
+          (specId) => input.state.specs[specId]?.status === "pass",
+        )
+      ) {
+        continue;
+      }
+      child.status = "done";
+      child.state = "done";
+      child.done_at = now;
+      child.done_by = "spec-loop-controller";
+      child.resolution = "completed";
+      child.result = `Closed stale blocked wait because every named spec already has live pass evidence: ${namedSpecIds.join(", ")}.`;
+      child.blocker = undefined;
+      child.trace = {
+        ...(child.trace ?? {}),
+        stale_wait_closed_at: now,
+        stale_wait_closed_by: "spec-loop-controller",
+        stale_wait_closed_reason:
+          "all spec ids named by this blocked wait are already pass in spec-loop state",
+        stale_wait_spec_ids: namedSpecIds,
+      };
+      closedTaskIds.push(childId);
+    }
+    if (closedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+    }
+  });
+  if (closedTaskIds.length > 0) {
+    appendToolJournal(config, {
+      kind: "spec_loop_stale_blocked_waits_closed",
+      task_id: input.loopTaskId,
+      closed_task_ids: closedTaskIds,
+    });
+  }
+  return closedTaskIds;
+}
+
+type TerminalGitHubWaitCandidate = {
+  taskId: string;
+  runId: string;
+  namedSpecIds: string[];
+};
+
+type TerminalGitHubWaitHarvest = {
+  harvestedTaskIds: string[];
+  terminalRunIds: string[];
+  lookupMissRunIds: string[];
+  checkedRunIds: string[];
+};
+
+function runIdFromWaitTask(task: TaskNode): string {
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker?.waiting_for);
+  const structuredRunId = stringField(waitingFor, "runId");
+  if (structuredRunId) return structuredRunId;
+  const context = taskContext(task);
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+  ]) {
+    const value = context[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+  const trace = taskTrace(task);
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+  ]) {
+    const value = trace[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    inputs: task.inputs,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+  });
+  const match = haystack.match(/\b(?:workflow run|run|runId)["':\s]+(\d{6,})\b/i);
+  return match?.[1] ?? "";
+}
+
+function terminalGitHubWaitCandidates(input: {
+  loopTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+  state: SpecLoopState;
+  limit: number;
+}): TerminalGitHubWaitCandidate[] {
+  if (!input.loopTask) return [];
+  const candidates: TerminalGitHubWaitCandidate[] = [];
+  const seenTaskIds = new Set<string>();
+  for (const childId of input.loopTask.children ?? []) {
+    if (candidates.length >= input.limit) break;
+    const child = input.tasks[childId];
+    if (!child || seenTaskIds.has(child.id)) continue;
+    const status = taskStatus(child);
+    if (status !== "blocked" && status !== "waiting") continue;
+    const runId = runIdFromWaitTask(child);
+    if (!runId) continue;
+    candidates.push({
+      taskId: child.id,
+      runId,
+      namedSpecIds: specIdsNamedByTask(child, input.state),
+    });
+    seenTaskIds.add(child.id);
+  }
+  return candidates;
+}
+
+function terminalRunSummary(run: GitHubWorkflowRun): string {
+  return [
+    `status=${run.status ?? "unknown"}`,
+    `conclusion=${run.conclusion ?? "unknown"}`,
+    run.url ? `url=${run.url}` : "",
+    run.displayTitle ? `title=${run.displayTitle}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
+export function harvestTerminalGitHubWaits(input: {
+  config: ReturnType<typeof buildTaskTreeConfig>;
+  projectDir: string;
+  loopTaskId: string;
+  state: SpecLoopState;
+  client: GitHubClient;
+  limit: number;
+  getRun?: (runId: string) => GitHubWorkflowRun | null;
+}): TerminalGitHubWaitHarvest {
+  const snapshot = readTaskTree(input.config);
+  const candidates = terminalGitHubWaitCandidates({
+    loopTask: snapshot.tasks[input.loopTaskId],
+    tasks: snapshot.tasks,
+    state: input.state,
+    limit: input.limit,
+  });
+  const checkedRunIds: string[] = [];
+  const lookupMissRunIds: string[] = [];
+  const terminalByTaskId = new Map<string, GitHubWorkflowRun>();
+
+  for (const candidate of candidates) {
+    checkedRunIds.push(candidate.runId);
+    const run =
+      input.getRun?.(candidate.runId) ??
+      getWorkflowRun({
+        client: input.client,
+        projectDir: input.projectDir,
+        runId: candidate.runId,
+      });
+    if (!run) {
+      lookupMissRunIds.push(candidate.runId);
+      continue;
+    }
+    if (run.status !== "completed") continue;
+    terminalByTaskId.set(candidate.taskId, run);
+  }
+
+  const harvestedTaskIds: string[] = [];
+  const terminalRunIds: string[] = [];
+  if (terminalByTaskId.size === 0) {
+    return { harvestedTaskIds, terminalRunIds, lookupMissRunIds, checkedRunIds };
+  }
+
+  withTreeLock(input.config, () => {
+    const tree = readTaskTree(input.config);
+    const loopTask = tree.tasks[input.loopTaskId];
+    if (!loopTask) return;
+    const now = new Date().toISOString();
+    for (const candidate of candidates) {
+      const run = terminalByTaskId.get(candidate.taskId);
+      if (!run) continue;
+      const child = tree.tasks[candidate.taskId];
+      if (!child) continue;
+      const status = taskStatus(child);
+      if (status !== "blocked" && status !== "waiting") continue;
+      if (runIdFromWaitTask(child) !== candidate.runId) continue;
+
+      const previousBlocker = child.blocker;
+      child.status = "review";
+      child.state = "review";
+      child.blocker = undefined;
+      child.result = [
+        `GitHub workflow run ${candidate.runId} is terminal; review the run artifact/result and update the spec-loop state or replace this wait with the current exact blocker.`,
+        terminalRunSummary(run),
+        candidate.namedSpecIds.length
+          ? `Named specs: ${candidate.namedSpecIds.join(", ")}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      child.context = {
+        ...taskContext(child),
+        terminalGitHubWaitReview: {
+          runId: candidate.runId,
+          runStatus: run.status ?? null,
+          runConclusion: run.conclusion ?? null,
+          runUrl: run.url ?? null,
+          runTitle: run.displayTitle ?? null,
+          namedSpecIds: candidate.namedSpecIds,
+          observedAt: now,
+        },
+      };
+      child.trace = {
+        ...(child.trace ?? {}),
+        terminal_github_wait_observed_at: now,
+        terminal_github_wait_run_id: candidate.runId,
+        terminal_github_wait_run_status: run.status ?? null,
+        terminal_github_wait_run_conclusion: run.conclusion ?? null,
+        terminal_github_wait_run_url: run.url ?? null,
+        previous_blocker_before_terminal_github_wait_review: previousBlocker,
+      };
+      for (const specId of candidate.namedSpecIds) {
+        const spec = input.state.specs[specId];
+        if (!spec || spec.status === "pass" || spec.status === "running") {
+          continue;
+        }
+        updateSpecLoopSpec(input.state, specId, {
+          taskId: child.id,
+          lastRunId: candidate.runId,
+          lastRunUrl: run.url ?? spec.lastRunUrl ?? null,
+          review: {
+            ...(spec.review ?? {}),
+            pendingReviewReason:
+              "terminal GitHub wait observed by spec-loop controller",
+            pendingReviewTaskId: child.id,
+            pendingReviewRunId: candidate.runId,
+            pendingReviewObservedAt: now,
+          },
+        });
+      }
+      harvestedTaskIds.push(child.id);
+      terminalRunIds.push(candidate.runId);
+    }
+    if (harvestedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(input.config, tree);
+    }
+  });
+
+  if (harvestedTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "spec_loop_terminal_github_waits_harvested",
+      task_id: input.loopTaskId,
+      harvested_task_ids: harvestedTaskIds,
+      terminal_run_ids: terminalRunIds,
+    });
+  }
+  return { harvestedTaskIds, terminalRunIds, lookupMissRunIds, checkedRunIds };
+}
+
 function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
   const keys = new Set<string>();
   if (!task) return keys;
@@ -602,6 +953,176 @@ function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
     }
   }
   return keys;
+}
+
+type SpecRetryResetDirective = {
+  specIds: string[];
+  featureFamilies: string[];
+  reason: string;
+  resetAttemptsTo: number;
+};
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringArrayValue(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function specRetryResetDirectivesFromValue(
+  value: unknown,
+): SpecRetryResetDirective[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  const directives: SpecRetryResetDirective[] = [];
+  for (const entry of values) {
+    const record = recordValue(entry);
+    if (!record) continue;
+    const specIds = [
+      ...stringArrayValue(record.specIds),
+      ...stringArrayValue(record.specs),
+      ...stringArrayValue(record.specId),
+    ];
+    const featureFamilies = [
+      ...stringArrayValue(record.featureFamilies),
+      ...stringArrayValue(record.featureFamily),
+      ...stringArrayValue(record.families),
+      ...stringArrayValue(record.family),
+    ];
+    if (specIds.length === 0 && featureFamilies.length === 0) continue;
+
+    const resetAttemptsTo =
+      typeof record.resetAttemptsTo === "number" &&
+      Number.isFinite(record.resetAttemptsTo) &&
+      record.resetAttemptsTo >= 0
+        ? Math.floor(record.resetAttemptsTo)
+        : 0;
+    const reason =
+      typeof record.reason === "string" && record.reason.trim()
+        ? record.reason.trim()
+        : "retry budget reset requested by completed spec repair task";
+
+    directives.push({
+      specIds: [...new Set(specIds)],
+      featureFamilies: [...new Set(featureFamilies)],
+      reason,
+      resetAttemptsTo,
+    });
+  }
+  return directives;
+}
+
+function specRetryResetDirectives(task: TaskNode): SpecRetryResetDirective[] {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  const workflowResult = recordValue(trace.workflowResult);
+  const details = recordValue(workflowResult?.details);
+  return [
+    ...specRetryResetDirectivesFromValue(context.specRetryReset),
+    ...specRetryResetDirectivesFromValue(context.specRetryResets),
+    ...specRetryResetDirectivesFromValue(trace.specRetryReset),
+    ...specRetryResetDirectivesFromValue(trace.specRetryResets),
+    ...specRetryResetDirectivesFromValue(workflowResult?.specRetryReset),
+    ...specRetryResetDirectivesFromValue(details?.specRetryReset),
+  ];
+}
+
+function specRetryResetMatches(
+  directive: SpecRetryResetDirective,
+  specId: string,
+): boolean {
+  if (directive.specIds.length > 0) {
+    return directive.specIds.includes(specId);
+  }
+  return directive.featureFamilies.includes(specFamily(specId));
+}
+
+function taskTerminalTimestamp(task: TaskNode): number | null {
+  return (
+    timestampMs((task as { done_at?: unknown }).done_at) ??
+    timestampMs((task as { reviewed_at?: unknown }).reviewed_at) ??
+    timestampMs(traceString(task, "reviewed_at")) ??
+    timestampMs(traceString(task, "last_worker_completed_at"))
+  );
+}
+
+function applySpecRetryResets(input: {
+  loopTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+  state: SpecLoopState;
+  maxDirectAttemptsPerSpec: number;
+}): string[] {
+  if (!input.loopTask) return [];
+  const resetSpecIds = new Set<string>();
+  for (const childId of input.loopTask.children ?? []) {
+    const child = input.tasks[childId];
+    if (!child || taskStatus(child) !== "done") continue;
+    const directives = specRetryResetDirectives(child);
+    if (directives.length === 0) continue;
+    const terminalAt = taskTerminalTimestamp(child);
+    if (terminalAt === null) continue;
+
+    for (const directive of directives) {
+      for (const [specId, spec] of Object.entries(input.state.specs)) {
+        if (!specRetryResetMatches(directive, specId)) continue;
+        if (spec.status === "pass" || spec.status === "running") continue;
+        if (
+          spec.status === "pending" &&
+          canDirectlyRunSpec({
+            state: input.state,
+            specId,
+            maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
+          })
+        ) {
+          continue;
+        }
+        if (
+          spec.status !== "pending" &&
+          spec.status !== "error" &&
+          spec.status !== "fail" &&
+          spec.status !== "done"
+        ) {
+          continue;
+        }
+        const specUpdatedAt = Date.parse(spec.updatedAt || "");
+        if (Number.isFinite(specUpdatedAt) && terminalAt < specUpdatedAt) {
+          continue;
+        }
+
+        updateSpecLoopSpec(input.state, specId, {
+          status: "pending",
+          taskId: null,
+          attempts: directive.resetAttemptsTo,
+          activeAttemptId: null,
+          activeTaskSessionId: null,
+          activeWorkflowRunId: null,
+          review: undefined,
+          successorDisposition: undefined,
+          successorStateReason: undefined,
+          resumeCondition: undefined,
+          retryResetAt: new Date().toISOString(),
+          retryResetByTaskId: child.id,
+          retryResetReason: directive.reason,
+        });
+        resetSpecIds.add(specId);
+      }
+    }
+  }
+  return [...resetSpecIds].sort((a, b) => a.localeCompare(b));
 }
 
 function blockedWaitChildCount(
@@ -730,6 +1251,7 @@ function canDirectlyRunSpec(input: {
 }): boolean {
   const spec = input.state.specs[input.specId];
   if (!spec) return false;
+  if (specLoopSpecHasStructuredSuccessor(spec)) return false;
   if (spec.status === "pending" || spec.status === "done") {
     return (
       !spec.lastRunUrl || (spec.attempts ?? 0) < input.maxDirectAttemptsPerSpec
@@ -902,7 +1424,8 @@ function materializeSpecLoopFollowups(
       outputs: [input.stateRef, "evidence/archive/", "features/", "specs/"],
       acceptance: [
         "Every affected non-pass spec has a concrete root-cause classification.",
-        "Every fixable test/spec/runtime issue was repaired and queued for a meaningful live rerun.",
+        "Every fixable test/spec/runtime/planner/workflow issue was repaired in the aks-rp-e2e domain repo, committed, pushed to the target branch, and queued for a meaningful GitHub live rerun.",
+        "App-only evidence or task-state changes are used only as audit trail and are not counted as the fix for domain test failures.",
         "If no bounded repo-local fix remains, an escalation task records the exact owner/environment/product reason, affected specs, attempted fixes, and resume condition.",
         "Relevant spec-loop state, spec/model files, or evidence notes were updated to match that pass/fix/escalate decision.",
       ],
@@ -1030,7 +1553,8 @@ function createOrUpdatePolicyFollowup(
       outputs: [input.stateRef, "features/", "specs/", "runs/test-results/"],
       acceptance: [
         "Every sampled spec removes private AKS RP source, Azure CLI fallback, and existing/shared-cluster carrier dependencies from its live execution path.",
-        "Each repaired spec is requeued for a standalone live GitHub run.",
+        "The repair is committed and pushed in the aks-rp-e2e domain repo before any success claim.",
+        "Each repaired spec is requeued for a standalone live GitHub run and that run link is recorded.",
         "If no repo-local repair remains, the task records the exact external owner, affected specs, attempted fixes, and resume condition.",
       ],
       conflict_scope: [
@@ -1207,6 +1731,8 @@ function specLoopWorkflowProgress(input: {
   blockedWaitChildren: number;
   created: number;
   createdFollowups: number;
+  harvestedTerminalGitHubWaits: number;
+  checkedTerminalGitHubWaits: number;
   assigned: number;
   reconciledArchivedNonLiveErrors: number;
   importedMirrorRows: number;
@@ -1360,6 +1886,8 @@ function specLoopWorkflowProgress(input: {
     backlogChildren: input.backlogChildren,
     openSpecVerifierChildren: input.openSpecVerifierChildren,
     openFollowups: input.openFollowups,
+    harvestedTerminalGitHubWaits: input.harvestedTerminalGitHubWaits,
+    checkedTerminalGitHubWaits: input.checkedTerminalGitHubWaits,
     representedFollowupGroups: [
       ...(input.representedFollowupGroupKeys ?? new Set<string>()),
     ].sort((a, b) => a.localeCompare(b)),
@@ -1410,13 +1938,16 @@ function updateControllerWorkflowProgress(input: {
       input.progress.noRefillNow === true ||
       input.progress.backendBlocked === true ||
       input.progress.dispatchHeld === true;
+    const exactBlockedWaitStewardship = exactBlockedWaitStewardshipProgress(
+      input.progress,
+    );
 
     if (input.progress.completionReady === false) {
       task.blocker = undefined;
       reopenControllerRootWhenIncomplete({
         task,
         progress: input.progress,
-        reason: exactBlockedWaitStewardshipProgress(input.progress)
+        reason: exactBlockedWaitStewardship
           ? "spec loop frontier is exact blocked wait stewardship; keep the durable root blocked until one named wait resolves or is replaced"
           : "spec loop progress is incomplete; durable controller root must stay runnable until non-pass specs are fixed, rerun, or exactly escalated",
       });
@@ -1425,7 +1956,9 @@ function updateControllerWorkflowProgress(input: {
         if (holdBlocked) {
           task.status = "blocked";
           task.state = "blocked";
-          task.blocker = holdReason;
+          if (!exactBlockedWaitStewardship) {
+            task.blocker = holdReason;
+          }
         } else {
           task.status = "backlog";
           task.state = "backlog";
@@ -1583,11 +2116,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: refreshedTree.tasks,
     state,
   });
-  const alreadyOpen = openSpecVerifierChildCount(
-    refreshedLoopTask,
-    refreshedTree.tasks,
-  );
-  const existing = existingSpecIds(refreshedLoopTask, refreshedTree.tasks);
   const releasedStaleRunning = releaseStaleRunningSpecs({
     state,
     activeOrBacklog: activeOrBacklogSpecIds(
@@ -1599,12 +2127,42 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     state,
     maxDirectAttemptsPerSpec,
   );
+  const resetSpecIds = applySpecRetryResets({
+    loopTask: refreshedLoopTask,
+    tasks: refreshedTree.tasks,
+    state,
+    maxDirectAttemptsPerSpec,
+  });
+  const closedStaleBlockedWaitTaskIds = closeStalePassedBlockedWaitChildren(
+    config,
+    {
+      loopTaskId: loopTask.id,
+      state,
+    },
+  );
   const githubAccess = shouldPreflightGitHubAccess({
     projectDir,
     loopTask,
   })
     ? resolveGitHubClient(projectDir)
     : { client: { kind: "gh" as const } };
+  const terminalGitHubWaitHarvest = githubAccess.client
+    ? harvestTerminalGitHubWaits({
+        config,
+        projectDir,
+        loopTaskId: loopTask.id,
+        state,
+        client: githubAccess.client,
+        limit: numberContext(loopTask, "terminalGitHubWaitHarvestLimit", 25),
+      })
+    : {
+        harvestedTaskIds: [],
+        terminalRunIds: [],
+        lookupMissRunIds: [],
+        checkedRunIds: [],
+      };
+  const postHarvestTree = readTaskTree(config);
+  const postHarvestLoopTask = postHarvestTree.tasks[loopTask.id];
   const backendBlocker = githubAccess.client
     ? ""
     : (githubAccess.reason ??
@@ -1629,6 +2187,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     projectDir,
     loopTask,
   });
+  const existing = existingSpecIds(postHarvestLoopTask, postHarvestTree.tasks);
+  const alreadyOpen = openSpecVerifierChildCount(
+    postHarvestLoopTask,
+    postHarvestTree.tasks,
+  );
   const pending =
     backendBlocker || dispatchHold
       ? []
@@ -1713,11 +2276,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     createdTaskIds.push(taskId);
   }
   const createdFollowupTaskIds =
-    refreshedLoopTask &&
+    postHarvestLoopTask &&
     createdTaskIds.length === 0 &&
     policyFailureTaskIds.length === 0
       ? materializeSpecLoopFollowups(config, {
-          loopTask: refreshedLoopTask,
+          loopTask: postHarvestLoopTask,
           state,
           stateRef,
           target,
@@ -1822,6 +2385,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       exactRepresentedSpecIds: exactOwnedSpecIds,
       blockedWaitChildren,
       createdFollowups: allCreatedFollowupTaskIds.length,
+      harvestedTerminalGitHubWaits:
+        terminalGitHubWaitHarvest.harvestedTaskIds.length,
+      checkedTerminalGitHubWaits:
+        terminalGitHubWaitHarvest.checkedRunIds.length,
       reconciledArchivedNonLiveErrors,
       importedMirrorRows: importedMirror.imported,
       targetRunning,
@@ -1858,6 +2425,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     requeuedMissingLocalResults
       ? `Requeued ${requeuedMissingLocalResults} terminal spec(s) with missing local result artifacts.`
       : "",
+    resetSpecIds.length
+      ? `Reset retry budget for ${resetSpecIds.length} spec(s): ${resetSpecIds.slice(0, 5).join(", ")}.`
+      : "",
+    closedStaleBlockedWaitTaskIds.length
+      ? `Closed ${closedStaleBlockedWaitTaskIds.length} stale blocked wait child task(s) whose named specs already passed.`
+      : "",
+    terminalGitHubWaitHarvest.harvestedTaskIds.length
+      ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal GitHub wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
+      : "",
     importedMirror.imported
       ? `Imported ${importedMirror.imported} newer domain mirror row(s): ${importedMirror.specIds.slice(0, 5).join(", ")}.`
       : "",
@@ -1882,6 +2458,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     consumed_assignment_rows: consumedAssignmentRows,
     requeued_orphaned_task_ids: requeuedOrphaned,
     requeued_missing_local_result_count: requeuedMissingLocalResults,
+    reset_spec_ids: resetSpecIds,
+    closed_stale_blocked_wait_task_ids: closedStaleBlockedWaitTaskIds,
+    terminal_github_wait_harvested_task_ids:
+      terminalGitHubWaitHarvest.harvestedTaskIds,
+    terminal_github_wait_terminal_run_ids:
+      terminalGitHubWaitHarvest.terminalRunIds,
+    terminal_github_wait_checked_run_ids:
+      terminalGitHubWaitHarvest.checkedRunIds,
+    terminal_github_wait_lookup_miss_run_ids:
+      terminalGitHubWaitHarvest.lookupMissRunIds,
     imported_mirror_spec_ids: importedMirror.specIds,
     accepted_review_task_ids: acceptedReviewChildren,
     state_path: statePath,

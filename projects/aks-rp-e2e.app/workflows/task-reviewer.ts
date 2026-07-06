@@ -4,7 +4,7 @@
  * Handles project.task.completed by validating that the cited task is still in
  * live review state, asking an independent reviewer for a structured judgment,
  * and emitting project.task.reviewed for the planner to apply. This workflow
- * must not mutate tasks/tree.json.
+ * must not mutate the task tree.
  */
 
 import { appendFileSync, mkdirSync } from "node:fs";
@@ -230,7 +230,7 @@ You are the read-only independent reviewer for one completed aks-rp-e2e task.
 Judge whether the worker completion satisfies the task acceptance criteria.
 
 Boundaries:
-- Do not mutate tasks/tree.json, loop state, project files, or domain files.
+- Do not mutate the task tree, loop state, project files, or domain files.
 - Do not assign tasks, create follow-up tasks, mark tasks done, or run live AKS
   tests.
 - Review only this completed task, its acceptance criteria, worker result,

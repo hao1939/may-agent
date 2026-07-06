@@ -131,7 +131,21 @@ and external run artifacts.
 ## Workflow Bridge
 
 Workflows are reusable project experience. A workflow can encode domain steps,
-but it runs inside the project operating loop:
+tool usage, artifact conventions, and result structure. A task is only the app
+tracking wrapper when work needs ownership, retry, blocked-state handling, UI
+visibility, review, or later recovery.
+
+Direct human/agent use can call the same workflow with structured input:
+
+```text
+human instruction
+  -> workflow under workflows/
+  -> domain command, GitHub run, or artifact update
+  -> structured workflowResult
+  -> agent reports the result
+```
+
+App-managed use wraps the same workflow in task state:
 
 ```text
 task context
@@ -145,12 +159,12 @@ task context
 
 Examples:
 
-| Workflow                      | Domain work it performs                         | Operating role                                  |
-| ----------------------------- | ----------------------------------------------- | ----------------------------------------------- |
-| `feature-reference-collector` | Collect Learn and REST API feature references.  | Advance one feature-reference loop item.        |
-| `single-spec-verifier`        | Run one spec live and classify the result.      | Advance one spec-loop child task.               |
-| `feature-compact-planner`     | Generate and live-prove a compact feature plan. | Advance one feature-compact loop item.          |
-| `project-stall-review`        | None directly.                                  | Collect state and ask the agent why work stuck. |
+| Workflow                      | Domain work it performs                         | Operating role                                                            |
+| ----------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
+| `feature-reference-collector` | Collect Learn and REST API feature references.  | Advance one feature-reference loop item.                                  |
+| `single-spec-verifier`        | Run one spec live and classify the result.      | Advance one spec-loop child task, or process one directly requested spec. |
+| `feature-compact-planner`     | Generate and live-prove a compact feature plan. | Advance one feature-compact loop item.                                    |
+| `project-stall-review`        | None directly.                                  | Collect state and ask the agent why work stuck.                           |
 
 Workflow code collects facts, runs commands, writes scoped artifacts, and emits
 structured results. The agent judges whether the facts satisfy the goal. The
@@ -289,7 +303,10 @@ with overwritten rejection history.
   truth by itself.
 - Knowledge claims must name their sources, evidence, confidence, and known
   gaps.
-- Workflows are reusable task execution experience, not a second task system.
+- Workflows are reusable work experience, not a second task system.
+- Tasks are for breaking up, tracking, retrying, blocking, and reviewing work;
+  direct human/agent work can use the same workflow without first creating a
+  task.
 - `tasks/tree.json` is the visible work frontier.
 - Loop state is operating memory and must be represented by task-tree work when
   non-terminal records exist.

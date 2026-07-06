@@ -9,7 +9,11 @@
 
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   planningPacket,
   taskTreeConfig,
@@ -259,7 +263,7 @@ ${cadence}
 
 Purpose:
 - Reduce the need for the human owner to repeatedly inspect status and steer.
-- Maintain one visible mid-term focus branch in tasks/tree.json.
+- Maintain one visible mid-term focus branch in the task tree.
 - Keep normal owner/worker execution inside the approved focus when useful.
 - Review progress regularly so we know whether the project is on track.
 
@@ -278,14 +282,14 @@ Boundaries:
   blocked.
 
 Expected durable shape:
-- Store the active or proposed focus in tasks/tree.json as a readable branch,
+- Store the active or proposed focus in the task tree as a readable branch,
   for example kind "focus_plan" with context.horizon, context.success_criteria,
   context.progress_review, and child tasks under existing domain lanes when
   possible.
-- Keep project.json currentFocus/focusPlan summary consistent when you make a
-  material focus change.
+- Keep the runtime project readout consistent when you make a material focus
+  change.
 - Keep .state/ only as scratch; durable focus understanding belongs in
-  tasks/tree.json and project.json.
+  the task tree.
 
 Focus review questions:
 1. What did the project learn or verify since the last focus review?
@@ -368,7 +372,7 @@ function dispatchOwnerRequested(
       params: {
         summary: truncate(input.summary, 2400),
         instruction:
-          "Review the focus-plan result, reconcile tasks/tree.json, and keep assigning work inside the approved focus when possible.",
+          "Review the focus-plan result, reconcile the task tree, and keep assigning work inside the approved focus when possible.",
       },
     });
   } catch {
@@ -455,8 +459,8 @@ function dispatchHumanApproval(
       plannerNext: truncate(plannerNext, 1000),
       evidence: {
         focusPlanId: planId,
-        appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
-        projectState: "/app/projects/aks-rp-e2e.app/project.json",
+        appTaskTree: resolveTaskTreePath("/app/projects/aks-rp-e2e.app"),
+        projectState: "/app/projects/aks-rp-e2e.app/.state/project-state.json",
         domainStatusCommand:
           "cd /app/projects/aks-rp-e2e && bun run status -- --gaps",
         kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
