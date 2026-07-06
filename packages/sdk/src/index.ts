@@ -949,6 +949,18 @@ export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
 export type { TaskBlocker, TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
 
 export {
+  ensureTaskTreeState,
+  loadProjectReadModel,
+  projectRuntimePaths,
+  resolveTaskTreePath,
+  saveProjectRuntimeState,
+} from "./project-runtime-state.js";
+export type {
+  EnsureTaskTreeStateResult,
+  ProjectRuntimePaths,
+} from "./project-runtime-state.js";
+
+export {
   appendPlannerRun,
   appendToolJournal,
   assignRunnableBacklogTasks,
