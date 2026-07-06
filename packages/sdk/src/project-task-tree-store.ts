@@ -11,6 +11,20 @@ export type TaskBlocker =
       resume_at?: string;
       resumeCondition?: string;
       resumeAt?: string;
+      blocked_at?: string;
+      blockedAt?: string;
+      waiting_for?: Record<string, unknown>;
+      waitingFor?: Record<string, unknown>;
+      observed_by?: Record<string, unknown>;
+      observedBy?: Record<string, unknown>;
+      observation_method?: string;
+      observationMethod?: string;
+      next_check_at?: string;
+      nextCheckAt?: string;
+      fallback_at?: string;
+      fallbackAt?: string;
+      fallback_action?: string;
+      fallbackAction?: string;
     };
 
 export type TaskNode = {

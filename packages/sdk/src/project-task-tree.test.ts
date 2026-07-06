@@ -25,7 +25,7 @@ import {
 
 async function makeApp() {
   const dir = await mkdtemp(join(tmpdir(), "may-sdk-task-tree-"));
-  await mkdir(join(dir, ".state"), { recursive: true });
+  await mkdir(join(dir, ".state", "tasks"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
@@ -41,7 +41,7 @@ function config(appDir: string, projectDir?: string) {
 }
 
 async function writeTree(appDir: string, tree: unknown) {
-  await writeFile(join(appDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+  await writeFile(join(appDir, ".state", "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 }
 
 describe("project task tree SDK", () => {
@@ -87,7 +87,7 @@ describe("project task tree SDK", () => {
     expect(dependenciesSatisfied(tree, tree.tasks["blocked-by-done"])).toBe(true);
 
     repairTaskTreeRollups(config(appDir));
-    const persisted = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const persisted = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(persisted.tasks["done-leaf"].state).toBe("done");
     expect(persisted.tasks["done-leaf"].status).toBeUndefined();
   });
@@ -129,7 +129,7 @@ describe("project task tree SDK", () => {
       active_task_ids: [],
     });
 
-    const persisted = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const persisted = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(persisted.tasks.project.children).toEqual(["live-child"]);
   });
 
@@ -234,7 +234,17 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.lane.blocker).toMatchObject({
       condition: "Child blocked: blocked-leaf.",
       category: "child-blocked",
+      waiting_for: {
+        type: "child.task.blocked",
+        taskId: "lane",
+        childTaskIds: ["blocked-leaf"],
+      },
+      observed_by: {
+        trigger: "task_tree_rollup_repaired",
+      },
     });
+    expect((tree.tasks.lane.blocker as Record<string, unknown>).next_check_at).toBeTruthy();
+    expect((tree.tasks.lane.blocker as Record<string, unknown>).fallback_at).toBeTruthy();
   });
 
   test("unblocks a blocked leaf back to backlog", async () => {
@@ -997,7 +1007,7 @@ describe("project task tree SDK", () => {
     expect(updated.outputs).toEqual(["evidence/archive/blocked.md"]);
     expect(updated.conflict_scope).toEqual(["feature:test"]);
 
-    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(tree.tasks["blocked-leaf"].goal).toBe("new goal");
     expect(tree.tasks["blocked-leaf"].acceptance).toEqual(["new acceptance a", "new acceptance b"]);
     expect(tree.tasks["blocked-leaf"].blocker).toBe("new blocker");
@@ -1121,9 +1131,9 @@ describe("project task tree SDK", () => {
     expect(result.archived).toBe(1);
     expect(result.parentId).toBe("lane");
     expect(result.archivedTaskIds).toEqual(["archive-me"]);
-    expect(result.archivePath).toMatch(/^tasks\/archive\/done-leaves-/);
+    expect(result.archivePath).toMatch(/^\.state\/tasks\/archive\/done-leaves-/);
 
-    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(tree.tasks["archive-me"]).toBeUndefined();
     expect(tree.tasks["keep-me"]).toBeDefined();
     expect(tree.tasks.lane.children).toEqual(["keep-me"]);
@@ -1280,7 +1290,7 @@ describe("project task tree SDK", () => {
     expect(secondArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["branch"]);
     expect(thirdArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["lane"]);
 
-    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(tree.tasks["deep-leaf"]).toBeUndefined();
     expect(tree.tasks.branch).toBeUndefined();
     expect(tree.tasks.lane).toBeUndefined();
@@ -1348,7 +1358,7 @@ describe("project task tree SDK", () => {
     });
 
     expect(result.archivedTaskIds).toEqual(["leaf-a", "lane-a"]);
-    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(tree.tasks["leaf-a"]).toBeUndefined();
     expect(tree.tasks["lane-a"]).toBeUndefined();
     expect(tree.tasks["leaf-b"]).toBeDefined();
@@ -1640,7 +1650,7 @@ describe("project task tree SDK", () => {
       }),
     ).toThrow("not done");
 
-    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(tree.tasks["active-child"]).toBeDefined();
     expect(tree.tasks.lane.children).toEqual(["active-child"]);
   });
