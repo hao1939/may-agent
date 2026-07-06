@@ -1,5 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { ensureTaskTreeState, projectRuntimePaths } from "./project-runtime-state.js";
 import {
   dependenciesSatisfied,
   isClearEnough,
@@ -270,11 +271,12 @@ export type RejectTaskReviewInput = {
 };
 
 export function taskTreeConfig(input: TaskTreeToolConfig): ToolConfig {
+  const runtimePaths = projectRuntimePaths(input.appDir);
   return {
     appDir: input.appDir,
     projectDir: input.projectDir,
-    treePath: join(input.appDir, "tasks", "tree.json"),
-    journalPath: join(input.appDir, ".state", "journal.jsonl"),
+    treePath: ensureTaskTreeState(input.appDir).path,
+    journalPath: runtimePaths.journalPath,
     worker: input.worker,
     maxConcurrent: input.maxConcurrent,
   };
@@ -422,7 +424,7 @@ function summarizeKanbanLoadedTree(tree: TaskTree): TaskKanbanProjection {
 }
 
 function kanbanSnapshotPath(config: ToolConfig): string {
-  return join(config.appDir, "tasks", "kanban.json");
+  return projectRuntimePaths(config.appDir).kanbanPath;
 }
 
 function writeKanbanSnapshotForTree(config: ToolConfig, tree: TaskTree): TaskKanbanSnapshot {
@@ -474,9 +476,9 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
           (progress as Record<string, unknown>).dispatchHeld === true
         : false;
     if (isAssignedWorkflowController(task)) return "active";
-    if (holdBlocked) return "blocked";
     if (childStates.includes("active")) return "active";
     if (childStates.includes("review")) return "review";
+    if (holdBlocked) return "blocked";
     return "backlog";
   }
   if (childStates.includes("active")) return "active";
@@ -524,10 +526,51 @@ function blockedConditionForChildren(tree: TaskTree, task: TaskNode): string {
   return `Child blocked: ${blockedIds.join(", ") || "blocked work"}.`;
 }
 
+function childBlockedIds(tree: TaskTree, task: TaskNode): string[] {
+  return normalizeStringArray(task.children).filter(
+    (id) => tree.tasks[id]?.status === "blocked",
+  );
+}
+
 function hasBlockerCondition(task: TaskNode): boolean {
   const blocker = task.blocker;
   if (typeof blocker === "string") return blocker.trim().length > 0;
   return Boolean(blocker?.condition?.trim());
+}
+
+function isoPlusMinutes(iso: string, minutes: number): string {
+  return new Date(Date.parse(iso) + minutes * 60_000).toISOString();
+}
+
+function isoPlusHours(iso: string, hours: number): string {
+  return new Date(Date.parse(iso) + hours * 3_600_000).toISOString();
+}
+
+function childBlockedContract(tree: TaskTree, task: TaskNode): Exclude<TaskBlocker, string> {
+  const now = new Date().toISOString();
+  return {
+    condition: blockedConditionForChildren(tree, task),
+    category: "child-blocked",
+    owner: task.owner,
+    blocked_at: now,
+    waiting_for: {
+      type: "child.task.blocked",
+      taskId: task.id,
+      childTaskIds: childBlockedIds(tree, task),
+    },
+    observed_by: {
+      workflow: task.workflow ?? "task-tree-rollup",
+      trigger: "task_tree_rollup_repaired",
+    },
+    observation_method:
+      "Task-tree rollup recomputes parent state from current child states; keep this blocked steward only while one or more child tasks remain blocked.",
+    next_check_at: isoPlusMinutes(now, 10),
+    resume_condition:
+      "Resume when the blocked child task is resolved or replaced.",
+    fallback_at: isoPlusHours(now, 24),
+    fallback_action:
+      "If child-blocked stewardship still holds at fallback time, rerun task-tree rollup/owner review and refresh the blocker metadata or reopen a concrete child follow-up.",
+  };
 }
 
 function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
@@ -550,13 +593,15 @@ function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
     if (nextState === "review" && !task.result?.trim()) {
       task.result = reviewResultForChildren(tree, task);
     }
-    if (nextState === "blocked" && !hasBlockerCondition(task)) {
-      task.blocker = {
-        condition: blockedConditionForChildren(tree, task),
-        category: "child-blocked",
-        owner: task.owner,
-        resume_condition: "Resume when the blocked child task is resolved or replaced.",
-      };
+    if (nextState === "blocked") {
+      const blocker = task.blocker;
+      const currentCategory =
+        blocker && typeof blocker === "object" && !Array.isArray(blocker)
+          ? blocker.category
+          : undefined;
+      if (!hasBlockerCondition(task) || currentCategory === "child-blocked") {
+        task.blocker = childBlockedContract(tree, task);
+      }
     } else if (nextState !== "blocked" && hasBlockerCondition(task)) {
       task.blocker = undefined;
     }
@@ -687,13 +732,14 @@ function writeCompactArchive(input: {
   parentId?: string;
   summary?: string;
 }): string {
-  const archiveDir = join(input.config.appDir, "tasks", "archive");
+  const runtimePaths = projectRuntimePaths(input.config.appDir);
+  const archiveDir = runtimePaths.taskArchiveDir;
   const archiveStamp = compactArchiveStamp();
-  let archiveRelPath = join("tasks", "archive", `done-leaves-${archiveStamp}.json`);
+  let archiveRelPath = join(".state", "tasks", "archive", `done-leaves-${archiveStamp}.json`);
   let archivePath = join(input.config.appDir, archiveRelPath);
   let attempt = 1;
   while (existsSync(archivePath)) {
-    archiveRelPath = join("tasks", "archive", `done-leaves-${archiveStamp}-${attempt}.json`);
+    archiveRelPath = join(".state", "tasks", "archive", `done-leaves-${archiveStamp}-${attempt}.json`);
     archivePath = join(input.config.appDir, archiveRelPath);
     attempt++;
   }
@@ -1023,13 +1069,7 @@ function controllerRefillPaused(task: TaskNode): boolean {
     return true;
   }
 
-  if (
-    pending === 0 &&
-    running === 0 &&
-    openChildren === 0 &&
-    error > 0 &&
-    retryBudgetExhausted === error
-  ) {
+  if (pending === 0 && running === 0 && openChildren === 0 && error > 0 && retryBudgetExhausted === error) {
     return true;
   }
 
