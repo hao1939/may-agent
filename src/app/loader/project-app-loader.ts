@@ -8,6 +8,7 @@ import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { runWorkflowDirect } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
+import { loadProjectReadModel } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
 
@@ -236,7 +237,7 @@ function readJsonObject(path: string): Record<string, unknown> {
 }
 
 function projectReadModel(projectRoot: string, descriptor: ProjectAppDescriptor): ProjectReadModel {
-  const projectJson = readJsonObject(join(descriptor.appDir, "project.json"));
+  const projectJson = loadProjectReadModel(descriptor.appDir);
   const id = typeof projectJson.id === "string" && projectJson.id.trim() ? projectJson.id.trim() : descriptor.id;
   const owner =
     typeof projectJson.owner === "string" && projectJson.owner.trim()
