@@ -13,9 +13,6 @@
 
 - committed runtime handoff files
 - review override: needs_improvement
-- Real root-cause fix was delivered, but the session spent many calls rediscovering table sizes, retention logic, and file locations before acting.
-- Several avoidable dead ends reduced efficiency: dbstat query on a non-existent table, disallowed PRAGMA/page_count probes, a grep against missing src/, and a failed edit from ambiguous context.
-- Verification relied mostly on runtime metric recovery and brace-balance checks; there was no targeted test run for the modified handler logic.
 
 ## Action Required
 
