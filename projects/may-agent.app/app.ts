@@ -207,6 +207,14 @@ async function routePlatformEvent(
       // Breaches correlate with planning cycle size, not platform failures.
       // Captured in scheduled project.tick (6h) for trend awareness.
       "event.pair-orphan-count",
+      // Category 12: zombie and stale-running session counts include the
+      // platform-owner-review session itself (runs 5-30min). The owner
+      // cannot fix its own running session from within — the metric
+      // self-resolves when the session completes. Waking for this creates
+      // a circular dependency: breach → owner wake → session runs →
+      // counted as zombie → breach. Captured in scheduled review.
+      "capability.zombie-session-count",
+      "runtime.stale-running-session-count",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {

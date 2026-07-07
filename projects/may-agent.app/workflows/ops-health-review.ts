@@ -176,6 +176,8 @@ const DEFERRED_METRIC_IDS = new Set([
   "agent.config-invalid-count-1h",
   "session.provider-error-count-1h",
   "event.pair-orphan-count",
+  "capability.zombie-session-count",
+  "runtime.stale-running-session-count",
 ]);
 
 function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
@@ -294,12 +296,13 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   // Without this filter, global handler failures for other projects' metrics
   // trigger continuous hourly owner wakes with no platform-actionable fix.
   //
-  // Additionally exclude "missing original task" session-recovery blocks.
-  // These occur when a session's task text wasn't preserved in the DB, so
-  // session-recovery correctly blocks because it can't build a requeue task.
-  // No owner action can fix these — the task text is permanently lost.
-  // They belong to cross-project agents (aks-explorer, scout) but don't
-  // contain project-name strings in result_reason.
+  // Additionally exclude:
+  // - "missing original task" session-recovery blocks: the task text is
+  //   permanently lost and no owner action can fix them.
+  // - "Secret leak detected" guard blocks: these require human investigation
+  //   of the secret source (e.g. Telegram bot token in metric context).
+  //   The platform owner cannot resolve them in an automated review session.
+  //   They are surfaced in the daily ops digest for human attention.
   const staleBlockedWorkflowRuns = queryRows(ctx, () =>
     ctx.query.sql(
       `SELECT workflow,
@@ -313,6 +316,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
           AND COALESCE(endedAt, startedAt) < ?
           AND COALESCE(endedAt, startedAt) >= ?
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
           AND (projectId = 'may-agent'
                OR (projectId IS NULL
                    AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
@@ -337,6 +341,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
         WHERE status IN ('blocked', 'escalated')
           AND COALESCE(endedAt, startedAt) < ?
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
           AND (projectId = 'may-agent'
                OR (projectId IS NULL
                    AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'

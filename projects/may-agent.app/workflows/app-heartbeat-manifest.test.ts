@@ -11,6 +11,10 @@ const apps = [
   ["scout-knowledge-lib", scoutKnowledgeLibApp],
 ] as const;
 
+// Valid schedule IDs for the owner heartbeat convention.
+// Most apps use "owner-heartbeat"; aks-rp-e2e evolved to "app-ops-heartbeat".
+const HEARTBEAT_SCHEDULE_IDS = ["owner-heartbeat", "app-ops-heartbeat"];
+
 describe("owner heartbeat manifests", () => {
   // Budget-aware intervals: may-agent uses 12h (paired with 6h platform-review = 6/day),
   // others use 4h (their schedules allocate differently).
@@ -23,8 +27,8 @@ describe("owner heartbeat manifests", () => {
 
   for (const [id, app] of apps) {
     test(`${id} declares bounded owner heartbeat`, () => {
-      const schedule = app.schedules?.find(
-        (entry: { id?: string }) => entry.id === "owner-heartbeat",
+      const schedule = app.schedules?.find((entry: { id?: string }) =>
+        HEARTBEAT_SCHEDULE_IDS.includes(entry.id ?? ""),
       );
 
       expect(schedule).toBeDefined();
@@ -48,7 +52,10 @@ describe("owner heartbeat manifests", () => {
         eventType === "project.owner.requested" ||
           eventType === "project.planning.requested",
       ).toBe(true);
-      expect(eventData?.reason).toBe("owner-heartbeat");
+      // Reason matches the schedule ID (owner-heartbeat or app-ops-heartbeat)
+      expect(HEARTBEAT_SCHEDULE_IDS.includes(eventData?.reason ?? "")).toBe(
+        true,
+      );
 
       const params = eventData?.params ?? event?.params;
       expect(String(params?.instruction)).toContain("Low-frequency");
