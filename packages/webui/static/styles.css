@@ -238,6 +238,72 @@
 
   /* Project task Kanban */
   .kanban-shell { display: grid; gap: 14px; min-width: 0; }
+  .project-readout { display: grid; gap: 12px; min-width: 0; }
+  .readout-panel {
+    min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); padding: 12px;
+    display: grid; gap: 12px;
+  }
+  .readout-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; min-width: 0; }
+  .readout-head.compact { align-items: center; }
+  .readout-head h3 { margin: 0; font-size: 15px; line-height: 1.3; }
+  .readout-head p { margin: 3px 0 0; color: var(--fg2); font-size: 12px; line-height: 1.4; max-width: 780px; }
+  .readout-kicker { color: var(--accent); font-size: 10px; font-weight: 700; line-height: 1.5; text-transform: uppercase; letter-spacing: 0; }
+  .readout-status { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; color: var(--fg2); font-size: 11px; }
+  .readout-status span, .readout-head > span {
+    border: 1px solid var(--border); border-radius: 999px; padding: 2px 7px; background: var(--bg2); white-space: nowrap;
+  }
+  .readout-lead {
+    display: grid; gap: 4px; border: 1px solid var(--border); border-left: 4px solid var(--fg2); border-radius: 6px; background: var(--bg2); padding: 10px 12px;
+  }
+  .readout-lead strong { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+  .readout-lead span { color: var(--fg2); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  .readout-ok { border-left-color: var(--green); }
+  .readout-watch { border-left-color: var(--yellow); }
+  .readout-bad { border-left-color: var(--red); }
+  .readout-unknown { border-left-color: var(--fg2); }
+  .readout-metrics { display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)); gap: 8px; }
+  .readout-metric {
+    min-width: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--bg2); padding: 8px;
+  }
+  .readout-metric strong { display: block; font-size: 17px; line-height: 1.15; overflow-wrap: anywhere; }
+  .readout-metric span { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-top: 3px; }
+  .readout-metric.readout-watch strong { color: var(--yellow); }
+  .readout-metric.readout-bad strong { color: var(--red); }
+  .bottleneck-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .readout-card {
+    min-width: 0; border: 1px solid var(--border); border-left: 4px solid var(--fg2); border-radius: 6px; background: var(--bg2); padding: 10px;
+    display: grid; gap: 7px; align-content: start;
+  }
+  .readout-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .readout-card-head span { font-weight: 650; font-size: 12px; overflow-wrap: anywhere; }
+  .readout-card-head b { font-size: 16px; color: var(--fg); }
+  .readout-question { font-size: 12px; color: var(--fg); line-height: 1.35; overflow-wrap: anywhere; }
+  .readout-copy, .readout-next { color: var(--fg2); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
+  .readout-next b, .readout-copy b { color: var(--fg); font-weight: 600; }
+  .readout-action {
+    justify-self: start; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px;
+    cursor: pointer; font-size: 11px; line-height: 1.35;
+  }
+  .readout-action:hover { border-color: var(--accent); color: var(--accent); }
+  .readout-no-action { color: var(--fg2); font-size: 11px; align-self: center; }
+  .readout-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .coverage-list, .issue-list { display: grid; gap: 8px; min-width: 0; }
+  .coverage-row, .issue-row {
+    display: grid; grid-template-columns: minmax(130px, .9fr) minmax(160px, 1fr) minmax(140px, 1fr) minmax(110px, .7fr) minmax(180px, 1.2fr) auto;
+    gap: 10px; align-items: start; min-width: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--bg2); padding: 9px;
+  }
+  .issue-row { grid-template-columns: minmax(130px, .8fr) minmax(180px, 1.1fr) minmax(150px, 1fr) minmax(120px, .8fr) minmax(180px, 1.1fr) auto; }
+  .coverage-row b, .issue-row b { display: block; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+  .coverage-row small, .issue-row small { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; line-height: 1.4; }
+  .coverage-row span, .issue-row span { display: block; color: var(--fg); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+  .coverage-row em, .issue-row em {
+    display: inline-flex; width: fit-content; color: var(--fg2); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; font-style: normal; font-size: 11px;
+  }
+  .coverage-row code, .issue-row code { display: block; margin-top: 3px; color: var(--fg2); font-size: 10px; overflow-wrap: anywhere; white-space: normal; }
+  .coverage-missing, .issue-p0, .issue-p1 { border-left: 3px solid var(--red); }
+  .coverage-partial, .coverage-inferred, .issue-p2 { border-left: 3px solid var(--yellow); }
+  .coverage-complete, .issue-p3 { border-left: 3px solid var(--green); }
+  .readout-steer-panel { scroll-margin-top: 20px; }
   .kanban-banner {
     display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
     padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
@@ -318,6 +384,18 @@
   .task-detail-drawer ul { margin: 0; padding-left: 18px; }
   .task-detail-drawer li, .task-detail-drawer p { font-size: 12px; overflow-wrap: anywhere; }
   .task-detail-drawer pre { max-height: 260px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11px; }
+  .kanban-steer-text {
+    width: 100%; min-height: 110px; resize: vertical; background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 10px; font: 12px/1.45 var(--mono);
+  }
+  .kanban-steer-text:focus { outline: none; border-color: var(--accent); }
+  .kanban-steer-actions { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .kanban-steer-actions button {
+    background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; cursor: pointer; font-size: 12px;
+  }
+  .kanban-steer-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .kanban-steer-actions button:first-child { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .kanban-steer-status { color: var(--fg2); font-size: 12px; min-height: 18px; }
   .empty-state { color: var(--fg2); border: 1px dashed var(--border); border-radius: 8px; background: var(--bg); padding: 18px; font-size: 13px; }
   .project-functions { display: grid; gap: 14px; }
   .function-surface-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
@@ -342,10 +420,19 @@
   .action-form textarea { min-height: 58px; resize: vertical; font-family: var(--mono); }
   .action-form button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; }
   #project-action-status { color: var(--fg2); font-size: 12px; grid-column: 1 / -1; min-height: 18px; }
+  @media (max-width: 1100px) {
+    .bottleneck-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .readout-metrics { grid-template-columns: repeat(3, minmax(90px, 1fr)); }
+    .coverage-row, .issue-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .coverage-row .readout-action, .issue-row .readout-action { justify-self: start; }
+  }
   @media (max-width: 980px) { .kanban-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tree-counts { max-width: 32%; } }
   @media (max-width: 620px) {
     .kanban-banner { display: grid; }
     .banner-meta { justify-content: flex-start; }
+    .readout-head { display: grid; }
+    .readout-status { justify-content: flex-start; }
+    .bottleneck-grid, .readout-metrics, .coverage-row, .issue-row { grid-template-columns: 1fr; }
     .kanban-board { grid-template-columns: 1fr; }
     .task-detail-grid { grid-template-columns: 1fr; }
     .tree-task-main { flex-wrap: wrap; }

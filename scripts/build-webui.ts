@@ -8,6 +8,7 @@ const nodeModulesRoot = join(repoRoot, "node_modules");
 const generatedUi = join(repoRoot, "ui");
 const legacyServedUi = resolve(repoRoot, "..", "..", "ui");
 const platformServedUi = resolve(repoRoot, "..", "platform", "ui");
+const mayAgentAppServedUi = resolve(repoRoot, "..", "may-agent.app", "ui");
 
 async function syncVendorAssets() {
   const vendorRoot = join(staticRoot, "vendor", "xterm");
@@ -28,7 +29,9 @@ await syncVendorAssets();
 await copyStatic(generatedUi);
 await copyStatic(legacyServedUi);
 await copyStatic(platformServedUi);
+await copyStatic(mayAgentAppServedUi);
 
 console.log(`generated ${generatedUi}`);
 console.log(`generated ${legacyServedUi}`);
 console.log(`generated ${platformServedUi}`);
+console.log(`generated ${mayAgentAppServedUi}`);
