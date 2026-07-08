@@ -1,5 +1,5 @@
 /**
- * single-spec-verifier — run one AKS RP E2E spec through GitHub Actions.
+ * single-spec-verifier — run one AKS RP E2E spec through Azure DevOps Pipelines.
  */
 
 import { spawnSync } from "node:child_process";
@@ -45,16 +45,30 @@ import {
   loadSpecLoopState,
   saveSpecLoopState,
   updateSpecLoopSpec,
+  type SpecLoopSpecState,
   type SpecLoopSpecStatus,
 } from "./lib/spec-loop-store.ts";
 import {
-  writeGitHubDispatchMetadata,
-  type GitHubDispatchMetadata,
-} from "./lib/github-actions.ts";
+  dispatchWorkflow as dispatchPipelineWorkflow,
+  downloadWorkflowRunArtifacts as downloadPipelineArtifacts,
+  getWorkflowRun as getPipelineWorkflowRun,
+  pipelineRunLookupPollIntervalMs,
+  newestWorkflowRun as newestPipelineWorkflowRun,
+  resolvePipelineClient,
+  waitForWorkflowRun as waitForPipelineWorkflowRun,
+  writePipelineDispatchMetadata,
+  type PipelineDispatchMetadata,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
+import {
+  classifyFixForwardFailure,
+  fixForwardErrorFingerprint,
+  fixForwardInputFingerprint,
+} from "./lib/fix-forward.ts";
 
 export const name = "single-spec-verifier";
 export const description =
-  "Dispatch and review one run-single-spec GitHub workflow execution.";
+  "Dispatch and review one single-spec Azure DevOps pipeline execution.";
 export const workflowContract: WorkflowIoContract = {
   workflow: name,
   version: "single-spec-verifier-v1",
@@ -63,14 +77,14 @@ export const workflowContract: WorkflowIoContract = {
     optional: [
       "target",
       "mode",
-      "task.context.githubWorkflow",
+      "task.context.adoPipeline",
       "task.context.branch",
       "task.context.timeoutMinutes",
       "task.context.stateRef",
       "task.context.loopTaskId",
     ],
     description:
-      "Verify one AKS RP E2E spec. Direct input runs the repo-native spec command; task input dispatches and reviews the configured GitHub single-spec workflow.",
+      "Verify one AKS RP E2E spec. Direct input runs the repo-native spec command; task input dispatches and reviews the configured ADO single-spec pipeline.",
   },
   output: {
     version: workflowResultVersion,
@@ -87,43 +101,6 @@ type CommandResult = {
   stderr: string;
   error?: string;
 };
-
-type GhRun = {
-  databaseId?: number;
-  status?: string;
-  conclusion?: string;
-  url?: string;
-  createdAt?: string;
-  displayTitle?: string;
-};
-
-type GhArtifact = {
-  id?: number;
-  name?: string;
-  archive_download_url?: string;
-};
-
-type GitHubRepo = {
-  owner: string;
-  repo: string;
-};
-
-type GitHubApiResponse = {
-  ok: boolean;
-  status: number;
-  body: string;
-  error?: string;
-};
-
-type GitHubClient =
-  | {
-      kind: "gh";
-    }
-  | {
-      kind: "api";
-      repo: GitHubRepo;
-      token: string;
-    };
 
 type ProjectResult = {
   status?: string;
@@ -144,8 +121,25 @@ type SpecRunnerArtifact = {
   specId?: string;
   status?: string;
   phase?: string;
+  audit?: {
+    subscriptionId?: string;
+    resourceGroup?: string;
+    clusterName?: string;
+    apiVersion?: string;
+  };
   probeEvidence?: {
     status?: string;
+    config?: {
+      subscriptionId?: string;
+      location?: string;
+      resourceGroup?: string;
+      clusterName?: string;
+    };
+    cleanup?: {
+      attempted?: boolean;
+      status?: string;
+      notes?: string[];
+    };
     assertions?: Array<{
       name?: string;
       ok?: boolean;
@@ -153,6 +147,7 @@ type SpecRunnerArtifact = {
       detail?: string;
     }>;
   };
+  summary?: string;
 };
 
 type ArtifactIdentityInspection = {
@@ -179,13 +174,6 @@ type ArtifactIdentityInspection = {
   sameSpecAggregationFailure: boolean;
   projectResult: ProjectResult | null;
   mismatches: string[];
-};
-
-type DownloadedArtifactInspection = {
-  ok: boolean;
-  detail?: string;
-  responseKind: "zip" | "json" | "other" | "missing";
-  jsonBody?: Record<string, unknown>;
 };
 
 function commandEnv(): NodeJS.ProcessEnv {
@@ -228,6 +216,14 @@ function taskContext(task: TaskNode): Record<string, unknown> {
 function contextString(task: TaskNode, key: string, fallback = ""): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function pipelineNameContext(task: TaskNode, fallback: string): string {
+  return (
+    contextString(task, "adoPipeline", "") ||
+    contextString(task, "pipelineWorkflow", "") ||
+    contextString(task, "githubWorkflow", fallback)
+  );
 }
 
 function contextOptionalText(task: TaskNode, key: string): string {
@@ -338,177 +334,6 @@ function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function pollIntervalMs(): number {
-  const parsed = Number.parseInt(
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS ?? "",
-    10,
-  );
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 15_000;
-}
-
-function runLookupPollIntervalMs(): number {
-  const parsed = Number.parseInt(
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS ?? "",
-    10,
-  );
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 5_000;
-}
-
-function parseGitHubRepo(input: string): GitHubRepo | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const ssh = trimmed.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/i);
-  if (ssh) {
-    return { owner: ssh[1], repo: ssh[2] };
-  }
-  try {
-    const url = new URL(trimmed);
-    if (!/github\.com$/i.test(url.hostname)) return null;
-    const parts = url.pathname
-      .replace(/^\/+/, "")
-      .replace(/\.git$/i, "")
-      .split("/");
-    if (parts.length < 2) return null;
-    return { owner: parts[0], repo: parts[1] };
-  } catch {
-    return null;
-  }
-}
-
-function readOriginRemoteUrl(projectDir: string): string {
-  const remote = runCommand(
-    projectDir,
-    "git",
-    ["remote", "get-url", "origin"],
-    30_000,
-  );
-  if (remote.ok && remote.stdout.trim()) {
-    return remote.stdout.trim();
-  }
-  try {
-    const gitConfig = readFileSync(join(projectDir, ".git", "config"), "utf-8");
-    const match = gitConfig.match(
-      /\[remote\s+"origin"\][\s\S]*?^\s*url\s*=\s*(.+)\s*$/m,
-    );
-    return match?.[1]?.trim() ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function resolveGitHubRepo(projectDir: string): GitHubRepo | null {
-  return parseGitHubRepo(readOriginRemoteUrl(projectDir));
-}
-
-function resolveGitHubToken(projectDir: string): string {
-  const envToken =
-    process.env.GH_TOKEN ||
-    process.env.GITHUB_TOKEN ||
-    process.env.GITHUB_PAT ||
-    process.env.MAY_GITHUB_TOKEN ||
-    process.env.MAY_GITHUB_PAT;
-  if (envToken?.trim()) return envToken.trim();
-  try {
-    const url = new URL(readOriginRemoteUrl(projectDir));
-    if (!/github\.com$/i.test(url.hostname)) return "";
-    return decodeURIComponent(url.username || "").trim();
-  } catch {
-    return "";
-  }
-}
-
-function resolveGitHubClient(projectDir: string): {
-  client: GitHubClient | null;
-  reason?: string;
-} {
-  const repo = resolveGitHubRepo(projectDir);
-  const token = repo ? resolveGitHubToken(projectDir) : "";
-  if (repo && token) {
-    return { client: { kind: "api", repo, token } };
-  }
-
-  const ghVersion = runCommand(projectDir, "gh", ["--version"], 30_000);
-  if (ghVersion.ok) {
-    const ghAuth = runCommand(projectDir, "gh", ["auth", "status"], 30_000);
-    if (ghAuth.ok) {
-      return { client: { kind: "gh" } };
-    }
-    return {
-      client: null,
-      reason:
-        ghAuth.stderr ||
-        ghAuth.stdout ||
-        "GitHub API unavailable because no token was found and gh CLI is not authenticated.",
-    };
-  }
-
-  if (!repo) {
-    return {
-      client: null,
-      reason:
-        ghVersion.error ||
-        ghVersion.stderr ||
-        "GitHub API unavailable because origin repo could not be resolved, and gh CLI is unavailable.",
-    };
-  }
-  return {
-    client: null,
-    reason:
-      ghVersion.error ||
-      ghVersion.stderr ||
-      "GitHub API unavailable because no token was found in env or origin remote, and gh CLI is unavailable.",
-  };
-}
-
-function githubApi(
-  client: Extract<GitHubClient, { kind: "api" }>,
-  method: string,
-  apiPath: string,
-  body?: unknown,
-): GitHubApiResponse {
-  const url = `https://api.github.com${apiPath}`;
-  const args = [
-    "-sS",
-    "-L",
-    "-X",
-    method,
-    "-H",
-    "Accept: application/vnd.github+json",
-    "-H",
-    `Authorization: Bearer ${client.token}`,
-    "-H",
-    "X-GitHub-Api-Version: 2022-11-28",
-  ];
-  if (body !== undefined) {
-    args.push(
-      "-H",
-      "Content-Type: application/json",
-      "-d",
-      JSON.stringify(body),
-    );
-  }
-  args.push("-w", "\n%{http_code}", url);
-  const result = runCommand("/app", "curl", args, 120_000);
-  if (!result.ok && !result.stdout) {
-    return {
-      ok: false,
-      status: result.status ?? 0,
-      body: result.stderr || result.error || "",
-      error: result.error || result.stderr,
-    };
-  }
-  const output = result.stdout || "";
-  const match = output.match(/\n(\d{3})\s*$/);
-  const status = match ? Number(match[1]) : (result.status ?? 0);
-  const responseBody = match ? output.slice(0, match.index) : output;
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    body: responseBody,
-    error: result.ok ? undefined : result.stderr || result.error,
-  };
-}
-
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -538,472 +363,13 @@ function workflowRunMatches(input: {
   return extractSpecIdsFromRunTitle(title).includes(input.specId);
 }
 
-function pickNewestWorkflowRun(input: {
-  runs: GhRun[];
-  sinceMs: number;
-  loopKey: string;
-  specId: string;
-}): GhRun | null {
-  const recentRuns = input.runs
-    .filter((run) => {
-      const createdAt = Date.parse(run.createdAt ?? "");
-      return Number.isFinite(createdAt) && createdAt >= input.sinceMs - 30_000;
-    })
-    .sort(
-      (a, b) => Date.parse(b.createdAt ?? "") - Date.parse(a.createdAt ?? ""),
-    );
-  const matchedRuns = recentRuns.filter((run) =>
-    workflowRunMatches({
-      displayTitle: run.displayTitle,
-      loopKey: input.loopKey,
-      specId: input.specId,
-    }),
-  );
-  if (matchedRuns.length === 0) {
-    return null;
-  }
-  return matchedRuns[0];
-}
-
 function isUnexpectedLoopKeyDispatchError(result: CommandResult): boolean {
   const detail = `${result.stderr}\n${result.stdout}\n${result.error ?? ""}`;
   return (
-    result.status === 422 &&
+    (result.status === 422 || /"status"\s*:\s*"?422"?/i.test(detail)) &&
     /unexpected inputs provided/i.test(detail) &&
     /(loop_key|metadata)/i.test(detail)
   );
-}
-
-function newestWorkflowRunViaGh(input: {
-  projectDir: string;
-  workflow: string;
-  branch: string;
-  sinceMs: number;
-  loopKey: string;
-  specId: string;
-}): GhRun | null {
-  const list = runCommand(input.projectDir, "gh", [
-    "run",
-    "list",
-    "--workflow",
-    input.workflow,
-    "--branch",
-    input.branch,
-    "--event",
-    "workflow_dispatch",
-    "--limit",
-    "50",
-    "--json",
-    "databaseId,status,conclusion,url,createdAt,displayTitle",
-  ]);
-  if (!list.ok) return null;
-  try {
-    const runs = JSON.parse(list.stdout) as GhRun[];
-    return pickNewestWorkflowRun({
-      runs,
-      sinceMs: input.sinceMs,
-      loopKey: input.loopKey,
-      specId: input.specId,
-    });
-  } catch {
-    return null;
-  }
-}
-
-function newestWorkflowRunViaApi(input: {
-  client: Extract<GitHubClient, { kind: "api" }>;
-  workflow: string;
-  branch: string;
-  sinceMs: number;
-  loopKey: string;
-  specId: string;
-}): GhRun | null {
-  const response = githubApi(
-    input.client,
-    "GET",
-    `/repos/${input.client.repo.owner}/${input.client.repo.repo}/actions/workflows/${encodeURIComponent(input.workflow)}/runs?branch=${encodeURIComponent(input.branch)}&event=workflow_dispatch&per_page=50`,
-  );
-  if (!response.ok) return null;
-  try {
-    const payload = JSON.parse(response.body) as {
-      workflow_runs?: Array<Record<string, unknown>>;
-    };
-    const runs = (payload.workflow_runs ?? []).map(
-      (run) =>
-        ({
-          databaseId: typeof run.id === "number" ? run.id : Number(run.id),
-          status: typeof run.status === "string" ? run.status : undefined,
-          conclusion:
-            typeof run.conclusion === "string" ? run.conclusion : undefined,
-          url:
-            typeof run.html_url === "string"
-              ? run.html_url
-              : typeof run.url === "string"
-                ? run.url
-                : undefined,
-          createdAt:
-            typeof run.created_at === "string" ? run.created_at : undefined,
-          displayTitle:
-            typeof run.display_title === "string"
-              ? run.display_title
-              : undefined,
-        }) satisfies GhRun,
-    );
-    return pickNewestWorkflowRun({
-      runs,
-      sinceMs: input.sinceMs,
-      loopKey: input.loopKey,
-      specId: input.specId,
-    });
-  } catch {
-    return null;
-  }
-}
-
-function newestWorkflowRun(input: {
-  client: GitHubClient;
-  projectDir: string;
-  workflow: string;
-  branch: string;
-  sinceMs: number;
-  loopKey: string;
-  specId: string;
-}): GhRun | null {
-  return input.client.kind === "gh"
-    ? newestWorkflowRunViaGh(input)
-    : newestWorkflowRunViaApi({
-        client: input.client,
-        workflow: input.workflow,
-        branch: input.branch,
-        sinceMs: input.sinceMs,
-        loopKey: input.loopKey,
-        specId: input.specId,
-      });
-}
-
-function dispatchWorkflow(input: {
-  client: GitHubClient;
-  projectDir: string;
-  workflow: string;
-  branch: string;
-  specId: string;
-  target: string;
-  loopKey: string;
-  includeLoopKey: boolean;
-  timeoutMinutes?: string;
-}): CommandResult {
-  if (input.client.kind === "gh") {
-    const args = [
-      "workflow",
-      "run",
-      input.workflow,
-      "--ref",
-      input.branch,
-      "-f",
-      `specs=${input.specId}`,
-      "-f",
-      `target=${input.target}`,
-    ];
-    if (input.timeoutMinutes) {
-      args.push("-f", `timeout_minutes=${input.timeoutMinutes}`);
-    }
-    if (input.includeLoopKey) {
-      args.push(
-        "-f",
-        `metadata=${JSON.stringify({ loop_key: input.loopKey })}`,
-      );
-    }
-    return runCommand(input.projectDir, "gh", args);
-  }
-  const response = githubApi(
-    input.client,
-    "POST",
-    `/repos/${input.client.repo.owner}/${input.client.repo.repo}/actions/workflows/${encodeURIComponent(input.workflow)}/dispatches`,
-    {
-      ref: input.branch,
-      inputs: {
-        specs: input.specId,
-        target: input.target,
-        ...(input.timeoutMinutes
-          ? { timeout_minutes: input.timeoutMinutes }
-          : {}),
-        ...(input.includeLoopKey
-          ? { metadata: JSON.stringify({ loop_key: input.loopKey }) }
-          : {}),
-      },
-    },
-  );
-  return {
-    ok: response.ok,
-    status: response.status,
-    stdout: response.body,
-    stderr: response.ok ? "" : response.body,
-    error: response.error,
-  };
-}
-
-function getWorkflowRun(input: {
-  client: GitHubClient;
-  projectDir: string;
-  runId: string;
-}): GhRun | null {
-  if (input.client.kind === "gh") {
-    const result = runCommand(input.projectDir, "gh", [
-      "run",
-      "view",
-      input.runId,
-      "--json",
-      "databaseId,status,conclusion,url,createdAt,displayTitle",
-    ]);
-    if (!result.ok) return null;
-    try {
-      return JSON.parse(result.stdout) as GhRun;
-    } catch {
-      return null;
-    }
-  }
-  const response = githubApi(
-    input.client,
-    "GET",
-    `/repos/${input.client.repo.owner}/${input.client.repo.repo}/actions/runs/${encodeURIComponent(input.runId)}`,
-  );
-  if (!response.ok) return null;
-  try {
-    const run = JSON.parse(response.body) as Record<string, unknown>;
-    return {
-      databaseId: typeof run.id === "number" ? run.id : Number(run.id),
-      status: typeof run.status === "string" ? run.status : undefined,
-      conclusion:
-        typeof run.conclusion === "string" ? run.conclusion : undefined,
-      url:
-        typeof run.html_url === "string"
-          ? run.html_url
-          : typeof run.url === "string"
-            ? run.url
-            : undefined,
-      createdAt:
-        typeof run.created_at === "string" ? run.created_at : undefined,
-      displayTitle:
-        typeof run.display_title === "string" ? run.display_title : undefined,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function waitForWorkflowRun(input: {
-  client: GitHubClient;
-  projectDir: string;
-  runId: string;
-  timeoutMs: number;
-  onPoll?: (run: GhRun | null) => void;
-}): Promise<{ ok: boolean; run: GhRun | null; detail?: string }> {
-  const deadline = Date.now() + input.timeoutMs;
-  let lastRun: GhRun | null = null;
-  while (Date.now() < deadline) {
-    lastRun = getWorkflowRun(input);
-    input.onPoll?.(lastRun);
-    if (lastRun?.status === "completed") {
-      return {
-        ok: lastRun.conclusion === "success",
-        run: lastRun,
-        detail:
-          lastRun.conclusion === "success"
-            ? undefined
-            : `GitHub run completed with conclusion ${lastRun.conclusion ?? "unknown"}`,
-      };
-    }
-    await sleepMs(pollIntervalMs());
-  }
-  return {
-    ok: false,
-    run: lastRun,
-    detail: `Timed out waiting for GitHub run ${input.runId} to complete.`,
-  };
-}
-
-function listRunArtifacts(input: {
-  client: Extract<GitHubClient, { kind: "api" }>;
-  runId: string;
-}): GhArtifact[] {
-  const response = githubApi(
-    input.client,
-    "GET",
-    `/repos/${input.client.repo.owner}/${input.client.repo.repo}/actions/runs/${encodeURIComponent(input.runId)}/artifacts`,
-  );
-  if (!response.ok) return [];
-  try {
-    const payload = JSON.parse(response.body) as {
-      artifacts?: Array<Record<string, unknown>>;
-    };
-    return (payload.artifacts ?? []).map((artifact) => ({
-      id: typeof artifact.id === "number" ? artifact.id : Number(artifact.id),
-      name: typeof artifact.name === "string" ? artifact.name : undefined,
-      archive_download_url:
-        typeof artifact.archive_download_url === "string"
-          ? artifact.archive_download_url
-          : undefined,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function inspectDownloadedArtifact(
-  zipPath: string,
-): DownloadedArtifactInspection {
-  if (!existsSync(zipPath)) {
-    return {
-      ok: false,
-      responseKind: "missing",
-      detail: `artifact download did not create ${zipPath}`,
-    };
-  }
-  let bytes: Buffer;
-  try {
-    bytes = readFileSync(zipPath);
-  } catch (error) {
-    return {
-      ok: false,
-      responseKind: "other",
-      detail: `artifact download could not be read: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-  if (bytes.length >= 4) {
-    const isZip =
-      bytes[0] === 0x50 &&
-      bytes[1] === 0x4b &&
-      bytes[2] === 0x03 &&
-      bytes[3] === 0x04;
-    if (isZip) {
-      return { ok: true, responseKind: "zip" };
-    }
-  }
-
-  const text = bytes.toString("utf-8").trim();
-  if (text) {
-    try {
-      const parsed = JSON.parse(text) as Record<string, unknown>;
-      const message =
-        typeof parsed.message === "string" ? parsed.message.trim() : "";
-      const status =
-        typeof parsed.status === "string" || typeof parsed.status === "number"
-          ? String(parsed.status).trim()
-          : "";
-      const detailParts = [
-        "artifact download returned non-zip JSON",
-        message ? `message=${message}` : "",
-        status ? `status=${status}` : "",
-      ].filter(Boolean);
-      return {
-        ok: false,
-        responseKind: "json",
-        jsonBody: parsed,
-        detail: detailParts.join("; "),
-      };
-    } catch {
-      // fall through to bounded text fingerprint reporting
-    }
-  }
-
-  const preview = bytes
-    .subarray(0, Math.min(bytes.length, 120))
-    .toString("utf-8")
-    .replace(/\s+/g, " ")
-    .trim();
-  return {
-    ok: false,
-    responseKind: "other",
-    detail: preview
-      ? `artifact download returned non-zip payload preview=${preview}`
-      : `artifact download returned non-zip payload (${bytes.length} bytes)`,
-  };
-}
-
-function downloadRunArtifacts(input: {
-  client: GitHubClient;
-  projectDir: string;
-  artifactDir: string;
-  runId: string;
-}): CommandResult {
-  mkdirSync(input.artifactDir, { recursive: true });
-  if (input.client.kind === "gh") {
-    return runCommand(
-      input.projectDir,
-      "gh",
-      ["run", "download", input.runId, "--dir", input.artifactDir],
-      10 * 60_000,
-    );
-  }
-  const artifacts = listRunArtifacts({
-    client: input.client,
-    runId: input.runId,
-  });
-  if (artifacts.length === 0) {
-    return {
-      ok: false,
-      status: 404,
-      stdout: "",
-      stderr: `No artifacts were listed for GitHub run ${input.runId}.`,
-    };
-  }
-  for (const artifact of artifacts) {
-    if (!artifact.id || !artifact.archive_download_url) continue;
-    const zipPath = join(
-      input.artifactDir,
-      `${artifact.name || artifact.id}.zip`,
-    );
-    const curl = runCommand(
-      "/app",
-      "curl",
-      [
-        "-sS",
-        "-L",
-        "-H",
-        "Accept: application/vnd.github+json",
-        "-H",
-        `Authorization: Bearer ${input.client.token}`,
-        "-H",
-        "X-GitHub-Api-Version: 2022-11-28",
-        "-o",
-        zipPath,
-        artifact.archive_download_url,
-      ],
-      10 * 60_000,
-    );
-    if (!curl.ok) {
-      return curl;
-    }
-    const artifactInspection = inspectDownloadedArtifact(zipPath);
-    if (!artifactInspection.ok) {
-      return {
-        ok: false,
-        status: 422,
-        stdout: "",
-        stderr: `Artifact ${artifact.name || artifact.id} for GitHub run ${input.runId} failed validation before unzip: ${artifactInspection.detail || "unknown artifact payload"}`,
-      };
-    }
-    const extractDir = join(
-      input.artifactDir,
-      artifact.name || String(artifact.id),
-    );
-    mkdirSync(extractDir, { recursive: true });
-    const unzip = runCommand(
-      "/app",
-      "unzip",
-      ["-oq", zipPath, "-d", extractDir],
-      10 * 60_000,
-    );
-    if (!unzip.ok) {
-      return unzip;
-    }
-  }
-  return {
-    ok: true,
-    status: 0,
-    stdout: `Downloaded ${artifacts.length} artifact(s).`,
-    stderr: "",
-  };
 }
 
 function findFiles(root: string, name: string): string[] {
@@ -1183,7 +549,9 @@ function readArtifactIdentity(input: {
       (assertion) =>
         assertion?.ok === false &&
         ["preflight", "claim"].includes(
-          String(assertion.verdictImpact ?? "").trim().toLowerCase(),
+          String(assertion.verdictImpact ?? "")
+            .trim()
+            .toLowerCase(),
         ),
     )
     .map((assertion) =>
@@ -1347,6 +715,51 @@ function classifyProjectResult(
   };
 }
 
+function specFixForwardPatch(input: {
+  specId: string;
+  target: string;
+  pipeline: string;
+  branch: string;
+  status: SpecLoopSpecStatus;
+  reason: string;
+  resultPath?: string | null;
+}): Partial<SpecLoopSpecState> {
+  if (input.status === "pass") {
+    return {
+      failureClass: null,
+      diagnosis: null,
+      inputFingerprint: fixForwardInputFingerprint({
+        specId: input.specId,
+        target: input.target,
+        pipeline: input.pipeline,
+        branch: input.branch,
+      }),
+      errorFingerprint: null,
+    };
+  }
+  const failureClass = classifyFixForwardFailure({
+    status: input.status,
+    reason: input.reason,
+  });
+  const inputFingerprint = fixForwardInputFingerprint({
+    specId: input.specId,
+    target: input.target,
+    pipeline: input.pipeline,
+    branch: input.branch,
+  });
+  return {
+    failureClass,
+    diagnosis: input.reason,
+    inputFingerprint,
+    errorFingerprint: fixForwardErrorFingerprint({
+      status: input.status,
+      failureClass,
+      reason: input.reason,
+      resultPath: input.resultPath,
+    }),
+  };
+}
+
 function directInputSpecId(
   rawTask: string,
   trigger: ReturnType<typeof parseTriggerEvent>,
@@ -1475,6 +888,155 @@ function directSpecVerifierResult(input: {
   });
 }
 
+function specRunnerArtifactForIdentity(
+  identity: ArtifactIdentityInspection | null,
+): SpecRunnerArtifact | null {
+  if (!identity) return null;
+  for (const path of [
+    identity.childResultPath,
+    identity.artifactLocalResultPath,
+    identity.childStatusPath,
+    identity.artifactLocalStatusPath,
+  ]) {
+    if (!path) continue;
+    const artifact = readSpecRunnerArtifact(path);
+    if (artifact) return artifact;
+  }
+  return null;
+}
+
+function artifactText(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function pipelineSpecVerifierResult(input: {
+  specId: string;
+  target: string;
+  pipeline: string;
+  branch: string;
+  runId: string;
+  runUrl: string | null;
+  resultPath: string;
+  classification: ReturnType<typeof classifyProjectResult>;
+  download: CommandResult;
+  watchOk: boolean;
+  watchDetail?: string;
+  identity: ArtifactIdentityInspection | null;
+}): StructuredWorkflowResult {
+  const passed = input.classification.loopStatus === "pass";
+  const artifact = specRunnerArtifactForIdentity(input.identity);
+  const resourceGroup =
+    artifactText(artifact?.audit?.resourceGroup) ||
+    artifactText(artifact?.probeEvidence?.config?.resourceGroup);
+  const clusterName =
+    artifactText(artifact?.audit?.clusterName) ||
+    artifactText(artifact?.probeEvidence?.config?.clusterName);
+  const subscriptionId =
+    artifactText(artifact?.audit?.subscriptionId) ||
+    artifactText(artifact?.probeEvidence?.config?.subscriptionId);
+  const location = artifactText(artifact?.probeEvidence?.config?.location);
+  const cleanupStatus = artifactText(artifact?.probeEvidence?.cleanup?.status);
+  const failedVerdictAssertions =
+    input.identity?.childFailedVerdictAssertions ?? [];
+  const liveClusterObserved = Boolean(resourceGroup && clusterName);
+  const problem = passed
+    ? null
+    : {
+        category: "single-spec-verification",
+        diagnosis: input.classification.reason,
+        resumeCondition:
+          input.classification.claim === "blocked"
+            ? "recover the pipeline artifact or exact external wait, then inspect the same run result"
+            : "fix the reported spec, scenario test, runner, environment, or product issue, then rerun this same spec",
+      };
+
+  return workflowResult({
+    workflow: name,
+    workflowVersion: workflowContract.version,
+    subject: {
+      kind: "spec",
+      id: input.specId,
+    },
+    status: passed ? "done" : "partial",
+    summary: [
+      `Azure DevOps verification for ${input.specId} classified as ${input.classification.loopStatus}.`,
+      input.classification.reason,
+      input.runId ? `Run: ${input.runId}` : "",
+      input.resultPath ? `Result: ${input.resultPath}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    artifacts: [
+      input.resultPath,
+      input.identity?.topLevelResultPath ?? "",
+      input.identity?.childResultPath ?? "",
+      input.identity?.childStatusPath ?? "",
+    ].filter(Boolean),
+    checks: [
+      {
+        name: "pipeline-run-completed",
+        status: input.watchOk ? "pass" : "fail",
+        detail: input.watchDetail,
+      },
+      {
+        name: "artifact-download",
+        status: input.download.ok ? "pass" : "fail",
+      },
+      {
+        name: "same-spec-result",
+        status:
+          input.identity?.sameSpecChildEvidence || !input.identity
+            ? "pass"
+            : "fail",
+      },
+      {
+        name: "live-aks-cluster-observed",
+        status: liveClusterObserved ? "pass" : passed ? "fail" : "skip",
+      },
+    ],
+    problem,
+    inputFingerprint: {
+      specId: input.specId,
+      target: input.target,
+      pipeline: input.pipeline,
+      branch: input.branch,
+    },
+    details: {
+      backend: "azure-devops-pipeline",
+      runId: input.runId,
+      runUrl: input.runUrl,
+      resultPath: input.resultPath,
+      specStatus: input.classification.loopStatus,
+      claim: input.classification.claim,
+      reason: input.classification.reason,
+      liveVerified: passed && liveClusterObserved,
+      target: input.target,
+      branch: input.branch,
+      pipeline: input.pipeline,
+      subscriptionId,
+      location,
+      resourceGroup,
+      clusterName,
+      cleanupStatus,
+      failedVerdictAssertions,
+      liveClusterObserved,
+      artifactIdentity: input.identity
+        ? {
+            bundlePath: input.identity.bundlePath,
+            metadataPath: input.identity.metadataPath,
+            loopKey: input.identity.loopKey,
+            resultSpecId: input.identity.resultSpecId,
+            childSpecId: input.identity.childSpecId,
+            childStatus: input.identity.childStatus,
+            childPhase: input.identity.childPhase,
+            childEvidenceStatus: input.identity.childEvidenceStatus,
+            mismatches: input.identity.mismatches,
+          }
+        : null,
+    },
+  });
+}
+
 function executeDirectSpecVerification(input: {
   projectDir: string;
   specId: string;
@@ -1579,7 +1141,7 @@ function dispatchMetadataPayload(input: {
   timeoutMinutes?: string;
   includeLoopKey: boolean;
   dispatch: CommandResult;
-}): GitHubDispatchMetadata {
+}): PipelineDispatchMetadata {
   const inputs: Record<string, string> = {
     specs: input.specId,
     target: input.target,
@@ -1656,11 +1218,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
   const specId = contextString(task, "specId");
-  const workflow = contextString(
-    task,
-    "githubWorkflow",
-    "run-single-spec.yaml",
-  );
+  const workflow = pipelineNameContext(task, "ado-pipeline-467665");
   const branch = contextString(task, "branch", "dev");
   const target = contextString(task, "target", "staging");
   const timeoutMinutes = contextOptionalText(task, "timeoutMinutes");
@@ -1806,9 +1364,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     enabled: shouldPreflightSpecExecutionPolicy({ projectDir, task }),
   });
   if (policy.ok === false) {
-    const summary = `Local live policy failed for ${specId}; GitHub workflow dispatch skipped. ${policy.reason}`;
+    const summary = `Local live policy failed for ${specId}; Azure DevOps pipeline dispatch skipped. ${policy.reason}`;
     publishState({
       status: "error",
+      ...specFixForwardPatch({
+        specId,
+        target,
+        pipeline: workflow,
+        branch,
+        status: "error",
+        reason: summary,
+      }),
       activeAttemptId: null,
       activeTaskSessionId: null,
       activeWorkflowRunId: null,
@@ -1830,11 +1396,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(summary);
   }
 
-  const github = resolveGitHubClient(projectDir);
-  if (!github.client) {
-    const summary = `Unable to access GitHub Actions for ${specId}: ${github.reason || "unknown error"}`;
+  const pipeline = resolvePipelineClient(projectDir);
+  if (!pipeline.client) {
+    const summary = `Unable to access Azure DevOps pipeline for ${specId}: ${pipeline.reason || "unknown error"}`;
     publishState({
       status: "error",
+      ...specFixForwardPatch({
+        specId,
+        target,
+        pipeline: workflow,
+        branch,
+        status: "error",
+        reason: summary,
+      }),
       activeAttemptId: null,
       activeTaskSessionId: null,
       activeWorkflowRunId: null,
@@ -1858,9 +1432,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const preferredWorkflowRunId =
     reusableWorkflowRunId || recoveredWorkflowRunId;
-  let run: GhRun | null = preferredWorkflowRunId
-    ? getWorkflowRun({
-        client: github.client,
+  let run: PipelineRun | null = preferredWorkflowRunId
+    ? getPipelineWorkflowRun({
+        client: pipeline.client,
         projectDir,
         runId: preferredWorkflowRunId,
       })
@@ -1870,9 +1444,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (!runId) {
     if (recoveredWorkflowRunId) {
-      const summary = `Known GitHub workflow run ${recoveredWorkflowRunId} for ${specId} was not discoverable through the GitHub run API.`;
+      const summary = `Known Azure DevOps pipeline run ${recoveredWorkflowRunId} for ${specId} was not discoverable through the ADO run API.`;
       publishState({
         status: "error",
+        ...specFixForwardPatch({
+          specId,
+          target,
+          pipeline: workflow,
+          branch,
+          status: "error",
+          reason: summary,
+        }),
         activeAttemptId: null,
         activeTaskSessionId: null,
         activeWorkflowRunId: null,
@@ -1895,32 +1477,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     const dispatchedAt = new Date(startedAt).toISOString();
     let includeLoopKey = true;
-    let dispatch = dispatchWorkflow({
-      client: github.client,
+    const pipelineInputs = (
+      includeMetadata: boolean,
+    ): Record<string, string> => ({
+      specs: specId,
+      target,
+      ...(timeoutMinutes ? { timeout_minutes: timeoutMinutes } : {}),
+      ...(includeMetadata
+        ? { metadata: JSON.stringify({ loop_key: loopKey }) }
+        : {}),
+    });
+    let dispatch = dispatchPipelineWorkflow({
+      client: pipeline.client,
       projectDir,
       workflow,
       branch,
-      specId,
-      target,
-      loopKey,
-      includeLoopKey,
-      timeoutMinutes,
+      inputs: pipelineInputs(includeLoopKey),
     });
     if (!dispatch.ok && isUnexpectedLoopKeyDispatchError(dispatch)) {
       includeLoopKey = false;
-      dispatch = dispatchWorkflow({
-        client: github.client,
+      dispatch = dispatchPipelineWorkflow({
+        client: pipeline.client,
         projectDir,
         workflow,
         branch,
-        specId,
-        target,
-        loopKey,
-        includeLoopKey,
-        timeoutMinutes,
+        inputs: pipelineInputs(includeLoopKey),
       });
     }
-    writeGitHubDispatchMetadata(
+    writePipelineDispatchMetadata(
       metadataPath,
       dispatchMetadataPayload({
         dispatchedAt,
@@ -1941,9 +1525,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       lastDispatchMetadataPath: metadataPath,
     });
     if (!dispatch.ok) {
-      const summary = `GitHub workflow dispatch failed for ${specId}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
+      const summary = `Azure DevOps pipeline dispatch failed for ${specId}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
       publishState({
         status: "error",
+        ...specFixForwardPatch({
+          specId,
+          target,
+          pipeline: workflow,
+          branch,
+          status: "error",
+          reason: summary,
+        }),
         activeAttemptId: null,
         activeTaskSessionId: null,
         activeWorkflowRunId: null,
@@ -1966,22 +1558,34 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     for (let attempt = 0; attempt < 12; attempt++) {
-      run = newestWorkflowRun({
-        client: github.client,
+      run = newestPipelineWorkflowRun({
+        client: pipeline.client,
         projectDir,
         workflow,
         branch,
         sinceMs: startedAt,
-        loopKey,
-        specId,
+        match: (candidate) =>
+          workflowRunMatches({
+            displayTitle: candidate.displayTitle,
+            loopKey,
+            specId,
+          }),
       });
       if (run?.databaseId) break;
-      await sleepMs(runLookupPollIntervalMs());
+      await sleepMs(pipelineRunLookupPollIntervalMs());
     }
     if (!run?.databaseId) {
-      const summary = `Dispatched ${workflow} for ${specId}, but could not find the GitHub run id. Loop key: ${loopKey}. Dispatch metadata: ${metadataPath}.`;
+      const summary = `Dispatched Azure DevOps pipeline for ${specId}, but could not find the run id. Loop key: ${loopKey}. Dispatch metadata: ${metadataPath}.`;
       publishState({
         status: "error",
+        ...specFixForwardPatch({
+          specId,
+          target,
+          pipeline: workflow,
+          branch,
+          status: "error",
+          reason: summary,
+        }),
         lastWorkflowLoopKey: loopKey,
         lastDispatchMetadataPath: metadataPath,
         activeAttemptId: null,
@@ -2013,8 +1617,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     activeWorkflowRunId: runId,
     heartbeatAt: new Date().toISOString(),
   });
-  const watch = await waitForWorkflowRun({
-    client: github.client,
+  const watch = await waitForPipelineWorkflowRun({
+    client: pipeline.client,
     projectDir,
     runId,
     timeoutMs: 3 * 60 * 60_000,
@@ -2032,16 +1636,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   const finalRun =
     watch.run ??
-    getWorkflowRun({
-      client: github.client,
+    getPipelineWorkflowRun({
+      client: pipeline.client,
       projectDir,
       runId,
     }) ??
     run;
   const artifactDir = join(appDir, ".state", "spec-loop", "artifacts", runId);
   mkdirSync(artifactDir, { recursive: true });
-  const download = downloadRunArtifacts({
-    client: github.client,
+  const download = downloadPipelineArtifacts({
+    client: pipeline.client,
     projectDir,
     runId,
     artifactDir,
@@ -2103,8 +1707,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           "same-loop/same-spec child evidence exists while top-level result.json remained empty or omitted specResults[0].specId",
         ]
           .filter(Boolean)
-            .join("; "),
-        }
+          .join("; "),
+      }
     : identity?.sameSpecChildEvidence &&
         (identity.childEvidenceStatus.toLowerCase() === "gated" ||
           identity.childFailedVerdictAssertions.length > 0)
@@ -2120,7 +1724,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             identity.childFailedVerdictAssertions.length
               ? `failed verdict assertions=${identity.childFailedVerdictAssertions.join(" | ")}`
               : "",
-            identity.childResultPath ? `child result=${identity.childResultPath}` : "",
+            identity.childResultPath
+              ? `child result=${identity.childResultPath}`
+              : "",
           ]
             .filter(Boolean)
             .join("; "),
@@ -2129,20 +1735,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? {
             loopStatus: "error" as SpecLoopSpecStatus,
             claim: "blocked" as const,
-          reason: [
-            `artifact-routing-mismatch for ${specId}`,
-            `run=${runId}`,
-            identity.bundlePath ? `bundle=${identity.bundlePath}` : "",
-            ...identity.mismatches,
-          ]
-            .filter(Boolean)
-            .join("; "),
-        }
-      : classifyProjectResult(projectResult, specId);
+            reason: [
+              `artifact-routing-mismatch for ${specId}`,
+              `run=${runId}`,
+              identity.bundlePath ? `bundle=${identity.bundlePath}` : "",
+              ...identity.mismatches,
+            ]
+              .filter(Boolean)
+              .join("; "),
+          }
+        : classifyProjectResult(projectResult, specId);
   const summary = [
     `Spec ${specId} workflow run ${runId} classified as ${classification.loopStatus}.`,
     `Loop key: ${loopKey}.`,
-    reattachedRunId ? `Reattached existing GitHub run ${reattachedRunId}.` : "",
+    reattachedRunId ? `Reattached existing ADO run ${reattachedRunId}.` : "",
     classification.reason,
     finalRun.url ? `Run: ${finalRun.url}` : "",
     resultPath ? `Result: ${resultPath}` : "",
@@ -2162,6 +1768,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const completionPatch = {
     status: classification.loopStatus,
+    ...specFixForwardPatch({
+      specId,
+      target,
+      pipeline: workflow,
+      branch,
+      status: classification.loopStatus,
+      reason: classification.reason,
+      resultPath,
+    }),
     lastRunId: runId,
     lastRunUrl: finalRun.url ?? null,
     lastResultPath: resultPath || null,
@@ -2170,12 +1785,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     activeWorkflowRunId: null,
     heartbeatAt: new Date().toISOString(),
   };
+  const verifierResult = pipelineSpecVerifierResult({
+    specId,
+    target,
+    pipeline: workflow,
+    branch,
+    runId,
+    runUrl: finalRun.url ?? null,
+    resultPath,
+    classification,
+    download,
+    watchOk: watch.ok,
+    watchDetail: watch.detail,
+    identity,
+  });
 
   const completion = completeStartedAttempt(config, {
     taskId,
     attemptId,
     claim: classification.claim,
     summary,
+    evidence: verifierResult.artifacts,
+    workflowResult: verifierResult,
   });
   if (completion.ok === false) {
     return ctx.done(
@@ -2187,6 +1818,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     attemptId,
     result: classification.claim,
     summary,
+    evidence: verifierResult.artifacts,
+    workflowResult: verifierResult,
   });
   return ctx.done(summary);
 }

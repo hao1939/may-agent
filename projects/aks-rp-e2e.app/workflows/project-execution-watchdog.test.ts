@@ -171,6 +171,65 @@ async function writeSpecLoopState(
   );
 }
 
+async function writeFeatureCompactLoopState(
+  projectDir: string,
+  input: {
+    featureKey: string;
+    taskId: string;
+    status?: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  },
+) {
+  await mkdir(join(projectDir, ".state", "feature-compact-loop"), {
+    recursive: true,
+  });
+  await writeFile(
+    join(projectDir, ".state", "feature-compact-loop", "state.json"),
+    `${JSON.stringify(
+      {
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 1,
+        cursor: 0,
+        features: {
+          [input.featureKey]: {
+            featureKey: input.featureKey,
+            capabilityId: input.featureKey,
+            packetPath: `features/${input.featureKey}.yaml`,
+            specsDir: `features/${input.featureKey}/specs`,
+            specCount: 1,
+            status: input.status ?? "running",
+            retryable: true,
+            retryReason: null,
+            taskId: input.taskId,
+            attempts: 1,
+            lastPlanPath: null,
+            lastSummaryPath: null,
+            lastDiagnosticsPath: null,
+            lastResultPath: null,
+            lastWorkflowRunId: null,
+            lastWorkflowRunUrl: null,
+            lastWorkflowLoopKey: null,
+            lastDispatchMetadataPath: null,
+            lastLiveProofVersion: null,
+            activeAttemptId: input.activeAttemptId ?? "a_test",
+            activeTaskSessionId: input.activeTaskSessionId ?? null,
+            activeWorkflowRunId: input.activeWorkflowRunId ?? null,
+            heartbeatAt: input.heartbeatAt ?? null,
+            lastSummary: null,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 function context(input: {
   projectDir: string;
   stateDbPath?: string;
@@ -392,7 +451,7 @@ describe("project execution watchdog", () => {
     expect(result.message).toContain(
       "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     );
-    expect(dispatched).toEqual([
+    expect(dispatched).toMatchObject([
       {
         type: "project.planning.requested",
         payload: {
@@ -685,7 +744,7 @@ describe("project execution watchdog", () => {
       message:
         "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     });
-    expect(dispatched).toEqual([
+    expect(dispatched).toMatchObject([
       {
         type: "project.planning.requested",
         payload: {
@@ -1285,6 +1344,106 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("treats feature-compact planner with fresh compact-loop heartbeat as active even without runtime session row", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "compact-feature-example": task("compact-feature-example", "active", {
+          workflow: "feature-compact-planner",
+          session_id: "s_task_compact-feature-example_retry_1",
+          trace: {
+            current_attempt_id: "a_test",
+            worker_started_at: new Date().toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "compact-feature-example",
+        active_task_ids: ["compact-feature-example"],
+      },
+    );
+    await writeFeatureCompactLoopState(projectDir, {
+      featureKey: "example",
+      taskId: "compact-feature-example",
+      activeAttemptId: "a_test",
+      activeTaskSessionId: "s_task_compact-feature-example_retry_1",
+      activeWorkflowRunId: "654321",
+      heartbeatAt: new Date().toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: { reason: "watchdog-capacity-underfilled" },
+    });
+  });
+
+  test("flags feature-compact planner when compact-loop heartbeat is stale", async () => {
+    const projectDir = await makeProject();
+    await writeTree(
+      projectDir,
+      {
+        "compact-feature-example": task("compact-feature-example", "active", {
+          workflow: "feature-compact-planner",
+          session_id: "s_task_compact-feature-example_retry_1",
+          trace: {
+            current_attempt_id: "a_test",
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "compact-feature-example",
+        active_task_ids: ["compact-feature-example"],
+      },
+    );
+    await writeFeatureCompactLoopState(projectDir, {
+      featureKey: "example",
+      taskId: "compact-feature-example",
+      activeAttemptId: "a_test",
+      activeTaskSessionId: "s_task_compact-feature-example_retry_1",
+      activeWorkflowRunId: "654321",
+      heartbeatAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${join(projectDir, "missing.db")}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [
+          { taskId: "compact-feature-example", reason: "compact-no-heartbeat" },
+        ],
+      },
+    });
+  });
+
   test("ignores active focus-plan leaves when checking stale active work", async () => {
     const projectDir = await makeProject();
     await writeTree(
@@ -1331,7 +1490,7 @@ describe("project execution watchdog", () => {
     expect(result.message).toContain(
       "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
     );
-    expect(dispatched).toEqual([
+    expect(dispatched).toMatchObject([
       {
         type: "project.planning.requested",
         payload: {
@@ -1397,6 +1556,258 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("samples overdue blocked waits before future waits", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "aaa-future-wait": task("aaa-future-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for a future operator response.",
+          waiting_for: { type: "evidence.available" },
+          resume_condition: "Resume when the future proof lands.",
+          fallback_at: "2099-06-27T00:00:00.000Z",
+          fallback_action: "Recheck the future proof.",
+        },
+      }),
+      "zzz-overdue-wait": task("zzz-overdue-wait", "blocked", {
+        blocker: {
+          condition: "Expired wait needs owner action.",
+          waiting_for: { type: "blocker.resolved" },
+          resume_condition:
+            "Resume when expired wait is rechecked or replaced.",
+          fallback_at: "2001-01-01T00:00:00.000Z",
+          fallback_action: "Recheck the expired wait now.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        blockedCount: 2,
+        blockedOverdueCount: 1,
+        blockedFutureWatchCount: 1,
+        blockedMissingWatchCount: 0,
+        blockedTasks: [
+          {
+            taskId: "zzz-overdue-wait",
+            fallbackAt: "2001-01-01T00:00:00.000Z",
+          },
+          {
+            taskId: "aaa-future-wait",
+            fallbackAt: "2099-06-27T00:00:00.000Z",
+          },
+        ],
+        blockedFrontierSummary: {
+          totalCount: 2,
+          overdueCount: 1,
+          futureWatchCount: 1,
+          missingWatchCount: 0,
+          sampledTaskIds: ["zzz-overdue-wait", "aaa-future-wait"],
+          sampledOverdueTaskIds: ["zzz-overdue-wait"],
+        },
+        instruction: expect.stringContaining(
+          "passed its resume/fallback window",
+        ),
+      },
+    });
+  });
+
+  test("includes overdue owner waits that have no active recovery work", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-owner-wait": task("blocked-owner-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for pipeline result.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the pipeline result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the pipeline and create a recovery task.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [
+          {
+            taskId: "blocked-owner-wait",
+            owner: "aks-explorer",
+            watchAt: "2001-01-01T00:00:00.000Z",
+            resumeAt: "2001-01-01T00:00:00.000Z",
+            fallbackAt: "2001-01-02T00:00:00.000Z",
+            fallbackAction: "Check the pipeline and create a recovery task.",
+            recoveryRequired:
+              "Resume window passed without active/review recovery work.",
+          },
+        ],
+        instruction: expect.stringContaining(
+          "passed its resume/fallback window",
+        ),
+      },
+    });
+  });
+
+  test("includes overdue human owner waits when no handoff work is active", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-human-wait": task("blocked-human-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for a human decision.",
+          waiting_for: { type: "owner.decision" },
+          owner: "human",
+          resume_condition: "Resume when the owner decision returns.",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action:
+            "Verify the human handoff exists or create escalation work.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [
+          {
+            taskId: "blocked-human-wait",
+            owner: "human",
+            watchAt: "2001-01-02T00:00:00.000Z",
+            fallbackAt: "2001-01-02T00:00:00.000Z",
+            fallbackAction:
+              "Verify the human handoff exists or create escalation work.",
+            recoveryRequired:
+              "Fallback window passed without active/review recovery work.",
+          },
+        ],
+      },
+    });
+  });
+
+  test("does not report overdue owner action when scoped recovery work is active", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_scoped_overdue_audit", "running");
+    await writeTree(projectDir, {
+      "scoped-overdue-audit": task("scoped-overdue-audit", "active", {
+        goal: "Audit overdue blocked waits under the spec loop.",
+        session_id: "s_scoped_overdue_audit",
+        conflict_scope: ["ops:blocked-overdue:spec-loop:20260708"],
+      }),
+      "aks-spec-verification-loop": task(
+        "aks-spec-verification-loop",
+        "active",
+        {
+          children: ["blocked-spec-wait"],
+        },
+      ),
+      "blocked-spec-wait": task("blocked-spec-wait", "blocked", {
+        parent_id: "aks-spec-verification-loop",
+        blocker: {
+          condition: "Waiting for pipeline result.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the pipeline result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the pipeline and create a recovery task.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 0,
+        overdueOwnerActions: [],
+      },
+    });
+  });
+
+  test("does not treat a broad parent loop as overdue recovery work", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_spec_loop", "running");
+    await writeTree(projectDir, {
+      "aks-spec-verification-loop": task(
+        "aks-spec-verification-loop",
+        "active",
+        {
+          children: ["blocked-spec-wait"],
+          goal: "Spec loop rollup mentions blocked-spec-wait but is not a recovery owner.",
+          session_id: "s_spec_loop",
+        },
+      ),
+      "blocked-spec-wait": task("blocked-spec-wait", "blocked", {
+        parent_id: "aks-spec-verification-loop",
+        blocker: {
+          condition: "Waiting for pipeline result.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the pipeline result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the pipeline and create a recovery task.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [{ taskId: "blocked-spec-wait" }],
+      },
+    });
+  });
+
   test("wakes owner for review work even when active capacity is full", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
@@ -1457,19 +1868,69 @@ describe("project execution watchdog", () => {
     ]);
   });
 
-  test("backfills terminal GitHub wait review context for planner action", async () => {
+  test("wakes overdue blocked recovery before ordinary review work", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        trace: {
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+      "blocked-human-wait": task("blocked-human-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for a human decision.",
+          waiting_for: { type: "owner.decision" },
+          owner: "human",
+          resume_condition: "Resume when the owner decision returns.",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action:
+            "Verify the human handoff exists or create escalation work.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+    });
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        reviewCount: 1,
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [
+          {
+            taskId: "blocked-human-wait",
+            owner: "human",
+          },
+        ],
+      },
+    });
+  });
+
+  test("backfills terminal pipeline wait review context for planner action", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "terminal-run-review": task("terminal-run-review", "review", {
         parent_id: "aks-spec-verification-loop",
         result:
-          "GitHub workflow run 123456789 is terminal; review the run artifact/result.",
+          "Azure DevOps pipeline run 123456789 is terminal; inspect returned artifacts.",
         context: {
-          terminalGitHubWaitReview: {
+          terminalPipelineWaitReview: {
             runId: "123456789",
             runStatus: "completed",
             runConclusion: "failure",
-            runUrl: "https://github.example/runs/123456789",
+            runUrl:
+              "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
             namedSpecIds: ["spec.example"],
           },
         },
@@ -1496,14 +1957,15 @@ describe("project execution watchdog", () => {
           {
             taskId: "terminal-run-review",
             parentId: "aks-spec-verification-loop",
-            reviewKind: "terminal-github-wait",
+            reviewKind: "terminal-pipeline-wait",
             resultSummary:
-              "GitHub workflow run 123456789 is terminal; review the run artifact/result.",
-            terminalGitHubWaitReview: {
+              "Azure DevOps pipeline run 123456789 is terminal; inspect returned artifacts.",
+            terminalPipelineWaitReview: {
               runId: "123456789",
               runStatus: "completed",
               runConclusion: "failure",
-              runUrl: "https://github.example/runs/123456789",
+              runUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
               namedSpecIds: ["spec.example"],
             },
           },

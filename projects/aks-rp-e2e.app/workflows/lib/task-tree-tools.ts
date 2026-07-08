@@ -416,6 +416,52 @@ function nodeState(task: TaskNode | undefined): string {
   return String(task?.status ?? task?.state ?? "");
 }
 
+function blockerRecord(task: TaskNode): Record<string, unknown> | null {
+  return task.blocker &&
+    typeof task.blocker === "object" &&
+    !Array.isArray(task.blocker)
+    ? (task.blocker as Record<string, unknown>)
+    : null;
+}
+
+function childBlockedResultText(childIds: string[]): string {
+  return `Blocked on child task(s): ${childIds.join(", ")}.`;
+}
+
+function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const repaired: string[] = [];
+
+    for (const task of Object.values(tree.tasks)) {
+      if (nodeState(task) !== "blocked") continue;
+      const blocker = blockerRecord(task);
+      if (blocker?.category !== "child-blocked") continue;
+
+      const blockedChildIds = normalizeStringArray(task.children).filter(
+        (childId) => nodeState(tree.tasks[childId]) === "blocked",
+      );
+      if (blockedChildIds.length === 0) continue;
+
+      const expected = childBlockedResultText(blockedChildIds);
+      if (task.result === expected) continue;
+      task.result = expected;
+      repaired.push(task.id);
+    }
+
+    if (repaired.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "child_blocked_parent_results_repaired",
+        task_ids: repaired,
+        reason: "blocked parent result text refreshed from current blocked children",
+      });
+    }
+
+    return repaired;
+  });
+}
+
 function traceRecord(task: TaskNode): Record<string, unknown> {
   return task.trace &&
     typeof task.trace === "object" &&
@@ -556,25 +602,35 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
   typeof sdkRepairTaskTreeRollups
 > & {
   reopenedDurableLoopRoots: string[];
+  repairedChildBlockedParentResults: string[];
 } {
   const initialResult = sdkRepairTaskTreeRollups(config);
   const reopenedDurableLoopRoots = reopenIncompleteDurableLoopRoots(config);
   const finalResult = reopenedDurableLoopRoots.length
     ? sdkRepairTaskTreeRollups(config)
     : initialResult;
+  const repairedChildBlockedParentResults =
+    repairChildBlockedParentResults(config);
   return {
     ...finalResult,
     changed:
       initialResult.changed ||
       finalResult.changed ||
-      reopenedDurableLoopRoots.length > 0,
-    repaired: [
-      ...new Set([
-        ...(initialResult.repaired ?? []),
-        ...(finalResult.repaired ?? []),
-      ]),
-    ],
+      reopenedDurableLoopRoots.length > 0 ||
+      repairedChildBlockedParentResults.length > 0,
+	    repaired: [
+	      ...new Set([
+	        ...(initialResult.repaired ?? []),
+	        ...(finalResult.repaired ?? []),
+	        ...repairedChildBlockedParentResults.map((taskId) => ({
+	          taskId,
+	          from: "child-blocked",
+	          to: "backlog",
+	        })),
+	      ]),
+	    ],
     reopenedDurableLoopRoots,
+    repairedChildBlockedParentResults,
   };
 }
 
@@ -1056,6 +1112,31 @@ function isHumanOwnedExternalWait(task: TaskNode): boolean {
   return category === "external-wait" && owner === "human";
 }
 
+function isRepresentedBlockedFrontier(task: TaskNode): boolean {
+  const text = taskSearchText(task);
+  const representedSignals = [
+    "split-frontier",
+    "split mixed-family holder",
+    "represented by",
+    "exact represented blockers",
+    "exact represented blocker",
+    "exact represented carriers",
+    "exact represented carrier",
+  ];
+  if (!includesAny(text, representedSignals)) {
+    return false;
+  }
+  return (
+    includesAny(text, [
+      "materially changes",
+      "remains the exact",
+      "still controls",
+      "represented by ",
+    ]) &&
+    includesAny(text, ["frontier", "carrier", "represented blocker"])
+  );
+}
+
 function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
@@ -1165,7 +1246,10 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           "required",
         ]);
       if (environmentBlocked) {
-        if (isHumanOwnedExternalWait(task)) {
+        if (
+          isHumanOwnedExternalWait(task) ||
+          isRepresentedBlockedFrontier(task)
+        ) {
           continue;
         }
         warnings.push({

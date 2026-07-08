@@ -1,5 +1,5 @@
 /**
- * project-stall-review — owner deep-dive fallback for project liveness stalls.
+ * project-stall-review — app-ops deep-dive fallback for project liveness stalls.
  *
  * Code gathers state and applies only mechanical repairs. The agent judges why
  * the project is not moving; the planner consumes that judgment and owns task
@@ -38,7 +38,7 @@ import {
 
 export const name = "project-stall-review";
 export const description =
-  "Collect liveness state for a stalled project, ask the owner agent to judge it, and emit a planner-consumable reviewed fact.";
+  "Collect liveness state for a stalled project, ask app-ops to judge it, and emit a planner-consumable reviewed fact.";
 
 type SessionWorkflowContext = WorkflowContext & {
   runAgentSession?: (
@@ -397,18 +397,20 @@ function buildPrompt(input: {
   repairResult: unknown;
   dispatchedTicks: Array<{ taskId: string; action: string }>;
 }): string {
-  return `Owner Deep-Dive Fallback
+  return `App-Ops Deep-Dive Fallback
 
 You are judging why the aks-rp-e2e project is not moving.
 
 Division of responsibility:
 - Workflow code collected the packet below and applied only mechanical repair.
-- You judge the root cause and the next project move.
+- You judge the process root cause and the next project move.
 - Do not mutate the task tree from this diagnostic session. The planner will
   consume project.stall.reviewed and make task-tree decisions.
 - Use the durable task tree, loop state, and recent journal facts. Do not treat
   lack of perfect information as a reason to block; recommend the best concrete
   next move from known data.
+- Do not decide AKS product correctness. If AKS domain judgment or repair is
+  needed, recommend concrete domain/* work for aks-explorer.
 
 Return structured control data. Prose may explain, but only this JSON object is
 used for workflow control:

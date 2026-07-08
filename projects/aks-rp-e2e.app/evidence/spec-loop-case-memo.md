@@ -169,7 +169,7 @@ Working rule: every GitHub live run should produce learning, even when it is not
 
 ### app-routing vm-prerelease compact branch set
 
-- Signal: mixed compact run with both useful pass evidence and test-code failures.
+- Signal: mixed compact run with both useful pass result and test-code failures.
 - Evidence: GitHub run `28698006097` ran four app-routing specs. `spec.app-routing.vm-prerelease.osm-acnginx-internal` passed and `spec.app-routing.vm-prerelease.osm-internal-nginx-internal` passed. Both created real staging clusters and ARM readback persisted webAppRouting plus OSM addon profile. `spec.app-routing.vm-prerelease.default-acnginx-internal` and `spec.app-routing.vm-prerelease.osm-external-nginx.internal` failed in preflight before Azure resource changes because expected lineage inputs such as `appRouting.mesh.family` or `useSharedIdentity` were missing.
 - Lesson: compact result ingestion must be per spec, not only per workflow. A compact workflow can contain two branches that should close as live pass and two branches that need test-spec/input repair.
 - Repair pattern: for the failed branches, fix the spec input lineage so preflight can build the exact request shape. Do not rerun the already-passing OSM branches just because the compact workflow was nonpassing overall.
@@ -197,3 +197,97 @@ Working rule: every GitHub live run should produce learning, even when it is not
 - Evidence: run `28696176301` passed `spec.gpu.mig-partitioning` with provisioningState `Succeeded`. Runs `28696180146`, `28696185393`, and `28696189852` failed because GPU VM sizes such as `Standard_NC24s_v3` and `Standard_NC6s_v3` were not supported for the staging subscription in `westus2`.
 - Lesson: not all GPU specs are broken. The loop should separate “supported SKU path passed” from “requested SKU unavailable in target env” and either choose target-supported SKUs from the spec constraints or mark the target requirement explicitly.
 - Status: MIG path passed; other GPU paths need target/SKU compatibility repair.
+
+## 2026-07-08
+
+### all-spec learning audit
+
+- Signal: full ledger review plus representative case audit.
+- Evidence: `evidence/spec-loop-learning-audit-20260708.md` reviews the current `.state/spec-loop/state.json` ledger: 664 specs total, 458 pass, 204 pending, 2 error. The largest non-pass families are `network-cni`, `secops-fips`, `storage-csi`, `virtualmachines`, `kms`, `net-integration`, `cluster-autoscaler`, `localdns`, `network-acns`, `private-cluster`, and `windows`.
+- Representative success cases: `spec.private-cluster.none-private-dns-zone-v3`, `spec.storage-csi.disk-resize`, `spec.cloud-provider.ipbased-lb-backend-pool`, and compact branch result for `spec.workload-identity.runtime-token-projection-linux`.
+- Representative failure/wait cases: `spec.egress-lockdown.fips`, `spec.hcp.grpc-message-size-interceptor`, `spec.network-cni.none-byo-cni-vm-prerelease-lifecycle`, `spec.gpu.multi-gpu-workload`, `spec.kms.v2-enable-on-existing-private-kv-lifecycle`, `spec.aad-rbac.managed-v2-lifecycle`, and `spec.node-http-proxy.trusted-ca`.
+- Main lesson: `pass` is currently overloaded. Some rows have strong same-spec live artifacts, some are compact per-spec passes, some are successor-run passes, and some are reviewed contract changes where `lastResultPath` still points at an old failed or aggregate artifact.
+- Workflow improvement: every result should leave enough plain facts to answer: what ran, where it ran, which spec it proved, which result file says so, whether it used a real cluster when required, whether any verdict assertion failed, and what the next action is.
+- Status: task not done. The existing review/fix-forward path should inspect pass rows whose result is missing, gated, stale, aggregate-only, mismatched, or only explained by prose before using them to close blocked waits.
+
+### spec.net-integration.custom-route-table-user-assigned-msi
+
+- Signal: useful manual workflow-training case.
+- Evidence: the original repair attempt pushed commit `d65038f1e`, queued ADO run `171350866`, downloaded the result, and updated spec-loop state to `pending` / `environment_blocker` with reason `Nodes did not become Ready before nginx validation: attempt=20; ready=0/0; minReady=1`. A later stale-active retry finished earlier with only a partial "rerun queued" result, so the complete original attempt was ignored as obsolete.
+- Lesson: stale-active retry can race with a long-running original attempt. If the original attempt later returns the real run result, the workflow must keep that late completion reviewable instead of silently dropping it.
+- Fix applied: `default-task-worker` now records an immediately previous stale-active attempt completion as a late completion, and promotes it into the reviewable task result when it is stronger than the retry result.
+- Status: task `repair-spec-net-integration-custom-route-table-user-assigned-msi-node-payload-20260708` was updated through `task-tree complete` with the real blocked/environment result and evidence paths, so reviewer/planner can close or hold it from the correct facts.
+
+### terminal ADO wait review boundary
+
+- Signal: offline training found review tasks that already knew an Azure DevOps run was terminal but still returned only "review the artifact/result" instead of consuming the returned artifacts.
+- Good example: `spec.virtualmachines.mixed-sku-deallocate` had ADO run `171344670` downloaded under `workspace/reconcile-spec-loop-pending-virtualmachines-5-20260708/downloads/171344670`. The artifact proves a real staging run in westus2, resource group `rg-plan-001-1646-iytx73-522561`, cluster `aks-plan-001-1646-iytx73-522561`, 4/4 verdict claims, and cleanup delete requested.
+- Bad pattern: the corresponding review task still sat in review with text saying the ADO run is terminal and should be reviewed. That is not domain progress; it is the same wait restated.
+- Boundary lesson: domain workflow can run offline from explicit inputs: spec id, run id, artifact location, repo paths, and expected result bar. It should inspect artifacts and write a domain result/evidence note. It must not mutate the task tree or app loop state. The app consumes the domain result later.
+- Fix applied: terminal pipeline waits now use `terminalPipelineWaitReview` wording, worker instructions require artifact/result inspection, and task review deterministically rejects a completion that only repeats "pipeline is terminal; review the artifact/result" with no evidence.
+- Verification: focused app tests passed: task reviewer, task worker, spec-loop controller, feature-compact controller, and watchdog; typecheck passed.
+
+### terminal ADO artifact result handoff
+
+- Signal: a terminal wait is not done until the returned run artifact has been
+  converted into a structured spec result that the app can apply.
+- Good pass case: `spec.virtualmachines.mixed-sku-deallocate` used ADO run
+  `171344670`. The exact artifact proved a real staging run in `westus2`,
+  resource group `rg-plan-001-1646-iytx73-522561`, cluster
+  `aks-plan-001-1646-iytx73-522561`, 4/4 claim assertions, and cleanup
+  requested. The reviewer accepted the structured result and the planner marked
+  the spec-loop row `pass`.
+- Second pass case: `spec.virtualmachines.mixed-sku-upgrade` used ADO run
+  `171344988`. The exact artifact proved real cluster
+  `aks-plan-001-9011-kqk05e-805500`, agent pool `mixedskuap`, 4/4 claim
+  assertions for mixed-SKU upgrade behavior, and cleanup requested. This reused
+  the same structured pass path without more workflow changes.
+- Third pass case: `spec.virtualmachines.managedsystem-agentpool-vm-prerelease`
+  used ADO run `171344777`. The exact artifact proved real cluster
+  `aks-plan-001-8955-tew79k-531463` and 23/23 mounted claims. The child
+  `spec-runner/result.json` did not include a cleanup object, so cleanup must be
+  checked from the broader run artifact/logs when this field is absent; missing
+  cleanup detail should be a review hint, not an automatic rejection of an
+  otherwise same-spec live pass.
+- Fourth pass case: `spec.virtualmachines.mixed-sku-lifecycle` used ADO run
+  `171344813`. The exact artifact proved real cluster
+  `aks-plan-001-9287-wjxn3i-603438`, 5/5 lifecycle claims, and cleanup
+  requested. This confirmed the same pass path across multiple VM prerelease
+  branches.
+- Environment/setup case: `spec.kms.v2-trust-service-public-cluster-private-kv-lifecycle`
+  used ADO run `171341607`. The artifact created resource group
+  `rg-plan-001-7029-prevyn-211103`, hit `Node subnet failed: HTTP 409` during
+  setup, and cleanup verified resource group deletion. This should be recorded
+  as a real reviewed `error`, not retried as artifact review and not called an
+  AKS product claim failure.
+- Grouped artifact case: `review-spec-loop-network-acns-rerun-171342018-return-20260708`
+  used ADO run `171342018`. The task had lost `namedSpecIds`, but the aggregate
+  `result.json.specResults[]` showed `spec.network-acns.cilium-observability`
+  and `spec.network-acns.retina-enterprise`, both failing with `hubble-ui`
+  deployment not found. The reviewer accepted the grouped `spec-result-review`
+  payload and the planner recorded both spec-loop rows as `error` from the same
+  run/result artifacts.
+- Single-entry aggregate case: `wait-spec-serverless-virtual-nodes-mounted-vmss-rerun-171356203-return-20260708`
+  used ADO run `171356203`. The task context listed two names, but the actual
+  aggregate result contained only
+  `spec.serverless-virtual-nodes.addonv2-aci-connector-mounted-vmss-lifecycle`.
+  The planner updated only the returned spec row to `error` with diagnosis
+  `attempt=60; helm=false; pod=false; virtualNode=false; requireVirtualNode=false`.
+- Fix applied: `task-reviewer` now accepts structured grouped
+  `spec-result-review` payloads when each returned spec has run id, result path,
+  and pass/fail/error status; `project-planner` applies every returned spec row
+  while preserving the stricter live-proof requirement for pass verdicts.
+- Useful non-pass case: `spec.cluster-autoscaler.mincount-recovery` used ADO
+  run `171349474`. The exact artifact created real cluster
+  `aks-plan-001-0112-mxvroj-234777`, cleaned it up, and recorded `0/3 claims
+passed` with failed claim assertions for node-count recovery, scale-up timing,
+  and replacement-node readiness. The reviewer accepted the artifact review as
+  valid even though the spec did not pass, and the planner recorded the
+  spec-loop row as `error` with the exact result path and diagnosis.
+- Lesson: reviewer `accept` means "the artifact review is valid", not "the AKS
+  spec passed". Pass/fail/error status belongs in the structured
+  `single-spec-verifier` result and the spec-loop ledger.
+- Fix applied: `single-spec-verifier` now includes structured ADO run/result
+  details in task completion, `task-reviewer` accepts structured same-spec
+  pass/fail/error artifact reviews, and `project-planner` applies reviewed
+  single-spec results to `.state/spec-loop/state.json`.

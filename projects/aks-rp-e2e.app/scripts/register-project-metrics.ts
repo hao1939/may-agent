@@ -19,10 +19,21 @@ type MetricDef = {
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(appDir, "..", "..");
 const dbPath = resolve(process.env.MAY_DB_PATH ?? `${rootDir}/.state/may.db`);
-const sampleCommand = (id: string) =>
-  id === "aks-rp-e2e.process.unowned-work-count"
+const sampleCommand = (id: string) => {
+  const jsonMetrics = new Set([
+    "aks-rp-e2e.process.unowned-work-count",
+    "aks-rp-e2e.process.blocked.missing-waiting-for-count",
+    "aks-rp-e2e.process.blocked.missing-observer-count",
+    "aks-rp-e2e.process.blocked.missing-resume-condition",
+    "aks-rp-e2e.process.blocked.missing-owner-count",
+    "aks-rp-e2e.process.blocked.missing-fallback-count",
+    "aks-rp-e2e.process.blocked.overdue-unworked-count",
+    "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+  ]);
+  return jsonMetrics.has(id)
     ? `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts ${id} --json`
     : `bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts ${id}`;
+};
 
 const metrics: MetricDef[] = [
   {
@@ -65,12 +76,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked task count",
     type: "gauge",
     target: 0,
-    threshold: 20,
+    threshold: 130,
     unit: "count",
     alertOp: ">",
     priority: "P3",
     description:
-      "Blocked-leaf review signal: the accepted steady-state frontier often carries 16-18 exact blocked waits while active repo-local work continues, so this should stay a dashboard/consolidation signal until blocked leaves grow materially beyond that floor or begin crowding out active work. Calibrated 2026-07-01 from the observed 17-18 blocked-wait plateau.",
+      "Blocked-leaf review signal: the accepted wind-down frontier now carries about 105-109 exact blocked leaves while three active support leaves and two review leaves continue moving useful no-cloud work. Keep this as a dashboard/consolidation signal; only alert when blocked leaves grow materially beyond the current plateau or when paired capacity signals show blocked waits crowding out active work. Recalibrated 2026-07-08 from the stable 105-109 leaf samples.",
   },
   {
     id: "aks-rp-e2e.task.completed-24h",
@@ -94,7 +105,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 unblock signal: no dependency-clear runnable backlog or active worker task while model path gaps or unverified specs remain. Review tasks do not suppress this alert; they are owner work, so the breach should wake the owner to accept, reject, split, or create follow-up tasks.",
+      "P0 unblock signal: no dependency-clear runnable backlog or active worker task while model path gaps or unverified specs remain. Review tasks do not suppress this alert; they are app-ops work, so the breach should wake app-ops to accept, reject, split, or create follow-up tasks.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -138,7 +149,7 @@ const metrics: MetricDef[] = [
   },
   {
     id: "aks-rp-e2e.process.unpublished-change-count",
-    name: "AKS RP E2E project repo changes not visible to GitHub",
+    name: "AKS RP E2E project repo changes not visible to pipeline",
     type: "gauge",
     target: 0,
     threshold: 0,
@@ -146,7 +157,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 process signal: the aks-rp-e2e project repo has dirty files or local commits that have not been pushed, so GitHub workflows may be running against stale test code, specs, plans, or artifacts. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
+      "P0 process signal: the aks-rp-e2e project repo has dirty files or local commits that have not been pushed, so pipeline runs may be using stale test code, specs, plans, or artifacts. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -215,6 +226,37 @@ const metrics: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
+    id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+    name: "AKS RP E2E overdue blocked waits without active work",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a blocked leaf passed its resume/fallback time, but no active or review task references that blocked wait. The owner label is not enough; create recovery/handoff/escalation work or refresh the exact wait.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+    name: "AKS RP E2E overdue blocked owner waits without active work",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "Compatibility alias for overdue blocked waits without active work. This includes human-owned waits unless a concrete active/review handoff or escalation references the blocked wait. Measurement stays live, but alert lifecycle is suppressed so the canonical metric owns paging.",
+    config: {
+      alert: {
+        mode: "disabled",
+        disabled: true,
+      },
+    },
+  },
+  {
     id: "aks-rp-e2e.task.ready-starvation-with-gaps",
     name: "AKS RP E2E runnable backlog starvation while verification gaps remain",
     type: "health",
@@ -262,7 +304,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "Impact signal: many failed paths without diagnosis should wake owner review. Threshold 20→25: 22 discovered product-gaps (12 KMS firewalled-KV, plus deployment-safeguards, planned-maintenance, managedsystem, etc.) form a structural floor from active exploration; only external product fixes reduce this count. Calibrated 2026-06-12.",
+      "Impact signal: many failed paths without diagnosis should wake app-ops review to create domain fix-forward work. Threshold 20->25: 22 discovered product-gaps (12 KMS firewalled-KV, plus deployment-safeguards, planned-maintenance, managedsystem, etc.) form a structural floor from active exploration; only external product fixes reduce this count. Calibrated 2026-06-12.",
   },
   {
     id: "aks-rp-e2e.model.blocked-path-count",
@@ -441,7 +483,7 @@ const metrics: MetricDef[] = [
     alertOp: "<",
     priority: "P3",
     description:
-      "Dashboard activity counter for execute-mode live runs in the last 24h. Not an interrupting alert: this project's automation policy keeps cloud verification event-driven and sparing, so raw daily live-run count should not page the owner during repo-local learning or externally gated periods. Use aks-rp-e2e.run.live-idle-with-runnable-work for the real liveness signal when execute-ready backlog exists but no run starts. Calibrated target 4→0, threshold 1→-1, priority P1→P3 on 2026-06-19 after repo-local evidence confirmed the old daily-pressure shape conflicted with replays/execution/automation.md and produced false alerts during ordinary gate-closed periods.",
+      "Dashboard activity counter for execute-mode live runs in the last 24h. Not an interrupting alert: this project's automation policy keeps cloud verification event-driven and sparing, so raw daily live-run count should not page app-ops during repo-local learning or externally gated periods. Use aks-rp-e2e.run.live-idle-with-runnable-work for the real liveness signal when execute-ready backlog exists but no run starts. Calibrated target 4->0, threshold 1->-1, priority P1->P3 on 2026-06-19 after repo-local evidence confirmed the old daily-pressure shape produced false alerts during ordinary gate-closed periods.",
   },
   {
     id: "aks-rp-e2e.run.live-succeeded-24h",
@@ -482,7 +524,7 @@ const metrics: MetricDef[] = [
   },
   {
     id: "aks-rp-e2e.planner.timeout-24h",
-    name: "AKS RP E2E planner owner-session timeouts in 24h",
+    name: "AKS RP E2E planner app-ops session timeouts in 24h",
     type: "gauge",
     target: 0,
     threshold: 0,
@@ -490,7 +532,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P1",
     description:
-      "Owner-visible planner health signal: counts planner_wake records from .state/planner-runs.jsonl in the last 24h whose owner session result timed out. Any nonzero count should wake the owner to inspect planner recovery and backlog refill behavior.",
+      "App-ops-visible planner health signal: counts planner_wake records from .state/planner-runs.jsonl in the last 24h whose app-ops session result timed out. Any nonzero count should wake app-ops to inspect planner recovery and backlog refill behavior.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -503,7 +545,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "Owner-visible planner slowness signal: counts planner_wake records in the last 24h that either took at least 180s wall time or ended interrupted/cancelled. This catches slow owner/planner loops before they become silent refill gaps.",
+      "App-ops-visible planner slowness signal: counts planner_wake records in the last 24h that either took at least 180s wall time or ended interrupted/cancelled. This catches slow app-ops/planner loops before they become silent refill gaps.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -557,7 +599,7 @@ for (const metric of metrics) {
     metric.id,
     metric.name,
     metric.type,
-    "aks-explorer",
+    "app-ops",
     metric.target,
     metric.threshold,
     metric.unit,

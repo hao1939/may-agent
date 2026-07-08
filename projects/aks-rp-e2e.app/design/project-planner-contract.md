@@ -4,30 +4,55 @@ Status: implemented contract
 
 ## Purpose
 
-`project-planner` is the owner-review adapter for `aks-rp-e2e.app`.
+`project-planner` is the app-ops decision adapter for `aks-rp-e2e.app`.
 
 It does not execute AKS tests, refill deterministic loops, or encode project
-strategy as workflow code. It wakes the project owner with current state, exposes
-safe task-tree tools, drains explicit assignments, and records the wake result.
+strategy as workflow code. It wakes `app-ops` with current state, exposes safe
+task-tree tools, drains explicit task dispatches, and records the wake result.
+
+Planning is invoked by event:
+
+```text
+project.planning.requested -> project-planner workflow
+```
+
+The workflow may call the `app-ops` agent when judgment is needed. The agent
+judges; the workflow validates structured output and applies the task-tree
+decision. Calling "planning" should mean emitting the event or running the
+planning workflow, not bypassing the workflow and calling the agent directly.
+
+Think of it as:
+
+```text
+project-planner workflow -> mechanism that packages state and applies decisions
+app-ops agent            -> judges how the app should move
+aks-explorer             -> executes AKS domain work dispatched by planner
+aks-reviewer             -> independently reviews completed task output
+```
+
+The planner is app operation. It should decide how to keep the task tree closed,
+owned, and moving. It should not decide whether an AKS behavior is correct;
+that domain judgment belongs in `domain/*` work owned by `aks-explorer`, with
+completed task output reviewed by `aks-reviewer`.
 
 ## Flow
 
 Normal planner wakes follow this shape:
 
 1. Repair task-tree rollups.
-2. Assign already-runnable backlog leaves when safe.
+2. Dispatch already-runnable backlog leaves when safe.
 3. Build a compact planning packet from the current task tree.
-4. Skip the owner agent only for deterministic, structured no-op cases.
-5. Otherwise run two bounded owner steps:
+4. Skip `app-ops` only for deterministic, structured no-op cases.
+5. Otherwise run two bounded `app-ops` steps:
    - event review: classify what changed without mutating the tree;
-   - planning update: review results, repair tree meaning, create or assign
+   - planning update: review results, repair tree meaning, create or dispatch
      concrete leaves, and record exact blockers.
-6. Repair rollups again, drain owner-created assignments, emit
+6. Repair rollups again, drain planner-created dispatches, emit
    `project.task.assigned`, and append `.state/planner-runs.jsonl`.
 
 Task completion review is split from general planning:
 
-1. `task-worker` completes an assigned task, moves it to `review`, and emits
+1. `task-worker` completes a dispatched task, moves it to `review`, and emits
    `project.task.completed`.
 2. `task-reviewer` runs as a read-only independent reviewer, normally through
    app-local agent `aks-reviewer` using the project-available `gpt-5.5` model
@@ -44,7 +69,7 @@ Task completion review is split from general planning:
 The watchdog remains a fallback for review leaves where `project.task.reviewed`
 was lost, never emitted, or was never the right source. Some workflows can move
 work directly to `review` after collecting an objective signal, such as a
-terminal GitHub run for a durable-loop wait. In that case the watchdog must
+terminal Azure DevOps pipeline run for a durable-loop wait. In that case the watchdog must
 backfill a `watchdog-review-pending` planner wake with enough context for the
 planner to act: task id, parent/loop id, review kind, run id/conclusion/URL when
 available, named specs or affected items, and the current task result summary.
@@ -60,25 +85,260 @@ Project-level liveness fallback is split from routine planning:
    objective repair such as task-tree rollup repair and pulse durable loop
    controllers only when the normal frontier is empty. In `risk-review` mode it
    is collect-only.
-4. The owner agent judges the stall and emits `project.stall.reviewed` with a
+4. `app-ops` judges the stall and emits `project.stall.reviewed` with a
    structured `stallReview` object. The workflow validates `judgment`; prose is
    explanation only.
 5. `project-planner` consumes the reviewed fact and remains the workflow that
-   decides task-tree mutations, assignments, grouped follow-up work, or exact
+   decides task-tree mutations, task dispatch, grouped follow-up work, or exact
    external waits.
 
 ## Ownership
 
-The planner owns owner-review orchestration:
+The planner owns app-ops orchestration:
 
 - apply structured task-review judgments;
 - accept, repair, retry, replace, split, or block task leaves;
 - keep durable value-loop lanes meaningful;
-- assign concrete executable leaves;
+- dispatch concrete executable leaves;
 - create focused problem-solving work when a shared/local blocker needs
   investigation.
 - consume `project.stall.reviewed` facts and turn the agent's stall judgment
   into concrete tree work or exact waits.
+
+The planner should not do the worker body for either root. When it sees domain
+work, it creates or dispatches `domain/*` tasks to `aks-explorer`. When it sees
+app machinery work, it creates or dispatches `ops/*` tasks to `app-ops`.
+
+`project.task.assigned` is the task-dispatch event. The planner is not manually
+handing work to a person; it is moving a runnable task into execution:
+
+```text
+create/update task as backlog
+  -> dispatch with project.task.assigned
+  -> task-worker consumes the event
+  -> scoped agent runs the task
+```
+
+A planner wake should end with one of these closed outcomes:
+
+- runnable task dispatched;
+- task accepted/done;
+- redo or follow-up task created and dispatched;
+- exact blocked wait recorded;
+- escalation linked;
+- accepted no-op with a structured reason.
+
+## Simple Role Boundaries
+
+Keep the architecture small by keeping each workflow boring:
+
+```text
+planner decides
+worker executes
+reviewer judges
+loop controllers refill
+watchdog observes
+stall-review diagnoses process stalls
+focus-plan keeps the current mission readable
+```
+
+Do not move responsibilities across those lines to fix one incident quickly.
+If a workflow needs to do something outside its role, create a concrete task or
+emit a structured fact for the planner instead.
+
+- Planner is the only normal task-tree decision writer.
+- Worker is the task adapter: it reads the assigned task, runs the scoped
+  business workflow or default worker, normalizes output, and reports
+  completion.
+- Reviewer is read-only and emits a structured judgment.
+- Loop controllers read their ledger, reconcile children, and fill the next
+  bounded window.
+- Watchdog is a normal workflow that observes liveness and wakes planner or
+  stall-review. It has no special authority beyond closure/liveness detection.
+- Stall-review collects a liveness packet and asks the agent to judge process
+  stalls; planner applies the result.
+- Focus-plan keeps mission-level state readable; child tasks do the work.
+
+Business workflows should not generally know task-tree mechanics. They should
+receive scoped input and return structured output. Task-tree lookup, assignment
+state, parent rollup, review wiring, and retry/blocker bookkeeping belong in
+the task adapter, planner, loop controllers, or shared task-tree helpers.
+
+Use visible scope to separate domain work from system ops work. Do not add a
+separate `workKind` field. The planner should infer the category from the task
+branch/id and workflow route:
+
+```text
+domain/* or AKS loop/focus lanes -> AKS feature/spec/test/model/result work
+ops/*                            -> watchdog, stall review, recovery,
+                                    observability, event closure, integrity
+```
+
+If a task's scope does not make the category obvious, rename or move the task
+instead of adding metadata. Metrics, UI groups, and escalation text should use
+the same convention so humans can understand the project without opening task
+payloads.
+
+Use one task tree with two top-level roots:
+
+```text
+domain/ -> AKS outcome work
+ops/    -> project machinery and health work
+```
+
+The planner coordinates both roots. `aks-explorer` owns `domain/*` work,
+`app-ops` owns `ops/*` work, and `aks-reviewer` reviews completed task output.
+They share the same task tree so blockers and dependencies stay visible in one
+place.
+
+Planner dispatch rules:
+
+- Create domain tasks for AKS feature/spec/test/model/result work.
+- Create ops tasks for metrics, watchdog, stall-review, recovery, escalation,
+  event closure, workflow routing, and UI/observability repair.
+- When domain work is stuck because project machinery is broken, create or link
+  an ops task and keep the domain task blocked on that exact ops repair.
+- When ops finds a real AKS behavior/test gap, create or link a domain task and
+  keep the ops task focused on the process issue it discovered.
+- Do not let ops tasks accept AKS correctness, and do not make domain tasks own
+  whole-project liveness.
+- Route `domain/*` dispatches to `aks-explorer`.
+- Route `ops/*` dispatches to `app-ops`.
+- Route completion review to `aks-reviewer`.
+
+The task tree should remain understandable with five states only:
+
+- `backlog`
+- `active`
+- `review`
+- `blocked`
+- `done`
+
+If new behavior appears to need another state, first try to express it as
+structured context, workflow progress, review feedback, or an exact blocker.
+
+Fallback is for recovery, not normal operation:
+
+- Metrics should catch broken or abnormal patterns.
+- Watchdog should recover or wake the owner for one liveness incident.
+- Escalation should handle a real outside-owner wait.
+- Repeated fallback on the same pattern must become systemic repair work.
+
+Planner policy for repeated signals:
+
+```text
+one incident -> recover, requeue, unblock, or create exact wait
+same signal repeats -> create repair task for the producing workflow/code path
+same family repeats with varied causes -> create grouped diagnosis task
+cannot classify locally -> escalate and record exact blocked wait
+```
+
+The planner should not keep accepting repeated watchdog wakeups, repeated
+metric breaches, or repeated escalation churn as normal progress. If the same
+mechanism keeps saving the project, the mechanism has identified a bug to fix.
+
+## Blocked Owner Recovery
+
+A blocked task's `blocker.owner` is not a worker assignment. It names who is
+accountable for making or explaining the waited-for condition. It does not
+start `task-worker`, and it does not prove anyone is currently acting on the
+wait. Work starts only from a runnable task dispatched through
+`project.task.assigned`.
+
+Therefore the planner must treat overdue blocked waits as actionable process
+work unless a concrete active/review recovery, handoff, or escalation task
+already covers the wait:
+
+```text
+blocked leaf has a resume/fallback time in the past
+fallbackAt has passed
+no active/review recovery task, handoff, escalation, or accepted terminal proof
+  -> create or reopen one concrete recovery task
+```
+
+The `owner` field describes accountability. It is not enough to set
+`owner=human`. A true human wait still needs a visible handoff/escalation task,
+or a refreshed wait with fresh evidence and the next check time.
+
+Allowed outcomes for an overdue blocked wait:
+
+- `unblock`: the waited-for condition is true; create the smallest runnable
+  successor or rerun task.
+- `recover`: create/dispatch an `ops/*` or `domain/*` recovery task that can
+  actively inspect or repair the wait.
+- `handoff`: create/verify a concrete handoff/escalation task for an external
+  owner, then link the blocked wait to that proof.
+- `refresh`: keep the wait only with new evidence, updated `lastCheckedAt`,
+  `nextCheckAt`, and `fallbackAt`.
+- `terminal`: mark done only when accepted evidence proves no further
+  meaningful project action remains.
+
+Disallowed outcomes:
+
+- leave the blocked leaf unchanged after fallback;
+- treat `blocker.owner=aks-explorer` or `blocker.owner=app-ops` as active work;
+- keep stale platform owners such as `github-actions` after the execution
+  platform has moved to Azure DevOps;
+- no-op because unrelated runnable work was assigned while overdue blocked
+  owner work remains unrepresented.
+
+When watchdog or a metric reports overdue blocked waits, the planner should
+prefer a grouped recovery task for repeated root causes. For example, stale
+GitHub-era waits should become one ADO migration/review task rather than many
+passive `github-actions` waits. Environment/operator waits should either show
+proof of handoff or produce an app-ops handoff/escalation task.
+
+Audit and recovery tasks must not measure their own masking effect as success.
+When a task audits overdue waits, its evidence should list the pre-audit
+contributors after excluding the audit task itself and any broad recovery scope
+on that task. The planner may use the task as active representation while it is
+running, but the review decision must verify that every pre-audit contributor
+was refreshed, replaced by a concrete successor, handed off/escalated, or proven
+terminal before accepting the audit as complete.
+
+## Focus Mission Lifecycle
+
+A focus plan is a bounded mission, not a generic status bucket. The focus parent
+stays open while the mission still has unresolved child work. The normal
+planner/worker/reviewer loop should drive the child work; the focus branch only
+keeps the mission, success criteria, current evidence, and remaining blockers
+readable.
+
+The lifecycle is:
+
+```text
+create focus
+  -> run planned work
+  -> review evidence
+  -> on failure, create diagnosis/repair/rerun/wait/escalation child work
+  -> repeat until the mission succeeds, reaches a known terminal failure, or is
+     paused on an exact external wait/escalation
+```
+
+When a focus run hits a failure, the planner must not finish the focus just
+because the first planned run ended. The failure must become one of:
+
+- diagnosis task with accepted evidence;
+- repo-local repair task plus the smallest truthful rerun;
+- exact blocked wait with owner, observer, resume condition, and fallback;
+- escalation with an owning blocked/wait task;
+- terminal known issue with evidence that local repair/rerun paths have been
+  exhausted or deliberately bounded.
+
+Allowed focus terminal states:
+
+- `completed`: the focus goal is met and the proof is linked.
+- `failed_known_issues`: the focus goal did not pass, every reasonable local
+  path has been attempted or bounded, and remaining issues are listed with
+  evidence, owner/resume condition, and next retry/escalation path.
+- `blocked`: the focus is not terminal; it is paused on a named external wait
+  or escalation that still has a watcher and fallback.
+
+`failed_known_issues` is a terminal result for the focus mission, not a task
+execution result. It should be used only after all focus children are terminal.
+If any child is still `active`, `review`, `backlog`, `waiting`, or `blocked`,
+the focus workflow must suppress terminal language and keep planner/app-ops
+moving.
 
 The planner should not be the default first-pass reviewer for fresh
 `project.task.completed` events once `task-reviewer` is enabled. Its role is to
@@ -93,7 +353,7 @@ The reviewer owns independent completion judgment only:
   blocked, or escalated;
 - emit `project.task.reviewed`.
 
-The reviewer must not mutate `tasks/tree.json`, assign work, create follow-up
+The reviewer must not mutate the live task tree, dispatch work, create follow-up
 tasks, edit project files, or commit changes. This keeps the task tree under a
 single decision writer while still giving review a fresh model perspective.
 
@@ -191,7 +451,7 @@ work is paused
 
 Do not mix up the wait condition and the watcher. The project is not waiting
 for a loop pulse, watchdog tick, or metric breach. Those are observation
-mechanisms. The project is waiting for the real condition: a GitHub run
+mechanisms. The project is waiting for the real condition: an Azure DevOps pipeline run
 completed, approval returned, Azure capacity recovered, source proof arrived,
 or an escalation resolved.
 
@@ -200,9 +460,9 @@ Required fields for new blocked state:
 - `blockedAt` / `blocker.blocked_at`: when the wait started.
 - `reason` / `blocker.condition`: why work cannot continue.
 - `waitingFor` / `blocker.waiting_for`: exact condition that must become true.
-- `owner` / `blocker.owner`: human, Azure, product, GitHub, project, or other
-  responsible owner that can make or explain that condition.
-- `observedBy` / `blocker.observed_by`: workflow, event handler, metric, or
+- `owner` / `blocker.owner`: human, Azure, product, pipeline platform,
+  project, or other responsible owner that can make or explain that condition.
+- `observedBy` / `blocker.observed_by`: workflow, event route, metric, or
   human that checks the condition.
 - `observationMethod` / `blocker.observation_method`: how the observer checks.
 - `nextCheckAt` / `blocker.next_check_at`: next planned check time.
@@ -224,17 +484,17 @@ owner cannot name what is being waited for, who observes it, how it is checked,
 the responsible owner, and the fallback, the item should stay `error`, become a
 repair/follow-up task, or become an escalation.
 
-For GitHub workflow-result waits, the exact workflow run id is required. A
-blocked item may say it waits for `github.workflow_run.completed` only when it
+For Azure DevOps pipeline-result waits, the exact pipeline run id is required. A
+blocked item may say it waits for `ado.pipeline_run.completed` only when it
 includes the run id and enough identity to avoid polling the wrong run:
 
 ```json
 {
   "waitingFor": {
-    "type": "github.workflow_run.completed",
+    "type": "ado.pipeline_run.completed",
     "runId": "123",
-    "runUrl": "https://github.com/.../actions/runs/123",
-    "workflow": "aks-rp-e2e-plan-execute.yaml",
+    "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+    "pipeline": "467665",
     "branch": "dev",
     "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
   },
@@ -242,18 +502,18 @@ includes the run id and enough identity to avoid polling the wrong run:
     "workflow": "feature-compact-loop-controller",
     "trigger": "project.task.tick"
   },
-  "observationMethod": "Poll GitHub Actions run API and inspect artifacts.",
+  "observationMethod": "Poll Azure DevOps pipeline run API and inspect artifacts.",
   "nextCheckAt": "2026-07-05T12:10:00.000Z",
   "fallbackAt": "2026-07-05T18:00:00.000Z",
-  "fallbackAction": "Create GitHub workflow diagnosis or escalation work if the run is still missing, still running, or missing artifacts."
+  "fallbackAction": "Create Azure DevOps pipeline diagnosis or escalation work if the run is still missing, still running, or missing artifacts."
 }
 ```
 
 If the run id is not known, name the real earlier wait instead:
 
-- `github.workflow_dispatch.allowed`: auth/schema/permission problem before
+- `ado.pipeline_dispatch.allowed`: auth/schema/permission problem before
   dispatch;
-- `github.workflow_run.discoverable`: dispatch returned but run lookup failed;
+- `ado.pipeline_run.discoverable`: dispatch returned but run lookup failed;
 - `azure.capacity.available`: Azure capacity blocks dispatch or proof.
 
 Durable loop ledgers must preserve `status=blocked` when this contract is
@@ -268,6 +528,11 @@ must re-evaluate it. Possible outcomes are:
 - refresh the blocker with new evidence/fallback;
 - mark done only if a terminal disposition or live proof exists;
 - escalate if fallback failed.
+
+If `fallbackAt` has passed and `owner` is not `human`, re-evaluation must not
+end as a passive wait unless a newer `lastCheckedAt`, `nextCheckAt`, and
+`fallbackAt` are written with evidence explaining why no active recovery is
+possible. Otherwise create active recovery/handoff work.
 
 ## Structured Inputs
 
@@ -305,11 +570,11 @@ class, root cause, and resume/retry conditions.
 
 ## Deterministic No-Ops
 
-Skipping the owner agent is allowed only when the event is stale or already
+Skipping `app-ops` is allowed only when the event is stale or already
 settled by current structured state. Examples:
 
 - stale watchdog runnable/review packets no longer match the live frontier;
-- a routine refill already assigned runnable backlog and there is no review or
+- a routine refill already dispatched runnable backlog and there is no review or
   human-steering frontier;
 - a blocked-frontier wake contains only exact external waits with future
   structured `resumeAt` timestamps.
@@ -317,9 +582,14 @@ settled by current structured state. Examples:
 If a blocker has only prose text, the planner should run owner review. Prose may
 explain the blocker, but it is not a reliable scheduling field.
 
+The planner must not skip `app-ops` for a blocked-frontier wake when the live
+frontier contains overdue blocked waits without active recovery, handoff,
+escalation, or accepted terminal proof. Quick-refill progress on other work is
+not closure for that blocked-owner problem.
+
 ## Task Tree Contract
 
-`tasks/tree.json` is the project source of truth for current work. The planner
+The live task tree is the project source of truth for current work. The planner
 must mutate it through task-tree tools, not direct whole-file edits. Runtime
 history belongs in May-agent session/workflow history and compact app-local
 state such as `.state/planner-runs.jsonl`.
@@ -344,14 +614,14 @@ worker completions this is recovery behavior; for controller-created review
 leaves it is the normal path because there may be no `project.task.completed`
 event.
 
-`active` means the current assignment is owned by a worker attempt. If
+`active` means the current dispatch is owned by a worker attempt. If
 `trace.current_attempt_id` matches `trace.worker_started_attempt_id`, the
 planner must not close that task with `mark-done`, even with
 `resolution=replaced` or `resolution=cancelled`. Closing it would bypass the
-`project.task.completed` event that closes the assignment pair and feeds
+`project.task.completed` event that closes the dispatch pair and feeds
 review. The planner should instead wait for completion, use `requeue-active`
 only when the attempt is stale or not running, or create separate follow-up or
-problem work while leaving the active assignment intact.
+problem work while leaving the active dispatch intact.
 
 `blocked` is a task state for real waits with resume conditions. It should not
 be used as the generic spec/test verdict. Spec and compact-test records should
@@ -369,15 +639,15 @@ wait, structured resume metadata:
 ```json
 {
   "blocker": {
-    "condition": "Waiting for GitHub workflow run 123 to finish live proof.",
+    "condition": "Waiting for Azure DevOps pipeline run 123 to finish live proof.",
     "category": "external-wait",
-    "owner": "github",
+    "owner": "ado",
     "blocked_at": "2026-07-05T00:00:00.000Z",
     "waiting_for": {
-      "type": "github.workflow_run.completed",
+      "type": "ado.pipeline_run.completed",
       "runId": "123",
-      "runUrl": "https://github.com/.../actions/runs/123",
-      "workflow": "aks-rp-e2e-plan-execute.yaml",
+      "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      "pipeline": "467665",
       "branch": "dev",
       "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
     },
@@ -385,14 +655,16 @@ wait, structured resume metadata:
       "workflow": "feature-compact-loop-controller",
       "trigger": "project.task.tick"
     },
-    "observation_method": "Poll GitHub Actions run API and inspect artifacts.",
+    "observation_method": "Poll Azure DevOps pipeline run API and inspect artifacts.",
     "next_check_at": "2026-07-05T00:10:00.000Z",
-    "resume_condition": "Resume when GitHub run 123 has completed and the artifact verdict is known.",
+    "resume_condition": "Resume when Azure DevOps pipeline run 123 has completed and the artifact verdict is known.",
     "resume_at": "2026-07-05T00:10:00.000Z",
     "fallback_at": "2026-07-05T06:00:00.000Z",
-    "fallback_action": "Create GitHub workflow diagnosis or escalation work if run 123 is still running, missing, or missing artifacts.",
+    "fallback_action": "Create Azure DevOps pipeline diagnosis or escalation work if run 123 is still running, missing, or missing artifacts.",
     "resume_action": "Inspect run 123 artifacts and update the compact feature result.",
-    "evidence": ["https://github.com/.../actions/runs/123"]
+    "evidence": [
+      "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123"
+    ]
   }
 }
 ```
@@ -403,13 +675,12 @@ real condition. `observed_by` and `observation_method` say who checks it and
 how. `fallback_at` and `fallback_action` prevent a blocked item from becoming
 silent parked work.
 
-Create or update these fields through the task-tree CLI instead of editing
-`tasks/tree.json` by hand:
+Create or update these fields through the task-tree CLI instead of editing the
+task tree file by hand:
 
 ```bash
 bun run task-tree add wait-for-proof --parent project --state blocked \
   --goal "Wait for returned operator proof." \
-  --output tasks/tree.json \
   --acceptance "proof reviewed" \
   --blocker "Waiting for returned operator proof." \
   --blocker-category external-wait \

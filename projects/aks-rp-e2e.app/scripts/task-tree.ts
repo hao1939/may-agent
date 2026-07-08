@@ -48,7 +48,7 @@ function usage(): never {
   bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
-  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO]
+  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
   bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
@@ -57,7 +57,7 @@ function usage(): never {
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
   bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
   bun run task-tree set-archived-outputs <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --output <path> [--output <path> ...]
-  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--clear-blocker]
+  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."] [--clear-blocker]
   bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
   bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
@@ -155,6 +155,9 @@ function blockerOptions(): {
   blockerOwner?: string;
   resumeCondition?: string;
   resumeAt?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 } {
   return {
     blocker: option("--blocker"),
@@ -162,6 +165,9 @@ function blockerOptions(): {
     blockerOwner: option("--blocker-owner"),
     resumeCondition: option("--resume-condition"),
     resumeAt: option("--resume-at"),
+    nextCheckAt: option("--next-check-at"),
+    fallbackAt: option("--fallback-at"),
+    fallbackAction: option("--fallback-action"),
   };
 }
 
@@ -235,6 +241,8 @@ function resumeCondition(
 function inferBlockedCategory(text: string): string {
   const lower = text.toLowerCase();
   if (
+    lower.includes("azure devops") ||
+    lower.includes("ado") ||
     lower.includes("github") ||
     lower.includes("workflow") ||
     lower.includes("artifact") ||
@@ -256,6 +264,48 @@ function inferBlockedCategory(text: string): string {
   return "blocked-wait";
 }
 
+function textNamesAdo(text: string): boolean {
+  return /\b(?:azure\s+devops|ado)\b/i.test(text);
+}
+
+function textWaitsForAdoRun(text: string): boolean {
+  return /\b(?:blocked\s+until|wait(?:ing)?\s+(?:for|on|until)|still\s+(?:executing|running|in\s+progress)|not\s+yet\s+terminal|pending|resume\s+when)\b/i.test(
+    text,
+  );
+}
+
+function textNamesGithub(text: string): boolean {
+  return /\b(?:github|gh|workflow\s+run)\b/i.test(text);
+}
+
+function adoPipelineId(): string {
+  return (
+    process.env.AKS_RP_E2E_ADO_PIPELINE_ID ||
+    process.env.MAY_ADO_PIPELINE_ID ||
+    "467665"
+  ).trim();
+}
+
+function adoOrganization(): string {
+  return (
+    process.env.AKS_RP_E2E_ADO_ORGANIZATION ||
+    process.env.MAY_ADO_ORGANIZATION ||
+    "https://dev.azure.com/msazure"
+  ).replace(/\/+$/g, "");
+}
+
+function adoProject(): string {
+  return (
+    process.env.AKS_RP_E2E_ADO_PROJECT ||
+    process.env.MAY_ADO_PROJECT ||
+    "CloudNativeCompute"
+  ).trim();
+}
+
+function adoRunUrl(runId: string): string {
+  return `${adoOrganization()}/${encodeURIComponent(adoProject())}/_build/results?buildId=${runId}`;
+}
+
 function inferWaitingFor(
   taskId: string,
   text: string,
@@ -263,11 +313,25 @@ function inferWaitingFor(
   const lower = text.toLowerCase();
   const runId = text.match(/\b(?:run|workflow run)\s+(\d{6,})\b/i)?.[1];
   if (runId) {
-    return {
-      type: "github.workflow_run.completed",
-      runId,
-      taskId,
-    };
+    if (textNamesAdo(text) && textWaitsForAdoRun(text)) {
+      return {
+        type: "ado.pipeline_run.completed",
+        runId,
+        runUrl: adoRunUrl(runId),
+        pipeline: adoPipelineId(),
+        branch: "dev",
+        successCriteria:
+          "Run completed and uploaded artifacts that prove real live test execution and cleanup.",
+        taskId,
+      };
+    }
+    if (textNamesGithub(text)) {
+      return {
+        type: "github.workflow_run.completed",
+        runId,
+        taskId,
+      };
+    }
   }
   if (
     lower.includes("capacity") ||
@@ -277,6 +341,23 @@ function inferWaitingFor(
     return {
       type: "azure.capacity.available",
       taskId,
+      sourceRunId: runId,
+    };
+  }
+  if (
+    lower.includes("environment") ||
+    lower.includes("dns") ||
+    lower.includes("auth") ||
+    lower.includes("identity") ||
+    lower.includes("kubeconfig") ||
+    lower.includes("runtime") ||
+    lower.includes("platform") ||
+    lower.includes("recovery")
+  ) {
+    return {
+      type: "environment.available",
+      taskId,
+      sourceRunId: runId,
     };
   }
   if (
@@ -288,6 +369,7 @@ function inferWaitingFor(
     return {
       type: "product_or_source_fix.available",
       taskId,
+      sourceRunId: runId,
     };
   }
   if (
@@ -302,22 +384,67 @@ function inferWaitingFor(
     return {
       type: "evidence.available",
       taskId,
+      sourceRunId: runId,
     };
   }
-  if (
-    lower.includes("environment") ||
-    lower.includes("dns") ||
-    lower.includes("auth") ||
-    lower.includes("identity") ||
-    lower.includes("kubeconfig")
-  ) {
+  if (runId) {
     return {
-      type: "environment.available",
+      type: "evidence.available",
       taskId,
+      sourceRunId: runId,
     };
   }
   return {
     type: "blocker.resolved",
+    taskId,
+  };
+}
+
+function correctedNonGithubWaitingFor(
+  taskId: string,
+  text: string,
+  existing: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  if (stringField(existing, ["type"]) !== "github.workflow_run.completed") {
+    return null;
+  }
+  if (textNamesGithub(text) || textNamesAdo(text)) return null;
+  const inferred = inferWaitingFor(taskId, text);
+  return stringField(inferred, ["type"]) === "github.workflow_run.completed"
+    ? null
+    : inferred;
+}
+
+function correctedWaitingFor(
+  taskId: string,
+  text: string,
+  existing: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const existingType = stringField(existing, ["type"]);
+  const runId =
+    stringField(existing, ["runId", "run_id"]) ||
+    text.match(/\b(?:run|pipeline run|workflow run)\s+(\d{6,})\b/i)?.[1] ||
+    "";
+  if (!runId || !textNamesAdo(text)) return null;
+  if (!textWaitsForAdoRun(text)) {
+    const inferred = inferWaitingFor(taskId, text);
+    return stringField(inferred, ["type"]) === "ado.pipeline_run.completed"
+      ? null
+      : inferred;
+  }
+  if (existingType && existingType !== "github.workflow_run.completed") {
+    return null;
+  }
+  return {
+    ...(existing ?? {}),
+    type: "ado.pipeline_run.completed",
+    runId,
+    runUrl: stringField(existing, ["runUrl", "run_url"]) || adoRunUrl(runId),
+    pipeline: stringField(existing, ["pipeline"]) || adoPipelineId(),
+    branch: stringField(existing, ["branch"]) || "dev",
+    successCriteria:
+      stringField(existing, ["successCriteria", "success_criteria"]) ||
+      "Run completed and uploaded artifacts that prove real live test execution and cleanup.",
     taskId,
   };
 }
@@ -346,58 +473,140 @@ function repairBlockedContracts(dryRun: boolean) {
         unchanged.push(taskId);
         continue;
       }
+      const condition =
+        stringField(blocker, ["condition"]) || conditionText(text);
+      const existingWaitingFor = objectField(blocker, [
+        "waiting_for",
+        "waitingFor",
+      ]);
+      const waitCorrection = correctedWaitingFor(
+        taskId,
+        [condition, text].filter(Boolean).join(" "),
+        existingWaitingFor,
+      );
+      const nonGithubWaitCorrection = correctedNonGithubWaitingFor(
+        taskId,
+        [condition, text].filter(Boolean).join(" "),
+        existingWaitingFor,
+      );
+      const existingOwner = stringField(blocker, ["owner"]);
+      const shouldUseAdoOwner =
+        textNamesAdo([condition, text].filter(Boolean).join(" ")) &&
+        stringField(existingWaitingFor, ["type"]) ===
+          "ado.pipeline_run.completed" &&
+        (existingOwner.toLowerCase() === "human" || !existingOwner);
+      let normalizedBlocker = blocker ? { ...blocker } : null;
+      let normalizedChanged = false;
+      if (waitCorrection && normalizedBlocker) {
+        const correctedType = stringField(waitCorrection, ["type"]);
+        const fallbackOwner =
+          typeof task.owner === "string" && task.owner.trim()
+            ? task.owner.trim()
+            : "aks-explorer";
+        const correctedOwner =
+          correctedType === "ado.pipeline_run.completed"
+            ? existingOwner.toLowerCase() === "human" || !existingOwner
+              ? "ado"
+              : existingOwner
+            : existingOwner.toLowerCase() === "ado"
+              ? fallbackOwner
+              : existingOwner || fallbackOwner;
+        normalizedBlocker = {
+          ...normalizedBlocker,
+          owner: correctedOwner,
+          waiting_for: waitCorrection,
+          waitingFor: undefined,
+        };
+        normalizedChanged = true;
+      } else if (nonGithubWaitCorrection && normalizedBlocker) {
+        normalizedBlocker = {
+          ...normalizedBlocker,
+          waiting_for: nonGithubWaitCorrection,
+          waitingFor: undefined,
+        };
+        normalizedChanged = true;
+      } else if (shouldUseAdoOwner && normalizedBlocker) {
+        normalizedBlocker = {
+          ...normalizedBlocker,
+          owner: "ado",
+        };
+        normalizedChanged = true;
+      }
+      const blockerForContract = normalizedBlocker ?? blocker;
       const hasFullContract =
-        objectField(blocker, ["waiting_for", "waitingFor"]) &&
-        objectField(blocker, ["observed_by", "observedBy"]) &&
-        stringField(blocker, ["observation_method", "observationMethod"]) &&
-        stringField(blocker, ["next_check_at", "nextCheckAt"]) &&
-        stringField(blocker, ["owner"]) &&
-        stringField(blocker, ["fallback_at", "fallbackAt"]) &&
-        stringField(blocker, ["fallback_action", "fallbackAction"]);
+        !!objectField(blockerForContract, ["waiting_for", "waitingFor"]) &&
+        !!objectField(blockerForContract, ["observed_by", "observedBy"]) &&
+        !!stringField(blockerForContract, [
+          "observation_method",
+          "observationMethod",
+        ]) &&
+        !!stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) &&
+        !!stringField(blockerForContract, ["owner"]) &&
+        !!stringField(blockerForContract, ["fallback_at", "fallbackAt"]) &&
+        !!stringField(blockerForContract, [
+          "fallback_action",
+          "fallbackAction",
+        ]);
       if (hasFullContract) {
-        unchanged.push(taskId);
+        if (normalizedChanged && normalizedBlocker) {
+          (task as { blocker?: unknown }).blocker = normalizedBlocker;
+          task.trace = {
+            ...(recordValue(task.trace) ?? {}),
+            blocked_contract_repaired_at: now,
+          } as typeof task.trace;
+          repaired.push(taskId);
+        } else {
+          unchanged.push(taskId);
+        }
         continue;
       }
       const trace = taskTrace(task);
       const blockedAt =
-        stringField(blocker, ["blocked_at", "blockedAt"]) ||
+        stringField(blockerForContract, ["blocked_at", "blockedAt"]) ||
         stringField(trace, ["blocked_at", "created_at", "assigned_at"]) ||
         now;
-      const condition =
-        stringField(blocker, ["condition"]) || conditionText(text);
-      const existingOwner = stringField(blocker, ["owner"]);
       const owner =
-        existingOwner ||
+        stringField(blockerForContract, ["owner"]) ||
         (typeof task.owner === "string" && task.owner.trim()
           ? task.owner.trim()
           : "aks-explorer");
       (task as { blocker?: unknown }).blocker = {
-        ...(blocker ?? {}),
+        ...(blockerForContract ?? {}),
         condition,
         category:
-          stringField(blocker, ["category"]) || inferBlockedCategory(text),
+          stringField(blockerForContract, ["category"]) ||
+          inferBlockedCategory(text),
         owner,
         blocked_at: blockedAt,
         waiting_for:
-          objectField(blocker, ["waiting_for", "waitingFor"]) ??
-          inferWaitingFor(taskId, text),
-        observed_by: objectField(blocker, ["observed_by", "observedBy"]) ?? {
+          objectField(blockerForContract, ["waiting_for", "waitingFor"]) ??
+          inferWaitingFor(taskId, [condition, text].filter(Boolean).join(" ")),
+        observed_by: objectField(blockerForContract, [
+          "observed_by",
+          "observedBy",
+        ]) ?? {
           workflow: "project-planner",
-          schedule: "blocked-frontier-owner-review",
+          schedule: "blocked-frontier-app-ops-review",
           trigger: "project.planning.requested",
         },
         observation_method:
-          stringField(blocker, ["observation_method", "observationMethod"]) ||
-          "Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+          stringField(blockerForContract, [
+            "observation_method",
+            "observationMethod",
+          ]) ||
+          "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
         next_check_at:
-          stringField(blocker, ["next_check_at", "nextCheckAt"]) ||
+          stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) ||
           addMinutes(now, 10),
-        resume_condition: resumeCondition(text, blocker),
+        resume_condition: resumeCondition(text, blockerForContract),
         fallback_at:
-          stringField(blocker, ["fallback_at", "fallbackAt"]) ||
+          stringField(blockerForContract, ["fallback_at", "fallbackAt"]) ||
           addHours(now, 24),
         fallback_action:
-          stringField(blocker, ["fallback_action", "fallbackAction"]) ||
+          stringField(blockerForContract, [
+            "fallback_action",
+            "fallbackAction",
+          ]) ||
           "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
       };
       task.trace = {
@@ -411,6 +620,7 @@ function repairBlockedContracts(dryRun: boolean) {
     }
     return {
       dryRun,
+      treePath: config.treePath,
       repairedCount: repaired.length,
       unchangedCount: unchanged.length,
       repaired,

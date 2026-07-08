@@ -53,10 +53,10 @@ import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-ste
 import {
   activeWorkflowRuns,
   getWorkflowRun,
-  resolveGitHubClient,
-  type GitHubClient,
-  type GitHubWorkflowRun,
-} from "./lib/github-actions.ts";
+  resolvePipelineClient,
+  type PipelineClient,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
 
 export const name = "spec-loop-controller";
 export const description =
@@ -215,16 +215,35 @@ function optionalBooleanContext(task: TaskNode, key: string): boolean | null {
   return null;
 }
 
-function shouldPreflightGitHubAccess(input: {
+function shouldPreflightPipelineAccess(input: {
   projectDir: string;
   loopTask: TaskNode;
 }): boolean {
   const explicit = optionalBooleanContext(
     input.loopTask,
-    "githubAccessPreflight",
+    "adoPipelineAccessPreflight",
   );
   if (explicit !== null) return explicit;
+  const legacyExplicit = optionalBooleanContext(
+    input.loopTask,
+    "githubAccessPreflight",
+  );
+  if (legacyExplicit !== null) return legacyExplicit;
   return existsSync(join(input.projectDir, ".git"));
+}
+
+function pipelineNameContext(task: TaskNode, fallback: string): string {
+  return (
+    stringContext(task, "adoPipeline", "") ||
+    stringContext(task, "githubWorkflow", fallback)
+  );
+}
+
+function pipelineLimitContext(task: TaskNode, fallback: number): number {
+  const adoLimit = numberContext(task, "adoActiveRunLimit", 0);
+  return adoLimit > 0
+    ? adoLimit
+    : numberContext(task, "githubActiveRunLimit", fallback);
 }
 
 function shouldPreflightSpecExecutionPolicy(input: {
@@ -321,7 +340,10 @@ function traceString(task: TaskNode | undefined, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function stringField(record: Record<string, unknown> | null, key: string): string {
+function stringField(
+  record: Record<string, unknown> | null,
+  key: string,
+): string {
   const value = record?.[key];
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
@@ -564,6 +586,23 @@ function taskTextMentionCountsAsSpecOwner(
   return taskStatus(task) !== "blocked" || taskHasStructuredBlocker(task);
 }
 
+function taskExplicitlyRepresentsSpec(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  if (taskConflictScopes(task).includes(`spec:${specId}`)) return true;
+  return taskTextMentionCountsAsSpecOwner(task, specId);
+}
+
+function taskRepresentsEverySpec(
+  task: TaskNode | undefined,
+  specIds: string[],
+): boolean {
+  if (!task) return false;
+  return specIds.every((specId) => taskExplicitlyRepresentsSpec(task, specId));
+}
+
 function specLoopSpecHasStructuredSuccessor(
   spec: SpecLoopState["specs"][string] | undefined,
 ): boolean {
@@ -617,7 +656,6 @@ function exactSpecLoopOwnerTaskId(input: {
     if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
       return taskId;
     }
-    if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
     if (
       spec?.taskId === taskId &&
       specLoopSpecHasStructuredSuccessor(spec) &&
@@ -630,13 +668,53 @@ function exactSpecLoopOwnerTaskId(input: {
   return null;
 }
 
+function specStateSelfRepresentsExactFrontier(
+  spec: SpecLoopState["specs"][string] | undefined,
+): boolean {
+  if (!spec || !specLoopSpecHasStructuredSuccessor(spec)) return false;
+  const record = spec as Record<string, unknown>;
+  if (record.terminalDisposition === true) return true;
+  if (typeof record.normalizedAt === "string" && record.normalizedAt.trim()) {
+    return true;
+  }
+  if (
+    typeof record.successorRunId === "string" &&
+    record.successorRunId.trim()
+  ) {
+    return true;
+  }
+  const review = recordValue(spec.review);
+  if (!review) return false;
+  return Boolean(
+    (typeof review.acceptedByTaskId === "string" &&
+      review.acceptedByTaskId.trim()) ||
+      (typeof review.acceptedRunId === "string" &&
+        review.acceptedRunId.trim()) ||
+      (typeof review.pendingReviewTaskId === "string" &&
+        review.pendingReviewTaskId.trim()),
+  );
+}
+
+function exactSpecLoopRepresentationExists(input: {
+  tasks: Record<string, TaskNode>;
+  state: SpecLoopState;
+  specId: string;
+}): boolean {
+  return (
+    exactSpecLoopOwnerTaskId(input) !== null ||
+    specStateSelfRepresentsExactFrontier(input.state.specs[input.specId])
+  );
+}
+
 function exactRepresentedSpecIds(input: {
   tasks: Record<string, TaskNode>;
   state: SpecLoopState;
 }): Set<string> {
   const ids = new Set<string>();
   for (const specId of Object.keys(input.state.specs)) {
-    if (exactSpecLoopOwnerTaskId({ ...input, specId })) ids.add(specId);
+    if (exactSpecLoopRepresentationExists({ ...input, specId })) {
+      ids.add(specId);
+    }
   }
   return ids;
 }
@@ -762,7 +840,9 @@ function runIdFromWaitTask(task: TaskNode): string {
     blocker: task.blocker,
     trace: task.trace,
   });
-  const match = haystack.match(/\b(?:workflow run|run|runId)["':\s]+(\d{6,})\b/i);
+  const match = haystack.match(
+    /\b(?:workflow run|run|runId)["':\s]+(\d{6,})\b/i,
+  );
   return match?.[1] ?? "";
 }
 
@@ -793,7 +873,7 @@ function terminalGitHubWaitCandidates(input: {
   return candidates;
 }
 
-function terminalRunSummary(run: GitHubWorkflowRun): string {
+function terminalRunSummary(run: PipelineRun): string {
   return [
     `status=${run.status ?? "unknown"}`,
     `conclusion=${run.conclusion ?? "unknown"}`,
@@ -809,9 +889,9 @@ export function harvestTerminalGitHubWaits(input: {
   projectDir: string;
   loopTaskId: string;
   state: SpecLoopState;
-  client: GitHubClient;
+  client: PipelineClient;
   limit: number;
-  getRun?: (runId: string) => GitHubWorkflowRun | null;
+  getRun?: (runId: string) => PipelineRun | null;
 }): TerminalGitHubWaitHarvest {
   const snapshot = readTaskTree(input.config);
   const candidates = terminalGitHubWaitCandidates({
@@ -822,7 +902,7 @@ export function harvestTerminalGitHubWaits(input: {
   });
   const checkedRunIds: string[] = [];
   const lookupMissRunIds: string[] = [];
-  const terminalByTaskId = new Map<string, GitHubWorkflowRun>();
+  const terminalByTaskId = new Map<string, PipelineRun>();
 
   for (const candidate of candidates) {
     checkedRunIds.push(candidate.runId);
@@ -844,7 +924,12 @@ export function harvestTerminalGitHubWaits(input: {
   const harvestedTaskIds: string[] = [];
   const terminalRunIds: string[] = [];
   if (terminalByTaskId.size === 0) {
-    return { harvestedTaskIds, terminalRunIds, lookupMissRunIds, checkedRunIds };
+    return {
+      harvestedTaskIds,
+      terminalRunIds,
+      lookupMissRunIds,
+      checkedRunIds,
+    };
   }
 
   withTreeLock(input.config, () => {
@@ -866,7 +951,7 @@ export function harvestTerminalGitHubWaits(input: {
       child.state = "review";
       child.blocker = undefined;
       child.result = [
-        `GitHub workflow run ${candidate.runId} is terminal; review the run artifact/result and update the spec-loop state or replace this wait with the current exact blocker.`,
+        `Azure DevOps pipeline run ${candidate.runId} is terminal; inspect the returned artifacts and record the exact same-spec pass/fail/error result, or record the exact artifact recovery blocker.`,
         terminalRunSummary(run),
         candidate.namedSpecIds.length
           ? `Named specs: ${candidate.namedSpecIds.join(", ")}.`
@@ -876,7 +961,7 @@ export function harvestTerminalGitHubWaits(input: {
         .join(" ");
       child.context = {
         ...taskContext(child),
-        terminalGitHubWaitReview: {
+        terminalPipelineWaitReview: {
           runId: candidate.runId,
           runStatus: run.status ?? null,
           runConclusion: run.conclusion ?? null,
@@ -888,6 +973,11 @@ export function harvestTerminalGitHubWaits(input: {
       };
       child.trace = {
         ...(child.trace ?? {}),
+        terminal_pipeline_wait_observed_at: now,
+        terminal_pipeline_wait_run_id: candidate.runId,
+        terminal_pipeline_wait_run_status: run.status ?? null,
+        terminal_pipeline_wait_run_conclusion: run.conclusion ?? null,
+        terminal_pipeline_wait_run_url: run.url ?? null,
         terminal_github_wait_observed_at: now,
         terminal_github_wait_run_id: candidate.runId,
         terminal_github_wait_run_status: run.status ?? null,
@@ -907,7 +997,7 @@ export function harvestTerminalGitHubWaits(input: {
           review: {
             ...(spec.review ?? {}),
             pendingReviewReason:
-              "terminal GitHub wait observed by spec-loop controller",
+              "terminal Azure DevOps pipeline wait observed by spec-loop controller",
             pendingReviewTaskId: child.id,
             pendingReviewRunId: candidate.runId,
             pendingReviewObservedAt: now,
@@ -924,7 +1014,7 @@ export function harvestTerminalGitHubWaits(input: {
 
   if (harvestedTaskIds.length > 0) {
     appendToolJournal(input.config, {
-      kind: "spec_loop_terminal_github_waits_harvested",
+      kind: "spec_loop_terminal_pipeline_waits_harvested",
       task_id: input.loopTaskId,
       harvested_task_ids: harvestedTaskIds,
       terminal_run_ids: terminalRunIds,
@@ -1219,6 +1309,9 @@ type NonPassSpecGroup = {
   count: number;
   specIds: string[];
   sampledSpecIds: string[];
+  failureClasses: string[];
+  inputFingerprints: string[];
+  errorFingerprints: string[];
 };
 
 function safeTaskIdPart(value: string): string {
@@ -1302,11 +1395,35 @@ function nonPassSpecGroups(
       count: 0,
       specIds: [],
       sampledSpecIds: [],
+      failureClasses: [],
+      inputFingerprints: [],
+      errorFingerprints: [],
     };
     group.count += 1;
     group.specIds.push(specId);
     if (group.sampledSpecIds.length < input.maxSpecSamples) {
       group.sampledSpecIds.push(specId);
+    }
+    if (
+      typeof spec.failureClass === "string" &&
+      spec.failureClass.trim() &&
+      !group.failureClasses.includes(spec.failureClass.trim())
+    ) {
+      group.failureClasses.push(spec.failureClass.trim());
+    }
+    if (
+      typeof spec.inputFingerprint === "string" &&
+      spec.inputFingerprint.trim() &&
+      !group.inputFingerprints.includes(spec.inputFingerprint.trim())
+    ) {
+      group.inputFingerprints.push(spec.inputFingerprint.trim());
+    }
+    if (
+      typeof spec.errorFingerprint === "string" &&
+      spec.errorFingerprint.trim() &&
+      !group.errorFingerprints.includes(spec.errorFingerprint.trim())
+    ) {
+      group.errorFingerprints.push(spec.errorFingerprint.trim());
     }
     groups.set(key, group);
   }
@@ -1341,13 +1458,19 @@ function existingRepresentingSpecLoopFollowupTaskId(
   const deterministicTask = tasks[followupTaskId(group)];
   if (
     deterministicTask &&
-    isRepresentingFollowupStatus(taskStatus(deterministicTask))
+    isRepresentingFollowupStatus(taskStatus(deterministicTask)) &&
+    taskRepresentsEverySpec(deterministicTask, group.specIds)
   ) {
     return deterministicTask.id;
   }
   for (const task of Object.values(tasks)) {
     if (!isRepresentingFollowupStatus(taskStatus(task))) continue;
-    if (specLoopFollowupGroupKeys(task).has(groupKey)) return task.id;
+    if (
+      specLoopFollowupGroupKeys(task).has(groupKey) &&
+      taskRepresentsEverySpec(task, group.specIds)
+    ) {
+      return task.id;
+    }
   }
   return null;
 }
@@ -1400,7 +1523,7 @@ function materializeSpecLoopFollowups(
       continue;
     }
     const allSpecsHaveExactOwners = group.specIds.every((specId) =>
-      exactSpecLoopOwnerTaskId({
+      exactSpecLoopRepresentationExists({
         tasks: latestTree.tasks,
         state: input.state,
         specId,
@@ -1419,12 +1542,16 @@ function materializeSpecLoopFollowups(
         `target:${input.target}`,
         `branch:${input.branch}`,
         `state:${input.stateRef}`,
+        ...group.failureClasses.map(
+          (failureClass) => `failureClass:${failureClass}`,
+        ),
         ...group.sampledSpecIds.map((specId) => `spec:${specId}`),
       ],
       outputs: [input.stateRef, "evidence/archive/", "features/", "specs/"],
       acceptance: [
         "Every affected non-pass spec has a concrete root-cause classification.",
-        "Every fixable test/spec/runtime/planner/workflow issue was repaired in the aks-rp-e2e domain repo, committed, pushed to the target branch, and queued for a meaningful GitHub live rerun.",
+        "Before any rerun, compare inputFingerprint and errorFingerprint; rerun only after the input changed, the diagnosis changed, or a new external fact makes the run meaningful.",
+        "Every fixable test/spec/runtime/planner/workflow issue was repaired in the aks-rp-e2e domain repo, committed, pushed to the target branch, and queued for a meaningful Azure DevOps live rerun.",
         "App-only evidence or task-state changes are used only as audit trail and are not counted as the fix for domain test failures.",
         "If no bounded repo-local fix remains, an escalation task records the exact owner/environment/product reason, affected specs, attempted fixes, and resume condition.",
         "Relevant spec-loop state, spec/model files, or evidence notes were updated to match that pass/fix/escalate decision.",
@@ -1437,9 +1564,14 @@ function materializeSpecLoopFollowups(
         specLoopFollowup: true,
         status: group.status,
         featureFamily: group.family,
+        workflow: "fix-forward",
+        subjectKind: "spec-family",
         totalSpecCount: group.count,
         sampledSpecIds: group.sampledSpecIds,
         representedSpecIds: group.specIds,
+        failureClasses: group.failureClasses,
+        inputFingerprints: group.inputFingerprints,
+        errorFingerprints: group.errorFingerprints,
         stateRef: input.stateRef,
         target: input.target,
         branch: input.branch,
@@ -1542,7 +1674,7 @@ function createOrUpdatePolicyFollowup(
       id: availableTaskId,
       parentId: input.loopTask.id,
       priority: "P1",
-      goal: `Repair spec-loop execution policy failures for the ${specFamily(input.specId)} feature family so affected specs can run live on GitHub without private AKS RP source or Azure CLI fallback.`,
+      goal: `Repair spec-loop execution policy failures for the ${specFamily(input.specId)} feature family so affected specs can run live through Azure DevOps without private AKS RP source or Azure CLI fallback.`,
       inputs: [
         `spec:${input.specId}`,
         `target:${input.target}`,
@@ -1554,7 +1686,7 @@ function createOrUpdatePolicyFollowup(
       acceptance: [
         "Every sampled spec removes private AKS RP source, Azure CLI fallback, and existing/shared-cluster carrier dependencies from its live execution path.",
         "The repair is committed and pushed in the aks-rp-e2e domain repo before any success claim.",
-        "Each repaired spec is requeued for a standalone live GitHub run and that run link is recorded.",
+        "Each repaired spec is requeued for a standalone live Azure DevOps pipeline run and that run link is recorded.",
         "If no repo-local repair remains, the task records the exact external owner, affected specs, attempted fixes, and resume condition.",
       ],
       conflict_scope: [
@@ -1793,12 +1925,7 @@ function specLoopWorkflowProgress(input: {
     ) {
       continue;
     }
-    const groupStatus = groupedPending ? "pending" : status;
-    const groupKey = `${groupStatus}:${specFamily(specId)}`;
-    if (
-      !input.representedFollowupGroupKeys?.has(groupKey) &&
-      !input.exactRepresentedSpecIds?.has(specId)
-    ) {
+    if (!input.exactRepresentedSpecIds?.has(specId)) {
       unrepresentedGroupedResidue += 1;
     }
   }
@@ -2012,11 +2139,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "stateRef",
     defaultSpecLoopStatePath(appDir),
   );
-  const githubWorkflow = stringContext(
-    loopTask,
-    "githubWorkflow",
-    "run-single-spec.yaml",
-  );
+  const pipelineName = pipelineNameContext(loopTask, "ado-pipeline-467665");
   const target = stringContext(loopTask, "target", "staging");
   const branch = stringContext(loopTask, "branch", "dev");
   const timeoutMinutes = String(numberContext(loopTask, "timeoutMinutes", 60));
@@ -2140,19 +2263,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state,
     },
   );
-  const githubAccess = shouldPreflightGitHubAccess({
+  const pipelineAccessRequired = shouldPreflightPipelineAccess({
     projectDir,
     loopTask,
-  })
-    ? resolveGitHubClient(projectDir)
-    : { client: { kind: "gh" as const } };
-  const terminalGitHubWaitHarvest = githubAccess.client
+  });
+  const pipelineAccess = pipelineAccessRequired
+    ? resolvePipelineClient(projectDir)
+    : { client: null as PipelineClient | null };
+  const terminalGitHubWaitHarvest = pipelineAccess.client
     ? harvestTerminalGitHubWaits({
         config,
         projectDir,
         loopTaskId: loopTask.id,
         state,
-        client: githubAccess.client,
+        client: pipelineAccess.client,
         limit: numberContext(loopTask, "terminalGitHubWaitHarvestLimit", 25),
       })
     : {
@@ -2163,25 +2287,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       };
   const postHarvestTree = readTaskTree(config);
   const postHarvestLoopTask = postHarvestTree.tasks[loopTask.id];
-  const backendBlocker = githubAccess.client
+  const backendBlocker = !pipelineAccessRequired
     ? ""
-    : (githubAccess.reason ??
-      "GitHub Actions access is unavailable for live single-spec verification.");
-  const githubActiveRunLimit = numberContext(
-    loopTask,
-    "githubActiveRunLimit",
-    6,
-  );
-  const activeGithubRuns = githubAccess.client
+    : pipelineAccess.client
+      ? ""
+      : (pipelineAccess.reason ??
+        "Azure DevOps pipeline access is unavailable for live single-spec verification.");
+  const pipelineActiveRunLimit = pipelineLimitContext(loopTask, 6);
+  const activePipelineRuns = pipelineAccess.client
     ? activeWorkflowRuns({
-        client: githubAccess.client,
+        client: pipelineAccess.client,
         projectDir,
         branch,
       }).length
     : 0;
   const dispatchHold =
-    !backendBlocker && activeGithubRuns >= githubActiveRunLimit
-      ? `spec-loop live dispatch held because ${activeGithubRuns} GitHub workflow run(s) are already in progress on ${branch}; limit=${githubActiveRunLimit}`
+    !backendBlocker && activePipelineRuns >= pipelineActiveRunLimit
+      ? `spec-loop live dispatch held because ${activePipelineRuns} Azure DevOps pipeline run(s) are already in progress on ${branch}; limit=${pipelineActiveRunLimit}`
       : "";
   const specExecutionPolicyPreflight = shouldPreflightSpecExecutionPolicy({
     projectDir,
@@ -2246,16 +2368,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       parentId: loopTask.id,
       priority: "P1",
       workflow: "single-spec-verifier",
-      goal: `Run and review ${specId} through the single-spec workflow.`,
+      goal: `Run and review ${specId} through the single-spec Azure DevOps pipeline.`,
       inputs: [
         `spec:${specId}`,
-        `workflow:${githubWorkflow}`,
+        `pipeline:${pipelineName}`,
         `target:${target}`,
         `timeoutMinutes:${timeoutMinutes}`,
       ],
       outputs: [stateRef, "runs/test-results/", "test-results/"],
       acceptance: [
-        "GitHub workflow run completed against the fixed target environment.",
+        "Azure DevOps pipeline run completed against the fixed target environment.",
         "result.json and summary artifacts were reviewed when available.",
         "Spec status was classified as pass, fail, or error with exact root cause.",
         "Any fail/error has a concrete repair-and-rerun path, or an escalation record after bounded fixes are exhausted.",
@@ -2264,7 +2386,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       conflict_scope: [`spec:${specId}`],
       context: {
         specId,
-        githubWorkflow,
+        adoPipeline: pipelineName,
         target,
         branch,
         timeoutMinutes,
@@ -2395,8 +2517,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       maxDirectAttemptsPerSpec,
       backendBlocker,
       dispatchHold,
-      activeGithubRuns,
-      githubActiveRunLimit,
+      activeGithubRuns: activePipelineRuns,
+      githubActiveRunLimit: pipelineActiveRunLimit,
     }),
   });
   const summary = [
@@ -2410,7 +2532,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ? `Created ${policyFailureTaskIds.length} policy repair follow-up task(s).`
       : "",
     policyPreflightFailures
-      ? `Policy-preflighted ${policyPreflightFailures} spec(s) into repair before GitHub dispatch: ${policyPreflightFailureSamples.join(", ")}.`
+      ? `Policy-preflighted ${policyPreflightFailures} spec(s) into repair before ADO dispatch: ${policyPreflightFailureSamples.join(", ")}.`
       : "",
     `Assigned ${assignments.length} child task(s).`,
     requeuedOrphaned.length
@@ -2432,7 +2554,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ? `Closed ${closedStaleBlockedWaitTaskIds.length} stale blocked wait child task(s) whose named specs already passed.`
       : "",
     terminalGitHubWaitHarvest.harvestedTaskIds.length
-      ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal GitHub wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
+      ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal Azure DevOps pipeline wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
       : "",
     importedMirror.imported
       ? `Imported ${importedMirror.imported} newer domain mirror row(s): ${importedMirror.specIds.slice(0, 5).join(", ")}.`
@@ -2440,7 +2562,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     backendBlocker ? `Backend blocked: ${backendBlocker}` : "",
     dispatchHold ? `Dispatch held: ${dispatchHold}` : "",
     `Target running spec workflows: ${targetRunning}.`,
-    `Active GitHub workflow runs: ${activeGithubRuns}/${githubActiveRunLimit}.`,
+    `Active Azure DevOps pipeline runs: ${activePipelineRuns}/${pipelineActiveRunLimit}.`,
     `Max direct attempts per spec: ${maxDirectAttemptsPerSpec}.`,
     `Priority specs from dev-infra-core: ${state.prioritySpecIds.length}.`,
   ]

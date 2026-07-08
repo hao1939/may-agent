@@ -1,6 +1,12 @@
 import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
-import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  appendFileSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -19,6 +25,11 @@ import {
   saveFeatureCompactLoopState,
   updateFeatureCompactItem,
 } from "./lib/feature-compact-loop-store.ts";
+import {
+  setPipelineBackendForTests,
+  type CommandResult,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-feature-compact-loop-"));
@@ -141,7 +152,141 @@ process.exit(1);
   );
 }
 
-async function installFakeGh(
+function pipelineRunUrl(runId: string | number): string {
+  return (
+    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=" +
+    String(runId)
+  );
+}
+
+type CompactPipelineState = {
+  dispatchCount?: number;
+  loopKey?: string;
+  run?: PipelineRun & {
+    loopKey?: string;
+    planPath?: string;
+    featureSet?: string;
+  };
+};
+
+function readCompactPipelineState(statePath: string): CompactPipelineState {
+  try {
+    return JSON.parse(readFileSync(statePath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeCompactPipelineState(
+  statePath: string,
+  state: CompactPipelineState,
+): void {
+  mkdirSync(join(statePath, ".."), { recursive: true });
+  writeFileSync(statePath, JSON.stringify(state, null, 2));
+}
+
+function appendCompactPipelineDispatch(
+  logPath: string,
+  inputs: Record<string, string>,
+): void {
+  mkdirSync(join(logPath, ".."), { recursive: true });
+  appendFileSync(logPath, JSON.stringify(inputs) + "\n");
+}
+
+function writeCompactPipelineArtifacts(
+  artifactDir: string,
+  runId: string,
+  loopKey: string,
+): void {
+  const artifactRoot = join(
+    artifactDir,
+    "aks-rp-e2e-" + runId + "-test-results",
+  );
+  const resultDir = join(
+    artifactRoot,
+    "runs",
+    "test-results",
+    "feature-compact-windows-staging_000001",
+  );
+  const sharedDir = join(resultDir, "shared-clusters");
+  mkdirSync(resultDir, { recursive: true });
+  mkdirSync(sharedDir, { recursive: true });
+  const surface = process.env.FAKE_GH_RESULT_SURFACE || "live-azure-run";
+  const status = process.env.FAKE_GH_RESULT_STATUS || "passed";
+  const specStatus = status === "passed" ? "pass" : "error";
+  const resultReason =
+    process.env.FAKE_GH_RESULT_REASON ||
+    (surface === "live-azure-run"
+      ? "Live Azure run passed."
+      : "Check complete without Azure resource changes.");
+  const resultCategory =
+    process.env.FAKE_GH_RESULT_CATEGORY ||
+    (status === "passed" ? "none" : "test_error");
+  writeFileSync(
+    join(resultDir, "result.json"),
+    JSON.stringify(
+      {
+        runId: "feature-compact-windows-staging_000001",
+        planId: "feature-compact-windows-staging",
+        planPath: "features/windows/compact/staging.plan.json",
+        target: {
+          name: "staging",
+          environment: "staging",
+          subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+          location: "westus2",
+          surface,
+        },
+        status,
+        counts: {
+          pass: status === "passed" ? 1 : 0,
+          fail: 0,
+          error: status === "passed" ? 0 : 1,
+          skipped: 0,
+        },
+        specResults: [
+          {
+            specId: "spec.windows.node-pool-create",
+            status: specStatus,
+            reason: resultReason,
+            category: resultCategory,
+            durationMs: surface === "live-azure-run" ? 240000 : 400,
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+  if (surface === "live-azure-run" && status === "passed") {
+    const cleanupStatus =
+      process.env.FAKE_GH_SHARED_CLUSTER_CLEANUP_STATUS || "delete-started";
+    const cleanupStarted =
+      process.env.FAKE_GH_SHARED_CLUSTER_CLEANUP_STARTED !== "0";
+    const record: Record<string, unknown> = {
+      clusterId: "shared-exec-cluster-01",
+      resourceGroup: "rg-plan-001-windows-staging-000001",
+      clusterName: "aks-plan-001-windows-staging-000001",
+      status: "released",
+      cleanupStatus,
+      createdAt: "2026-06-30T00:00:00.000Z",
+    };
+    if (cleanupStarted) {
+      record.cleanupStartedAt = "2026-06-30T00:30:00.000Z";
+      record.cleanupReason = "vitest-global-teardown";
+    }
+    writeFileSync(
+      join(sharedDir, "shared-exec-cluster-01.json"),
+      JSON.stringify(record, null, 2),
+    );
+  }
+  mkdirSync(join(artifactRoot, "runs"), { recursive: true });
+  writeFileSync(
+    join(artifactRoot, "runs", "workflow-metadata.json"),
+    JSON.stringify({ loop_key: loopKey }, null, 2),
+  );
+}
+
+async function installCompactPipelineBackend(
   projectDir: string,
   conclusion = "success",
   options: {
@@ -153,150 +298,9 @@ async function installFakeGh(
     sharedClusterCleanupStarted?: boolean;
   } = {},
 ) {
-  const binDir = join(projectDir, "bin");
-  const statePath = join(projectDir, ".state", "fake-gh-run.json");
-  const logPath = join(projectDir, ".state", "fake-gh-dispatches.jsonl");
-  await mkdir(binDir, { recursive: true });
-  await writeFile(
-    join(binDir, "gh"),
-    `#!/usr/bin/env bun
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-
-const args = process.argv.slice(2);
-const statePath = process.env.FAKE_GH_STATE;
-const logPath = process.env.FAKE_GH_LOG;
-function readState() {
-  try { return JSON.parse(readFileSync(statePath, "utf8")); } catch { return {}; }
-}
-function writeState(value) {
-  writeFileSync(statePath, JSON.stringify(value, null, 2));
-}
-if (args[0] === "--version") {
-  console.log("gh version fake");
-  process.exit(0);
-}
-if (args[0] === "auth" && args[1] === "status") {
-  console.log("Logged in to github.com as fake-user");
-  process.exit(0);
-}
-if (args[0] === "workflow" && args[1] === "run") {
-  const inputs = {};
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "-f" && args[i + 1]) {
-      const [key, ...rest] = args[++i].split("=");
-      inputs[key] = rest.join("=");
-    }
-  }
-  if (process.env.FAKE_GH_DISPATCH_FAIL === "1") {
-    if (logPath) appendFileSync(logPath, JSON.stringify(inputs) + "\\n");
-    console.error('{"message":"dispatch failed","status":"403"}');
-    process.exit(1);
-  }
-  if (logPath) appendFileSync(logPath, JSON.stringify(inputs) + "\\n");
-  const state = readState();
-  const dispatchCount = Number(state.dispatchCount || 0) + 1;
-  if (dispatchCount === 1 && process.env.FAKE_GH_REJECT_METADATA === "1" && inputs.metadata) {
-    writeState({ ...state, dispatchCount });
-    console.error('{"message":"Unexpected inputs provided: [\\"metadata\\"]","status":"422"}');
-    process.exit(1);
-  }
-  const run = {
-    databaseId: 123,
-    status: "completed",
-    conclusion: process.env.FAKE_GH_CONCLUSION || "success",
-    url: "https://github.example/runs/123",
-    createdAt: new Date().toISOString(),
-    displayTitle: \`AKS RP E2E \${inputs.plan_path || inputs.feature_set || ""} \${inputs.target || ""}\`
-  };
-  writeState({ ...state, dispatchCount, run });
-  process.exit(0);
-}
-if (args[0] === "run" && args[1] === "list") {
-  const state = readState();
-  console.log(JSON.stringify(state.run ? [state.run] : []));
-  process.exit(0);
-}
-if (args[0] === "run" && args[1] === "view") {
-  const state = readState();
-  console.log(JSON.stringify(state.run || null));
-  process.exit(state.run ? 0 : 1);
-}
-if (args[0] === "run" && args[1] === "download") {
-  const state = readState();
-  let dir = "";
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--dir" && args[i + 1]) dir = args[++i];
-  }
-  if (!state.run || !dir) process.exit(1);
-  const artifactRoot = join(dir, \`aks-rp-e2e-\${state.run.databaseId}-test-results\`);
-  const resultDir = join(artifactRoot, "runs", "test-results", "feature-compact-windows-staging_000001");
-  const sharedDir = join(resultDir, "shared-clusters");
-  mkdirSync(resultDir, { recursive: true });
-  mkdirSync(sharedDir, { recursive: true });
-  const surface = process.env.FAKE_GH_RESULT_SURFACE || "live-azure-run";
-  const status = process.env.FAKE_GH_RESULT_STATUS || "passed";
-  const specStatus = status === "passed" ? "pass" : "error";
-  const resultReason = process.env.FAKE_GH_RESULT_REASON || (surface === "live-azure-run" ? "Live Azure run passed." : "Check complete without Azure resource changes.");
-  const resultCategory = process.env.FAKE_GH_RESULT_CATEGORY || (status === "passed" ? "none" : "test_error");
-  const result = {
-    runId: "feature-compact-windows-staging_000001",
-    planId: "feature-compact-windows-staging",
-    planPath: "features/windows/compact/staging.plan.json",
-    target: {
-      name: "staging",
-      environment: "staging",
-      subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
-      location: "westus2",
-      surface
-    },
-    status,
-    counts: {
-      pass: status === "passed" ? 1 : 0,
-      fail: 0,
-      error: status === "passed" ? 0 : 1,
-      skipped: 0
-    },
-    specResults: [{
-	      specId: "spec.windows.node-pool-create",
-	      status: specStatus,
-	      reason: resultReason,
-	      category: resultCategory,
-	      durationMs: surface === "live-azure-run" ? 240000 : 400
-	    }]
-	  };
-  writeFileSync(join(resultDir, "result.json"), JSON.stringify(result, null, 2));
-  if (surface === "live-azure-run" && status === "passed") {
-    const cleanupStatus = process.env.FAKE_GH_SHARED_CLUSTER_CLEANUP_STATUS || "delete-started";
-    const cleanupStarted = process.env.FAKE_GH_SHARED_CLUSTER_CLEANUP_STARTED !== "0";
-    const record = {
-      clusterId: "shared-exec-cluster-01",
-      resourceGroup: "rg-plan-001-windows-staging-000001",
-      clusterName: "aks-plan-001-windows-staging-000001",
-      status: "released",
-      cleanupStatus,
-      createdAt: "2026-06-30T00:00:00.000Z"
-    };
-    if (cleanupStarted) {
-      record.cleanupStartedAt = "2026-06-30T00:30:00.000Z";
-      record.cleanupReason = "vitest-global-teardown";
-    }
-    writeFileSync(join(sharedDir, "shared-exec-cluster-01.json"), JSON.stringify({
-      ...record
-    }, null, 2));
-  }
-  writeFileSync(join(artifactRoot, "runs", "workflow-metadata.json"), JSON.stringify({ loop_key: state.loopKey || "" }, null, 2));
-  process.exit(0);
-}
-console.error(\`unexpected gh args: \${args.join(" ")}\`);
-process.exit(1);
-`,
-    "utf8",
-  );
-  await chmod(join(binDir, "gh"), 0o755);
-
+  const statePath = join(projectDir, ".state", "fake-pipeline-run.json");
+  const logPath = join(projectDir, ".state", "fake-pipeline-dispatches.jsonl");
   const previous = {
-    PATH: process.env.PATH,
     FAKE_GH_STATE: process.env.FAKE_GH_STATE,
     FAKE_GH_LOG: process.env.FAKE_GH_LOG,
     FAKE_GH_CONCLUSION: process.env.FAKE_GH_CONCLUSION,
@@ -310,17 +314,10 @@ process.exit(1);
       process.env.FAKE_GH_SHARED_CLUSTER_CLEANUP_STARTED,
     FAKE_GH_DISPATCH_FAIL: process.env.FAKE_GH_DISPATCH_FAIL,
     FAKE_GH_REJECT_METADATA: process.env.FAKE_GH_REJECT_METADATA,
-    MAY_GITHUB_ACTIONS_POLL_MS: process.env.MAY_GITHUB_ACTIONS_POLL_MS,
-    MAY_GITHUB_ACTIONS_RUN_LOOKUP_POLL_MS:
-      process.env.MAY_GITHUB_ACTIONS_RUN_LOOKUP_POLL_MS,
+    MAY_ADO_PIPELINES_POLL_MS: process.env.MAY_ADO_PIPELINES_POLL_MS,
+    MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS:
+      process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS,
   };
-  const localBin = "/app/.state/.local/bin";
-  const pathWithLocalBin = (process.env.PATH ?? "")
-    .split(":")
-    .includes(localBin)
-    ? (process.env.PATH ?? "")
-    : `${localBin}:${process.env.PATH ?? ""}`;
-  process.env.PATH = `${binDir}:${pathWithLocalBin}`;
   process.env.FAKE_GH_STATE = statePath;
   process.env.FAKE_GH_LOG = logPath;
   process.env.FAKE_GH_CONCLUSION = conclusion;
@@ -339,9 +336,96 @@ process.exit(1);
     options.sharedClusterCleanupStarted === false ? "0" : "1";
   delete process.env.FAKE_GH_DISPATCH_FAIL;
   delete process.env.FAKE_GH_REJECT_METADATA;
-  process.env.MAY_GITHUB_ACTIONS_POLL_MS = "1";
-  process.env.MAY_GITHUB_ACTIONS_RUN_LOOKUP_POLL_MS = "1";
+  process.env.MAY_ADO_PIPELINES_POLL_MS = "1";
+  process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS = "1";
+
+  setPipelineBackendForTests({
+    activeRuns: () => {
+      const run = readCompactPipelineState(statePath).run;
+      return run && run.status !== "completed" ? [run] : [];
+    },
+    dispatch: ({ inputs }): CommandResult => {
+      appendCompactPipelineDispatch(logPath, inputs);
+      const state = readCompactPipelineState(statePath);
+      const dispatchCount = Number(state.dispatchCount || 0) + 1;
+      if (process.env.FAKE_GH_DISPATCH_FAIL === "1") {
+        return {
+          ok: false,
+          status: 403,
+          stdout: "",
+          stderr: '{"message":"dispatch failed","status":"403"}',
+        };
+      }
+      if (
+        dispatchCount === 1 &&
+        process.env.FAKE_GH_REJECT_METADATA === "1" &&
+        inputs.metadata
+      ) {
+        writeCompactPipelineState(statePath, { ...state, dispatchCount });
+        return {
+          ok: false,
+          status: 422,
+          stdout: "",
+          stderr:
+            '{"message":"Unexpected inputs provided: [\\"metadata\\"]","status":"422"}',
+        };
+      }
+      const loopKey = inputs.metadata
+        ? JSON.parse(inputs.metadata).loop_key || ""
+        : "";
+      const run: PipelineRun & {
+        loopKey?: string;
+        planPath?: string;
+        featureSet?: string;
+      } = {
+        databaseId: 123,
+        status: "completed",
+        conclusion: process.env.FAKE_GH_CONCLUSION || "success",
+        url: pipelineRunUrl(123),
+        createdAt: new Date().toISOString(),
+        displayTitle:
+          "AKS RP E2E " +
+          (inputs.plan_path || inputs.feature_set || "") +
+          " " +
+          (inputs.target || ""),
+        loopKey,
+        planPath: inputs.plan_path || "",
+        featureSet: inputs.feature_set || "",
+      };
+      writeCompactPipelineState(statePath, {
+        ...state,
+        dispatchCount,
+        loopKey,
+        run,
+      });
+      return { ok: true, status: 0, stdout: JSON.stringify(run), stderr: "" };
+    },
+    newestRun: (input) => {
+      const run = readCompactPipelineState(statePath).run ?? null;
+      return run && (input.match?.(run) ?? true) ? run : null;
+    },
+    getRun: ({ runId }) => {
+      const run = readCompactPipelineState(statePath).run ?? null;
+      if (!run) return null;
+      return String(run.databaseId ?? "") === String(runId) ? run : null;
+    },
+    downloadArtifacts: ({ artifactDir, runId }) => {
+      const state = readCompactPipelineState(statePath);
+      if (!state.run) {
+        return { ok: false, status: 404, stdout: "", stderr: "missing run" };
+      }
+      writeCompactPipelineArtifacts(artifactDir, runId, state.loopKey || "");
+      return {
+        ok: true,
+        status: 0,
+        stdout: "Downloaded compact pipeline artifacts.",
+        stderr: "",
+      };
+    },
+  });
+
   return () => {
+    setPipelineBackendForTests(null);
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -438,57 +522,77 @@ describe("feature compact loop", () => {
   test("controller creates bounded compact planner children", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     const assignment = assignTask(config(projectDir), {
       taskId: "aks-feature-compact-loop",
     });
     const dispatched: Array<Record<string, unknown>> = [];
 
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.assigned",
-          project: "aks-rp-e2e",
-          ...assignment,
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(_type: string, payload: Record<string, unknown>) {
-        dispatched.push(payload);
-      },
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(_type: string, payload: Record<string, unknown>) {
+          dispatched.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
 
-    expect(result.status).toBe("done");
-    expect(result.message).toContain("Created 1 child task");
-    const tree = JSON.parse(
-      await readFile(resolveTaskTreePath(projectDir), "utf8"),
-    );
-    const loop = tree.tasks["aks-feature-compact-loop"];
-    expect(loop.children).toHaveLength(1);
-    const child = tree.tasks[loop.children[0]];
-    expect(child.workflow).toBe("feature-compact-planner");
-    expect(child.context.featureKey).toBe("windows");
-    expect(child.context.target).toBe("staging");
-    expect(loop.context.workflowProgress).toMatchObject({
-      completionReady: false,
-      pending: 0,
-      running: 1,
-      lastPulseCreated: 1,
-    });
-    expect(dispatched).toHaveLength(1);
-    expect(
-      peekTaskAssignments(config(projectDir)).some(
-        (queued) => queued.taskId === child.id,
-      ),
-    ).toBe(false);
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("Created 1 child task");
+      const tree = JSON.parse(
+        await readFile(resolveTaskTreePath(projectDir), "utf8"),
+      );
+      const loop = tree.tasks["aks-feature-compact-loop"];
+      expect(loop.children).toHaveLength(1);
+      const child = tree.tasks[loop.children[0]];
+      expect(child.workflow).toBe("feature-compact-planner");
+      expect(child.context.featureKey).toBe("windows");
+      expect(child.context.target).toBe("staging");
+      expect(child.outputs).toContain(
+        "features/windows/compact/staging.plan.json",
+      );
+      expect(child.outputs).toContain(
+        "features/windows/compact/staging.diagnostics.json",
+      );
+      expect(child.outputs).not.toContain(
+        "features/windows/compact/staging.summary.md",
+      );
+      expect(child.acceptance.join("\n")).toContain(
+        "not appended to generated compact summaries",
+      );
+      expect(child.forbidden.join("\n")).toContain(
+        "Do not append task refresh",
+      );
+      expect(loop.context.workflowProgress).toMatchObject({
+        completionReady: false,
+        pending: 0,
+        running: 1,
+        lastPulseCreated: 1,
+      });
+      expect(dispatched).toHaveLength(1);
+      expect(
+        peekTaskAssignments(config(projectDir)).some(
+          (queued) => queued.taskId === child.id,
+        ),
+      ).toBe(false);
+    } finally {
+      restoreGh();
+    }
   });
 
   test("controller sends non-retryable compact errors to support follow-up without planner retry", async () => {
@@ -515,56 +619,67 @@ describe("feature compact loop", () => {
       lastSummary: "Exact external prerequisite is missing.",
     });
     saveFeatureCompactLoopState(statePath, state);
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     const assignment = assignTask(config(projectDir), {
       taskId: "aks-feature-compact-loop",
     });
     const dispatched: Array<Record<string, unknown>> = [];
 
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.assigned",
-          project: "aks-rp-e2e",
-          ...assignment,
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(_type: string, payload: Record<string, unknown>) {
-        dispatched.push(payload);
-      },
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(_type: string, payload: Record<string, unknown>) {
+          dispatched.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
 
-    expect(result.status).toBe("done");
-    expect(result.message).toContain("Created 0 child task");
-    expect(result.message).toContain("Created 1 grouped compact repair task");
-    const tree = JSON.parse(
-      await readFile(resolveTaskTreePath(projectDir), "utf8"),
-    );
-    const loop = tree.tasks["aks-feature-compact-loop"];
-    expect(
-      loop.children.filter(
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("Created 0 child task");
+      expect(result.message).toContain("Created 1 grouped compact repair task");
+      const tree = JSON.parse(
+        await readFile(resolveTaskTreePath(projectDir), "utf8"),
+      );
+      const loop = tree.tasks["aks-feature-compact-loop"];
+      expect(
+        loop.children.filter(
+          (childId: string) =>
+            tree.tasks[childId]?.workflow === "feature-compact-planner",
+        ),
+      ).toHaveLength(0);
+      const supportChildren = loop.children.filter(
         (childId: string) =>
-          tree.tasks[childId]?.workflow === "feature-compact-planner",
-      ),
-    ).toHaveLength(0);
-    const supportChildren = loop.children.filter(
-      (childId: string) =>
-        tree.tasks[childId]?.context?.featureCompactFollowup === true,
-    );
-    expect(supportChildren).toHaveLength(1);
-    expect(tree.tasks[supportChildren[0]].context.errorClass).toBe(
-      "compact-error",
-    );
-    expect(dispatched).toHaveLength(1);
+          tree.tasks[childId]?.context?.featureCompactFollowup === true,
+      );
+      expect(supportChildren).toHaveLength(1);
+      expect(tree.tasks[supportChildren[0]].context.errorClass).toBe(
+        "compact-error",
+      );
+      expect(tree.tasks[supportChildren[0]].forbidden.join("\n")).toContain(
+        "Do not append task refresh",
+      );
+      expect(tree.tasks[supportChildren[0]].acceptance.join("\n")).toContain(
+        "feature-owned compact artifacts were updated only for material reusable package/spec changes",
+      );
+      expect(dispatched).toHaveLength(1);
+    } finally {
+      restoreGh();
+    }
   });
 
   test("controller requeues stale package-gate errors when current compact plan is live-ready", async () => {
@@ -610,53 +725,217 @@ describe("feature compact loop", () => {
     });
     saveFeatureCompactLoopState(statePath, state);
 
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     const assignment = assignTask(config(projectDir), {
       taskId: "aks-feature-compact-loop",
     });
     const dispatched: Array<Record<string, unknown>> = [];
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.assigned",
-          project: "aks-rp-e2e",
-          ...assignment,
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(_type: string, payload: Record<string, unknown>) {
-        dispatched.push(payload);
-      },
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(_type: string, payload: Record<string, unknown>) {
+          dispatched.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
 
-    expect(result.status).toBe("done");
-    expect(result.message).toContain("Reset 1 stale package-gate error");
-    const updatedState = JSON.parse(await readFile(statePath, "utf8"));
-    expect(updatedState.features.windows).toMatchObject({
-      status: "running",
-      attempts: 1,
-      retryable: true,
-      retryReason: null,
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("Reset 1 stale package-gate error");
+      const updatedState = JSON.parse(await readFile(statePath, "utf8"));
+      expect(updatedState.features.windows).toMatchObject({
+        status: "running",
+        attempts: 1,
+        retryable: true,
+        retryReason: null,
+      });
+      const tree = JSON.parse(
+        await readFile(resolveTaskTreePath(projectDir), "utf8"),
+      );
+      const compactChildren = tree.tasks[
+        "aks-feature-compact-loop"
+      ].children.filter(
+        (childId: string) =>
+          tree.tasks[childId]?.workflow === "feature-compact-planner",
+      );
+      expect(compactChildren).toHaveLength(1);
+      expect(dispatched).toHaveLength(1);
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller turns failed compact branches into focused diagnostic tasks", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "features", "windows", "specs", "bad-branch.json"),
+      JSON.stringify({ id: "spec.windows.bad-branch" }),
+      "utf8",
+    );
+    await writeRootTree(projectDir);
+    const restoreGh = await installCompactPipelineBackend(projectDir);
+    const resultDir = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "artifacts",
+      "456",
+      "bundle",
+      "runs",
+      "test-results",
+      "feature-compact-windows-staging_000002",
+    );
+    await mkdir(resultDir, { recursive: true });
+    await writeFile(
+      join(resultDir, "result.json"),
+      JSON.stringify(
+        {
+          runId: "feature-compact-windows-staging_000002",
+          planId: "feature-compact-windows-staging",
+          planPath: "features/windows/compact/staging.plan.json",
+          target: {
+            name: "staging",
+            environment: "staging",
+            location: "westus2",
+            surface: "live-azure-run",
+          },
+          status: "nonpassing",
+          counts: { pass: 1, fail: 0, error: 1, skipped: 0 },
+          specResults: [
+            {
+              specId: "spec.windows.node-pool-create",
+              status: "pass",
+              reason: "Live Azure branch passed.",
+              category: "none",
+            },
+            {
+              specId: "spec.windows.bad-branch",
+              status: "error",
+              reason: "Focused branch assertion failed.",
+              category: "unknown",
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
     });
-    const tree = JSON.parse(
-      await readFile(resolveTaskTreePath(projectDir), "utf8"),
-    );
-    const compactChildren = tree.tasks[
-      "aks-feature-compact-loop"
-    ].children.filter(
-      (childId: string) =>
-        tree.tasks[childId]?.workflow === "feature-compact-planner",
-    );
-    expect(compactChildren).toHaveLength(1);
-    expect(dispatched).toHaveLength(1);
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      attempts: 2,
+      lastWorkflowRunId: "456",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=456",
+      lastResultPath:
+        ".state/feature-compact-loop/artifacts/456/bundle/runs/test-results/feature-compact-windows-staging_000002/result.json",
+      lastSummary: "Compact live run is nonpassing with one failed branch.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    const assignment = assignTask(config(projectDir), {
+      taskId: "aks-feature-compact-loop",
+    });
+    const dispatched: Array<Record<string, unknown>> = [];
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.assigned",
+            project: "aks-rp-e2e",
+            ...assignment,
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(_type: string, payload: Record<string, unknown>) {
+          dispatched.push(payload);
+        },
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Created 1 focused failed-branch diagnostic task",
+      );
+      expect(result.message).toContain(
+        "Recorded 1 compact branch pass(es) in the spec loop",
+      );
+      const tree = JSON.parse(
+        await readFile(resolveTaskTreePath(projectDir), "utf8"),
+      );
+      const loop = tree.tasks["aks-feature-compact-loop"];
+      const focusedChildren = loop.children
+        .map((childId: string) => tree.tasks[childId])
+        .filter(
+          (child: any) => child?.context?.featureCompactFocusedSpec === true,
+        );
+      expect(focusedChildren).toHaveLength(1);
+      expect(focusedChildren[0].workflow).toBeUndefined();
+      expect(focusedChildren[0].context).toMatchObject({
+        featureKey: "windows",
+        specId: "spec.windows.bad-branch",
+        sourceCompactWorkflowRunId: "456",
+        featureCompactFocusedDiagnostic: true,
+        requiresGitHubRun: false,
+        adoPipeline: "ado-pipeline-467665",
+        target: "staging",
+      });
+      expect(focusedChildren[0].conflict_scope).toContain(
+        "compact-failed-branch:windows:spec.windows.bad-branch",
+      );
+      const specLoopState = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "spec-loop", "state.json"),
+          "utf8",
+        ),
+      );
+      expect(
+        specLoopState.specs["spec.windows.node-pool-create"],
+      ).toMatchObject({
+        status: "pass",
+        lastRunId: "456",
+      });
+      expect(
+        dispatched.some((event) => event.taskId === focusedChildren[0].id),
+      ).toBe(true);
+    } finally {
+      restoreGh();
+    }
   });
 
   test("controller caps compact planner children by live GitHub capacity", async () => {
@@ -680,7 +959,7 @@ describe("feature compact loop", () => {
     tree.tasks["aks-feature-compact-loop"].context.windowSize = 3;
     tree.tasks["aks-feature-compact-loop"].context.githubActiveRunLimit = 1;
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
-    const restoreGh = await installFakeGh(projectDir);
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     const assignment = assignTask(config(projectDir), {
       taskId: "aks-feature-compact-loop",
     });
@@ -731,10 +1010,13 @@ describe("feature compact loop", () => {
     }
   });
 
-  test("planner marks done only after the live GitHub compact workflow passes", async () => {
+  test("planner marks done only after the live Azure DevOps compact pipeline passes", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -800,7 +1082,7 @@ describe("feature compact loop", () => {
     }
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("live GitHub workflow passed");
+    expect(result.message).toContain("live Azure DevOps pipeline passed");
     const state = JSON.parse(
       await readFile(
         join(projectDir, ".state", "feature-compact-loop", "state.json"),
@@ -812,7 +1094,12 @@ describe("feature compact loop", () => {
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      activeAttemptId: null,
+      activeTaskSessionId: null,
+      activeWorkflowRunId: null,
+      heartbeatAt: null,
     });
     expect(state.features.windows.lastResultPath).toContain(
       ".state/feature-compact-loop/artifacts/123/",
@@ -840,7 +1127,10 @@ describe("feature compact loop", () => {
   test("planner records live workflow failure as repairable error", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "failure");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "failure",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -913,8 +1203,15 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       status: "error",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      activeAttemptId: expect.stringContaining("a_compact-feature-windows"),
+      activeTaskSessionId: expect.stringContaining(
+        "s_task_compact-feature-windows",
+      ),
+      activeWorkflowRunId: "123",
     });
+    expect(typeof state.features.windows.heartbeatAt).toBe("string");
     expect(state.features.windows.lastWorkflowLoopKey).toContain(
       "compact-feature-windows-a_compact-feature-windows_",
     );
@@ -939,12 +1236,16 @@ describe("feature compact loop", () => {
   test("planner classifies failed compact workflow capacity preflight as capacity wait", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "failure", {
-      resultStatus: "nonpassing",
-      resultReason:
-        "Live Azure run failed staging AKS capacity preflight: westus2 has 161/161 managed clusters, so no concurrent new cluster create slots are available.",
-      resultCategory: "environment_blocker",
-    });
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "failure",
+      {
+        resultStatus: "nonpassing",
+        resultReason:
+          "Live Azure run failed staging AKS capacity preflight: westus2 has 161/161 managed clusters, so no concurrent new cluster create slots are available.",
+        resultCategory: "environment_blocker",
+      },
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1017,8 +1318,15 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       status: "error",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      activeAttemptId: expect.stringContaining("a_compact-feature-windows"),
+      activeTaskSessionId: expect.stringContaining(
+        "s_task_compact-feature-windows",
+      ),
+      activeWorkflowRunId: "123",
     });
+    expect(typeof state.features.windows.heartbeatAt).toBe("string");
     expect(String(state.features.windows.lastSummary)).toContain(
       "waiting on staging capacity",
     );
@@ -1033,7 +1341,10 @@ describe("feature compact loop", () => {
   test("planner clears stale live run references when workflow dispatch fails", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     process.env.FAKE_GH_DISPATCH_FAIL = "1";
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
@@ -1131,18 +1442,21 @@ describe("feature compact loop", () => {
       ".state/old-dispatch.json",
     );
     expect(String(state.features.windows.lastSummary)).toContain(
-      "GitHub live compact workflow dispatch failed",
+      "Azure DevOps live compact pipeline dispatch failed",
     );
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0].problem).toMatchObject({
-      category: "github-actions-dispatch",
+      category: "ado-pipeline-dispatch",
     });
   });
 
   test("planner derives compact identity for reviewed follow-up tasks", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1210,7 +1524,7 @@ describe("feature compact loop", () => {
     }
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("live GitHub workflow passed");
+    expect(result.message).toContain("live Azure DevOps pipeline passed");
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0].result).toBe("done");
     expect(String(completedEvents[0].summary)).not.toContain(
@@ -1221,9 +1535,13 @@ describe("feature compact loop", () => {
   test("planner rejects green compact workflow when artifact is only check validation", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success", {
-      resultSurface: "check-validation",
-    });
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+      {
+        resultSurface: "check-validation",
+      },
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1299,7 +1617,8 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       status: "error",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
     });
     expect(String(state.features.windows.lastSummary)).toContain(
       "surface is check-validation, not live-azure-run",
@@ -1315,11 +1634,15 @@ describe("feature compact loop", () => {
   test("planner rejects green compact workflow without real AKS creation evidence", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success", {
-      resultReason: "Live Azure run passed.",
-      sharedClusterCleanupStatus: "complete",
-      sharedClusterCleanupStarted: false,
-    });
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+      {
+        resultReason: "Live Azure run passed.",
+        sharedClusterCleanupStatus: "complete",
+        sharedClusterCleanupStarted: false,
+      },
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1395,7 +1718,8 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       status: "error",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
     });
     expect(String(state.features.windows.lastSummary)).toContain(
       "no AKS cluster creation evidence",
@@ -1411,7 +1735,10 @@ describe("feature compact loop", () => {
   test("planner retries compact dispatch without metadata after exact 422 and preserves ready package intent", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     process.env.FAKE_GH_REJECT_METADATA = "1";
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
@@ -1474,7 +1801,7 @@ describe("feature compact loop", () => {
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("live GitHub workflow passed");
+      expect(result.message).toContain("live Azure DevOps pipeline passed");
     } finally {
       restoreGh();
     }
@@ -1488,7 +1815,8 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       status: "done",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
     });
     const dispatchMetadata = JSON.parse(
       await readFile(state.features.windows.lastDispatchMetadataPath, "utf8"),
@@ -1497,7 +1825,7 @@ describe("feature compact loop", () => {
     expect(dispatchMetadata.inputs.metadata).toBeUndefined();
     const dispatchLog = (
       await readFile(
-        join(projectDir, ".state", "fake-gh-dispatches.jsonl"),
+        join(projectDir, ".state", "fake-pipeline-dispatches.jsonl"),
         "utf8",
       )
     )
@@ -1518,7 +1846,10 @@ describe("feature compact loop", () => {
   test("planner blocks live dispatch when compact package status is partial", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir, { packageStatus: "partial" });
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1633,7 +1964,10 @@ describe("feature compact loop", () => {
         },
       },
     });
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1696,7 +2030,7 @@ describe("feature compact loop", () => {
       } as any);
       expect(result.status).toBe("done");
       expect(result.message).toContain(
-        "Workflow run: 123 https://github.example/runs/123",
+        "Workflow run: 123 https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       );
     } finally {
       restoreGh();
@@ -1736,7 +2070,10 @@ describe("feature compact loop", () => {
         },
       },
     });
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1823,7 +2160,7 @@ describe("feature compact loop", () => {
       "Live dispatch gate: Compact package is blocked; no live-ready member set remains after compact eligibility filtering.",
     );
     expect(String(state.features.windows.lastSummary)).not.toContain(
-      "live GitHub dispatch is intentionally blocked until the package becomes ready",
+      "live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready",
     );
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0].problem).toMatchObject({
@@ -1840,7 +2177,10 @@ describe("feature compact loop", () => {
   test("planner blocks live dispatch when selected specs fail live policy", async () => {
     const projectDir = await makeProject();
     await writeFakeCompactRunner(projectDir, { liveAdmissionOk: false });
-    const restoreGh = await installFakeGh(projectDir, "success");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -1917,14 +2257,14 @@ describe("feature compact loop", () => {
       status: "error",
       retryable: true,
       retryReason:
-        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying GitHub dispatch.",
+        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying Azure DevOps pipeline dispatch.",
       lastWorkflowRunId: null,
       lastWorkflowRunUrl: null,
       lastDispatchMetadataPath: null,
       lastWorkflowLoopKey: null,
     });
     expect(String(state.features.windows.lastSummary)).toContain(
-      "GitHub dispatch skipped",
+      "Azure DevOps pipeline dispatch skipped",
     );
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0].problem).toMatchObject({
@@ -1933,10 +2273,10 @@ describe("feature compact loop", () => {
     });
     try {
       await readFile(
-        join(projectDir, ".state", "fake-gh-dispatches.jsonl"),
+        join(projectDir, ".state", "fake-pipeline-dispatches.jsonl"),
         "utf8",
       );
-      throw new Error("expected no GitHub dispatch log");
+      throw new Error("expected no Azure DevOps pipeline dispatch log");
     } catch (error) {
       expect(String(error)).toContain("ENOENT");
     }
@@ -1966,11 +2306,11 @@ describe("feature compact loop", () => {
       conflict_scope: ["feature-compact:windows"],
       depends_on: [],
       result:
-        "Feature compact package done for windows; live GitHub workflow passed.",
+        "Feature compact package done for windows; live Azure DevOps pipeline passed.",
       trace: {
         last_worker_result: "done",
         last_worker_summary:
-          "Feature compact package done for windows; live GitHub workflow passed.",
+          "Feature compact package done for windows; live Azure DevOps pipeline passed.",
       },
       context: {
         featureKey: "windows",
@@ -1999,10 +2339,11 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 1,
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: "live-aks-proof-v2",
       lastSummary:
-        "Feature compact package done for windows; live GitHub workflow passed.",
+        "Feature compact package done for windows; live Azure DevOps pipeline passed.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -2039,6 +2380,7 @@ describe("feature compact loop", () => {
 
   test("controller marks drained blocked-wait compact frontier as no-refill stewardship", async () => {
     const projectDir = await makeProject();
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -2084,52 +2426,57 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.tick",
-          action: "feature-compact-loop",
-          project: "aks-rp-e2e",
-          taskId: "aks-feature-compact-loop",
-          target: { taskId: "aks-feature-compact-loop" },
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
 
-    expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(
-      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
-    ).toMatchObject({
-      completionReady: false,
-      openChildren: 0,
-      openSupportChildren: 1,
-      blockedWaitChildren: 1,
-      retryBudgetExhausted: 1,
-      maxDirectAttemptsPerFeature: 2,
-      unrepresentedNonTerminalCount: 0,
-    });
-    expect(
-      updated.tasks["aks-feature-compact-loop"].context.workflowProgress.reason,
-    ).toContain("non-terminal features");
-    expect(
-      updated.tasks["reconcile-compact-loop-package-partial"],
-    ).toBeTruthy();
+      expect(result.status).toBe("done");
+      const updated = JSON.parse(await readFile(treePath, "utf8"));
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+      ).toMatchObject({
+        completionReady: false,
+        openChildren: 0,
+        openSupportChildren: 1,
+        blockedWaitChildren: 1,
+        retryBudgetExhausted: 1,
+        maxDirectAttemptsPerFeature: 2,
+        unrepresentedNonTerminalCount: 0,
+      });
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress
+          .reason,
+      ).toContain("non-terminal features");
+      expect(
+        updated.tasks["reconcile-compact-loop-package-partial"],
+      ).toBeTruthy();
+    } finally {
+      restoreGh();
+    }
   });
 
   test("controller represents staging capacity errors as blocked wait follow-ups", async () => {
@@ -2467,7 +2814,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -2587,7 +2934,7 @@ describe("feature compact loop", () => {
         status: "error",
         taskId: `compact-feature-${featureKey}`,
         attempts: 2,
-        lastSummary: `Feature compact package for ${featureKey} is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.`,
+        lastSummary: `Feature compact package for ${featureKey} is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.`,
       });
     }
     updateFeatureCompactItem(state, "network", {
@@ -2595,7 +2942,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-network",
       attempts: 2,
       lastSummary:
-        "Feature compact live GitHub workflow failed for network. Run id 12345.",
+        "Feature compact live Azure DevOps pipeline failed for network. Run id 12345.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -2711,7 +3058,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -2778,7 +3125,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -2881,7 +3228,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
     saveFeatureCompactLoopState(statePath, state);
@@ -3032,6 +3379,7 @@ describe("feature compact loop", () => {
 
   test("completed support task can reset exhausted compact retry budget with structured directive", async () => {
     const projectDir = await makeProject();
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -3082,56 +3430,61 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
     saveFeatureCompactLoopState(statePath, state);
 
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.tick",
-          action: "feature-compact-loop",
-          project: "aks-rp-e2e",
-          taskId: "aks-feature-compact-loop",
-          target: { taskId: "aks-feature-compact-loop" },
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
 
-    expect(result.status).toBe("done");
-    expect(result.message).toContain(
-      "Reset compact retry budget for 1 feature(s)",
-    );
-    const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
-    expect(
-      updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
-    ).toMatchObject({
-      retryBudgetExhausted: 0,
-      lastPulseCreated: 1,
-    });
-    const savedState = JSON.parse(await readFile(statePath, "utf8"));
-    expect(savedState.features.windows).toMatchObject({
-      status: "running",
-      attempts: 1,
-      taskId: "compact-feature-windows",
-    });
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Reset compact retry budget for 1 feature(s)",
+      );
+      const updated = JSON.parse(await readFile(treePath, "utf8"));
+      expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+      ).toMatchObject({
+        retryBudgetExhausted: 0,
+        lastPulseCreated: 1,
+      });
+      const savedState = JSON.parse(await readFile(statePath, "utf8"));
+      expect(savedState.features.windows).toMatchObject({
+        status: "running",
+        attempts: 1,
+        taskId: "compact-feature-windows",
+      });
+    } finally {
+      restoreGh();
+    }
   });
 
   test("completed exact compact repair can infer retry reset from accepted rerun text", async () => {
     const projectDir = await makeProject();
+    const restoreGh = await installCompactPipelineBackend(projectDir);
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -3184,7 +3537,113 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Reset compact retry budget for 1 feature(s)",
+      );
+      const updated = JSON.parse(await readFile(treePath, "utf8"));
+      expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
+      const savedState = JSON.parse(await readFile(statePath, "utf8"));
+      expect(savedState.features.windows).toMatchObject({
+        status: "running",
+        attempts: 1,
+        taskId: "compact-feature-windows",
+      });
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("completed focused compact diagnostic does not infer retry reset from rerun wording", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].state = "active";
+    tree.tasks["aks-feature-compact-loop"].status = "active";
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "verify-compact-windows-node-pool",
+    ];
+    tree.tasks["verify-compact-windows-node-pool"] = {
+      id: "verify-compact-windows-node-pool",
+      parent_id: "aks-feature-compact-loop",
+      state: "done",
+      status: "done",
+      done_at: "2999-01-01T00:00:00.000Z",
+      priority: "P1",
+      children: [],
+      goal: "Diagnose failed compact branch.",
+      inputs: ["spec:spec.windows.node-pool-create"],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: ["Diagnosed"],
+      forbidden: [],
+      conflict_scope: [
+        "feature-compact:windows",
+        "spec:spec.windows.node-pool-create",
+      ],
+      depends_on: [],
+      context: {
+        featureCompactFocusedSpec: true,
+        featureCompactFocusedDiagnostic: true,
+        featureKey: "windows",
+        specId: "spec.windows.node-pool-create",
+      },
+      result:
+        "Cancelled old single-spec rerun; rerun wording is diagnostic history, not accepted compact repair.",
+      trace: {
+        last_worker_summary:
+          "The diagnostic mentions rerun, but no explicit compactRetryReset was emitted.",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary: "Compact live run is nonpassing.",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
     saveFeatureCompactLoopState(statePath, state);
@@ -3213,15 +3672,11 @@ describe("feature compact loop", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain(
-      "Reset compact retry budget for 1 feature(s)",
-    );
-    const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(updated.tasks["compact-feature-windows"]).toBeTruthy();
+    expect(result.message).not.toContain("Reset compact retry budget");
     const savedState = JSON.parse(await readFile(statePath, "utf8"));
     expect(savedState.features.windows).toMatchObject({
-      status: "running",
-      attempts: 1,
+      status: "error",
+      attempts: 2,
       taskId: "compact-feature-windows",
     });
   });
@@ -3278,7 +3733,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
     saveFeatureCompactLoopState(statePath, state);
@@ -3365,7 +3820,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 1,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -3414,7 +3869,7 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 1,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
   });
 
@@ -3493,10 +3948,11 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 1,
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: "live-aks-proof-v2",
       lastSummary:
-        "Feature compact package done for windows; live GitHub workflow passed.",
+        "Feature compact package done for windows; live Azure DevOps pipeline passed.",
     });
     updateFeatureCompactItem(state, "oidc-issuer", {
       status: "error",
@@ -3570,11 +4026,11 @@ describe("feature compact loop", () => {
       conflict_scope: ["feature-compact:windows"],
       depends_on: [],
       result:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       trace: {
         last_worker_result: "partial",
         last_worker_summary:
-          "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+          "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       },
       context: {
         featureKey: "windows",
@@ -3607,7 +4063,7 @@ describe("feature compact loop", () => {
       lastSummaryPath: "features/windows/compact/staging.summary.md",
       lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -3790,11 +4246,11 @@ describe("feature compact loop", () => {
       conflict_scope: ["feature-compact:windows"],
       depends_on: [],
       result:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       trace: {
         last_worker_result: "partial",
         last_worker_summary:
-          "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+          "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
       },
       context: {
         featureKey: "windows",
@@ -3859,7 +4315,7 @@ describe("feature compact loop", () => {
       "Feature compact package for windows remains partial because compactEligibility intentionally quarantines reviewed-exception spec.windows.example. Keep the exact blocker-specific summary instead of the generic package-ready placeholder.",
     );
     expect(savedState.features.windows.lastSummary).not.toContain(
-      "live GitHub dispatch is intentionally blocked until the package becomes ready",
+      "live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready",
     );
   });
 
@@ -3890,7 +4346,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(provenState, "windows", {
       status: "done",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: "live-aks-proof-v2",
       lastSummary: "Live shared-cluster proof accepted.",
     });
@@ -3994,7 +4451,7 @@ describe("feature compact loop", () => {
       status: "error",
       attempts: 2,
       lastSummary:
-        "Feature compact package for windows is partial; live GitHub dispatch is intentionally blocked until the package becomes ready.",
+        "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
     state.features.windows.updatedAt = "2026-01-01T00:00:00.000Z";
     await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
@@ -4076,21 +4533,22 @@ describe("feature compact loop", () => {
     });
   });
 
-  test("controller keeps running feature when recorded GitHub run is active", async () => {
+  test("controller keeps running feature when recorded Azure DevOps run is active", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const restoreGh = await installFakeGh(projectDir);
-    const fakeGhState = process.env.FAKE_GH_STATE;
-    if (!fakeGhState) throw new Error("missing fake gh state path");
+    const treePath = resolveTaskTreePath(projectDir);
+    const restoreGh = await installCompactPipelineBackend(projectDir);
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
     await writeFile(
-      fakeGhState,
+      pipelineState,
       JSON.stringify(
         {
           run: {
             databaseId: 123,
             status: "in_progress",
             conclusion: "",
-            url: "https://github.example/runs/123",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle: "AKS RP E2E compact-feature-windows staging",
           },
@@ -4119,7 +4577,8 @@ describe("feature compact loop", () => {
       taskId: "compact-feature-windows",
       attempts: 1,
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastSummary: "Live compact workflow is in progress.",
     });
     saveFeatureCompactLoopState(statePath, state);
@@ -4155,26 +4614,41 @@ describe("feature compact loop", () => {
         status: "running",
         lastWorkflowRunId: "123",
       });
+      const updated = JSON.parse(await readFile(treePath, "utf8"));
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+      ).toMatchObject({
+        completionReady: false,
+        running: 1,
+        openChildren: 0,
+        unrepresentedNonTerminalCount: 0,
+        activePipelineFeatureKeys: ["windows"],
+        lastPulseCreated: 0,
+      });
+      expect(updated.tasks["compact-feature-windows"]).toBeUndefined();
     } finally {
       restoreGh();
     }
   });
 
-  test("controller reconciles completed orphaned GitHub run before releasing running feature", async () => {
+  test("controller reconciles completed orphaned Azure DevOps run before releasing running feature", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
-    const fakeGhState = process.env.FAKE_GH_STATE;
-    if (!fakeGhState) throw new Error("missing fake gh state path");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
     await writeFile(
-      fakeGhState,
+      pipelineState,
       JSON.stringify(
         {
           run: {
             databaseId: 123,
             status: "completed",
             conclusion: "success",
-            url: "https://github.example/runs/123",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle:
               "AKS RP E2E features/windows/compact/staging.plan.json staging",
@@ -4205,7 +4679,8 @@ describe("feature compact loop", () => {
       attempts: 1,
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastSummary:
         "Live compact workflow was dispatched before the task attempt became obsolete.",
     });
@@ -4236,7 +4711,9 @@ describe("feature compact loop", () => {
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("Reconciled 1 completed GitHub compact");
+      expect(result.message).toContain(
+        "Reconciled 1 completed Azure DevOps compact",
+      );
       expect(result.message).not.toContain("Released 1 stale running");
       const saved = JSON.parse(await readFile(statePath, "utf8"));
       expect(saved.features.windows).toMatchObject({
@@ -4245,28 +4722,31 @@ describe("feature compact loop", () => {
         lastLiveProofVersion: "live-aks-proof-v2",
       });
       expect(saved.features.windows.lastSummary).toContain(
-        "Reconciled completed compact GitHub run 123",
+        "Reconciled completed compact Azure DevOps pipeline run 123",
       );
     } finally {
       restoreGh();
     }
   });
 
-  test("controller backfills stale error row from completed GitHub live proof", async () => {
+  test("controller backfills stale error row from completed Azure DevOps live proof", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
-    const fakeGhState = process.env.FAKE_GH_STATE;
-    if (!fakeGhState) throw new Error("missing fake gh state path");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
     await writeFile(
-      fakeGhState,
+      pipelineState,
       JSON.stringify(
         {
           run: {
             databaseId: 123,
             status: "completed",
             conclusion: "success",
-            url: "https://github.example/runs/123",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle:
               "AKS RP E2E features/windows/compact/staging.plan.json staging",
@@ -4297,7 +4777,8 @@ describe("feature compact loop", () => {
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: null,
       lastSummary:
         "Feature compact live workflow did not prove a live Azure pass for windows.",
@@ -4341,7 +4822,140 @@ describe("feature compact loop", () => {
         lastLiveProofVersion: "live-aks-proof-v2",
       });
       expect(saved.features.windows.lastSummary).toContain(
-        "Backfilled completed compact GitHub run 123",
+        "Backfilled completed compact Azure DevOps pipeline run 123",
+      );
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller backfills completed Azure DevOps live proof even when an exact wait holder represents the feature", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
+    await writeFile(
+      pipelineState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "completed",
+            conclusion: "success",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+            createdAt: new Date().toISOString(),
+            displayTitle:
+              "AKS RP E2E features/windows/compact/staging.plan.json staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      ...(tree.tasks["aks-feature-compact-loop"].children ?? []),
+      "wait-compact-windows-ado-run-123-review",
+    ];
+    tree.tasks["wait-compact-windows-ado-run-123-review"] = {
+      id: "wait-compact-windows-ado-run-123-review",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P1",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for Azure DevOps run 123 for windows compact package.",
+      inputs: ["feature:windows", "runId:123"],
+      outputs: [],
+      acceptance: ["Review run 123 when terminal."],
+      conflict_scope: ["feature-compact:windows"],
+      context: {
+        featureKey: "windows",
+        runId: "123",
+      },
+      blocker: {
+        condition: "Azure DevOps run 123 review pending.",
+        waiting_for: {
+          type: "azure-devops.run.completed",
+          runId: "123",
+        },
+      },
+    };
+    await writeFile(treePath, JSON.stringify(tree, null, 2), "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      errorClass: "live-workflow",
+      retryable: true,
+      attempts: 2,
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastWorkflowRunId: "123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      lastLiveProofVersion: null,
+      lastSummary:
+        "Exact Azure DevOps run 123 is represented by a wait holder and needs result harvest.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Backfilled 1 stale compact error run(s).",
+      );
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features.windows).toMatchObject({
+        status: "done",
+        lastWorkflowRunId: "123",
+        lastLiveProofVersion: "live-aks-proof-v2",
+      });
+      expect(saved.features.windows.lastSummary).toContain(
+        "Backfilled completed compact Azure DevOps pipeline run 123",
       );
     } finally {
       restoreGh();
@@ -4351,18 +4965,26 @@ describe("feature compact loop", () => {
   test("controller does not repeatedly backfill an already inspected failing run", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "success");
-    const fakeGhState = process.env.FAKE_GH_STATE;
-    if (!fakeGhState) throw new Error("missing fake gh state path");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "failure",
+      {
+        resultStatus: "nonpassing",
+        resultReason: "Previously inspected failing live proof.",
+        resultCategory: "test_error",
+      },
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
     await writeFile(
-      fakeGhState,
+      pipelineState,
       JSON.stringify(
         {
           run: {
             databaseId: 123,
             status: "completed",
             conclusion: "success",
-            url: "https://github.example/runs/123",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle:
               "AKS RP E2E features/windows/compact/staging.plan.json staging",
@@ -4393,10 +5015,11 @@ describe("feature compact loop", () => {
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: null,
       lastSummary:
-        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+        "Backfilled completed compact Azure DevOps pipeline run 123 for windows; live proof is still failing.",
     });
     saveFeatureCompactLoopState(statePath, state);
 
@@ -4433,7 +5056,7 @@ describe("feature compact loop", () => {
         lastLiveProofVersion: null,
       });
       expect(saved.features.windows.lastSummary).toBe(
-        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+        "Backfilled completed compact Azure DevOps pipeline run 123 for windows; live proof is still failing.",
       );
     } finally {
       restoreGh();
@@ -4443,23 +5066,27 @@ describe("feature compact loop", () => {
   test("controller preserves exact retryReason when backfilling a completed nonpassing run without capacity classification", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
-    const restoreGh = await installFakeGh(projectDir, "failure", {
-      resultStatus: "nonpassing",
-      resultReason:
-        "Run artifact bundle is incomplete; only workflow metadata and dispatch inputs were materialized locally.",
-      resultCategory: "workflow_artifact_gap",
-    });
-    const fakeGhState = process.env.FAKE_GH_STATE;
-    if (!fakeGhState) throw new Error("missing fake gh state path");
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "failure",
+      {
+        resultStatus: "nonpassing",
+        resultReason:
+          "Run artifact bundle is incomplete; only workflow metadata and dispatch inputs were materialized locally.",
+        resultCategory: "workflow_artifact_gap",
+      },
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
     await writeFile(
-      fakeGhState,
+      pipelineState,
       JSON.stringify(
         {
           run: {
             databaseId: 123,
             status: "completed",
             conclusion: "failure",
-            url: "https://github.example/runs/123",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle:
               "AKS RP E2E features/windows/compact/staging.plan.json staging",
@@ -4490,7 +5117,8 @@ describe("feature compact loop", () => {
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: null,
       retryReason:
         "Recover and review the exact failed run artifact/log surface before any successor rerun.",
@@ -4535,7 +5163,7 @@ describe("feature compact loop", () => {
           "Recover and review the exact failed run artifact/log surface before any successor rerun.",
       });
       expect(String(saved.features.windows.lastSummary)).toContain(
-        "Backfilled completed compact GitHub run 123 for windows; live proof is still failing.",
+        "Backfilled completed compact Azure DevOps pipeline run 123 for windows; live proof is still failing.",
       );
     } finally {
       restoreGh();
@@ -4597,7 +5225,8 @@ describe("feature compact loop", () => {
       attempts: 1,
       taskId: "compact-feature-windows-retry",
       lastWorkflowRunId: "123",
-      lastWorkflowRunUrl: "https://github.example/runs/123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
       lastLiveProofVersion: "live-aks-proof-v2",
       lastSummary: "Live shared-cluster proof accepted.",
     });
@@ -4664,7 +5293,7 @@ describe("feature compact loop", () => {
       depends_on: [],
       blocker: {
         condition:
-          "Waiting for GitHub run 28775604245 terminal artifacts for the two-spec storage-csi slice.",
+          "Waiting for Azure DevOps run 28775604245 terminal artifacts for the two-spec storage-csi slice.",
       },
     };
     tree.tasks["wait-storage-csi-mixed-frontier"] = {
@@ -4761,7 +5390,7 @@ describe("feature compact loop", () => {
     });
   });
 
-  test("controller moves terminal GitHub compact waits to review", async () => {
+  test("controller moves terminal Azure DevOps compact waits to review", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
@@ -4776,7 +5405,7 @@ describe("feature compact loop", () => {
       status: "blocked",
       priority: "P1",
       children: [],
-      goal: "Wait for windows compact GitHub workflow run 123456789 to finish.",
+      goal: "Wait for windows compact Azure DevOps pipeline run 123456789 to finish.",
       inputs: ["feature:windows", "spec.windows.node-pool-create"],
       outputs: [],
       acceptance: ["Review terminal workflow result."],
@@ -4790,7 +5419,7 @@ describe("feature compact loop", () => {
       },
       blocker: {
         category: "external-wait",
-        condition: "Waiting for GitHub workflow run 123456789.",
+        condition: "Waiting for Azure DevOps pipeline run 123456789.",
         waiting_for: {
           type: "github.workflow_run.completed",
           runId: "123456789",
@@ -4848,7 +5477,7 @@ describe("feature compact loop", () => {
         databaseId: Number(runId),
         status: "completed",
         conclusion: "failure",
-        url: "https://github.example/runs/123456789",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
         displayTitle: "Compact windows staging",
       }),
     });
@@ -4859,7 +5488,7 @@ describe("feature compact loop", () => {
     expect(updated.tasks["wait-compact-windows-run"]).toMatchObject({
       state: "review",
       context: {
-        terminalGitHubWaitReview: {
+        terminalPipelineWaitReview: {
           runId: "123456789",
           runStatus: "completed",
           runConclusion: "failure",
@@ -4872,7 +5501,8 @@ describe("feature compact loop", () => {
     expect(state.features.windows).toMatchObject({
       taskId: "wait-compact-windows-run",
       lastWorkflowRunId: "123456789",
-      lastWorkflowRunUrl: "https://github.example/runs/123456789",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
       observedBy: {
         workflow: "feature-compact-loop-controller",
         taskId: "wait-compact-windows-run",
@@ -4881,7 +5511,7 @@ describe("feature compact loop", () => {
     });
   });
 
-  test("controller leaves active GitHub compact waits blocked", async () => {
+  test("controller leaves active Azure DevOps compact waits blocked", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
@@ -4896,7 +5526,7 @@ describe("feature compact loop", () => {
       status: "blocked",
       priority: "P1",
       children: [],
-      goal: "Wait for windows compact GitHub workflow run 123456789 to finish.",
+      goal: "Wait for windows compact Azure DevOps pipeline run 123456789 to finish.",
       inputs: ["feature:windows"],
       outputs: [],
       acceptance: ["Review terminal workflow result."],
@@ -4905,7 +5535,7 @@ describe("feature compact loop", () => {
       depends_on: [],
       blocker: {
         category: "external-wait",
-        condition: "Waiting for GitHub workflow run 123456789.",
+        condition: "Waiting for Azure DevOps pipeline run 123456789.",
         waiting_for: {
           type: "github.workflow_run.completed",
           runId: "123456789",

@@ -72,7 +72,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts "aks-rp-
 Observed result:
 
 ```json
-{"measuredAt":1783374242581,"value":0}
+{ "measuredAt": 1783374242581, "value": 0 }
 ```
 
 A direct audit of `.state/tasks/tree.json` now also returns no offenders:

@@ -3,7 +3,7 @@
  *
  * Handles project.problem.investigation.requested by waking a focused solver session. The
  * solver investigates and may fix local runner/app/domain defects, but the
- * project owner remains responsible for task-tree reconciliation.
+ * planner remains responsible for task-tree reconciliation.
  */
 
 import { join } from "node:path";
@@ -74,8 +74,8 @@ You are handling one aks-rp-e2e project problem. The purpose is to make the
 failure/blocking process large, visible, and resolved quickly.
 
 Boundaries:
-- Do not reshape the task tree, accept tasks, roll up parents, or assign work.
-  The project owner owns all task-tree decisions.
+- Do not reshape the task tree, accept tasks, roll up parents, or dispatch work.
+  The planner owns all task-tree decisions.
 - You may inspect task context, run diagnostics, and fix local app/domain runner
   or replay code when the problem is caused by our tools or environment setup.
 - If the problem needs external input, credentials, quota, policy, product
@@ -85,7 +85,7 @@ Boundaries:
   ${input.sourceDir}. Do not escalate missing source/devbox/source-holder issues
   until the relevant mounted source paths have been checked.
 - If you fix something, verify the fix as far as possible and state the exact
-  retry event or task the owner should use.
+  retry event or task the planner should use.
 
 Finish with one explicit line:
 
@@ -151,7 +151,7 @@ function problemResultType(
   }
 
   // Agent didn't declare a result — don't guess from unrelated free text.
-  // The owner will see "inconclusive" and decide.
+  // The planner will see "inconclusive" and decide.
   return "project.problem.inconclusive";
 }
 

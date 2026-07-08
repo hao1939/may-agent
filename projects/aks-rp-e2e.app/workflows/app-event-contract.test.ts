@@ -314,9 +314,9 @@ describe("app event contract", () => {
     }
   });
 
-  test("manifest schedules periodic blocked-frontier owner review", () => {
+  test("manifest schedules periodic blocked-frontier app-ops review", () => {
     const schedule = appManifest.schedules?.find(
-      (entry) => entry.id === "blocked-frontier-owner-review",
+      (entry) => entry.id === "blocked-frontier-app-ops-review",
     );
 
     expect(schedule).toMatchObject({
@@ -338,7 +338,7 @@ describe("app event contract", () => {
       schedule?.emits as Array<{ data?: { params?: { instruction?: string } } }>
     )?.at(0)?.data?.params;
     expect(String(params?.instruction)).toContain(
-      "Periodic blocked-frontier owner review",
+      "Periodic blocked-frontier app-ops review",
     );
   });
 

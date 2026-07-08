@@ -20,7 +20,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts aks-rp-e
 Observed result before repair:
 
 ```json
-{"measuredAt":1783387951183,"value":7}
+{ "measuredAt": 1783387951183, "value": 7 }
 ```
 
 ### Exact offenders from the runtime tree
@@ -66,7 +66,7 @@ Observed result:
 A fresh runtime-tree audit using the same blocked-waiting-for logic as `scripts/project-metrics.ts` found no remaining offenders:
 
 ```json
-{"count":0,"offenders":[]}
+{ "count": 0, "offenders": [] }
 ```
 
 The metric source then recomputed to target value `0`:
@@ -78,7 +78,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts aks-rp-e
 Observed result after repair:
 
 ```json
-{"measuredAt":1783387973279,"value":0}
+{ "measuredAt": 1783387973279, "value": 0 }
 ```
 
 ## Conclusion

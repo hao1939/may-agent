@@ -227,6 +227,12 @@ describe("task-tree CLI", () => {
         "Resume when proof lands.",
         "--resume-at",
         "2099-06-26T00:00:00.000Z",
+        "--next-check-at",
+        "2099-06-26T12:00:00.000Z",
+        "--fallback-at",
+        "2099-06-27T00:00:00.000Z",
+        "--fallback-action",
+        "Escalate if proof has not landed.",
       ],
       {
         ...process.env,
@@ -243,6 +249,9 @@ describe("task-tree CLI", () => {
       owner: "human",
       resume_condition: "Resume when proof lands.",
       resume_at: "2099-06-26T00:00:00.000Z",
+      next_check_at: "2099-06-26T12:00:00.000Z",
+      fallback_at: "2099-06-27T00:00:00.000Z",
+      fallback_action: "Escalate if proof has not landed.",
     });
 
     const update = await runTaskTree(
@@ -251,6 +260,12 @@ describe("task-tree CLI", () => {
         "blocked-task",
         "--resume-at",
         "2099-06-27T00:00:00.000Z",
+        "--next-check-at",
+        "2099-06-27T12:00:00.000Z",
+        "--fallback-at",
+        "2099-06-28T00:00:00.000Z",
+        "--fallback-action",
+        "Escalate again if proof has not landed.",
       ],
       {
         ...process.env,
@@ -264,6 +279,9 @@ describe("task-tree CLI", () => {
     expect(JSON.parse(update.stdout).blocker).toMatchObject({
       condition: "Waiting for returned operator proof.",
       resume_at: "2099-06-27T00:00:00.000Z",
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+      fallback_action: "Escalate again if proof has not landed.",
     });
 
     const tree = JSON.parse(
@@ -272,11 +290,16 @@ describe("task-tree CLI", () => {
     expect(tree.tasks["blocked-task"].blocker).toMatchObject({
       condition: "Waiting for returned operator proof.",
       resume_at: "2099-06-27T00:00:00.000Z",
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+      fallback_action: "Escalate again if proof has not landed.",
     });
   });
 
   test("repair-blocked-contracts backfills explicit wait and observer fields", async () => {
     const fixture = await makeFixture();
+
+    const runtimePaths = projectRuntimePaths(fixture.appDir);
 
     const add = await runTaskTree(
       [
@@ -315,6 +338,7 @@ describe("task-tree CLI", () => {
 
     expect(repaired.exitCode).toBe(0);
     expect(JSON.parse(repaired.stdout)).toMatchObject({
+      treePath: runtimePaths.taskTreePath,
       repairedCount: 1,
       repaired: ["github-wait"],
     });
@@ -332,7 +356,7 @@ describe("task-tree CLI", () => {
       },
       observed_by: {
         workflow: "project-planner",
-        schedule: "blocked-frontier-owner-review",
+        schedule: "blocked-frontier-app-ops-review",
       },
       resume_condition:
         "Resume when run 28702280698 has reviewed same-run logs.",
@@ -342,5 +366,309 @@ describe("task-tree CLI", () => {
     expect(tree.tasks["github-wait"].blocker.fallback_action).toContain(
       "owner recovery",
     );
+  });
+
+  test("repair-blocked-contracts infers Azure DevOps waits from blocked text", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "ado-wait",
+        "--parent",
+        "project",
+        "--goal",
+        "Wait for planned set result.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "ADO result reviewed",
+        "--state",
+        "blocked",
+        "--blocker",
+        "Blocked until Azure DevOps run 171186535 returns planned set artifacts. Resume: Resume when ADO run 171186535 is terminal and artifacts are reviewed.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["ado-wait"].blocker).toMatchObject({
+      waiting_for: {
+        type: "ado.pipeline_run.completed",
+        runId: "171186535",
+        pipeline: "467665",
+        branch: "dev",
+      },
+    });
+    expect(tree.tasks["ado-wait"].blocker.waiting_for.runUrl).toContain(
+      "buildId=171186535",
+    );
+  });
+
+  test("repair-blocked-contracts corrects migrated Azure DevOps waits that still name GitHub", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["ado-migrated-wait"] = {
+      id: "ado-migrated-wait",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for Azure DevOps run 171186535.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["ADO result reviewed"],
+      blocker: {
+        condition:
+          "Azure DevOps pipeline run 171186535 is still executing for the planned staging pass.",
+        category: "external-wait",
+        owner: "human",
+        blocked_at: "2026-07-07T12:30:42.557Z",
+        waiting_for: {
+          type: "github.workflow_run.completed",
+          runId: "171186535",
+          taskId: "ado-migrated-wait",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          "Scheduled blocked-frontier owner review checks the stated wait condition.",
+        next_check_at: "2026-07-07T12:46:42.845Z",
+        resume_condition:
+          "Resume when ADO run 171186535 completes and artifacts can be reviewed.",
+        fallback_at: "2026-07-08T12:36:42.845Z",
+        fallback_action:
+          "If the wait is still true at fallback time, refresh or escalate.",
+      },
+    };
+    tree.tasks.project.children.push("ado-migrated-wait");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repaired: ["ado-migrated-wait"],
+    });
+
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["ado-migrated-wait"].blocker.owner).toBe("ado");
+    expect(
+      updated.tasks["ado-migrated-wait"].blocker.waiting_for,
+    ).toMatchObject({
+      type: "ado.pipeline_run.completed",
+      runId: "171186535",
+      pipeline: "467665",
+      branch: "dev",
+    });
+  });
+
+  test("repair-blocked-contracts corrects Azure DevOps wait owner", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["ado-owner-wait"] = {
+      id: "ado-owner-wait",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for Azure DevOps run 171186535.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["ADO result reviewed"],
+      blocker: {
+        condition:
+          "Azure DevOps pipeline run 171186535 is still executing for the planned staging pass.",
+        category: "external-wait",
+        owner: "human",
+        blocked_at: "2026-07-07T12:30:42.557Z",
+        waiting_for: {
+          type: "ado.pipeline_run.completed",
+          runId: "171186535",
+          taskId: "ado-owner-wait",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          "Scheduled blocked-frontier owner review checks the stated wait condition.",
+        next_check_at: "2026-07-07T12:46:42.845Z",
+        resume_condition:
+          "Resume when ADO run 171186535 completes and artifacts can be reviewed.",
+        fallback_at: "2026-07-08T12:36:42.845Z",
+        fallback_action:
+          "If the wait is still true at fallback time, refresh or escalate.",
+      },
+    };
+    tree.tasks.project.children.push("ado-owner-wait");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repaired: ["ado-owner-wait"],
+    });
+
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["ado-owner-wait"].blocker.owner).toBe("ado");
+    expect(updated.tasks["ado-owner-wait"].blocker.waiting_for.type).toBe(
+      "ado.pipeline_run.completed",
+    );
+  });
+
+  test("repair-blocked-contracts does not treat plain runtime run ids as GitHub waits", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["runtime-recovery-wait"] = {
+      id: "runtime-recovery-wait",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for runtime recovery after run 171186535.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["runtime recovery reviewed"],
+      blocker: {
+        condition:
+          "Run 171186535 reached deep live execution but failed on a runtime/platform update path; wait for material platform recovery before rerun.",
+        category: "external-wait",
+        owner: "aks-explorer",
+        blocked_at: "2026-07-07T14:30:00.000Z",
+        waiting_for: {
+          type: "github.workflow_run.completed",
+          runId: "171186535",
+          taskId: "runtime-recovery-wait",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          "Scheduled blocked-frontier owner review checks the stated wait condition.",
+        next_check_at: "2026-07-07T14:40:00.000Z",
+        resume_condition:
+          "Resume when runtime/platform recovery changes this surface.",
+        fallback_at: "2026-07-08T14:30:00.000Z",
+        fallback_action: "Refresh or escalate.",
+      },
+    };
+    tree.tasks.project.children.push("runtime-recovery-wait");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repaired: ["runtime-recovery-wait"],
+    });
+
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      updated.tasks["runtime-recovery-wait"].blocker.waiting_for,
+    ).toMatchObject({
+      type: "environment.available",
+      taskId: "runtime-recovery-wait",
+      sourceRunId: "171186535",
+    });
+  });
+
+  test("repair-blocked-contracts does not turn completed ADO evidence into an ADO wait", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["kms-invalid-sku-wait"] = {
+      id: "kms-invalid-sku-wait",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for material Key Vault SKU contract change.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["SKU frontier remains exact"],
+      blocker: {
+        condition:
+          "Blocked on the repaired same-path rerun for spec.kms.v2plus-enable-pmk-from-v2-public: Azure DevOps run 171208533 preserved the Key Vault request/response and returned HTTP 400 BadRequest 'The key vault sku is invalid.' This closes the diagnostics gap and leaves the current branch as a provider/environment rejection with no truthful unchanged rerun.",
+        category: "external-wait",
+        owner: "ado",
+        resume_condition:
+          "Resume only when a reviewed same-surface signal changes this exact Key Vault create contract on staging.",
+      },
+    };
+    tree.tasks.project.children.push("kms-invalid-sku-wait");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repaired: ["kms-invalid-sku-wait"],
+    });
+
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["kms-invalid-sku-wait"].blocker.owner).toBe(
+      "aks-explorer",
+    );
+    expect(
+      updated.tasks["kms-invalid-sku-wait"].blocker.waiting_for,
+    ).toMatchObject({
+      type: "environment.available",
+      taskId: "kms-invalid-sku-wait",
+      sourceRunId: "171208533",
+    });
   });
 });

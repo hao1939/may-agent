@@ -12,13 +12,55 @@ The contract is intentionally small:
 
 - `type` says what kind of command or fact this is.
 - `target` says who should handle it.
-- optional top-level `action` disambiguates routing when several handlers share
-  the same event type.
+- optional top-level `action` disambiguates routing when several event routes
+  share the same event type.
 - `data` explains why the event was fired and carries workflow context.
 
 The target-first rule is the most important part: fire the target. If no direct
-handler catches the event, runtime ownership fallback may route it to the owning
-task or project.
+event route catches the event, runtime ownership fallback may route it to the
+owning task or project.
+
+## Event Routes
+
+`handler` is runtime plumbing, not a project-level mental model. In app design,
+talk about event routes and route targets:
+
+```text
+event -> event route -> target
+```
+
+An event route lives in `app.ts` through `onEvent`. Most routes are generated
+with `workflowHandlers([...])`; that helper name is implementation history, not
+the conceptual model. A route matches an event selector and delivers the event
+to the right target. The target is inferred by convention: a route with a
+workflow runs that workflow; a route or event with an owner and no workflow is
+an owner handoff; an unmatched event follows the runtime ownership fallback.
+The responsible actor is the agent, project, or task owner named by the
+task/event context, not the route object.
+
+Owner-routed events must still close with structured output. The owner should
+record one of: dispatch a workflow, create/assign a task, accept a no-op, block
+with an exact waiting condition, escalate, or emit another canonical event.
+
+Example owner route:
+
+```text
+metric.breach
+  -> project owner/app-ops
+  -> structured decision
+  -> project.planning.requested, project.stall.review.requested,
+     accepted no-op, exact wait, or escalation
+```
+
+For task-backed work, the route normally starts a task adapter:
+
+```text
+project.task.assigned -> task-worker -> task.workflow
+```
+
+The task adapter may read the task tree to build workflow input and normalize
+workflow output. Business workflows should not need task-tree mechanics unless
+their business purpose is project orchestration.
 
 ## Naming Rules
 
@@ -30,11 +72,42 @@ task or project.
 - Use top-level `action` only as routing metadata for shared event types.
 - Avoid ambiguous event names:
   - `owner` is accountability, not the planner event name.
-  - `dispatch` is implementation detail.
+  - do not create new `dispatch` event names; `project.task.assigned` is the
+    existing task-dispatch fact.
   - `unknown` is not a result; use `inconclusive`.
 - Platform events such as `metric.*`, `escalation.*`, and `message.created`
   remain platform events. The project app may subscribe to them when they affect
   project state.
+
+## Vocabulary Guardrail
+
+Prefer the existing event vocabulary before adding a new event:
+
+- Use `project.planning.requested` when the planner should decide what happens
+  next.
+- Use `project.task.tick` plus top-level `action` for durable loop pulses.
+- Use `project.task.assigned`, `project.task.completed`, and
+  `project.task.reviewed` for normal task execution.
+- Use `project.stall.review.requested` only when the process itself needs a
+  liveness diagnosis.
+- Use `project.problem.investigation.requested` for one bounded root-cause
+  investigation.
+
+New event types are justified only when the existing events cannot express the
+command/fact without hiding ownership or closure. Put variants in `data.reason`,
+`data.mode`, `data.params`, or `action` rather than creating
+feature-specific event names.
+
+This makes app extension incremental:
+
+```text
+new workflow -> task.workflow usage -> app route when direct triggering is needed
+new event    -> only when there is a new durable command or fact
+```
+
+One-off work does not need a new event. Repeated one-off work should first
+become a task pattern or workflow. Add an app route only when an event,
+schedule, metric, external input, or UI action must start it directly.
 
 ## Canonical Events
 
@@ -43,8 +116,34 @@ task or project.
 `project.planning.requested`
 
 Wakes the planner workflow. The planner reviews current state, reconciles
-results, repairs task-tree meaning, and assigns or creates the next concrete
-work.
+results, repairs task-tree meaning, and creates, blocks, or dispatches the next
+concrete work.
+
+Planning is invoked by event. Emit `project.planning.requested`; do not call an
+agent directly as the planner. The `project-planner` workflow is the executable
+adapter that packages state, calls `app-ops` when judgment is needed, validates
+structured decisions, and applies task-tree changes. `app-ops` supplies
+judgment; the workflow owns the IO contract and state mutation boundary. When
+the next move is AKS domain work, the planner should create or dispatch a
+`domain/*` task for `aks-explorer` rather than doing that work itself.
+
+In this app, "assign" means event-driven dispatch:
+
+```text
+task tree stores runnable work
+project.task.assigned starts the worker attempt
+task-worker consumes the event and runs the scoped agent
+```
+
+It is not a manual management step. If the planner creates a runnable task, it
+must dispatch it with `project.task.assigned` or record why the task is blocked.
+
+Do not confuse `project.task.assigned` with `blocker.owner`. `blocker.owner`
+names the party accountable for a blocked wait; it does not start a worker and
+does not prove work is happening. When a blocked wait reaches fallback time, the
+planner must either create/dispatch an active recovery task, refresh the exact
+wait with evidence, create/verify a handoff or escalation, or mark the wait
+terminal with proof.
 
 Use this for manual planning, scheduled learning, watchdog refill requests,
 task-completion reconciliation, metric/escalation follow-up, comments that need
@@ -65,11 +164,12 @@ project interpretation, and generic project advancement.
 
 `project.task.assigned`
 
-A planner or controller assigned one concrete executable leaf.
+A planner or controller dispatched one concrete executable leaf. The name is
+kept for compatibility, but the meaning is "start this runnable task now".
 
 `project.task.completed`
 
-A worker completed one assigned task and reported structured completion fields,
+A worker completed one dispatched task and reported structured completion fields,
 summary, test result fields, evidence refs, attempt, and review context.
 Completion is progress, not automatic acceptance; it wakes independent task
 review.
@@ -77,9 +177,9 @@ review.
 `project.task.reviewed`
 
 The read-only task reviewer judged one completed task. This is a structured
-review fact, not a task-tree mutation. The project owner/planner consumes it and
-is still the only workflow that decides whether to accept, reject, block, or
-create follow-up work in `tasks/tree.json`.
+review fact, not a task-tree mutation. The planner consumes it and is still the
+only workflow that decides whether to accept, reject, block, or create follow-up
+work in the live task tree.
 
 The reviewer should normally run as app-local agent `aks-reviewer`, configured
 with the project-available `gpt-5.5` model alias. The separate model/agent gives
@@ -116,7 +216,8 @@ Supported `data.decision` values:
 
 Required review rules:
 
-- The reviewer must not mutate `tasks/tree.json`, loop state, or project files.
+- The reviewer must not mutate the live task tree, loop state, or project
+  files.
 - The reviewer must judge only the completed task, its acceptance criteria,
   worker result, evidence refs, and relevant dirty files/artifacts.
 - The reviewer must emit structured fields; prose is explanation, not control
@@ -157,7 +258,7 @@ Known loop actions:
 
 The `action` belongs at the top level because the runtime selector uses it for
 routing. The same value may also appear in `data.action` for audit readability,
-but handlers must not depend on payload-only routing metadata.
+but event routes must not depend on payload-only routing metadata.
 
 ### Watchdog
 
@@ -169,6 +270,11 @@ frontier, review backlog, and capacity underfill. The watchdog emits
 project-level liveness contradiction, such as durable loop state with unfinished
 work but no useful runnable/review/active frontier, it emits
 `project.stall.review.requested` instead of another generic planner wake.
+
+The watchdog is a normal workflow with scheduled, metric, or manual triggers.
+It has no special runtime authority. Its role is to observe closure/liveness
+gaps and emit follow-up events; planner, reviewer, loop controller, or
+stall-review workflows own the resulting decisions.
 
 Review backlog by itself is not proof that `task-reviewer` is idle. The
 reviewer is completion-event driven: it judges fresh `project.task.completed`
@@ -184,8 +290,8 @@ live task-tree leaves. A blocked-only frontier is not a valid steady state when
 
 `project.stall.review.requested`
 
-Asks the owner deep-dive fallback workflow to collect the project liveness
-packet and ask the owner agent to judge why the project is not moving. Code
+Asks the deep-dive fallback workflow to collect the project liveness packet and
+ask `app-ops` to judge why the project is not moving. Code
 collects structured state and applies only safe mechanical repairs, such as
 task-tree rollup repair, only in fallback mode. The agent judges the stall
 class and recommends the next project move.
@@ -203,7 +309,7 @@ Supported `data.mode` values:
 `project.stall.reviewed`
 
 The stall-review workflow finished its diagnostic pass. The planner consumes
-this fact and owns the resulting task-tree decision: assign loop/controller
+this fact and owns the resulting task-tree decision: dispatch loop/controller
 work, create grouped repair tasks, convert a noisy wait into one exact wait, or
 record a real escalation/resume condition.
 
@@ -311,7 +417,7 @@ Records a human approval decision. The approval kind belongs in payload.
 
 ### Test Run Results
 
-Most test execution is task-owned. In that normal path, the assigned worker
+Most test execution is task-owned. In that normal path, the dispatched worker
 emits `project.task.completed` and includes test fields such as `runId`,
 `specId`, `status`, `durationMs`, and `artifactRef` in the task completion
 payload.
@@ -324,27 +430,28 @@ does not replace `project.task.completed` when a task owns the run.
 
 ## Target Event Map
 
-| Event                                                 | Owner Handler                       | Purpose                                           |
+| Event                                                 | Destination                         | Purpose                                           |
 | ----------------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `project.planning.requested`                          | `project-planner`                   | Planner wake/reconciliation.                      |
-| `project.task.assigned`                               | `task-worker`                       | Execute one assigned leaf.                        |
-| `project.task.completed`                              | `task-reviewer`                     | Independently judge completed worker output.      |
-| `project.task.reviewed`                               | `project-planner`                   | Apply reviewer judgment to the task tree.         |
-| `project.task.tick` + `action=spec-loop`              | `spec-loop-controller`              | Refill spec verification loop.                    |
-| `project.task.tick` + `action=feature-reference-loop` | `feature-reference-loop-controller` | Refill feature reference loop.                    |
-| `project.task.tick` + `action=feature-compact-loop`   | `feature-compact-loop-controller`   | Refill compact planning loop.                     |
-| `project.watchdog.check.requested`                    | `project-execution-watchdog`        | Inspect liveness and wake planner if needed.      |
-| `project.stall.review.requested`                      | `project-stall-review`              | Collect stall packet and ask agent to judge.      |
-| `project.stall.reviewed`                              | `project-planner`                   | Apply stall-review judgment to the task tree.     |
-| `project.problem.investigation.requested`             | `problem-solver`                    | Investigate a bounded blocker/root cause.         |
-| `project.problem.resolved`                            | `project-planner`                   | Reconcile resolved problem evidence.              |
-| `project.problem.escalated`                           | `project-planner`                   | Reconcile external/human wait.                    |
-| `project.problem.inconclusive`                        | `project-planner`                   | Decide next step after unresolved investigation.  |
-| `project.focus.review.requested`                      | `focus-plan`                        | Propose or review focus, selected by `data.mode`. |
-| `project.approval.requested`                          | `approval-dispatch`                 | Create a human-facing approval message.           |
-| `project.approval.submitted`                          | `project-planner`                   | Reconcile a human approval decision.              |
-| `project.test_run.completed`                          | `project-planner`                   | Reconcile an out-of-band test backend result.     |
-| `learning.feedback` for project agents                | `project-planner`                   | Reconcile evaluator findings about project work.  |
+| `project.planning.requested`                          | workflow: `project-planner`         | App-ops planner wake/reconciliation.              |
+| `project.task.assigned`                               | workflow: `task-worker`             | Execute one dispatched leaf.                      |
+| `project.task.completed`                              | workflow: `task-reviewer`           | Independently judge completed worker output.      |
+| `project.task.reviewed`                               | workflow: `project-planner`         | Apply reviewer judgment to the task tree.         |
+| `project.task.tick` + `action=spec-loop`              | workflow: `spec-loop-controller`    | Refill spec verification loop.                    |
+| `project.task.tick` + `action=feature-reference-loop` | workflow: `feature-reference-loop-controller` | Refill feature reference loop.          |
+| `project.task.tick` + `action=feature-compact-loop`   | workflow: `feature-compact-loop-controller` | Refill compact planning loop.             |
+| `project.watchdog.check.requested`                    | workflow: `project-execution-watchdog` | Inspect liveness and wake planner if needed.   |
+| `project.stall.review.requested`                      | workflow: `project-stall-review`    | Collect stall packet and ask agent to judge.      |
+| `project.stall.reviewed`                              | workflow: `project-planner`         | Apply stall-review judgment to the task tree.     |
+| `project.problem.investigation.requested`             | workflow: `problem-solver`          | Investigate a bounded blocker/root cause.         |
+| `project.problem.resolved`                            | workflow: `project-planner`         | Reconcile resolved problem evidence.              |
+| `project.problem.escalated`                           | workflow: `project-planner`         | Reconcile external/human wait.                    |
+| `project.problem.inconclusive`                        | workflow: `project-planner`         | Decide next step after unresolved investigation.  |
+| `project.focus.review.requested`                      | workflow: `focus-plan`              | Propose or review focus, selected by `data.mode`. |
+| `project.approval.requested`                          | workflow: `approval-dispatch`       | Create a human-facing approval message.           |
+| `project.approval.submitted`                          | workflow: `project-planner`         | Reconcile a human approval decision.              |
+| `project.test_run.completed`                          | workflow: `project-planner`         | Reconcile an out-of-band test backend result.     |
+| `metric.breach` affecting project closure             | owner: `app-ops`                    | Judge whether to plan, stall-review, wait, or escalate. |
+| `learning.feedback` for project agents                | workflow: `project-planner`         | Reconcile evaluator findings about project work.  |
 
 Fresh worker completions route to read-only review first. The planner consumes
 only the structured `project.task.reviewed` result in the normal path. Watchdog
@@ -377,9 +484,9 @@ Project events are coordination hints, not the durable state store.
 - Delivery is at least once. Duplicate delivery is allowed.
 - Do not assume global ordering across schedules, workflow outputs, UI actions,
   metrics, and external events.
-- Handlers must be idempotent. Before mutating the task tree or loop state, read
-  the durable source of truth and check whether the requested transition already
-  happened.
+- Event routes and workflows must be idempotent. Before mutating the task tree
+  or loop state, read the durable source of truth and check whether the
+  requested transition already happened.
 - Commands such as `project.planning.requested`, `project.task.tick`,
   `project.watchdog.check.requested`, and
   `project.problem.investigation.requested` must be safe to retry.
@@ -412,19 +519,19 @@ Every new blocked item must carry structured fields:
   "blockedAt": "2026-07-05T00:00:00.000Z",
   "reason": "Why work stopped now.",
   "waitingFor": {
-    "type": "github.workflow_run.completed",
+    "type": "ado.pipeline_run.completed",
     "runId": "123",
-    "runUrl": "https://github.com/.../actions/runs/123",
-    "workflow": "aks-rp-e2e-plan-execute.yaml",
+    "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+    "pipeline": "467665",
     "branch": "dev",
     "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
   },
-  "owner": "human | azure | product | github | project | external",
+  "owner": "human | azure | product | ado | project | external",
   "observedBy": {
     "workflow": "feature-compact-loop-controller",
     "trigger": "project.task.tick"
   },
-  "observationMethod": "Poll GitHub Actions run API and inspect artifacts.",
+  "observationMethod": "Poll Azure DevOps pipeline run API and inspect artifacts.",
   "nextCheckAt": "2026-07-05T00:10:00.000Z",
   "fallbackAt": "2026-07-06T00:00:00.000Z",
   "fallbackAction": "Recheck, escalate, reclassify, or create repair work.",
@@ -451,13 +558,13 @@ existing snake_case aliases where needed:
   "blocker": {
     "condition": "Why work stopped now.",
     "category": "external-wait",
-    "owner": "github",
+    "owner": "ado",
     "blocked_at": "2026-07-05T00:00:00.000Z",
     "waiting_for": {
-      "type": "github.workflow_run.completed",
+      "type": "ado.pipeline_run.completed",
       "runId": "123",
-      "runUrl": "https://github.com/.../actions/runs/123",
-      "workflow": "aks-rp-e2e-plan-execute.yaml",
+      "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      "pipeline": "467665",
       "branch": "dev",
       "successCriteria": "Run completed and uploaded a passing live-azure-run artifact."
     },
@@ -465,9 +572,9 @@ existing snake_case aliases where needed:
       "workflow": "feature-compact-loop-controller",
       "trigger": "project.task.tick"
     },
-    "observation_method": "Poll GitHub Actions run API and inspect artifacts.",
+    "observation_method": "Poll Azure DevOps pipeline run API and inspect artifacts.",
     "next_check_at": "2026-07-05T00:10:00.000Z",
-    "resume_condition": "Resume when GitHub run 123 has completed and the artifact verdict is known.",
+    "resume_condition": "Resume when Azure DevOps pipeline run 123 has completed and the artifact verdict is known.",
     "resume_action": "Review returned artifact and rerun the exact plan.",
     "fallback_at": "2026-07-06T00:00:00.000Z",
     "fallback_action": "Escalate if no artifact has returned.",
@@ -482,9 +589,9 @@ contract. They must not normalize a valid blocked record back to `error`.
 understood and represented until `waitingFor` becomes true, fallback time, or
 fingerprint change.
 
-For GitHub workflow-result waits, `waitingFor.runId` is required. Without the
-run id, the item is not waiting for workflow completion; it is waiting for an
-earlier condition such as dispatch permission, workflow input/schema repair,
+For Azure DevOps pipeline-result waits, `waitingFor.runId` is required. Without the
+run id, the item is not waiting for pipeline completion; it is waiting for an
+earlier condition such as dispatch permission, pipeline input/schema repair,
 run lookup/discovery, or Azure capacity.
 
 ## Compatibility Notes

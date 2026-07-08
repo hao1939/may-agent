@@ -237,9 +237,9 @@ async function writeSpecLoopState(
 }
 
 async function readTaskTreeJson(appDir: string) {
-  return JSON.parse(
-    await readFile(resolveTaskTreePath(appDir), "utf8"),
-  ) as { tasks: Record<string, any> };
+  return JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8")) as {
+    tasks: Record<string, any>;
+  };
 }
 
 function reviewedTrigger(data: Record<string, unknown>) {
@@ -286,6 +286,80 @@ function plannerContext(input: {
 }
 
 describe("project owner workflow", () => {
+  test("routes ops-prefixed backlog tasks to the ops worker", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["ops-audit-overdue-waits"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops-audit-overdue-waits": {
+              id: "ops-audit-overdue-waits",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Audit overdue waits.",
+              outputs: ["evidence/archive/ops-audit-overdue-waits.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
+      [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "worker: aks-explorer",
+        "opsWorker: app-ops",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, data: Record<string, unknown>) {
+        dispatched.push({ type, data });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toContainEqual({
+      type: "project.task.assigned",
+      data: expect.objectContaining({
+        taskId: "ops-audit-overdue-waits",
+        worker: "app-ops",
+      }),
+    });
+  });
+
   test("applies accepted task reviews without owner-agent planning", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir);
@@ -314,6 +388,301 @@ describe("project owner workflow", () => {
       "Evidence satisfies the task.",
     );
     expect(prompts).toHaveLength(0);
+  });
+
+  test("accepted structured single-spec review marks spec-loop item passed", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "wait-spec-virtualmachines-mixed-sku-deallocate-rerun-171344670-return-20260708",
+      conflictScope: ["spec:spec.virtualmachines.mixed-sku-deallocate"],
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171344670",
+          namedSpecIds: ["spec.virtualmachines.mixed-sku-deallocate"],
+        },
+      },
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.virtualmachines.mixed-sku-deallocate": {
+        status: "pending",
+        attempts: 3,
+        taskId:
+          "wait-spec-virtualmachines-mixed-sku-deallocate-rerun-171344670-return-20260708",
+        lastRunId: "171344670",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171344670",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-08T10:18:38.710Z",
+        failureClass: "test-code-bug",
+        diagnosis: "stale diagnosis",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "wait-spec-virtualmachines-mixed-sku-deallocate-rerun-171344670-return-20260708",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Returned ADO artifact proves the spec passed live.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: {
+                kind: "spec",
+                id: "spec.virtualmachines.mixed-sku-deallocate",
+              },
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171344670",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171344670",
+                resultPath:
+                  "runs/test-results/test_20260708090351646_iytx73_522561/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+                specStatus: "pass",
+                liveVerified: true,
+                resourceGroup: "rg-plan-001-1646-iytx73-522561",
+                clusterName: "aks-plan-001-1646-iytx73-522561",
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const state = JSON.parse(
+      await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+    );
+    const spec = state.specs["spec.virtualmachines.mixed-sku-deallocate"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "recorded structured verifier result for spec.virtualmachines.mixed-sku-deallocate",
+    );
+    expect(
+      tree.tasks[
+        "wait-spec-virtualmachines-mixed-sku-deallocate-rerun-171344670-return-20260708"
+      ].state,
+    ).toBe("done");
+    expect(spec.status).toBe("pass");
+    expect(spec.lastRunId).toBe("171344670");
+    expect(spec.lastResultPath).toBe(
+      "runs/test-results/test_20260708090351646_iytx73_522561/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+    );
+    expect(spec.failureClass).toBeNull();
+    expect(spec.diagnosis).toBeNull();
+  });
+
+  test("accepted structured single-spec failure records spec-loop failure", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "wait-spec-cluster-autoscaler-mincount-recovery-rerun-171349474-return-20260708",
+      conflictScope: ["spec:spec.cluster-autoscaler.mincount-recovery"],
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171349474",
+          namedSpecIds: ["spec.cluster-autoscaler.mincount-recovery"],
+        },
+      },
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.cluster-autoscaler.mincount-recovery": {
+        status: "pending",
+        attempts: 3,
+        taskId:
+          "wait-spec-cluster-autoscaler-mincount-recovery-rerun-171349474-return-20260708",
+        lastRunId: "171349474",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171349474",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-08T10:08:18.843Z",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "wait-spec-cluster-autoscaler-mincount-recovery-rerun-171349474-return-20260708",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Returned ADO artifact proves the spec failed live.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "single-spec-verifier",
+              status: "partial",
+              subject: {
+                kind: "spec",
+                id: "spec.cluster-autoscaler.mincount-recovery",
+              },
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171349474",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171349474",
+                resultPath:
+                  "runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+                specStatus: "fail",
+                liveVerified: false,
+                liveClusterObserved: true,
+                reason: "0/3 claims passed.",
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const state = JSON.parse(
+      await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+    );
+    const spec = state.specs["spec.cluster-autoscaler.mincount-recovery"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "recorded structured verifier result for spec.cluster-autoscaler.mincount-recovery",
+    );
+    expect(spec.status).toBe("fail");
+    expect(spec.lastRunId).toBe("171349474");
+    expect(spec.lastResultPath).toBe(
+      "runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+    );
+    expect(spec.diagnosis).toBe("0/3 claims passed.");
+    expect(spec.review.acceptedStatus).toBe("fail");
+  });
+
+  test("accepted structured grouped spec review records each spec-loop result", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "review-spec-loop-network-acns-rerun-171342018-return-20260708",
+      conflictScope: ["spec-loop-followup:pending:network-acns"],
+      context: {
+        terminalGitHubWaitReview: {
+          runId: "171342018",
+          runStatus: "completed",
+          runConclusion: "failed",
+          namedSpecIds: [],
+        },
+      },
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.network-acns.cilium-observability": {
+        status: "pending",
+        attempts: 5,
+        taskId: "reconcile-spec-loop-pending-network-acns-9",
+        lastRunId: "171342018",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171342018",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-08T02:41:10.010Z",
+      },
+      "spec.network-acns.retina-enterprise": {
+        status: "pending",
+        attempts: 5,
+        taskId: "reconcile-spec-loop-pending-network-acns-9",
+        lastRunId: "171342018",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171342018",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-08T02:41:10.010Z",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "review-spec-loop-network-acns-rerun-171342018-return-20260708",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Returned grouped ADO artifact records two same-spec errors.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "single-spec-verifier",
+              status: "partial",
+              subject: {
+                kind: "spec-group",
+                id: "network-acns",
+              },
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171342018",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171342018",
+                resultPath:
+                  "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+                specResults: [
+                  {
+                    specId: "spec.network-acns.cilium-observability",
+                    status: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-cilium-observability/spec-runner/result.json",
+                    ],
+                  },
+                  {
+                    specId: "spec.network-acns.retina-enterprise",
+                    status: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-retina-enterprise/spec-runner/result.json",
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const state = JSON.parse(
+      await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+    );
+    const cilium = state.specs["spec.network-acns.cilium-observability"];
+    const retina = state.specs["spec.network-acns.retina-enterprise"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "recorded structured verifier result for spec.network-acns.cilium-observability, spec.network-acns.retina-enterprise",
+    );
+    expect(
+      tree.tasks[
+        "review-spec-loop-network-acns-rerun-171342018-return-20260708"
+      ].state,
+    ).toBe("done");
+    expect(cilium.status).toBe("error");
+    expect(retina.status).toBe("error");
+    expect(cilium.lastResultPath).toBe(
+      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-cilium-observability/spec-runner/result.json",
+    );
+    expect(retina.lastResultPath).toBe(
+      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-retina-enterprise/spec-runner/result.json",
+    );
+    expect(cilium.diagnosis).toContain("hubble-ui");
+    expect(retina.review.acceptedStatus).toBe("error");
   });
 
   test("applies redo reviews by requeuing the reviewed task with a fresh attempt", async () => {
@@ -399,6 +768,45 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("preserves blocked-overdue scope on reviewed audit follow-ups", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-audit-spec-loop-overdue-self-excluded-baseline-20260708",
+      context: {
+        metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+        blockedOverdueAudit: true,
+        selfExcludedBaselineRequired: true,
+      },
+      conflictScope: [],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops-audit-spec-loop-overdue-self-excluded-baseline-20260708",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "The spec-loop overdue audit is correct but needs a concrete repair successor.",
+          suggestedFollowups: [
+            "Apply the spec-loop overdue wait repairs and verify the metric is zero.",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup =
+      tree.tasks[
+        "ops-audit-spec-loop-overdue-self-excluded-baseline-20260708-followup"
+      ];
+    expect(result.status).toBe("done");
+    expect(followup.conflict_scope).toContain("ops:blocked-overdue:spec-loop");
+  });
+
   test("applies blocked reviews by replacing the review leaf with an exact wait task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -436,6 +844,30 @@ describe("project owner workflow", () => {
     expect(tree.tasks["review-task-blocked"].blocker.resume_condition).toBe(
       "Resume when westus2 quota drops below limit.",
     );
+    expect(tree.tasks["review-task-blocked"].blocker.waiting_for).toMatchObject(
+      {
+        type: "blocker.resolved",
+        reviewedTaskId: "review-task",
+        reviewedAttemptId: "attempt-1",
+        successorTaskId: "review-task-blocked",
+        source: "project.task.reviewed",
+      },
+    );
+    expect(tree.tasks["review-task-blocked"].blocker.observed_by).toMatchObject(
+      {
+        workflow: "project-planner",
+        trigger: "project.task.reviewed",
+      },
+    );
+    expect(tree.tasks["review-task-blocked"].blocker.next_check_at).toEqual(
+      expect.any(String),
+    );
+    expect(tree.tasks["review-task-blocked"].blocker.fallback_at).toEqual(
+      expect.any(String),
+    );
+    expect(tree.tasks["review-task-blocked"].blocker.fallback_action).toContain(
+      "If the reviewed blocker is still unresolved at fallback time",
+    );
     expect(tree.tasks["review-task-blocked"].context).toMatchObject({
       featureKey: "node-restriction",
       capabilityId: "node-restriction",
@@ -445,6 +877,58 @@ describe("project owner workflow", () => {
         attemptId: "attempt-1",
         decision: "blocked",
       },
+    });
+  });
+
+  test("applies escalate reviews by replacing the review leaf with an owner-decision wait task", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      context: {
+        featureKey: "node-restriction",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "escalate",
+          summary: "Human owner decision is required.",
+          feedback: [
+            "May or the owner must decide whether to keep or replace this path.",
+          ],
+          suggestedFollowups: ["Resume when the owner decision returns."],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(tree.tasks["review-task"].resolution).toBe("replaced");
+    expect(tree.tasks["review-task-escalate"].state).toBe("blocked");
+    expect(tree.tasks["review-task-escalate"].blocker.owner).toBe("human");
+    expect(tree.tasks["review-task-escalate"].blocker.resume_condition).toBe(
+      "Resume when the owner decision returns.",
+    );
+    expect(
+      tree.tasks["review-task-escalate"].blocker.waiting_for,
+    ).toMatchObject({
+      type: "owner.decision",
+      reviewedTaskId: "review-task",
+      reviewedAttemptId: "attempt-1",
+      successorTaskId: "review-task-escalate",
+      source: "project.task.reviewed",
+    });
+    expect(
+      tree.tasks["review-task-escalate"].blocker.observed_by,
+    ).toMatchObject({
+      workflow: "project-planner",
+      trigger: "project.task.reviewed",
     });
   });
 
@@ -1031,6 +1515,138 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["quick-refill"]');
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("does not quick-refill no-op when overdue blocked owner action needs planning", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task", "blocked-owner-wait"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Do unrelated backlog work.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+            "blocked-owner-wait": {
+              id: "blocked-owner-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for pipeline result.",
+              outputs: ["evidence/archive/blocked-owner-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Waiting for pipeline result.",
+                waiting_for: { type: "pipeline.completed" },
+                owner: "aks-explorer",
+                resume_condition: "Resume when the pipeline result is known.",
+                resume_at: "2001-01-01T00:00:00.000Z",
+                fallback_at: "2001-01-02T00:00:00.000Z",
+                fallback_action:
+                  "Check the pipeline and create a recovery task.",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            overdueOwnerActions: [
+              {
+                taskId: "blocked-owner-wait",
+                owner: "aks-explorer",
+                watchAt: "2001-01-01T00:00:00.000Z",
+                recoveryRequired:
+                  "Resume window passed without active/review recovery work.",
+              },
+            ],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return task.includes("Planner Event Review Step")
+          ? { status: "success", message: "EVENT_REVIEW: overdue owner wait" }
+          : {
+              status: "success",
+              message: "planner reviewed overdue owner action",
+            };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.assigned",
+      payload: { taskId: "backlog-task" },
+    });
+    expect(result.message).toContain("planner reviewed overdue owner action");
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"ran_agent":true');
+    expect(plannerRuns).not.toContain('"steps":["quick-refill"]');
   });
 
   test("quick-refill does not assign loop-owned child tasks directly", async () => {
@@ -3620,7 +4236,7 @@ describe("project owner workflow", () => {
 
       expect(result.status).toBe("done");
       expect(result.message).toContain(
-        "another owner-planner session is already running",
+        "another app-ops planner session is already running",
       );
       expect(prompts).toHaveLength(0);
       expect(dispatched).toHaveLength(1);

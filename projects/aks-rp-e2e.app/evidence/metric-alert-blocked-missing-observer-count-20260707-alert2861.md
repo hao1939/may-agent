@@ -34,7 +34,7 @@ cd /app/projects/aks-rp-e2e.app && bun run metrics:sample aks-rp-e2e.process.blo
 Observed result:
 
 ```json
-{"measuredAt":1783397518211,"value":0}
+{ "measuredAt": 1783397518211, "value": 0 }
 ```
 
 So the current runtime recompute already says the metric should be `0`.

@@ -48,7 +48,12 @@ cd /app/projects/aks-rp-e2e.app && bun run metrics:sample aks-rp-e2e.process.blo
 Observed result:
 
 ```json
-{"measuredAt":1783495703380,"value":0,"sampleSize":0,"note":"{\"offenderTaskIds\":[]}"}
+{
+  "measuredAt": 1783495703380,
+  "value": 0,
+  "sampleSize": 0,
+  "note": "{\"offenderTaskIds\":[]}"
+}
 ```
 
 Although the sampler was already back to `0`, the dry run still exposed a live blocked-contract defect, so this was not sufficient to choose `resolve_stale`.
@@ -95,7 +100,12 @@ cd /app/projects/aks-rp-e2e.app && bun run metrics:sample aks-rp-e2e.process.blo
 Observed result:
 
 ```json
-{"measuredAt":1783495717269,"value":0,"sampleSize":0,"note":"{\"offenderTaskIds\":[]}"}
+{
+  "measuredAt": 1783495717269,
+  "value": 0,
+  "sampleSize": 0,
+  "note": "{\"offenderTaskIds\":[]}"
+}
 ```
 
 ## Conclusion

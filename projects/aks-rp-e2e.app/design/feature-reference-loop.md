@@ -1,5 +1,7 @@
 # Feature Reference Loop
 
+Status: implemented baseline
+
 ## Purpose
 
 `aks-feature-reference-loop` is a normal workflow-bound task that iterates over

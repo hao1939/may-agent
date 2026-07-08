@@ -11,7 +11,7 @@ Git should answer: "What is this project app, and how should it run?"
 
 `.state/` should answer: "What is happening right now?"
 
-This is not just repo cleanup. It prevents stale workers, GitHub workflows, and
+This is not just repo cleanup. It prevents stale workers, external CI runs, and
 review sessions from treating old runtime snapshots as source truth.
 
 ## Current Project Audit
@@ -31,12 +31,12 @@ Implementation note, 2026-07-06:
 - Legacy `tasks/tree.json` and `tasks/kanban.json` are ignored and removed from
   git tracking for all current project apps.
 
-| App | Source state in git | Runtime state in `.state/` | Notes |
-|-----|---------------------|----------------------------|-------|
-| `aks-rp-e2e.app` | `tasks/seed.json`, `tasks/README.md`, curated task archive docs, static `project.json` | `.state/tasks/tree.json`, `.state/tasks/kanban.json`, `.state/tasks/archive/`, `.state/project-state.json` | Main validation target. App-local scripts, workflows, metrics, and private kanban UI use the SDK runtime path contract. |
-| `may-agent.app` | `tasks/seed.json`, static `project.json` | `.state/tasks/tree.json`, `.state/project-state.json`, app runtime journals/packets | Shared app UI and loader use the SDK runtime path contract. |
-| `evaluation.app` | `tasks/seed.json`, `tasks/README.md`, static `project.json` | `.state/tasks/tree.json`, `.state/project-state.json` | Uses the same boot and read-model contract as the larger apps. |
-| `scout-knowledge-lib.app` | `tasks/seed.json`, `tasks/README.md`, static `project.json` | `.state/tasks/tree.json`, `.state/project-state.json`, app runtime packets | Uses the same boot and read-model contract as the larger apps. |
+| App                       | Source state in git                                                                    | Runtime state in `.state/`                                                                                 | Notes                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `aks-rp-e2e.app`          | `tasks/seed.json`, `tasks/README.md`, curated task archive docs, static `project.json` | `.state/tasks/tree.json`, `.state/tasks/kanban.json`, `.state/tasks/archive/`, `.state/project-state.json` | Main validation target. App-local scripts, workflows, metrics, and private kanban UI use the SDK runtime path contract. |
+| `may-agent.app`           | `tasks/seed.json`, static `project.json`                                               | `.state/tasks/tree.json`, `.state/project-state.json`, app runtime journals/packets                        | Shared app UI and loader use the SDK runtime path contract.                                                             |
+| `evaluation.app`          | `tasks/seed.json`, `tasks/README.md`, static `project.json`                            | `.state/tasks/tree.json`, `.state/project-state.json`                                                      | Uses the same boot and read-model contract as the larger apps.                                                          |
+| `scout-knowledge-lib.app` | `tasks/seed.json`, `tasks/README.md`, static `project.json`                            | `.state/tasks/tree.json`, `.state/project-state.json`, app runtime packets                                 | Uses the same boot and read-model contract as the larger apps.                                                          |
 
 Implementation seams that moved together:
 
@@ -69,7 +69,7 @@ separate compatibility branch per app.
    and task-tree pruning commits.
 5. Review sessions waste attention deciding whether runtime changes should be
    committed.
-6. Fresh workers and GitHub runs can accidentally start from stale committed
+6. Fresh workers and pipeline runs can accidentally start from stale committed
    state instead of the live local runtime state.
 
 ## Principle
@@ -170,9 +170,15 @@ type ProjectRuntimePaths = {
 
 function projectRuntimePaths(appDir: string): ProjectRuntimePaths;
 function resolveTaskTreePath(appDir: string): string;
-function ensureTaskTreeState(appDir: string): { path: string; migrated: boolean };
+function ensureTaskTreeState(appDir: string): {
+  path: string;
+  migrated: boolean;
+};
 function loadProjectReadModel(appDir: string): Record<string, unknown>;
-function saveProjectRuntimeState(appDir: string, patch: Record<string, unknown>): void;
+function saveProjectRuntimeState(
+  appDir: string,
+  patch: Record<string, unknown>,
+): void;
 ```
 
 The exact names can change, but the rule cannot: one SDK helper owns runtime

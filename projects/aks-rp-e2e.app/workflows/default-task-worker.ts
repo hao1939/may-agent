@@ -1,8 +1,8 @@
 /**
  * default-task-worker — generic LLM-backed task execution.
  *
- * Handles project.task.assigned by waking the assigned task session. The
- * project owner owns the task tree; this workflow executes and reports
+ * Handles project.task.assigned by waking the dispatched task session. The
+ * planner owns the task tree; this workflow executes and reports
  * completion.
  */
 
@@ -55,6 +55,18 @@ type TaskProblemRoute = {
   resumeCondition?: string;
 };
 
+type FixForwardResult = {
+  workflow: "fix-forward";
+  subject?: unknown;
+  classification?: unknown;
+  diagnosis?: unknown;
+  minimumDiagnosisPacket?: unknown;
+  changedFiles?: unknown;
+  verification?: unknown;
+  nextAction?: unknown;
+  nextActionReason?: unknown;
+};
+
 type SessionWorkflowContext = WorkflowContext & {
   runAgentSession?: (
     agent: string,
@@ -92,6 +104,68 @@ function taskContext(task: TaskNode): Record<string, unknown> {
 function taskContextString(task: TaskNode, key: string): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function isFixForwardTask(task: TaskNode): boolean {
+  return taskContextString(task, "workflow") === "fix-forward";
+}
+
+function matchingJsonObject(text: string, start: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, index + 1);
+    }
+  }
+  return null;
+}
+
+function parseFixForwardResult(text: string): FixForwardResult | null {
+  const marker = text.search(/FIX_FORWARD_RESULT/i);
+  if (marker < 0) return null;
+  const scoped = text.slice(marker);
+  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidates: string[] = [];
+  if (fenced) candidates.push(fenced[1]);
+  const firstBrace = scoped.indexOf("{");
+  if (firstBrace >= 0) {
+    const objectText = matchingJsonObject(scoped, firstBrace);
+    if (objectText) candidates.push(objectText);
+  }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        (parsed as { workflow?: unknown }).workflow === "fix-forward"
+      ) {
+        return parsed as FixForwardResult;
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
 }
 
 function completionControllerTick(
@@ -180,15 +254,75 @@ function buildWorkerPrompt(input: {
   task: unknown;
   attemptId: string;
 }): string {
+  const task = input.task as TaskNode;
+  const fixForwardInstructions = isFixForwardTask(task)
+    ? `
+This task is a fix-forward task. Handle failures as a decision problem, not a
+blind retry problem.
+
+Required order:
+1. Name the exact subject: one spec, one compact feature, or one coherent
+   feature family.
+2. Classify the failure. Use needs-diagnosis only when you cannot classify from
+   the available facts, and then collect diagnosis before any rerun.
+3. Preserve raw facts: run id, result path, failing assertion, request/response
+   excerpt, command, target, branch, and artifact refs when available.
+4. Compare inputFingerprints and errorFingerprints from the task context before
+   rerunning.
+5. Pick one smallest truthful next action: bounded domain fix, ops fix, focused
+   follow-up, exact blocked wait, escalation, or terminal finding with proof.
+
+Do not rerun the same input after the same error without a changed input,
+changed diagnosis, or new external fact. Do not turn "I am unsure" into
+blocked. Do not hide agent/tool/pipeline/artifact failure as AKS product
+behavior.
+
+Finish your worker response with this structured block:
+
+FIX_FORWARD_RESULT:
+\`\`\`json
+{
+  "workflow": "fix-forward",
+  "subject": {
+    "kind": "spec | compact-feature | feature-family",
+    "id": "exact subject id"
+  },
+  "classification": "request-shape-invalid | test-code-bug | compact-plan-conflict | pipeline-infrastructure | missing-result-artifact | product-behavior-mismatch | capacity-exhausted | needs-diagnosis | other-known-class",
+  "diagnosis": "specific root-cause diagnosis or the exact missing fact",
+  "minimumDiagnosisPacket": {
+    "target": "target profile",
+    "branch": "branch",
+    "runId": "pipeline/run id or empty when unavailable",
+    "resultPath": "result artifact path or empty when unavailable",
+    "failingPhase": "phase or empty",
+    "failingAssertion": "assertion or empty",
+    "requestOrResponseExcerpt": "short excerpt or empty",
+    "referencesChecked": ["official/API/design/source references checked"],
+    "inputFingerprint": "current input fingerprint or empty",
+    "errorFingerprint": "current error fingerprint or empty"
+  },
+  "changedFiles": ["files changed, if any"],
+  "verification": {
+    "runId": "verification run id or empty",
+    "resultPath": "verification result path or empty",
+    "status": "pass | fail | error | not-run"
+  },
+  "nextAction": "done | rerun-after-change | create-domain-repair | create-ops-repair | exact-wait | escalate",
+  "nextActionReason": "why this next action is the smallest truthful move"
+}
+\`\`\`
+`
+    : "";
   return `Task Worker Mode
 
-You are executing exactly one aks-rp-e2e task assigned by the project owner.
+You are executing exactly one aks-rp-e2e task dispatched by the planner.
 Do not reshape the tree, create sibling branches, roll up parents, or run
 planner work from this session.
 If the assigned task asks for planning work, child-task creation, branch
-creation, assignment, acceptance/review decisions, rollups, or other broad tree
-changes, treat that as owner-review output: write the plan/proposal/evidence in
-the domain workspace and report what the project owner should add to the tree.
+creation, dispatch, acceptance/review decisions, rollups, or other broad tree
+changes, treat that as planner/app-ops review output: write the
+plan/proposal/evidence in the right workspace and report what the planner should
+add to the tree.
 If the assigned task is a bounded existing-task metadata repair that explicitly
 names supported task-tree commands such as \`task-tree set-outputs\` or
 \`task-tree update-text\`, you may run only those exact commands against the
@@ -203,7 +337,7 @@ agent result status:
 
 Use blocked only for a real blocker with a concrete resume condition.
 If the work is too large or wrongly decomposed, record a blocked summary that
-explains the exact decomposition problem. The project owner reviews the latest task
+explains the exact decomposition problem. The planner reviews the latest task
 state after worker progress and decides whether to accept, retry, repair,
 replace, split, or keep the task blocked.
 Your summary is review material, not routing protocol. Do not rely on special
@@ -230,16 +364,16 @@ the app path unless the task explicitly says otherwise. Domain feature/spec
 files, compact packages, test code, run artifacts, and evidence notes stay
 rooted at ${input.projectDir}.
 
-Before any worker-initiated live GitHub dispatch for single specs or compact
+Before any worker-initiated live Azure DevOps pipeline dispatch for single specs or compact
 feature reruns, run the local live dependency and admission policies against
 the exact spec set from ${input.projectDir}. Use both commands:
 
   bun runner/check-private-source-policy.ts --specs <comma-separated-spec-ids>
   bun runner/check-live-admission.ts --specs <comma-separated-spec-ids>
 
-If either policy fails, do not dispatch the workflow. Repair the selected
+If either policy fails, do not dispatch the pipeline. Repair the selected
 scenario tests so they are self-contained and live-admissible, or finish
-partial/blocked with the exact policy output and resume condition. A GitHub run
+partial/blocked with the exact policy output and resume condition. An Azure DevOps pipeline run
 that fails only because either local policy would have failed is not acceptable
 completion evidence.
 
@@ -247,10 +381,43 @@ For spec-loop or compact-loop repair tasks, the app is only the organizer. If
 the root cause is test code, generated tests, runner behavior, compact planner,
 workflow YAML, live target/env wiring, or spec execution behavior, make the fix
 in the domain workspace (${input.projectDir}), commit it, push it to the target
-branch, then verify it with the GitHub workflow that runs the affected spec or
+branch, then verify it with the Azure DevOps pipeline that runs the affected spec or
 compact plan. App-only notes, memos, or task-state updates do not fix those
 failures and are not enough to claim success. Update app evidence only as an
 audit trail after the domain fix is pushed and verified.
+
+If the assigned task is reviewing a terminal Azure DevOps pipeline wait, treat
+that as domain result review with explicit inputs. Do not touch the task tree,
+do not edit app loop state, and do not finish by saying only that the pipeline
+is terminal or that someone should review the artifacts.
+
+Use the run id and spec ids from task.context.terminalPipelineWaitReview,
+task.context.terminalGitHubWaitReview, task.trace.terminal_pipeline_wait_run_id,
+or task.trace.terminal_github_wait_run_id. Then:
+
+1. Look for already downloaded artifacts under ${input.projectDir}/workspace,
+   ${input.projectDir}/evidence/archive, and app .state artifact paths named by
+   the task.
+2. If artifacts are missing and Azure DevOps access is available, download them
+   with the existing Azure DevOps artifact flow or equivalent az pipelines
+   artifact commands into a task-specific workspace directory.
+3. Inspect the exact result.json/spec-runner result for each named spec. A
+   successful pipeline conclusion is not enough by itself.
+4. Record the concrete result: same spec id, target, run id, result path, real
+   cluster/resource group when required, failed verdict assertions, cleanup, and
+   next action.
+5. If the artifact cannot be obtained, finish partial/blocked with the exact
+   artifact recovery step. If the artifact is present, classify pass/fail/error
+   from the artifact and write the durable domain evidence or structured result
+   requested by the task. The app-side planner/controller consumes that result
+   later and owns task-tree or loop-state updates.
+
+For metric, watchdog, blocked-frontier, and overdue-wait audit tasks, compute
+the baseline as if the current audit/recovery task did not exist. Do not let the
+assigned task's own id, goal text, conflict scope, or review state suppress the
+blocked waits it is supposed to inspect. Report both the pre-audit contributor
+set and the post-action represented set when they differ.
+${fixForwardInstructions}
 
 Assigned task:
 \`\`\`json
@@ -268,6 +435,45 @@ async function runTaskAgent(input: {
   return sessionCtx.runAgentSession
     ? sessionCtx.runAgentSession(input.worker, input.prompt, input.sessionId)
     : input.ctx.runAgent(input.worker, input.prompt);
+}
+
+const EMPTY_ASSISTANT_TURN = "Agent ended with an empty assistant turn";
+
+function sessionSummaryForCompletion(result: unknown): string {
+  const typed = result as {
+    status?: string;
+    errorMessage?: string;
+    error?: unknown;
+    lastAssistantText?: string | null;
+    finishResult?: { summary?: unknown };
+  };
+  const summary = resultText(result);
+  const finishSummary =
+    typeof typed?.finishResult?.summary === "string"
+      ? typed.finishResult.summary.trim()
+      : "";
+  const lastAssistantText =
+    typeof typed?.lastAssistantText === "string"
+      ? typed.lastAssistantText.trim()
+      : "";
+  const hasRuntimeError =
+    (typeof typed?.errorMessage === "string" && typed.errorMessage.trim()) ||
+    (typed?.error &&
+      typeof typed.error === "object" &&
+      ((typeof (typed.error as { message?: unknown }).message === "string" &&
+        (typed.error as { message?: string }).message?.trim()) ||
+        (typeof (typed.error as { error?: unknown }).error === "string" &&
+          String((typed.error as { error?: string }).error).trim())));
+
+  if (hasRuntimeError) return summary;
+  if (
+    typed?.status === "error" &&
+    typed?.lastAssistantText == null &&
+    (!finishSummary || finishSummary === EMPTY_ASSISTANT_TURN)
+  ) {
+    return "Worker runtime error: session ended with status=error before any usable assistant output or structured finish summary.";
+  }
+  return summary;
 }
 
 function workerResultFromSession(
@@ -310,6 +516,7 @@ function completionWorkflowResult(
     summary: string;
     evidence: string[];
     problem: TaskProblemRoute;
+    details?: Record<string, unknown>;
   },
 ): StructuredWorkflowResult {
   const problem =
@@ -335,6 +542,7 @@ function completionWorkflowResult(
     problem,
     details: {
       taskClaim: input.result,
+      ...(input.details ?? {}),
     },
   });
 }
@@ -350,6 +558,7 @@ export function emitTaskCompleted(
     review?: TaskReviewRoute;
     problem?: TaskProblemRoute;
     workflowResult?: StructuredWorkflowResult;
+    details?: Record<string, unknown>;
   },
 ): void {
   const evidence = input.evidence ?? [];
@@ -367,6 +576,7 @@ export function emitTaskCompleted(
       summary: input.summary,
       evidence,
       problem,
+      details: input.details,
     });
   const completion = {
     taskId: task.id,
@@ -494,8 +704,10 @@ export function completeStartedAttempt(
     claim: TaskCompletionClaim;
     summary: string;
     evidence?: string[];
+    workflowResult?: StructuredWorkflowResult;
   },
-): { ok: true; task: TaskNode } | { ok: false; reason: string } {
+):
+  { ok: true; task: TaskNode; late?: boolean } | { ok: false; reason: string } {
   const completionState = withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
@@ -520,6 +732,8 @@ export function completeStartedAttempt(
     return { ok: true as const };
   });
   if (completionState.ok === false) {
+    const lateCompletion = recordLatePreviousAttemptCompletion(config, input);
+    if (lateCompletion.ok) return lateCompletion;
     appendToolJournal(config, {
       kind: "task_worker_completion_ignored",
       task_id: input.taskId,
@@ -532,15 +746,29 @@ export function completeStartedAttempt(
   }
 
   try {
-    return {
-      ok: true,
-      task: completeTask(config, {
-        taskId: input.taskId,
-        claim: input.claim,
-        summary: input.summary,
-        evidence: input.evidence,
-      }),
-    };
+    const task = completeTask(config, {
+      taskId: input.taskId,
+      claim: input.claim,
+      summary: input.summary,
+      evidence: input.evidence,
+    });
+    if (input.workflowResult) {
+      withTreeLock(config, () => {
+        const tree = readTaskTree(config);
+        const latest = tree.tasks[input.taskId];
+        if (!latest) return;
+        latest.trace = {
+          ...(latest.trace ?? {}),
+          workflowResult: input.workflowResult,
+        };
+        saveTaskTreeWithKanbanSnapshot(config, tree);
+      });
+      task.trace = {
+        ...(task.trace ?? {}),
+        workflowResult: input.workflowResult,
+      };
+    }
+    return { ok: true, task };
   } catch (error) {
     const reason =
       error instanceof Error
@@ -556,6 +784,101 @@ export function completeStartedAttempt(
     });
     return { ok: false, reason };
   }
+}
+
+function claimRank(claim: TaskCompletionClaim): number {
+  if (claim === "done") return 3;
+  if (claim === "blocked") return 2;
+  return 1;
+}
+
+function recordLatePreviousAttemptCompletion(
+  config: TaskTreeConfig,
+  input: {
+    taskId: string;
+    attemptId: string;
+    claim: TaskCompletionClaim;
+    summary: string;
+    evidence?: string[];
+    workflowResult?: StructuredWorkflowResult;
+  },
+): { ok: true; task: TaskNode; late: true } | { ok: false } {
+  const recorded = withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) return { ok: false as const };
+    const trace =
+      task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+        ? (task.trace as Record<string, unknown>)
+        : {};
+    if (trace.previous_attempt_id !== input.attemptId) {
+      return { ok: false as const };
+    }
+    if (trace.stale_active_fresh_session !== true) {
+      return { ok: false as const };
+    }
+    const status = taskStatus(task);
+    if (status === "done") return { ok: false as const };
+
+    const now = new Date().toISOString();
+    const priorCompletions = Array.isArray(trace.late_worker_completions)
+      ? trace.late_worker_completions
+      : [];
+    const lateCompletion = {
+      attempt_id: input.attemptId,
+      result: input.claim,
+      summary: input.summary,
+      evidence: input.evidence ?? [],
+      ...(input.workflowResult ? { workflowResult: input.workflowResult } : {}),
+      recorded_at: now,
+    };
+    const currentClaim =
+      typeof trace.last_worker_claim === "string"
+        ? (trace.last_worker_claim as TaskCompletionClaim)
+        : undefined;
+    const shouldPromote =
+      status === "review" &&
+      (!currentClaim || claimRank(input.claim) > claimRank(currentClaim));
+
+    task.trace = {
+      ...trace,
+      late_worker_completions: [...priorCompletions, lateCompletion].slice(-5),
+      late_worker_completion_recorded_at: now,
+      late_worker_completion_attempt_id: input.attemptId,
+    };
+    if (shouldPromote) {
+      task.result = input.summary;
+      task.evidence = input.evidence ?? task.evidence;
+      task.trace = {
+        ...(task.trace ?? {}),
+        last_worker_result: input.claim,
+        last_worker_claim: input.claim,
+        last_worker_summary: input.summary,
+        last_worker_completed_at: now,
+        last_worker_evidence: input.evidence ?? [],
+        ...(input.workflowResult
+          ? { workflowResult: input.workflowResult }
+          : {}),
+        late_worker_completion_promoted_at: now,
+      };
+    }
+
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_worker_late_completion_recorded",
+      task_id: input.taskId,
+      attempt_id: input.attemptId,
+      result: input.claim,
+      promoted: shouldPromote,
+      summary: input.summary,
+      evidence: input.evidence ?? [],
+      workflowResult: input.workflowResult,
+    });
+    return { ok: true as const, task, late: true as const };
+  });
+  return recorded.ok
+    ? { ok: true, task: recorded.task, late: true }
+    : { ok: false };
 }
 
 async function runAssignedMode(
@@ -598,9 +921,18 @@ async function runAssignedMode(
       attemptId,
     }),
   });
-  const message = resultText(result);
+  const message = sessionSummaryForCompletion(result);
   const claim = workerResultFromSession(result, message);
   const evidence = resultEvidence(result);
+  const fixForwardResult = isFixForwardTask(task)
+    ? parseFixForwardResult(message)
+    : null;
+  const fixForwardDetails = isFixForwardTask(task)
+    ? {
+        fixForward: fixForwardResult,
+        fixForwardStructuredResultPresent: Boolean(fixForwardResult),
+      }
+    : undefined;
   const completion = completeStartedAttempt(config, {
     taskId: task.id,
     attemptId,
@@ -625,6 +957,7 @@ async function runAssignedMode(
     result: claim,
     summary: message || "Worker session returned without a completion summary.",
     evidence,
+    details: fixForwardDetails,
   });
   return ctx.done(
     `Task worker handled ${task.id} attempt ${attemptId}; result is ${claim}. Agent result: ${message}`,

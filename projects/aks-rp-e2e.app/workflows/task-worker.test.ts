@@ -142,10 +142,18 @@ describe("task worker", () => {
     expect(observedPrompt).toContain("context, not ground truth");
     expect(observedPrompt).toContain("commit it, push it to the target");
     expect(observedPrompt).toContain(
-      "then verify it with the GitHub workflow",
+      "then verify it with the Azure DevOps pipeline",
     );
     expect(observedPrompt).toContain("App-only notes, memos");
     expect(observedPrompt).toContain("do not fix those");
+    expect(observedPrompt).toContain(
+      "domain result review with explicit inputs",
+    );
+    expect(observedPrompt).toContain("Do not touch the task tree");
+    expect(observedPrompt).toContain("do not edit app loop state");
+    expect(observedPrompt).toContain(
+      "The app-side planner/controller consumes that result",
+    );
 
     const updated = JSON.parse(
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
@@ -167,6 +175,138 @@ describe("task worker", () => {
         result: "done",
       },
     });
+  });
+
+  test("carries structured fix-forward result into completion details", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["fix-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "fix-task": {
+              id: "fix-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Fix one failed spec.",
+              inputs: ["spec:one"],
+              outputs: ["runs/test-results/"],
+              acceptance: ["Fix-forward result is structured"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+                subjectKind: "spec-family",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "fix-task" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, any>;
+    }> = [];
+    let observedPrompt = "";
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, prompt: string) => {
+        observedPrompt = prompt;
+        return {
+          status: "success",
+          finishResult: {
+            status: "success",
+            deliverables: [{ path: "evidence/fix.md" }],
+          },
+          message: `Fixed.
+
+FIX_FORWARD_RESULT:
+\`\`\`json
+{
+  "workflow": "fix-forward",
+  "subject": { "kind": "spec", "id": "spec.one" },
+  "classification": "request-shape-invalid",
+  "diagnosis": "Request shape was missing a required field.",
+  "minimumDiagnosisPacket": {
+    "target": "staging",
+    "branch": "dev",
+    "runId": "171",
+    "resultPath": "runs/test-results/spec.one/result.json",
+    "failingPhase": "execute",
+    "failingAssertion": "create succeeds",
+    "requestOrResponseExcerpt": "HTTP 400 missing field",
+    "referencesChecked": ["azure-rest-api-specs"],
+    "inputFingerprint": "input-a",
+    "errorFingerprint": "error-a"
+  },
+  "changedFiles": ["features/example/specs/spec.one.json"],
+  "verification": {
+    "runId": "172",
+    "resultPath": "runs/test-results/spec.one/result.json",
+    "status": "pass"
+  },
+  "nextAction": "done",
+  "nextActionReason": "The changed spec passed live verification."
+}
+\`\`\``,
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedPrompt).toContain("FIX_FORWARD_RESULT");
+    expect(observedPrompt).toContain("minimumDiagnosisPacket");
+    expect(dispatched).toHaveLength(1);
+    expect(
+      dispatched[0].payload.workflowResult.details.fixForward,
+    ).toMatchObject({
+      workflow: "fix-forward",
+      classification: "request-shape-invalid",
+      nextAction: "done",
+    });
+    expect(
+      dispatched[0].payload.workflowResult.details
+        .fixForwardStructuredResultPresent,
+    ).toBe(true);
   });
 
   test("completion helpers accept legacy state-only active tasks", async () => {
@@ -338,6 +478,90 @@ describe("task worker", () => {
       "utf8",
     );
     expect(journal).toContain("task_worker_completion_ignored");
+  });
+
+  test("keeps late stale-active completion reviewable when previous attempt finishes after retry", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["spec-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-task": {
+              id: "spec-task",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Repair one spec.",
+              outputs: ["evidence/archive/"],
+              acceptance: ["done"],
+              result: "Retry attempt only queued the rerun.",
+              evidence: ["evidence/archive/retry.md"],
+              trace: {
+                current_attempt_id: "attempt-retry",
+                previous_attempt_id: "attempt-original",
+                stale_active_fresh_session: true,
+                last_worker_claim: "partial",
+                last_worker_result: "partial",
+                last_worker_summary: "Retry attempt only queued the rerun.",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const completed = completeStartedAttempt(config(projectDir), {
+      taskId: "spec-task",
+      attemptId: "attempt-original",
+      claim: "done",
+      summary: "Original attempt finished with the reviewed live result.",
+      evidence: ["evidence/archive/final.md"],
+    });
+
+    expect(completed.ok).toBe(true);
+    expect(completed.ok && completed.late).toBe(true);
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(updated.tasks["spec-task"].state).toBe("review");
+    expect(updated.tasks["spec-task"].result).toBe(
+      "Original attempt finished with the reviewed live result.",
+    );
+    expect(updated.tasks["spec-task"].evidence).toEqual([
+      "evidence/archive/final.md",
+    ]);
+    expect(updated.tasks["spec-task"].trace.last_worker_claim).toBe("done");
+    expect(
+      updated.tasks["spec-task"].trace.late_worker_completions[0].attempt_id,
+    ).toBe("attempt-original");
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain("task_worker_late_completion_recorded");
+    expect(journal).not.toContain("task_worker_completion_ignored");
   });
 
   test("keeps blocked worker results reviewable for the owner", async () => {
@@ -861,6 +1085,204 @@ describe("task worker", () => {
         result: "blocked",
         summary:
           "OpenAI API error (429): 429 No deployments available for selected model, Try again in 5 seconds.",
+      },
+    });
+  });
+
+  test("prefers provider errorMessage over finish summary when session startup fails before work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["spec-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-task": {
+              id: "spec-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              workflow: "spec-runner",
+              priority: "P1",
+              children: [],
+              goal: "Run one spec.",
+              inputs: [],
+              outputs: ["runs/executions/"],
+              acceptance: ["Spec-runner produces terminal result"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "spec-task" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "error" }),
+      runAgentSession: async () => ({
+        sessionId: "s_task_spec-task",
+        status: "error",
+        lastAssistantText: null,
+        errorMessage:
+          "OpenAI API error (401): 401 litellm.AuthenticationError: token expired",
+        finishResult: {
+          status: "blocked",
+          summary: "Agent ended with an empty assistant turn",
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("blocked");
+    expect(updated.tasks["spec-task"].trace.last_worker_summary).toBe(
+      "OpenAI API error (401): 401 litellm.AuthenticationError: token expired",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: {
+        taskId: "spec-task",
+        result: "blocked",
+        summary:
+          "OpenAI API error (401): 401 litellm.AuthenticationError: token expired",
+      },
+    });
+  });
+
+  test("uses explicit runtime-error summary when session ends error with no assistant output or provider error", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["spec-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-task": {
+              id: "spec-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              workflow: "spec-runner",
+              priority: "P1",
+              children: [],
+              goal: "Run one spec.",
+              inputs: [],
+              outputs: ["runs/executions/"],
+              acceptance: ["Spec-runner produces terminal result"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "spec-task" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "error" }),
+      runAgentSession: async () => ({
+        sessionId: "s_task_spec-task",
+        status: "error",
+        lastAssistantText: null,
+        finishResult: {
+          status: "blocked",
+          summary: "Agent ended with an empty assistant turn",
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("blocked");
+    expect(updated.tasks["spec-task"].trace.last_worker_summary).toBe(
+      "Worker runtime error: session ended with status=error before any usable assistant output or structured finish summary.",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: {
+        taskId: "spec-task",
+        result: "blocked",
+        summary:
+          "Worker runtime error: session ended with status=error before any usable assistant output or structured finish summary.",
       },
     });
   });

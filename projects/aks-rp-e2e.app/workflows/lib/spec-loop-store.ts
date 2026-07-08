@@ -33,6 +33,10 @@ export type SpecLoopSpecState = {
   lastPrUrl: string | null;
   lastWorkflowLoopKey?: string | null;
   lastDispatchMetadataPath?: string | null;
+  failureClass?: string | null;
+  diagnosis?: string | null;
+  inputFingerprint?: string | null;
+  errorFingerprint?: string | null;
   activeAttemptId?: string | null;
   activeTaskSessionId?: string | null;
   activeWorkflowRunId?: string | null;
@@ -66,12 +70,20 @@ export function normalizeSpecLoopSpecState(
       ...spec,
       lastWorkflowLoopKey: spec.lastWorkflowLoopKey ?? null,
       lastDispatchMetadataPath: spec.lastDispatchMetadataPath ?? null,
+      failureClass: spec.failureClass ?? null,
+      diagnosis: spec.diagnosis ?? null,
+      inputFingerprint: spec.inputFingerprint ?? null,
+      errorFingerprint: spec.errorFingerprint ?? null,
     };
   }
   return {
     ...spec,
     lastWorkflowLoopKey: spec.lastWorkflowLoopKey ?? null,
     lastDispatchMetadataPath: spec.lastDispatchMetadataPath ?? null,
+    failureClass: spec.failureClass ?? null,
+    diagnosis: spec.diagnosis ?? null,
+    inputFingerprint: spec.inputFingerprint ?? null,
+    errorFingerprint: spec.errorFingerprint ?? null,
     activeAttemptId: null,
     activeTaskSessionId: null,
     activeWorkflowRunId: null,
@@ -346,6 +358,10 @@ export function loadSpecLoopState(input: {
         lastPrUrl: null,
         lastWorkflowLoopKey: null,
         lastDispatchMetadataPath: null,
+        failureClass: null,
+        diagnosis: null,
+        inputFingerprint: null,
+        errorFingerprint: null,
         activeAttemptId: null,
         activeTaskSessionId: null,
         activeWorkflowRunId: null,
@@ -384,6 +400,10 @@ export function loadSpecLoopState(input: {
         lastPrUrl: null,
         lastWorkflowLoopKey: null,
         lastDispatchMetadataPath: null,
+        failureClass: null,
+        diagnosis: null,
+        inputFingerprint: null,
+        errorFingerprint: null,
         activeAttemptId: null,
         activeTaskSessionId: null,
         activeWorkflowRunId: null,
@@ -519,6 +539,10 @@ export function updateSpecLoopSpec(
     lastPrUrl: null,
     lastWorkflowLoopKey: null,
     lastDispatchMetadataPath: null,
+    failureClass: null,
+    diagnosis: null,
+    inputFingerprint: null,
+    errorFingerprint: null,
     activeAttemptId: null,
     activeTaskSessionId: null,
     activeWorkflowRunId: null,

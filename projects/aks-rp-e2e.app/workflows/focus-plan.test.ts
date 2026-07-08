@@ -158,6 +158,80 @@ describe("focus-plan workflow", () => {
     expect(result.message).toContain("counts.backlog=0");
   });
 
+  test("suppresses failed-known-issues when live frontier is still nonterminal", async () => {
+    const { appDir, projectDir } = await makeWorkspace({
+      leafState: "blocked",
+    });
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed with known issues.\nOWNER_NEXT: archive the plan",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("result updated");
+    expect(result.message).toContain(
+      "Terminal/completed or disable-review guidance was suppressed",
+    );
+    expect(result.message).toContain("counts.blocked=1");
+  });
+
+  test("accepts failed-known-issues when the focus frontier is terminal", async () => {
+    const { appDir, projectDir } = await makeWorkspace({ leafState: "done" });
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed after local repair paths were exhausted.\nOWNER_NEXT: start a new focus after escalation response",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Focus-plan review completed with result failed_known_issues",
+    );
+    expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
+    expect(result.message).toContain("counts.blocked=0");
+  });
+
   test("asks for human approval and still wakes owner review for a proposed focus", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];

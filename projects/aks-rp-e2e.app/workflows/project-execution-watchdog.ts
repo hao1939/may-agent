@@ -1,8 +1,8 @@
 /**
  * project-execution-watchdog — liveness observer for aks-rp-e2e.
  *
- * The project owner owns the task tree. This workflow only observes runtime
- * sessions and wakes the owner when review is needed.
+ * The planner owns task-tree decisions. This workflow only observes runtime
+ * sessions and wakes app-ops when review is needed.
  */
 
 import { existsSync } from "node:fs";
@@ -14,7 +14,11 @@ import {
   defaultSpecLoopStatePath,
   type SpecLoopState,
 } from "./lib/spec-loop-store.ts";
-import { resolveTaskTreePath, type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   normalizeTaskTreeInPlace,
   withTreeLock,
@@ -35,7 +39,7 @@ import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
 export const description =
-  "Observe aks-rp-e2e task/session liveness and wake the project owner when review is needed.";
+  "Observe aks-rp-e2e task/session liveness and wake app-ops when review is needed.";
 
 type WatchdogConfig = {
   appDir: string;
@@ -65,17 +69,26 @@ type ActiveTaskSnapshot = {
     activeWorkflowRunId?: string | null;
     heartbeatAt?: string | null;
   };
+  compactLiveness?: {
+    featureKey?: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  };
 };
 
 type OpenTaskSnapshot = {
   taskId: string;
   parentId?: string | null;
   workflow?: string;
+  owner?: string;
   updatedAt?: string;
   reviewKind?: string;
   resultSummary?: string;
   lastWorkerResult?: string;
   lastWorkerSummary?: string;
+  terminalPipelineWaitReview?: Record<string, unknown>;
   terminalGitHubWaitReview?: Record<string, unknown>;
   blocker?: unknown;
   resumeAt?: string;
@@ -83,6 +96,16 @@ type OpenTaskSnapshot = {
   fallbackAt?: string;
   fallbackAction?: string;
   reasons?: string[];
+};
+
+type OverdueOwnerAction = {
+  taskId: string;
+  owner: string;
+  watchAt: string;
+  resumeAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
+  recoveryRequired: string;
 };
 
 type TerminalSessionRecovery = {
@@ -98,11 +121,31 @@ type WatchdogTreeSnapshot = {
   activeTasks: ActiveTaskSnapshot[];
   reviewTasks: OpenTaskSnapshot[];
   blockedTasks: OpenTaskSnapshot[];
+  overdueOwnerActions: OverdueOwnerAction[];
   waitingBacklogTasks: OpenTaskSnapshot[];
   activeCount: number;
   hasOpenWork: boolean;
   needsRefill: boolean;
   durableLoopLiveness: DurableLoopLiveness[];
+};
+
+type BlockedFrontierSummary = {
+  totalCount: number;
+  overdueCount: number;
+  futureWatchCount: number;
+  missingWatchCount: number;
+  sampledTaskIds: string[];
+  sampledOverdueTaskIds: string[];
+  parentGroups: Array<{
+    parentId: string;
+    count: number;
+    overdueCount: number;
+  }>;
+  waitTypeGroups: Array<{
+    waitType: string;
+    count: number;
+    overdueCount: number;
+  }>;
 };
 
 type DurableLoopLiveness = {
@@ -224,6 +267,71 @@ function blockerStringField(
   return undefined;
 }
 
+function taskSearchText(task: TaskTree["tasks"][string]): string {
+  return JSON.stringify({
+    id: task.id,
+    goal: task.goal,
+    inputs: task.inputs,
+    outputs: task.outputs,
+    acceptance: task.acceptance,
+    conflict_scope: task.conflict_scope,
+    depends_on: task.depends_on,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+    result: task.result,
+  }).toLowerCase();
+}
+
+function taskConflictScopes(task: TaskTree["tasks"][string]): string[] {
+  return Array.isArray(task.conflict_scope)
+    ? task.conflict_scope.filter(
+        (scope): scope is string => typeof scope === "string",
+      )
+    : [];
+}
+
+function blockedOverdueScope(parentId: string | null | undefined): string {
+  if (parentId === "aks-spec-verification-loop") return "spec-loop";
+  if (parentId === "aks-feature-compact-loop") return "compact-loop";
+  if (parentId === "project") return "project";
+  return "";
+}
+
+function taskCoversBlockedOverdueWait(
+  candidate: TaskTree["tasks"][string],
+  blockedTask: OpenTaskSnapshot,
+): boolean {
+  if (candidate.id === blockedTask.taskId) return false;
+  if (candidate.id === blockedTask.parentId) return false;
+  const needle = blockedTask.taskId.toLowerCase();
+  if (taskSearchText(candidate).includes(needle)) return true;
+
+  const scope = blockedOverdueScope(blockedTask.parentId);
+  if (!scope) return false;
+  return taskConflictScopes(candidate).some(
+    (conflictScope) =>
+      conflictScope === `ops:blocked-overdue:${scope}` ||
+      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`),
+  );
+}
+
+function blockerNestedStringField(
+  blocker: TaskTree["tasks"][string]["blocker"],
+  path: string[],
+): string | undefined {
+  let current: unknown = blockerRecord(blocker);
+  for (const key of path) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+  return typeof current === "string" && current.trim()
+    ? current.trim()
+    : undefined;
+}
+
 function taskRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -240,9 +348,9 @@ function reviewSnapshotFields(
 ): Partial<OpenTaskSnapshot> {
   const context = taskRecord(task.context);
   const trace = taskRecord(task.trace);
-  const terminalGitHubWaitReview = taskRecord(
-    context?.terminalGitHubWaitReview,
-  );
+  const terminalPipelineWaitReview =
+    taskRecord(context?.terminalPipelineWaitReview) ??
+    taskRecord(context?.terminalGitHubWaitReview);
   const lastWorkerResult = compactText(trace?.last_worker_result, 120);
   const lastWorkerSummary = compactText(trace?.last_worker_summary);
   return {
@@ -252,15 +360,17 @@ function reviewSnapshotFields(
     ...(typeof task.workflow === "string" && task.workflow.trim()
       ? { workflow: task.workflow.trim() }
       : {}),
-    reviewKind: terminalGitHubWaitReview
-      ? "terminal-github-wait"
+    reviewKind: terminalPipelineWaitReview
+      ? "terminal-pipeline-wait"
       : lastWorkerResult || lastWorkerSummary
         ? "worker-completion"
         : "manual-review",
-    ...(compactText(task.result) ? { resultSummary: compactText(task.result) } : {}),
+    ...(compactText(task.result)
+      ? { resultSummary: compactText(task.result) }
+      : {}),
     ...(lastWorkerResult ? { lastWorkerResult } : {}),
     ...(lastWorkerSummary ? { lastWorkerSummary } : {}),
-    ...(terminalGitHubWaitReview ? { terminalGitHubWaitReview } : {}),
+    ...(terminalPipelineWaitReview ? { terminalPipelineWaitReview } : {}),
   };
 }
 
@@ -268,52 +378,246 @@ function openTaskSnapshots(
   tree: TaskTree,
   state: "review" | "blocked",
 ): OpenTaskSnapshot[] {
-  return leafTasksByStatus(tree, state)
-    .map((task) => ({
-      taskId: task.id,
-      ...(state === "review" ? reviewSnapshotFields(task) : {}),
-      ...(taskUpdatedAt(task) ? { updatedAt: taskUpdatedAt(task) } : {}),
-      ...(task.blocker !== undefined ? { blocker: task.blocker } : {}),
-      ...(blockerStringField(task.blocker, ["resumeAt", "resume_at"])
-        ? {
-            resumeAt: blockerStringField(task.blocker, [
-              "resumeAt",
-              "resume_at",
-            ]),
-          }
-        : {}),
-      ...(blockerStringField(task.blocker, [
-        "resumeCondition",
-        "resume_condition",
-      ])
-        ? {
-            resumeCondition: blockerStringField(task.blocker, [
-              "resumeCondition",
-              "resume_condition",
-            ]),
-          }
-        : {}),
-      ...(blockerStringField(task.blocker, ["fallbackAt", "fallback_at"])
-        ? {
-            fallbackAt: blockerStringField(task.blocker, [
-              "fallbackAt",
-              "fallback_at",
-            ]),
-          }
-        : {}),
-      ...(blockerStringField(task.blocker, [
-        "fallbackAction",
-        "fallback_action",
-      ])
-        ? {
-            fallbackAction: blockerStringField(task.blocker, [
-              "fallbackAction",
-              "fallback_action",
-            ]),
-          }
-        : {}),
+  const snapshots = leafTasksByStatus(tree, state).map((task) => ({
+    taskId: task.id,
+    ...(typeof task.parent_id === "string" || task.parent_id === null
+      ? { parentId: task.parent_id }
+      : {}),
+    ...(typeof task.workflow === "string" && task.workflow.trim()
+      ? { workflow: task.workflow.trim() }
+      : {}),
+    ...(blockerStringField(task.blocker, ["owner"])
+      ? { owner: blockerStringField(task.blocker, ["owner"]) }
+      : {}),
+    ...(state === "review" ? reviewSnapshotFields(task) : {}),
+    ...(taskUpdatedAt(task) ? { updatedAt: taskUpdatedAt(task) } : {}),
+    ...(task.blocker !== undefined ? { blocker: task.blocker } : {}),
+    ...((blockerNestedStringField(task.blocker, ["waiting_for", "type"]) ??
+    blockerNestedStringField(task.blocker, ["waitingFor", "type"]))
+      ? {
+          waitType:
+            blockerNestedStringField(task.blocker, ["waiting_for", "type"]) ??
+            blockerNestedStringField(task.blocker, ["waitingFor", "type"]),
+        }
+      : {}),
+    ...(blockerStringField(task.blocker, ["resumeAt", "resume_at"])
+      ? {
+          resumeAt: blockerStringField(task.blocker, ["resumeAt", "resume_at"]),
+        }
+      : {}),
+    ...(blockerStringField(task.blocker, [
+      "resumeCondition",
+      "resume_condition",
+    ])
+      ? {
+          resumeCondition: blockerStringField(task.blocker, [
+            "resumeCondition",
+            "resume_condition",
+          ]),
+        }
+      : {}),
+    ...(blockerStringField(task.blocker, ["fallbackAt", "fallback_at"])
+      ? {
+          fallbackAt: blockerStringField(task.blocker, [
+            "fallbackAt",
+            "fallback_at",
+          ]),
+        }
+      : {}),
+    ...(blockerStringField(task.blocker, ["fallbackAction", "fallback_action"])
+      ? {
+          fallbackAction: blockerStringField(task.blocker, [
+            "fallbackAction",
+            "fallback_action",
+          ]),
+        }
+      : {}),
+  }));
+
+  return state === "blocked"
+    ? sortBlockedSnapshots(snapshots)
+    : snapshots.sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
+function parseWatchTime(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function blockedWatchTime(task: OpenTaskSnapshot): number | null {
+  const candidates = [
+    parseWatchTime(task.resumeAt),
+    parseWatchTime(task.fallbackAt),
+  ].filter((value): value is number => typeof value === "number");
+  return candidates.length ? Math.min(...candidates) : null;
+}
+
+function blockedTaskRank(task: OpenTaskSnapshot, now = Date.now()): number {
+  const watchTime = blockedWatchTime(task);
+  if (watchTime !== null && watchTime <= now) return 0;
+  if (watchTime === null) return 1;
+  return 2;
+}
+
+function sortBlockedSnapshots(tasks: OpenTaskSnapshot[]): OpenTaskSnapshot[] {
+  const now = Date.now();
+  return [...tasks].sort((a, b) => {
+    const rankDiff = blockedTaskRank(a, now) - blockedTaskRank(b, now);
+    if (rankDiff !== 0) return rankDiff;
+    const aWatch = blockedWatchTime(a) ?? Number.POSITIVE_INFINITY;
+    const bWatch = blockedWatchTime(b) ?? Number.POSITIVE_INFINITY;
+    if (aWatch !== bWatch) return aWatch - bWatch;
+    return a.taskId.localeCompare(b.taskId);
+  });
+}
+
+function incrementGroup(groups: Record<string, number>, key: string): void {
+  groups[key] = (groups[key] ?? 0) + 1;
+}
+
+function topGroups(
+  counts: Record<string, number>,
+  overdueCounts: Record<string, number>,
+  keyName: "parentId" | "waitType",
+):
+  | Array<{ parentId: string; count: number; overdueCount: number }>
+  | Array<{
+      waitType: string;
+      count: number;
+      overdueCount: number;
+    }> {
+  return Object.entries(counts)
+    .map(([key, count]) => ({
+      [keyName]: key,
+      count,
+      overdueCount: overdueCounts[key] ?? 0,
     }))
-    .sort((a, b) => a.taskId.localeCompare(b.taskId));
+    .sort((a, b) => {
+      const overdueDiff = b.overdueCount - a.overdueCount;
+      if (overdueDiff !== 0) return overdueDiff;
+      const countDiff = b.count - a.count;
+      if (countDiff !== 0) return countDiff;
+      return String(a[keyName]).localeCompare(String(b[keyName]));
+    })
+    .slice(0, 8) as never;
+}
+
+function blockedWaitType(task: OpenTaskSnapshot): string {
+  const value = (task as { waitType?: unknown }).waitType;
+  return typeof value === "string" && value.trim() ? value.trim() : "<missing>";
+}
+
+function blockedParentId(task: OpenTaskSnapshot): string {
+  return task.parentId ?? "<missing>";
+}
+
+function blockedFrontierSummary(
+  allTasks: OpenTaskSnapshot[],
+  sampledTasks: OpenTaskSnapshot[],
+): BlockedFrontierSummary {
+  const now = Date.now();
+  let overdueCount = 0;
+  let futureWatchCount = 0;
+  let missingWatchCount = 0;
+  const parentCounts: Record<string, number> = {};
+  const parentOverdueCounts: Record<string, number> = {};
+  const waitTypeCounts: Record<string, number> = {};
+  const waitTypeOverdueCounts: Record<string, number> = {};
+
+  for (const task of allTasks) {
+    const watchTime = blockedWatchTime(task);
+    const overdue = watchTime !== null && watchTime <= now;
+    if (overdue) overdueCount += 1;
+    else if (watchTime === null) missingWatchCount += 1;
+    else futureWatchCount += 1;
+
+    const parentId = blockedParentId(task);
+    const waitType = blockedWaitType(task);
+    incrementGroup(parentCounts, parentId);
+    incrementGroup(waitTypeCounts, waitType);
+    if (overdue) {
+      incrementGroup(parentOverdueCounts, parentId);
+      incrementGroup(waitTypeOverdueCounts, waitType);
+    }
+  }
+
+  return {
+    totalCount: allTasks.length,
+    overdueCount,
+    futureWatchCount,
+    missingWatchCount,
+    sampledTaskIds: sampledTasks.map((task) => task.taskId),
+    sampledOverdueTaskIds: sampledTasks
+      .filter((task) => blockedTaskRank(task, now) === 0)
+      .map((task) => task.taskId),
+    parentGroups: topGroups(
+      parentCounts,
+      parentOverdueCounts,
+      "parentId",
+    ) as BlockedFrontierSummary["parentGroups"],
+    waitTypeGroups: topGroups(
+      waitTypeCounts,
+      waitTypeOverdueCounts,
+      "waitType",
+    ) as BlockedFrontierSummary["waitTypeGroups"],
+  };
+}
+
+function recoveryTaskAlreadyOpen(
+  tree: TaskTree,
+  blockedTask: OpenTaskSnapshot,
+): boolean {
+  return Object.values(tree.tasks ?? {}).some((task) => {
+    if (!isLeaf(task)) return false;
+    const state = task.status ?? task.state ?? "backlog";
+    if (state !== "active" && state !== "review") return false;
+    return taskCoversBlockedOverdueWait(task, blockedTask);
+  });
+}
+
+function overdueOwnerActions(
+  tree: TaskTree,
+  blockedTasks: OpenTaskSnapshot[],
+): OverdueOwnerAction[] {
+  const now = Date.now();
+  return blockedTasks
+    .flatMap((task): OverdueOwnerAction[] => {
+      const watchCandidates = [
+        { at: task.resumeAt, kind: "resume" },
+        { at: task.fallbackAt, kind: "fallback" },
+      ]
+        .map((candidate) => ({
+          ...candidate,
+          ts: parseWatchTime(candidate.at),
+        }))
+        .filter(
+          (candidate): candidate is { at: string; kind: string; ts: number } =>
+            typeof candidate.at === "string" &&
+            typeof candidate.ts === "number",
+        )
+        .sort((a, b) => a.ts - b.ts);
+      const watch = watchCandidates[0];
+      if (!watch || watch.ts > now) return [];
+      if (recoveryTaskAlreadyOpen(tree, task)) return [];
+      return [
+        {
+          taskId: task.taskId,
+          owner: task.owner ?? "",
+          watchAt: new Date(watch.ts).toISOString(),
+          ...(task.resumeAt ? { resumeAt: task.resumeAt } : {}),
+          ...(task.fallbackAt ? { fallbackAt: task.fallbackAt } : {}),
+          ...(task.fallbackAction
+            ? { fallbackAction: task.fallbackAction }
+            : {}),
+          recoveryRequired:
+            watch.kind === "resume"
+              ? "Resume window passed without active/review recovery work."
+              : "Fallback window passed without active/review recovery work.",
+        },
+      ];
+    })
+    .sort((a, b) => a.watchAt.localeCompare(b.watchAt));
 }
 
 function waitingBacklogSnapshots(tree: TaskTree): OpenTaskSnapshot[] {
@@ -334,6 +638,16 @@ function activeTaskSnapshots(
     string,
     {
       specId: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >,
+  compactByTaskId: Map<
+    string,
+    {
+      featureKey: string;
       activeAttemptId?: string | null;
       activeTaskSessionId?: string | null;
       activeWorkflowRunId?: string | null;
@@ -365,6 +679,7 @@ function activeTaskSnapshots(
           ? task.workflow.trim()
           : undefined,
       verifierLiveness: verifierByTaskId.get(task.id),
+      compactLiveness: compactByTaskId.get(task.id),
     }))
     .sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
@@ -409,6 +724,57 @@ function loadVerifierLivenessByTaskId(path: string): Map<
           : null,
       heartbeatAt:
         typeof spec.heartbeatAt === "string" ? spec.heartbeatAt : null,
+    });
+  }
+  return byTaskId;
+}
+
+function loadCompactLivenessByTaskId(path: string): Map<
+  string,
+  {
+    featureKey: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  }
+> {
+  const state = readJson<Record<string, unknown> | null>(path, null);
+  const byTaskId = new Map<
+    string,
+    {
+      featureKey: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >();
+  const features = state?.features;
+  const records =
+    features && typeof features === "object" && !Array.isArray(features)
+      ? (features as Record<string, Record<string, unknown>>)
+      : {};
+  for (const [featureKey, feature] of Object.entries(records)) {
+    if (!feature || typeof feature !== "object") continue;
+    if (feature.status !== "running") continue;
+    if (!feature.taskId || typeof feature.taskId !== "string") continue;
+    byTaskId.set(feature.taskId, {
+      featureKey,
+      activeAttemptId:
+        typeof feature.activeAttemptId === "string"
+          ? feature.activeAttemptId
+          : null,
+      activeTaskSessionId:
+        typeof feature.activeTaskSessionId === "string"
+          ? feature.activeTaskSessionId
+          : null,
+      activeWorkflowRunId:
+        typeof feature.activeWorkflowRunId === "string"
+          ? feature.activeWorkflowRunId
+          : null,
+      heartbeatAt:
+        typeof feature.heartbeatAt === "string" ? feature.heartbeatAt : null,
     });
   }
   return byTaskId;
@@ -652,6 +1018,24 @@ function activeTaskRestartReason(
         return null;
       }
       return "verifier-no-heartbeat";
+    }
+  }
+
+  if (task.workflow === "feature-compact-planner" && task.compactLiveness) {
+    const sameAttempt =
+      !!task.currentAttemptId &&
+      task.compactLiveness.activeAttemptId === task.currentAttemptId;
+    if (sameAttempt) {
+      const heartbeatMs = task.compactLiveness.heartbeatAt
+        ? Date.parse(task.compactLiveness.heartbeatAt)
+        : Number.NaN;
+      if (
+        Number.isFinite(heartbeatMs) &&
+        Date.now() - heartbeatMs <= config.staleNoActivityMs
+      ) {
+        return null;
+      }
+      return "compact-no-heartbeat";
     }
   }
 
@@ -909,9 +1293,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const verifierByTaskId = loadVerifierLivenessByTaskId(
         config.specLoopStatePath,
       );
-      const activeTasks = activeTaskSnapshots(tree, verifierByTaskId);
+      const compactByTaskId = loadCompactLivenessByTaskId(
+        config.featureCompactLoopStatePath,
+      );
+      const activeTasks = activeTaskSnapshots(
+        tree,
+        verifierByTaskId,
+        compactByTaskId,
+      );
       const reviewTasks = openTaskSnapshots(tree, "review");
       const blockedTasks = openTaskSnapshots(tree, "blocked");
+      const blockedOwnerActions = overdueOwnerActions(tree, blockedTasks);
       const waitingBacklogTasks = waitingBacklogSnapshots(tree);
       const durableLoops = durableLoopLiveness(config, tree);
 
@@ -923,6 +1315,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         activeTasks,
         reviewTasks,
         blockedTasks,
+        overdueOwnerActions: blockedOwnerActions,
         waitingBacklogTasks,
         activeCount: activeTasks.length,
         hasOpenWork: hasOpenWork(tree),
@@ -966,6 +1359,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     emitOwnerRequested(ctx, config, reason, {
       staleActiveTasks: recovery.staleActiveTasks,
       ...loopTickDetails(loopTickCount),
+    });
+    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+  }
+
+  if (recovery.overdueOwnerActions.length > 0) {
+    const reason = "watchdog-blocked-frontier-review";
+    const sampledBlockedTasks = recovery.blockedTasks.slice(0, 20);
+    const blockedSummary = blockedFrontierSummary(
+      recovery.blockedTasks,
+      sampledBlockedTasks,
+    );
+    emitOwnerRequested(ctx, config, reason, {
+      blockedTasks: sampledBlockedTasks,
+      blockedCount: recovery.blockedTasks.length,
+      blockedOverdueCount: blockedSummary.overdueCount,
+      blockedFutureWatchCount: blockedSummary.futureWatchCount,
+      blockedMissingWatchCount: blockedSummary.missingWatchCount,
+      blockedFrontierSummary: blockedSummary,
+      overdueOwnerActions: recovery.overdueOwnerActions.slice(0, 20),
+      overdueOwnerActionCount: recovery.overdueOwnerActions.length,
+      reviewCount: recovery.reviewTasks.length,
+      runnableBacklogTaskIds: recovery.runnableBacklogTaskIds.slice(0, 20),
+      runnableBacklogCount: recovery.runnableBacklogTaskIds.length,
+      ...loopTickDetails(loopTickCount),
+      instruction:
+        "A blocked wait passed its resume/fallback window without active/review recovery or handoff work. Treat this before ordinary review/backlog refill: verify the wait, create recovery/handoff/escalation work, refresh it with new evidence and next check, or close a stale holder.",
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
@@ -1017,6 +1436,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     recovery.activeCount < config.maxConcurrent
   ) {
     const reason = "watchdog-blocked-frontier-review";
+    const sampledBlockedTasks = recovery.blockedTasks.slice(0, 20);
+    const blockedSummary = blockedFrontierSummary(
+      recovery.blockedTasks,
+      sampledBlockedTasks,
+    );
     const waitingBacklogDetails =
       recovery.waitingBacklogTasks.length > 0
         ? {
@@ -1025,12 +1449,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           }
         : {};
     emitOwnerRequested(ctx, config, reason, {
-      blockedTasks: recovery.blockedTasks.slice(0, 20),
+      blockedTasks: sampledBlockedTasks,
       blockedCount: recovery.blockedTasks.length,
+      blockedOverdueCount: blockedSummary.overdueCount,
+      blockedFutureWatchCount: blockedSummary.futureWatchCount,
+      blockedMissingWatchCount: blockedSummary.missingWatchCount,
+      blockedFrontierSummary: blockedSummary,
+      overdueOwnerActions: recovery.overdueOwnerActions.slice(0, 20),
+      overdueOwnerActionCount: recovery.overdueOwnerActions.length,
       ...loopTickDetails(loopTickCount),
       ...waitingBacklogDetails,
       instruction:
-        "Review blocked and dependency-waiting tasks before treating underfilled capacity as idle. Push sampled blockers toward done, rework, a visible problem task, or an exact external ask/resume condition.",
+        "Review blocked and dependency-waiting tasks before treating underfilled capacity as idle. The blockedTasks sample is ordered by actionability: expired resume/fallback windows first, malformed waits next, future waits last. overdueOwnerActions names waits whose resume/fallback window passed without active/review recovery or handoff work; owner=human is not enough by itself. Push expired or malformed blockers toward done, rework, a visible problem task, or a refreshed exact external ask/resume condition; do not retry an unchanged blocked leaf.",
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }

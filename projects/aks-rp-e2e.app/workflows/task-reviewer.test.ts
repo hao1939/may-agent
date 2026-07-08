@@ -18,7 +18,11 @@ async function makeWorkspace() {
 
 async function writeTree(
   appDir: string,
-  input: { state?: string; attemptId?: string } = {},
+  input: {
+    state?: string;
+    attemptId?: string;
+    context?: Record<string, unknown>;
+  } = {},
 ) {
   await writeFile(
     resolveTaskTreePath(appDir),
@@ -55,6 +59,7 @@ async function writeTree(
             forbidden: [],
             conflict_scope: ["spec:one"],
             depends_on: [],
+            context: input.context,
             trace: {
               current_attempt_id: input.attemptId ?? "attempt-1",
               last_worker_result: "done",
@@ -84,6 +89,7 @@ function completionEvent(
     result?: string;
     summary?: string;
     evidenceRefs?: string[];
+    workflowResult?: Record<string, unknown>;
   } = {},
 ): Record<string, unknown> {
   const taskId = input.taskId ?? "review-task";
@@ -91,6 +97,7 @@ function completionEvent(
   const result = input.result ?? "done";
   const summary = input.summary ?? "GitHub live workflow passed.";
   const evidenceRefs = input.evidenceRefs ?? ["runs/test-results/test-1"];
+  const workflowResult = input.workflowResult;
   return {
     type: "project.task.completed",
     target: { project: "aks-rp-e2e", taskId },
@@ -105,6 +112,7 @@ function completionEvent(
       result,
       summary,
       evidenceRefs,
+      ...(workflowResult ? { workflowResult } : {}),
     },
   };
 }
@@ -332,6 +340,483 @@ describe("task reviewer", () => {
         decision: "redo",
         confidence: "high",
         findings: ["worker-empty-assistant-turn", "worker-no-evidence"],
+      },
+    });
+  });
+
+  test("emits redo when terminal pipeline wait is not actually reviewed", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171344670",
+          runStatus: "completed",
+          runConclusion: "success",
+          namedSpecIds: ["spec.virtualmachines.mixed-sku-deallocate"],
+        },
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "partial",
+            summary:
+              "Azure DevOps pipeline run 171344670 is terminal; review the run artifact/result and update the spec-loop state.",
+            evidenceRefs: [],
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "redo",
+        confidence: "high",
+        findings: [
+          "terminal-pipeline-wait-not-reviewed",
+          "worker-returned-review-request-instead-of-result",
+        ],
+      },
+    });
+  });
+
+  test("accepts terminal pipeline wait with structured same-spec live proof", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171344670",
+          runStatus: "completed",
+          runConclusion: "success",
+          namedSpecIds: ["spec.virtualmachines.mixed-sku-deallocate"],
+        },
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "done",
+            summary:
+              "Spec spec.virtualmachines.mixed-sku-deallocate live artifact passed.",
+            evidenceRefs: [
+              "runs/test-results/test_123/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+            ],
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: {
+                kind: "spec",
+                id: "spec.virtualmachines.mixed-sku-deallocate",
+              },
+              artifacts: [
+                "runs/test-results/test_123/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+              ],
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171344670",
+                resultPath:
+                  "runs/test-results/test_123/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+                specStatus: "pass",
+                liveVerified: true,
+                resourceGroup: "rg-plan-001-proof",
+                clusterName: "aks-plan-001-proof",
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "accept",
+        confidence: "high",
+        findings: [
+          "run:171344670",
+          "result:runs/test-results/test_123/artifacts/virtualmachines-mixed-sku-deallocate/spec-runner/result.json",
+          "status:pass",
+          "liveClusterObserved:true",
+          "resourceGroup:rg-plan-001-proof",
+          "clusterName:aks-plan-001-proof",
+        ],
+      },
+    });
+  });
+
+  test("accepts terminal pipeline wait with structured same-spec failure proof", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171349474",
+          runStatus: "completed",
+          runConclusion: "failed",
+          namedSpecIds: ["spec.cluster-autoscaler.mincount-recovery"],
+        },
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "partial",
+            summary:
+              "Spec spec.cluster-autoscaler.mincount-recovery live artifact failed.",
+            evidenceRefs: [
+              "runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+            ],
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "single-spec-verifier",
+              status: "partial",
+              subject: {
+                kind: "spec",
+                id: "spec.cluster-autoscaler.mincount-recovery",
+              },
+              artifacts: [
+                "runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+              ],
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171349474",
+                resultPath:
+                  "runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+                specStatus: "fail",
+                liveVerified: false,
+                liveClusterObserved: true,
+                resourceGroup: "rg-plan-001-fail",
+                clusterName: "aks-plan-001-fail",
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "accept",
+        confidence: "high",
+        summary:
+          "Terminal pipeline wait review consumed the returned artifact and recorded a same-spec non-passing result.",
+        findings: [
+          "run:171349474",
+          "result:runs/test-results/test_456/artifacts/cluster-autoscaler-mincount-recovery/spec-runner/result.json",
+          "status:fail",
+          "liveClusterObserved:true",
+          "resourceGroup:rg-plan-001-fail",
+          "clusterName:aks-plan-001-fail",
+        ],
+      },
+    });
+  });
+
+  test("accepts terminal pipeline wait with structured grouped spec results", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171342018",
+          runStatus: "completed",
+          runConclusion: "failed",
+          namedSpecIds: [],
+        },
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "partial",
+            summary: "Grouped network-acns run returned two error results.",
+            evidenceRefs: [
+              "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+            ],
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "single-spec-verifier",
+              status: "partial",
+              subject: {
+                kind: "spec-group",
+                id: "network-acns",
+              },
+              artifacts: [
+                "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+              ],
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171342018",
+                resultPath:
+                  "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+                specResults: [
+                  {
+                    specId: "spec.network-acns.cilium-observability",
+                    status: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-cilium-observability/spec-runner/result.json",
+                    ],
+                  },
+                  {
+                    specId: "spec.network-acns.retina-enterprise",
+                    status: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-retina-enterprise/spec-runner/result.json",
+                    ],
+                  },
+                ],
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "accept",
+        confidence: "high",
+        summary:
+          "Terminal pipeline wait review consumed the returned artifact and recorded same-spec non-passing result(s).",
+      },
+    });
+    expect(dispatched[0].payload.findings).toContain(
+      "spec:spec.network-acns.cilium-observability:error",
+    );
+    expect(dispatched[0].payload.findings).toContain(
+      "spec:spec.network-acns.retina-enterprise:error",
+    );
+  });
+
+  test("accepts structured spec result on ordinary artifact-review task", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "partial",
+            summary: "Reviewed ADO run 171341417 artifact result.",
+            evidenceRefs: [
+              "runs/test-results/test_20260708082648685_e95l27_817307/result.json",
+            ],
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "partial",
+              subject: {
+                kind: "spec",
+                id: "spec.network-cni.cilium-stop-start",
+              },
+              artifacts: [
+                "runs/test-results/test_20260708082648685_e95l27_817307/result.json",
+              ],
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "171341417",
+                resultPath:
+                  "runs/test-results/test_20260708082648685_e95l27_817307/artifacts/network-cni-cilium-stop-start/spec-runner/result.json",
+                specResults: [
+                  {
+                    specId: "spec.network-cni.cilium-stop-start",
+                    status: "error",
+                    reason:
+                      "Failed to resolve DefaultVersion(): HTTP 400; version=(missing)",
+                    artifactRefs: [
+                      "runs/test-results/test_20260708082648685_e95l27_817307/artifacts/network-cni-cilium-stop-start/spec-runner/result.json",
+                    ],
+                  },
+                ],
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "accept",
+        confidence: "high",
+        summary:
+          "Structured artifact review consumed the returned artifact and recorded a same-spec non-passing result.",
+      },
+    });
+  });
+
+  test("emits redo for fix-forward completion missing structured result", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, { context: { workflow: "fix-forward" } });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "done",
+            summary: "Fixed it based on evidence, but no structured result.",
+            evidenceRefs: ["evidence/fix.md"],
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "redo",
+        confidence: "high",
+        findings: [
+          "fix-forward-structured-result-missing",
+          "missing:workflowResult.details.fixForward",
+        ],
       },
     });
   });

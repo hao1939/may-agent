@@ -715,6 +715,75 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for represented split frontiers", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["represented-frontier", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "represented-frontier": {
+              id: "represented-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Preserve one exact split-frontier representation for windows while the mixed family remains represented by exact carriers rather than a fake shared environment family.",
+              outputs: ["evidence/archive/represented-frontier.md"],
+              acceptance: [
+                "The holder cites exact represented carriers and resumes only when one represented blocker materially changes.",
+              ],
+              blocker: {
+                condition:
+                  "Blocked-frontier review confirmed this split mixed-family holder is represented by exact carriers: westus2 capacity still controls one member, two others remain the exact staging carrier, and the pipeline-only holder remains the exact residual carrier. No merged environment task would move those carriers honestly now.",
+                category: "blocked-wait",
+                owner: "aks-explorer",
+                resume_condition:
+                  "Resume only when one exact represented blocker materially changes or a new current-head review reclassifies one member.",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("repairs parent rollups and lifecycle from active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -2440,6 +2509,84 @@ describe("task tree tools", () => {
     expect(
       tree.tasks["aks-spec-verification-loop"].trace?.reopened_by,
     ).toBeUndefined();
+  });
+
+  test("repair-rollups refreshes child-blocked parent result text", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["focus"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            focus: {
+              id: "focus",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              priority: "P1",
+              children: ["done-child", "wait-child"],
+              goal: "Keep focus truthful.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["wait is explicit"],
+              result: "Child review pending: done-child.",
+              blocker: {
+                condition: "Child blocked: wait-child.",
+                category: "child-blocked",
+              },
+            },
+            "done-child": {
+              id: "done-child",
+              parent_id: "focus",
+              state: "done",
+              status: "done",
+              goal: "Already accepted.",
+              outputs: ["evidence/archive/done.md"],
+              acceptance: ["done"],
+            },
+            "wait-child": {
+              id: "wait-child",
+              parent_id: "focus",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.repairedChildBlockedParentResults).toContain("focus");
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks.focus.result).toBe(
+      "Blocked on child task(s): wait-child.",
+    );
   });
 
   test("reopenControllerRootWhenIncomplete adds observer and fallback metadata for child-blocked stewardship", () => {

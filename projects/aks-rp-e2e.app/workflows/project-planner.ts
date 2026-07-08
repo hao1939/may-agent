@@ -1,9 +1,9 @@
 /**
  * project-planner — refill/review loop for aks-rp-e2e.
  *
- * The planner workflow is not the project brain. It wakes the project owner
- * agent with task-tree tools, then emits task assignment events from owner
- * assignments or already-clear backlog dispatch.
+ * The planner workflow is the app-ops decision adapter. It wakes app-ops with
+ * task-tree tools, then emits task dispatch events from app-ops decisions or
+ * already-clear backlog dispatch.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -42,13 +42,15 @@ import {
 } from "./lib/workflow-input.ts";
 import {
   defaultSpecLoopStatePath,
+  saveSpecLoopState,
+  updateSpecLoopSpec,
   type SpecLoopState,
   type SpecLoopSpecState,
 } from "./lib/spec-loop-store.ts";
 
 export const name = "project-planner";
 export const description =
-  "Wake the project owner to plan in the task tree, then emit explicit worker assignments or durable loop controller ticks.";
+  "Wake app-ops to plan in the task tree, then emit explicit task dispatches or durable loop controller ticks.";
 
 type SessionWorkflowContext = WorkflowContext & {
   runAgentSession?: (
@@ -151,7 +153,7 @@ function loopControllerActionForTask(
 
 function assignPlannerRunnableBacklogTasks(
   config: TaskTreeConfig,
-  input: { worker?: string } = {},
+  input: { worker?: string; domainWorker?: string; opsWorker?: string } = {},
 ): LoopControllerPulse[] {
   const controllerPulses: LoopControllerPulse[] = [];
 
@@ -168,7 +170,10 @@ function assignPlannerRunnableBacklogTasks(
 
     try {
       prepareFreshSessionForTerminalRuntime(config, taskId);
-      assignTask(config, { taskId, worker: input.worker });
+      assignTask(config, {
+        taskId,
+        worker: plannerWorkerForTask(config, taskId, input),
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes("Worker capacity is full")) break;
@@ -185,6 +190,50 @@ function assignPlannerRunnableBacklogTasks(
   }
 
   return controllerPulses;
+}
+
+function taskAncestry(config: TaskTreeConfig, taskId: string): string[] {
+  const ancestry: string[] = [];
+  const seen = new Set<string>();
+  let currentId: string | undefined = taskId;
+  while (currentId && !seen.has(currentId)) {
+    seen.add(currentId);
+    ancestry.push(currentId);
+    const task = readTask(config, currentId);
+    currentId =
+      typeof task?.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id
+        : undefined;
+  }
+  return ancestry;
+}
+
+function hasScopePrefix(value: string, scope: string): boolean {
+  return (
+    value === scope ||
+    value.startsWith(`${scope}/`) ||
+    value.startsWith(`${scope}-`)
+  );
+}
+
+function plannerWorkerForTask(
+  config: TaskTreeConfig,
+  taskId: string,
+  input: { worker?: string; domainWorker?: string; opsWorker?: string },
+): string | undefined {
+  const task = readTask(config, taskId);
+  const workflow = String(task?.workflow ?? "");
+  const ancestry = taskAncestry(config, taskId);
+  if (ancestry.some((id) => hasScopePrefix(id, "ops"))) {
+    return input.opsWorker ?? input.worker;
+  }
+  if (ancestry.some((id) => hasScopePrefix(id, "domain"))) {
+    return input.domainWorker ?? input.worker;
+  }
+  if (loopControllerManagedChildWorkflows.has(workflow)) {
+    return input.domainWorker ?? input.worker;
+  }
+  return input.worker;
 }
 
 type ReviewDecision = "accept" | "redo" | "followup" | "blocked" | "escalate";
@@ -563,6 +612,8 @@ function buildPlannerPrompt(input: {
   projectDir: string;
   sourceDir: string;
   agent: string;
+  domainWorker: string;
+  opsWorker: string;
   eventReview: string;
   trigger: string;
   packet: unknown;
@@ -579,7 +630,7 @@ function buildPlannerPrompt(input: {
       ? `
 - This wake is in aggressive-push mode (${input.wakeReason}). Do not short-circuit after one refill. If safe runnable work, review work, drained non-pass loop results, or locally actionable blocked families remain, push the tree toward a full useful frontier before stopping.`
       : `
-- This wake is in the bounded single-assignment short-circuit family (${input.wakeReason}). If you create or assign one truthful deterministic refill or bounded successor and no human-steering or review frontier remains, stop immediately. Do not keep scanning unrelated blocked families or try to saturate all remaining capacity in this same wake.`
+- This wake is in the bounded single-dispatch short-circuit family (${input.wakeReason}). If you create or dispatch one truthful deterministic refill or bounded successor and no human-steering or review frontier remains, stop immediately. Do not keep scanning unrelated blocked families or try to saturate all remaining capacity in this same wake.`
     : "";
   return `Planning Update Step
 
@@ -588,8 +639,8 @@ This is step 2 of 2 for the same planner wake. Use the event review from step
 repair bad decomposition, roll up completed work, create concrete next leaves,
 and assign runnable backlog work when useful.
 
-You are the project owner agent for aks-rp-e2e. The workflow is only a wakeup
-adapter. You are the brain.
+You are app-ops for aks-rp-e2e.app. The workflow is only a wakeup adapter. You
+judge app/process motion and apply task-tree decisions.
 
 Core operating model:
 - The task tree is your workspace and memory aid. It serves your planning; it
@@ -597,8 +648,12 @@ Core operating model:
 - Task-tree commands are your tools, not the workflow brain.
 - Do not create planning/control task nodes.
 - Do not run worker task bodies from the planner session.
-- Keep work under durable project lanes: feature knowledge/specs, runner/replays,
-  evidence feedback/model update, and user review workspace.
+- Keep new work under visible scope: domain/* for AKS spec/feature/compact/live
+  result work, and ops/* for app health, routing, watchdog, recovery,
+  observability, and escalation plumbing.
+- Do not decide AKS product correctness in app-ops. When AKS judgment or domain
+  fixing is needed, create or dispatch domain/* work for ${input.domainWorker}.
+- Use ops/* work for process repair and route it to ${input.opsWorker}.
 - If a task is too large or unclear, rewrite/split that branch once toward
   executable leaves. Do not cycle through rework tasks.
 - Worker output is progress, not a final project decision. First review every
@@ -608,7 +663,7 @@ Core operating model:
   unsupported, non-terminal, or contradictory, repair/replace/retry through a
   concrete task. Mark blocked only after you have exact external evidence and a
   concrete resume condition.
-- Do not mark an active assigned task done/replaced/cancelled while its current
+- Do not mark an active dispatched task done/replaced/cancelled while its current
   attempt has started. Active means a worker may still emit
   project.task.completed. Wait for that completion, use requeue-active only
   for a stale/non-running attempt, or create separate follow-up/problem work
@@ -707,7 +762,7 @@ Core operating model:
   the event review, and at most two targeted reads. After that, choose a tree
   action. Follow-up investigation belongs in newly created worker/problem tasks.
 - Stop once the next useful project action is clear and recorded, or once you
-  have assigned enough runnable work for this wake.
+  have dispatched enough runnable work for this wake.
   Do not stop merely because one rollup or one new leaf was created.${singleAssignmentWakeGuidance}
 - Tree hygiene is owner judgment. If task_tree_hygiene shows many safe done
   leaves under a parent, decide whether their durable meaning is already
@@ -739,14 +794,14 @@ Use these commands from the app directory:
 - bun run task-tree packet
 - bun run task-tree frontier
 - bun run task-tree confirm-runnable --limit 10
-- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO]
+- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
 - bun run task-tree mark-done <task-id> --summary "why the review is accepted"
 - bun run task-tree mark-done <task-id> --resolution replaced --summary "why this blocked leaf is replaced by the family-level wait"
 - bun run task-tree requeue-active <task-id> --reason "why the active attempt is stale or not running" [--fresh-session]
 - bun run task-tree rollup-parent <parent-id> --summary "what this branch now knows and what remains" [--archive-done <child-id> ...] [--limit 50]
 - bun run task-tree compact-done --limit 50  # recovery only; prefer rollup-parent after owner summary
-- bun run task-tree assign <task-id> [--worker ${input.agent}]
-- bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--clear-blocker]
+- bun run task-tree assign <task-id> [--worker ${input.domainWorker}|${input.opsWorker}]
+- bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."] [--clear-blocker]
 - bun run task-tree show <task-id>
 - bun run domain:checkpoint
 - bun run domain:checkpoint -- --json
@@ -780,6 +835,8 @@ Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
 Source workspace: ${input.sourceDir}
 Agent: ${input.agent}
+Domain worker: ${input.domainWorker}
+Ops worker: ${input.opsWorker}
 
 Event review from step 1:
 ${input.eventReview}
@@ -825,7 +882,7 @@ Focus:
 - Is there stale active work, misleading completion, real blocker, human
   steering, project-scoped learning feedback, metric breach, or normal refill?
 - If this is blocked-frontier review, which parent group or repeated blocker
-  group from blocked_frontier_summary should the owner burn down first?
+  group from blocked_frontier_summary should app-ops burn down first?
 - Did blocked_action_warnings flag passive response-await or source-exactness
   overblocking? If yes, which warning family should planning repair first?
 - Are any active/runnable tasks marked context.specLoopFollowup=true? Treat
@@ -854,6 +911,7 @@ Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
 Source workspace: ${input.sourceDir}
 Agent: ${input.agent}
+Role: app-ops event review. Do not decide AKS product correctness here.
 
 Compact task-tree packet:
 \`\`\`json
@@ -1045,6 +1103,212 @@ function reviewStringList(
   key: string,
 ): string[] {
   return stringList(reviewValue(trigger, key));
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function reviewedCompletionWorkflowResult(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): Record<string, unknown> | null {
+  const completion = objectValue(triggerValue(trigger, "completion"));
+  return (
+    objectValue(completion?.workflowResult) ??
+    objectValue(completion?.workflow_result) ??
+    objectValue(triggerValue(trigger, "workflowResult")) ??
+    objectValue(triggerValue(trigger, "workflow_result"))
+  );
+}
+
+type AcceptedSpecVerifierResult = {
+  specId: string;
+  loopStatus: "pass" | "fail" | "error";
+  runId: string;
+  runUrl: string;
+  resultPath: string;
+  reason: string;
+};
+
+function normalizeSpecVerifierStatus(
+  value: unknown,
+): "pass" | "fail" | "error" | "" {
+  const status = stringValue(value).toLowerCase();
+  if (status === "pass" || status === "passed" || status === "success") {
+    return "pass";
+  }
+  if (status === "fail" || status === "failed" || status === "failure") {
+    return "fail";
+  }
+  if (status === "error") return "error";
+  return "";
+}
+
+function artifactResultPath(value: unknown): string {
+  const refs = stringList(value);
+  return refs.find((ref) => /result\.json$/i.test(ref)) ?? refs[0] ?? "";
+}
+
+function acceptedSpecVerifierResults(
+  workflowResult: Record<string, unknown>,
+): AcceptedSpecVerifierResult[] {
+  const workflow = stringValue(workflowResult.workflow);
+  if (
+    workflow !== "single-spec-verifier" &&
+    workflow !== "spec-result-review"
+  ) {
+    return [];
+  }
+  const details = objectValue(workflowResult.details);
+  const subject = objectValue(workflowResult.subject);
+  if (!details) return [];
+
+  const runId = stringValue(details.runId);
+  const runUrl = stringValue(details.runUrl);
+  const aggregateResultPath = stringValue(details.resultPath);
+  const aggregateReason = stringValue(details.reason);
+  const rawSpecResults = Array.isArray(details.specResults)
+    ? details.specResults
+    : [];
+
+  if (rawSpecResults.length === 0) {
+    const specId =
+      stringValue(subject?.id) || stringValue(details.specId) || "";
+    const loopStatus = normalizeSpecVerifierStatus(details.specStatus);
+    const resultPath = aggregateResultPath;
+    if (
+      !specId ||
+      !loopStatus ||
+      (loopStatus === "pass" && details.liveVerified !== true) ||
+      !runId ||
+      !resultPath
+    ) {
+      return [];
+    }
+    return [
+      {
+        specId,
+        loopStatus,
+        runId,
+        runUrl,
+        resultPath,
+        reason: aggregateReason,
+      },
+    ];
+  }
+
+  const results = rawSpecResults
+    .map((entry) => objectValue(entry))
+    .filter((entry): entry is Record<string, unknown> => !!entry)
+    .map((entry) => {
+      const specId = stringValue(entry.specId) || stringValue(entry.id);
+      const loopStatus = normalizeSpecVerifierStatus(
+        entry.specStatus ?? entry.status,
+      );
+      const resultPath =
+        stringValue(entry.resultPath) ||
+        artifactResultPath(entry.artifactRefs) ||
+        aggregateResultPath;
+      return {
+        specId,
+        loopStatus,
+        runId: stringValue(entry.runId) || runId,
+        runUrl: stringValue(entry.runUrl) || runUrl,
+        resultPath,
+        reason: stringValue(entry.reason) || aggregateReason,
+        liveVerified:
+          entry.liveVerified === true || details.liveVerified === true,
+      };
+    });
+
+  if (
+    results.some(
+      (result) =>
+        !result.specId ||
+        !result.loopStatus ||
+        !result.runId ||
+        !result.resultPath ||
+        (result.loopStatus === "pass" && result.liveVerified !== true),
+    )
+  ) {
+    return [];
+  }
+
+  const accepted: AcceptedSpecVerifierResult[] = [];
+  for (const result of results) {
+    if (!result.loopStatus) continue;
+    accepted.push({
+      specId: result.specId,
+      loopStatus: result.loopStatus,
+      runId: result.runId,
+      runUrl: result.runUrl,
+      resultPath: result.resultPath,
+      reason: result.reason,
+    });
+  }
+  return accepted;
+}
+
+function applyAcceptedSpecVerifierResults(input: {
+  config: TaskTreeConfig;
+  taskId: string;
+  trigger: ReturnType<typeof parseTriggerEvent>;
+}): string[] {
+  const workflowResult = reviewedCompletionWorkflowResult(input.trigger);
+  if (!workflowResult) {
+    return [];
+  }
+  const verifierResults = acceptedSpecVerifierResults(workflowResult);
+  if (!verifierResults.length) return [];
+
+  const statePath = defaultSpecLoopStatePath(input.config.appDir);
+  if (!existsSync(statePath)) return [];
+  const state = readJsonFile<SpecLoopState | null>(statePath, null);
+  if (!state?.specs) return [];
+
+  const acceptedSpecIds: string[] = [];
+  for (const result of verifierResults) {
+    if (!state.specs[result.specId]) continue;
+    updateSpecLoopSpec(state, result.specId, {
+      status: result.loopStatus,
+      taskId: input.taskId,
+      lastRunId: result.runId,
+      lastRunUrl: result.runUrl || null,
+      lastResultPath: result.resultPath,
+      activeAttemptId: null,
+      activeTaskSessionId: null,
+      activeWorkflowRunId: null,
+      heartbeatAt: new Date().toISOString(),
+      ...(result.loopStatus === "pass"
+        ? {
+            failureClass: null,
+            diagnosis: null,
+            errorFingerprint: null,
+          }
+        : {
+            diagnosis: result.reason,
+          }),
+      review: {
+        ...(state.specs[result.specId]?.review ?? {}),
+        acceptedRunId: result.runId,
+        acceptedResultPath: result.resultPath,
+        acceptedStatus: result.loopStatus,
+        acceptedByTaskId: input.taskId,
+        acceptedAt: new Date().toISOString(),
+      },
+    });
+    acceptedSpecIds.push(result.specId);
+  }
+  if (!acceptedSpecIds.length) return [];
+  saveSpecLoopState(statePath, state);
+  appendToolJournal(input.config, {
+    kind: "spec_loop_reviewed_spec_result_accepted",
+    task_id: input.taskId,
+    spec_ids: acceptedSpecIds,
+  });
+  return acceptedSpecIds;
 }
 
 function normalizeReviewDecision(value: unknown): ReviewDecision | null {
@@ -1400,6 +1664,47 @@ function uniqueTaskId(config: TaskTreeConfig, base: string): string {
   throw new Error(`Could not allocate unique task id for ${base}`);
 }
 
+function reviewedSuccessorConflictScopes(input: {
+  task: NonNullable<ReturnType<typeof readTask>>;
+  summary: string;
+  findings: string[];
+  feedback: string[];
+  suggestedFollowups: string[];
+}): string[] {
+  const scopes = new Set(taskStringList(input.task, "conflict_scope"));
+  const context = taskContext(input.task);
+  const metricId = typeof context.metricId === "string" ? context.metricId : "";
+  const isBlockedOverdueAudit =
+    context.blockedOverdueAudit === true ||
+    metricId === "aks-rp-e2e.process.blocked.overdue-unworked-count" ||
+    metricId === "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count";
+  if (!isBlockedOverdueAudit) return [...scopes];
+
+  const haystack = JSON.stringify({
+    id: input.task.id,
+    goal: input.task.goal,
+    context,
+    summary: input.summary,
+    findings: input.findings,
+    feedback: input.feedback,
+    suggestedFollowups: input.suggestedFollowups,
+  }).toLowerCase();
+  if (
+    haystack.includes("compact-loop") ||
+    haystack.includes("feature-compact")
+  ) {
+    scopes.add("ops:blocked-overdue:compact-loop");
+  } else if (
+    haystack.includes("spec-loop") ||
+    haystack.includes("spec verification")
+  ) {
+    scopes.add("ops:blocked-overdue:spec-loop");
+  } else {
+    scopes.add("ops:blocked-overdue:project");
+  }
+  return [...scopes];
+}
+
 function createReviewedSuccessor(input: {
   config: TaskTreeConfig;
   task: NonNullable<ReturnType<typeof readTask>>;
@@ -1427,6 +1732,10 @@ function createReviewedSuccessor(input: {
   const blocker =
     firstText(input.feedback, input.findings, [input.summary]) ||
     `Reviewed task ${input.task.id} needs ${input.decision} handling.`;
+  const blockerOwner = input.decision === "escalate" ? "human" : "external";
+  const resumeCondition =
+    firstText(input.suggestedFollowups) ||
+    `Resume when ${input.decision} condition for ${input.task.id} is resolved.`;
   createTask(input.config, {
     id,
     parentId: input.task.parent_id,
@@ -1451,7 +1760,7 @@ function createReviewedSuccessor(input: {
           "The review follow-up is resolved with concrete evidence.",
           "The affected task branch records the result and next verification step.",
         ],
-    conflict_scope: taskStringList(input.task, "conflict_scope"),
+    conflict_scope: reviewedSuccessorConflictScopes(input),
     context: {
       ...taskContext(input.task),
       reviewedTask: {
@@ -1468,12 +1777,57 @@ function createReviewedSuccessor(input: {
       ? {
           blocker,
           blockerCategory: "external-wait",
-          blockerOwner: input.decision === "escalate" ? "human" : "external",
-          resumeCondition:
-            firstText(input.suggestedFollowups) ||
-            `Resume when ${input.decision} condition for ${input.task.id} is resolved.`,
+          blockerOwner,
+          resumeCondition,
         }
       : {}),
+  });
+  if (!isBlocked) return id;
+
+  withTreeLock(input.config, () => {
+    const tree = readTaskTree(input.config);
+    const task = tree.tasks[id];
+    if (!task) return;
+    const blockedAt = new Date().toISOString();
+    const nextCheckAt = new Date(
+      Date.parse(blockedAt) + 10 * 60 * 1000,
+    ).toISOString();
+    const fallbackAt = new Date(
+      Date.parse(blockedAt) + 24 * 60 * 60 * 1000,
+    ).toISOString();
+    task.blocker = {
+      condition: blocker,
+      category: "external-wait",
+      owner: blockerOwner,
+      blocked_at: blockedAt,
+      waiting_for: {
+        type:
+          input.decision === "escalate" ? "owner.decision" : "blocker.resolved",
+        reviewedTaskId: input.task.id,
+        reviewedAttemptId: input.attemptId,
+        successorTaskId: id,
+        source: "project.task.reviewed",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.task.reviewed",
+      },
+      observation_method:
+        "Project planner created this reviewed blocked successor from the review result; on the next owner/planner pass, refresh it with concrete returned evidence, replace it with runnable work, or keep the wait with updated blocker proof.",
+      next_check_at: nextCheckAt,
+      resume_condition: resumeCondition,
+      fallback_at: fallbackAt,
+      fallback_action:
+        "If the reviewed blocker is still unresolved at fallback time, create or reuse a concrete recovery/escalation task, or refresh this exact wait with current evidence.",
+    };
+    task.trace = {
+      ...(task.trace ?? {}),
+      blocked_contract_seeded_at: blockedAt,
+      blocked_contract_seeded_by: "project-planner",
+      reviewed_source_task_id: input.task.id,
+      reviewed_source_attempt_id: input.attemptId,
+    };
+    saveTaskTreeWithKanbanSnapshot(input.config, tree);
   });
   return id;
 }
@@ -1581,13 +1935,20 @@ function applyReviewedTaskEvent(
         message: `Applied review for ${taskId}; converted accept to followup ${successorTaskId}.`,
       };
     }
+    const acceptedSpecIds = applyAcceptedSpecVerifierResults({
+      config,
+      taskId,
+      trigger,
+    });
     markTaskDone(config, { taskId, summary });
     return {
       handled: true,
       applied: true,
       decision,
       taskId,
-      message: `Applied accept review for ${taskId}.`,
+      message: acceptedSpecIds.length
+        ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}.`
+        : `Applied accept review for ${taskId}.`,
     };
   }
 
@@ -2039,6 +2400,13 @@ type TriggerBlockedTask = {
   fallbackAction?: string;
 };
 
+type TriggerOverdueOwnerAction = {
+  taskId: string;
+  owner?: string;
+  watchAt?: string;
+  recoveryRequired?: string;
+};
+
 function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
   const trigger = parseTriggerEvent(rawTask);
   const value = triggerValue(trigger, "blockedTasks");
@@ -2098,6 +2466,52 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
     .filter((entry): entry is TriggerBlockedTask => Boolean(entry));
 }
 
+function triggerOverdueOwnerActions(
+  rawTask: string,
+): TriggerOverdueOwnerAction[] {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "overdueOwnerActions");
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const taskId =
+        (entry as { taskId?: unknown; task_id?: unknown }).taskId ??
+        (entry as { task_id?: unknown }).task_id;
+      if (typeof taskId !== "string" || !taskId.trim()) return null;
+      const owner =
+        typeof (entry as { owner?: unknown }).owner === "string"
+          ? ((entry as { owner?: string }).owner ?? "").trim()
+          : undefined;
+      const watchAt =
+        typeof (entry as { watchAt?: unknown }).watchAt === "string"
+          ? ((entry as { watchAt?: string }).watchAt ?? "").trim()
+          : typeof (entry as { watch_at?: unknown }).watch_at === "string"
+            ? ((entry as { watch_at?: string }).watch_at ?? "").trim()
+            : undefined;
+      const recoveryRequired =
+        typeof (entry as { recoveryRequired?: unknown }).recoveryRequired ===
+        "string"
+          ? (
+              (entry as { recoveryRequired?: string }).recoveryRequired ?? ""
+            ).trim()
+          : typeof (entry as { recovery_required?: unknown })
+                .recovery_required === "string"
+            ? (
+                (entry as { recovery_required?: string }).recovery_required ??
+                ""
+              ).trim()
+            : undefined;
+      return {
+        taskId: taskId.trim(),
+        ...(owner ? { owner } : {}),
+        ...(watchAt ? { watchAt } : {}),
+        ...(recoveryRequired ? { recoveryRequired } : {}),
+      };
+    })
+    .filter((entry): entry is TriggerOverdueOwnerAction => Boolean(entry));
+}
+
 function futureTimestamp(value: string | undefined): number | null {
   if (!value) return null;
   const ts = Date.parse(value);
@@ -2129,6 +2543,7 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (input.packet.frontier.runnable.length > 0) return null;
   if (input.packet.frontier.review.length > 0) return null;
   if ((input.packet.frontier.waiting ?? []).length > 0) return null;
+  if (triggerOverdueOwnerActions(input.rawTask).length > 0) return null;
 
   const blockedTasks = triggerBlockedTasks(input.rawTask);
   if (blockedTasks.length === 0) return null;
@@ -2144,7 +2559,7 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (futureWatchDates.length !== blockedTasks.length) return null;
 
   const earliestWatchAt = new Date(Math.min(...futureWatchDates)).toISOString();
-  return `Blocked-frontier wake is already represented by structured future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited watch window is ${earliestWatchAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
+  return `Blocked-frontier wake is already represented by structured future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited watch window is ${earliestWatchAt}. Skipping app-ops planning until returned proof arrives or that window opens.`;
 }
 
 function singleAssignmentShortCircuitResult(input: {
@@ -2156,6 +2571,7 @@ function singleAssignmentShortCircuitResult(input: {
   aggressivePush: boolean;
 }): string | null {
   if (input.aggressivePush) return null;
+  if (triggerOverdueOwnerActions(input.rawTask).length > 0) return null;
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   if (
     ![
@@ -2232,7 +2648,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
   const worker =
-    field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent;
+    field(ctx.task, "worker") ??
+    field(ctx.task, "domainWorker") ??
+    field(ctx.task, "domain_worker") ??
+    "aks-explorer";
+  const domainWorker =
+    field(ctx.task, "domainWorker") ??
+    field(ctx.task, "domain_worker") ??
+    worker;
+  const opsWorker =
+    field(ctx.task, "opsWorker") ?? field(ctx.task, "ops_worker") ?? agent;
   const config = taskTreeConfig({
     appDir,
     projectDir,
@@ -2244,10 +2669,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const initialRepair = repairTaskTreeRollups(config);
   syncPlannerProjectReadout(config);
   const trigger = parseTriggerEvent(ctx.task);
+  const overdueOwnerActionCount = triggerOverdueOwnerActions(ctx.task).length;
   const reviewedApply = applyReviewedTaskEvent(config, trigger);
   if (reviewedApply.handled) {
     const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
       worker,
+      domainWorker,
+      opsWorker,
     });
     const drainedAssignments = drainTaskAssignments(config);
     const bridgedAssignments = splitLoopControllerAssignments(
@@ -2296,6 +2724,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (stallReviewedApply.handled && stallReviewedApply.applied) {
     const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
       worker,
+      domainWorker,
+      opsWorker,
     });
     const drainedAssignments = drainTaskAssignments(config);
     const bridgedAssignments = splitLoopControllerAssignments(
@@ -2336,6 +2766,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
   const quickControllerPulses = assignPlannerRunnableBacklogTasks(config, {
     worker,
+    domainWorker,
+    opsWorker,
   });
   const quickDrainedAssignments = drainTaskAssignments(config);
   const quickBridgedAssignments = splitLoopControllerAssignments(
@@ -2448,6 +2880,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (
     (quickAssignments.length > 0 || quickControllerPulses.length > 0) &&
+    overdueOwnerActionCount === 0 &&
     humanSteering.length === 0 &&
     packet.frontier.review.length === 0 &&
     (packet.active_task_ids.length >= config.maxConcurrent ||
@@ -2467,7 +2900,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       repaired_rollups: initialRepair.repaired,
       active_task_ids: packet.active_task_ids,
       result:
-        "Quick refill assigned runnable backlog tasks or pulsed durable loop controllers; skipped owner-agent planning for this routine wake.",
+        "Quick refill dispatched runnable backlog tasks or pulsed durable loop controllers; skipped app-ops planning for this routine wake.",
     });
     return ctx.done(
       plannerProgressMessage({
@@ -2496,17 +2929,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       repaired_rollups: initialRepair.repaired,
       active_task_ids: packet.active_task_ids,
       result:
-        "Skipped owner-agent planning because another workflow:project-planner session is already running for this owner; rely on the in-flight planner wake instead of starting an overlapping owner session.",
+        "Skipped app-ops planning because another workflow:project-planner session is already running for app-ops; rely on the in-flight planner wake instead of starting an overlapping app-ops session.",
     });
     return ctx.done(
       quickAssignments.length || quickControllerPulses.length
         ? plannerProgressMessage({
             prefix:
-              "Planner dedupe made refill progress while another owner-planner session is already running:",
+              "Planner dedupe made refill progress while another app-ops planner session is already running:",
             assignments: quickAssignments,
             controllerPulses: quickControllerPulses,
           })
-        : "Planner dedupe skipped owner-agent planning because another workflow:project-planner session is already running for this owner.",
+        : "Planner dedupe skipped app-ops planning because another workflow:project-planner session is already running for app-ops.",
     );
   }
 
@@ -2548,6 +2981,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectDir,
         sourceDir: sourceRoot,
         agent,
+        domainWorker,
+        opsWorker,
         eventReview: resultText(eventReviewResult).slice(0, 5000),
         trigger: triggerBlock(ctx.task),
         packet,

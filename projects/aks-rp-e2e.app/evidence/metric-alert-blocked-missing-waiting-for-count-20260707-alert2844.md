@@ -57,7 +57,7 @@ The three alert offenders were repaired, and the same supported repair also norm
 A fresh runtime-tree audit using the same blocked-waiting-for logic as `scripts/project-metrics.ts` found no remaining offenders:
 
 ```json
-{"count":0}
+{ "count": 0 }
 ```
 
 The metric source then recomputed to target value `0`:
@@ -69,7 +69,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts aks-rp-e
 Observed result after repair:
 
 ```json
-{"measuredAt":1783391060783,"value":0}
+{ "measuredAt": 1783391060783, "value": 0 }
 ```
 
 ## Conclusion

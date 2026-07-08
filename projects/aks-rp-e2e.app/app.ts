@@ -20,10 +20,10 @@ export default defineProjectApp({
   id: projectId,
   version: 1,
   description:
-    "AKS RP e2e feature knowledge, spec verification, and owner-review app.",
+    "AKS RP e2e feature knowledge, spec verification, and app-ops project organizer.",
   workspace: {
     kind: "git",
-    repo: "git@github.com:hao1939/aks-rp-e2e.git",
+    repo: "https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-e2e-spec-runner",
     localPath: "../aks-rp-e2e",
     branch: "dev",
   },
@@ -101,7 +101,7 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "owner-heartbeat",
+      id: "app-ops-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
       emits: [
@@ -110,15 +110,15 @@ export default defineProjectApp({
           target: { project: projectId },
           data: {
             project: projectId,
-            reason: "owner-heartbeat",
+            reason: "app-ops-heartbeat",
             params: {
               maxConcurrent: projectPolicyMaxConcurrent,
               instruction:
-                "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
+                "Low-frequency app-ops heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the app-ops session.",
               reviewChecklist: [
                 "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
                 "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
-                "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
+                "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing app-ops rollup, and repeated app-ops/planner failures.",
                 "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
                 "No-op is valid when the task tree already has clear active/review/runnable work.",
               ],
@@ -128,7 +128,7 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "blocked-frontier-owner-review",
+      id: "blocked-frontier-app-ops-review",
       enabled: true,
       intervalMs: 7_200_000,
       emits: [
@@ -142,7 +142,7 @@ export default defineProjectApp({
             params: {
               maxConcurrent: projectPolicyMaxConcurrent,
               instruction:
-                "Periodic blocked-frontier owner review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and assign unrelated runnable work so the project keeps moving.",
+                "Periodic blocked-frontier app-ops review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and dispatch unrelated runnable work so the project keeps moving.",
               reviewChecklist: [
                 "Do not treat blocked as final.",
                 "Do not retry a blocked leaf unchanged.",
@@ -195,11 +195,11 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Owner loop. Wakes the project owner, which updates the task tree and explicitly assigns worker tasks.",
+        "App-ops planner. Wakes app-ops, applies task-tree decisions, and explicitly dispatches worker tasks.",
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 3_600_000,
       },
       accepts: [
@@ -220,8 +220,8 @@ export default defineProjectApp({
         },
         { type: "escalation.resolved", owner: "agent:aks-explorer" },
         { type: "escalation.dismissed", owner: "agent:aks-explorer" },
-        { type: "metric.breach", owner: "agent:aks-explorer" },
-        { type: "metric.recovered", owner: "agent:aks-explorer" },
+        { type: "metric.breach", owner: "agent:app-ops" },
+        { type: "metric.recovered", owner: "agent:app-ops" },
         { type: "learning.feedback", owner: "agent:aks-explorer" },
         { type: "learning.feedback", owner: "agent:aks-reviewer" },
         { type: "coverage.gap.detected", target: { project: projectId } },
@@ -256,7 +256,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Worker execution. Executes one task assigned by the project owner and emits task completion.",
+        "Worker execution. Executes one dispatched task and emits task completion.",
       maxConcurrentTriggers: projectPolicyMaxConcurrent,
       handler: {
         workflow: "task-worker",
@@ -275,7 +275,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Focused problem resolver. Investigates blocked/failed work, fixes local causes when possible, and emits problem resolved/escalated for owner reconciliation.",
+        "Focused problem resolver. Investigates blocked/failed work, fixes local causes when possible, and emits problem resolved/escalated for planner reconciliation.",
       maxConcurrentTriggers: 2,
       handler: {
         workflow: "problem-solver",
@@ -301,7 +301,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Five-minute liveness guard. Observes task/session state and wakes the owner when review is needed.",
+        "Five-minute liveness guard. Observes task/session state and wakes app-ops when review is needed.",
       accepts: [
         {
           type: "project.watchdog.check.requested",
@@ -325,7 +325,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Owner deep-dive fallback. Collects liveness state, performs safe mechanical repair, asks the agent to judge the stall, and emits a reviewed fact for planner reconciliation.",
+        "App-ops deep-dive fallback. Collects liveness state, performs safe mechanical repair, asks app-ops to judge the stall, and emits a reviewed fact for planner reconciliation.",
       maxConcurrentTriggers: 1,
       accepts: [
         {
@@ -336,7 +336,7 @@ export default defineProjectApp({
       handler: {
         workflow: "project-stall-review",
         includeEvent: true,
-        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        task: `${appTaskContext}\nagent: app-ops\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 1_800_000,
       },
       emits: ["project.stall.reviewed", "project.task.tick"],
@@ -495,7 +495,7 @@ export default defineProjectApp({
     ],
     intentionalCycles: [
       {
-        id: "owner-worker-review-loop",
+        id: "app-ops-worker-review-loop",
         events: [
           "project.planning.requested",
           "project.task.assigned",
@@ -511,7 +511,7 @@ export default defineProjectApp({
           "project.focus.review.requested",
         ],
         reason:
-          "This is the project control loop. The owner is the state-machine boundary and must review worker/problem-solver/focus-plan output before assigning more work.",
+          "This is the project control loop. App-ops is the state-machine boundary and must review worker/problem-solver/focus-plan output before dispatching more work.",
       },
     ],
     limits: {
@@ -564,7 +564,7 @@ export default defineProjectApp({
     },
     watch: {
       type: "async",
-      description: "Start or resume owner review through the task tree.",
+      description: "Start or resume app-ops review through the task tree.",
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -607,7 +607,7 @@ export default defineProjectApp({
     "review-stall-risk": {
       type: "async",
       description:
-        "Ask the owner deep-dive fallback to collect and judge suspicious stalled work without pulsing controllers.",
+        "Ask the app-ops deep-dive fallback to collect and judge suspicious stalled work without pulsing controllers.",
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -628,7 +628,7 @@ export default defineProjectApp({
     "request-focus-plan": {
       type: "async",
       description:
-        "Ask the project owner to propose or refresh the next mid-term focus plan.",
+        "Ask app-ops to propose or refresh the next mid-term focus plan.",
       event(params) {
         return {
           type: "project.focus.review.requested",
@@ -667,7 +667,7 @@ export default defineProjectApp({
     "review-focus-progress": {
       type: "async",
       description:
-        "Ask the project owner to review whether the current focus plan is on track.",
+        "Ask app-ops to review whether the current focus plan is on track.",
       event(params) {
         return {
           type: "project.focus.review.requested",

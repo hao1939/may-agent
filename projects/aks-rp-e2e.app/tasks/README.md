@@ -14,8 +14,8 @@ useful, and linked evidence artifacts.
 
 Project-specific operating knowledge belongs in task context, especially on the
 root project node or durable lane nodes. Planner prompts and workflow code
-should stay generic: they wake the project owner and expose tools, while
-`tasks/tree.json` carries progress signals, completion criteria, standing
+should stay generic: they wake app-ops/planner judgment and expose tools, while
+the live task tree carries progress signals, completion criteria, standing
 reconciliation tasks, live execution assumptions, and current user steering.
 
 ## Files
@@ -56,10 +56,10 @@ folder does not keep a parallel task event log.
   catch-all for dependencies, safety constraints, external blockers, and live
   execution approval. Use `depends_on`, `forbidden`, `blocker`, structured
   `context`, and `conflict_scope` instead.
-- A task without `owner` is owned by the convention-inferred project owner
-  (`agents/<single-local-agent>/`, or `agents/owner/` /
-  `agents/project-owner/` when multiple app-local agents exist). Set `owner`
-  only for real exceptions such as `human` or another agent boundary.
+- A task without `owner` is owned by visible scope convention: `domain/*`
+  belongs to `aks-explorer`, `ops/*` belongs to `app-ops`, and completed output
+  is reviewed by `aks-reviewer`. Set `owner` only for real exceptions such as
+  `human` or another agent boundary.
 - Every task should be meaningful as one of: a project/domain responsibility, a
   decomposition of that responsibility, an executable leaf, or a review that
   corrects the decomposition. Avoid vague branches such as "follow up",
@@ -88,18 +88,18 @@ folder does not keep a parallel task event log.
   unknown without visible follow-up tasks under that standing task.
 - Metrics are project motion signals, not the project brain. The standing
   `project-progress-metric-watch` task owns what AKS metrics mean and how a
-  breach should feed back into the task tree. Metric breaches wake the project
-  owner; only confirmed human/ownership blockers become escalations.
+  breach should feed back into the task tree. Metric breaches wake app-ops;
+  only confirmed human/ownership blockers become escalations.
 - A single active task is not enough to call the project healthy while model
   gaps remain. The owner should keep enough runnable backlog to fill the app's
   parallelism target, unless the task tree visibly records why capacity cannot
   be filled. `runnable-starvation-with-gaps` and
-  `capacity-underfilled-with-gaps` are owner refill signals; only
+  `capacity-underfilled-with-gaps` are app-ops refill signals; only
   `no-work-with-gaps` is the high-urgency no-executable-progress signal.
-  Review leaves do not suppress it: if only review remains, the owner must
+  Review leaves do not suppress it: if only review remains, the planner must
   accept, reject, split, or create follow-up tasks instead of waiting for the
   human to notice.
-- If an owner wake times out or leaves no assignable backlog while worker
+- If an app-ops wake times out or leaves no assignable backlog while worker
   capacity is underfilled and model gaps remain, the app may seed a bounded
   number of concrete backlog leaves from the knowledge model plus existing
   `specs/` and `replays/`. This is a liveness fallback, not domain judgment:
@@ -113,7 +113,7 @@ folder does not keep a parallel task event log.
 - Mounted AKS RP Go source is a first-class project input. The app passes
   `/app/sources/aks-rp` to planner, worker, and problem-solver workflows as the
   source workspace. Before keeping any `source-holder`, `devbox`, handwritten
-  source, or authoritative-source blocker, the owner/worker must inspect this
+  source, or authoritative-source blocker, the domain worker must inspect this
   mounted tree and convert the branch into source-backed spec/replay/model work
   when the source answers the question.
 - For VirtualMachine prerelease work, start source discovery from
@@ -124,9 +124,9 @@ folder does not keep a parallel task event log.
 - The active root lanes are durable responsibilities:
   `feature-knowledge-and-specs`, `spec-runner-and-replays`,
   `evidence-feedback-and-model-update`, and `user-review-workspace`.
-- Root-lane shape is owner judgment, not a hard tool decision. New ordinary
+- Root-lane shape is app-ops judgment, not a hard tool decision. New ordinary
   work should usually be created under one of those durable lanes, but the
-  project owner may intentionally add another root child when it represents
+  planner may intentionally add another root child when it represents
   real project structure. The task-tree tools enforce schema, links, layout, and
   derived projections; they do not decide whether task content belongs under a
   specific branch.
@@ -254,34 +254,35 @@ folder does not keep a parallel task event log.
   work may continue in the parent session; parallel child work should fork a
   new session seeded from the parent and write a completion packet back to the
   parent.
-- The project owner agent is the brain. Workflows wake agent sessions and
-  expose safe task-tree primitives; workflows do not encode project strategy,
-  branch repair policy, or domain judgment.
+- App-ops/planner is the process decision boundary. Workflows wake agent
+  sessions and expose safe task-tree primitives; workflows do not encode project
+  strategy, branch repair policy, or domain judgment.
 - Agents should mutate `tasks/tree.json` through task-tree tools, not by direct
   whole-file edits. Tool writes take the tree lock, repair rollups, refresh
   kanban, and prevent stale sessions from overwriting newer planner/watchdog
   changes. If a needed mutation has no safe primitive, create an app-tooling
   task before hand-editing the live tree.
-- The task tree is the owner's workspace and context container. It serves the
-  owner; it is not the controller. Task-tree processing code should be tools
+- The task tree is the shared workspace and context container. It serves
+  app-ops, aks-explorer, aks-reviewer, and humans; it is not the controller.
+  Task-tree processing code should be tools
   for the LLM. Use app-local commands such as `bun run task-tree summary`,
   `bun run task-tree frontier`, `bun run task-tree confirm-runnable`,
   `bun run task-tree add`, `bun run task-tree assign`,
   `bun run task-tree update-text`, and `bun run task-tree complete` for
   reviewed task-tree operations.
-- Owner work runs through the project owner. Each wake has two owner steps:
-  event review first, then task-tree update. The event-review step receives a
+- App-ops work runs through the project planner. Each wake has two app-ops
+  steps: event review first, then task-tree update. The event-review step receives a
   compact planning packet and should classify what changed without editing
   `tree.json`; it should stay bounded and prefer the packet over rediscovery.
   The update step uses that review and the latest packet to repair
   decomposition, review worker progress, create new leaves, assign runnable
   leaves, and unblock the project.
-- Owner session memory is non-authoritative. Each owner wake should reason
+- App-ops session memory is non-authoritative. Each planner wake should reason
   from the latest compact planning packet, `tasks/tree.json`, trigger context,
   and domain workspace commands. The packet includes frontier task details so
-  the owner can start from current state, then dive deeper with `task-tree show`
+  app-ops can start from current state, then dive deeper with `task-tree show`
   or domain commands when needed. Reusing stale planner conclusions is a bug;
-  if the tree says review work or domain gaps remain, the owner must judge
+  if the tree says review work or domain gaps remain, the planner must judge
   that current state and move it forward.
 - If runnable backlog plus active work is empty while review, blocked, or
   unresolved backlog work exists,

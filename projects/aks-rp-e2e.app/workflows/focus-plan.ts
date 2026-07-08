@@ -1,8 +1,8 @@
 /**
  * focus-plan — slower strategy cadence for aks-rp-e2e.
  *
- * The normal owner/worker loop keeps tasks moving. This workflow periodically
- * asks the project owner to review the bigger picture, maintain one current
+ * The normal app-ops/worker loop keeps tasks moving. This workflow periodically
+ * asks app-ops to review the bigger picture, maintain one current
  * focus branch in the task tree, and request human approval when the focus
  * materially changes or drifts off track.
  */
@@ -47,7 +47,8 @@ type FocusResult =
   | "needs_approval"
   | "off_track"
   | "completed"
-  | "blocked";
+  | "blocked"
+  | "failed_known_issues";
 
 function focusRunKind(
   trigger: ReturnType<typeof parseTriggerEvent>,
@@ -77,13 +78,16 @@ function focusResult(text: string): FocusResult {
     raw === "needs_approval" ||
     raw === "off_track" ||
     raw === "completed" ||
-    raw === "blocked"
+    raw === "blocked" ||
+    raw === "failed_known_issues"
   ) {
     return raw;
   }
   if (/needs approval|approve this plan|approval request/i.test(text))
     return "needs_approval";
   if (/off track|not on track|stale focus/i.test(text)) return "off_track";
+  if (/failed[-_ ]known[-_ ]issues|known issues|terminal failed/i.test(text))
+    return "failed_known_issues";
   if (/completed|focus done/i.test(text)) return "completed";
   return "updated";
 }
@@ -168,10 +172,12 @@ function guardFocusSummary(input: {
     extractMarker(input.summary, "FOCUS_PLAN_TITLE") || "Focus review";
   const ownerNext =
     extractMarker(input.summary, "OWNER_NEXT") ||
-    "Keep the owner review loop active and reconcile the live task-tree frontier before any closure decision.";
+    "Keep the app-ops review loop active and reconcile the live task-tree frontier before any closure decision.";
   const evidenceText = liveFrontierEvidenceText(input.packet);
   const terminalClaim =
-    input.result === "completed" || terminalLanguagePresent(input.summary);
+    input.result === "completed" ||
+    input.result === "failed_known_issues" ||
+    terminalLanguagePresent(input.summary);
 
   if (terminalClaim && hasNonterminalLiveFrontier(input.packet)) {
     return {
@@ -185,7 +191,7 @@ function guardFocusSummary(input: {
     };
   }
 
-  if (input.result === "completed") {
+  if (input.result === "completed" || input.result === "failed_known_issues") {
     if (/LIVE_FRONTIER_EVIDENCE:/i.test(input.summary)) {
       return input;
     }
@@ -238,7 +244,7 @@ function approvalText(input: {
     summary,
     plannerNext,
     "",
-    "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to the aks-rp-e2e project owner.",
+        "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to aks-rp-e2e app-ops.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -316,9 +322,23 @@ Commands you may use:
 - cd ${input.projectDir} && bun run status -- --json
 - cd ${input.projectDir} && git status --short
 
+Focus mission lifecycle:
+- A focus plan is a bounded mission, not a normal status note.
+- While the focus is running, every failure must become one of: diagnosis,
+  repair, smallest truthful rerun, exact blocked wait, escalation, or terminal
+  known issue.
+- Use FOCUS_PLAN_RESULT: completed only when the goal is met with linked
+  evidence.
+- Use FOCUS_PLAN_RESULT: failed_known_issues only when the goal did not pass,
+  every reasonable local repair/rerun path has been exhausted or bounded, and
+  the remaining issues are listed with evidence and next resume/escalation
+  conditions.
+- Use FOCUS_PLAN_RESULT: blocked when the focus is paused on a real external
+  wait that still has a watcher and fallback.
+
 Finish with these exact markers:
 
-FOCUS_PLAN_RESULT: on_track | updated | needs_approval | off_track | completed | blocked
+FOCUS_PLAN_RESULT: on_track | updated | needs_approval | off_track | completed | blocked | failed_known_issues
 FOCUS_PLAN_TITLE: <short title>
 FOCUS_PLAN_SUMMARY: <human-readable summary suitable for Telegram>
 OWNER_NEXT: <what the normal owner loop should do next>

@@ -20,7 +20,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts aks-rp-e
 Observed result before repair:
 
 ```json
-{"measuredAt":1783390408723,"value":8}
+{ "measuredAt": 1783390408723, "value": 8 }
 ```
 
 ### Exact offenders from the runtime tree
@@ -67,7 +67,7 @@ Observed result:
 The repaired blockers now carry explicit `waiting_for`, `observed_by`, `observation_method`, `next_check_at`, `fallback_at`, and `fallback_action` fields. A fresh runtime-tree audit found no remaining blocked leaves missing `waiting_for`.
 
 ```json
-{"count":0,"offenders":[]}
+{ "count": 0, "offenders": [] }
 ```
 
 The metric source then recomputed to target value `0`:
@@ -79,7 +79,7 @@ cd /app/projects/aks-rp-e2e.app && bun run ./scripts/project-metrics.ts aks-rp-e
 Observed result after repair:
 
 ```json
-{"measuredAt":1783390452978,"value":0}
+{ "measuredAt": 1783390452978, "value": 0 }
 ```
 
 ## Conclusion

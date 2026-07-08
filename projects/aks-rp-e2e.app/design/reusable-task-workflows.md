@@ -27,8 +27,10 @@ The app-managed target shape is:
 loop/planner task
   -> task.workflow=<workflow file under workflows/>
   -> task context carries the same workflow input plus tracking fields
-  -> workflow updates scoped artifacts or state
-  -> workflow emits project.task.completed with structured fields
+  -> project.task.assigned dispatches the runnable task
+  -> task-worker adapter builds business workflow input
+  -> business workflow updates scoped artifacts or state
+  -> task-worker adapter emits project.task.completed with structured fields
   -> task-reviewer judges the completion
   -> planner applies accept/retry/follow-up/escalation
 ```
@@ -38,13 +40,60 @@ The direct human/agent shape is:
 ```text
 human instruction with structured input
   -> workflow file under workflows/
-  -> domain command, GitHub run, or scoped artifact update
+  -> domain command, Azure DevOps pipeline run, or scoped artifact update
   -> structured workflowResult and concise human summary
 ```
 
 There is no separate workflow category. Controllers, collectors, verifiers,
 planners, and future authoring workflows are all reusable workflows. Some are
 usually called through tasks; some can also be called directly by an agent.
+Whether a workflow-backed task is domain work or system ops work is a naming
+and scope convention, not a workflow type:
+
+```text
+domain/spec/...    -> use workflows that verify or repair AKS specs
+domain/feature/... -> use workflows that collect AKS feature references
+domain/compact/... -> use workflows that generate and prove compact tests
+ops/...            -> use workflows that observe, diagnose, recover, or
+                      escalate project process issues
+```
+
+If that distinction is not clear from the task branch or id, fix the branch/id.
+Do not add another workflow category or task classification field.
+
+The same workflow can be used by a human/agent directly or by the app through a
+task. Agent ownership comes from the task scope, not from the workflow file:
+
+```text
+aks-explorer + domain/* task -> run AKS/spec/test workflow
+app-ops + ops/* task         -> run observability/recovery/stall workflow
+app-ops + project-planner    -> decide and apply the next task-tree move
+aks-reviewer                 -> review completed task output, read-only
+direct human request         -> run the same workflow with structured input
+```
+
+Keep one task tree. `aks-explorer` and `app-ops` focus on different roots, but
+the planner coordinates both so dependencies are visible.
+
+## Adapter Boundary
+
+The task tree is a tracking and relationship model, not the business API for
+every workflow. For normal business workflows:
+
+```text
+task tree task -> task adapter -> workflow input
+workflow result -> task adapter/reviewer/planner -> task-tree update
+```
+
+The workflow should know the business part: collect references, verify one
+spec, generate a compact plan, diagnose one bounded problem, or update a scoped
+artifact. It should not normally know parent rollup, assignment queues, review
+state, or task-tree storage.
+
+Orchestration workflows are the exception because their business purpose is the
+project process. `project-planner`, `task-worker`, loop controllers, watchdog,
+review, and stall-review adapters may read task or loop state through shared
+helpers, but they should still keep mutations narrow and structured.
 
 ## Knowledge Boundary
 
@@ -53,10 +102,23 @@ Workflows are the bridge between operating work and AKS test knowledge:
 ```text
 task context or direct instruction input
   -> workflow under workflows/
-  -> domain command, GitHub run, or scoped artifact update
+  -> domain command, Azure DevOps pipeline run, or scoped artifact update
   -> structured workflowResult
   -> reviewer/planner decision when the app is tracking the work
 ```
+
+When the app tracks work, task execution is event-driven:
+
+```text
+task tree backlog leaf
+  -> project.task.assigned
+  -> task-worker
+  -> scoped workflow or default worker
+  -> project.task.completed
+```
+
+Use "assigned" as the event name, but read it as "dispatched". The task tree is
+durable work state; `project.task.assigned` is the event that starts the work.
 
 The workflow may know how to generate a spec, collect references, verify a
 single live test, or build a compact plan. It should not become the durable
@@ -96,6 +158,128 @@ ledger, review result, and next operating move.
    facts. Routing decisions must use structured fields, not special phrases in
    summaries.
 
+## Extending The App
+
+Do not require perfect reuse at the first attempt. Let useful one-off work
+graduate into reusable shape when repetition proves the value:
+
+```text
+one-off fix
+  -> repeated task pattern
+  -> reusable workflow
+  -> app route or event only when the control plane needs it
+```
+
+### 1. One-Off Fix
+
+Use direct agent work or a normal task when the problem shape is still unknown.
+This is appropriate for quick repair, exploratory diagnosis, or trying a new
+approach. The only requirement is that the result is not hidden in prose:
+leave a structured completion, concrete artifact, code change, exact blocker,
+or escalation that the planner/reviewer can understand.
+
+### 2. Repeated Task Pattern
+
+When the same kind of work appears again, keep it as a task convention before
+creating a workflow. Reuse task scope, `workflow`, and `context` fields instead
+of adding new task kinds:
+
+```json
+{
+  "workflow": "default-task-worker",
+  "context": {
+    "kind": "ado-artifact-diagnosis",
+    "runId": "123",
+    "featureKey": "localdns"
+  }
+}
+```
+
+If the repeated work can still be handled by the default worker with clear
+acceptance criteria, do not promote it yet.
+
+### 3. Reusable Workflow
+
+Promote the pattern to `workflows/<name>.ts` when the steps are stable enough
+to repeat. The workflow should be runnable both directly and through a task:
+
+```ts
+export const name = "ado-artifact-diagnoser";
+export const description = "Diagnose one Azure DevOps run artifact gap.";
+
+export const workflowContract = {
+  workflow: "ado-artifact-diagnoser",
+  input: {
+    required: ["runId"],
+    optional: ["featureKey", "specId"],
+  },
+  output: {
+    fields: ["status", "summary", "artifacts", "problem", "nextActions"],
+  },
+};
+```
+
+A task can use the workflow immediately:
+
+```json
+{
+  "workflow": "ado-artifact-diagnoser",
+  "context": {
+    "runId": "123",
+    "featureKey": "localdns"
+  }
+}
+```
+
+No `app.ts` change should be needed for ordinary task execution because the
+standard path already exists:
+
+```text
+project.task.assigned -> task-worker -> task.workflow
+```
+
+### 4. App Route Or Event
+
+Edit `app.ts` only when an event, schedule, metric, external input, or UI
+action must trigger the workflow directly. Prefer existing events first:
+
+```text
+project.task.assigned
+project.task.completed
+project.task.reviewed
+project.planning.requested
+project.task.tick
+project.problem.investigation.requested
+project.watchdog.check.requested
+project.stall.review.requested
+message.created
+```
+
+Add a new event only when using an existing event would hide a durable command
+or fact. Put variants in `target`, top-level `action`, `data.reason`,
+`data.mode`, or `data.params` before adding new event names.
+
+### Seamless Developer Path
+
+Normal extension should not require container restart:
+
+```text
+add or edit workflows/foo.ts
+create/assign task with workflow=foo
+task-worker loads and runs it
+```
+
+Manifest changes are the exception:
+
+```text
+edit app.ts for a new schedule/action/event route
+project app watcher reloads the manifest
+new route becomes active
+```
+
+If reload is not seamless, that is an app/runtime issue to fix. Restarting the
+container should not be part of the normal workflow-authoring loop.
+
 ## Workflow Result
 
 Use the SDK `workflowResult(...)` helper from `@may-agent/sdk` for structured
@@ -116,7 +300,7 @@ Example:
     "capabilityId": "localdns"
   },
   "status": "done",
-  "summary": "Feature compact package done for localdns; live GitHub workflow passed.",
+  "summary": "Feature compact package done for localdns; live Azure DevOps pipeline passed.",
   "artifacts": [
     "features/localdns/compact/staging.plan.json",
     "features/localdns/compact/staging.diagnostics.json",
@@ -207,14 +391,21 @@ missing or incomplete.
 
 Verifies one spec and classifies the result. Direct use runs the repo-native
 `bun run spec <spec-id>` path and returns a structured result. Task-backed use
-dispatches and reviews the configured GitHub single-spec workflow, then updates
+dispatches and reviews the configured pipeline single-spec workflow, then updates
 the spec-loop ledger and emits task completion.
 
 `feature-compact-planner`
 
-Generates one feature compact plan, runs generated tests, dispatches live GitHub
-proof when ready, and reports compact artifacts, proof status, and blocker
-categories through `workflowResult`.
+Generates one feature compact plan, runs generated tests, dispatches live
+Azure DevOps proof when ready, and reports compact artifacts, proof status, and
+blocker categories through `workflowResult`.
+
+Compact loop runtime data belongs in `.state/feature-compact-loop/state.json`
+or ignored run artifacts. `features/<capability>/compact/*.summary.md` is
+generated package state, not a task journal. Workers must not append refresh,
+no-decision, progress, local result path, or per-task evidence notes to compact
+summaries. Update feature-owned compact artifacts only for material reusable
+package/spec changes.
 
 Future task workflows can be added when there is a real reusable operation. Do
 not add wrappers just to rename an existing workflow.
@@ -261,8 +452,8 @@ lets normal loop scheduling create the next proof attempt.
 
 ## Direct Human/Agent Usage
 
-The same workflow should work when assigned by a loop, by the planner, or by a
-direct human instruction:
+The same workflow should work when dispatched by a loop, dispatched by the
+planner, or called by a direct human instruction:
 
 ```text
 collect references for localdns

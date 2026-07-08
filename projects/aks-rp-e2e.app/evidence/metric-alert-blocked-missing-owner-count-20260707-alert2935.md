@@ -30,7 +30,7 @@ cd /app/projects/aks-rp-e2e.app && bun scripts/project-metrics.ts aks-rp-e2e.pro
 Observed result:
 
 ```json
-{"measuredAt":1783414597779,"value":0}
+{ "measuredAt": 1783414597779, "value": 0 }
 ```
 
 Task-tree verification command:

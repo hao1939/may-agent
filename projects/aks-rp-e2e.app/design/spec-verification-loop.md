@@ -1,4 +1,4 @@
-# Spec Verification Loop Proposal
+# Spec Verification Loop
 
 Status: implemented baseline
 
@@ -7,7 +7,7 @@ Status: implemented baseline
 Drive every AKS RP E2E spec through a repeatable loop:
 
 ```text
-select specs -> run live test backend -> result review -> fix/model proposal -> rerun until live pass
+select specs -> run live test backend -> result review -> fix/model update -> rerun until live pass
 ```
 
 The loop should keep working without asking the LLM planner to repeatedly pick
@@ -15,17 +15,18 @@ the next spec. The task tree remains the visible control plane, while a small
 deterministic workflow keeps a bounded set of spec leaves moving.
 
 The workflow is responsible for the normal repair path. Humans should not need
-to patch each failing spec by hand. If the evidence shows the issue is in test
+to patch each failing spec by hand. If the test result or linked proof shows
+the issue is in test
 code, generated tests, runner behavior, compact planning, workflow YAML, target
 environment wiring, or spec execution behavior, the worker must repair the
 `aks-rp-e2e` domain repo, commit and push the change to the target branch, then
-verify it with the GitHub live workflow. Changes in `aks-rp-e2e.app` can fix
-orchestration, UI, recovery, metrics, and task routing only; they do not make
-GitHub spec runs use new domain test code.
+verify it with the Azure DevOps live workflow. Changes in `aks-rp-e2e.app` can
+fix orchestration, UI, recovery, metrics, and task routing only; they do not
+make pipeline spec runs use new domain test code.
 
 This is one concrete instance of the knowledge split described in
 `project-knowledge-layers.md`: the loop ledger and retry/frontier policy are
-project operating knowledge, while accepted spec fixes, live pass evidence, and
+project operating knowledge, while accepted spec fixes, live pass results, and
 feature/model updates are AKS test knowledge.
 
 The completion bar is intentionally strict: every single spec needs a live
@@ -51,14 +52,14 @@ Direct human/agent use:
 ```text
 specId + target + mode
   -> single-spec verification workflow
-  -> repo-native spec command / GitHub backend
+  -> repo-native spec command / pipeline backend
   -> structured result and artifact refs
 ```
 
 App-managed loop use:
 
 ```text
-project.task.assigned
+project.task.assigned dispatch
   -> task workflow router
   -> task.workflow=single-spec-verifier
   -> task.context carries specId + target + tracking fields
@@ -101,7 +102,7 @@ The loop task uses a controller workflow:
   "context": {
     "windowSize": 5,
     "stateRef": ".state/spec-loop/state.json",
-    "githubWorkflow": "run-single-spec.yaml",
+    "adoPipeline": "ado-pipeline-467665",
     "target": "staging",
     "branch": "dev",
     "maxOpenPrs": 3,
@@ -127,7 +128,7 @@ Each child leaf verifies one spec:
   "goal": "Run and review spec.managedsystem.rest-add-existing.minimal-rest through the single-spec workflow.",
   "context": {
     "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
-    "githubWorkflow": "run-single-spec.yaml",
+    "adoPipeline": "ado-pipeline-467665",
     "target": "staging",
     "branch": "dev",
     "stateRef": ".state/spec-loop/state.json"
@@ -152,7 +153,7 @@ and an explicit top-level action.
 project.task.tick taskId=aks-spec-verification-loop action=spec-loop
   -> spec-loop-controller pulse
   -> create/fill 3-5 child spec leaves
-  -> emit project.task.assigned for runnable child leaves
+  -> emit project.task.assigned to dispatch runnable child leaves
   -> update task.context.workflowProgress
   -> leave aks-spec-verification-loop backlog/continuing
 
@@ -169,7 +170,8 @@ project.task.completed taskId=verify-spec-A
 ```
 
 `project.task.assigned` remains the worker path for executable child leaves.
-If a loop root is accidentally assigned, the planner may bridge that assignment
+Read the event name as dispatch. If a loop root is accidentally dispatched with
+this event, the planner may bridge that dispatch
 back into a controller tick as compatibility behavior, but producers should not
 rely on the worker to consume durable loop roots.
 
@@ -193,7 +195,7 @@ task-targeted form:
 Loop pulses use `project.task.tick` with a concrete task target and an explicit
 top-level `action` discriminator such as `spec-loop`. Routing starts at that
 task, falls back to the loop/parent task when available, and finally reaches the
-project owner.
+project app.
 
 ## Workflow Result Contract
 
@@ -259,13 +261,13 @@ pending records must create grouped follow-up work; they must not be hidden by a
 `stranded` or retry-budget-exhausted flag.
 
 Exact waits are not passive parking. On every pulse, the controller must inspect
-wait leaves that name a GitHub workflow run. If the run is still active, the wait
-can remain blocked. If the run is terminal, the controller must move the wait
+wait leaves that name an Azure DevOps pipeline run. If the run is still active,
+the wait can remain blocked. If the run is terminal, the controller must move the wait
 leaf to review with the run id, conclusion, URL, and named specs attached. Code
 only collects this signal; the reviewing agent decides whether the terminal run
 proves a pass, needs a domain repair/rerun, or should be replaced by a fresh
 external wait with the current waiting condition. A wait must not keep saying it
-is waiting for a GitHub run that already finished.
+is waiting for an Azure DevOps pipeline run that already finished.
 
 The simple operating rule is: unfinished work must have an owner. A spec that
 has exhausted direct retries is not finished, but it may not be visible as a
@@ -279,7 +281,7 @@ execution is drained.
 
 `spec-loop-controller` is deterministic. It should:
 
-- load `tasks/tree.json`;
+- load the live task tree through the SDK runtime path;
 - load `.state/spec-loop/state.json`;
 - find the loop parent task;
 - count open child leaves under the loop parent;
@@ -288,7 +290,7 @@ execution is drained.
   `fail` records when no direct verifier work can be launched; grouped
   follow-ups are compact by feature family, but all affected specs must be
   recorded in task context so ownership is durable;
-- assign runnable child leaves;
+- dispatch runnable child leaves;
 - update compact loop counters;
 - pause on circuit breakers;
 - wake the owner only for judgment or policy decisions.
@@ -303,7 +305,7 @@ is `status + feature family`, for example `error/aad-rbac` or
 tasks: they classify root cause, repair `aks-rp-e2e` specs/tests/runner/model
 files when possible, push the domain fix, and create rerun work only after a
 blocker changes or a concrete test/spec fix makes the rerun meaningful. App
-evidence is an audit trail, not the fix. This keeps the task tree pushing
+test results and app artifacts are an audit trail, not the fix. This keeps the task tree pushing
 without exploding one task per failed spec.
 
 ## Single Spec Verifier Workflow
@@ -311,7 +313,7 @@ without exploding one task per failed spec.
 `single-spec-verifier` owns one spec leaf. It should:
 
 1. Dispatch the configured test backend for the task's `specId`; the initial
-   backend is GitHub `run-single-spec.yaml`, but the same leaf shape can route
+   backend is Azure DevOps pipeline `467665`, but the same leaf shape can route
    to local/generated Vitest plan execution.
 2. Watch or poll the workflow run.
 3. Download artifacts.
@@ -324,13 +326,13 @@ without exploding one task per failed spec.
      environment, product, or source issue that prevents a live pass.
 6. Apply a bounded local fix or model proposal when safe.
 7. Commit/push the `aks-rp-e2e` change when the fix is in domain test/spec
-   code, then rerun the GitHub workflow against the pushed commit.
+   code, then rerun the Azure DevOps pipeline against the pushed commit.
 8. Open a PR when code/model changes need review instead of direct branch
    update.
 9. Complete the leaf with links to the workflow run, result artifact, test
    result notes, and PR when present.
 
-`lastRunUrl` is the durable GitHub Actions workflow link and should be present
+`lastRunUrl` is the durable Azure DevOps pipeline run link and should be present
 for every dispatched attempt. `lastResultPath` is the downloaded local result
 artifact path. Do not collapse these into one field: when a test fails before
 artifact upload, the workflow URL is still the operator's primary drill-down
@@ -342,7 +344,7 @@ Azure CLI login state is not ready for the spec loop; that is a test repair
 item. The single-spec workflow supplies the fixed target environment, and the
 test must create and clean up its own AKS cluster through ARM REST helpers.
 
-Live test code should use `ARM_ACCESS_TOKEN`, GitHub OIDC, or managed identity
+Live test code should use `ARM_ACCESS_TOKEN`, pipeline OIDC, or managed identity
 with ARM REST. It must not shell out to `az`, use `azure/login`, depend on
 Azure CLI account state, or read private AKS RP source code.
 
@@ -354,6 +356,12 @@ AKS-specific, but the control shape is reusable for other projects.
 ```text
 audit spec -> generate test -> run test -> review result -> update model -> close or create exact follow-up
 ```
+
+Every result is also a learning input. A pass teaches the result shape that can
+be reused for similar specs. A failure teaches the smallest owner for the next
+change: spec/model, scenario test, runner, target environment, product behavior,
+or workflow ingestion. The loop should keep this learning structured instead of
+only storing prose in task results.
 
 1. Audit the spec.
    - Confirm the spec file is discoverable from `features/<feature>/specs/`.
@@ -382,7 +390,8 @@ audit spec -> generate test -> run test -> review result -> update model -> clos
      scenario-test bug, runner bug, environment capacity/auth issue, or product
      behavior mismatch.
    - Small local runner/test fixes are applied in `aks-rp-e2e`, committed,
-     pushed, and verified by GitHub. A local check or app memo is not enough.
+     pushed, and verified by the Azure DevOps pipeline. A local check or app
+     memo is not enough.
    - Ambiguous product or model decisions become explicit follow-up tasks with
      the run link, result path, waiting condition, and fallback.
 
@@ -403,6 +412,16 @@ audit spec -> generate test -> run test -> review result -> update model -> clos
      exact wait, escalation, or PR. No non-pass spec should remain only as a
      hidden ledger entry.
 
+6. Record what the result taught us.
+   - Success records the proof pattern: setup shape, request path, assertions,
+     runtime witnesses, cleanup, and model decision.
+   - Failure records the smallest repair owner, failing phase/assertion,
+     request/response or command evidence, input fingerprint, error fingerprint,
+     and next action.
+   - Mixed compact or grouped results are split by spec branch. Passing branches
+     keep their proof; failing branches get focused repair or wait work.
+   - A stale or suspicious pass record becomes review work, not silent trust.
+
 Reusable parts:
 
 - queue/frontier control: bounded dispatch, retry budget, exact wait ownership,
@@ -412,6 +431,47 @@ Reusable parts:
 - result contract: structured run id, item id, status, reason, artifact refs,
   and model-impact recommendation;
 - closure rule: only close when the project-specific pass bar is met.
+
+## Findings To Mark
+
+The task is not done just because a ledger row says `status=pass`. The review
+found several practical cases that must be handled by the existing review and
+fix-forward path:
+
+- Some pass rows point to a clear same-spec live result.
+- Some pass rows were recovered from a later successor run.
+- Some pass rows came from a passing branch inside a compact run whose aggregate
+  result was not fully passing.
+- Some pass rows still point at an old failed, gated, missing, aggregate, or
+  differently named artifact.
+- Source/check-only proof is useful for authoring, but it cannot close a live
+  spec.
+
+Plain closure rule:
+
+- Close a spec only when the result being used is really for that spec, really
+  ran on the expected target, and did not leave failed verdict assertions.
+- If the result path is missing, stale, gated, aggregate-only, or hard to match
+  back to the spec, do not silently close it. Move it to review or fix-forward
+  work with the exact run/result that needs inspection.
+- A blocked wait should not close merely because every named spec says
+  `status=pass`; it should close only after the reviewer or controller confirms
+  those pass rows are safe to use.
+
+## What To Record
+
+Each run, artifact ingestion, repair, or pass decision should write down the
+plain facts that help the next worker move faster:
+
+- what worked;
+- what failed;
+- what should be reused;
+- what should be avoided;
+- which run/result shows it;
+- what the next action is.
+
+This note is not a substitute for the spec ledger. It is a short memory of what
+we learned so the next attempt does not repeat the same mistake.
 
 AKS-specific parts:
 
@@ -461,7 +521,7 @@ bun run spec-loop seed
 ```
 
 These commands are development helpers, not the normal control plane. Normal
-operation should be visible through `tasks/tree.json`, the task frontier, and
+operation should be visible through the live task tree, the task frontier, and
 `task.context.workflowProgress`. Use the `pulse-spec-loop` app action to wake
 the controller. The default target task id is `aks-spec-verification-loop`.
 
@@ -504,7 +564,7 @@ Use the planner/owner only for:
 3. Done: add `spec-loop-controller`.
 4. Done: add `.state/spec-loop/state.json` store helpers.
 5. Done: add `single-spec-verifier`.
-6. Done: dispatch GitHub workflow, poll by a unique `loop_key`, download
+6. Done: dispatch the Azure DevOps pipeline, poll by a unique `loop_key`, download
    artifacts, and parse `result.json`.
 7. Done: add `bun run spec-loop status|seed`.
 8. Done: add tests for workflow routing, bounded refill, dev-infra-core
@@ -514,11 +574,9 @@ Use the planner/owner only for:
 10. Remaining: add circuit breakers.
 11. Remaining: add bounded fix/model-update PR creation after result review.
 
-## Open Questions
+## Remaining Decisions
 
 - Should pass-only model evidence updates be batched by feature family instead
   of creating one PR per spec?
-- What is the first safe window size for live GitHub workflow execution: 1, 3,
-  or 5?
 - Should `single-spec-verifier` create fixes directly, or should it create a
   follow-up repair task when the change is larger than a small bounded patch?

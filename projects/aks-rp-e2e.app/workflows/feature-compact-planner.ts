@@ -45,16 +45,16 @@ import {
   activeWorkflowRuns,
   downloadWorkflowRunArtifacts,
   dispatchWorkflow,
-  githubPollIntervalMs,
-  githubRunLookupPollIntervalMs,
+  pipelinePollIntervalMs,
+  pipelineRunLookupPollIntervalMs,
   newestWorkflowRun,
-  resolveGitHubClient,
+  resolvePipelineClient,
   sleepMs,
   waitForWorkflowRun,
-  writeGitHubDispatchMetadata,
-  type GitHubClient,
-  type GitHubWorkflowRun,
-} from "./lib/github-actions.ts";
+  writePipelineDispatchMetadata,
+  type PipelineClient,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
 import type { TaskNode } from "./lib/task-tree-store.ts";
 import { readTaskTree } from "./lib/task-tree-store.ts";
 import type { TaskCompletionClaim } from "./lib/task-tree-tools.ts";
@@ -71,12 +71,12 @@ export const workflowContract: WorkflowIoContract = {
       "task.context.capabilityId",
       "task.context.target",
       "task.context.liveParallel",
-      "task.context.githubWorkflow",
+      "task.context.adoPipeline",
       "task.context.branch",
       "task.context.stateRef",
     ],
     description:
-      "Generate one feature compact plan, run generated tests, and live-prove the plan through GitHub Actions.",
+      "Generate one feature compact plan, run generated tests, and live-prove the plan through Azure DevOps Pipelines.",
   },
   output: {
     version: workflowResultVersion,
@@ -201,6 +201,20 @@ function contextNumber(task: TaskNode, key: string, fallback: number): number {
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
   }
   return fallback;
+}
+
+function pipelineNameContext(task: TaskNode, fallback: string): string {
+  return (
+    contextString(task, "adoPipeline", "") ||
+    contextString(task, "githubWorkflow", fallback)
+  );
+}
+
+function pipelineLimitContext(task: TaskNode, fallback: number): number {
+  const adoLimit = contextNumber(task, "adoActiveRunLimit", 0);
+  return adoLimit > 0
+    ? adoLimit
+    : contextNumber(task, "githubActiveRunLimit", fallback);
 }
 
 function taskStringList(task: TaskNode, key: "outputs"): string[] {
@@ -404,7 +418,7 @@ function validateLiveResult(input: {
       ok: false,
       resultPath: input.resultPath,
       result,
-      detail: `GitHub artifact result plan ${resultPlanPath} does not match compact plan ${input.planRel}.`,
+      detail: `Azure DevOps artifact result plan ${resultPlanPath} does not match compact plan ${input.planRel}.`,
     };
   }
   if (surface !== "live-azure-run") {
@@ -412,7 +426,7 @@ function validateLiveResult(input: {
       ok: false,
       resultPath: input.resultPath,
       result,
-      detail: `GitHub artifact result surface is ${surface || "(missing)"}, not live-azure-run.`,
+      detail: `Azure DevOps artifact result surface is ${surface || "(missing)"}, not live-azure-run.`,
     };
   }
   if (status !== "passed") {
@@ -420,7 +434,7 @@ function validateLiveResult(input: {
       ok: false,
       resultPath: input.resultPath,
       result,
-      detail: `GitHub artifact live result status is ${status || "(missing)"}, not passed.`,
+      detail: `Azure DevOps artifact live result status is ${status || "(missing)"}, not passed.`,
     };
   }
   if (specResults.length === 0 || passCount < 1) {
@@ -428,7 +442,7 @@ function validateLiveResult(input: {
       ok: false,
       resultPath: input.resultPath,
       result,
-      detail: "GitHub artifact live result has no passing spec result.",
+      detail: "Azure DevOps artifact live result has no passing spec result.",
     };
   }
   if (failCount || errorCount) {
@@ -436,7 +450,7 @@ function validateLiveResult(input: {
       ok: false,
       resultPath: input.resultPath,
       result,
-      detail: `GitHub artifact live result has fail/error counts: fail=${failCount} error=${errorCount}.`,
+      detail: `Azure DevOps artifact live result has fail/error counts: fail=${failCount} error=${errorCount}.`,
     };
   }
   const checkOnlyPass = specResults.find((item) =>
@@ -450,7 +464,7 @@ function validateLiveResult(input: {
       resultPath: input.resultPath,
       result,
       clusterEvidence: input.clusterEvidence,
-      detail: `GitHub artifact live result includes check-only pass for ${checkOnlyPass.specId}; live compact proof requires real Azure resource changes.`,
+      detail: `Azure DevOps artifact live result includes check-only pass for ${checkOnlyPass.specId}; live compact proof requires real Azure resource changes.`,
     };
   }
   if (input.clusterEvidence.length === 0) {
@@ -460,7 +474,7 @@ function validateLiveResult(input: {
       result,
       clusterEvidence: input.clusterEvidence,
       detail:
-        "GitHub artifact live result has no AKS cluster creation evidence.",
+        "Azure DevOps artifact live result has no AKS cluster creation evidence.",
     };
   }
   return {
@@ -468,7 +482,7 @@ function validateLiveResult(input: {
     resultPath: input.resultPath,
     result,
     clusterEvidence: input.clusterEvidence,
-    detail: `GitHub artifact proves live Azure pass with ${passCount} passing spec result(s) and AKS cluster evidence.`,
+    detail: `Azure DevOps artifact proves live Azure pass with ${passCount} passing spec result(s) and AKS cluster evidence.`,
   };
 }
 
@@ -507,7 +521,7 @@ export function capacityPreflightReason(proof: LiveResultProof): string | null {
 }
 
 export function inspectLiveWorkflowArtifacts(input: {
-  client: GitHubClient;
+  client: PipelineClient;
   projectDir: string;
   appDir: string;
   runId: string;
@@ -532,7 +546,7 @@ export function inspectLiveWorkflowArtifacts(input: {
   if (!download.ok) {
     return {
       ok: false,
-      detail: `GitHub artifact download failed: ${download.stderr || download.stdout || download.error || "unknown error"}`,
+      detail: `Azure DevOps artifact download failed: ${download.stderr || download.stdout || download.error || "unknown error"}`,
     };
   }
   const clusterEvidence = clusterEvidenceFromArtifactDir(
@@ -581,7 +595,7 @@ export function inspectLiveWorkflowArtifacts(input: {
   }
   return {
     ok: false,
-    detail: `No top-level result.json was found in GitHub artifacts for compact feature ${input.featureKey}.`,
+    detail: `No top-level result.json was found in Azure DevOps artifacts for compact feature ${input.featureKey}.`,
   };
 }
 
@@ -682,13 +696,17 @@ function checkCompactLivePolicy(input: {
   projectDir: string;
   planRel: string;
   diagnostics: Diagnostics;
+  specIds?: string[];
 }): CommandResult {
-  const selectedSpecIds = [
-    ...new Set([
-      ...(input.diagnostics.selectedSpecIds ?? []),
-      ...selectedSpecIdsForPlan(input.projectDir, input.planRel),
-    ]),
-  ].filter((specId) => specId.trim().length > 0);
+  const selectedSpecIds = (input.specIds?.length
+    ? input.specIds
+    : [
+        ...new Set([
+          ...(input.diagnostics.selectedSpecIds ?? []),
+          ...selectedSpecIdsForPlan(input.projectDir, input.planRel),
+        ]),
+      ]
+  ).filter((specId) => specId.trim().length > 0);
 
   if (selectedSpecIds.length === 0) {
     return {
@@ -732,7 +750,7 @@ function checkCompactLivePolicy(input: {
 }
 
 function workflowRunMatches(input: {
-  run: GitHubWorkflowRun;
+  run: PipelineRun;
   loopKey: string;
   planPath: string;
   capabilityId: string;
@@ -758,6 +776,7 @@ function isUnexpectedMetadataDispatchError(result: CommandResult): boolean {
 function compactDispatchInputs(input: {
   target: string;
   planPath: string;
+  specIds?: string[];
   parallel: number;
   testTimeoutSeconds: number;
   loopKey: string;
@@ -766,6 +785,7 @@ function compactDispatchInputs(input: {
   return {
     target: input.target,
     plan_path: input.planPath,
+    ...(input.specIds?.length ? { specs: input.specIds.join(",") } : {}),
     parallel: String(input.parallel),
     test_timeout_seconds: String(input.testTimeoutSeconds),
     ...(input.includeMetadata
@@ -775,7 +795,7 @@ function compactDispatchInputs(input: {
 }
 
 async function waitForDispatchCapacity(input: {
-  client: GitHubClient;
+  client: PipelineClient;
   projectDir: string;
   branch: string;
   limit: number;
@@ -794,11 +814,11 @@ async function waitForDispatchCapacity(input: {
     });
     lastCount = active.length;
     if (active.length < input.limit) return { ok: true };
-    await sleepMs(githubPollIntervalMs());
+    await sleepMs(pipelinePollIntervalMs());
   }
   return {
     ok: false,
-    detail: `GitHub live dispatch capacity did not open: ${lastCount}/${input.limit} workflow run(s) still in progress on ${input.branch}.`,
+    detail: `Azure DevOps live dispatch capacity did not open: ${lastCount}/${input.limit} pipeline run(s) still in progress on ${input.branch}.`,
   };
 }
 
@@ -823,6 +843,7 @@ function compactDispatchMetadata(input: {
   branch: string;
   target: string;
   planPath: string;
+  specIds?: string[];
   parallel: number;
   testTimeoutSeconds: number;
   loopKey: string;
@@ -840,6 +861,7 @@ function compactDispatchMetadata(input: {
   taskId: string;
   attemptId: string;
   planPath: string;
+  specIds: string[];
   capabilityId: string;
   dispatchResult: CommandResult;
 } {
@@ -850,6 +872,7 @@ function compactDispatchMetadata(input: {
     inputs: compactDispatchInputs({
       target: input.target,
       planPath: input.planPath,
+      specIds: input.specIds,
       parallel: input.parallel,
       testTimeoutSeconds: input.testTimeoutSeconds,
       loopKey: input.loopKey,
@@ -859,6 +882,7 @@ function compactDispatchMetadata(input: {
     taskId: input.taskId,
     attemptId: input.attemptId,
     planPath: input.planPath,
+    specIds: input.specIds ?? [],
     capabilityId: input.capabilityId,
     dispatchResult: input.dispatch,
   };
@@ -995,11 +1019,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   const checkParallel = contextNumber(task, "checkParallel", 50);
   const liveParallel = contextNumber(task, "liveParallel", checkParallel);
-  const workflow = contextString(
-    task,
-    "githubWorkflow",
-    "aks-rp-e2e-plan-execute.yaml",
-  );
+  const workflow = pipelineNameContext(task, "ado-pipeline-467665");
   const branch = contextString(task, "branch", "dev");
   const testTimeoutSeconds = contextNumber(task, "testTimeoutSeconds", 7200);
   const githubWaitTimeoutMinutes = contextNumber(
@@ -1043,6 +1063,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state.features[featureKey]?.attempts ?? 0,
       attemptNumber || (state.features[featureKey]?.attempts ?? 0) + 1,
     ),
+    activeAttemptId: attemptId,
+    activeTaskSessionId:
+      typeof task.session_id === "string" && task.session_id.trim()
+        ? task.session_id.trim()
+        : null,
+    activeWorkflowRunId: null,
+    heartbeatAt: new Date().toISOString(),
   });
   saveFeatureCompactLoopState(statePath, state);
 
@@ -1201,12 +1228,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  if (diagnostics.packageStatus && diagnostics.packageStatus !== "ready") {
+  const partialReadySpecIds =
+    diagnostics.packageStatus && diagnostics.packageStatus !== "ready"
+      ? (diagnostics.liveDispatchGate?.readySpecIds ?? []).filter(
+          (specId): specId is string =>
+            typeof specId === "string" && specId.trim().length > 0,
+        )
+      : [];
+  const partialResumeCondition =
+    diagnostics.selectionBlocker?.resumeCondition?.trim() ||
+    "Regenerate the compact package only after excluded or quarantined members are repaired, promoted, or reclassified so packageStatus becomes ready.";
+  const partialBlockerSummary = diagnostics.packageStatus
+    ? blockerSummaryFragment(diagnostics)
+    : "";
+  const partialRetryReason = diagnostics.packageStatus
+    ? blockerRetryReason(diagnostics)
+    : "";
+
+  if (
+    diagnostics.packageStatus &&
+    diagnostics.packageStatus !== "ready" &&
+    partialReadySpecIds.length === 0
+  ) {
     const blockerSummary = blockerSummaryFragment(diagnostics);
     const retryReason = blockerRetryReason(diagnostics);
-    const resumeCondition =
-      diagnostics.selectionBlocker?.resumeCondition?.trim() ||
-      "Regenerate the compact package only after excluded or quarantined members are repaired, promoted, or reclassified so packageStatus becomes ready.";
     const summary = [
       `Feature compact package for ${featureKey} is ${diagnostics.packageStatus}.`,
       blockerSummary,
@@ -1241,7 +1286,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         action: "request",
         category: "feature-compact-package-status",
         diagnosis: summary,
-        resumeCondition,
+        resumeCondition: partialResumeCondition,
       },
     });
   }
@@ -1250,10 +1295,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     projectDir,
     planRel,
     diagnostics,
+    specIds: partialReadySpecIds,
   });
   if (!livePolicy.ok) {
     const summary = [
-      `Feature compact live policy failed for ${featureKey}; GitHub dispatch skipped.`,
+      `Feature compact live policy failed for ${featureKey}; Azure DevOps pipeline dispatch skipped.`,
       `Plan: ${planRel}.`,
       `Summary: ${summaryRel}.`,
       `Diagnostics: ${diagnosticsRel}.`,
@@ -1269,7 +1315,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       status: "error",
       retryable: true,
       retryReason:
-        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying GitHub dispatch.",
+        "Repair selected compact scenario tests so live execution is self-contained and live-admissible before retrying Azure DevOps pipeline dispatch.",
       ...clearLiveWorkflowState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -1296,9 +1342,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const github = resolveGitHubClient(projectDir);
-  if (!github.client) {
-    const summary = `Unable to access GitHub Actions for ${featureKey}: ${github.reason || "unknown error"}`;
+  const pipeline = resolvePipelineClient(projectDir);
+  if (!pipeline.client) {
+    const summary = `Unable to access Azure DevOps pipeline for ${featureKey}: ${pipeline.reason || "unknown error"}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
       ...clearLiveWorkflowState,
@@ -1319,10 +1365,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ),
       problem: {
         action: "request",
-        category: "github-actions-access",
+        category: "ado-pipeline-access",
         diagnosis: summary,
         resumeCondition:
-          "Provide gh CLI authentication or GH_TOKEN/GITHUB_TOKEN access to the aks-rp-e2e repository.",
+          "Provide Azure DevOps CLI authentication for the AKS E2E Spec Runner pipeline.",
       },
     });
   }
@@ -1330,8 +1376,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const latestTreeBeforeDispatch = readTaskTree(config);
   const loopTask = latestTreeBeforeDispatch.tasks[loopTaskId];
   const githubActiveRunLimit = loopTask
-    ? contextNumber(loopTask, "githubActiveRunLimit", 6)
-    : contextNumber(task, "githubActiveRunLimit", 6);
+    ? pipelineLimitContext(loopTask, 6)
+    : pipelineLimitContext(task, 6);
   const githubDispatchWaitTimeoutMinutes = loopTask
     ? contextNumber(
         loopTask,
@@ -1340,19 +1386,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       )
     : contextNumber(task, "githubDispatchWaitTimeoutMinutes", 120);
   const dispatchCapacity = await waitForDispatchCapacity({
-    client: github.client,
+    client: pipeline.client,
     projectDir,
     branch,
     limit: githubActiveRunLimit,
     timeoutMinutes: githubDispatchWaitTimeoutMinutes,
   });
   if (dispatchCapacity.ok === false) {
-    const summary = `Live compact dispatch is waiting for GitHub workflow capacity for ${featureKey}. ${dispatchCapacity.detail}`;
+    const summary = `Live compact dispatch is waiting for Azure DevOps pipeline capacity for ${featureKey}. ${dispatchCapacity.detail}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
       retryable: false,
       retryReason:
-        "GitHub workflow capacity is full; retry only after active workflow slots are available.",
+        "Azure DevOps pipeline capacity is full; retry only after active pipeline slots are available.",
       ...clearLiveRunState,
       lastPlanPath: planRel,
       lastSummaryPath: summaryRel,
@@ -1374,7 +1420,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         category: "feature-compact-live-dispatch-capacity",
         diagnosis: summary,
         resumeCondition:
-          "Retry this compact feature after active staging GitHub live runs finish and cleanup frees AKS cluster slots.",
+          "Retry this compact feature after active staging Azure DevOps live runs finish and cleanup frees AKS cluster slots.",
       },
     });
   }
@@ -1389,13 +1435,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   let includeMetadata = true;
   let dispatch = dispatchWorkflow({
-    client: github.client,
+    client: pipeline.client,
     projectDir,
     workflow,
     branch,
     inputs: compactDispatchInputs({
       target,
       planPath: planRel,
+      specIds: partialReadySpecIds,
       parallel: liveParallel,
       testTimeoutSeconds,
       loopKey,
@@ -1405,13 +1452,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!dispatch.ok && isUnexpectedMetadataDispatchError(dispatch)) {
     includeMetadata = false;
     dispatch = dispatchWorkflow({
-      client: github.client,
+      client: pipeline.client,
       projectDir,
       workflow,
       branch,
       inputs: compactDispatchInputs({
         target,
         planPath: planRel,
+        specIds: partialReadySpecIds,
         parallel: liveParallel,
         testTimeoutSeconds,
         loopKey,
@@ -1419,7 +1467,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }),
     });
   }
-  writeGitHubDispatchMetadata(
+  writePipelineDispatchMetadata(
     metadataPath,
     compactDispatchMetadata({
       dispatchedAt,
@@ -1427,6 +1475,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       branch,
       target,
       planPath: planRel,
+      specIds: partialReadySpecIds,
       parallel: liveParallel,
       testTimeoutSeconds,
       loopKey,
@@ -1440,10 +1489,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   updateFeatureCompactItem(state, featureKey, {
     lastWorkflowLoopKey: loopKey,
     lastDispatchMetadataPath: metadataPath,
+    activeAttemptId: attemptId,
+    activeTaskSessionId:
+      typeof task.session_id === "string" && task.session_id.trim()
+        ? task.session_id.trim()
+        : null,
+    activeWorkflowRunId: null,
+    heartbeatAt: new Date().toISOString(),
   });
   saveFeatureCompactLoopState(statePath, state);
   if (!dispatch.ok) {
-    const summary = `GitHub live compact workflow dispatch failed for ${featureKey}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
+    const summary = `Azure DevOps live compact pipeline dispatch failed for ${featureKey}: ${dispatch.stderr || dispatch.stdout || dispatch.error}`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
       ...clearLiveRunState,
@@ -1466,18 +1522,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ),
       problem: {
         action: "request",
-        category: "github-actions-dispatch",
+        category: "ado-pipeline-dispatch",
         diagnosis: summary,
         resumeCondition:
-          "Fix GitHub workflow dispatch access or workflow input schema, then retry this compact feature.",
+          "Fix Azure DevOps pipeline dispatch access or pipeline input schema, then retry this compact feature.",
       },
     });
   }
 
-  let run: GitHubWorkflowRun | null = null;
+  let run: PipelineRun | null = null;
   for (let attempt = 0; attempt < 12; attempt++) {
     run = newestWorkflowRun({
-      client: github.client,
+      client: pipeline.client,
       projectDir,
       workflow,
       branch,
@@ -1491,11 +1547,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }),
     });
     if (run?.databaseId) break;
-    await sleepMs(githubRunLookupPollIntervalMs());
+    await sleepMs(pipelineRunLookupPollIntervalMs());
   }
 
   if (!run?.databaseId) {
-    const summary = `Dispatched ${workflow} for compact feature ${featureKey}, but could not find the GitHub run id. Plan: ${planRel}. Dispatch metadata: ${metadataPath}.`;
+    const summary = `Dispatched Azure DevOps pipeline for compact feature ${featureKey}, but could not find the run id. Plan: ${planRel}. Dispatch metadata: ${metadataPath}.`;
     updateFeatureCompactItem(state, featureKey, {
       status: "error",
       lastPlanPath: planRel,
@@ -1517,10 +1573,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ),
       problem: {
         action: "request",
-        category: "github-actions-run-lookup",
+        category: "ado-pipeline-run-lookup",
         diagnosis: summary,
         resumeCondition:
-          "Confirm the dispatched workflow run exists or restore GitHub run listing access.",
+          "Confirm the dispatched pipeline run exists or restore Azure DevOps run listing access.",
       },
     });
   }
@@ -1531,11 +1587,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     lastWorkflowRunUrl: run.url ?? null,
     lastWorkflowLoopKey: loopKey,
     lastDispatchMetadataPath: metadataPath,
+    activeAttemptId: attemptId,
+    activeTaskSessionId:
+      typeof task.session_id === "string" && task.session_id.trim()
+        ? task.session_id.trim()
+        : null,
+    activeWorkflowRunId: runId,
+    heartbeatAt: new Date().toISOString(),
   });
   saveFeatureCompactLoopState(statePath, state);
 
   const watch = await waitForWorkflowRun({
-    client: github.client,
+    client: pipeline.client,
     projectDir,
     runId,
     timeoutMs: githubWaitTimeoutMinutes * 60_000,
@@ -1546,6 +1609,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         lastWorkflowRunUrl: observedRun.url,
         lastWorkflowLoopKey: loopKey,
         lastDispatchMetadataPath: metadataPath,
+        activeAttemptId: attemptId,
+        activeTaskSessionId:
+          typeof task.session_id === "string" && task.session_id.trim()
+            ? task.session_id.trim()
+            : null,
+        activeWorkflowRunId: runId,
+        heartbeatAt: new Date().toISOString(),
       });
       saveFeatureCompactLoopState(statePath, state);
     },
@@ -1564,7 +1634,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const failedRunProof =
       !stillRunning && finalRun.status === "completed"
         ? inspectLiveWorkflowArtifacts({
-            client: github.client,
+            client: pipeline.client,
             projectDir,
             appDir,
             runId,
@@ -1582,7 +1652,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `Run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
         capacityReason,
         failedRunProof.resultPath
-          ? `GitHub artifact result: ${failedRunProof.resultPath}.`
+          ? `Azure DevOps artifact result: ${failedRunProof.resultPath}.`
           : "",
       ]
         .filter(Boolean)
@@ -1655,18 +1725,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       problem: {
         action: "request",
         category: stillRunning
-          ? "github-actions-runner-wait"
+          ? "ado-pipeline-runner-wait"
           : "feature-compact-live-test",
         diagnosis: summary,
         resumeCondition: stillRunning
-          ? "GitHub workflow runner capacity or the still-running workflow must finish before this feature can be marked done."
+          ? "Azure DevOps pipeline runner capacity or the still-running pipeline must finish before this feature can be marked done."
           : "Inspect the live workflow failure, fix the compact plan/spec/runtime, and retry this feature.",
       },
     });
   }
 
   const liveProof = inspectLiveWorkflowArtifacts({
-    client: github.client,
+    client: pipeline.client,
     projectDir,
     appDir,
     runId,
@@ -1682,7 +1752,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       liveProof.detail,
       resultPath ? `Local check result: ${resultPath}.` : "",
       liveProof.resultPath
-        ? `GitHub artifact result: ${liveProof.resultPath}.`
+        ? `Azure DevOps artifact result: ${liveProof.resultPath}.`
         : "",
     ]
       .filter(Boolean)
@@ -1718,13 +1788,65 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         category: "feature-compact-live-proof",
         diagnosis: summary,
         resumeCondition:
-          "Rerun the compact GitHub workflow after the workflow uploads a passing live-azure-run result artifact for this compact plan.",
+          "Rerun the compact Azure DevOps pipeline after the pipeline uploads a passing live test result artifact for this compact plan.",
+      },
+    });
+  }
+
+  if (partialReadySpecIds.length > 0) {
+    const summary = [
+      `Feature compact ready subset passed for ${featureKey}; the full package remains ${diagnostics.packageStatus}.`,
+      `Ready subset: ${partialReadySpecIds.join(", ")}.`,
+      partialBlockerSummary,
+      `Plan: ${planRel}.`,
+      `Summary: ${summaryRel}.`,
+      `Diagnostics: ${diagnosticsRel}.`,
+      liveProof.resultPath ? `Live test result: ${liveProof.resultPath}.` : "",
+      resultPath ? `Local check result: ${resultPath}.` : "",
+      `Workflow run: ${runId}${finalRun.url ? ` ${finalRun.url}` : ""}.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    updateFeatureCompactItem(state, featureKey, {
+      status: "error",
+      retryable: false,
+      retryReason: partialRetryReason || partialResumeCondition,
+      lastPlanPath: planRel,
+      lastSummaryPath: summaryRel,
+      lastDiagnosticsPath: diagnosticsRel,
+      lastResultPath: liveProof.resultPath ?? resultPath,
+      lastWorkflowRunId: runId,
+      lastWorkflowRunUrl: finalRun.url ?? null,
+      lastWorkflowLoopKey: loopKey,
+      lastDispatchMetadataPath: metadataPath,
+      lastLiveProofVersion: null,
+      lastSummary: summary,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+    return completion(ctx, config, {
+      task,
+      attemptId,
+      claim: "partial",
+      summary,
+      evidence: [
+        planRel,
+        summaryRel,
+        diagnosticsRel,
+        resultPath ?? "",
+        liveProof.resultPath ?? "",
+        finalRun.url ?? "",
+      ].filter(Boolean),
+      problem: {
+        action: "request",
+        category: "feature-compact-package-status",
+        diagnosis: summary,
+        resumeCondition: partialResumeCondition,
       },
     });
   }
 
   const summary = [
-    `Feature compact package done for ${featureKey}; live GitHub workflow passed.`,
+    `Feature compact package done for ${featureKey}; live Azure DevOps pipeline passed.`,
     `Plan: ${planRel}.`,
     `Summary: ${summaryRel}.`,
     `Diagnostics: ${diagnosticsRel}.`,

@@ -35,8 +35,14 @@ export type FeatureCompactItemState = FeatureCompactRecord & {
   lastWorkflowLoopKey: string | null;
   lastDispatchMetadataPath: string | null;
   lastLiveProofVersion: string | null;
+  activeAttemptId?: string | null;
+  activeTaskSessionId?: string | null;
+  activeWorkflowRunId?: string | null;
+  heartbeatAt?: string | null;
   lastSummary: string | null;
   rootCauseClassification?: string | null;
+  inputFingerprint?: string | null;
+  errorFingerprint?: string | null;
   ownerReason?: string | null;
   attemptedFixes?: string[] | null;
   nextStepClassification?: string | null;
@@ -67,6 +73,8 @@ export type FeatureCompactLoopState = {
   windowSize: number;
   cursor: number;
   features: Record<string, FeatureCompactItemState>;
+  updatedAt?: string;
+  updated_at?: string;
 };
 
 function readJson<T>(path: string, fallback: T): T {
@@ -185,12 +193,22 @@ function normalizeExistingItem(
       (item as FeatureCompactItemState).lastDispatchMetadataPath ?? null,
     lastLiveProofVersion:
       (item as FeatureCompactItemState).lastLiveProofVersion ?? null,
+    activeAttemptId: (item as FeatureCompactItemState).activeAttemptId ?? null,
+    activeTaskSessionId:
+      (item as FeatureCompactItemState).activeTaskSessionId ?? null,
+    activeWorkflowRunId:
+      (item as FeatureCompactItemState).activeWorkflowRunId ?? null,
+    heartbeatAt: (item as FeatureCompactItemState).heartbeatAt ?? null,
     retryable:
       (item as FeatureCompactItemState).retryable === false ? false : true,
     retryReason: (item as FeatureCompactItemState).retryReason ?? null,
     taskId: (item as FeatureCompactItemState).taskId ?? null,
     rootCauseClassification:
       (item as FeatureCompactItemState).rootCauseClassification ?? null,
+    inputFingerprint:
+      (item as FeatureCompactItemState).inputFingerprint ?? null,
+    errorFingerprint:
+      (item as FeatureCompactItemState).errorFingerprint ?? null,
     ownerReason: (item as FeatureCompactItemState).ownerReason ?? null,
     attemptedFixes: (item as FeatureCompactItemState).attemptedFixes ?? null,
     nextStepClassification:
@@ -344,6 +362,10 @@ export function loadFeatureCompactLoopState(input: {
       lastWorkflowLoopKey: existing?.lastWorkflowLoopKey ?? null,
       lastDispatchMetadataPath: existing?.lastDispatchMetadataPath ?? null,
       lastLiveProofVersion: existing?.lastLiveProofVersion ?? null,
+      activeAttemptId: existing?.activeAttemptId ?? null,
+      activeTaskSessionId: existing?.activeTaskSessionId ?? null,
+      activeWorkflowRunId: existing?.activeWorkflowRunId ?? null,
+      heartbeatAt: existing?.heartbeatAt ?? null,
       lastSummary: existing?.lastSummary ?? null,
       rootCauseClassification: existing?.rootCauseClassification ?? null,
       ownerReason: existing?.ownerReason ?? null,
@@ -390,7 +412,8 @@ export function saveFeatureCompactLoopState(
     ? readJson<FeatureCompactLoopState | null>(path, null)
     : null;
   if (!latest?.features) {
-    writeJson(path, state);
+    const now = new Date().toISOString();
+    writeJson(path, { ...state, updatedAt: now, updated_at: now });
     return;
   }
 
@@ -418,6 +441,9 @@ export function saveFeatureCompactLoopState(
     }
   }
 
+  const now = new Date().toISOString();
+  merged.updatedAt = now;
+  merged.updated_at = now;
   writeJson(path, merged);
 }
 
@@ -460,7 +486,13 @@ export function updateFeatureCompactItem(
     lastWorkflowLoopKey: null,
     lastDispatchMetadataPath: null,
     lastLiveProofVersion: null,
+    activeAttemptId: null,
+    activeTaskSessionId: null,
+    activeWorkflowRunId: null,
+    heartbeatAt: null,
     lastSummary: null,
+    inputFingerprint: null,
+    errorFingerprint: null,
     updatedAt: now,
   };
   const normalizedPatch = { ...patch };
@@ -484,6 +516,24 @@ export function updateFeatureCompactItem(
     normalizedPatch.blockedScope ??= null;
     normalizedPatch.blockedFingerprint ??= null;
     normalizedPatch.lastCheckedAt ??= null;
+  }
+  if (normalizedPatch.status === "pending") {
+    normalizedPatch.activeAttemptId ??= null;
+    normalizedPatch.activeTaskSessionId ??= null;
+    normalizedPatch.activeWorkflowRunId ??= null;
+    normalizedPatch.heartbeatAt ??= null;
+  }
+  if (normalizedPatch.status === "running") {
+    normalizedPatch.heartbeatAt ??= now;
+  }
+  if (
+    normalizedPatch.status === "done" ||
+    normalizedPatch.status === "blocked"
+  ) {
+    normalizedPatch.activeAttemptId ??= null;
+    normalizedPatch.activeTaskSessionId ??= null;
+    normalizedPatch.activeWorkflowRunId ??= null;
+    normalizedPatch.heartbeatAt ??= null;
   }
   if (normalizedPatch.status === "blocked") {
     normalizedPatch.retryable ??= false;

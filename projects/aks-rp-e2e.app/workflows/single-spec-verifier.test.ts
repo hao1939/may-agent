@@ -8,15 +8,20 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { assignTask, taskTreeConfig } from "./lib/task-tree-tools.ts";
 import { buildLoopKey, execute } from "./single-spec-verifier.ts";
 import {
   bindKnownWorkflowRun,
   loadSpecLoopState,
 } from "./lib/spec-loop-store.ts";
+import {
+  setPipelineBackendForTests,
+  type CommandResult,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
 
 async function readSpecState(appDir: string) {
   const state = JSON.parse(
@@ -27,6 +32,258 @@ async function readSpecState(appDir: string) {
 
 const createdRoots: string[] = [];
 
+function appendPipelineLog(marker: string, payload: unknown = null): void {
+  const log = process.env.TEST_PIPELINE_LOG;
+  if (!log) return;
+  writeFileSync(log, `${JSON.stringify([payload, marker])}\n`, {
+    flag: "a",
+  });
+}
+
+function defaultPipelineRun(runId = "123456", completed = true): PipelineRun {
+  return {
+    databaseId: Number(runId),
+    status: completed ? "completed" : "inProgress",
+    conclusion: completed ? (process.env.TEST_RUN_CONCLUSION ?? "success") : "",
+    url: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
+    createdAt:
+      process.env.TEST_CREATED_AT ??
+      new Date(Date.now() + 60_000).toISOString(),
+    displayTitle: [
+      process.env.TEST_DISPLAY_TITLE ??
+        "Single spec: spec.net-integration.authorized-ip-ranges",
+      process.env.TEST_METADATA ?? "",
+      process.env.TEST_SPEC_ID ?? "spec.net-integration.authorized-ip-ranges",
+    ]
+      .filter(Boolean)
+      .join(" "),
+  };
+}
+
+function writeSingleSpecArtifacts(artifactDir: string): void {
+  const bundle = join(
+    artifactDir,
+    "aks-rp-e2e-123456-single-spec-test-results",
+  );
+  mkdirSync(bundle, { recursive: true });
+  const status = process.env.TEST_RESULT_STATUS ?? "pass";
+  const reason =
+    process.env.TEST_RESULT_REASON ?? "Pipeline result artifact succeeded.";
+  const category = process.env.TEST_RESULT_CATEGORY;
+  const specId =
+    process.env.TEST_RESULT_SPEC_ID ??
+    "spec.net-integration.authorized-ip-ranges";
+  const artifactFamily =
+    process.env.TEST_ARTIFACT_FAMILY ?? "net-integration-authorized-ip-ranges";
+  const loopKey =
+    process.env.TEST_WORKFLOW_LOOP_KEY ??
+    "verify-spec-net-integration-authorized-ip-ranges-a_test";
+  const unzipLog = process.env.TEST_UNZIP_LOG;
+  if (unzipLog) writeFileSync(unzipLog, `${bundle}\n`, { flag: "a" });
+  writeFileSync(
+    join(bundle, "workflow-metadata.json"),
+    JSON.stringify({ loop_key: loopKey }, null, 2),
+  );
+  const artifactPath = join(bundle, "artifacts", artifactFamily, "spec-runner");
+  mkdirSync(artifactPath, { recursive: true });
+  const childPhase = process.env.TEST_CHILD_PHASE ?? "";
+  const childPayload: Record<string, unknown> = {
+    status: process.env.TEST_CHILD_STATUS ?? status,
+    specId,
+    ...(childPhase ? { phase: childPhase } : {}),
+  };
+  if (process.env.TEST_RESOURCE_GROUP || process.env.TEST_CLUSTER_NAME) {
+    childPayload.audit = {
+      subscriptionId: process.env.TEST_SUBSCRIPTION_ID ?? "sub-test",
+      resourceGroup: process.env.TEST_RESOURCE_GROUP ?? "",
+      clusterName: process.env.TEST_CLUSTER_NAME ?? "",
+    };
+    childPayload.probeEvidence = {
+      config: {
+        subscriptionId: process.env.TEST_SUBSCRIPTION_ID ?? "sub-test",
+        location: process.env.TEST_LOCATION ?? "westus2",
+        resourceGroup: process.env.TEST_RESOURCE_GROUP ?? "",
+        clusterName: process.env.TEST_CLUSTER_NAME ?? "",
+      },
+      cleanup: {
+        attempted: true,
+        status: process.env.TEST_CLEANUP_STATUS ?? "pass",
+      },
+    };
+  }
+  if (
+    process.env.TEST_CHILD_EVIDENCE_STATUS ||
+    process.env.TEST_CHILD_FAILED_ASSERTION_NAME
+  ) {
+    childPayload.probeEvidence = {
+      ...((childPayload.probeEvidence as Record<string, unknown>) ?? {}),
+      status: process.env.TEST_CHILD_EVIDENCE_STATUS,
+      assertions: [
+        {
+          name:
+            process.env.TEST_CHILD_FAILED_ASSERTION_NAME ??
+            "child-failed-assertion",
+          ok: false,
+          verdictImpact:
+            process.env.TEST_CHILD_FAILED_ASSERTION_IMPACT ?? "preflight",
+          detail:
+            process.env.TEST_CHILD_FAILED_ASSERTION_DETAIL ??
+            "child assertion failed",
+        },
+      ],
+    };
+  }
+  writeFileSync(
+    join(artifactPath, "status.json"),
+    JSON.stringify(childPayload, null, 2),
+  );
+  writeFileSync(
+    join(artifactPath, "result.json"),
+    JSON.stringify({ ...childPayload, status }, null, 2),
+  );
+  const artifactRefKind = process.env.TEST_ARTIFACT_REF_KIND ?? "result";
+  const artifactRefs =
+    process.env.TEST_ARTIFACT_REFS === "empty"
+      ? []
+      : [
+          `runs/test-results/single-${artifactFamily}_123456/artifacts/${artifactFamily}/spec-runner/${artifactRefKind}.json`,
+        ];
+  const topLevelSpecResults =
+    process.env.TEST_TOP_LEVEL_SPEC_RESULTS === "empty"
+      ? []
+      : [
+          {
+            specId,
+            status,
+            reason,
+            ...(category ? { category } : {}),
+            artifactRefs,
+          },
+        ];
+  writeFileSync(
+    join(bundle, "result.json"),
+    JSON.stringify(
+      {
+        status: process.env.TEST_TOP_LEVEL_STATUS ?? status,
+        specResults: topLevelSpecResults,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+function installPipelineBackendForSingleSpecTests(): void {
+  setPipelineBackendForTests({
+    activeRuns: () => [],
+    dispatch: ({ inputs }): CommandResult => {
+      appendPipelineLog("/dispatches", inputs);
+      const rawStatuses =
+        process.env.TEST_DISPATCH_STATUSES ||
+        process.env.TEST_DISPATCH_STATUS ||
+        "0";
+      const rawBodies =
+        process.env.TEST_DISPATCH_RESPONSES ||
+        process.env.TEST_DISPATCH_RESPONSE ||
+        "";
+      const statuses = rawStatuses.split("||");
+      const bodies = rawBodies.split("||");
+      const counterPath = process.env.TEST_DISPATCH_COUNTER;
+      let index = 0;
+      if (counterPath) {
+        try {
+          index = Number.parseInt(
+            readFileSync(counterPath, "utf-8").trim(),
+            10,
+          );
+        } catch {
+          index = 0;
+        }
+        mkdirSync(dirname(counterPath), { recursive: true });
+        writeFileSync(counterPath, String(index + 1));
+      }
+      const statusText =
+        statuses[index] ?? statuses[statuses.length - 1] ?? "0";
+      const body = bodies[index] ?? bodies[bodies.length - 1] ?? "";
+      const numericStatus = Number.parseInt(statusText, 10);
+      return {
+        ok:
+          numericStatus === 0 || (numericStatus >= 200 && numericStatus < 300),
+        status: Number.isFinite(numericStatus) ? numericStatus : 1,
+        stdout:
+          numericStatus === 0 || (numericStatus >= 200 && numericStatus < 300)
+            ? body
+            : "",
+        stderr:
+          numericStatus === 0 || (numericStatus >= 200 && numericStatus < 300)
+            ? ""
+            : body,
+      };
+    },
+    newestRun: (input) => {
+      appendPipelineLog("/runs", input.branch);
+      if (process.env.TEST_WORKFLOW_RUNS_JSON) {
+        const runs = JSON.parse(process.env.TEST_WORKFLOW_RUNS_JSON).map(
+          (run: Record<string, unknown>) =>
+            ({
+              databaseId: Number(run.databaseId ?? run.id),
+              status: String(run.status ?? "completed"),
+              conclusion: String(run.conclusion ?? "success"),
+              url: String(run.url ?? ""),
+              createdAt: String(run.createdAt ?? run.createdAt ?? ""),
+              displayTitle: String(run.displayTitle ?? run.displayTitle ?? ""),
+            }) satisfies PipelineRun,
+        );
+        return (
+          runs.find((run: PipelineRun) => input.match?.(run) ?? true) ?? null
+        );
+      }
+      const run = defaultPipelineRun();
+      return input.match?.(run) === false ? null : run;
+    },
+    getRun: ({ runId }) => {
+      appendPipelineLog(`/runs/${runId}`, null);
+      const counterPath = process.env.TEST_RUN_VIEW_COUNTER;
+      const pendingCount = Number.parseInt(
+        process.env.TEST_RUN_VIEW_PENDING_COUNT ?? "0",
+        10,
+      );
+      let index = 0;
+      if (counterPath) {
+        try {
+          index = Number.parseInt(
+            readFileSync(counterPath, "utf-8").trim(),
+            10,
+          );
+        } catch {
+          index = 0;
+        }
+        mkdirSync(dirname(counterPath), { recursive: true });
+        writeFileSync(counterPath, String(index + 1));
+      }
+      return defaultPipelineRun(runId, index >= pendingCount);
+    },
+    downloadArtifacts: ({ artifactDir }) => {
+      appendPipelineLog("/artifacts", null);
+      if (process.env.TEST_ARTIFACT_DOWNLOAD_FAIL) {
+        return {
+          ok: false,
+          status: 1,
+          stdout: "",
+          stderr: process.env.TEST_ARTIFACT_DOWNLOAD_FAIL,
+        };
+      }
+      writeSingleSpecArtifacts(artifactDir);
+      return {
+        ok: true,
+        status: 0,
+        stdout: "Downloaded test artifact.",
+        stderr: "",
+      };
+    },
+  });
+}
+
 async function makeProject() {
   const root = await mkdtemp(join(tmpdir(), "aks-single-spec-"));
   createdRoots.push(root);
@@ -34,18 +291,8 @@ async function makeProject() {
   const projectDir = join(root, "aks-rp-e2e");
   const binDir = join(root, "bin");
   await mkdir(join(appDir, "tasks"), { recursive: true });
-  await mkdir(join(projectDir, ".github", "workflows"), { recursive: true });
-  await mkdir(join(projectDir, ".git"), { recursive: true });
-  await mkdir(join(projectDir, ".github", "workflows", "feature-sets"), {
-    recursive: true,
-  });
   await mkdir(join(projectDir, "specs"), { recursive: true });
   await mkdir(binDir, { recursive: true });
-  await writeFile(
-    join(projectDir, ".github", "workflows", "run-single-spec.yaml"),
-    "name: Run Single Spec\n",
-    "utf8",
-  );
   await writeFile(
     join(projectDir, "specs", "index.json"),
     `${JSON.stringify({ specFiles: ["net-integration-authorized-ip-ranges.json"] }, null, 2)}\n`,
@@ -96,14 +343,14 @@ async function makeProject() {
             inputs: ["spec:spec.net-integration.authorized-ip-ranges"],
             outputs: [".state/spec-loop/state.json"],
             acceptance: [
-              "GitHub workflow run completed or produced a concrete blocker.",
+              "Azure DevOps pipeline run completed or produced a concrete blocker.",
             ],
             forbidden: [],
             conflict_scope: ["spec:spec.net-integration.authorized-ip-ranges"],
             depends_on: [],
             context: {
               specId: "spec.net-integration.authorized-ip-ranges",
-              githubWorkflow: "run-single-spec.yaml",
+              pipelineWorkflow: "run-single-spec.yaml",
               target: "staging",
               branch: "dev",
               timeoutMinutes: "110",
@@ -119,211 +366,7 @@ async function makeProject() {
     )}\n`,
     "utf8",
   );
-  await writeFile(
-    join(projectDir, ".git", "config"),
-    `[remote \"origin\"]\n\turl = https://ghp_exampletoken@github.com/example-org/example-repo.git\n`,
-    "utf8",
-  );
-  const gitScript = `#!/usr/bin/env python3
-import sys
-if sys.argv[1:] == ["remote", "get-url", "origin"]:
-    sys.stdout.write("https://ghp_exampletoken@github.com/example-org/example-repo.git\\n")
-    sys.exit(0)
-sys.exit(1)
-`;
-  const curlScript = `#!/usr/bin/env python3
-import json
-import os
-import sys
-from pathlib import Path
-
-args = sys.argv[1:]
-out_path = None
-if "-o" in args:
-    idx = args.index("-o")
-    out_path = args[idx + 1]
-url = args[-1] if args else ""
-log = Path(os.environ["TEST_CURL_LOG"])
-with log.open("a", encoding="utf-8") as fh:
-    fh.write(json.dumps(args) + "\\n")
-if out_path:
-    payload_hex = os.environ.get("TEST_DOWNLOAD_PAYLOAD_HEX", "")
-    if payload_hex:
-        payload = bytes.fromhex(payload_hex)
-    elif "TEST_DOWNLOAD_PAYLOAD" in os.environ:
-        payload = os.environ["TEST_DOWNLOAD_PAYLOAD"].encode("utf-8")
-    else:
-        payload = b"PK\x03\x04fake-zip"
-    Path(out_path).write_bytes(payload)
-    sys.exit(0)
-if url.endswith("/dispatches"):
-    raw_statuses = os.environ.get("TEST_DISPATCH_STATUSES") or os.environ.get("TEST_DISPATCH_STATUS", "204")
-    raw_bodies = os.environ.get("TEST_DISPATCH_RESPONSES") or os.environ.get("TEST_DISPATCH_RESPONSE", "")
-    statuses = raw_statuses.split("||") if raw_statuses else ["204"]
-    bodies = raw_bodies.split("||") if raw_bodies else [""]
-    counter_path = Path(os.environ["TEST_DISPATCH_COUNTER"])
-    try:
-        dispatch_index = int(counter_path.read_text(encoding="utf-8"))
-    except Exception:
-        dispatch_index = 0
-    counter_path.write_text(str(dispatch_index + 1), encoding="utf-8")
-    status = statuses[dispatch_index] if dispatch_index < len(statuses) else statuses[-1]
-    body = bodies[dispatch_index] if dispatch_index < len(bodies) else bodies[-1]
-    sys.stdout.write(body + "\\n" + status)
-    sys.exit(0)
-if "/actions/workflows/run-single-spec.yaml/runs" in url:
-    custom_runs = os.environ.get("TEST_WORKFLOW_RUNS_JSON")
-    if custom_runs:
-        sys.stdout.write(json.dumps({"workflow_runs": json.loads(custom_runs)}) + "\\n200")
-        sys.exit(0)
-    created_at = os.environ.get("TEST_CREATED_AT", "2026-06-26T12:00:00Z")
-    body = {
-        "workflow_runs": [{
-            "id": 123456,
-            "status": "queued",
-            "conclusion": None,
-            "html_url": "https://github.com/example-org/example-repo/actions/runs/123456",
-            "created_at": created_at,
-            "display_title": os.environ.get("TEST_DISPLAY_TITLE", "Single spec: spec.net-integration.authorized-ip-ranges"),
-        }]
-    }
-    sys.stdout.write(json.dumps(body) + "\\n200")
-    sys.exit(0)
-if "/actions/runs/123456/artifacts" in url:
-    body = {
-        "artifacts": [{
-            "id": 999,
-            "name": "aks-rp-e2e-123456-single-spec-test-results",
-            "archive_download_url": "https://api.github.com/repos/example-org/example-repo/actions/artifacts/999/zip",
-        }]
-    }
-    sys.stdout.write(json.dumps(body) + "\\n200")
-    sys.exit(0)
-if "/actions/runs/123456" in url:
-    created_at = os.environ.get("TEST_CREATED_AT", "2026-06-26T12:00:00Z")
-    counter_path = os.environ.get("TEST_RUN_VIEW_COUNTER")
-    pending_count = int(os.environ.get("TEST_RUN_VIEW_PENDING_COUNT", "0"))
-    view_index = 0
-    if counter_path:
-        counter = Path(counter_path)
-        try:
-            view_index = int(counter.read_text(encoding="utf-8"))
-        except Exception:
-            view_index = 0
-        counter.write_text(str(view_index + 1), encoding="utf-8")
-    is_pending = view_index < pending_count
-    body = {
-        "id": 123456,
-        "status": "in_progress" if is_pending else "completed",
-        "conclusion": None if is_pending else "success",
-        "html_url": "https://github.com/example-org/example-repo/actions/runs/123456",
-        "created_at": created_at,
-        "display_title": os.environ.get("TEST_DISPLAY_TITLE", "Single spec: spec.net-integration.authorized-ip-ranges"),
-    }
-    sys.stdout.write(json.dumps(body) + "\\n200")
-    sys.exit(0)
-sys.stdout.write("{}\\n200")
-`;
-  const unzipScript = `#!/usr/bin/env python3
-import json
-import os
-import sys
-from pathlib import Path
-
-dest = Path(sys.argv[-1])
-dest.mkdir(parents=True, exist_ok=True)
-status = os.environ.get("TEST_RESULT_STATUS", "pass")
-reason = os.environ.get("TEST_RESULT_REASON", "REST fallback path succeeded.")
-category = os.environ.get("TEST_RESULT_CATEGORY")
-spec_id = os.environ.get("TEST_RESULT_SPEC_ID", "spec.net-integration.authorized-ip-ranges")
-artifact_family = os.environ.get("TEST_ARTIFACT_FAMILY", "net-integration-authorized-ip-ranges")
-loop_key = os.environ.get("TEST_WORKFLOW_LOOP_KEY", "verify-spec-net-integration-authorized-ip-ranges-a_test")
-(Path(os.environ["TEST_UNZIP_LOG"])).open("a", encoding="utf-8").write(str(dest) + "\\n")
-(dest / "workflow-metadata.json").write_text(json.dumps({
-  "loop_key": loop_key,
-}, indent=2), encoding="utf-8")
-artifact_dir = dest / "artifacts" / artifact_family / "spec-runner"
-artifact_dir.mkdir(parents=True, exist_ok=True)
-artifact_result = artifact_dir / "result.json"
-artifact_result.write_text(json.dumps({
-  "status": status,
-  "specId": spec_id,
-  **({"probeEvidence": {
-    "status": os.environ.get("TEST_CHILD_EVIDENCE_STATUS"),
-    "assertions": [{
-      "name": os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME", "child-failed-assertion"),
-      "ok": False,
-      "verdictImpact": os.environ.get("TEST_CHILD_FAILED_ASSERTION_IMPACT", "preflight"),
-      "detail": os.environ.get("TEST_CHILD_FAILED_ASSERTION_DETAIL", "child assertion failed"),
-    }]
-  }} if os.environ.get("TEST_CHILD_EVIDENCE_STATUS") or os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME") else {}),
-}, indent=2), encoding="utf-8")
-artifact_ref_kind = os.environ.get("TEST_ARTIFACT_REF_KIND", "result")
-artifact_ref_path = f"runs/test-results/single-{artifact_family}_123456/artifacts/{artifact_family}/spec-runner/{artifact_ref_kind}.json"
-artifact_refs = [] if os.environ.get("TEST_ARTIFACT_REFS") == "empty" else [artifact_ref_path]
-child_status = os.environ.get("TEST_CHILD_STATUS", status)
-child_phase = os.environ.get("TEST_CHILD_PHASE", "")
-child_status_path = artifact_dir / "status.json"
-child_status_path.write_text(json.dumps({
-  "status": child_status,
-  "specId": spec_id,
-  **({"phase": child_phase} if child_phase else {}),
-}, indent=2), encoding="utf-8")
-artifact_result.write_text(json.dumps({
-  "status": status,
-  "specId": spec_id,
-  **({"phase": child_phase} if child_phase else {}),
-  **({"probeEvidence": {
-    "status": os.environ.get("TEST_CHILD_EVIDENCE_STATUS"),
-    "assertions": [{
-      "name": os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME", "child-failed-assertion"),
-      "ok": False,
-      "verdictImpact": os.environ.get("TEST_CHILD_FAILED_ASSERTION_IMPACT", "preflight"),
-      "detail": os.environ.get("TEST_CHILD_FAILED_ASSERTION_DETAIL", "child assertion failed"),
-    }]
-  }} if os.environ.get("TEST_CHILD_EVIDENCE_STATUS") or os.environ.get("TEST_CHILD_FAILED_ASSERTION_NAME") else {}),
-}, indent=2), encoding="utf-8")
-omit_top_level_spec_results = os.environ.get("TEST_TOP_LEVEL_SPEC_RESULTS", "present") == "empty"
-top_level_payload = {
-  "status": os.environ.get("TEST_TOP_LEVEL_STATUS", status),
-  "specResults": [] if omit_top_level_spec_results else [{
-    "specId": spec_id,
-    "status": status,
-    "reason": reason,
-    **({"category": category} if category else {}),
-    "artifactRefs": artifact_refs
-  }]
-}
-(dest / "result.json").write_text(json.dumps(top_level_payload, indent=2), encoding="utf-8")
-`;
-  await writeFile(join(binDir, "git"), gitScript, "utf8");
-  await chmod(join(binDir, "git"), 0o755);
-  await writeFile(join(binDir, "curl"), curlScript, "utf8");
-  await chmod(join(binDir, "curl"), 0o755);
-  await writeFile(join(binDir, "unzip"), unzipScript, "utf8");
-  await chmod(join(binDir, "unzip"), 0o755);
-  await writeFile(
-    join(binDir, "git"),
-    `#!/bin/sh
-if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
-  echo "https://ghp_exampletoken@github.com/example-org/example-repo.git"
-  exit 0
-fi
-echo "unexpected git call: $*" >&2
-exit 1
-`,
-    "utf8",
-  );
-  await chmod(join(binDir, "git"), 0o755);
-  await writeFile(
-    join(binDir, "gh"),
-    `#!/bin/sh
-echo "gh should not be used when API token is available" >&2
-exit 127
-`,
-    "utf8",
-  );
-  await chmod(join(binDir, "gh"), 0o755);
+  installPipelineBackendForSingleSpecTests();
   return { appDir, projectDir, binDir };
 }
 
@@ -332,6 +375,10 @@ function triggerText(event: Record<string, unknown>): string {
 }
 
 afterEach(async () => {
+  setPipelineBackendForTests(null);
+  delete process.env.AKS_RP_E2E_APP_ALLOW_ADO_TEST_DISPATCH;
+  delete process.env.MAY_ADO_PIPELINES_POLL_MS;
+  delete process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS;
   for (const root of createdRoots.splice(0)) {
     await rm(root, { recursive: true, force: true });
   }
@@ -404,7 +451,7 @@ exit 0
     }
   });
 
-  test("dispatches and classifies a workflow run via GitHub REST fallback when gh is unavailable", async () => {
+  test("dispatches and classifies a workflow run via pipeline backend", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -417,11 +464,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_ATTEMPT_ID = String(assignment.attemptId);
@@ -429,6 +476,8 @@ exit 0
     process.env.TEST_DISPATCH_RESPONSE = "";
     process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
     process.env.TEST_DISPLAY_TITLE = `Single spec: spec.net-integration.authorized-ip-ranges [verify-spec-net-integration.authorized-ip-ranges-${assignment.attemptId}]`;
+    process.env.TEST_RESOURCE_GROUP = "rg-test-proof";
+    process.env.TEST_CLUSTER_NAME = "aks-test-proof";
 
     try {
       const result = await execute({
@@ -454,23 +503,29 @@ exit 0
 
       expect(result.status).toBe("done");
       expect(result.message).toContain("classified as pass");
-      expect(result.message).toContain("REST fallback path succeeded.");
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      expect(result.message).toContain("Pipeline result artifact succeeded.");
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       const unzipCalls = await readFile(unzipLog, "utf8");
       expect(
-        curlCalls.some((args) => args[args.length - 1].includes("/dispatches")),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/dispatches"),
+        ),
       ).toBeTrue();
       expect(
-        curlCalls.some((args) => args[args.length - 1].includes("/artifacts")),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/artifacts"),
+        ),
       ).toBeTrue();
-      const dispatchCall = curlCalls.find((args) =>
+      const dispatchCall = pipelineCalls.find((args) =>
         args[args.length - 1].includes("/dispatches"),
       );
-      expect(dispatchCall?.join(" ")).toContain('"timeout_minutes":"110"');
+      expect(JSON.stringify(dispatchCall?.[0])).toContain(
+        '"timeout_minutes":"110"',
+      );
       expect(unzipCalls.trim().length).toBeGreaterThan(0);
 
       const tree = JSON.parse(
@@ -480,6 +535,18 @@ exit 0
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
       expect(task.trace.last_worker_result).toBe("done");
       expect(task.trace.last_worker_summary).toContain("classified as pass");
+      expect(task.trace.workflowResult.workflow).toBe("single-spec-verifier");
+      expect(task.trace.workflowResult.details.runId).toBe("123456");
+      expect(task.trace.workflowResult.details.resultPath).toContain(
+        "artifacts/net-integration-authorized-ip-ranges/spec-runner/result.json",
+      );
+      expect(task.trace.workflowResult.details.liveVerified).toBeTrue();
+      expect(task.trace.workflowResult.details.resourceGroup).toBe(
+        "rg-test-proof",
+      );
+      expect(task.trace.workflowResult.details.clusterName).toBe(
+        "aks-test-proof",
+      );
 
       const state = JSON.parse(
         await readFile(
@@ -495,7 +562,7 @@ exit 0
       ).toBe("123456");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_ATTEMPT_ID;
       delete process.env.TEST_DISPATCH_COUNTER;
@@ -506,13 +573,15 @@ exit 0
       delete process.env.TEST_CREATED_AT;
       delete process.env.TEST_DISPLAY_TITLE;
       delete process.env.TEST_RESULT_STATUS;
+      delete process.env.TEST_RESOURCE_GROUP;
+      delete process.env.TEST_CLUSTER_NAME;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
-  test("skips GitHub dispatch when local live policy fails", async () => {
+  test("skips pipeline dispatch when local live policy fails", async () => {
     const { appDir, projectDir } = await makeProject();
     await mkdir(join(projectDir, "runner"), { recursive: true });
     await writeFile(
@@ -569,7 +638,7 @@ exit 0
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Local live policy failed");
-    expect(result.message).toContain("GitHub workflow dispatch skipped");
+    expect(result.message).toContain("Azure DevOps pipeline dispatch skipped");
     expect(result.message).toContain("missing carrier metadata");
     expect(
       existsSync(
@@ -611,11 +680,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -665,7 +734,7 @@ exit 0
       ).toContain("spec-runner/result.json");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -678,7 +747,7 @@ exit 0
       delete process.env.TEST_ARTIFACT_REF_KIND;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -695,11 +764,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -757,7 +826,7 @@ exit 0
       ).toBe("error");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -770,7 +839,7 @@ exit 0
       delete process.env.TEST_ARTIFACT_REFS;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -787,11 +856,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -850,7 +919,7 @@ exit 0
       ).toBe("error");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -864,7 +933,7 @@ exit 0
       delete process.env.TEST_RESULT_REASON;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -911,11 +980,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -960,7 +1029,7 @@ exit 0
       ).toBe("pass");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -972,7 +1041,7 @@ exit 0
       delete process.env.TEST_RESULT_STATUS;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -989,11 +1058,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -1047,7 +1116,7 @@ exit 0
       ).toBe("error");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -1063,7 +1132,7 @@ exit 0
       delete process.env.TEST_CHILD_FAILED_ASSERTION_DETAIL;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1080,11 +1149,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_ATTEMPT_ID = String(assignment.attemptId);
@@ -1123,19 +1192,23 @@ exit 0
 
       expect(result.status).toBe("done");
       expect(result.message).toContain("classified as pass");
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
-      const dispatchCalls = curlCalls.filter((args) =>
+      const dispatchCalls = pipelineCalls.filter((args) =>
         args[args.length - 1].includes("/dispatches"),
       );
       expect(dispatchCalls.length).toBe(2);
-      expect(dispatchCalls[0].join(" ")).toContain("loop_key");
-      expect(dispatchCalls[1].join(" ")).not.toContain("loop_key");
-      expect(dispatchCalls[0].join(" ")).toContain('"timeout_minutes":"110"');
-      expect(dispatchCalls[1].join(" ")).toContain('"timeout_minutes":"110"');
+      expect(JSON.stringify(dispatchCalls[0])).toContain("loop_key");
+      expect(JSON.stringify(dispatchCalls[1])).not.toContain("loop_key");
+      expect(JSON.stringify(dispatchCalls[0])).toContain(
+        '"timeout_minutes":"110"',
+      );
+      expect(JSON.stringify(dispatchCalls[1])).toContain(
+        '"timeout_minutes":"110"',
+      );
 
       const tree = JSON.parse(
         await readFile(resolveTaskTreePath(appDir), "utf8"),
@@ -1159,7 +1232,7 @@ exit 0
       );
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_ATTEMPT_ID;
       delete process.env.TEST_DISPATCH_COUNTER;
@@ -1172,7 +1245,7 @@ exit 0
       delete process.env.TEST_RESULT_STATUS;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1189,17 +1262,17 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     const runViewCounter = join(appDir, ".state", "run-view-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_RUN_VIEW_COUNTER = runViewCounter;
     process.env.TEST_RUN_VIEW_PENDING_COUNT = "2";
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS = "10";
+    process.env.MAY_ADO_PIPELINES_POLL_MS = "10";
     process.env.TEST_DISPATCH_STATUS = "204";
     process.env.TEST_DISPATCH_RESPONSE = "";
     process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
@@ -1243,7 +1316,7 @@ exit 0
       expect(specState.heartbeatAt).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -1258,7 +1331,7 @@ exit 0
       delete process.env.TEST_WORKFLOW_LOOP_KEY;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1274,7 +1347,7 @@ exit 0
     bindKnownWorkflowRun(state, "spec.net-integration.authorized-ip-ranges", {
       runId: "28371054186",
       runUrl:
-        "https://github.com/example-org/example-repo/actions/runs/28371054186",
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=28371054186",
       taskId:
         "repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629",
       attemptId:
@@ -1292,7 +1365,7 @@ exit 0
     expect(specState.activeWorkflowRunId).toBe("28371054186");
     expect(specState.lastRunId).toBeNull();
     expect(specState.lastRunUrl).toBe(
-      "https://github.com/example-org/example-repo/actions/runs/28371054186",
+      "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=28371054186",
     );
     expect(specState.lastWorkflowLoopKey).toBe(
       "repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629-a_repair-spec-loop-runid-binding-and-artifact-ingestion-backfill-20260629_test",
@@ -1330,20 +1403,20 @@ exit 0
       ...tree.tasks["verify-spec-net-integration-authorized-ip-ranges"].context,
       knownWorkflowRunId: "123456",
       knownWorkflowRunUrl:
-        "https://github.com/example-org/example-repo/actions/runs/123456",
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456",
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const runViewCounter = join(appDir, ".state", "run-view-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_RUN_VIEW_COUNTER = runViewCounter;
     process.env.TEST_RUN_VIEW_PENDING_COUNT = "1";
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS = "10";
+    process.env.MAY_ADO_PIPELINES_POLL_MS = "10";
     process.env.TEST_CREATED_AT = new Date(Date.now() - 60_000).toISOString();
     process.env.TEST_DISPLAY_TITLE =
       "Single spec: spec.net-integration.authorized-ip-ranges";
@@ -1371,18 +1444,20 @@ exit 0
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("Reattached existing GitHub run 123456");
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      expect(result.message).toContain("Reattached existing ADO run 123456");
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       expect(
-        curlCalls.some((args) => args[args.length - 1].includes("/dispatches")),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/dispatches"),
+        ),
       ).toBeFalse();
       expect(
-        curlCalls.some((args) =>
-          args[args.length - 1].includes("/actions/runs/123456"),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/runs/123456"),
         ),
       ).toBeTrue();
 
@@ -1397,18 +1472,18 @@ exit 0
       expect(specState.status).toBe("pass");
       expect(specState.lastRunId).toBe("123456");
       expect(specState.lastRunUrl).toBe(
-        "https://github.com/example-org/example-repo/actions/runs/123456",
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456",
       );
       expect(specState.activeWorkflowRunId).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
       delete process.env.TEST_CREATED_AT;
       delete process.env.TEST_DISPLAY_TITLE;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1456,15 +1531,15 @@ exit 0
     );
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const runViewCounter = join(appDir, ".state", "run-view-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_RUN_VIEW_COUNTER = runViewCounter;
     process.env.TEST_RUN_VIEW_PENDING_COUNT = "1";
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS = "10";
+    process.env.MAY_ADO_PIPELINES_POLL_MS = "10";
     process.env.TEST_CREATED_AT = new Date(Date.now() - 60_000).toISOString();
     process.env.TEST_DISPLAY_TITLE =
       "Single spec: spec.net-integration.authorized-ip-ranges";
@@ -1492,17 +1567,21 @@ exit 0
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("Reattached existing GitHub run 123456");
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      expect(result.message).toContain("Reattached existing ADO run 123456");
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       expect(
-        curlCalls.some((args) => args[args.length - 1].includes("/dispatches")),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/dispatches"),
+        ),
       ).toBeFalse();
       expect(
-        curlCalls.some((args) => args[args.length - 1].includes("/artifacts")),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/artifacts"),
+        ),
       ).toBeTrue();
 
       const state = JSON.parse(
@@ -1518,13 +1597,13 @@ exit 0
       expect(specState.activeWorkflowRunId).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
       delete process.env.TEST_CREATED_AT;
       delete process.env.TEST_DISPLAY_TITLE;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1541,17 +1620,17 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     const runViewCounter = join(appDir, ".state", "run-view-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_RUN_VIEW_COUNTER = runViewCounter;
     process.env.TEST_RUN_VIEW_PENDING_COUNT = "3";
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS = "10";
+    process.env.MAY_ADO_PIPELINES_POLL_MS = "10";
     process.env.TEST_DISPATCH_STATUS = "204";
     process.env.TEST_DISPATCH_RESPONSE = "";
     process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
@@ -1594,7 +1673,7 @@ exit 0
       expect(result.message).toContain("classified as pass");
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -1609,7 +1688,7 @@ exit 0
       delete process.env.TEST_WORKFLOW_LOOP_KEY;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -1626,11 +1705,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -1638,12 +1717,13 @@ exit 0
     process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
     process.env.TEST_DISPLAY_TITLE =
       "Single spec: spec.ccp-agent.connectivity-tunnel";
+    process.env.TEST_SPEC_ID = "spec.ccp-agent.connectivity-tunnel";
     process.env.TEST_RESULT_SPEC_ID =
       "spec.net-integration.authorized-ip-ranges";
     process.env.TEST_ARTIFACT_FAMILY = "net-integration-authorized-ip-ranges";
     process.env.TEST_WORKFLOW_LOOP_KEY =
       "verify-spec-net-integration-authorized-ip-ranges-a_test";
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS = "1";
+    process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS = "1";
 
     try {
       const result = await execute({
@@ -1668,25 +1748,21 @@ exit 0
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("could not find the GitHub run id");
+      expect(result.message).toContain("could not find the run id");
       expect(result.message).not.toContain("classified as pass");
       expect(result.message).not.toContain("run 123456");
 
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       expect(
-        curlCalls.some((args) =>
-          args[args.length - 1].includes(
-            "/actions/workflows/run-single-spec.yaml/runs",
-          ),
-        ),
+        pipelineCalls.some((args) => args[args.length - 1].includes("/runs")),
       ).toBeTrue();
       expect(
-        curlCalls.some((args) =>
-          args[args.length - 1].includes("/actions/runs/123456/artifacts"),
+        pipelineCalls.some((args) =>
+          args[args.length - 1].includes("/runs/123456/artifacts"),
         ),
       ).toBeFalse();
 
@@ -1697,7 +1773,7 @@ exit 0
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
       expect(task.trace.last_worker_result).toBe("blocked");
       expect(task.trace.last_worker_summary).toContain(
-        "could not find the GitHub run id",
+        "could not find the run id",
       );
 
       const state = JSON.parse(
@@ -1717,7 +1793,7 @@ exit 0
       ).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -1726,6 +1802,7 @@ exit 0
       delete process.env.TEST_DISPATCH_RESPONSES;
       delete process.env.TEST_CREATED_AT;
       delete process.env.TEST_DISPLAY_TITLE;
+      delete process.env.TEST_SPEC_ID;
       delete process.env.TEST_RESULT_STATUS;
       delete process.env.TEST_RESULT_SPEC_ID;
       delete process.env.TEST_ARTIFACT_FAMILY;
@@ -1733,8 +1810,8 @@ exit 0
       delete process.env.TEST_WORKFLOW_RUNS_JSON;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS;
     }
   });
 
@@ -1751,12 +1828,12 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     const now = Date.now();
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     await writeFile(unzipLog, "", "utf8");
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
@@ -1768,31 +1845,28 @@ exit 0
         id: 223458,
         status: "queued",
         conclusion: null,
-        html_url:
-          "https://github.com/example-org/example-repo/actions/runs/223458",
-        created_at: new Date(now + 55_000).toISOString(),
-        display_title: "Single spec: spec.jwt-authenticator.external-idp-crud",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=223458",
+        createdAt: new Date(now + 55_000).toISOString(),
+        displayTitle: "Single spec: spec.jwt-authenticator.external-idp-crud",
       },
       {
         id: 223457,
         status: "queued",
         conclusion: null,
-        html_url:
-          "https://github.com/example-org/example-repo/actions/runs/223457",
-        created_at: new Date(now + 50_000).toISOString(),
-        display_title: "Single spec: spec.ccp-agent.connectivity-tunnel",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=223457",
+        createdAt: new Date(now + 50_000).toISOString(),
+        displayTitle: "Single spec: spec.ccp-agent.connectivity-tunnel",
       },
       {
         id: 223456,
         status: "queued",
         conclusion: null,
-        html_url:
-          "https://github.com/example-org/example-repo/actions/runs/223456",
-        created_at: new Date(now + 45_000).toISOString(),
-        display_title: "Single spec: spec.kms.v2plus-enable-cmk-from-v2-public",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=223456",
+        createdAt: new Date(now + 45_000).toISOString(),
+        displayTitle: "Single spec: spec.kms.v2plus-enable-cmk-from-v2-public",
       },
     ]);
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS = "1";
+    process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS = "1";
 
     try {
       const result = await execute({
@@ -1817,30 +1891,30 @@ exit 0
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("could not find the GitHub run id");
+      expect(result.message).toContain("could not find the run id");
       expect(result.message).toContain("Loop key:");
       expect(result.message).toContain("Dispatch metadata:");
       expect(result.message).not.toContain("run 223458");
       expect(result.message).not.toContain("run 223457");
       expect(result.message).not.toContain("run 223456");
 
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       expect(
-        curlCalls.some((args) =>
+        pipelineCalls.some((args) =>
           args[args.length - 1].includes("/actions/runs/223458"),
         ),
       ).toBeFalse();
       expect(
-        curlCalls.some((args) =>
+        pipelineCalls.some((args) =>
           args[args.length - 1].includes("/actions/runs/223457"),
         ),
       ).toBeFalse();
       expect(
-        curlCalls.some((args) =>
+        pipelineCalls.some((args) =>
           args[args.length - 1].includes("/actions/runs/223456"),
         ),
       ).toBeFalse();
@@ -1853,7 +1927,7 @@ exit 0
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
       expect(task.trace.last_worker_result).toBe("blocked");
       expect(task.trace.last_worker_summary).toContain(
-        "could not find the GitHub run id",
+        "could not find the run id",
       );
       expect(task.trace.last_worker_summary).toContain("Dispatch metadata:");
 
@@ -1885,7 +1959,7 @@ exit 0
       expect(dispatchMetadata.dispatchResult.status).toBe(204);
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -1901,8 +1975,8 @@ exit 0
       delete process.env.TEST_WORKFLOW_RUNS_JSON;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS;
     }
   });
 
@@ -1919,12 +1993,12 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     const now = Date.now();
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     await writeFile(unzipLog, "", "utf8");
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
@@ -1936,14 +2010,13 @@ exit 0
         id: 223458,
         status: "queued",
         conclusion: null,
-        html_url:
-          "https://github.com/example-org/example-repo/actions/runs/223458",
-        created_at: new Date(now + 55_000).toISOString(),
-        display_title:
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=223458",
+        createdAt: new Date(now + 55_000).toISOString(),
+        displayTitle:
           "Single spec: spec.net-integration.authorized-ip-ranges-firewall",
       },
     ]);
-    process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS = "1";
+    process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS = "1";
 
     try {
       const result = await execute({
@@ -1968,16 +2041,16 @@ exit 0
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("could not find the GitHub run id");
+      expect(result.message).toContain("could not find the run id");
       expect(result.message).not.toContain("run 223458");
 
-      const curlCalls = (await readFile(curlLog, "utf8"))
+      const pipelineCalls = (await readFile(pipelineLog, "utf8"))
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line) as string[]);
       expect(
-        curlCalls.some((args) =>
+        pipelineCalls.some((args) =>
           args[args.length - 1].includes("/actions/runs/223458"),
         ),
       ).toBeFalse();
@@ -1997,7 +2070,7 @@ exit 0
       ).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -2013,12 +2086,12 @@ exit 0
       delete process.env.TEST_WORKFLOW_RUNS_JSON;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_RUN_LOOKUP_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_RUN_LOOKUP_POLL_MS;
     }
   });
 
-  test("fails closed on non-zip GitHub auth/error artifact bodies before unzip and preserves unknown classification", async () => {
+  test("fails closed on non-zip artifact auth/error bodies before unzip and preserves unknown classification", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -2031,11 +2104,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     await writeFile(unzipLog, "", "utf8");
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
@@ -2044,9 +2117,8 @@ exit 0
     process.env.TEST_CREATED_AT = new Date(Date.now() + 60_000).toISOString();
     process.env.TEST_DISPLAY_TITLE =
       "Single spec: spec.net-integration.authorized-ip-ranges";
-    process.env.TEST_DOWNLOAD_PAYLOAD = JSON.stringify({
+    process.env.TEST_ARTIFACT_DOWNLOAD_FAIL = JSON.stringify({
       message: "Bad credentials",
-      documentation_url: "https://docs.github.com/rest",
       status: "401",
     });
 
@@ -2075,9 +2147,8 @@ exit 0
       expect(result.status).toBe("done");
       expect(result.message).toContain("classified as error");
       expect(result.message).toContain("artifact download issue:");
-      expect(result.message).toContain(
-        "failed validation before unzip: artifact download returned non-zip JSON; message=Bad credentials; status=401",
-      );
+      expect(result.message).toContain("Bad credentials");
+      expect(result.message).toContain('"status":"401"');
       expect(result.message).not.toContain("missing specResults[0].specId");
       expect(result.message).not.toContain("missing loop_key");
       expect((await readFile(unzipLog, "utf8")).trim()).toBe("");
@@ -2089,7 +2160,7 @@ exit 0
         tree.tasks["verify-spec-net-integration-authorized-ip-ranges"];
       expect(task.trace.last_worker_result).toBe("blocked");
       expect(task.trace.last_worker_summary).toContain("Bad credentials");
-      expect(task.trace.last_worker_summary).toContain("status=401");
+      expect(task.trace.last_worker_summary).toContain('"status":"401"');
 
       const state = JSON.parse(
         await readFile(
@@ -2108,7 +2179,7 @@ exit 0
       ).toBeNull();
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -2121,10 +2192,10 @@ exit 0
       delete process.env.TEST_RESULT_SPEC_ID;
       delete process.env.TEST_ARTIFACT_FAMILY;
       delete process.env.TEST_WORKFLOW_LOOP_KEY;
-      delete process.env.TEST_DOWNLOAD_PAYLOAD;
+      delete process.env.TEST_ARTIFACT_DOWNLOAD_FAIL;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -2141,11 +2212,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -2228,7 +2299,7 @@ exit 0
       );
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -2245,7 +2316,7 @@ exit 0
       delete process.env.TEST_ARTIFACT_REFS;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -2262,11 +2333,11 @@ exit 0
     });
 
     const originalPath = process.env.PATH || "";
-    const curlLog = join(appDir, ".state", "curl.log");
+    const pipelineLog = join(appDir, ".state", "pipeline.log");
     const unzipLog = join(appDir, ".state", "unzip.log");
     const dispatchCounter = join(appDir, ".state", "dispatch-count.txt");
     process.env.PATH = `${binDir}:${originalPath}`;
-    process.env.TEST_CURL_LOG = curlLog;
+    process.env.TEST_PIPELINE_LOG = pipelineLog;
     process.env.TEST_UNZIP_LOG = unzipLog;
     process.env.TEST_DISPATCH_COUNTER = dispatchCounter;
     process.env.TEST_DISPATCH_STATUS = "204";
@@ -2342,7 +2413,7 @@ exit 0
       );
     } finally {
       process.env.PATH = originalPath;
-      delete process.env.TEST_CURL_LOG;
+      delete process.env.TEST_PIPELINE_LOG;
       delete process.env.TEST_UNZIP_LOG;
       delete process.env.TEST_DISPATCH_COUNTER;
       delete process.env.TEST_DISPATCH_STATUS;
@@ -2357,7 +2428,7 @@ exit 0
       delete process.env.TEST_WORKFLOW_LOOP_KEY;
       delete process.env.TEST_RUN_VIEW_COUNTER;
       delete process.env.TEST_RUN_VIEW_PENDING_COUNT;
-      delete process.env.AKS_RP_E2E_SPEC_VERIFIER_POLL_MS;
+      delete process.env.MAY_ADO_PIPELINES_POLL_MS;
     }
   });
 
@@ -2405,7 +2476,7 @@ exit 0
               context: {
                 windowSize: 1,
                 stateRef: ".state/spec-loop/state.json",
-                githubWorkflow: "run-single-spec.yaml",
+                pipelineWorkflow: "run-single-spec.yaml",
                 target: "staging",
                 branch: "dev",
               },
@@ -2424,7 +2495,7 @@ exit 0
               conflict_scope: ["spec:spec.a"],
               context: {
                 specId: "spec.a",
-                githubWorkflow: "run-single-spec.yaml",
+                pipelineWorkflow: "run-single-spec.yaml",
                 target: "staging",
                 branch: "dev",
                 stateRef: ".state/spec-loop/state.json",

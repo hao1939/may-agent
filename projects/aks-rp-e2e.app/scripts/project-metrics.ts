@@ -75,6 +75,7 @@ type MetricSampleOutput = {
   sampleSize?: number;
   measuredAt?: number;
   note?: unknown;
+  treePath?: string;
 };
 
 type StaleActiveTaskInfo = {
@@ -105,6 +106,20 @@ type SpecLoopState = {
       successorDisposition?: string | null;
       resumeCondition?: string | null;
       review?: Record<string, unknown> | null;
+    }
+  >;
+};
+
+type FeatureCompactLoopState = {
+  features?: Record<
+    string,
+    {
+      status?: string;
+      taskId?: string | null;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
     }
   >;
 };
@@ -186,15 +201,17 @@ function timestampOf(task: TaskNode): number | null {
   return null;
 }
 
+function runtimeTaskTreeConfig() {
+  return taskTreeConfig({
+    appDir: effectiveAppDir,
+    projectDir,
+    worker: "aks-explorer",
+    maxConcurrent: desiredParallelism,
+  });
+}
+
 function loadTaskTree(): TaskTree {
-  return readTaskTree(
-    taskTreeConfig({
-      appDir: effectiveAppDir,
-      projectDir,
-      worker: "aks-explorer",
-      maxConcurrent: desiredParallelism,
-    }),
-  );
+  return readTaskTree(runtimeTaskTreeConfig());
 }
 
 function taskState(task: TaskNode): string {
@@ -242,6 +259,55 @@ function objectRecordField(
   return null;
 }
 
+function taskSearchText(task: TaskNode): string {
+  return JSON.stringify({
+    id: task.id,
+    goal: task.goal,
+    inputs: task.inputs,
+    outputs: task.outputs,
+    acceptance: task.acceptance,
+    conflict_scope: task.conflict_scope,
+    depends_on: task.depends_on,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+  }).toLowerCase();
+}
+
+function blockedOverdueScope(parentId: unknown): string {
+  if (parentId === "aks-spec-verification-loop") return "spec-loop";
+  if (parentId === "aks-feature-compact-loop") return "compact-loop";
+  if (parentId === "project") return "project";
+  return "";
+}
+
+function taskCoversBlockedOverdueWait(
+  candidate: TaskNode,
+  blockedTask: TaskNode,
+): boolean {
+  if (candidate.id === blockedTask.id) return false;
+  if (
+    typeof candidate.id === "string" &&
+    typeof blockedTask.parent_id === "string" &&
+    candidate.id === blockedTask.parent_id
+  ) {
+    return false;
+  }
+  const blockedTaskId =
+    typeof blockedTask.id === "string" ? blockedTask.id.toLowerCase() : "";
+  if (blockedTaskId && taskSearchText(candidate).includes(blockedTaskId)) {
+    return true;
+  }
+
+  const scope = blockedOverdueScope(blockedTask.parent_id);
+  if (!scope) return false;
+  return taskConflictScopes(candidate).some(
+    (conflictScope) =>
+      conflictScope === `ops:blocked-overdue:${scope}` ||
+      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`),
+  );
+}
+
 function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
   if (taskState(task) !== "backlog") return false;
@@ -279,6 +345,10 @@ function taskCounts() {
   const tree = loadTaskTree();
   const taskMap = tree.tasks ?? {};
   const tasks = Object.values(tree.tasks ?? {});
+  const taskIdOrFallback = (task: TaskNode, index: number): string =>
+    typeof task.id === "string" && task.id.trim()
+      ? task.id.trim()
+      : `blocked-leaf#${index}`;
   let frontier: {
     runnable: string[];
     active: string[];
@@ -317,40 +387,85 @@ function taskCounts() {
     (task) => isLeaf(task) && taskState(task) === "blocked",
   );
   const blockedLeaves = blockedLeafTasks.length;
-  const blockedMissingWaitingFor = blockedLeafTasks.filter((task) => {
+  const blockedMissingWaitingForTaskIds = blockedLeafTasks.flatMap(
+    (task, index) => {
+      const blocker = recordValue(task.blocker);
+      return objectRecordField(blocker, ["waiting_for", "waitingFor"])
+        ? []
+        : [taskIdOrFallback(task, index)];
+    },
+  );
+  const blockedMissingObserverTaskIds = blockedLeafTasks.flatMap(
+    (task, index) => {
+      const blocker = recordValue(task.blocker);
+      return !objectRecordField(blocker, ["observed_by", "observedBy"]) ||
+        !stringRecordField(blocker, [
+          "observation_method",
+          "observationMethod",
+        ]) ||
+        !stringRecordField(blocker, ["next_check_at", "nextCheckAt"])
+        ? [taskIdOrFallback(task, index)]
+        : [];
+    },
+  );
+  const blockedMissingResumeConditionTaskIds = blockedLeafTasks.flatMap(
+    (task, index) => {
+      const blocker = recordValue(task.blocker);
+      return !stringRecordField(blocker, [
+        "resume_condition",
+        "resumeCondition",
+        "waitingCondition",
+      ])
+        ? [taskIdOrFallback(task, index)]
+        : [];
+    },
+  );
+  const blockedMissingOwnerTaskIds = blockedLeafTasks.flatMap((task, index) => {
     const blocker = recordValue(task.blocker);
-    return !objectRecordField(blocker, ["waiting_for", "waitingFor"]);
-  }).length;
-  const blockedMissingObserver = blockedLeafTasks.filter((task) => {
-    const blocker = recordValue(task.blocker);
-    return (
-      !objectRecordField(blocker, ["observed_by", "observedBy"]) ||
-      !stringRecordField(blocker, [
-        "observation_method",
-        "observationMethod",
-      ]) ||
-      !stringRecordField(blocker, ["next_check_at", "nextCheckAt"])
-    );
-  }).length;
-  const blockedMissingResumeCondition = blockedLeafTasks.filter((task) => {
-    const blocker = recordValue(task.blocker);
-    return !stringRecordField(blocker, [
-      "resume_condition",
-      "resumeCondition",
-      "waitingCondition",
-    ]);
-  }).length;
-  const blockedMissingOwner = blockedLeafTasks.filter((task) => {
-    const blocker = recordValue(task.blocker);
-    return !stringRecordField(blocker, ["owner"]);
-  }).length;
-  const blockedMissingFallback = blockedLeafTasks.filter((task) => {
-    const blocker = recordValue(task.blocker);
-    return (
-      !stringRecordField(blocker, ["fallback_at", "fallbackAt"]) ||
-      !stringRecordField(blocker, ["fallback_action", "fallbackAction"])
-    );
-  }).length;
+    return !stringRecordField(blocker, ["owner"])
+      ? [taskIdOrFallback(task, index)]
+      : [];
+  });
+  const blockedMissingFallbackTaskIds = blockedLeafTasks.flatMap(
+    (task, index) => {
+      const blocker = recordValue(task.blocker);
+      return !stringRecordField(blocker, ["fallback_at", "fallbackAt"]) ||
+        !stringRecordField(blocker, ["fallback_action", "fallbackAction"])
+        ? [taskIdOrFallback(task, index)]
+        : [];
+    },
+  );
+  const blockedMissingWaitingFor = blockedMissingWaitingForTaskIds.length;
+  const blockedMissingObserver = blockedMissingObserverTaskIds.length;
+  const blockedMissingResumeCondition =
+    blockedMissingResumeConditionTaskIds.length;
+  const blockedMissingOwner = blockedMissingOwnerTaskIds.length;
+  const blockedMissingFallback = blockedMissingFallbackTaskIds.length;
+  const activeOrReviewTasks = tasks.filter((task) =>
+    ["active", "review"].includes(taskState(task)),
+  );
+  const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
+    (task, index) => {
+      const blocker = recordValue(task.blocker);
+      const watchTimes = [
+        stringRecordField(blocker, ["resume_at", "resumeAt"]),
+        stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
+      ]
+        .map((value) => Date.parse(value))
+        .filter((value) => Number.isFinite(value));
+      if (watchTimes.length === 0 || Math.min(...watchTimes) > now) {
+        return [];
+      }
+      const taskId = typeof task.id === "string" ? task.id.toLowerCase() : "";
+      const hasActiveRecovery =
+        taskId &&
+        activeOrReviewTasks.some((candidate) =>
+          taskCoversBlockedOverdueWait(candidate, task),
+        );
+      return hasActiveRecovery ? [] : [taskIdOrFallback(task, index)];
+    },
+  );
+  const blockedOverdueUnworked = blockedOverdueUnworkedTaskIds.length;
   const childRefs = new Set<string>();
   for (const task of Object.values(taskMap)) {
     for (const childId of task.children ?? []) childRefs.add(childId);
@@ -371,10 +486,17 @@ function taskCounts() {
     backlog: byStatus.get("backlog") ?? 0,
     blocked: blockedLeaves,
     blockedMissingWaitingFor,
+    blockedMissingWaitingForTaskIds,
     blockedMissingObserver,
+    blockedMissingObserverTaskIds,
     blockedMissingResumeCondition,
+    blockedMissingResumeConditionTaskIds,
     blockedMissingOwner,
+    blockedMissingOwnerTaskIds,
     blockedMissingFallback,
+    blockedMissingFallbackTaskIds,
+    blockedOverdueUnworked,
+    blockedOverdueUnworkedTaskIds,
     done: byStatus.get("done") ?? 0,
     completed24h,
     taskTreeProblemCount: (roots === 1 ? 0 : 1) + assignmentStateMismatch,
@@ -595,6 +717,13 @@ function loadSpecLoopState(): SpecLoopState {
   );
 }
 
+function loadFeatureCompactLoopState(): FeatureCompactLoopState {
+  return readJson<FeatureCompactLoopState>(
+    join(effectiveAppDir, ".state", "feature-compact-loop", "state.json"),
+    { features: {} },
+  );
+}
+
 function taskContext(task: TaskNode | undefined): Record<string, unknown> {
   return task?.context &&
     typeof task.context === "object" &&
@@ -736,6 +865,27 @@ function taskTextMentionsSpecId(
   return haystack.includes(specId.toLowerCase());
 }
 
+function taskTextMentionsSpecFamily(
+  task: TaskNode | undefined,
+  specId: string,
+): boolean {
+  if (!task) return false;
+  const family = specFamily(specId).trim().toLowerCase();
+  if (!family) return false;
+  const taskRecord = task as TaskNode & {
+    acceptance?: unknown;
+    inputs?: unknown;
+  };
+  const haystack = JSON.stringify({
+    goal: task.goal,
+    acceptance: taskRecord.acceptance,
+    inputs: taskRecord.inputs,
+    context: task.context,
+    blocker: task.blocker,
+  }).toLowerCase();
+  return haystack.includes(family);
+}
+
 function taskTextMentionCountsAsSpecOwner(
   task: TaskNode | undefined,
   specId: string,
@@ -776,9 +926,14 @@ function exactSpecLoopOwnerTaskId(input: {
   const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
     !!task && representingStates.has(taskState(task));
 
+  const candidateSpecTaskId =
+    typeof spec?.taskId === "string" && spec.taskId.trim()
+      ? spec.taskId.trim()
+      : null;
+
   const taskIds = new Set<string>();
-  if (typeof spec?.taskId === "string" && spec.taskId.trim()) {
-    taskIds.add(spec.taskId.trim());
+  if (candidateSpecTaskId) {
+    taskIds.add(candidateSpecTaskId);
   }
   for (const task of Object.values(input.tree.tasks ?? {})) {
     if (!isRepresenting(task)) continue;
@@ -788,10 +943,40 @@ function exactSpecLoopOwnerTaskId(input: {
     }
     if (taskTextMentionCountsAsSpecOwner(task, input.specId)) {
       taskIds.add(task.id ?? "");
+      continue;
+    }
+    if (taskTextMentionsSpecFamily(task, input.specId)) {
+      taskIds.add(task.id ?? "");
     }
   }
 
-  for (const taskId of taskIds) {
+  const orderedTaskIds = [
+    ...taskIds,
+  ].sort((leftId, rightId) => {
+    const left = input.tree.tasks?.[leftId];
+    const right = input.tree.tasks?.[rightId];
+    const leftExact = left
+      ? taskConflictScopes(left).includes(`spec:${input.specId}`) ||
+        taskTextMentionCountsAsSpecOwner(left, input.specId)
+      : false;
+    const rightExact = right
+      ? taskConflictScopes(right).includes(`spec:${input.specId}`) ||
+        taskTextMentionCountsAsSpecOwner(right, input.specId)
+      : false;
+    if (leftExact !== rightExact) return leftExact ? -1 : 1;
+    const leftStructured = left
+      ? taskHasStructuredBlocker(left) || specLoopFollowupGroupKeys(left).size > 0
+      : false;
+    const rightStructured = right
+      ? taskHasStructuredBlocker(right) || specLoopFollowupGroupKeys(right).size > 0
+      : false;
+    if (leftStructured !== rightStructured) return leftStructured ? -1 : 1;
+    if (leftId === candidateSpecTaskId && rightId !== candidateSpecTaskId) return 1;
+    if (rightId === candidateSpecTaskId && leftId !== candidateSpecTaskId) return -1;
+    return leftId.localeCompare(rightId);
+  });
+
+  for (const taskId of orderedTaskIds) {
     const task = input.tree.tasks?.[taskId];
     if (!isRepresenting(task)) continue;
     if (taskConflictScopes(task).includes(`spec:${input.specId}`)) {
@@ -801,6 +986,9 @@ function exactSpecLoopOwnerTaskId(input: {
       return taskId;
     }
     if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
+    if (taskHasStructuredBlocker(task) && taskTextMentionsSpecFamily(task, input.specId)) {
+      return taskId;
+    }
     if (
       spec?.taskId === taskId &&
       specLoopSpecHasStructuredSuccessor(spec) &&
@@ -1043,6 +1231,53 @@ function loadVerifierLivenessByTaskId(): Map<
   return byTaskId;
 }
 
+function featureCompactLoopByTaskId(): Map<
+  string,
+  {
+    featureKey: string;
+    activeAttemptId?: string | null;
+    activeTaskSessionId?: string | null;
+    activeWorkflowRunId?: string | null;
+    heartbeatAt?: string | null;
+  }
+> {
+  const state = loadFeatureCompactLoopState();
+  const byTaskId = new Map<
+    string,
+    {
+      featureKey: string;
+      activeAttemptId?: string | null;
+      activeTaskSessionId?: string | null;
+      activeWorkflowRunId?: string | null;
+      heartbeatAt?: string | null;
+    }
+  >();
+  const features = state.features ?? {};
+  for (const [featureKey, feature] of Object.entries(features)) {
+    if (!feature || typeof feature !== "object") continue;
+    if (feature.status !== "running") continue;
+    if (!feature.taskId || typeof feature.taskId !== "string") continue;
+    byTaskId.set(feature.taskId, {
+      featureKey,
+      activeAttemptId:
+        typeof feature.activeAttemptId === "string"
+          ? feature.activeAttemptId
+          : null,
+      activeTaskSessionId:
+        typeof feature.activeTaskSessionId === "string"
+          ? feature.activeTaskSessionId
+          : null,
+      activeWorkflowRunId:
+        typeof feature.activeWorkflowRunId === "string"
+          ? feature.activeWorkflowRunId
+          : null,
+      heartbeatAt:
+        typeof feature.heartbeatAt === "string" ? feature.heartbeatAt : null,
+    });
+  }
+  return byTaskId;
+}
+
 function countsAsExecutableActiveLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
   if (taskState(task) !== "active") return false;
@@ -1092,7 +1327,9 @@ function activeTaskHasFreshGitHubRun(task: TaskNode): boolean {
     const payload = readJson<Record<string, unknown>>(path, {});
     const nested = recordValue(payload.json) ?? payload;
     const status =
-      typeof nested.status === "string" ? nested.status.trim().toLowerCase() : "";
+      typeof nested.status === "string"
+        ? nested.status.trim().toLowerCase()
+        : "";
     const updatedAt =
       typeof nested.updated_at === "string"
         ? nested.updated_at
@@ -1106,7 +1343,11 @@ function activeTaskHasFreshGitHubRun(task: TaskNode): boolean {
   }
 
   if (!Number.isFinite(freshestMs)) return false;
-  if (!["queued", "pending", "waiting", "requested", "in_progress"].includes(freshestStatus)) {
+  if (
+    !["queued", "pending", "waiting", "requested", "in_progress"].includes(
+      freshestStatus,
+    )
+  ) {
     return false;
   }
   return Date.now() - freshestMs <= staleActiveNoActivityMs;
@@ -1120,6 +1361,10 @@ function activeTaskRestartReason(task: TaskNode): string | null {
       : "";
   const verifierByTaskId = loadVerifierLivenessByTaskId();
   const verifier = taskId ? verifierByTaskId.get(taskId) : undefined;
+  const featureCompactByTaskId = featureCompactLoopByTaskId();
+  const featureCompact = taskId
+    ? featureCompactByTaskId.get(taskId)
+    : undefined;
   const currentAttemptId =
     typeof task.trace?.current_attempt_id === "string"
       ? task.trace.current_attempt_id
@@ -1142,6 +1387,24 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     return "verifier-no-heartbeat";
   }
 
+  if (task.workflow === "feature-compact-planner" && featureCompact) {
+    const heartbeatMs = featureCompact.heartbeatAt
+      ? Date.parse(featureCompact.heartbeatAt)
+      : Number.NaN;
+    const compactAttemptMatches =
+      featureCompact.activeAttemptId != null &&
+      currentAttemptId != null &&
+      featureCompact.activeAttemptId === currentAttemptId;
+    if (
+      Number.isFinite(heartbeatMs) &&
+      Date.now() - heartbeatMs <= staleActiveNoActivityMs
+    ) {
+      return null;
+    }
+    if (featureCompact.activeWorkflowRunId) return null;
+    if (compactAttemptMatches) return "feature-compact-no-heartbeat";
+  }
+
   if (!sessionId) {
     return activeTaskIsWithinStartGrace(task) ? null : "missing-session";
   }
@@ -1158,6 +1421,14 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     const workerReason = sessionRestartReasonFromRow(workerRow);
     if (workerReason === null) return null;
     if (workerReason !== "session-not-running") return workerReason;
+
+    if (
+      task.workflow === "feature-compact-planner" &&
+      featureCompact &&
+      featureCompact.activeWorkflowRunId
+    ) {
+      return null;
+    }
 
     const featureRow = activeTaskFeatureReferenceSessionRow(task);
     const featureReason = sessionRestartReasonFromRow(featureRow);
@@ -1361,6 +1632,10 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
   const openGaps = pathGaps + specs.unverified;
   const live = liveRuns24h();
   const plannerRecent = recentPlannerRuns(24);
+  const healthyActive =
+    tasks.activeRunning > 0
+      ? tasks.activeRunning
+      : Math.max(0, tasks.active - tasks.activeStale);
 
   const values: Record<string, () => MetricSampleOutput> = {
     "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
@@ -1372,7 +1647,7 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       value:
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
-        tasks.activeRunning === 0 &&
+        healthyActive === 0 &&
         openGaps > 0
           ? 1
           : 0,
@@ -1381,7 +1656,7 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       value:
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
-        tasks.activeRunning === 0 &&
+        healthyActive === 0 &&
         tasks.review === 0 &&
         openGaps > 0
           ? 1
@@ -1390,7 +1665,8 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () => ({
       value:
         !tasks.projectClosed &&
-        tasks.runnable + tasks.activeRunning < Math.max(1, desiredParallelism) &&
+        tasks.runnable + tasks.activeRunning <
+          Math.max(1, desiredParallelism) &&
         openGaps > 0
           ? 1
           : 0,
@@ -1401,9 +1677,8 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     }),
     "aks-rp-e2e.process.unowned-work-count": () => {
       const staleActiveTasks = staleActiveTaskDetails();
-      const assignmentMismatches = openTaskAssignmentStateMismatchDetails(
-        loadTaskTree(),
-      );
+      const assignmentMismatches =
+        openTaskAssignmentStateMismatchDetails(loadTaskTree());
       const value = tasks.projectClosed
         ? 0
         : staleActiveTasks.length +
@@ -1442,18 +1717,54 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     }),
     "aks-rp-e2e.process.blocked.missing-waiting-for-count": () => ({
       value: tasks.blockedMissingWaitingFor,
+      sampleSize: tasks.blockedMissingWaitingForTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedMissingWaitingForTaskIds,
+      }),
     }),
     "aks-rp-e2e.process.blocked.missing-observer-count": () => ({
       value: tasks.blockedMissingObserver,
+      sampleSize: tasks.blockedMissingObserverTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedMissingObserverTaskIds,
+      }),
     }),
     "aks-rp-e2e.process.blocked.missing-resume-condition": () => ({
       value: tasks.blockedMissingResumeCondition,
+      sampleSize: tasks.blockedMissingResumeConditionTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedMissingResumeConditionTaskIds,
+      }),
     }),
     "aks-rp-e2e.process.blocked.missing-owner-count": () => ({
       value: tasks.blockedMissingOwner,
+      sampleSize: tasks.blockedMissingOwnerTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedMissingOwnerTaskIds,
+      }),
     }),
     "aks-rp-e2e.process.blocked.missing-fallback-count": () => ({
       value: tasks.blockedMissingFallback,
+      sampleSize: tasks.blockedMissingFallbackTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedMissingFallbackTaskIds,
+      }),
+    }),
+    "aks-rp-e2e.process.blocked.overdue-unworked-count": () => ({
+      value: tasks.blockedOverdueUnworked,
+      sampleSize: tasks.blockedOverdueUnworkedTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedOverdueUnworkedTaskIds,
+      }),
+    }),
+    "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count": () => ({
+      value: tasks.blockedOverdueUnworked,
+      sampleSize: tasks.blockedOverdueUnworkedTaskIds.length,
+      note: JSON.stringify({
+        offenderTaskIds: tasks.blockedOverdueUnworkedTaskIds,
+        compatibilityAliasFor:
+          "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      }),
     }),
     "aks-rp-e2e.model.unknown-path-count": () => ({
       value: (pathStatus.unknown ?? 0) + (pathStatus["source-enumerated"] ?? 0),
@@ -1530,7 +1841,11 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
   if (!compute) {
     throw new Error(`Unknown metric id: ${metricId}`);
   }
-  return { measuredAt: Date.now(), ...compute() };
+  return {
+    measuredAt: Date.now(),
+    treePath: runtimeTaskTreeConfig().treePath,
+    ...compute(),
+  };
 }
 
 const metricId = process.argv[2];

@@ -155,7 +155,7 @@ describe("project stall review", () => {
       "project.stall.reviewed (needs-work, fallback)",
     );
     expect(prompts).toHaveLength(1);
-    expect(prompts[0]).toContain("Owner Deep-Dive Fallback");
+    expect(prompts[0]).toContain("App-Ops Deep-Dive Fallback");
     expect(prompts[0]).toContain("Workflow code collected the packet");
     expect(prompts[0]).toContain("spec.virtualmachines.example");
     expect(prompts[0]).toContain("Review mode: fallback");

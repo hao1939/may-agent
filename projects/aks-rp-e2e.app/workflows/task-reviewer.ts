@@ -62,6 +62,34 @@ function taskTrace(task: TaskNode): Record<string, unknown> {
     : {};
 }
 
+function taskContext(task: TaskNode): Record<string, unknown> {
+  return task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+    ? (task.context as Record<string, unknown>)
+    : {};
+}
+
+function taskContextString(task: TaskNode, key: string): string {
+  const value = taskContext(task)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function isFixForwardTask(task: TaskNode): boolean {
+  return taskContextString(task, "workflow") === "fix-forward";
+}
+
+function hasTerminalPipelineWaitReview(task: TaskNode): boolean {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  return Boolean(
+    recordValue(context.terminalPipelineWaitReview) ||
+    recordValue(context.terminalGitHubWaitReview) ||
+    textValue(trace.terminal_pipeline_wait_run_id) ||
+    textValue(trace.terminal_github_wait_run_id),
+  );
+}
+
 function currentAttemptId(task: TaskNode): string {
   const value = taskTrace(task).current_attempt_id;
   return typeof value === "string" ? value : "";
@@ -189,13 +217,229 @@ function evidenceRefs(completion: Record<string, unknown>): string[] {
   );
 }
 
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function workflowResultDetails(
+  completion: Record<string, unknown>,
+): Record<string, unknown> {
+  const workflowResult =
+    recordValue(completion.workflowResult) ??
+    recordValue(completion.workflow_result);
+  return recordValue(workflowResult?.details) ?? {};
+}
+
+function textValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function fixForwardMissingFields(
+  completion: Record<string, unknown>,
+): string[] {
+  const details = workflowResultDetails(completion);
+  const fixForward = recordValue(details.fixForward);
+  if (!fixForward) return ["workflowResult.details.fixForward"];
+
+  const missing: string[] = [];
+  if (textValue(fixForward.workflow) !== "fix-forward") {
+    missing.push("fixForward.workflow");
+  }
+  if (!recordValue(fixForward.subject)) missing.push("fixForward.subject");
+  if (!textValue(fixForward.classification)) {
+    missing.push("fixForward.classification");
+  }
+  if (!textValue(fixForward.diagnosis)) missing.push("fixForward.diagnosis");
+  if (!recordValue(fixForward.minimumDiagnosisPacket)) {
+    missing.push("fixForward.minimumDiagnosisPacket");
+  }
+  if (!recordValue(fixForward.verification)) {
+    missing.push("fixForward.verification");
+  }
+  if (!textValue(fixForward.nextAction)) {
+    missing.push("fixForward.nextAction");
+  }
+  if (!textValue(fixForward.nextActionReason)) {
+    missing.push("fixForward.nextActionReason");
+  }
+  return missing;
+}
+
+function completedSpecVerification(
+  completion: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const workflowResult =
+    recordValue(completion.workflowResult) ??
+    recordValue(completion.workflow_result);
+  const workflow = textValue(workflowResult?.workflow);
+  if (
+    workflow !== "single-spec-verifier" &&
+    workflow !== "spec-result-review"
+  ) {
+    return null;
+  }
+  const details = recordValue(workflowResult?.details);
+  if (!details) return null;
+  return {
+    ...details,
+    status: workflowResult.status,
+    subject: workflowResult.subject,
+    artifacts: workflowResult.artifacts,
+  };
+}
+
+function completedSpecVerificationResults(
+  completion: Record<string, unknown>,
+): Array<Record<string, unknown>> {
+  const verification = completedSpecVerification(completion);
+  if (!verification) return [];
+  const runId = textValue(verification.runId);
+  const runUrl = textValue(verification.runUrl);
+  const aggregateResultPath = textValue(verification.resultPath);
+  const aggregateLiveVerified = verification.liveVerified === true;
+  const aggregateLiveClusterObserved =
+    verification.liveClusterObserved === true || aggregateLiveVerified;
+  const aggregateResourceGroup = textValue(verification.resourceGroup);
+  const aggregateClusterName = textValue(verification.clusterName);
+  const subject = recordValue(verification.subject);
+  const rawSpecResults = Array.isArray(verification.specResults)
+    ? verification.specResults
+    : [];
+
+  if (rawSpecResults.length === 0) {
+    return [
+      {
+        ...verification,
+        specId: textValue(subject?.id) || textValue(verification.specId),
+        specStatus: textValue(verification.specStatus),
+        liveVerified: aggregateLiveVerified,
+        liveClusterObserved: aggregateLiveClusterObserved,
+        resourceGroup: aggregateResourceGroup,
+        clusterName: aggregateClusterName,
+      },
+    ];
+  }
+
+  return rawSpecResults
+    .map((entry) => recordValue(entry))
+    .filter((entry): entry is Record<string, unknown> => !!entry)
+    .map((entry) => {
+      const artifactRefs = stringList(entry.artifactRefs);
+      const resultPath =
+        textValue(entry.resultPath) ||
+        artifactRefs.find((ref) => /result\.json$/i.test(ref)) ||
+        aggregateResultPath;
+      return {
+        ...entry,
+        runId: textValue(entry.runId) || runId,
+        runUrl: textValue(entry.runUrl) || runUrl,
+        resultPath,
+        specStatus: textValue(entry.specStatus) || textValue(entry.status),
+        reason: textValue(entry.reason) || textValue(verification.reason),
+        liveVerified:
+          entry.liveVerified === true ||
+          (aggregateLiveVerified && textValue(entry.status) === "pass"),
+        liveClusterObserved:
+          entry.liveClusterObserved === true || aggregateLiveClusterObserved,
+        resourceGroup: textValue(entry.resourceGroup) || aggregateResourceGroup,
+        clusterName: textValue(entry.clusterName) || aggregateClusterName,
+      };
+    });
+}
+
 function deterministicReviewForCompletion(
+  task: TaskNode,
   completion: Record<string, unknown>,
 ): StructuredReview | null {
-  if (
-    completionSummary(completion) === EMPTY_ASSISTANT_TURN &&
-    evidenceRefs(completion).length === 0
-  ) {
+  const summary = completionSummary(completion);
+  const evidence = evidenceRefs(completion);
+  const specVerificationResults = completedSpecVerificationResults(completion);
+  if (specVerificationResults.length) {
+    const terminalWaitReview = hasTerminalPipelineWaitReview(task);
+    const validResults = specVerificationResults.filter((result) => {
+      const specStatus = textValue(result.specStatus);
+      const liveVerified = result.liveVerified === true;
+      return (
+        textValue(result.resultPath) &&
+        textValue(result.runId) &&
+        (specStatus === "pass" ||
+          specStatus === "fail" ||
+          specStatus === "error") &&
+        (specStatus !== "pass" || liveVerified)
+      );
+    });
+    if (validResults.length === specVerificationResults.length) {
+      const statuses = validResults.map((result) =>
+        textValue(result.specStatus),
+      );
+      const allPassed = statuses.every((status) => status === "pass");
+      const grouped = validResults.length > 1;
+      const runIds = [
+        ...new Set(validResults.map((result) => textValue(result.runId))),
+      ];
+      const resultPaths = validResults.map((result) =>
+        textValue(result.resultPath),
+      );
+      return {
+        decision: "accept",
+        confidence: "high",
+        summary: allPassed
+          ? terminalWaitReview
+            ? "Terminal pipeline wait review consumed the returned artifact and proved a same-spec live AKS pass."
+            : "Structured artifact review consumed the returned artifact and proved a same-spec live AKS pass."
+          : grouped
+            ? terminalWaitReview
+              ? "Terminal pipeline wait review consumed the returned artifact and recorded same-spec non-passing result(s)."
+              : "Structured artifact review consumed the returned artifact and recorded same-spec non-passing result(s)."
+            : terminalWaitReview
+              ? "Terminal pipeline wait review consumed the returned artifact and recorded a same-spec non-passing result."
+              : "Structured artifact review consumed the returned artifact and recorded a same-spec non-passing result.",
+        findings: [
+          ...runIds.map((runId) => `run:${runId}`),
+          ...resultPaths.map((resultPath) => `result:${resultPath}`),
+          ...[...new Set(statuses)].map((status) => `status:${status}`),
+          ...(grouped
+            ? validResults.map(
+                (result) =>
+                  `spec:${textValue(result.specId) || textValue(result.id) || "unknown"}:${textValue(result.specStatus)}`,
+              )
+            : []),
+          ...validResults.map(
+            (result) =>
+              `liveClusterObserved:${String(result.liveClusterObserved === true)}`,
+          ),
+          ...validResults
+            .map((result) => `resourceGroup:${textValue(result.resourceGroup)}`)
+            .filter((item) => !item.endsWith(":")),
+          ...validResults
+            .map((result) => `clusterName:${textValue(result.clusterName)}`)
+            .filter((item) => !item.endsWith(":")),
+        ],
+        feedback: [],
+        suggestedFollowups: [],
+      };
+    }
+    const firstResult = specVerificationResults[0] ?? {};
+    return {
+      decision: "redo",
+      confidence: "high",
+      summary:
+        "Terminal pipeline wait review returned structured spec data, but it did not prove a same-spec live AKS verdict.",
+      findings: [
+        `run:${textValue(firstResult.runId) || "missing"}`,
+        `result:${textValue(firstResult.resultPath) || "missing"}`,
+        `status:${textValue(firstResult.specStatus) || "missing"}`,
+        `liveVerified:${String(firstResult.liveVerified === true)}`,
+      ],
+      feedback: [
+        "Redo the domain review from the exact run artifact. Accept only when each returned spec has a result path, run id, same-spec status, and live proof for any pass verdict.",
+      ],
+      suggestedFollowups: [],
+    };
+  }
+  if (summary === EMPTY_ASSISTANT_TURN && evidence.length === 0) {
     return {
       decision: "redo",
       confidence: "high",
@@ -207,6 +451,50 @@ function deterministicReviewForCompletion(
       ],
       suggestedFollowups: [],
     };
+  }
+  if (
+    hasTerminalPipelineWaitReview(task) &&
+    /\b(?:azure devops pipeline|github workflow|workflow|pipeline) run \d{6,} is terminal\b/i.test(
+      summary,
+    ) &&
+    /\breview (?:the )?(?:run |compact run )?artifact\/result\b/i.test(
+      summary,
+    ) &&
+    evidence.length === 0
+  ) {
+    return {
+      decision: "redo",
+      confidence: "high",
+      summary:
+        "Terminal pipeline wait review did not consume the returned run artifacts; it only repeated that the run is terminal.",
+      findings: [
+        "terminal-pipeline-wait-not-reviewed",
+        "worker-returned-review-request-instead-of-result",
+      ],
+      feedback: [
+        "Redo the same domain review from the run id/spec ids. Download or locate the artifact bundle, inspect the exact result.json/spec-runner result, and return a concrete pass/fail/error classification with evidence path. Do not mutate task tree or app loop state.",
+      ],
+      suggestedFollowups: [],
+    };
+  }
+  if (isFixForwardTask(task)) {
+    const missing = fixForwardMissingFields(completion);
+    if (missing.length > 0) {
+      return {
+        decision: "redo",
+        confidence: "high",
+        summary:
+          "Fix-forward completion is missing required structured diagnosis fields, so the planner should not accept it as a real fix, wait, or terminal finding.",
+        findings: [
+          "fix-forward-structured-result-missing",
+          ...missing.map((field) => `missing:${field}`),
+        ],
+        feedback: [
+          "Redo the task and finish with FIX_FORWARD_RESULT containing subject, classification, diagnosis, minimumDiagnosisPacket, verification, nextAction, and nextActionReason.",
+        ],
+        suggestedFollowups: [],
+      };
+    }
   }
   return null;
 }
@@ -243,6 +531,27 @@ Decision meanings:
 - followup: current work is useful but needs a concrete successor.
 - blocked: a real external/environment/product wait remains.
 - escalate: owner/human judgment is required before deciding.
+
+For metric, watchdog, blocked-frontier, and overdue-wait audit tasks, verify
+that the worker measured the baseline as if the audited task itself did not
+exist. Do not accept an audit that concludes "few/no contributors remain" only
+because the audit task's own goal text, conflict scope, active state, or review
+state references and suppresses the blocked waits under inspection.
+
+For fix-forward tasks, do not infer success from prose. Accept only when the
+completion includes structured fix-forward details with subject,
+classification, diagnosis, minimumDiagnosisPacket, verification, nextAction,
+and nextActionReason. If the worker reported a tool, agent, pipeline, provider,
+or artifact failure, review that as workflow/process failure, not AKS product
+proof.
+
+For terminal Azure DevOps pipeline wait reviews, accept only a real domain
+review result. The worker must locate or download the returned run artifacts,
+inspect the exact result.json/spec-runner result for the named spec or compact
+branch, and cite the result path plus pass/fail/error facts. Do not accept a
+completion that merely says the pipeline is terminal and should be reviewed.
+The domain worker must not mutate the task tree or app loop state; it returns
+evidence/results for the app to consume.
 
 Finish with exactly one structured block:
 
@@ -418,7 +727,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence_refs: triggerValue(trigger, "evidence_refs"),
         };
 
-  let review = deterministicReviewForCompletion(completion);
+  let review = deterministicReviewForCompletion(task, completion);
   if (!review) {
     let reviewerResult: unknown;
     try {

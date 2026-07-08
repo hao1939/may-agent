@@ -15,6 +15,94 @@ Project operating knowledge -> how May-agent keeps the work moving
 
 The app should keep this boundary visible in docs, tasks, workflows, and code.
 
+Use convention over configuration for this boundary. Do not add a task field
+such as `workKind` just to say whether work is domain or ops. The task tree
+scope, task id, workflow name, and UI grouping should make the answer visible.
+
+The convention is:
+
+```text
+domain/spec/...       -> AKS spec/test/model work
+domain/feature/...    -> AKS feature reference/model work
+domain/compact/...    -> AKS compact planning and live proof work
+domain/focus/...      -> AKS outcome-focused mission work
+
+ops/watchdog/...      -> project liveness observation
+ops/stall-review/...  -> process diagnosis
+ops/recovery/...      -> repair/retry/escalation plumbing
+ops/observability/... -> metrics, UI, event closure, integrity checks
+```
+
+Existing durable loop names such as `aks-spec-verification-loop`,
+`aks-feature-reference-loop`, and `aks-feature-compact-loop` remain valid. They
+are domain loops because their visible scope is AKS specs, features, and compact
+tests. New work should use readable scope/id prefixes rather than hidden
+classification fields.
+
+The simple rule is:
+
+```text
+If it changes AKS knowledge, specs, tests, plans, or live result understanding,
+it is domain work.
+
+If it keeps the app moving, observes process health, repairs routing, or
+escalates stuck work, it is ops work.
+```
+
+System ops must not decide AKS correctness. Domain work must not own whole-app
+health. The planner may connect them by creating a domain repair task for an AKS
+failure, or an ops repair task when the project machinery is the problem.
+
+## One Tree, Two Roots
+
+Keep one project task tree. Split it by visible roots:
+
+```text
+root
+  domain/
+    spec/
+    feature/
+    compact/
+    focus/
+
+  ops/
+    observability/
+    watchdog/
+    stall-review/
+    recovery/
+    escalation/
+```
+
+Do not create a second task tree just for ops. One tree keeps one project truth:
+the human can see when domain work is stuck because ops is broken, and when ops
+work exists only to unblock domain progress.
+
+Ownership can still be split:
+
+```text
+aks-explorer -> works under domain/*
+app-ops      -> works under ops/* and runs planner judgment
+aks-reviewer -> reviews completed task output, read-only
+planner workflow -> applies app-ops decisions to the shared task tree
+```
+
+`app-ops` is allowed to inspect metrics, event traces, workflow runs, loop
+ledgers, task state, and UI/readout gaps. It may fix project machinery, create
+ops repair tasks, run planner judgment, or escalate process failures. It must
+not declare an AKS spec correct or incorrect.
+
+`aks-explorer` is allowed to update AKS knowledge, specs, generated tests,
+compact plans, and live result understanding. It should not own whole-app
+liveness, event closure, watchdog recovery, or observability repair.
+
+`aks-reviewer` stays read-only. It checks whether completed work satisfies the
+task acceptance criteria and emits structured review facts for the planner. It
+does not mutate the task tree and does not own either root.
+
+If ops becomes a shared platform project used by many apps, a separate ops task
+tree may be justified later. For `aks-rp-e2e.app`, two roots in one tree is the
+default because it is simpler and easier to audit.
+
 ## Layer 1: AKS Knowledge Model
 
 AKS knowledge model is business/domain knowledge. It answers:
@@ -113,11 +201,12 @@ This knowledge belongs in the app control plane:
 ```text
 aks-rp-e2e.app/
   app.ts
-  tasks/tree.json
+  tasks/seed.json
   workflows/
   design/
   scripts/
   ui/
+  .state/tasks/tree.json
   .state/<loop>/state.json
 ```
 
@@ -140,7 +229,7 @@ Direct human/agent use can call the same workflow with structured input:
 ```text
 human instruction
   -> workflow under workflows/
-  -> domain command, GitHub run, or artifact update
+  -> domain command, Azure DevOps pipeline run, or artifact update
   -> structured workflowResult
   -> agent reports the result
 ```
@@ -150,7 +239,7 @@ App-managed use wraps the same workflow in task state:
 ```text
 task context
   -> workflow under workflows/
-  -> domain command, GitHub run, or artifact update
+  -> domain command, Azure DevOps pipeline run, or artifact update
   -> structured workflowResult
   -> project.task.completed
   -> task-reviewer judgment
@@ -190,7 +279,7 @@ loop completion.
 ```text
 knowledge claim / test intent
   -> generated spec
-  -> standalone live GitHub run
+  -> standalone live Azure DevOps pipeline run
   -> result.json and workflow URL
   -> pass/fail/error classification
   -> model/spec/test/investigation update until understood and live-proven
@@ -207,7 +296,7 @@ feature claims and specs
   -> resource/state DAG
   -> compact plan
   -> generated Vitest tests
-  -> live GitHub proof
+  -> live pipeline proof
 ```
 
 The compact planner should be brave about sharing setup only when the
@@ -235,6 +324,11 @@ project.planning.requested
 Completion is not acceptance. A worker says what happened; the reviewer judges
 it; the planner changes the tree.
 
+`project.task.assigned` is the dispatch event. The planner or loop controller
+does not "assign" in a manual management sense; it emits the event that tells
+`task-worker` to start a runnable task. If a task is created but not dispatched,
+it must either remain intentional backlog or carry an exact blocked wait.
+
 ### Durable Value Loops
 
 The three durable loops are normal tasks with controller workflows:
@@ -252,7 +346,7 @@ Durable loop roots are woken with `project.task.tick`, not consumed as normal
 worker leaves. `project.task.assigned` is for executable children created by a
 controller, such as `single-spec-verifier`, `feature-reference-collector`, or
 `feature-compact-planner`. The planner may bridge an accidental loop-root
-assignment into a tick, but the design source of truth is:
+dispatch into a tick, but the design source of truth is:
 
 ```text
 project.task.tick + action=<loop-action>
@@ -307,7 +401,7 @@ with overwritten rejection history.
 - Tasks are for breaking up, tracking, retrying, blocking, and reviewing work;
   direct human/agent work can use the same workflow without first creating a
   task.
-- `tasks/tree.json` is the visible work frontier.
+- The live task tree is the visible work frontier.
 - Loop state is operating memory and must be represented by task-tree work when
   non-terminal records exist.
 - `workflowResult` carries machine-readable facts; summaries are review

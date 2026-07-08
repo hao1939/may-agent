@@ -177,9 +177,7 @@
             "at": "2026-07-06T05:13:53.247Z",
             "summary": "2026-07-06 metric.recovered for unpublished-change-count is accepted as a resolved hygiene-clear event, not new project work: the prior repo-change breach is now back at 0, the finished checkpoint-slice review is archived on this parent, and the live planning frontier remains the two compact reconciliation retries plus the active traffic-alb-controller source-boundary repair. To reduce blocked-source churn, the LocalDNS exact-source wait was replaced by a concrete repo-local source-equivalent successor queued behind current feature-local conflict scope.",
             "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "review-unpublished-change-checkpoint-slice-20260706"
-            ]
+            "task_ids": ["review-unpublished-change-checkpoint-slice-20260706"]
           },
           {
             "archive": "tasks/archive/done-leaves-20260706044445012.json",
@@ -208,9 +206,7 @@
             "at": "2026-07-06T01:47:02.310Z",
             "summary": "2026-07-06 metric-breach owner review accepted the mixed unpublished-change classification and kept the root aligned to the real frontier. The broad repo dirt after checkpoint b2c35279a5d2cfc2cdebad1b52e036042f7773b9 is not one truthful publication slice: it spans compact/spec review-sync summaries, blocked-family maintenance, active storage-csi source/test authoring, and shared runner/model spillover. So no new checkpoint or filler backlog is truthful. Immediate project motion remains the existing active focus-storage-csi-live-readiness-and-checkpoint-hygiene-20260706 branch, while compact/spec durable loop roots stay as support/controller lanes rather than separate ad hoc refill work.",
             "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "checkpoint-unpublished-compact-slice-20260706"
-            ]
+            "task_ids": ["checkpoint-unpublished-compact-slice-20260706"]
           },
           {
             "archive": "tasks/archive/done-leaves-20260706012228794.json",
@@ -250,24 +246,19 @@
         "../aks-rp-e2e/specs/index.json",
         "../aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt"
       ],
-      "outputs": [
-        ".state/spec-loop/state.json",
-        "tasks/tree.json"
-      ],
+      "outputs": [".state/spec-loop/state.json", "tasks/tree.json"],
       "acceptance": [
         "Every executable spec is pass in spec-loop state, or has a reviewed terminal escalation explaining why it cannot be made pass with bounded repo-local work.",
         "Every fail/error has an exact root-cause classification and either a repair-and-rerun successor or an escalation record with affected specs, attempted fixes, owner/environment/product reason, and resume condition.",
-        "The controller keeps up to the configured targetRunning GitHub workflows moving while pending or retryable specs exist.",
+        "The controller keeps up to the configured targetRunning Azure DevOps pipeline runs moving while pending or retryable specs exist.",
         "No non-pass result is hidden as completion merely because direct retry budget was exhausted."
       ],
       "forbidden": [],
-      "conflict_scope": [
-        "spec-loop"
-      ],
+      "conflict_scope": ["spec-loop"],
       "context": {
         "windowSize": 5,
         "stateRef": ".state/spec-loop/state.json",
-        "githubWorkflow": "run-single-spec.yaml",
+        "adoPipeline": "ado-pipeline-467665",
         "target": "staging",
         "branch": "dev",
         "priorityFeatureSet": "dev-infra-core",
@@ -289,7 +280,7 @@
           "targetRunning": 5,
           "maxDirectAttemptsPerSpec": 3,
           "activeGithubRuns": 0,
-          "githubActiveRunLimit": 6,
+          "adoActiveRunLimit": 6,
           "retryBudgetExhausted": 5,
           "unrepresentedNonTerminalCount": 0,
           "surplusRunning": 0,
@@ -462,9 +453,7 @@
         "The loop remains present in tasks/tree.json until explicitly retired."
       ],
       "forbidden": [],
-      "conflict_scope": [
-        "feature-reference-loop"
-      ],
+      "conflict_scope": ["feature-reference-loop"],
       "depends_on": [],
       "context": {
         "windowSize": 30,
@@ -750,9 +739,7 @@
         "Controller pulses keep a bounded child frontier filled from pending/error compact features until all feature compact packages pass live on GitHub."
       ],
       "forbidden": [],
-      "conflict_scope": [
-        "feature-compact-loop"
-      ],
+      "conflict_scope": ["feature-compact-loop"],
       "depends_on": [],
       "context": {
         "windowSize": 5,
@@ -775,7 +762,7 @@
           "unrepresentedErrorCount": 0,
           "unrepresentedNonTerminalCount": 0,
           "activeGithubRuns": 0,
-          "githubActiveRunLimit": 5,
+          "adoActiveRunLimit": 5,
           "openChildren": 0,
           "openSupportChildren": 2,
           "blockedWaitChildren": 33,
@@ -840,9 +827,7 @@
             "at": "2026-07-06T05:14:31.028Z",
             "summary": "2026-07-06 planning review accepts the exact-scope live-workflow compact reconciliation as complete for this slice: evidence/archive/reconcile-compact-loop-live-workflow-exact10-final-20260706045523-worker.md remains the controlling note for the ten sampled features, current summaries/state still match that classification set, and the only newly noticed traffic-azure-service-mesh artifact-directory signal is not authoritative enough to reopen or reclassify the family. Package-partial remains the single active compact reconciliation attempt.",
             "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "reconcile-compact-loop-live-workflow"
-            ]
+            "task_ids": ["reconcile-compact-loop-live-workflow"]
           },
           {
             "archive": "tasks/archive/done-leaves-20260706050917562.json",
@@ -868,9 +853,7 @@
             "at": "2026-07-06T04:44:45.066Z",
             "summary": "2026-07-06 owner hygiene rollup keeps the compact loop aligned to the real frontier after the stale blocked-owner alert. The package-partial family now moves through the active 24-error reconciliation leaf plus the active traffic-api-proxy live-workflow follow-up, while the reviewed compact holders remain the truthful blocked representatives for product/runtime waits. Archive the earlier completed package-partial review leaf because its durable meaning is already carried by this parent summary and the current active successor.",
             "reason": "owner rolled up completed child tasks",
-            "task_ids": [
-              "reconcile-compact-loop-package-partial"
-            ]
+            "task_ids": ["reconcile-compact-loop-package-partial"]
           },
           {
             "archive": "tasks/archive/done-leaves-20260706043228515.json",
@@ -902,8 +885,8 @@
         ],
         "acceptance_note": "Accepted the stale-active watchdog review: the durable compact-loop root currently has no pending or running features, no open children, and workflowProgress.completionReady=true, so it should remain present as a completed/supporting loop root rather than consume a live runnable slot until a concrete compact artifact repair or new carrier-quality signal reopens the lane.",
         "liveParallel": 1,
-        "throttleReason": "Bounded compact live dispatch: up to 5 GitHub workflows concurrently, one live plan worker per workflow, so ready compact packages keep verifying without per-plan fan-out.",
-        "githubActiveRunLimit": 5
+        "throttleReason": "Bounded compact live dispatch: up to 5 Azure DevOps pipeline runs concurrently, one live plan worker per run, so ready compact packages keep verifying without per-plan fan-out.",
+        "adoActiveRunLimit": 5
       },
       "state": "backlog",
       "children": []
@@ -916,9 +899,7 @@
       "owner": "aks-explorer",
       "goal": "Keep the single useful live representation of the shared westus2 managed-cluster capacity external wait across compact app-monitoring, compact managementplane-addon, the seven spec.managementplane-addon pending single-spec carriers, and spec.windows-calico.vm-prerelease-containerd, so duplicate environment waits stay replaced until a reviewed return arrives.",
       "inputs": [],
-      "outputs": [
-        "/app/projects/aks-rp-e2e/evidence/archive/"
-      ],
+      "outputs": ["/app/projects/aks-rp-e2e/evidence/archive/"],
       "acceptance": [
         "One blocked leaf now carries the shared westus2 managed-cluster capacity family for compact app-monitoring, compact managementplane-addon, the seven spec.managementplane-addon pending single-spec carriers, and spec.windows-calico.vm-prerelease-containerd, citing accepted reconciliation evidence and preserving the exact affected branches/features.",
         "Resume condition requires returned westus2 managed-cluster create headroom/quota proof for the same staging surface or an owner-approved replacement target; unchanged local reruns and duplicate passive waits remain forbidden."
@@ -979,9 +960,7 @@
             "reconcile-compact-loop-package-partial-202607051818",
             "verify-spec-private-cluster-none-private-dns-zone-v3"
           ],
-          "linked_waiting_task_ids": [
-            "repair-spec-loop-policy-localdns"
-          ],
+          "linked_waiting_task_ids": ["repair-spec-loop-policy-localdns"],
           "linked_controller_root_ids": [
             "aks-feature-compact-loop",
             "aks-spec-verification-loop"
@@ -1125,16 +1104,12 @@
       "owner": "aks-explorer",
       "goal": "Preserve the single useful cross-loop wait for secure-tls-bootstrap run 28676958643 after the network-isolated Direct disable payload repair, covering the active compact state-writeback branch and the spec-loop pending secure-tls-bootstrap family until that exact rerun is reviewable.",
       "inputs": [],
-      "outputs": [
-        "evidence/archive/"
-      ],
+      "outputs": ["evidence/archive/"],
       "acceptance": [
         "The tree has one family-level wait that names run 28676958643, the affected compact/spec branches, and the exact resume step to review that same run's artifacts before any new rerun decision."
       ],
       "forbidden": [],
-      "conflict_scope": [
-        "feature:secure-tls-bootstrap"
-      ],
+      "conflict_scope": ["feature:secure-tls-bootstrap"],
       "depends_on": [],
       "state": "backlog",
       "children": []

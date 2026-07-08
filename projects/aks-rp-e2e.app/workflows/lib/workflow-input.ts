@@ -123,10 +123,10 @@ export function resultText(result: unknown): string {
   const runtimeError =
     nonEmptyString(typed.errorMessage) || errorText(typed.error);
   return (
+    runtimeError ||
     nonEmptyString(typed.message) ||
     nonEmptyString(typed.summary) ||
     finishSummary ||
-    runtimeError ||
     nonEmptyString(typed.lastAssistantText) ||
     nonEmptyString(typed.status) ||
     JSON.stringify(result) ||
