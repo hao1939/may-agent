@@ -21,6 +21,8 @@ interface TaskResult {
   duration: string;
   outputDir: string;
   error?: string;
+  /** Provider/runtime error surfaced on the terminal assistant message, when present. */
+  errorMessage?: string;
   /** Number of assistant turns completed in this session. */
   turnsUsed?: number;
   /** Structured data from the agent's finish() tool call, if one was made. */

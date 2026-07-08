@@ -99,6 +99,8 @@ export interface TaskResult {
   duration: string;
   outputDir: string;
   error?: string;
+  /** Provider/runtime error surfaced on the terminal assistant message, when present. */
+  errorMessage?: string;
   /** Number of assistant turns completed in this session. */
   turnsUsed?: number;
   /** P20 Tainted Handoffs: instability metrics for downstream verification decisions. */
