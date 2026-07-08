@@ -311,12 +311,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked paths",
     type: "gauge",
     target: 0,
-    threshold: 45,
+    threshold: 9,
     unit: "count",
     alertOp: ">",
     priority: "P3",
     description:
-      "Impact signal: repo-local path.status=blocked entries should become unblock or human-decision tasks. This metric intentionally excludes path.status=blocked-infra because structural terminal infra gates are tracked separately and should not breach the blocked-path counter. Threshold 14→45, P2→P3 reflects normal transient staging-wave blocked volume; review when blocked path volume alone exceeds that lane. Measurement contract clarified 2026-06-28.",
+      "Impact signal: repo-local path.status=blocked entries should become unblock or human-decision tasks. The count intentionally excludes blocked-infra, accepted terminal/awaiting-external blocked paths, and blocked paths that already carry an exact resumeCondition/retestCondition because those are already represented by exact waits or durable exceptions. Threshold 45→9 after 2026-07-08 triage aligned the metric to the remaining blocked paths that still lack a terminal or exact-wait disposition.",
   },
   {
     id: "aks-rp-e2e.feature.unknown-count",

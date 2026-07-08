@@ -1206,6 +1206,49 @@ describe("project metrics", () => {
     );
   });
 
+  test("counts only blocked model paths that still lack a terminal or exact-wait disposition", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      join(fixture.projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            { id: "path.actionable", status: "blocked" },
+            {
+              id: "path.resume-wait",
+              status: "blocked",
+              resumeCondition: "resume when exact source returns",
+            },
+            {
+              id: "path.retest-wait",
+              status: "blocked",
+              retestCondition: "retry only after staging image changes",
+            },
+            { id: "path.terminal-flag", status: "blocked", terminal: true },
+            {
+              id: "path.terminal-remediation",
+              status: "blocked",
+              remediationStatus: "terminal",
+            },
+            {
+              id: "path.awaiting-external",
+              status: "blocked",
+              remediationStatus: "awaiting-external",
+            },
+            { id: "path.blocked-infra", status: "blocked-infra" },
+            { id: "path.pass", status: "pass" },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.model.blocked-path-count"),
+    ).toBe("1");
+  });
+
   test("counts project repo changes that have not been committed and pushed", async () => {
     const fixture = await makeFixture();
     await $`git init`.cwd(fixture.projectDir).quiet();

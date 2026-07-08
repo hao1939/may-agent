@@ -598,6 +598,10 @@ function modelStatus(): ModelStatus {
   return computeModelStatus();
 }
 
+function hasText(value: string | null | undefined): boolean {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function pathGapCount(): number {
   // Read model directly to check both status and terminal flag per path.
   // Terminal paths (externally blocked, product-gap, etc.) are not actionable
@@ -612,6 +616,38 @@ function pathGapCount(): number {
       !["pass", "staging-pass"].includes(p.status ?? "unknown") &&
       p.terminal !== true,
   ).length;
+}
+
+function blockedPathCount(): number {
+  // This metric is meant to surface blocked paths that still need actionable
+  // closure work. Paths that already carry an accepted terminal disposition or
+  // an exact resume/retest condition are represented elsewhere and should not
+  // keep the blocked-path alert open by themselves.
+  const modelPath = join(projectDir, "model", "knowledge-map", "model.json");
+  const model = readJson<{
+    featurePaths?: Array<{
+      status?: string;
+      terminal?: boolean;
+      remediationStatus?: string | null;
+      resumeCondition?: string | null;
+      retestCondition?: string | null;
+    }>;
+  }>(modelPath, {});
+  const paths = model.featurePaths ?? [];
+  return paths.filter((path) => {
+    if (path.status !== "blocked") return false;
+    if (path.terminal === true) return false;
+    if (
+      path.remediationStatus === "terminal" ||
+      path.remediationStatus === "awaiting-external"
+    ) {
+      return false;
+    }
+    if (hasText(path.resumeCondition) || hasText(path.retestCondition)) {
+      return false;
+    }
+    return true;
+  }).length;
 }
 
 function countSpecs(): number {
@@ -1773,7 +1809,7 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       value: pathStatus.fail ?? 0,
     }),
     "aks-rp-e2e.model.blocked-path-count": () => ({
-      value: pathStatus.blocked ?? 0,
+      value: blockedPathCount(),
     }),
     "aks-rp-e2e.feature.unknown-count": () => ({
       value: (featureStatus.unknown ?? 0) + (featureStatus.partial ?? 0),
