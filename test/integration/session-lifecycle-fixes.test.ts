@@ -11,7 +11,10 @@ import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { classifyTerminalAssistantFailure } from "../../src/lib/manager-utils.js";
+import {
+  classifyTerminalAssistantFailure,
+  extractLastAssistantError,
+} from "../../src/lib/manager-utils.js";
 import {
   readSessionMeta,
   writeSessionMeta,
@@ -79,6 +82,22 @@ describe("terminal assistant failure classification", () => {
     ]);
 
     expect(reason).toBeUndefined();
+  });
+
+  it("extracts provider error from the terminal assistant message", () => {
+    const error = extractLastAssistantError([
+      { role: "user", content: [{ type: "text", text: "do work" }] } as any,
+      {
+        role: "assistant",
+        stopReason: "error",
+        content: [],
+        errorMessage: "OpenAI API error (429): 429 No deployments available for selected model",
+      } as any,
+    ]);
+
+    expect(error).toBe(
+      "OpenAI API error (429): 429 No deployments available for selected model",
+    );
   });
 });
 
