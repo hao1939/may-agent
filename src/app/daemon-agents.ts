@@ -66,14 +66,14 @@ export async function prepareDaemonAgents(opts: {
     }
   }
 
-  // App brings its own agent — register from local agent.json when not already loaded
-  const registerOwnerAgent = async (ownerName: string, appDir: string): Promise<boolean> => {
-    const agentDir = resolve(appDir, "agents", ownerName);
+  // App brings its own agents — register from local agent.json when not already loaded.
+  const registerLocalAgent = async (agentName: string, appDir: string, resolvedAgentDir?: string): Promise<boolean> => {
+    const agentDir = resolvedAgentDir ?? resolve(appDir, "agents", agentName);
     const config = loadAgentConfig(agentDir, opts.bus);
     if (!config) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] No valid agent.json at ${agentDir} for owner "${ownerName}"`,
+        message: `[project-app] No valid agent.json at ${agentDir} for app agent "${agentName}"`,
       });
       return false;
     }
@@ -82,7 +82,7 @@ export async function prepareDaemonAgents(opts: {
     if (errors.length > 0) {
       opts.bus.emit({
         type: "info",
-        message: `[project-app] Agent config errors for ${ownerName}: ${errors.map((e) => e.message).join(", ")}`,
+        message: `[project-app] Agent config errors for ${agentName}: ${errors.map((e) => e.message).join(", ")}`,
       });
       return false;
     }
@@ -118,7 +118,7 @@ export async function prepareDaemonAgents(opts: {
 
     opts.bus.emit({
       type: "info",
-      message: `[project-app] Auto-registered owner agent "${ownerName}" from ${agentDir}`,
+      message: `[project-app] Auto-registered app agent "${agentName}" from ${agentDir}`,
     });
     return true;
   };
@@ -132,7 +132,7 @@ export async function prepareDaemonAgents(opts: {
     manager: opts.manager,
     bus: opts.bus,
     agentCrons: getAgentCrons(),
-    registerOwnerAgent,
+    registerLocalAgent,
   };
 
   const appResult = await installProjectApps(projectAppOpts);
