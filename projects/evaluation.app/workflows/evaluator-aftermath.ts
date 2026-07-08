@@ -8,9 +8,7 @@ export const description =
 export const HEURISTIC_VERSION = 11;
 
 export type EvaluationLane =
-  | "needs_triage"
-  | "success_candidate"
-  | "routine_ok";
+  "needs_triage" | "success_candidate" | "routine_ok";
 
 type TranscriptView = {
   text: string;
@@ -1012,12 +1010,7 @@ function evalIssuesFromChecks(checks: EvalCheck[]): string[] {
 }
 
 type EvalTarget =
-  | "request"
-  | "execution"
-  | "result"
-  | "verification"
-  | "evolution"
-  | "session";
+  "request" | "execution" | "result" | "verification" | "evolution" | "session";
 type TargetQuality = "ok" | "check" | "issue" | "unknown";
 type RepairAction =
   | "none"

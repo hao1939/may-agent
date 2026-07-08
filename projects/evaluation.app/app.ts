@@ -41,6 +41,21 @@ function evaluationReviewRequested(
   };
 }
 
+function projectHealthReviewRequested(params: unknown = {}): ProjectAppEvent {
+  const details = eventParams(params);
+  return {
+    type: "evaluation.project.review.requested",
+    project: projectId,
+    params: {
+      targetProject: "aks-rp-e2e.app",
+      targetAppDir: "/app/projects/aks-rp-e2e.app",
+      targetDomainDir: "/app/projects/aks-rp-e2e",
+      reason: "manual",
+      ...details,
+    },
+  };
+}
+
 function metricId(event: Record<string, unknown>): string {
   const details = eventDetails(event);
   const value = details.metricId ?? details.metric_id ?? details.metric;
@@ -72,6 +87,7 @@ async function routeEvaluationEvent(
     event.type === "evaluation.session.requested" ||
     event.type === "evaluation.deep.requested" ||
     event.type === "evaluation.tick" ||
+    event.type === "evaluation.project.review.requested" ||
     event.type === "evaluation.aftermath.scan" ||
     event.type === "evaluation.deep.scan"
   ) {
@@ -106,9 +122,18 @@ async function routeEvaluationEvent(
   }
 
   if (event.type === "project.action.invoked") {
+    const action = eventDetails(event);
+    if (action.action === "review-project-app") {
+      return ctx.emit(
+        projectHealthReviewRequested({
+          ...(eventParams(action.params) as Record<string, unknown>),
+          reason: action.reason ?? "manual-action",
+        }),
+      );
+    }
     return ctx.emit(
       evaluationReviewRequested("project-action", {
-        action: eventDetails(event),
+        action,
       }),
     );
   }
@@ -211,6 +236,21 @@ export default defineProjectApp({
         project: projectId,
       },
     },
+    {
+      id: "project-health-loop",
+      enabled: true,
+      intervalMs: 1_800_000, // 30min human-facing app/project review baseline
+      event: {
+        type: "evaluation.project.review.requested",
+        project: projectId,
+        params: {
+          targetProject: "aks-rp-e2e.app",
+          targetAppDir: "/app/projects/aks-rp-e2e.app",
+          targetDomainDir: "/app/projects/aks-rp-e2e",
+          reason: "scheduled",
+        },
+      },
+    },
   ],
 
   workflowHandlers: [
@@ -295,6 +335,25 @@ export default defineProjectApp({
       },
       context: evaluationContext,
     },
+    {
+      name: "project-health-evaluator",
+      type: "job",
+      enabled: true,
+      description:
+        "Human-facing review of whether a target project app is moving and self-correcting.",
+      on: ["evaluation.project.review.requested"],
+      handler: {
+        workflow: "project-health-evaluator",
+        agent: "evaluator",
+        includeEvent: true,
+        task: `${appTaskContext}\nReview the target project/app health from the trigger event. Write a report and notify only when useful.`,
+        timeoutMs: 900_000,
+      },
+      context: [
+        ...evaluationContext,
+        "projects/evaluation.app/design/project-app-evaluation.md",
+      ],
+    },
   ],
 
   events: [
@@ -304,6 +363,9 @@ export default defineProjectApp({
     "evaluation.tick",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
+    "evaluation.project.review.requested",
+    "evaluation.project.reviewed",
+    "evaluation.project.notification.requested",
     { type: "metric.breach", project: projectId },
     { type: "metric.recovered", project: projectId },
     { type: "project.owner.requested", project: projectId },
@@ -334,6 +396,15 @@ export default defineProjectApp({
         description:
           "Runs an evaluator worker session for one explicit deep-eval request.",
       },
+      "project-health-evaluator": {
+        emits: [
+          "evaluation.project.review_started",
+          "evaluation.project.reviewed",
+          "evaluation.project.notification.requested",
+        ],
+        description:
+          "Samples a target project app and writes a human-facing health report.",
+      },
     },
     adapters: [
       {
@@ -357,12 +428,19 @@ export default defineProjectApp({
         description:
           "Ready task-tree leaves wake the evaluation owner through the existing heartbeat lane.",
       },
+      {
+        event: "evaluation.project.review.requested",
+        emits: ["evaluation.project.reviewed"],
+        description:
+          "Project/app review requests dispatch the project health evaluator workflow.",
+      },
     ],
     externalEvents: [
       "evaluation.reviewed",
       "evaluation.success_candidate",
       "evaluation.triage_closed",
       "evaluation.learning_created",
+      "evaluation.project.review_started",
       "heartbeat.step_started",
       "heartbeat.skipped",
       "handler.workflow_dispatched",
@@ -401,6 +479,14 @@ export default defineProjectApp({
       description: "Ask the evaluation app owner to review project state.",
       event(params) {
         return evaluationReviewRequested("manual-review", params);
+      },
+    },
+    "review-project-app": {
+      type: "async",
+      description:
+        "Review a target project app from the outside and write a human-facing health report.",
+      event(params) {
+        return projectHealthReviewRequested(params);
       },
     },
   },

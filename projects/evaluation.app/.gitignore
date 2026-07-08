@@ -8,6 +8,8 @@ agents/*/last-eval.md
 agents/*/last-session.md
 agents/*/last_heartbeat_brief.md
 agents/*/workflows/.may-runtime-module-*.mjs
+/workflows/.may-runtime-module-*.mjs
+/reports/project-health/
 tasks/tree.json
 tasks/kanban.json
 tasks/archive/*.json
