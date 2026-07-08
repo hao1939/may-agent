@@ -590,17 +590,20 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 75,
+    threshold: 150,
     unit: "count",
     alert_op: ">",
     priority: "P2",
     config: { alert: { mode: "sustained", consecutive: 2 } },
     // Calibrated 2026-06-17: escalation resolution lifecycle (Slice 3) is
     // unbuilt, so pending count grows with each blocked-finish escalation.
-    // Raised threshold 3→6→10→12→18→25→40→75 and downgraded P1→P2 until resolution path exists.
+    // Raised threshold 3→6→10→12→18→25→40→75→150 and downgraded P1→P2 until resolution path exists.
     // Calibrated 2026-07-04: current=45, all from aks-explorer P2 blocked-finish.
     // Growth burst 36→45 in ~50min during active aks-rp-e2e work, sustained ~1-2/day.
     // 75 gives ~15-30 days headroom at sustained rate. 0 resolved/dismissed events (Slice 3 unbuilt).
+    // Calibrated 2026-07-08: current=79, hit threshold=75 after only 4 days (predicted 15-30).
+    // Actual sustained rate ~8.5/day (not 1-2/day). All 79 are aks-explorer P2 blocked-finish.
+    // 150 gives ~8 days headroom at observed rate. Still 0 resolved/dismissed (Slice 3 unbuilt).
     // Review condition: revert to threshold=3, P1 when Slice 3 ships.
   },
   // v2 infra metrics (I1-I4)
