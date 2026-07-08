@@ -40,6 +40,18 @@ export function extractLastAssistantText(messages: AgentMessage[]): string | nul
   return null;
 }
 
+export function extractLastAssistantError(messages: AgentMessage[]): string | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i] as { role?: string; errorMessage?: unknown };
+    if (msg.role !== "assistant") continue;
+    if (typeof msg.errorMessage === "string" && msg.errorMessage.trim()) {
+      return msg.errorMessage;
+    }
+    return undefined;
+  }
+  return undefined;
+}
+
 export function classifyTerminalAssistantFailure(messages: AgentMessage[]): string | undefined {
   const last = messages[messages.length - 1] as any;
   if (last?.role !== "assistant") return undefined;

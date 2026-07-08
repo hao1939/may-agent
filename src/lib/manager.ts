@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import {
   generateId,
   extractLastAssistantText,
+  extractLastAssistantError,
   classifyTerminalAssistantFailure,
   formatDuration,
   truncateForPrompt,
@@ -1642,7 +1643,11 @@ export class SubagentManager {
     const messages = agent.state.messages as AgentMessage[];
     const finishParams = extractFinishParams(messages as any[]);
     const assistantText = extractLastAssistantText(messages);
+    const assistantError = extractLastAssistantError(messages);
     const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    if (!errorText && assistantError) {
+      errorText = assistantError;
+    }
     if (!errorText && terminalAssistantFailure) {
       errorText = terminalAssistantFailure;
     }
@@ -1714,6 +1719,7 @@ export class SubagentManager {
       duration: formatDuration(durationMs),
       outputDir: sessionOutputDir(this._persistDir, sessionId),
       error: errorText,
+      errorMessage: assistantError,
       finishResult: finishParams as any,
     };
   }
@@ -1817,7 +1823,12 @@ export class SubagentManager {
     let messages = agent.state.messages as AgentMessage[];
     let finishParams = extractFinishParams(messages as any[]);
     let assistantText = extractLastAssistantText(messages);
+    let assistantError = extractLastAssistantError(messages);
     let terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+
+    if (!errorText && assistantError) {
+      errorText = assistantError;
+    }
 
     if (!errorText && isRetryableEmptyAssistantFailure(terminalAssistantFailure)) {
       retryReason = terminalAssistantFailure ?? "Agent ended with an empty assistant turn";
@@ -1829,7 +1840,11 @@ export class SubagentManager {
       messages = agent.state.messages as AgentMessage[];
       finishParams = extractFinishParams(messages as any[]);
       assistantText = extractLastAssistantText(messages);
+      assistantError = extractLastAssistantError(messages);
       terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+      if (!errorText && assistantError) {
+        errorText = assistantError;
+      }
     }
 
     if (!errorText && terminalAssistantFailure) {
@@ -1872,6 +1887,7 @@ export class SubagentManager {
         duration: formatDuration(durationMs),
         outputDir: sessionOutputDir(this._persistDir, sessionId),
         error: errorText,
+        errorMessage: assistantError,
         finishResult: finishParams as any,
       };
       this.completedResults.set(sessionId, result);
