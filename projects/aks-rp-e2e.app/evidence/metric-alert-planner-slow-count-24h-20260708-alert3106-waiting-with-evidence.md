@@ -54,18 +54,15 @@ No other planner-wake rows in the last 24h matched the metric rule during this b
 
 ### 4) The planner has recovered after the latest counted slow wake
 
-Recent `workflow:project-planner` owner sessions after those two timeouts are mostly successful, including many `done` sessions around:
+Recent `workflow:project-planner` owner sessions after those two timeouts are mostly successful. The latest bounded session query shows these recent `planning_update` sessions all completed `done` with no error:
 
-- `17:12Z`
-- `17:20Z`
-- `17:23Z`
-- `17:30Z`
-- `17:37Z`
-- `17:48Z`
-- `17:52Z`
-- `17:56Z`
+- `s_project_planner_planning_update_20260708194036_k3rizh`
+- `s_project_planner_planning_update_20260708194535_hzy8fv`
+- `s_project_planner_planning_update_20260708194940_kuwap1`
+- `s_project_planner_planning_update_20260708195221_jv4a4e`
+- `s_project_planner_planning_update_20260708200034_8ypce0`
 
-The latest planner-run tail in `.state/planner-runs.jsonl` also shows successful assigned/idle wakes at `17:51:56Z`, `17:51:59Z`, `17:52:04Z`, `17:55:16Z`, and `17:59:00Z`, with no newer qualifying slow row after the `16:23:21Z` timeout.
+The latest planner-run tail in `.state/planner-runs.jsonl` also shows successful assigned/settled wakes at `2026-07-08T19:59:40.993Z`, `2026-07-08T19:59:53.476Z`, `2026-07-08T20:00:23.467Z`, `2026-07-08T20:00:26.729Z`, and then a fresh active planner wake at `2026-07-08T20:05:56.620Z` that has not yet qualified as slow. There is still no newer qualifying slow row after the `2026-07-08T16:23:21.089Z` timeout.
 
 That means the current alert is real rolling-window residue from two earlier slow wakes, not proof that the planner is still actively stalled right now.
 
