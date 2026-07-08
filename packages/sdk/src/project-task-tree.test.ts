@@ -1049,6 +1049,9 @@ describe("project task tree SDK", () => {
       blockerOwner: "human",
       resumeCondition: "Resume when proof lands or the follow-up window opens.",
       resumeAt: "2099-06-26T00:00:00.000Z",
+      nextCheckAt: "2099-06-26T12:00:00.000Z",
+      fallbackAt: "2099-06-27T00:00:00.000Z",
+      fallbackAction: "Escalate if proof has not landed.",
     });
 
     expect(created.blocker).toMatchObject({
@@ -1057,11 +1060,17 @@ describe("project task tree SDK", () => {
       owner: "human",
       resume_condition: "Resume when proof lands or the follow-up window opens.",
       resume_at: "2099-06-26T00:00:00.000Z",
+      next_check_at: "2099-06-26T12:00:00.000Z",
+      fallback_at: "2099-06-27T00:00:00.000Z",
+      fallback_action: "Escalate if proof has not landed.",
     });
 
     const updated = updateTaskText(config(appDir), {
       taskId: "blocked-leaf",
       resumeAt: "2099-06-27T00:00:00.000Z",
+      nextCheckAt: "2099-06-27T12:00:00.000Z",
+      fallbackAt: "2099-06-28T00:00:00.000Z",
+      fallbackAction: "Escalate again if proof has not landed.",
     });
 
     expect(updated.blocker).toMatchObject({
@@ -1070,11 +1079,15 @@ describe("project task tree SDK", () => {
       owner: "human",
       resume_condition: "Resume when proof lands or the follow-up window opens.",
       resume_at: "2099-06-27T00:00:00.000Z",
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+      fallback_action: "Escalate again if proof has not landed.",
     });
 
     const packet = planningPacket(config(appDir));
     expect(packet.frontier_details.blocked[0].blocker).toContain("Waiting for returned operator proof.");
     expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-27T00:00:00.000Z");
+    expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-28T00:00:00.000Z");
   });
 
   test("rolls up parent summary and archives selected done child leaves", async () => {
