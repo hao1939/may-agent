@@ -243,6 +243,7 @@
     min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); padding: 12px;
     display: grid; gap: 12px;
   }
+  .readout-compact-panel { gap: 10px; }
   .readout-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; min-width: 0; }
   .readout-head.compact { align-items: center; }
   .readout-head h3 { margin: 0; font-size: 15px; line-height: 1.3; }
@@ -253,10 +254,11 @@
     border: 1px solid var(--border); border-radius: 999px; padding: 2px 7px; background: var(--bg2); white-space: nowrap;
   }
   .readout-lead {
-    display: grid; gap: 4px; border: 1px solid var(--border); border-left: 4px solid var(--fg2); border-radius: 6px; background: var(--bg2); padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--border); border-left: 4px solid var(--fg2);
+    border-radius: 6px; background: var(--bg2); padding: 9px 10px;
   }
   .readout-lead strong { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
-  .readout-lead span { color: var(--fg2); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  .readout-lead span { display: block; color: var(--fg2); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
   .readout-ok { border-left-color: var(--green); }
   .readout-watch { border-left-color: var(--yellow); }
   .readout-bad { border-left-color: var(--red); }
@@ -286,7 +288,19 @@
   }
   .readout-action:hover { border-color: var(--accent); color: var(--accent); }
   .readout-no-action { color: var(--fg2); font-size: 11px; align-self: center; }
-  .readout-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .readout-diagnostics {
+    min-width: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--bg2);
+  }
+  .readout-diagnostics > summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none;
+    padding: 8px 10px; color: var(--fg2); font-size: 12px;
+  }
+  .readout-diagnostics > summary::-webkit-details-marker { display: none; }
+  .readout-diagnostics > summary span { color: var(--fg); font-weight: 600; }
+  .readout-diagnostics > summary b { font-weight: 500; font-size: 11px; text-align: right; }
+  .readout-diagnostics[open] > summary { border-bottom: 1px solid var(--border); }
+  .diagnostic-section { display: grid; gap: 8px; padding: 10px; min-width: 0; }
+  .diagnostic-section + .diagnostic-section { border-top: 1px solid var(--border); }
   .coverage-list, .issue-list { display: grid; gap: 8px; min-width: 0; }
   .coverage-row, .issue-row {
     display: grid; grid-template-columns: minmax(130px, .9fr) minmax(160px, 1fr) minmax(140px, 1fr) minmax(110px, .7fr) minmax(180px, 1.2fr) auto;
@@ -304,14 +318,6 @@
   .coverage-partial, .coverage-inferred, .issue-p2 { border-left: 3px solid var(--yellow); }
   .coverage-complete, .issue-p3 { border-left: 3px solid var(--green); }
   .readout-steer-panel { scroll-margin-top: 20px; }
-  .kanban-banner {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
-    padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
-  }
-  .banner-label { color: var(--accent); font-size: 11px; line-height: 1.5; font-weight: 650; text-transform: uppercase; letter-spacing: 0; }
-  .banner-text { margin-top: 2px; font-size: 13px; color: var(--fg); overflow-wrap: anywhere; }
-  .banner-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; color: var(--fg2); font-size: 11px; line-height: 1.5; }
-  .banner-meta span { border: 1px solid var(--border); border-radius: 999px; padding: 2px 7px; background: var(--bg2); white-space: nowrap; }
   .kanban-board {
     display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; align-items: stretch;
   }
@@ -428,10 +434,11 @@
   }
   @media (max-width: 980px) { .kanban-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tree-counts { max-width: 32%; } }
   @media (max-width: 620px) {
-    .kanban-banner { display: grid; }
-    .banner-meta { justify-content: flex-start; }
     .readout-head { display: grid; }
     .readout-status { justify-content: flex-start; }
+    .readout-lead { display: grid; }
+    .readout-diagnostics > summary { display: grid; }
+    .readout-diagnostics > summary b { text-align: left; }
     .bottleneck-grid, .readout-metrics, .coverage-row, .issue-row { grid-template-columns: 1fr; }
     .kanban-board { grid-template-columns: 1fr; }
     .task-detail-grid { grid-template-columns: 1fr; }
