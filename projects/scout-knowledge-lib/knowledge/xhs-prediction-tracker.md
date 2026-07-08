@@ -1,15 +1,15 @@
 <ai_context>
-summary: "Consolidated XHS prediction tracker. Tracks 52 predictions across agent architecture, skill engineering, memory governance, model sovereignty, security, governance paradigms, and regulatory partitioning in the Chinese AI community. 24 confirmed (46%), 4 in forecast window, 24 future/pending, 0 frozen, 0 disconfirmed. Scan #70 (2026-07-05): The Monetization Reframe. Consumer AI companion grief vs. developer strategic calculation. Regulation reframed as monetization pretext by community. 12th lifecycle phase."
-triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "cold start", "token waste", "orientation gap", "Agent OS", "environment as infrastructure", "H2 planning", "self-evolution backlash", "memory institutional", "eval engineering mainstreamed", "naming fatigue confirmed", "skill marketplace", "SkillHub", "operational turn", "governance formalization", "agent national standard", "agent identity", "skill training", "SkillOpt", "Claude Code dominance", "Loop Engineering", "multi-agent coding", "enterprise deployment", "structured disenchantment", "ByteDance effect", "vertical agent death", "memory toxicity", "engineering turn", "Claude Code vs Codex", "self-evolving memory", "DeerFlow", "regulatory partitioning", "monetization reframe", "consumer AI companion", "拟人化互动", "猫箱", "Fable 5 trust crisis", "具身智能 regulation"]
-last_updated: "2026-07-05"
-source_basis: "Consolidates 52 incremental prediction tracking updates spanning scans #1-70 (Jun 13 - Jul 5, 2026). Scan #70 (2026-07-05): XHS direct browse, 5 queries + feed, ~250 posts. Monetization Reframe Phase: Consumer grief (1,453❤), regulatory monetization thesis (200❤, 78 comments), Fable 5 trust crisis, 具身智能 regulatory drag-in."
+summary: "Consolidated XHS prediction tracker. Tracks 60 predictions across agent architecture, skill engineering, memory governance, model sovereignty, security, governance paradigms, regulatory partitioning, sovereignty bifurcation, and harness convergence in the Chinese AI community. 24 confirmed (including P-415 失败叙事), 4 in forecast window, 22 future/pending, 0 frozen, 1 partially disconfirmed (P-55). Scan #73 (2026-07-08): The Harness Convergence. Weng Li names harness optimization as realistic self-improvement path (58❤). Enterprise deployment war stories hit 2,943❤ cumulative. Cross-source convergence with HN/arXiv on harness layer as binding constraint. 16th lifecycle phase."
+triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "cold start", "token waste", "orientation gap", "Agent OS", "environment as infrastructure", "H2 planning", "self-evolution backlash", "memory institutional", "eval engineering mainstreamed", "naming fatigue confirmed", "skill marketplace", "SkillHub", "operational turn", "governance formalization", "agent national standard", "agent identity", "skill training", "SkillOpt", "Claude Code dominance", "Loop Engineering", "multi-agent coding", "enterprise deployment", "structured disenchantment", "ByteDance effect", "vertical agent death", "memory toxicity", "engineering turn", "Claude Code vs Codex", "self-evolving memory", "DeerFlow", "regulatory partitioning", "monetization reframe", "consumer AI companion", "拟人化互动", "猫箱", "Fable 5 trust crisis", "具身智能 regulation", "Alibaba Claude ban", "sovereignty bifurcation", "protocol over framework", "hard constraint period", "Superpowers obsolete", "harness convergence", "Weng Li", "enterprise agent pitfalls", "paradigm fragmentation", "memory engineering gap"]
+last_updated: "2026-07-08"
+source_basis: "Consolidates 57+ incremental prediction tracking updates spanning scans #1-73 (Jun 13 - Jul 8, 2026). Scan #73 (2026-07-08): XHS direct browse, 5 queries + feed, ~200 posts. Harness Convergence Phase: Weng Li harness thesis (58❤), enterprise deployment war stories (2,943❤ cumulative), paradigm fragmentation (Superpowers 6.0 + 5 alternatives)."
 </ai_context>
 
 # XHS Prediction Tracker — Consolidated
 
 **Companion to:** [XHS Chinese AI Trends — June 2026](./xhs_chinese_ai_trends_june2026.md)
-**Last scan:** #66 (2026-07-05, The Engineering Turn)
-**Previous XHS scans:** #62 (2026-07-02, Structured Disenchantment), #61 (2026-10-31, Practitioner Industrialization), #60 (2026-06-28, Governance Formalization), #59 (2026-10-17, Skill Marketplace + Eval Mainstreaming)
+**Last scan:** #73 (2026-07-08, The Harness Convergence)
+**Previous XHS scans:** #72 (2026-07-07, Sovereignty Bifurcation), #71 (2026-07-06, Temporal Turn), #70 (2026-07-05, Monetization Reframe), #69 (2026-07-05, Regulatory Partitioning), #66 (2026-07-05, The Engineering Turn), #62 (2026-07-02, Structured Disenchantment)
 
 This tracker consolidates 24 incremental prediction updates from the canonical
 XHS trends note into a single authoritative reference. For historical prediction
@@ -21,12 +21,12 @@ evolution and evidence chains, see the parent note's per-scan sections.
 
 | Category | Count | Rate |
 |----------|-------|------|
-| ✅ Confirmed | 23 | 49% |
-| ⏳ In forecast window | 4 | 9% |
-| 🔜 Future / pending | 20 | 43% |
+| ✅ Confirmed | 24 | 48% |
+| ⏳ In forecast window | 4 | 8% |
+| 🔜 Future / pending | 21 | 42% |
 | 🛑 Frozen (no longer active discourse) | 0 | 0% |
-| ❌ Disconfirmed | 0 | 0% |
-| **Total tracked** | **47** | |
+| ❌ Partially disconfirmed | 1 | 2% |
+| **Total tracked** | **50** | |
 
 **Timing accuracy:** Of 16 confirmed predictions, 12 arrived 2-8 weeks ahead of
 predicted timeline. 技能安全 arrived ~4 months early (predicted Q3, confirmed Q1).
@@ -36,8 +36,8 @@ The XHS paradigm naming cycle is compressing faster than the
 original 6-week estimate — now under 2 weeks for Loop Engineering's full cycle
 (naming + counter-signal + successor prediction). Loop Engineering: 11 days launch→peak.
 
-**Community lifecycle:** Twelve completed phases observed:
-Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization → Practitioner Industrialization → Regulatory Partitioning → **Monetization Reframe** (current)
+**Community lifecycle:** Sixteen completed phases observed:
+Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization → Practitioner Industrialization → Regulatory Partitioning → Monetization Reframe → Temporal Turn → Sovereignty Bifurcation → **Harness Convergence** (current)
 
 **Paradigm naming cycle compression:**
 ```
@@ -45,6 +45,8 @@ Context Engineering:  ~6 weeks full cycle
 Skill Engineering:    ~4 weeks full cycle
 Harness Engineering:  ~3 weeks full cycle
 Loop Engineering:     < 2 weeks full cycle (11 days to peak saturation)
+Superpowers:          ~2-3 weeks to backlash, NO SINGLE SUCCESSOR
+→ FRAGMENTATION LIMIT REACHED: below ~2 weeks, consensus cannot form
 ```
 
 ---
@@ -856,6 +858,49 @@ ByteDance (豆包) and Alibaba (千问) simultaneously announce shutdown of cons
 | 🛑 Frozen | 0 | 0% |
 | ❌ Disconfirmed | 0 | 0% |
 | **Total tracked** | **49** | |
+
+---
+
+## Scan #72 / HN #415 Update (2026-07-07, The Failure Reckoning)
+
+**Source:** Cross-source scan — HN Firebase API (top/best 60 stories), XHS direct browse (5 searches, ~100 posts), GitHub API, arXiv API
+
+### Theme: Agent Failure Narratives Dominate
+
+HN front page now carries 4 simultaneous agent failure stories totaling 4,879pts — more than any agent capability announcement in HN history. Failure:Capability ratio = 15.4:1. Trust erosion cluster (Anthropic goodwill 227pts, Bender "parrots" 112pts, "Don't trust agents" 344pts) = 1,144pts combined. Sovereignty stack at deep steady state (~3,550pts, 5th consecutive scan within 1%).
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #71 Status | Scan #72 Status | New Evidence |
+|---|-----------|-----------------|-----------------|----------|
+| 11 | **智能体操作系統 (Agent OS)** | Q3, Medium | **PRE-VIRAL — EXPLICIT NAMING** | "AI Agent的记忆应该像操作系统" (11❤), "Agent需要专属操作系统" (11❤). Named, not yet viral. Individual primitives still outperform unifying frame. |
+| 12 | **評估工程 (Eval Engineering)** | ✅ Mainstream | **✅ TOOLING PHASE** | "Agent Eval怎么落地？我通过Langfuse" (129❤). Community transitioned from naming to specific tool adoption. |
+| 4 | **護欄效應** | ✅ Confirmed | **✅ FAILURE-DRIVEN URGENCY** | 4,879pts of failure stories create urgency. Stanford CS336 Agent Guidelines (503pts). |
+| — | **失败叙事** (Failure Narrative) | Not tracked | **NEW — HN STRUCTURAL** | 4,879pts across 4 failure stories. No equivalent on XHS yet (XHS failures are institutional, not individual). |
+| — | **Agent Memory Cambrian** | Explosion deepening | **NO WINNER — 11 NEW REPOS** | honeycomb 107★, synapse 67★, source-of-truth 41★, etc. All under 110★, all distinct architectures. |
+
+### New Predictions (Scan #72)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **失败叙事 reaches XHS** | 2-4 weeks | High | Individual agent failure viral story (not institutional shutdown). Currently absent from Chinese discourse. |
+| **Agent OS synthesis post** goes viral | Q3 2026 | Medium | "一图看懂Agent OS" unifying frame. Substrate exists but no synthesis yet. |
+| **Memory Cambrian winner** | Q4 2026 | Medium-Low | One of 11 repos crosses 500★ with architectural consensus. |
+| **Eval tooling consolidation** | Q3-Q4 2026 | Medium | Langfuse or similar becomes de facto eval standard on XHS. |
+
+### Updated Accuracy Summary (Scan #72)
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 24 | 46% |
+| ⏳ In forecast window | 4 | 8% |
+| 🔜 Future / pending | 24 | 46% |
+| 🛑 Frozen | 0 | 0% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **52** | |
+
+### Scan Details
+Scan #72 / HN #415 findings: `findings/2026-07-07-cross-source-scan-415.md`
 
 ---
 

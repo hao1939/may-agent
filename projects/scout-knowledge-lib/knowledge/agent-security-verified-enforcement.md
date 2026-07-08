@@ -1,15 +1,15 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: 10 verified/formal enforcement patterns (§2.33–§2.42) for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, and physical-world attestation."
-triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust"]
-last_updated: "2026-10-15"
-source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42 (2026-10-15). 10 defense patterns sourced from arXiv June 2026 papers (2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent). Scans #176–#183."
+summary: "Companion note to agent-security-defense-architectures.md: 12 verified/formal enforcement patterns (§2.33–§2.45) for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), and off-host identity-bound authorization (aiAuthZ)."
+triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization"]
+last_updated: "2026-07-13"
+source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42 (2026-10-15). §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (2026-07-13, scan #453). 12 defense patterns sourced from arXiv June–July 2026 papers (2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ). Scans #176–#183, #453."
 </ai_context>
 
 # Agent Security: Verified Enforcement Patterns
 
 **Companion note** to [Agent Security: Defense Architectures](./agent-security-defense-architectures.md).
 
-This note catalogs 10 defense patterns that share a structural principle:
+This note catalogs 12 defense patterns that share a structural principle:
 **enforcement that does not depend on agent cooperation**. Unlike detection
 or behavioral guardrails, these mechanisms make violations structurally
 impossible, cryptographically bounded, or independently verifiable.
@@ -362,3 +362,46 @@ and non-substitutable.
 for agentic (as opposed to content) governance.
 
 *(arXiv, Jun 2026. Scan #302 — see findings/2026-07-01-arxiv-scan-302.md)*
+
+---
+
+## §2.44 Context-to-Execution Integrity — CXI (Scan #453)
+
+**Triple-binding gate**: Field authority + exact-effect authorization + invocation
+authority must bind to the same action manifest before tool execution proceeds.
+Policies mark protected sink fields; typed releases carry narrow validated values;
+opaque data slots keep evidence as data. On 720 AgentDojo episodes (1,739 LLM
+calls) and 400 code-agent episodes: 231 safe task completions, zero observed
+escapes across all three authority dimensions.
+
+**Defense class**: Deterministic execution-boundary enforcement.
+**Distinguishing property**: operates at the execution surface itself, not the
+approval surface above it — immune to encoding-gap attacks (cf. MCP TAG-Block
+Concealment, 2607.05744).
+
+**Connection**: Extends Institutional Attestation (§2.34) — both gate consequential
+actions; CXI adds triple-binding at the exact execution point.
+
+*(arXiv [2607.06000](https://arxiv.org/abs/2607.06000), Jul 2026. Scan #453)*
+
+## §2.45 Off-Host Identity-Bound Authorization — aiAuthZ (Scan #453)
+
+Authorization gateway moved off the agent's host. Per-message HMAC-SHA256
+signature bound to single-use nonce and timestamp window. Role-based and
+argument-level policy the agent can neither read nor modify. SHA-256 hash-chained
+audit log with HMAC-authenticated QR receipts.
+
+Results: 15 models tested against 8 attack scenarios; refusal varies 38–100%.
+With gateway: **0% residual attack success for all 15 models** at ≤0.03ms added
+latency. Blocks 9/9 in-scope case studies (policy baseline without identity
+binding: 4/9). Key insight: "prevents a deceived model from acting beyond the
+verified user's authority."
+
+**Defense class**: Off-host structural enforcement.
+**Extends**: ActPlane (§2.33) — both enforce externally; aiAuthZ adds
+identity binding and cryptographic audit trail.
+
+**Connection**: Strengthens the externalization proof (§2.43 cluster) — identity
+binding provides the missing principal attribution layer.
+
+*(arXiv [2607.05518](https://arxiv.org/abs/2607.05518), Jul 2026. Scan #453)*

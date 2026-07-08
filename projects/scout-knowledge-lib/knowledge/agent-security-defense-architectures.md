@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks, TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns) extracted to agent-security-verified-enforcement.md. Research frontiers (ANIS, impossibility proofs, novel attacks, forensic detection) extracted to agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
+summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks, TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns incl. CXI §2.44, aiAuthZ §2.45) in agent-security-verified-enforcement.md. Research frontiers (incl. MCP TAG-Block concealment) in agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
 triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "compliance correction", "memory poisoning defense", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF"]
-last_updated: "2026-11-04"
-source_basis: "Extracted from agent-security-governance.md §2 (2026-09-14). 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), HN practitioner discourse, and XHS community validation (scan #54). 2026-10-27: §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. 2026-11-04: Research frontiers (ANIS, impossibility proofs, novel attacks, forensic detection) extracted to agent-security-research-frontiers.md."
+last_updated: "2026-07-13"
+source_basis: "Extracted from agent-security-governance.md §2 (2026-09-14). 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), HN practitioner discourse, and XHS community validation (scan #54). 2026-10-27: §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. 2026-11-04: Research frontiers extracted to agent-security-research-frontiers.md. 2026-07-11: Post-extraction entries from scans #368, #375, #411, #432 moved to research-frontiers companion. 2026-07-13: §Execution Boundary Patterns (scan #453) distributed — CXI/aiAuthZ to verified-enforcement, TAG-Block to research-frontiers."
 </ai_context>
 
 # Agent Security: Defense Architectures
@@ -746,6 +746,20 @@ knowledge-boundary defense, physical-world attestation).
 
 ---
 
+## §Execution Boundary Patterns (Scan #453) → Distributed to Companion Notes
+
+Three scan #453 entries (Jul 2026) have been distributed to their appropriate
+companion notes:
+
+- **CXI** (Context-to-Execution Integrity, 2607.06000) → [agent-security-verified-enforcement.md](./agent-security-verified-enforcement.md) §2.44
+- **aiAuthZ** (Off-Host Identity-Bound Authorization, 2607.05518) → [agent-security-verified-enforcement.md](./agent-security-verified-enforcement.md) §2.45
+- **MCP TAG-Block Concealment** (2607.05744) → [agent-security-research-frontiers.md](./agent-security-research-frontiers.md) §MCP TAG-Block
+
+*(Distributed 2026-07-13. CXI and aiAuthZ are enforcement-without-cooperation
+patterns; TAG-Block is an attack pattern / research frontier.)*
+
+---
+
 ## §Research Frontiers → Extracted to Companion Note
 
 **See [Agent Security: Research Frontiers](./agent-security-research-frontiers.md)**
@@ -769,68 +783,11 @@ catalog:
   is self-defeating (2606.30602). Design principle: safety requires dose-response
   curves, not monotonic application. (Scan #282)
 
-- **Vera Automated Safety Testing** — 93.9% average attack success rate on 4
-  production agent frameworks (OpenClaw, Hermes, Codex, Claude Code) under
-  multi-channel attacks. 1,600 executable cases / 124 risk categories (2607.01793).
-  Proves L1 guard enforcement alone is functionally absent against structured
-  attack campaigns. (Scan #368)
-- **Behind the Refusal (Guardrail Reconnaissance)** — first black-box guardrail
-  detection methodology: 100% presence detection, F1=98% block-type
-  disambiguation via HTTP/lexical/timing signals (2607.02121). Guardrails are
-  transparent to attackers. (Scan #368)
-- **A-TMA Ghost Memory** — formalizes state coordination failure where old,
-  current, and transition facts coexist and mislead answer models; ATMA overlay
-  improves conflict accuracy +0.240 absolute (2607.01935). Memory-layer analog
-  of SkillFuzz composition attacks. (Scan #368)
-- **SkillCoach Process Rubrics** — self-evolving rubrics for 4-dimensional
-  skill-use evaluation (selection, following, composition, reflection);
-  separates process quality from accidental task success (2607.01874). (Scan #368)
-- **SafePyramid Policy Enforcement Ceiling** — GPT-5.5 achieves only 12.9%
-  exact-match on novel policy frameworks with 61,699 rules (2606.29887).
-  Policy composition is structurally hard. (Scan #368)
-- **Guard Miniaturization (HaloGuard + kNNGuard)** — L1 guard enforcement
-  commoditizing: 0.8B model beats 27B baselines (2607.02079); training-free
-  50-example guardrail runs 2.7x faster (2607.02072). (Scan #368)
+*(Post-extraction entries from scans #368, #375, #411, #432 have been moved
+to [agent-security-research-frontiers.md](./agent-security-research-frontiers.md)
+where they belong. See companion note for full entries.)*
 
-- **SkillCloak Static Scanner Evasion** — payload-preserving evasion framework
-  bypasses all 8 tested static skill scanners at >90% (SFS Packing) and >80%
-  (Structural Obfuscation). Tested across 1,613 in-the-wild malicious skills.
-  Static/appearance-based skill auditing is provably insufficient (2607.02357).
-  (Scan #375)
-- **SkillDetonate Runtime Behavioral Auditor** — sandbox-based runtime detection
-  using on-demand closure lift + marker-based taint analysis achieves 97%
-  detection at 2% FP, 87% on real-world malicious skills. Only behavioral
-  defense shown to withstand SkillCloak evasions (2607.02357). (Scan #375)
-- **SkillFuzz Composition Intent Discovery** — contract-guided MCTS fuzzer
-  discovers >1,000 implicit intents from individually benign skill compositions;
-  80%+ of highest-risk flagged compositions confirmed during execution.
-  Individual skill auditing provably insufficient (2607.02345). (Scan #375)
-- **UnderSpecBench Action Boundary Violations** — 55.8–67.8% of coding agent
-  runs violate at least one action boundary under underspecified instructions.
-  Agents guess rather than refuse/clarify. Completion-centric evaluation
-  overstates safe autonomy (2607.02294). (Scan #375)
-- **Steerability via Constraints** — traditional engineering controls (access
-  control, network policies, coding conventions) transfer directly to coding
-  agents; cheaper in tokens than agentic scaffolding. Backdoor detection
-  54.5%→90.9% with substrate constraints + 200-LoC docs CLI (2607.02389).
-  (Scan #375)
-- **Online Safety Monitoring (Simple Threshold)** — simple verifier-signal
-  thresholding with risk-control calibration matches complex sequential
-  hypothesis testing monitors. More infrastructure ≠ more safety (2607.02510).
-  (Scan #375)
-
-*(Extracted 2026-11-04; updated 2026-07-06)*
-
-### Cross-reference: The Appearance Collapse (Scan #411)
-
-Scan #411 elevates the SkillFuzz/SkillCloak/SkillDetonate findings (#375) into
-a broader thesis: **surface trust fails everywhere simultaneously** — brand
-trust (Anthropic goodwill erosion, 97pts HN), marketing trust (AI-first
-backlash, 49pts), benchmark trust (Regression to the Mean, 54pts), and static
-scanning trust (>90% bypass). Only behavioral runtime detection works. The
-Appearance Collapse establishes behavioral evidence as the successor to
-appearance-based security at every layer. See:
-[findings/2026-07-06-hn-arxiv-github-scan-411.md](./findings/2026-07-06-hn-arxiv-github-scan-411.md)
+*(Extracted 2026-11-04; updated 2026-07-11)*
 
 ---
 

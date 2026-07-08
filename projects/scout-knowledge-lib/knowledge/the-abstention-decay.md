@@ -226,3 +226,29 @@ The system doesn't need better agents. It needs agents that can efficiently dete
 - **CONVOLVE**, a context engineering method, raises timely recall from 26.7 to 57.4 without parameter updates — validating our proposed compiled abstention gate (structural fix #1).
 
 This paper transforms our internal production observation into a measured, cross-system phenomenon. The Abstention Decay is not specific to our system; it is a structural property of LLM agents trained on completion and evaluated on action. See [findings/2026-07-09-arxiv-scan-401.md](findings/2026-07-09-arxiv-scan-401.md).
+
+## External Validation (2026-07-07): Training-Depth Fix
+
+**RLSR — Reinforcement Learning for Selection Reward (arXiv 2607.03528, ICML 2026 Workshop)** provides the first training-depth solution to Abstention Decay: align LLMs for **selective prediction** rather than correctness or calibration.
+
+- Standard alignment optimizes for correctness — abstention is never rewarded, so it decays.
+- RLSR targets the **Area Under the Risk-Coverage Curve (AURC)** as alignment objective — directly rewarding the model for knowing when to predict and when to flag for human review.
+- Substantially better risk-coverage trade-off compared to correctness-aligned and calibration-aligned baselines, on both in-domain **and** out-of-domain tasks.
+
+This validates the Depth Mismatch thesis (Scan #424): Abstention Decay is caused by training at the wrong depth (correctness) rather than the right depth (risk-coverage). CONVOLVE (#401) showed context engineering can partially fix abstention without parameter updates; RLSR shows post-training alignment can build abstention capacity into the model's weights directly.
+
+Source: https://arxiv.org/abs/2607.03528, findings/2026-07-07-arxiv-scan-424.md
+
+## External Validation (2026-07-14): Fabrication as Verbalization Failure
+
+**Knowledge Knows, Verbalization Tells (arXiv 2607.05013)** reveals the **mechanistic root** of Abstention Decay: solvability knowledge and verbalization are encoded as distinct, linearly decodable internal representations. Fabrication (confident but wrong output) is primarily associated with changes in **verbalization**, not in the underlying knowledge.
+
+Key implications for Abstention Decay:
+- The model "knows" it cannot solve a problem (knowledge representation) but still outputs a confident answer (verbalization representation). Abstention failure is a **routing problem** — knowledge correctly encodes uncertainty but verbalization overrides it.
+- Prompting with unsolvability cues reduces fabrication primarily by shifting verbalization, not knowledge — consistent with CONVOLVE's context engineering success (#401).
+- Activation steering can **mechanistically manipulate** knowledge and verbalization representations independently — opening a third fix pathway (alongside context engineering/CONVOLVE and training alignment/RLSR): direct representational intervention at the knowledge-verbalization interface.
+- The knowledge probe detects internal uncertainty even when output is maximally confident — meaning the information needed for correct abstention is already present and accessible in the model's hidden states, it's simply not being routed to output.
+
+This is the deepest validation yet: Abstention Decay is not about missing capability (the knowledge is there) or insufficient training signal (RLSR showed training can help) or context deficiency (CONVOLVE showed context can help). It is about a **structural routing failure** between an internal representation that correctly encodes uncertainty and an output channel that defaults to confidence. The fix hierarchy: (1) activation steering at knowledge-verbalization boundary, (2) training alignment targeting risk-coverage, (3) context engineering to shift verbalization.
+
+Source: https://arxiv.org/abs/2607.05013, findings/2026-07-14-hn-arxiv-github-scan-438.md

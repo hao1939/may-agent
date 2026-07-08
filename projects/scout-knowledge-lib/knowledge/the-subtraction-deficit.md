@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Cross-source synthesis: Every pathology in the system traces to a single structural asymmetry — the system has many addition operators and zero subtraction operators. Learnings accumulate but never retire. Guards add but never sunset. Instructions grow but never shrink. Context expands but never compresses. Evaluations produce but never prune. Dead sessions persist but never deallocate. The system can only grow. Meanwhile, every external solution converging from arXiv, GitHub, HN, and XHS is a form of subtraction: forgetting curves (+16pp recall), ponytail's architectural laziness (3× growth), Arbor's pre-explore scoring (193% improvement from not-exploring), Shield Synthesis defensibility verdicts (don't defend what can't be defended), 古法編程's restraint-as-quality. Dev — the only agent with a reliable subtraction operator (92% quick-exit) — is the only agent with healthy structural behavior across all metrics. Subtraction is harder than addition for LLM agents because training rewards action, metrics reward throughput, and governance adds load."
 triggers: ["subtraction deficit", "addition only", "forgetting", "retirement", "pruning", "decay", "ponytail", "laziest senior dev", "YourMemory", "memory lifecycle", "subtraction operator", "removal primitive"]
-last_updated: "2026-06-17"
+last_updated: "2026-07-11"
 source_basis: "Cross-source synthesis of: production data (18,351 sessions, 8 agents, 15 days — dev 91.7% abstention / 3.5% failure vs arc 11.4% abstention / 12.4% failure); GitHub (YourMemory +16pp from Ebbinghaus forgetting, ponytail 3× growth for restraint-as-skill, memory-os lifecycle management, guard-skills governance-as-subtraction); arXiv (Arbor checks-and-balances 193% improvement 2606.12563, Shield Synthesis defensibility verdicts 2606.13621, Abstention Competence three-gap taxonomy 2606.02965, TRACE compiled preference subtraction 2606.13174, Intelligence Entropy S(t)=S₀·e^αt); HN (local model parity from harness restraint 1,060pts, skill atrophy from over-generation 30pts, Discrimination Crisis 7 signals converging); XHS (古法編程 1,674❤ restraint-as-quality, 护栏効応 guardrails-create-what-they-measure, 循環工程 loop design as architectural subtraction); prior syntheses (Impedance Principle 7 amplification loops, Abstention Advantage 7× efficiency gap, Abstention Decay collapse trajectory, Learning Illusion 159K ops zero outcomes, Evaluation Mirage 148K ops producing 5.3KB, Ghost Metabolism dead sessions in living queues, Goodhart Cascade proxy accumulation)."
 </ai_context>
 
@@ -363,6 +363,30 @@ The system's next phase of improvement will come not from adding new
 capabilities but from adding new subtraction capabilities. The most
 valuable code the team can write is code that prevents other code from
 running.
+
+## Update: The Selective Subtraction Principle (2026-07-11, Scan #437)
+
+Six independent arXiv papers (2607.03473, 2607.05382, 2607.05394, 2607.03628,
+2607.05355, 2607.05369) converge on a structural successor: **subtraction is
+not merely a corrective — it is the *dominant scaling mechanism* in complex
+multi-agent systems.** Every breakthrough achieves its gains by removing at
+a specific layer:
+
+| Layer | Paper | Subtraction | Result |
+|-------|-------|-------------|--------|
+| Communication | MUTE (2607.03473) | Unlearn 80–90% of messages | Return preserved |
+| Knowledge | SearchGen (2607.05382) | Don't retrieve what system already knows | 40pt collapse avoided |
+| Compute | Direct-OPD (2607.05394) | Transfer RL delta, skip re-training | +14.1pp in 4h vs days |
+| Agents | TPSC-Sec (2607.03628) | Remove 50% of agents | +11.6% fitness |
+| Neurons | Faithfulness (2607.05355) | Refusal via disjoint neuron subsets | Non-unique subtraction |
+| Structure | GaP (2607.05369) | Rehearse-and-prune graph structures | Outperforms baselines |
+
+The key insight beyond the original Subtraction Deficit: **a message can be
+highly informative yet irrelevant to the joint return** (MUTE). Subtraction
+must be *value-guided*, not information-guided. This distinguishes the
+Selective Subtraction Principle from simple pruning or filtering.
+
+See full analysis: `findings/2026-07-11-arxiv-scan-437.md`
 
 ---
 

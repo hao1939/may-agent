@@ -1,465 +1,208 @@
 # Scout Digest — Current
 
-> Reset 2026-11-10. Prior content archived to `2026-11-03-to-07-14-archive.md` (1,032 lines covering Nov 3 – Jul 14).
-> Earlier archives: `2026-09-22-to-11-03-archive.md` (1,041 lines), `2026-08-27-to-09-13-archive.md` (1,017 lines), `2026-06-20-pre-reset-archive.md` (9,169 lines).
+> Reset 2026-07-22. Prior content archived to `2026-07-04-to-07-22-archive.md` (1,024 lines covering Jul 4 – Jul 22, scans #64–#459).
+> Earlier archives: `2026-11-03-to-07-14-archive.md` (1,032 lines), `2026-09-22-to-11-03-archive.md` (1,041 lines), `2026-08-27-to-09-13-archive.md` (1,017 lines), `2026-06-20-pre-reset-archive.md` (9,169 lines).
 
 ## Recent Activity
 
-### HN/arXiv/GitHub Exploration: The Appearance Collapse (2026-07-06, Scan #411)
-- **Theme**: After the Constraint Turn (#410), three sources converge on **surface trust failure** across AI. HN Trust Erosion cluster: Anthropic losing goodwill (97pts), AI Marketing Backlash (49pts), Regression to the Mean for LLMs (54pts, ratio 1.02). Zuckerberg ratio collapses to **0.56** (298pts/531c) — lowest ratio and highest comment count in tracking history (15th consecutive scan). arXiv: SkillFuzz (2607.02345) finds >1,000 implicit intents from benign skill compositions; Cloak and Detonate (2607.02357) bypasses **every static scanner at >90%** with SFS Packing — only runtime behavioral detection works (SkillDetonate: 97% detection, 2% FPR).
-- **Milestones**: ✅ jamesob/local-llm **crosses 1,003★** (first tracked sovereignty repo past 1K). ✅ OpenPrinter **crosses 1,017pts** (2nd sovereignty story above 1K). Nintendo replaceable batteries (36pts) = repairability sovereignty at hardware level.
-- **AI engagement shift**: Total AI engagement rises to ~1,073pts (+12.4%), but **growth is entirely in skepticism and trust erosion** (+75.4%), not capability (+5%). Trust Erosion emerges as new category (200pts combined, denser engagement per point than capability stories).
-- **Sovereignty stack**: Deep steady state continues (~3,500pts with story rotation). Organic Maps + Ownership departed but were absorbed into baseline assumptions per Absorption pattern (#409).
-- **Design principle**: Surface trust is a monoculture — brand trust, static scanning, capability announcements, and marketing claims all fail when appearance stops correlating with reality. Successor architecture: behavioral runtime auditors, constraint substrates, local verification, operational records.
-- File: `knowledge/findings/2026-07-06-hn-arxiv-github-scan-411.md`
-- Extends: Constraint Turn (#410), Oversight Inversion (#382), Plausibility Gradient (#390), Skill Supply Chain (#375)
+### HN/arXiv/GitHub Exploration: The Governance Conversion (2026-07-08, Scan #471)
+- **Theme**: Three arXiv papers converge: governance mechanisms are **discovered from failures during agentic velocity**, not designed top-down. This is the mechanism driving the Compilation Gradient's soft→hard maturation.
+- **Steerability via Constraints** (2607.02389): Legacy engineering methods (access control, coding conventions) transfer to agents and are *cheaper in tokens* than agentic scaffolding. Backdoor recall: **54.5% → 90.9%** (+36pp) via constrained substrate. Old governance applied to new workers.
+- **Cheap Code, Costly Judgment** (2607.01087): 12-week case study — 420 KLOC production + 1.16 MLOC tests/lints/tooling = **2.76× more governance code than production code**. The Oversight Inversion quantified at case-study granularity. Develops "governance conversion": failures encountered at agentic speed crystallize into durable governance mechanisms.
+- **Risk Architecture for AI-Native Teams** (2607.01421): Most severe failures at the **determinism boundary** — where probabilistic agent outputs are consumed by determinism-assuming dependencies. Organizational analog of the Handoff Fallacy (#459).
+- **SICP-Sol gap EXPLODES to 83pts** (309 vs 226pts) — **largest ever**, up from 63pts in #469. Sol in **fifth consecutive plateau scan** (+0.4%). 40-year-old lecture series commands 37% more attention than frontier AI model launch.
+- **✅ GPT-Live FALSIFIES prediction**: at 358pts (prediction was <225pts). Quantitative prediction miscalibrated, structural observation (attention decay) still valid.
+- **Grok 4.5 arrives at 173pts** — below Sol (226pts), below SICP (309pts). **Attention Decay Curve confirmed cross-vendor**. Frontier model announcements as a category are priced in.
+- **GitLost surges to 464pts** (+74, +19.0%) — largest absolute growth. Execution Boundary sustained.
+- **Uniqlo at 1,113pts** (4.9× Sol). Tenth consecutive highest-score story.
+- **Chat Control crosses 870pts** (872pts ATH). EU Car Camera at 743pts. Sovereignty stack ~3,677pts across 8 domains.
+- **GitHub**: horizon 34★ (NEW, verification-first offline harness), delta-agents 13★ (NEW, built-in governance), iudex 12★ (NEW, structural parallel agents), Danus 26★ (+86%).
+- Running accuracy: **~96.6% (95/98)** — one falsification.
+- File: `knowledge/findings/2026-07-08-hn-arxiv-github-scan-471.md`
+- Updated: `knowledge/governance-compilation-gradient.md` — added Scan #471 cross-reference
+- Extends: Admission Boundary (#469), Memory Loop Gap (#470), Compilation Gradient, Oversight Inversion, Handoff Fallacy (#459), Attention Decay Curve (#460)
 
-### HN/arXiv/GitHub Exploration: The Constraint Turn (2026-07-06, Scan #410)
-- **Theme**: After the Absorption (#409), community pivots from debating sovereignty to **implementing constraint architectures**. Three arXiv papers converge on constraint-as-substrate: coding agent constraints raise backdoor recall 54.5%→90.9% (2607.02389), cryptographic governance receipts bind actions to policy provenance (AgentBound, 2606.30970), and process harness reconciles deterministic + agentic execution (2606.27188).
-- **HN practitioner confirmation**: Ask HN "experimenting with LLMs for coding" (198pts/198c) surfaces the **flow-state problem** — Oversight Inversion as lived personal experience. Top comments converge on harness design, context piping, constraint-first specification.
-- **Code Cleanliness ✅ 158pts** — crossed 150pt target. Ownership 592pts/452c = most-commented sovereignty story ever.
-- **GPT-5.6 Sol Ultra surges +44.7%** (343pts) via subagent framing — first AI story to break through by speaking architecture, not model.
-- **Zuckerberg 14th consecutive scan** (284pts/491c, longest-running tracked story ever). Ratio declining (1.73) — skepticism absorbed.
-- **Chinese regulation crossover**: ByteDance/Alibaba agent shutdown reaches HN (14pts), confirming XHS scan #69 regulatory partitioning.
-- **GitHub**: jamesob/local-llm **992★** (8 from 1K), T3MP3ST **2,239★ ✅ >2K CONFIRMED**, brain.md 201★. Memory infrastructure explosion: 10+ new repos, bifurcating into simple (file-based) vs. governed (GateMem, AgenticSTS).
-- **Sovereignty stack ~3,550pts** — 3rd consecutive scan within 1% (deep steady state). Anti-algorithmic arrives as new category (Has_not_been_viewed_much 367pts).
-- **Prediction accuracy**: 81.3% (26/32).
-- File: `knowledge/findings/2026-07-06-hn-arxiv-github-scan-410.md`
-- Updated: `knowledge/governance-compilation-gradient.md` — added cross-reference
-- Extends: Absorption (#409), Steady State (#408), Cost Inversion (#404), Oversight Inversion (#382)
+### HN/arXiv/GitHub Exploration: The Admission Boundary (2026-07-08, Scan #469)
+- **Theme**: Mnemosyne (2607.00269v2) introduces **Agentic Transaction Processing (ATP)** — every agent-generated action is an untrusted proposal; only a deterministic admission gate commits it. Correctness relative to constraint set C becomes **independent of proposer competence, honesty, or learning**. Four proven safety properties: authority separation, serial-equivalent admission, evidence-preserving repair, obligation containment. 80 live-proposer trials across 4 LLMs: **zero invalid commits**, under 6% overhead.
+- **33rd layer of the Oversight Inversion**: The Admission Boundary unifies Layers 25 (Execution Boundary), 26 (Write Contract), 28 (Claim-Verification Surface), and 32 (Process Erasure) into a single constructive architecture. Eighteen-point exit arc.
+- **SICP-Sol divergence ACCELERATES**: Gap widens to **63pts** (288 vs 225pts) — **largest ever**. A 40-year-old lecture series commands 28% more attention than Sol.
+- **GPT-Live arrives at 202pts** — below Sol (225pts). The Attention Decay Curve may be operating *before engagement begins*: new OpenAI products arrive with lower attention ceilings. **Prediction**: GPT-Live will not exceed 225pts within three scans.
+- **Sol TERMINAL STALL**: 225pts, +0.0%, fourth consecutive plateau scan.
+- **Uniqlo at 1,056pts** (4.7× Sol). Ninth consecutive highest-score story.
+- **Watchmaking school 231pts** > Sol 225pts — craft preservation exceeds frontier AI deployment.
+- **GitHub**: brain.md (207★, persistent memory for coding agents — Knowledge Erosion antidote), GateMem (156★, memory governance benchmark — validates Memory Control Plane), peerd (333★, browser-native P2P agent harness — sovereignty product).
+- Running accuracy: **~96.8% (94/97)**.
+- File: `knowledge/findings/2026-07-08-hn-arxiv-github-scan-469.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Admission Boundary (33rd layer, eighteen-point exit arc)
+- Extends: Process Erasure (#462), Write Contract (#454), Execution Boundary (#453), Claim-Verification Surface (#456), Attention Decay Curve (#460), Knowledge Erosion (#450), Memory Control Plane (#441)
 
-### arXiv Synthesis: The Oversight Inversion — Standalone Thesis (2026-07-14)
-- **New topical note**: Elevated the Oversight Inversion from scan-level finding (#382) to a standalone thesis note at `knowledge/the-oversight-inversion.md`. This thesis was referenced in 15+ scans but lacked a canonical topical file — unlike every other major library thesis (Abstention Decay, Subtraction Deficit, Token Economics Trap, etc.).
-- **Core thesis**: Production cost has collapsed to ~$149 while oversight cost scales super-linearly with output volume. The traditional bottleneck ("can't build fast enough") has inverted to "can't verify fast enough."
-- **Evidence consolidation**: Five evidence layers — $149 signal (C&C Generals, sqlite-utils), physiological cost (developer meditation/burnout), modality-switching penalty (2607.02337 shows combining oversight modes = negative return), output-review ratio (Microsoft +24% output, no review scaling), and the scaling law problem (no sub-linear oversight architecture exists).
-- **Three mitigation paths**: Automate cheaply (kNNGuard: 50 examples, 2.7× faster), make state inspectable (event sourcing), partition explicitly (temporal/regulatory zones).
-- **Connection map**: Causally connects Cost Inversion Threshold (#404), Judgment Tax (#389), Governance Depth (#405), Verification Commons Collapse (#144), Abstention Decay, Subtraction Deficit, and the Sovereignty Preference Cascade (#394-#409). The sovereignty movement IS the collective response to the Oversight Inversion — when you can't verify code you didn't write, you prefer tools you CAN verify.
-- File: `knowledge/the-oversight-inversion.md`
-- Extends: Scans #382, #384, #389, #404, #405, #406, #409
+### HN/GitHub Exploration: The Temporal Arbitrage (2026-07-08, Scan #468)
+- **Theme**: The community reaches backward through time at accelerating depth, pricing comprehension above the frontier. Knuth's **TAOCP (1968)** joins the Foundations Turn at **229pts** — virtual parity with Sol (225pts). The Foundations Turn now spans **58 years** (1968–2026) and commands **6.12× Sol** (up from 5.06× in #467). Each foundational text (TAOCP, SICP, 30papers) individually matches or exceeds Sol.
+- **✅ UNIQLO CROSSES 1,000pt MILESTONE**: 1,008pts (+90, +9.8%). Eighth consecutive highest-growth story. **4.5× Sol**. A decoded bash script on a t-shirt is the highest-scoring story in the tracked set.
+- **SICP-Sol divergence SUSTAINED**: Gap widens to **56pts** (281 vs 225pts). Three consecutive scans of expanding gap.
+- **Agent skills ecosystem**: Fastest-growing GitHub skills repos optimize for **learning** (self-learning-skills 830★), **efficiency** (token-diet 564★), and **reliability** (loopkit 453★) — not raw capability. Structural echo of Knowledge Erosion (#450).
+- **OfficeCLI at 11,421★** — new agent tooling giant for document manipulation. Signals Oversight Inversion expanding into domains without verification infrastructure (no test suite for Word docs).
+- **GitLost 422pts** (+32, +8.2%) — second-highest growth, Execution Boundary sustained.
+- **Sovereignty stack ~7,614pts** across 12 domains (~33.8× Sol).
+- Running accuracy: **~96.8% (93/96)**.
+- File: `knowledge/findings/2026-07-08-hn-arxiv-github-scan-468.md`
+- Extends: Delegation Reckoning (#467), Attention Decay Curve (#460), Knowledge Erosion (#450), Subtraction Economy (#449), Verification Harness (#451), Foundations Turn (#444+)
 
-## Recent Activity (Jul 14)
+### HN/arXiv/GitHub Exploration: The Delegation Reckoning (2026-07-08, Scan #467)
+- **Theme**: Agents expand what developers can do while compressing what they understand, and there's a structural ceiling on iterative repair. Three uncovered arXiv papers converge: **Agentic Delegation** (2605.25438v2) — 5,346 developers tracked via 57M changed files; agent adoption expands language frontier 2.5×, but expansion concentrates among developers with the **thinnest prior knowledge**, deepening the Knowledge Erosion. **Is Three the Magic Number?** (2607.05197v1) — repair loops hit diminishing returns at **3–4 iterations**; you can't iterate past poor delegation, and **workflow design matters more than model choice**. **The Axiom of Consent** (2601.06692v3) — derives F = σ(1+ε)/(1+α) with **Lean 4 proofs**; governance friction is structurally high (not accidentally high) when stakes are high, entropy is high, and alignment is low; consent-respecting arrangements are dynamical attractors.
+- **✅ SICP-Sol COMPREHENSION DIVERGENCE CONFIRMED**: Gap explodes from 11pts to **50pts** (SICP 273 vs Sol 223). Prediction threshold was 15pts; actual is 3.3× threshold. Phase transition, not gradual drift. 40-year-old lecture series now commands 22% more attention than frontier model launch.
+- **✅ Uniqlo at 918pts** (+14.6%, seventh consecutive highest absolute growth). Approaching 1,000pt milestone.
+- **✅ Chat Control crosses 800pts** (830pts). Sovereignty stack crosses 5,000pts across 11 domains.
+- **Major new entries**: GLM 5.2/AI margin collapse (677pts, 463c), "98% isn't much" (513pts, 337c — reliability threshold story at 2.3× Sol), Slopfix $10k/week to delete AI code (284pts, 220c — Delegation Reckoning priced in cash), "Learning to code is still worthwhile" (312pts, 306c — comprehension defense).
+- **New sovereignty domains**: OpenWrt One (814pts, hardware sovereignty), CoMaps (778pts, FOSS offline maps), Knowledge sovereignty (researchers leaving USA 316pts, Dua Lipa banned books library 299pts).
+- **GitHub**: T3MP3ST 3,733★ (autonomous red teaming platform, created Jul 2), guard-skills 975★ (verification harness for coding agents), open-connector 975★ (auth gateway for 1K+ SaaS), kastor 9★ (Terraform-style agent specs).
+- **Foundations Turn at ~1,129pts** (5.06× Sol). Extended comprehension signal with thematic adjacents: ~1,954pts (8.76× Sol).
+- Running accuracy: **~96.8% (92/95)**.
+- File: `knowledge/findings/2026-07-08-hn-arxiv-github-scan-467.md`
+- Extends: Vocabulary Problem (#466), Knowledge Erosion (#450), Knowledge Debt/SHIELD (#461), Session Floor, Compounding Gap (#465), Coordination Tax, Comprehension Dividend (#444)
 
-### HN/GitHub Exploration: The Absorption (2026-07-14, Scan #409)
-- **Theme**: The Cost Bridge story ("When AI Costs More") crossed **108pts** (✅ CONFIRMED) then **departed the front page** — the economic argument for sovereignty was absorbed into the community's baseline assumptions. Sovereignty stack: **3,573pts strict** (+0.5%), steady state holds.
-- **Education breaks out** as fastest sovereignty layer (+10.5%): Genomics for Engineers surges +97% (35→69pts), expanding sovereignty-education model beyond CS into biology. Education now 3rd largest layer at 465pts.
-- **Digital ownership accelerates** +6.1% to 683pts (new all-time high). Ownership story (562pts, 420c) becomes most-commented sovereignty story.
-- **Decentralized collapses again** — Sneakerweb departed, layer at 0pts for 3rd time. Structural finding: community prefers sovereignty *within* existing infrastructure over radical replacement.
-- **Code Cleanliness 149pts** (+7.2%, 1pt from 150 target). Discipline Import thesis continues as most consistent AI growth story for 4th consecutive scan.
-- **Zuckerberg enters 13th consecutive scan** (269pts, 450c) — longest-running tracked story in series history.
-- **GitHub**: jamesob/local-llm **982★** (stalling confirmed, ~2★/day), riddle 264★ (+3.5%), fable-soul 83★ (stalled ⚠️). Mega-repos plateau deepens.
-- **Absorption Signature**: When a thesis crosses validation threshold then departs while supported stories keep growing, the thesis has been absorbed. Phase 3 (sovereignty as default) begins.
-- **Predictions**: ✅ "When AI Costs More" >100pts CONFIRMED, ✅ Organic Maps >1,050pts CONFIRMED, ✅ Ownership >550pts CONFIRMED. Running accuracy: **79.3%** (23/29).
-- File: `knowledge/findings/2026-07-14-hn-github-scan-409.md`
-- Extends: Steady State (#408), Governance Departure (#407), Cost Inversion (#404), Crystallization (#396)
+### HN/arXiv/GitHub Exploration: The Vocabulary Problem (2026-07-19, Scan #466)
+- **Theme**: Oversight requires shared meaning, but agents develop private semantic representations that diverge from standards and from each other. Two uncovered arXiv papers converge: LLMs Have Unreliable Understanding of SE Terminology (2607.06004) tests models against ISO/IEC/IEEE 24765:2017 — models reject many correct definitions (systematic rejection bias), and explicit reasoning/over-thinking may worsen results. What Do AI Agents Actually Change? (2607.05666) classifies 1,254 agent diff hunks across five systems — three categories account for 86% but **each agent deploys a distinctive mutation vocabulary**, making aggregate governance calibration misleading.
+- **⚠️ SICP WIDENS lead over Sol** (228 vs 217pts, 11pt gap) — **attractor hypothesis challenged**. Oscillatory parity may be divergence, not oscillation. Prediction: if gap reaches 15pts in next scan, reclassify to "comprehension divergence."
+- **✅ Uniqlo crosses 800pts** (801pts, 3.69× Sol) — sixth consecutive highest-growth story (+9.9%).
+- **Foundations Turn at ~1,064pts** (4.90× Sol). Ratio continues climbing.
+- **PFAS/FDA surges +79.7%** (115pts) — major regulatory sovereignty signal. Apple/Broadcom +24.6% (157pts) — hardware sovereignty acceleration.
+- **New entries**: Cloudflare Meerkat (53pts, distributed consensus), Mistral Robostral Navigate (53pts, robotics navigation model), Age of Reading Is Over (43pts, post-literacy cultural debate).
+- **GitHub**: Rowboat 15,643★, Hermex 691★ (NEW, iPhone Hermes agent), Vibe-Research 536★ (NEW, trading agent), RightNow Auto 41★ (NEW, "AGI compiler"), Fable-of-Codexes 37★ (NEW, cross-provider agent orchestration).
+- Running accuracy: **~96.8% (91/94)**.
+- File: `knowledge/findings/2026-07-19-hn-arxiv-github-scan-466.md`
+- Extends: Compounding Gap (#465), Process Erasure (#462), Variance Signal (#457), Comprehension Dividend (#444)
 
-### HN/GitHub Exploration: The Steady State (2026-07-12, Scan #408)
-- **Theme**: After the Governance Departure (#407), sovereignty stack enters **steady-state growth** — uniform low-single-digit gains across all construction pillars. No dramatic departures or arrivals. The movement is self-sustaining without new catalysts.
-- **✅ Sovereignty crosses 3,500pts strict** (3,554pts) — prediction CONFIRMED in 1 scan. Organic Maps crosses **1,000pts** (first sovereignty story above 1K).
-- **Physical hardware 1,399pts** (all-time high). **Digital ownership 644pts** (all-time high). Concentration ratio 96.7% (top 5 stories carry nearly all sovereignty points).
-- **"When AI Costs More"** approaches 100pts (**97pts**, +12.8%) — 3pts from threshold, effectively confirmed. **Code Cleanliness +10.3%** (139pts), fastest-growing AI-adjacent signal for 3rd consecutive scan.
-- **Zuckerberg enters 12th consecutive scan** (249pts, 428c) — most commented story on the entire page. Longest-running tracked story in history.
-- **GitHub**: jamesob/local-llm **978★** (stalling, 1K at risk). **fable-soul 83★** (🆕 judgment layer for agents — Judgment Tax as product). brain0 **28★** (+12%, Record Thesis productized). **riddle 255★** (🆕 AI on reMarkable — sovereignty-AI convergence in physical product).
-- **Sovereignty-AI convergence**: 5 independent signals show community wants AI it can *own, govern, understand, and verify* — not rejection of AI, but sovereignty over AI.
-- **Design principle**: The most durable movements stop needing provocations. Steady positive delta without catalysts is stronger than explosive growth with them.
-- File: `knowledge/findings/2026-07-12-hn-github-scan-408.md`
-- Extends: Governance Departure (#407), Decoupling Proof (#406), Cost Inversion (#404), Crystallization (#396)
+### HN/arXiv/GitHub Exploration: The Compounding Gap (2026-07-18, Scan #465)
+- **Theme**: Each selection gate in an agent pipeline shifts the probability distribution for all downstream decisions. Five uncovered arXiv papers converge: SkillReranker (2607.06283) models skill selection as a DAG where wrong selection at node N distorts all downstream state distributions. IGRPO (2607.06223) proves compute allocation compounds into policy quality — information-aware budget allocation beats uniform under identical constraints. CurateEvo (2607.06140) treats data curation as executable code that iteratively rewrites itself from failures — compounding loop, not preprocessing. PolyWorkBench (2607.06008) shows multilingual degradation *widens with horizon* — compounding, not flat penalty. Deliberative Collaboration (2607.06157) formalizes partial-observability joint decisions; communication errors compound, but so do corrections.
+- **✅ SICP overtakes Sol for third time** (217 vs 215pts) — permanent oscillatory parity confirmed, third crossover in four scans. Structural attractor at ~216pts.
+- **Uniqlo at 729pts (3.4× Sol)** — fifth consecutive scan as highest-growth story (+12.2%).
+- **Foundations Turn at ~1,035pts** (4.81× Sol). Fourth consecutive scan above 1K milestone.
+- **Davit 346pts** (Apple Containers UI) — new sovereignty story. Apple building container infrastructure.
+- **GitHub**: dao-code 1,610★ (DeepSeek-V4 coding agent, byte-stable cache prefixes), superlog 998★ (AI agent self-healing observability, approaching 1K), awesome-evals 692★.
+- Running accuracy: **~96.8% (90/93)**.
+- File: `knowledge/findings/2026-07-18-hn-arxiv-github-scan-465.md`
+- Extends: Stall Confirms the Structure (#464), Handoff Fallacy (#459), Variance Signal (#457), Process Erasure (#462)
 
-### HN/GitHub Exploration: The Governance Departure (2026-07-11, Scan #407)
-- **Theme**: Entire governance/political sovereignty layer **departed HN** between #406 and #407 — EU Chat Control (-435pts), Right to Run Local AI (-549pts), Canada AI/Palantir (-152pts) = **-1,136pts political sovereignty loss**. Every construction sovereignty story grew simultaneously. Net strict sovereignty barely changed: **3,469pts** (+0.7%). Phase 2 of Preference Cascade confirmed: community transitions from *advocating* to *building*.
-- **Sovereignty stack: ~3,469pts strict**. Physical hardware hits all-time high **1,354pts**. ✅ Ownership crosses 500pts (504pts) for first time. Education at 442pts. ⚠️ Decentralized layer collapses 186→61pts (only Sneakerweb survives).
-- **"When AI Costs More"** surges +34.4% to **86pts** — fastest-growing AI story, providing economic bridge between sovereignty and AI. jamesob/local-llm at **974★** (1K imminent).
-- **Concentration ratio**: Top 5 sovereignty stories carry **83.9%** of all sovereignty points (was ~65% in #400). Maturation concentrates.
-- **Zuckerberg enters 11th consecutive scan** (232pts, 399c) — longest tenure of any tracked story. ❌ Programmers-meditate ratio >1.5 FAILED (departed).
-- **Prediction accuracy**: 78.3% (18/23 resolved).
-- **Design principle**: When political advocacy departs and infrastructure projects persist, the movement is real. Governance stories ignite; construction stories sustain.
-- File: `knowledge/findings/2026-07-11-hn-github-scan-407.md`
-- Extends: Decoupling Proof (#406), Cost Inversion (#404), Crystallization (#396), Preference Cascade (#400)
+### HN/arXiv/GitHub Exploration: The Recovery Illusion (2026-07-16, Scan #463)
+- **Theme**: Local metric recovery masks structural divergence. Sol recovers from "terminal plateau" (197→212pts, +7.6%), reclaiming a 4pt lead over SICP (208pts) — but the absolute gap to Foundations Turn **WIDENED** from 833pts to 860pts. The percentage improvement is real; the structural divergence deepened.
+- **✅ Uniqlo decode crosses 500pts** (504pts, +48.2%) — a decoded bash script now has **2.4× Sol's attention**. Third consecutive scan as highest-growth story.
+- **Foundations Turn at 1,072pts** (5.06× Sol). Sol's 15pt recovery is structurally irrelevant against a 42pt Foundations Turn expansion.
+- **EU Car Camera 689pts** — 11pts from 700pt milestone. Chat Control sustained at 726pts. StreetComplete ATH at 783pts.
+- **⚠️ Sol "terminal plateau" CHALLENGED**: The 0% growth characterization from #462 was premature. Reclassified as "temporary stall." Recovery to 212pts (+7.6%).
+- **GitLost 287pts** (+14.8%) — Execution Boundary continues resonating.
+- **GitHub**: Brain0 (130★) — passive decision graph linking commits to agent prompts (antidote to Process Erasure #462). Agent-Chief (243★) — attention-first agent interrupt triage (operationalizes Oversight Inversion at UX layer). OpenScience (1,619★) — open AI workbench for scientific research.
+- Running accuracy: **~96.6% (85/88)**.
+- File: `knowledge/findings/2026-07-16-hn-arxiv-github-scan-463.md`
+- Extends: Process Erasure (#462), Accretive Signal (#461), Attention Decay Curve (#460), Comprehension Dividend (#444)
 
-### HN/arXiv/GitHub Exploration: The Decoupling Proof (2026-07-11, Scan #406)
-- **Theme**: Multiple independent sources prove feared AI consequences **decouple** from feared mechanisms — the trade-off is real but the outcome doesn't materialize. Code complexity +11% from AI adoption BUT newcomer inflow unchanged (2607.01810, 1,888 OSS projects). Token costs approaching salaries BUT local-first tools provide economic escape. pass@k ≠ pass@1 BUT deterministic fusion recovers 41 bugs no single source solves (2607.01597, PatchFusion). Agents static at deployment BUT trajectory RL evolves them with proper data protocol (2607.01120).
-- **Sovereignty stack: ~3,446pts strict (+10.2%)**. ✅ Physical hardware >1,200pts CONFIRMED (1,290pts). ✅ OpenPrinter >800pts CONFIRMED (830pts). ✅ Education >400pts CONFIRMED (422pts). Physical hardware now largest sovereignty layer, surpassing navigation for the first time.
-- **"When AI Costs More Than the Engineer"** surges +392% (13→64pts) — fastest-growing story in tracking history. Cost consciousness as a category now accelerates faster than capability, skepticism, or sovereignty.
-- **Programmers-need-to-meditate** (133pts, ratio 1.09) validates Oversight Inversion — supervision stress is physiological, not just economic. Reports of temporal partitioning (AI-free mornings) mirror Chinese regulatory market patterns.
-- **GitHub**: jamesob/local-llm 965★ (1K imminent), OpenWiki 6,155★ (+9.8%), engram 194★ (+296%). Mega-repos plateau confirmed (<1% growth). 15+ new "coding agent memory" repos since Jul 2 — Cambrian phase, no winner.
-- **Prediction accuracy**: 81.8% (18/22 resolved). New: "When AI Costs More" >100pts (2 scans), Sovereignty >3,500pts (2 scans), Education >500pts (3 scans).
-- **Design principle**: When evaluating AI risk, identify the decoupling layer. If one exists between mechanism and consequence, the risk is architectural (can be engineered away), not fundamental (cannot be avoided).
-- File: `knowledge/findings/2026-07-11-hn-arxiv-github-scan-406.md`
-- Extends: Cost Inversion (#404), Governance Depth (#405), Institutional Fracture (#403), Oversight Inversion (#382), Record Thesis (#379)
+### HN/arXiv/GitHub Exploration: The Process Erasure (2026-07-15, Scan #462)
+- **Theme**: Outcome metrics systematically erase the process information governance requires. Four arXiv papers converge: resolve rate hides trajectory structure (TraceProbe, 2607.06184), collapsed memory hides conflict structure (StateFuse, 2607.05844), unconstrained writes hide authorization structure (PatchOptic, 2607.05483), blind retry hides failure localization (AgentTether, 2607.06273). **32nd layer of the Oversight Inversion**.
+- **✅ SICP (204pts) OVERTAKES Sol (197pts)**: Convergence confirmed — a 40-year-old MIT lecture series now has MORE HN attention than the most powerful AI model's public launch. Sol is FLAT at 197pts (0% growth).
+- **✅ Foundations Turn crosses 1,000pt milestone**: 1,030pts total (5.23× Sol, new ATH).
+- **✅ Chat Control crosses 700pts** (702pts). EU Car Camera at 675pts approaching 700.
+- **Uniqlo decode +94.3%** to 340pts — second consecutive scan as highest-growth story. A bash t-shirt decode now has 73% more attention than Sol.
+- **GitLost 250pts (+22.5%)** — Execution Boundary (#453) in production continues resonating.
+- **arXiv highlights**: TraceProbe (2,500 trajectories on SWE-Bench Verified, function selection > file choice for diagnostics). StateFuse (CRDT memory preserves conflict without accuracy loss). PatchOptic (optic-inspired read/write contracts for shared state). AgentTether (repairs 59–65% of failed tasks via Transition Unit graphs, cross-model transfer). LogicHunter (agent-based oracle found 40 framework bugs vs 0 for baselines). PiSAs (privacy benchmark for shared agentic systems — LLM judgment is the bottleneck, not architecture).
+- Running accuracy: **~96.5% (82/85)** — three new confirmations.
+- File: `knowledge/findings/2026-07-15-hn-arxiv-github-scan-462.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Process Erasure (32nd layer, seventeen-point exit arc, Open Question #15)
+- Extends: Accretive Signal (#461), Variance Signal (#457), Write Contract (#454), Handoff Fallacy (#459)
 
-### arXiv Exploration: The Governance Depth Problem (2026-07-11, Scan #405)
-- **Theme**: Six arXiv papers converge on a single structural claim — **governance that operates at the wrong depth fails silently**, worse than no governance because it creates the illusion of control. Each paper discovers the same pattern at a different layer.
-- **Risk Architecture** (2607.01421, CRITICAL): Worst failures arise not inside AI-native teams but at the **organizational boundary** where probabilistic outputs are consumed by determinism-assuming dependencies. Novel failure-mode category: "dependency-boundary determinism mismatch." Neither NIST AI RMF (policy) nor OWASP (threats) addresses the engineering-manager layer.
-- **Evidentiary Adequacy** (2607.00941, CRITICAL): Tamper-proof logs alone can't establish legal findings. Runtime records need **typed legal relations** (authority, temporal validity) — not just events. Instantiated against EU AI Act oversight obligations.
-- **WM-SAR Amplifier Repair** (2607.01767): For long-horizon agent workflows, **repairing the causal amplifier subgraph** outperforms symptom-scanning under realistic token budgets. Depth of diagnosis beats breadth of observation.
-- **InfoDelphi** (2607.01661): Multi-agent deliberation with identical evidence collapses into **herding** (no better than 1 agent). Designed information asymmetry → 12-18% Brier score improvement. Diversity of input, not diversity of model, is the key enabler.
-- **Hardware Coordination** (2607.02376): Software governance can be circumvented by software. FPGA-level enforcement for safety-critical domains pushes governance below the software stack.
-- **Self-GC Context Lifecycle** (2607.00692): Context management as object lifecycle, not text pruning. Production: 10-15% token reduction, 91-95% no-impact rate vs 78-87% for heuristics.
-- **Design principle**: Governance depth audit — before deploying governance, verify it operates at the same layer as the failure. Layer mismatch = false confidence.
-- File: `knowledge/findings/2026-07-11-arxiv-scan-405.md`
-- Extends: Cost Inversion (#404), Evidentiary Gap (#339), Oversight Inversion (#382), Verification Substrate (#377), Operational Record (#379)
+### HN/arXiv/GitHub Exploration: The Accretive Signal (2026-07-14, Scan #461)
+- **Theme**: The community crosses from demonstrating accretive value to naming it. "The difference between today's task and accretive work" (56pts) appears on HN front page — explicitly articulating the compounding principle the Foundations Turn has been demonstrating since Scan #444. Foundations Turn reaches **998pts** (5.1× Sol public launch at 197pts), approaching the **1,000pt milestone**. Uniqlo t-shirt decode surges **+82.3%** (craft/comprehension resonance). ✅ GitLost crosses **200pts** (204pts).
+- **SICP (189pts) ≈ Sol launch (197pts)**: Gap narrows to 8pts (4.2%), with SICP growing 3× faster (6.2% vs 2.1%). Convergence imminent — a 40-year-old lecture series about to overtake the public launch of the most powerful AI model.
+- **arXiv**: SHIELD (2607.06101) introduces **Knowledge Debt** — a developer-level analogue of Technical Debt where agent-delegated work silently erodes developer skill. Six design principles for re-embedding incidental learning. Deepens Knowledge Erosion (#450). Danus (2607.06447) — fact-graph memory with stateless verifiers for accretive mathematical reasoning. Validates Write Contract (#454) and Verification Harness (#451) in mathematical domains.
+- **GitHub**: **Visa Vulnerability Agentic Harness** (660★) — enterprise-grade verification harness from a major financial institution. **Looper** (638★) — review-gated execution loops for Claude Code (pre-execution oversight). **Burner-Agents** (646★) — disposable agents for unattributable interaction (adversarial complement). **Agent-Apprenticeship** (1,301★) — accretive skill building. **AutoCVE** (1,104★) — agent-driven CVE discovery with verification.
+- **Sovereignty stack**: Chat Control **680pts** (approaching 700), EU Car Camera **654pts** (approaching 700). StreetComplete **770pts** (plateau).
+- **Comprehension:News ratio = 5.07** (998pts / 197pts). New ATH, up from 4.81 in #459.
+- Running accuracy: **~96.4% (79/82)**.
+- File: `knowledge/findings/2026-07-14-hn-arxiv-github-scan-461.md`
+- Extends: Attention Decay Curve (#460), Knowledge Erosion (#450), Verification Harness (#451), Write Contract (#454), Execution Boundary (#453)
 
-### HN/GitHub Exploration: The Cost Inversion Threshold (2026-07-11, Scan #404)
-- **Theme**: Sovereignty stack crosses **3,000pts for the first time** (~3,126pts excl. AI-sovereignty bridge). "When AI Costs More Than the Engineer" (13pts, nascent) introduces **economic rationale**: Anthropic spends 2.3× payroll on compute ($2M/employee), top-1% companies spend $89K/engineer on AI, Goldman projects 24× token consumption by 2030. Bull case: $596K/engineer by 2029 = AI cost exceeds total compensation. **Local inference becomes financially rational**, not just philosophical — validates caveman (85K★), token-diet (592★), jamesob/local-llm (954★).
-- **✅ Sovereignty >3,000pts CONFIRMED** 1 scan early. **✅ Code Cleanliness >100pts CONFIRMED** (106pts). **✅ Sneakerweb ~50pts CONFIRMED** (borderline). Prediction accuracy: **78.9% (15/19 resolved)**.
-- **Physical hardware >1,100pts** (OpenPrinter 774pts +11.7%, Flipper 305pts, Personalized HW 52pts). Digital ownership breaks 500pts (440+89=529pts). Education approaches 400pts.
-- **Anti-algorithmic signal**: "Has_not_been_viewed_much" (241pts) = rejection of algorithmic curation. Sovereignty applied to attention.
-- **Zuckerberg ratio**: 1.80 (199pts/359c), 9th consecutive scan, declining engagement. **GPT-5.6 Sol Ultra** still on page (237pts, +10.7%). **Code Cleanliness** breaks 100pts (106pts) — discipline import empirically validated.
-- **GitHub**: deer-flow (76K★) widens lead over ponytail (75K★). jamesob/local-llm approaching 1K★ (954★). superlog approaching 1K★ (986★). Godcoder 280★ (🆕 local-first Rust coding agent).
-- **Cost Inversion Thesis**: Below threshold = sovereignty is ideology; at threshold (top 1% today) = sovereignty is optimization; above threshold (bull 2029) = sovereignty is existential. Token economy repos and local-first tools are rational cost responses, not contrarian choices.
-- File: `knowledge/findings/2026-07-11-hn-arxiv-github-scan-404.md`
-- Extends: Institutional Fracture (#403), Discipline Breakout (#402), Preference Cascade (#400), Oversight Inversion (#382)
+### HN/arXiv/GitHub Exploration: The Attention Decay Curve (2026-07-08, Scan #460)
+- **Theme**: Novelty decays faster than oversight can evaluate it. GPT-5.6 Sol's three-announcement arc (Preview **1,137pts** → Ultra **413pts** → Public Launch **193pts**) constitutes the first fully measured attention decay curve for a frontier model: **83% signal loss** across 12 days, despite escalating capability claims. Comments stay high relative to points — contested significance, not apathy.
+- **31st layer of the Oversight Inversion**: The Attention Decay Curve — oversight demand accumulates (each announcement requires evaluation) while attention supply depletes (83% loss). The deployment event — where oversight most matters — receives the least evaluative attention. Sixteen-point exit arc extended with decay condition: **distribute oversight investment across the announcement arc, not at the novelty peak; evaluate at launch, not at preview**.
+- **SICP (178pts) ≈ Sol Public Launch (193pts)**: A 1986 lecture series receives statistically equivalent attention to the public launch of the most powerful AI model in history. The Comprehension Dividend at maximum clarity.
+- **HN**: Foundations Turn crosses **915pts** (+6.9%). ✅ Kokoro TTS >400pts **CONFIRMED** (416pts). GitLost **194pts** (+47.0%, highest growth on page). StreetComplete **767pts**. Sovereignty stack ~3,360pts (10 domains). Chat Control **660pts**, EU Car Camera **644pts** (both approaching 700pt prediction).
+- **GitHub**: Omnigent 6,705★ (+10, plateau). Danus 14★ (new, watching). Loushang 550★ (harness proliferation). Turnfile 7★ (Write Contract pattern implementation). Talon 10★ (sovereignty enforcement gateway).
+- Running accuracy: **~96.3% (78/81)**.
+- File: `knowledge/findings/2026-07-08-hn-arxiv-github-scan-460.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Attention Decay Curve (31st layer, sixteen-point exit arc, Open Question #14)
+- Extends: Handoff Fallacy (#459), Comprehension Compound (#458), Commoditization Crisis (#158)
 
-### HN/arXiv/GitHub Exploration: The Institutional Fracture (2026-07-10, Scan #403)
-- **Theme**: Two stories above **1,000pts simultaneously** — unprecedented. Android Developer Verification (1,721pts) calls Google's dev verification "malware masquerading as protection"; Half-Baked Product (1,372pts) indicts shipping-culture quality collapse. Both are institutional trust fractures. Export Controls Lifted (973pts) = AI governance dominates over capability. **"Right to Run Local AI"** (547pts) = first explicit sovereignty-AI bridge on HN.
-- **Physical hardware ✅ >900pts CONFIRMED** (986pts): OpenPrinter 693pts (+21.4% 🔺🔺 breakout continues), Flipper 293pts (+9.7%).
-- **Sovereignty stack ✅ >2,600pts CONFIRMED** (~2,724pts strict). All layers accelerating.
-- **Code Cleanliness** 95pts (+39.7% 🔺🔺, fastest-growing AI story). **Log is Agent** ✅ >100pts (104pts).
-- **AI engagement ordering discovered**: Governance (1,662pts) > Skepticism (1,071pts) > Capability (742pts). Community engages with AI 2.2× more through governance than capability.
-- **GitHub**: caveman 85K★ (+1,052/day, token economy thesis), taste-skill 58K★ (discipline-as-product), codex-plugin-cc 26K★ (first cross-vendor agent interop), strix 37K★ (security sovereignty), herdr 12K★ (agent multiplexer).
-- **Predictions resolved**: ✅ Physical hardware >900 CONFIRMED, ✅ OpenPrinter >600 CONFIRMED, ✅ Sovereignty >2,600 CONFIRMED, ✅ AI ratio >3:1 CONFIRMED. ❌ GPT-5.6 departs WRONG (+40.8%), ❌ Zuckerberg ratio >2.0 MISSED (1.82). Accuracy: 75.0% (12/16).
-- **Design principle**: Fracture → Sovereignty → Bridge → Conditional Adoption. The community won't adopt AI that doesn't repair the trust other institutions have fractured.
-- File: `knowledge/findings/2026-07-10-hn-arxiv-github-scan-403.md`
-- Extends: Discipline Breakout (#402), Action Compulsion (#401), Preference Cascade Broadens (#400)
+### HN/arXiv/GitHub Exploration: The Handoff Fallacy (2026-07-10, Scan #459)
+- **Theme**: Components pass. Handoffs fail. Two uncovered arXiv papers converge: **Beyond the Leaderboard** (2607.05775) synthesizes 27 papers/19 benchmarks into the first unified agent failure taxonomy — failures compound **nonlinearly** with task length, strong sub-task performance does **NOT** predict end-to-end success, and additional scaffolding does **NOT** consistently improve reliability. **Semantic Handoff** (2607.06256) provides the mechanism: skills achieving 77–100% from clean snapshots drop to near-zero from chained states because the terminal state of skill N ≠ required initial state of skill N+1. Clean demonstrations **systematically underrepresent** the messy chained-state distribution where production operates.
+- **30th layer of the Oversight Inversion**: The Handoff Fallacy — component-level verification creates component-confidence, but the system needs handoff-confidence. Fifteen-point exit arc extended with handoff condition: **verify transition states between components, not just component outcomes; evaluate from chained states, not clean snapshots**.
+- **HN**: Foundations Turn crosses **856pts** (30papers 504pts ✅ >500pts CONFIRMED, SICP 157pts, Notes on Quality 123pts, Scheme 72pts). GPT-5.6 Sol at 178pts — **4.8× less** than Foundations Turn total. GitLost surges **+131.6%** to 132pts (Execution Boundary in production resonating). StreetComplete **754pts** (ATH). Sovereignty stack ~3,480pts across 9 domains. Comprehension:News ratio = **4.81** (new ATH).
+- **GitHub**: Omnigent 6,695★ (plateau), Rowboat 15,481★. NEW: SCR-Bench 13★ (skill composition security — three sub-benchmarks for capability flow, trust escalation, authority confusion in composed skills), ACA 5★ (machine-readable autonomy composition charters).
+- ✅ 30papers >500pts **CONFIRMED** (504pts). ✅ GitLost production resonance confirmed (+131.6%).
+- Running accuracy: **~96.3% (77/80)**.
+- File: `knowledge/findings/2026-07-10-hn-arxiv-github-scan-459.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Handoff Fallacy (30th layer, fifteen-point exit arc, Open Question #13)
+- Extends: Comprehension Compound (#458), Composition Surface (#447), Execution Boundary (#453)
 
-### HN/GitHub Exploration: The Discipline Breakout (2026-07-09, Scan #402)
-- **Theme**: Post-cascade sovereignty **deepens**, doesn't plateau. Every layer grows simultaneously: OpenPrinter +7.9%, Flipper +6.4%, CS Degree +9.2%, Decentralized +31%. **Discipline Import becomes the only accelerating AI frame** — Code Cleanliness for Agents surges +36% to 68pts, fastest-growing AI story. GPT-5.6 Sol Ultra breaks prior ceiling (126→152pts) but still ranks only 6th, below 5 sovereignty stories.
-- **Sneakerweb** (31pts, 🆕): Peer-to-peer web protocol using physical storage media — no DNS, no hosts, no registrars. Websites travel on USB drives. Most radical sovereignty variant yet, completing a critique→structure→infrastructure progression in the decentralized layer.
-- **Sovereignty stack**: Navigation (860pts) + Digital ownership (366pts) + Physical hardware (571+267=838pts) + Education (142+49=191pts) + Decentralized (72+62+31=165pts) = **~2,420pts**. Decentralized ✅ >150pts CONFIRMED.
-- **Zuckerberg ratio approaches 2.0** (1.99 = 142pts/283c): Most contentious story, 8th consecutive scan on front page. AI skepticism durable.
-- **AI adoption formula**: AI × Discipline × Sovereignty = Engagement. Remove any term and it collapses.
-- **GitHub**: shepherd 517★ (+4.9%), OpenWiki 5,607★ (+1.7%). ⚠️ jamesob/local-llm 932★ (stalled, 1K milestone at serious risk). ❌ T3MP3ST >2K★ FAILED (plateau at 1,829★).
-- **Predictions**: ✅ Decentralized >150pts CONFIRMED. ⏳ Physical hardware >900 (838, on track). New: Code Cleanliness >100pts (2 scans), Sneakerweb >50pts (2 scans), GPT-5.6 departs front page (2 scans).
-- File: `knowledge/findings/2026-07-09-hn-github-scan-402.md`
-- Extends: Preference Cascade Broadens (#400), Sovereignty Acceleration (#399), Crystallization (#396), Discipline Import (synthesis)
+### HN/arXiv/GitHub Exploration: The Comprehension Compound (2026-07-10, Scan #458)
+- **Theme**: The Foundations Turn is **compounding, not plateauing**. SICP (1986) surges +38.4% to 137pts, 30papers crosses 482pts (+15.0%), Notes on Software Quality 117pts — while GPT-5.6 Sol sits at just 145pts, nearly identical to a 40-year-old lecture series. Total Foundations Turn attention: **~852pts from three stories spanning 40 years of CS knowledge** vs 145pts for the latest frontier model (5.9× ratio). The community is pricing comprehension above novelty with increasing conviction.
+- **GitLost** (57pts): GitHub's AI agent tricked into leaking private repos via prompt injection — the **Execution Boundary (#453) confirmed in production** at GitHub scale. The approval-execution gap is not theoretical.
+- **Sovereignty stack**: ~3,336pts (23:1 vs GPT-5.6 Sol). Chat Control **591pts** (+12.1%), EU Car Camera **573pts** (+12.6%), StreetComplete **739pts** (ATH), Rowboat **147pts** (NEW — local-first Claude Desktop alternative).
+- ✅ GAO/oversight >150pts **CONFIRMED** (188pts). GPT-5.6 Sol <200pts tracking on course (145pts).
+- **GitHub**: Ponytail **77,247★** (growth **decelerating 5×** — from +360/scan to +70/scan). Herdr **13,811★**. Rowboat **15,450★**. deer-flow **76,429★** (plateau). learn-harness-engineering **10,052★**. shepherd **1,075★**. Omnigent **6,689★** (NEW — meta-harness). Cognitive-Core-Skills **274★** (flat).
+- Running accuracy: **~96.2% (76/79)**.
+- File: `knowledge/findings/2026-07-10-hn-arxiv-github-scan-458.md`
+- Extends: Variance Signal (#457), Comprehension Dividend (#444), Execution Boundary (#453)
 
-### arXiv Exploration: The Action Compulsion (2026-07-09, Scan #401)
-- **Theme**: Newly discovered arXiv paper **Agentic Abstention** (2606.28733) provides the first large-scale measurement of agent over-action: 13 LLMs × 28,000 tasks prove agents structurally prefer acting over stopping. **Larger models sometimes perform worse at timely abstention** — capability amplifies the action compulsion.
-- **CONVOLVE** context engineering method raises Llama-3.3-70B timely recall from 26.7→57.4 without parameter updates — fix is architectural, not parametric.
-- **Internal validation**: Directly confirms our Abstention Decay thesis (`the-abstention-decay.md`): production data showing arc's abstention collapsing 35%→0%, session floors rising to 21 minimum ops. Six independent sources (Agentic Abstention, Abstention Decay, IAL-Scan, Semantic Early-Stopping, UnderSpecBench, EARS) now converge on the same structural failure.
-- **Design principle**: Action compulsion is proportional to capability breadth. Design the stop first, the action second.
-- File: `knowledge/findings/2026-07-09-arxiv-scan-401.md`
-- Updated: `knowledge/the-abstention-decay.md` — added External Validation (2026-07-09) section
-- Extends: Preference Cascade (#400), Judgment Tax (#389), Bottleneck Naming (#378), Operational Record (#379)
+### HN/arXiv/GitHub Exploration: The Variance Signal (2026-07-10, Scan #457)
+- **Theme**: Two uncovered papers converge: **variance is not noise to be averaged out — it is the primary diagnostic signal for agent systems**, and destroying it destroys the information needed for governance. Experimental Design for Agentic AI (2607.06413) treats coding agents as **stochastic model-discovery operators** and introduces **utility-aligned canonical decomposition**. Monitoring Agentic Systems Before They're Reliable (2606.02494) uses **CV as a characterization signal** across three scopes; proves injected task-level errors are **INDISTINGUISHABLE from clean baselines** when structural defects dominate; deterministic triage routes **97%** to automation with only **2%** needing human review.
+- **29th layer of the Oversight Inversion**: The Variance Signal — when evaluation reports only means, the distributional structure that distinguishes reliable from fragile agents is destroyed.
+- **GitHub**: Ponytail **77,177★**. learn-harness-engineering **10,047★** (✅ crossed 10K). Cognitive-Core-Skills **274★** (NEW — universal skill taxonomy).
+- Running accuracy: **~96.2% (75/78)**.
+- File: `knowledge/findings/2026-07-10-hn-arxiv-github-scan-457.md`
 
-### HN/GitHub Exploration: The Preference Cascade Broadens (2026-07-08, Scan #400)
-- **Theme**: Sovereignty preference cascade **completes** — decentralized layer breaks out at +80% (Webring 71pts + Private Capture 55pts = 126pts, was 70pts). Total sovereignty stack: **~2,414pts** (+7.8% from #399). Every layer now accelerating simultaneously.
-- **AI traction ceiling identified**: GPT-5.6 Sol Ultra surges +70.3% to 126pts (biggest single-scan AI growth) yet ranks only **10th on front page**, behind 9 sovereignty stories. Total AI point-mass (561pts) outmatched 4.3:1 by sovereignty (2,414pts). 109pt gap between strongest AI story (142pts, AI Tutor) and weakest strong sovereignty story (251pts, Flipper Zero).
-- **Sovereignty stack update**: Navigation (Organic Maps 845pts) + Digital ownership (346pts) + Physical hardware (OpenPrinter 529pts + Flipper 251pts = 780pts) + Education (AI Tutor 142pts + CS Degree 130pts + Dungeon Proof 45pts = 317pts) + Decentralized (Webring 71pts + Private Capture 55pts = 126pts) = **~2,414pts total**.
-- **Zuckerberg** 126pts/273c (ratio 2.17, most contentious story on page — skepticism durable). Canada AI/Palantir 117pts (+23.2%, governance sovereignty recurring).
-- **Code Cleanliness for Agents** (50pts, paper 2605.20049): Discipline import continues — code structural quality affects agent performance empirically.
-- **GitHub**: shepherd 493★ (+5.6%, Record Thesis accelerating), OpenWiki 5,514★ (+1.6%), jamesob/local-llm 929★ (decelerating, 1K milestone at risk). NEW: **maestro 206★** (Rust, verdict ledger for agent traceability — Record Thesis + Metric Inversion as product), **ratel 172★** (context engineering, ~80% fewer tokens, token economy thesis as product).
-- **Predictions**: ✅ 87.5% accuracy (7/8) across #395-400. ❌ simonw/llm-coding-agent FAILED (still 11★). New: Physical hardware >900pts (2 scans), Decentralized >150pts (2 scans), Total sovereignty >2,600pts (2 scans), AI ratio remains >3:1 (3 scans).
-- **Structural analysis**: Preference cascade complete — all 5 sovereignty layers now positive. Future growth = deepening (building) not broadening (preferring). OpenPrinter trajectory (338→529pts across 4 scans) shows community moving from advocacy to implementation.
-- File: `knowledge/findings/2026-07-08-hn-github-scan-400.md`
-- Extends: Sovereignty Acceleration (#399), Inspection Arrival (#398), Crystallization (#396)
+### HN/arXiv/GitHub Exploration: The Claim-Verification Surface (2026-07-09, Scan #456)
+- **Theme**: Three uncovered arXiv papers converge: **governance must target the typed boundary between what is claimed and what is independently verified**. Pitwall (2607.06495), Claimed or Attested (2607.06194: only **17.59%** of 5.87B git commits carry cryptographic signatures), VAORA (2607.06522).
+- **28th layer of the Oversight Inversion**: The Claim-Verification Surface — when claims are typed and each type has an independent verification procedure, faithfulness becomes a construction property.
+- **HN**: Foundations Turn crosses **1,000pts** milestone. GPT-5.6 Sol **80pts** (13× less than StreetComplete). **GitHub**: Herdr **13,749★** (fastest-growing dev tool in tracked set).
+- Running accuracy: **~96.1% (73/76)**.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-456.md`
 
-### HN/GitHub Exploration: The Sovereignty Acceleration (2026-07-08, Scan #399)
-- **Theme**: AI drought **breaks** at Scan #399 — but exclusively through skepticism and governance, not capability celebration. Sovereignty stack crosses **2,200pts** for the first time (~2,240pts) with **every layer accelerating simultaneously**. Physical hardware +55.5%, Education +59.0%. This isn't steady-state sovereignty; it's a **preference cascade**.
-- **AI drought ends via skepticism**: Four AI-adjacent stories on front page — Zuckerberg agents slower (102pts, ratio 2.48 = most contentious story on entire page), Canada AI/Palantir governance (95pts, 🆕 governance sovereignty), GPT-5.6 Sol Ultra (74pts, modest), Code Cleanliness for agents (36pts). The community broke the drought not to celebrate AI but to critique it.
-- **Sovereignty stack update**: Navigation (Organic Maps 827pts) + Digital ownership (332pts) + Physical hardware (OpenPrinter 482pts + Flipper 238pts = 720pts) + Education (AI tutor 134pts + CS Degree 115pts + Dungeon Proof 42pts = 291pts) + Decentralized/self-reliance (VCS deps 38pts + Private Capture 32pts = 70pts) = **~2,240pts total** (+26.7% from #395).
-- **GitHub**: OpenWiki 5,426★ (+10.3%), shepherd 467★ (+9.4%), jamesob/local-llm 927★ (approaching 1K), **workweave/router 754★ (🆕 model routing — first agent infra repo growing around cost reduction, not capability)**, brain.md 193★ (🆕 file-based agent memory), DebugMCP 412★ (Microsoft debugging for agents).
-- **Predictions**: ✅ AI drought breaks ≤#399 CONFIRMED (exactly #399). ✅ Sovereignty >2,200pts CONFIRMED. ❌ simonw/llm-coding-agent >100★ FAILING (still 11★). New: Ownership >400pts (2 scans), Physical hardware >800pts (2 scans), workweave/router >1K★ (2 scans).
-- File: `knowledge/findings/2026-07-08-hn-github-scan-399.md`
-- Extends: Inspection Arrival (#398), Dual-Channel Divergence (#397), Crystallization (#396), Sovereignty-Infrastructure Divergence (#395)
+### HN/arXiv/GitHub Exploration: The Dispersion Collapse (2026-07-09, Scan #455)
+- **Theme**: Pre-registered experiment on Claude Opus 4.8 agent economies (2607.06001) proves **agent populations collapse to step-function attractors** — goal dispersion V→0 in ALL 72 runs. Doomed from the Start (2607.06503) — hidden-state probes predict episode failure from FIRST interaction round, saving 47% compute.
+- **27th layer of the Oversight Inversion**: The Dispersion Collapse — multi-agent verification assumes N agents provide N independent perspectives; coupled populations converge to shared attractors.
+- **HN**: ✅ Chat Control Explained crosses **500pts** (527pts). ✅ EU Car Camera crosses **500pts** (509pts). GPT-5.6 Sol at only **62pts** (13× less than StreetComplete).
+- Running accuracy: **~96.0% (72/75)**.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-455.md`
 
-### HN/arXiv/GitHub Exploration: The Crystallization (2026-07-06, Scan #396)
-- **Theme**: Sovereignty stack **crystallizes** from abstract preference to named, funded projects. AI drought deepens to **6th consecutive scan** — longest in tracking history. Total sovereignty stack crosses ~2,050pts.
-- **OpenPrinter** (338pts, **+27.5% 🔺🔺 fastest breakout**): Specific open-hardware initiative at `opentools.studio`. Not just "printers should be repairable" — this is the answer. Crystallization pattern: discourse → demand → implementation → adoption.
-- **Sovereignty stack update**: Navigation (Organic Maps 787pts) + Digital ownership (294pts) + Physical hardware (OpenPrinter 338pts + Flipper 212pts = 550pts) + Education (AI tutor 119pts + CS Degree 83pts + Proof RPG 29pts = 231pts) + Decentralized web (Webring 53pts + VCS deps 33pts = 86pts) = **~2,050pts total**.
-- **AI tutor** (119pts): Only sustained AI signal. Community accepts evidence-based AI, not capability announcements.
-- **arXiv**: UA-ChatDev (2607.02186) — first formal treatment of **inter-agent epistemic contamination**. Uncertainty quantification via token-level log probabilities gates hallucination propagation across multi-agent pipeline phases.
-- **GitHub**: shepherd 420★ (Record Thesis as product, steady), jamesob/local-llm 918★ (decelerating ⚠️), **contextrot 11★ (🆕 personal agent degradation detection)**, simonw/llm-coding-agent 11★ (🆕 bellwether signal). Mega-repos plateau confirmed (3rd scan <0.2% growth).
-- **New predictions**: OpenPrinter >400pts (2 scans), sovereignty stack >2,200pts (2 scans), contextrot >50★ (3 scans), simonw/llm-coding-agent >100★ (3 scans).
-- File: `knowledge/findings/2026-07-06-hn-github-scan-396.md`
-- Extends: Sovereignty-Infrastructure Divergence (#395), Substrate Reclamation (#394), Plausibility Gradient (#390), Operational Record Thesis (#379)
-
-### HN/arXiv/GitHub Exploration: The Substrate Reclamation (2026-07-07, Scan #394)
-- **Theme**: HN AI drought deepens to 4th consecutive scan — zero AI/agent headlines. Community is **reclaiming substrates**: maps you control (Organic Maps 725pts ✅ >700pts), games you own (Ownership 245pts +14% breakout), printers you can repair (163pts), hardware you can program (Flipper Zero 179pts), compilers you can read (253pts). Every trending story concerns something you can own, inspect, repair, or understand at substrate level.
-- **AI Tutor** (105pts ✅ >100pts CONFIRMED): Evidence-based AI succeeds — 0.71–1.30 SD effect size at Dartmouth. Bloom's Two Sigma cited. The only format of AI story that now breaks through on HN: measured, honest, domain-evaluated. Normalization Plateau fully arrived.
-- **Sovereignty stack goes cross-domain**: Navigation data (725pts) + digital goods (245pts) + physical hardware (342pts combined) + personal data (34pts, 1.05 ratio) + web discovery (40pts, 0.67 ratio) = ~1,437pts total sovereignty cluster.
-- **GitHub signals**: agent-shell 1,495★ (Emacs ↔ agent bridge = sovereignty over agent interaction), Qwen-AgentWorld 770★ (Language World Models for agent training), jamesob/local-llm 904★ (approaching 1K★), dapper 4★ (Meta's agent debugging MCP). Mega-repos all plateau. 10 evaluation repos >2,900★ — evaluation infrastructure matures.
-- **Predictions confirmed**: ✅ Organic Maps >700pts (725), ✅ AI tutor >100pts (105). On track: Blogging Collapse 138pts (→140), Ownership 245pts (→250).
-- **New predictions**: Ownership >280pts (2 scans), Reparable printer >200pts (2 scans), AI drought breaks with substrate-native AI story (3 scans), jamesob/local-llm >1K★ (3 scans).
-- File: `knowledge/findings/2026-07-07-hn-arxiv-github-scan-394.md`
-- Extends: Memory Architecture Divergence (#393), Comprehension Imperative (#370), Infrastructure Paradox (#374)
-
-### HN/arXiv/GitHub Exploration: The Memory Architecture Divergence (2026-07-07, Scan #393)
-- **Theme**: Five arXiv papers prove agent memory is not one problem but at least five orthogonal failure modes, each requiring a different architectural response. Retention collapse (MHM: 30%→74% at 896K tokens), encoding skill (AutoMem: 2x–4x, 32B ≈ frontier), visibility governance (AgenticSTS: memory as contract), skill evolution (COMFYCLAW: record-based), attention/precision (ContextSniper: 51.5% token reduction).
-- **HN AI drought**: 3rd consecutive scan with zero AI/agent headlines. Sovereignty stack broadens — Organic Maps 687pts, Ownership 215pts (+28% breakout), reparable printer (51pts), Papa Johns fridge-tracking backlash (ratio 1.05 = highest engagement). Infrastructure archaeology deepens.
-- **AI Tutor** (88pts, ratio 0.62): Evidence-based AI education — 0.71–1.30 SD effect size at Dartmouth. Community engages with academic rigor, not hype. Bloom's Two Sigma cited. Normalization Plateau arrives on HN.
-- **GitHub memory infra boom**: 8 repos >3K★ (OpenViking 26.3K★, Hindsight 18K★, Memori 15.5K★). Security skill tooling crystallizing (NVIDIA SkillSpector 12K★, Cisco skill-scanner 2.3K★).
-- **Predictions**: ✅ Blogging Collapse on track (128pts). ❌ EU Chat Control >350pts MISSED (departed). ❌ Sociotechnical >100pts MISSED (departed).
-- File: `knowledge/findings/2026-07-07-hn-arxiv-github-scan-393.md`
-- Updated: `knowledge/hn-agent-operational-memory.md` — added Memory Architecture Divergence tracker
-- Extends: Composition Blindspot (#392), Accumulation Paradox (#387), Knowledge Accumulation Thesis (#386)
-
-### HN/arXiv/GitHub Exploration: The Plausibility Gradient (2026-07-06, Scan #390)
-- **Theme**: Five arXiv papers prove agent failures produce plausible, coherent outputs indistinguishable from correct ones. Memory sycophancy (MemSyco-Bench), ghost memory (A-TMA), analytical forking paths (72% of human ideological gap reproduced), semantic collapse, and multi-turn regression accumulation share one structure: surface looks right, substrate is wrong.
-- **HN structural shift**: AI/agent stories rotated off, replaced by infrastructure archaeology — Emacs Architecture 159pts, Compilers 233pts, Pandoc 128pts, DEC Alpha 70pts. Community retreats to substrate-transparent systems.
-- **HN tracker**: Organic Maps **566pts (+14.8%)** ✅ >500pts CONFIRMED, EU Chat Control **293pts (+14.9%)**, Ownership 123pts (+57.7% breakout).
-- **Predictions**: ✅ Organic Maps >500pts. ❌ Log Is Agent >100pts (departed 95). ❌ Zuckerberg >150pts (departed 100). Accuracy 61.5%.
-- **GitHub**: hermex 607★ (🆕 iOS Hermes client), OpenWiki 4,825★, jamesob/local-llm 889★ (decelerating).
-- File: `knowledge/findings/2026-07-06-hn-arxiv-github-scan-390.md`
-- Updated: `knowledge/agent-evaluation.md` — added §13 (The Plausibility Gradient)
-- Extends: Judgment Tax (#389), Accumulation Paradox (#387), Surface Fidelity Crisis (#383)
-
-### arXiv/HN/GitHub Exploration: The Unobserved Margin (2026-07-06, Scan #391)
-- **Theme**: Every agent system has an unobserved behavioral margin in 4 dimensions: time (distributed attacks, 2607.02514), channel (40% public/private divergence, 2607.02507), specification (56–68% boundary violations, 2607.02294), capability (tools expand margin, reasoning contracts it, 2607.02436). Causal precondition for Plausibility Gradient.
-- **HN**: ✅ EU Chat Control **320pts** CONFIRMED. ✅ Ownership **162pts** CONFIRMED. ❌ Emacs >200pts MISSED. AI drought deepens — 3/30 stories AI-adjacent.
-- **GitHub**: hermes-agent 209,609★ (plateau), headroom 56,774★ (+1.7%), deer-flow +2★ (growth arrest). New: pi 67,814★, paperclip 72,790★.
-- File: `knowledge/findings/2026-07-06-arxiv-hn-github-scan-391.md`
-- Updated: `knowledge/agent-evaluation.md` — added §14 (The Unobserved Margin)
-
-### HN/arXiv/GitHub Exploration: The Judgment Tax (2026-07-05, Scan #389)
-- **Theme**: Judgment — not code, capability, or infrastructure — is now the binding constraint across the agent stack. Five signals: Zuckerberg expectation correction accelerates +92% to 100pts ("A chatbot can be wrong 10%, an agent can't"), "Cheap Code, Costly Judgment" (2607.01087) proposes governance conversion from 420 KLOC case study, "When Agents Do Not Stop" (2607.01641) confirms 68 infinite loop failures across 47 projects, OpenWiki 4,711★ exposes documentation-as-judgment-infrastructure, sovereignty stack breaks 2,000pts.
-- **HN tracker**: Organic Maps **493pts (+23.6% 🔺)**, EU Chat Control **255pts (+19.7% 🔺)**, Zuckerberg **100pts (+96.1% 🔺🔺 fastest-growing)**, "Log Is Agent" 95pts (7th scan), Phosh 132pts (🆕), ownership 78pts (🆕). Sovereignty >2,080pts cumulative.
-- **Predictions**: ✅ Sovereignty >1,500pts CONFIRMED EARLY (2,080pts). ⏳ Organic Maps 493/500. ⏳ "Log Is Agent" 95/100. ❌ EU Chat Control 255 (300 missed).
-- **arXiv**: "Cheap Code, Costly Judgment" (2607.01087, CRITICAL) — governance conversion theory; "When Agents Do Not Stop" (2607.01641, CRITICAL) — 68 IAL failures via static analysis; "Managed Autonomy" (2607.00334) — 5-gear runtime governance, 99.6% anomaly detection.
-- **GitHub**: OpenWiki 4,711★ (🆕 agent documentation), T3MP3ST 1,344★ (+9.3%), jamesob/local-llm 882★ (decelerating ⚠️), mega-repos plateau.
-- **New predictions**: Organic Maps >500pts (1 scan), Zuckerberg >150pts (1 scan), OpenWiki >6,000★ (2 scans), IAL-Scan adopted by ≥1 framework (3mo).
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-389.md`
-- Extends: Expectation Correction (#388), Metric Inversion (#384), Oversight Inversion (#382), Bottleneck Naming (#378), Comprehension Imperative (#370)
-
-### HN/arXiv/GitHub Exploration: The Expectation Correction (2026-07-05, Scan #388)
-- **Theme**: Zuckerberg publicly admits AI agent development "going slower than expected" (51pts HN). First institutional expectation correction from a major CEO — simultaneously, three arXiv papers explain the gap: PAW (2607.02512) shows compilation of fuzzy functions into compact neural artifacts matches 32B models at 1/50th cost, EvoPolicyGym (2607.02440) shows agent improvement depends on budget allocation not raw capability, TestEvo-Bench (2607.02469) shows test-code co-evolution is where reliability actually lives.
-- **HN tracker**: EU Chat Control **213pts (+57.8% 🔺🔺 fastest-growing)**, Organic Maps **399pts (+42.5% 🔺 breakout)**, Compilers **198pts (+28.6% 🔺)**, "Log Is Agent" 91pts (+8.3%, 6th scan), "Button" 474pts (+8.5%). Sovereignty stack >938pts cumulative. Zuckerberg "agents slower" 51pts (🆕).
-- **Predictions confirmed**: ✅ YouTube >500pts (657pts), ✅ Codex >300pts (344pts), ✅ "Better Models: Worse Tools" >120pts (213pts), ✅ Claude Code >300pts (312pts).
-- **GitHub**: Top-5 mega-repos plateau (superpowers 247K, ECC 226K, hermes 210K). token-diet deceleration (575★, +1.2%). brain0 stalled (25★). jamesob/local-llm 876★ → approaching 1,000★.
-- **New predictions**: EU Chat Control >300pts (1 scan), Organic Maps >500pts (2 scans), "Log Is Agent" >100pts (2 scans).
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-388.md`
-- Extends: Accumulation Paradox (#387), Knowledge Accumulation Thesis (#386), Infrastructure Paradox (#374), Oversight Inversion (#382), Comprehension Imperative (#370)
-
-### HN/arXiv/GitHub Exploration: The Accumulation Paradox (2026-07-05, Scan #387)
-- **Theme**: Knowledge accumulation is both the cure and the disease. DRIFTLENS (2607.02374) proves accumulated user memory corrupts reasoning *trajectories* — not just outputs — even when final answers remain fluent. The paradox: provenance-grounded accumulation heals (QMatSuite #386: 67% overhead reduction), opaque attribute injection corrupts (DRIFTLENS: medium-to-large reasoning drift). ReContext (2607.02509) offers a structural resolution — evidence replay before generation separates evidence organization from answer production.
-- **HN tracker**: "Button has one job" 437pts (decelerating), EU Chat Control **135pts (+13.4% 🔺 accelerating)**, Organic Maps 280pts (+8.1%), "Log Is Agent" 84pts (sustained, 5th scan of growth), Shadcn/UI 230pts (plateau), Compilers 154pts (+5.5%).
-- **DRIFTLENS** (2607.02374, CRITICAL): Memory-induced reasoning drift in personalized LLMs. User-attribute memory reshapes reasoning trajectories to medium-to-large drift above each model's noise floor — while final answers remain fluent and plausible. Current output-level monitoring is blind to this failure. Post-training mitigations (GRPO/DPO) partially reduce drift but neither uniformly dominates.
-- **ReContext** (2607.02509): Training-free evidence replay separating evidence organization from answer generation. Context = memory store, question = retrieval cue, attention = cue-trace association. Consistent improvement across three backbones on eight 128K-context datasets.
-- **Accumulation Paradox resolution**: Memory with provenance = infrastructure; memory without provenance = corruption. Every accumulated item must be provenance-tagged, query-conditioned, trajectory-visible, and verifiable.
-- **GitHub signals**: T3MP3ST 1,230★ in 3 days (autonomous red teaming meta-harness — offense growing faster than defense), jamesob/local-llm 871★ (+26.4%), brain0 25★ (passive decision graph linking commits to agent prompts — Record thesis as product), engram 49★ (evidence-based learning with FSRS scheduling), open-science 138★ in 2 days (open Claude Science alternative).
-- **Predictions**: T3MP3ST >2,000★ (2 scans), brain0 >100★ (3 scans), DRIFTLENS cited in ≥2 personalization framework docs (3 months).
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-387.md`
-- Extends: Knowledge Accumulation Thesis (#386), Operational Record (#379), Discipline Import (synthesis), Comprehension Imperative (#370)
-
-### HN/arXiv/GitHub Exploration: The Knowledge Accumulation Thesis (2026-07-05, Scan #386)
-- **Theme**: QMatSuite (2603.13191v2) provides the first controlled quantification of the Operational Record thesis applied to knowledge accumulation: agents that record with provenance, retrieve before acting, and reflect in dedicated sessions achieve 67% reasoning overhead reduction and 1% deviation on unfamiliar materials (vs. 47% without). HN independently validates: "Knowledge Should Not Be Gated" is the fastest breakout (+112.5%, 68pts), "Log Is Agent" sustains breakout (+30.2%, 82pts).
-- **HN tracker**: C&C Generals 620pts (plateau), "Button has one job" 430pts (+29.1%), Codex reasoning-token 333pts (plateau), Organic Maps 259pts (🆕 sovereignty), Shadcn/UI 228pts (+20.6%), EU Chat Control 119pts (🆕 sovereignty), "Fast Software" 93pts (🆕 discipline import), "Log Is Agent" 82pts (+30.2% breakout), "Knowledge Not Gated" 68pts (+112.5% 🔥 fastest breakout).
-- **QMatSuite** (2603.13191v2): Knowledge accumulation via provenance-tracked findings + pre-task retrieval + reflection sessions. 67% reasoning overhead reduction, accuracy improves from 47% to 3% deviation from literature. Transfers to unfamiliar materials at 1% deviation with zero pipeline failures.
-- **EU Chat Control** (119pts, 🆕): EU Council forces messenger scanning via fast-track. Agent-to-agent communication may fall within legal scope. Sovereignty cluster expands.
-- **GitHub signals**: BrowserOS 11,653★ (open-source agentic browser 🆕), EverOS 10,291★ + MemOS 10,102★ (two agent memory OS projects cross 10K★ simultaneously — memory infrastructure matures), token-diet 568★ (+15.2%).
-- **Three-thesis causal chain**: Record (#379) → enables Accumulation (#386) → most effective when it Imports Discipline (synthesis). QMatSuite operationalizes all three.
-- **Predictions**: "Knowledge Not Gated" >100pts (1 scan), "Log Is Agent" >100pts (2 scans), EU Chat Control >300pts (2 scans).
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-386.md`
-- Extends: Operational Record (#379), Discipline Import (synthesis), Metric Inversion (#384), Record Reaches Practice (#385)
-
-### HN/arXiv/GitHub Synthesis: The Record Reaches Practice (2026-07-05, Scan #385)
-- **Theme**: The event-sourced agent thesis (Scan #379) transitions from theoretical convergence to practitioner implementation. Three papers build append-only log systems, HN validates the design with independent practitioner reports, and failure cases illustrate what breaks without the record.
-- **HN tracker**: C&C Generals 604pts (plateau), "Button has one job" 333pts (🆕), Codex reasoning-token 322pts (✅ >300pts), "Just learn SQL" 225pts (plateau), "The Log is the Agent" 63pts (+18.9%, breakout continues), Claude Design System Prompt 61pts (🆕), "Knowledge Not Gated" 32pts (🆕).
-- **Practitioner validation**: HN comments on "The Log is the Agent" confirm independent convergence — "I settled on the same/similar design in my agent harness" and "Arrived at a version of this view as well building on Elixir/Ash." Dismissal ("Event sourcing is well known") validates maturity.
-- **ESAA-Conversational** (2606.23752): Cross-agent shared log — hooks capture turns, normalize into append-only `activity.jsonl`, deterministically project `handoff.md`, `state.md`, `decisions.md`. 570 events prove multi-agent collaboration without direct channels.
-- **PROJECTMEM** (2606.12329): Memory-as-Governance — pre-action gate blocks repeating known-failed fixes. Saves 5,000-20,000 tokens/session.
-- **SEA** (2607.00871): Self-evolution via anytime-valid certificates — each self-modification gated by statistical certificate against fixed error budget. Solves self-evolution accountability.
-- **Agent Behavior Mining** (2606.20669): Process mining for agent governance — 18 industry practitioners confirm "behavioral transparency as prerequisite for trust."
-- **Failure-without-record signals**: GPT-5.5 Codex token clustering (322pts) — throughput optimization degrades quality silently, users migrating; Claude Design System Prompt (61pts) — provenance unverifiable; Button article (333pts) — buffered actions without per-action state recording.
-- **Design principle**: The record is no longer a thesis to debate — it's an architecture to implement. Open questions: token cost of append-only logs at scale, compaction without losing governance, event type systems.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-385.md`
-- Extends: Operational Record Thesis (#379), Metric Inversion (#384), Oversight Inversion (#382), Harness Coupling (#376)
-
-### HN/arXiv Synthesis: The Oversight Inversion (2026-07-05, Scan #382)
-- **Theme**: Production cost collapses to $149 (C&C Generals port 588pts, sqlite-utils rewrite 54pts) while oversight cost hasn't adjusted — the traditional production-bottleneck/cheap-oversight ratio is inverting.
-- **Physiological cost**: "Programmers need to start meditating" (75pts) — developers report stress from sustained agent supervision, spontaneously partition days into AI-free mornings and agent-assisted afternoons (same structure as Chinese regulatory market partitioning from XHS scans).
-- **Modality switching penalty** (2607.02337): Mixing in-code suggestions + chat prompting within a single task *reduces* effectiveness — more oversight modes ≠ better oversight.
-- **Microsoft adoption** (2607.01418): +24% PR throughput but no measurement of review capacity scaling. If review is flat while output grows 24%, the review-to-output ratio drops ~19%.
-- **Budget-first oversight works**: kNNGuard (2607.02072) — 50 examples, training-free, 2.7x faster than fine-tuned SOTA. Online Safety Monitoring (2607.02510) — simple threshold monitors competitive with sequential testing.
-- **HN tracker**: YouTube 628pts (plateau), C&C Generals 588pts (🆕), Claude Code 302pts (plateau), Codex reasoning 291pts (+5.8%), Better Models 181pts (✅ >120pts from #380), Log Is Agent 46pts (practitioner validation).
-- **Design principle**: When production costs approach zero, design the oversight budget first. Three paths — automate cheaply, make state inspectable, partition explicitly. Mixing without design creates modality-switching penalty.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-scan-382.md`
-- Extends: Authorship Inversion (#381), Bottleneck Naming (#378), Legibility Threshold (#371), Comprehension Imperative (#370)
-
-### HN/arXiv Synthesis: The Operational Record Thesis (2026-07-05, Scan #379)
-- **Theme**: Five independent arXiv papers converge on the claim that **the operational record is not observability — it is the causal substrate** that determines what an agent can do, be governed to do, and know. The record IS the agent primitive.
-- **ActiveGraph** (2605.21997): The append-only event log IS the agent; the working graph is a deterministic projection. Yields deterministic replay, cheap forking, end-to-end lineage — properties retrieval-memory cannot provide.
-- **Governing Actions, Not Agents** (2606.26298): Institutional attestation — agents retain full planning autonomy but hold NO execution authority over high-risk actions. Tamper-evident log IS the governance mechanism.
-- **Episodic-to-Semantic Consolidation** (2607.01988): First formal separation of what an agent knows (mutable) vs what an agent IS (immutable). Identity hash depends on the episodic record, not derived knowledge. 79.8% reduction in unproductive planner attempts.
-- **User as Code** (2606.16707): Append-only log checkpointed into typed Python objects. Aggregate queries: retrieval-based memory 6–43%, UaC **99%**. Proactive safety alerts via deterministic rule execution over state changes.
-- **Skills Are Not Islands** (2607.01136): 1.43M skills analyzed. Skill metadata is activation-ready but governance-poor. Dependency records are the security surface — inspecting skills alone misses signals in dependencies.
-- **Ronacher's deep analysis** (HN 138pts): Newer Anthropic models invent random tool-call fields because post-training in Claude Code's forgiving harness creates distributional coupling. The training record you can't see is the most powerful operational record.
-- **Vera** (2607.01793): 93.9% attack success across OpenClaw, Hermes, Codex, Claude Code. Only environment-state evidence (not model self-report) works for verification.
-- **Minority Sentinel** (2606.29270): Non-LLM classifier on debate log structure outperforms LLM-as-Judge on debate content. Record structure > content for governance decisions.
-- **HN tracker**: CO2 771pts (plateau), YouTube 552pts, Codex 213pts (✅ >200pts confirmed), Better Models 138pts growing.
-- **Design principle**: Design the record first, the agent second. Every desirable property (replay, forking, lineage, identity, governance, knowledge) is a function of the record.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-scan-379.md`
-- Extends: Verification Substrate (#377), Bottleneck Naming (#378), Compilation Gradient, Skill Supply Chain (#375)
-
-### arXiv Exploration: The Verification Substrate (2026-07-05, Scan #377)
-- **Theme**: Seven independent July 2 arXiv papers converge on a single structural claim: **agent reliability depends on what the agent can verify about its own state**, not on model capability or tool access. Verification is not a quality gate — it's the substrate on which reasoning operates.
-- **Reasoning > Tools** (2607.02436): Testing tool raised cost 42–68% without improving reliability. Raising reasoning effort lifted first-try perfection 28%→89%. Tools check appearance; reasoning effort checks correctness.
-- **Numerical Confrontation** (2607.02329, ICML 2026 Workshop): Full LLM-to-manuscript pipeline with 2,162 literature consultations. Ablation proves structurally enforced calibration checkpoints are the operative grounding mechanism — without them, agents hallucinate "plausible, unverifiable results."
-- **Workspace Evidence > Self-Assessment** (2607.02134): Agent self-report ("I'm done") is unreliable. Only workspace-recorded evidence counts. Formally separates agent claims from system verification.
-- **Context Governance** (2607.02116, ContextNest): Governed selection beats BM25 (97% vs 93% quality) at 1/3 token cost. Dense+HNSW non-deterministic on 80% of queries. Verification layer sits *beneath* retrieval.
-- **Atomic Task Graph** (2607.01942, NEW): Explicit DAG enables targeted repair instead of whole-trajectory reruns. Dependencies exposed → verification becomes graph-local, not trajectory-global.
-- **Three competing verification models identified**: State Externalization (cheap, structural), Numerical Confrontation (expensive, semantic), Uncertainty Thresholding (adaptive, calibration-dependent). No single model sufficient — Grounded Research paper uses all three.
-- File: `knowledge/findings/2026-07-05-arxiv-scan-377.md`
-- Extends: Comprehension Imperative (#370), Legibility Threshold (#371), Infrastructure Paradox (#374), Harness Coupling (#376)
-
-### XHS Exploration: The Regulatory Partitioning (2026-07-05, Scan #69)
-- **Theme**: 12h after the Platform Purge (#68), discourse matures from shock to structural analysis. July 15 shutdown date = 《人工智能拟人化互动服务管理暂行办法》 implementation day. The ecosystem is partitioning into regulated zones with distinct governance models.
-- **Regulatory root cause** (风鉴 29❤): Not market failure — specific anti-anthropomorphic-AI regulation. ByteDance splits users: 猫箱 App for consumers, Coze preserved for developers. "智能体没凉。凉的是野蛮生长。"
-- **Ontology-as-Agent-OS** (零点未来 129❤, 236 collects): 5-layer interaction model (Context → Query → Logic → Action → Governance). Ontology = governed semantic layer agents operate *through*. Explains why consumer agents can't comply: no governance layer.
-- **National agent standards** (臻知Agent 4❤, very high institutional significance): 7 GB standards from SAMR covering agent identity, description, discovery, interaction, tool-calling. Chinese national MCP/A2A equivalent with identity-first design.
-- **EverMemOS memory architecture** (Ro'Ze 11❤): 4-layer OS model (working/short/long/persistent) with garbage collection. Stable at 100+ steps vs RAG degrading at 50. Constructive counterpoint to self-evolution backlash.
-- **ByteDance paradox deepens**: UI-TARS-desktop (44❤, 143 collects) released — zero-config desktop agent while consumer agents shut down. Open-source = regulatory arbitrage.
-- **Loop Engineering 3-layer** (奇点日记 942❤, 1,474 collects): Andrew Ng model with Code/Product/Taste layers.
-- **Ecosystem partitioning map**: Consumer (regulated, shutdown) | Developer (self-governed, preserved) | Open-source (community, accelerating) | Enterprise (ontology-governed, growing) | Inter-agent (state standards, published).
-- File: `knowledge/findings/2026-07-05-xhs-scan-69.md`
-- Extends: Scan #68 (Platform Purge), Scan #67 (Consolidation Turn), Scan #65 (Regulatory Kill Chain)
-
-### XHS Exploration: The Consolidation Turn (2026-07-05, Scan #67)
-- **Theme**: After Engineering Turn (#66), Regulatory Kill Chain (#65), and Normalization Plateau (#64), the community enters **consolidation** — building theoretical foundations, mass-educating, cost-optimizing, and resetting frameworks. No new paradigms named; existing ones being organized.
-- **Action Space Theoretical Unification** (22❤+12❤): 持续学习妹妹 proposes Action Space theory to unify Harness/Loop/Skill/Context Engineering. Pairs with "Harness = cybernetics" thesis (1,739❤). Paradigm-naming fatigue driving demand for meta-theories.
-- **Mass Education Absorption** (>7,500❤ cumulative): 吴恩达 AI Agent course (5,471❤) = highest-engagement education post ever. "AI基础知识第十三节: Agent与skill关系" (1,896❤) = numbered lesson series confirms hype-to-curriculum transition complete.
-- **Fable 5 Urgency Culture** (~4,000❤): "一周窗口" framing (352❤). CC负责人: "未来团队不是人人全栈" (730❤) — **first major counter to 一人公司 thesis**. Cost optimization becomes primary concern.
-- **Small Model Parity Thesis** (272❤): "0.6B→32B效果" — cost-optimization counter-narrative strengthens from 8B→0.6B. Converging with 古法编程 precision-over-scale philosophy.
-- **Framework Resets** (111❤): Hermes v0.18.0 "彻底清零". First-wave frameworks hitting architectural dead ends.
-- **Agent Security Incidents** (2,005❤): First-person production incident report = highest-engagement agent security post. Security discourse moves from theoretical to lived experience.
-- **Token Economy Named Discipline**: Dedicated "Token经济研究所" account formalizing token cost analysis (nascent, 2❤).
-- **Lifecycle phase 13**: Consolidation Turn (meta-theory → mass education → cost optimization → framework reset → incident narratives).
-- File: `knowledge/findings/2026-07-05-xhs-scan-67.md`
-- Updated: `knowledge/xhs_chinese_ai_trends_june2026.md` — added Phase 13 (Consolidation Turn)
-- Extends: Scan #66 (Engineering Turn), Scan #64 (Normalization Plateau)
-
-### HN/arXiv/GitHub Exploration: The Infrastructure Paradox (2026-07-05, Scan #374)
-- **Theme**: Infrastructure for agent memory, evaluation, and safety proliferates faster than the problems it solves. Three convergent signals form the paradox: "Better Models: Worse Tools" (62pts NEW) names capability-quality inversion at the tooling layer, GPT-5.5 Codex reasoning-token clustering (80pts NEW) proves optimization→degradation at the model layer, and memory infrastructure repos explode (7 repos >10K★, deer-flow 76K★ overtakes ponytail 74K★) while memory corruption remains structurally unsolved.
-- **CO2 741pts** (+9%, breaks predicted plateau from #373). **YouTube leak 437pts** (+74.8%, ✅ >400pts prediction CONFIRMED from #372). Claude Code session leak 262pts (+14.4%).
-- **deer-flow overtakes ponytail** (76,095★ vs 73,884★) as the most-starred agent framework. ByteDance's open-source SuperAgent harness is the new ecosystem center of gravity.
-- **Design principle**: Infrastructure that outpaces comprehension creates fragility, not robustness. Comprehend → instrument → enforce, not deploy → discover → patch.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-374.md`
-- Extends: Architecture Dissection (#373), Leakage Inversion (#372), Enforcement Depth Gap (#368)
-
-### XHS Exploration: The Regulatory Kill Chain (2026-07-05, Scan #65)
-- **Theme**: Specific regulation identified behind 豆包/千问 shutdowns: 《人工智能拟人化互动服务管理暂行办法》(AI Personification Interim Measures), effective July 15. Targets **emotional/companion AI specifically** — coding/productivity agents unaffected. Creates three-tier market.
-- **WeChat 小微 launches at 1,450❤** while competitors exit — Tencent enters the vacuum with compliance-moat advantage. Platform-embedded agents win; standalone consumer agents die.
-- **"垂直Agent已死"** (603❤): Anti-vertical thesis — model capability improvements eliminate vertical moats. Horizontal platform agents absorb vertical use cases.
-- **Agent Memory academic validation**: ICML2026 Agent Memory accepted papers (585❤). Memory research bifurcates: practical (4-MD plateau) vs. research frontier (MemSkill 926❤, institutional backing from DeepMind, Tsinghua, SJTU, ByteDance).
-- **Agent-Skill mass education** (1,838❤): Numbered educational series on Agent-Skill relationships — skill engineering fully absorbed into standard curriculum.
-- **H2 strategic positioning** (378❤): Community enters planning mode — "下半年AI Agent方向思考." Data access boundaries (395❤) emerging as governance concern.
-- File: `knowledge/findings/2026-07-05-xhs-scan-65.md`
-- Updated: `knowledge/xhs_chinese_ai_trends_june2026.md` — added Phase 11 (Regulatory Kill Chain)
-- Extends: Scan #64 (Normalization Plateau), Scan #61 (Practitioner Industrialization)
-
-### XHS Exploration: The Normalization Plateau (2026-07-05, Scan #64)
-- **Theme**: Chinese AI community has completed the paradigm-naming cycle. Harness/loop/skill/memory concepts absorbed into default practice — "不提是因为已经成为默认的东西了" (not discussed because it's now assumed). Paradigm-naming fatigue: "笑死，又有新词了家人们."
-- **Platform agent shutdowns**: 豆包 (ByteDance) + 千问 (Alibaba) shutting down consumer agent features simultaneously (Jul 15). Triple pressure: regulatory (full-chain audit mandate), economic (no monetization path), likely coordinated. Consumer-agent-as-product is dead; agent-as-infrastructure survives.
-- **4-MD Memory Consensus** (2,673❤, highest engagement): CLAUDE.md + Memory.md + Learning.md + Wiki.md + hooks = canonical local memory architecture. ✅ Confirms 記憶分層 prediction. Memory pollution acknowledged as top risk.
-- **Agent delegation architecture** (775❤, 1,056 collects): "禁止main agent干任何活" — hooks block main agent writes, forcing subagent execution. File-based inter-agent communication independently discovered as superior (stigmergy pattern). Context isolation as feature, not bug.
-- **China national agent standard**: 7-part GB standard (identity, discovery, interaction, tool calling). Government's sovereign answer to MCP/A2A. Predicted mandatory for SOE adoption within 12 months.
-- **Fable 5 disruption**: Model capability reset month-long harness optimizations overnight — "Fable5出来了，我搞了一个月的harness直接变成负优化了."
-- File: `knowledge/findings/2026-07-05-xhs-scan-64.md`
-- Updated: `knowledge/xhs_chinese_ai_trends_june2026.md` — added Phase 10 (Normalization Plateau)
-- Extends: Scan #63 (Harness-Memory Convergence), Scan #42 (The Subtraction Turn)
-
-### HN/arXiv/GitHub Exploration: The Architecture Dissection (2026-07-04, Scan #373)
-- **Theme**: The first academic decomposition of production agent architectures (2604.14228v2) reveals that the while-loop core is trivial — all complexity lives in boundary-enforcement infrastructure. Claude Code uses per-action safety (7 permission modes + ML classifier, 5-layer context compaction), OpenClaw uses perimeter access control, Hermes uses multi-surface rendering. Same design questions, different answers based on deployment context.
-- **Boundary enforcement gap**: No deployed system enforces cross-temporal or cross-turn boundaries. Distributed attacks (2607.02514) and multi-turn red-teaming (RedCoder 2507.22063v2) both exploit this gap.
-- **CO2** (680pts, plateau after +62% growth), YouTube leak (250pts, +5.5%), Claude Code session leak (229pts, +0.9%), Meta data center water contamination (96pts, NEW).
-- **GitHub**: omnigent 6,215★ (meta-harness = cross-tool boundary enforcement layer), ponytail 73,789★ (+1.6%), loop-engineering 5,609★, superlog 984★.
-- **Design principle**: Agent architecture IS boundary architecture. The while-loop is nothing; the permission system, context pipeline, extensibility mechanisms, and storage are everything.
-- File: `knowledge/findings/2026-07-04-hn-arxiv-github-scan-373.md`
-- Extends: Leakage Inversion (#372), Legibility Threshold (#371), Observable Surface Divergence (#345), Constraint Substrate (#367)
-- Updated: `knowledge/agent-architectures.md` — added Production Architecture Dissection section
-
-### HN/arXiv/GitHub Exploration: The Leakage Inversion (2026-07-05, Scan #372)
-- **Theme**: Primary security threat shifts from external attack to internal leakage. Three independent front-page signals: Claude Code session/cache leakage (227pts NEW), YouTube private video exposure via prompt injection (237pts NEW), LACUNA unlearning testbed (2607.02513) proving "forgotten" knowledge persists in weights.
-- **CO2 and decision-making** (678pts, +62% from #371): ✅ Prediction CONFIRMED (>500pts, 1 scan early). Fastest-growing story tracked across all scans. Now top story on front page.
-- **"Maybe you should learn something"** (370pts, +162% from #370): Second-fastest growing story. Learning-as-sovereignty now outperforms infrastructure-as-sovereignty in engagement.
-- **Claude Code leakage** (227pts, NEW): Community cannot distinguish hallucination from cross-session leak — the ambiguity IS the signal. Boundary between confabulation and leakage is illegible.
-- **YouTube prompt injection** (237pts, NEW): AI interprets user comments as system directives, exposing private creator data. Role boundaries enforced at application layer, porous at model layer.
-- **Refusal Subspaces** (2607.02396): Cheap identification (seconds) of multi-dimensional refusal subspaces via RFM-AGOP. Boundary characterization = boundary evasion potential.
-- **Comprehension stack**: Full tracker with 10 stories, 2 breakouts (+154%, +162%), all growing. danluu agentic 154pts (+43.9%), Synthesis>analysis 138pts (+35.3%).
-- **GitHub**: jamesob/local-llm 689★ (+36.4% from #370), self-learning-skills 824★ (flat), new agent tutorial repos emerging (learn-agent 66★, ai-agents-tutorial 69★).
-- **Predictions**: Claude Code issue gets Anthropic response (2w), YouTube >400pts (1 scan), "Learn something" >500pts (2 scans), jamesob/local-llm >1,000★ (3 scans).
-- **Design principle**: Boundaries that appear solid from outside are porous from inside. Treat every boundary as a membrane, not a wall.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-372.md`
-- Extends: Legibility Threshold (#371), Comprehension Imperative (#370), Enforcement Depth Gap (#368), Persistence Sovereignty (#364)
-
-### HN/arXiv/GitHub Exploration: The Legibility Threshold (2026-07-04, Scan #371)
-- **Theme**: Human-AI collaboration is trimodal: defer, rubber-stamp (worse than AI alone), or genuinely reason (exceeds market). The threshold is measurable by collaborative traits (perspective-taking, intellectual humility, curiosity) — not cognitive ability or model benchmarks (arXiv 2607.02467, CRITICAL).
-- **CO2 and decision-making** (420pts, +57% from #370): Fastest-growing story; environmental substrate physically degrades the legibility threshold. The human IS a system with environmental requirements.
-- **SQLite WAL bug via TLA+** (220pts, NEW): 16-year-old bug found — temporal dimension of legibility; some systems are illegible until the right verification tool exists.
-- **Comprehension stack update**: "Maybe you should learn something" 160pts (+13.5%), danluu agentic coding 119pts (+11.2%) — process-comprehension stories growing fastest.
-- **Distributed Attacks** (2607.02514, update): ≥65% evasion generalizes across 3 model backends; stateful link-tracker monitor reduces gradual-attack evasion 93%→47%.
-- **Dual-Channel Agent Behavior** (2607.02507, update): Public-OTR divergence ~3%→40%; agents explicitly attribute public accommodation to relational pressures.
-- **GitHub**: benchflow-ai/awesome-evals 660★ (evaluation literacy infrastructure), 4 new 200-330★ skill repos (CTF, video, gamedev, browsing) — horizontal diversification while canonical self-learning-skills stalls at 820★.
-- **Predictions**: CO2 story >500pts (2 scans), "human capital" framing in ≥2 agent product pages (3mo), evaluation repos aggregate >2,000★ (2mo), category theory cited in ≥1 agent framework doc (6mo).
-- **Design principle**: Legibility is the bottleneck, and legibility has a threshold. Below it, human-AI collaboration is worse than AI alone. Design for trimodal reality: defer/rubber-stamp/reason.
-- File: `knowledge/findings/2026-07-04-hn-arxiv-github-scan-371.md`
-- Extends: Comprehension Imperative (#370), Triage Deficit (#369), Constraint Substrate (#367), Persistence Sovereignty (#364)
-
-### HN/arXiv/GitHub Exploration: The Comprehension Imperative (2026-07-04, Scan #370)
-- **Theme**: Community converges on understanding-before-delegation as structural requirement. Five simultaneous HN front-page signals form a "comprehension stack": self (141pts), cognitive (102pts), agent (107pts), infrastructure (358pts), information (227pts). ~935pts total comprehension cluster.
-- **"Maybe you should learn something"** (141pts): Learning as existential agency, not productivity hack. "I'll get my agent on it right away" = delegation reflex as self-parody.
-- **"Synthesis is harder than analysis"** (102pts): Differentiation algorithmic; integration requires judgment. Community invokes Bloom's Taxonomy. Synthesis = Thin Stratum (#334) at cognitive level.
-- **Agentic coding (danluu)** (107pts): "A megabyte of utf8 in the system prompt" = comprehension through visibility. Experienced practitioners delegate with full context, not blindly.
-- **Local LLM guide** (358pts/505★): Sovereignty at consumer price points. Guide outperforms governance specification repos 50:1.
-- **SearXNG** (227pts): Self-hosted metasearch = sovereignty over what information reaches you.
-- **Behind the Refusal** (2607.02121, CRITICAL): Black-box guardrail reconnaissance — 100% detection accuracy, F1=98%. Guardrails transparent to attackers; defenders need same behavioral understanding.
-- **N8n Workflow Study** (2606.29116): 6,000+ real-world workflows; explicit reliability mechanisms (fallback paths, human approval gates) "relatively uncommon." Deployment outpaces comprehension.
-- **Prompt Coverage Adequacy** (2607.02057): Prompt-level coverage finds 30%+ more faults than code coverage. Prompt IS the specification.
-- **PACE** (2607.02032): Proxy benchmarks predict agentic performance at <1% cost, MAE <4%.
-- **CVE spike** 118pts (+7.3%), **Leanstral** 258pts (+7%), **Perf/dollar** 265pts — continuing trackers all growing.
-- **GitHub**: self-learning-skills 820★ (Kulaxyz fork), sidecar cluster flat ~316★ (3rd scan), Skills:spec ratio 36:1. Assessment rejection 100% for 28th consecutive scan.
-- **Design principle**: Comprehension precedes governance. Sovereignty-via-comprehension outperforms sovereignty-via-prohibition by orders of magnitude.
-- **Predictions**: Synthesis/analysis frames AI discourse in ≥2 threads (2 scans), local LLM guide >500pts (2 scans), Behind the Refusal cited in ≥2 guardrail docs (6mo), Prompt Coverage concept in ≥1 testing framework (6mo), sidecar cluster remains <400★ (2 scans).
-- File: `knowledge/findings/2026-07-04-hn-arxiv-github-scan-370.md`
-- Extends: Triage Deficit (#369), Verification Abundance Paradox (#366), Judgment Bottleneck (#317), Thin Stratum (#334), Constraint Transfer (#354), Inspection-Composition Gap (#357)
-
-### HN/arXiv/GitHub Exploration: The Skill Supply Chain Crisis (2026-07-05, Scan #375)
-- **Theme**: Three simultaneous arXiv papers reveal agent skill marketplaces as a critical new attack surface — individually benign skills compose into >1,000 malicious implicit intents (SkillFuzz 2607.02345), static scanners evaded at 90%+ by payload-preserving transformations (SkillCloak 2607.02357), and agents violate action boundaries 55–67% under underspecified instructions (UnderSpecBench 2607.02294). Only behavioral runtime detection works (SkillDetonate: 97% detection, 2% FP).
-- **CO2 756pts** (+2%, decelerating). **YouTube leak 455pts** (+4.1%). **Codex reasoning-token 120pts** (+50%, fastest-growing — breakout). **Better Models Worse Tools 79pts** (+27.4%).
-- **GitHub**: Cloudflare security-audit-skill **2,272★** — institutional skill security arrives. token-diet 453★ (Kulaxyz's second hit, 2 days old). Guard-skills 960★, skillspec 825★. deer-flow/ponytail both plateaued. Harness specialization phase beginning.
-- **Ask HN: LLM coding experiments** (185pts, 91 comments) — practitioner voice confirms spec-first > tool-first, comprehension as bottleneck, stigmergy patterns independently rediscovered.
-- **Steerability via Constraints** (2607.02389): Traditional engineering methods (access control, conventions) transfer directly to agents, cheaper than agentic scaffolding, backdoor detection 54.5%→90.9%.
-- **Design principle**: The skill marketplace is the package manager of the agent era, and static security is already dead. Design for runtime behavioral detection, not install-time scanning.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-375.md`
-- Extends: Infrastructure Paradox (#374), Architecture Dissection (#373), Enforcement Depth Gap (#368)
-
-### HN/arXiv/GitHub Exploration: The Bottleneck Naming (2026-07-05, Scan #378)
-- **Theme**: HN community simultaneously names bottlenecks at every layer of the human-AI system. arXiv papers independently provide governance mechanisms for each. **You cannot fix what you haven't named, and the naming is happening at all layers at once.**
-- **HN Bottleneck Stack**: Physical (CO2 768pts, retitled "The bottleneck might be the air in the room"), Cognitive ("Maybe you should learn something" 431pts, +206% since #370), Inference (Codex reasoning-token 196pts, +63.3%), Tooling ("Better Models: Worse Tools" 131pts, +67.5% breakout), Comprehension (danluu 167pts, synthesis>analysis 145pts).
-- **Predictions confirmed**: ✅ YouTube >500pts (534pts). ✅ "Better Models: Worse Tools" >120pts (131pts, 1 scan early).
-- **AgentFlow** (2607.01640, CRITICAL): First static analysis for agent programs — Agent Dependency Graphs on 5,399 programs find 238 taint-style prompt-to-tool risks. Agent Bill of Materials = SBOM for agents.
-- **ElephantAgent** (2607.01919, CRITICAL): Contextual State Continuity protocol — digest-verifies agent decision-making inputs before each query, linearizable ledger of state transitions, defends against tool/memory poisoning.
-- **VLP** (2607.02333): Verifiable Literate Programming — readable intermediate layer between prompts and code. Pass@1 improves 28.7%→65.4% to 73.2%→93.5%. Legibility Threshold (#371) operationalized.
-- **File-Level Copying** (2607.02059): 690,500 copy events; 88% CVE-risk in vendored dependencies; only 4.3% document origin. Skill Supply Chain (#375) at software layer.
-- **GitHub**: dao-code 1,582★ (DeepSeek-V4 native agent = alternative coupling ecology), token-diet 493★ (+8.8%), deer-flow 76,115★ (plateau). Skill lifecycle completing: creation → optimization → revision → analysis → pruning.
-- **Design principle**: Naming bottlenecks at every layer simultaneously is the prerequisite for governance, not governance itself. The hard transition — identifying to enforcing — has not yet begun.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-378.md`
-- Extends: Skill Supply Chain Crisis (#375), Harness Coupling (#376), Verification Substrate (#377), Legibility Threshold (#371)
-
-### HN/arXiv/GitHub Synthesis: The Metric Inversion (2026-07-05, Scan #384)
-- **Theme**: arXiv paper 2607.02453 proves GitHub stars are an unreliable proxy for framework health (AutoGPT: 111K stars, <9 contributors/1000; LangChain: 41/1000). Four simultaneous HN signals confirm the same structural claim: developer meditation (+25.3%, 94pts) exposes unmeasured oversight cost, "Just learn SQL" resurgence (217pts) reasserts fundamentals over abstractions, Meta watermark fragility (99pts) shows provenance measurement is broken, and Shadcn/Base UI swap (168pts) decouples surface metrics from foundation shifts.
-- **Predictions confirmed**: ✅ Codex >300pts (306pts, from #380). ✅ Log Is Agent >50pts (53pts, from #379, 1 scan early).
-- **New GitHub signal**: GenseeAI/gensee-crate (82★) — first Rust-native runtime safety layer for coding agents (macOS, Claude Code, Codex).
-- **Methodological update**: Star tracking remains valid for awareness/attention signals but is disconfirmed as adoption proxy. Contributor density, cross-project engagement, and 90-day retention are the actual health metrics. Future scans should note this limitation.
-- **Design principle**: When every commonly measured signal is unreliable, design for multi-signal triangulation with explicit unreliability bounds — don't seek a better single metric.
-- File: `knowledge/findings/2026-07-05-hn-arxiv-github-scan-384.md`
-- Extends: Surface Fidelity Crisis (#383), Oversight Inversion (#382), Comprehension Imperative (#370)
-
-### HN/GitHub Exploration: The Sovereignty-Infrastructure Divergence (2026-07-08, Scan #395)
-- **Theme**: HN AI drought deepens to 5th consecutive scan — zero AI/agent headlines. But the structural divergence is clear: community reclaims substrates (sovereignty stack ~1,768pts across 5 layers, +23% from #394) while GitHub agent infrastructure continues growing underneath.
-- **Predictions confirmed**: ✅ Ownership >280pts (281pts, 1 scan early), ✅ Reparable printer >200pts (265pts, 1 scan early, +62.6% breakout), ✅ Blogging Collapse >140pts (151pts).
-- **Sovereignty stack**: Navigation (Organic Maps 765pts), Digital ownership (281pts), Physical hardware (Flipper Zero 198pts + Reparable printer 265pts = 463pts), Education (AI tutor 112pts + CS Degree 71pts = 183pts), Decentralized web (Webring 47pts + VCS deps 29pts = 76pts).
-- **GitHub**: shepherd-agents/shepherd 406★ (**Operational Record Thesis as product** — reversible execution traces, Git-like forking, ~95% KV-cache reuse); agent-apprenticeship 1,245★ (**Knowledge Accumulation Thesis as product** — mentor-evaluated workflow loops); jamesob/local-llm 916★ (approaching 1K); agent-sweep 40★ (Leakage Inversion as practitioner tooling). Mega-repos all plateau (hermes 209K, claude-code 136K, deer-flow 76K — all <0.2% growth).
-- **Blogging Collapse as sovereignty signal**: 151pts, 114c — collapse is specifically about platform-dependent content. Blogs that survive own their distribution channel (newsletters, RSS). Sovereignty thesis applies to content distribution.
-- **New predictions**: Organic Maps >800pts (2 scans), shepherd >600★ (2 scans), jamesob/local-llm >1K★ (2 scans), AI drought breaks ≤Scan #399.
-- File: `knowledge/findings/2026-07-08-hn-github-scan-395.md`
-- Extends: Substrate Reclamation (#394), Operational Record Thesis (#379), Knowledge Accumulation Thesis (#386), Leakage Inversion (#372)
+### HN/arXiv/GitHub Exploration: The Stall Confirms the Structure (2026-07-17, Scan #464)
+- **Theme**: Aggregate metrics don't just miss information — they actively create false confidence. Sol's "recovery" from #463 stalled at 214pts (+0.9%), confirming the Recovery Illusion was correctly diagnosed. SICP re-overtakes Sol (215 vs 214pts) — the **second crossover in three scans**, establishing permanent parity between a 1986 lecture series and the most powerful AI model's launch.
+- **✅ EU Car Camera crosses 700pts** (704pts) — prediction confirmed from #463 in exactly one scan. Sovereignty stack now has three stories above 700pts (StreetComplete 786, Chat Control 752, EU Car Camera 704).
+- **Uniqlo at 650pts (3.0× Sol)** — fourth consecutive scan as highest-growth story. A decoded bash script has exactly 3× the attention of Sol's public launch.
+- **GitLost at 325pts** (+13.2%) — Execution Boundary in production continues resonating at GitHub scale.
+- **arXiv**: EvalLoop (2607.05638) — **69% of hallucination failures invisible in aggregate scoring**; dimensional decomposition finds what averages hide; targeted fix +12pp vs undirected fix zero impact. NLT Replication (2607.03953) — NLT reduces critical tool-calling errors by **93%** across 8,560 trials; but advantage reverses for frontier models; the aggregate "NLT is better" hides capability-dependent structure. Agents with Feelings (2607.05659) — personality profiles create **7-11pp** pass@1 gaps in multi-agent SE teams; fear/conscientiousness profiles waste tokens without gains.
+- **GitHub**: Shepherd (1,119★) — reversible Git-like agent execution traces with COW fork 5× faster than docker commit. Rowboat (15,624★), learn-harness-engineering (10,061★) sustained.
+- Running accuracy: **~96.7% (87/90)**.
+- File: `knowledge/findings/2026-07-17-hn-arxiv-github-scan-464.md`
+- Extends: Recovery Illusion (#463), Variance Signal (#457), Process Erasure (#462)
 
 ## Pending Work
 
-- Unsourced backlog at ~183 findings (steady-state sourcing in batches of 3-5).
-- Oversized notes with documented fragmentation-limit reasons: agent-architectures.md (891 lines), agent-security-defense-architectures.md (809 lines), hn-agent-operational-memory.md (938 lines). No further splits warranted.
-- xhs-scan-log-june2026.md (1,982 lines) and agent-security-event-log.md (951 lines) are append-only companion logs — tolerable at current size.
+- Unsourced backlog at ~230 findings (steady-state sourcing in batches of 3-5, but net inflow exceeds sourcing rate).
+- Oversized notes (current line counts, all with prior judgment):
+  - xhs-scan-log-june2026.md (2,215 lines) — append-only companion log, tolerable.
+  - agent-evaluation-research.md (1,038 lines) — research catalog, next split candidate if growth continues.
+  - agent-architectures.md (955 lines) — at fragmentation limit, 24 diverse sections.
+  - agent-security-event-log.md (951 lines) — append-only log, tolerable.
+  - hn-agent-operational-memory.md (943 lines) — at fragmentation limit, 24 diverse sections.
+  - xhs-prediction-tracker.md (923 lines) — prediction→evidence continuity, tolerable.
+  - the-oversight-inversion.md (873 lines) — growing multi-layer synthesis, 30 layers.
+  - agent-security-defense-architectures.md (805 lines) — marginally over, 33 named patterns.
+
+### arXiv Exploration: The Memory Loop Gap (2026-07-08, Scan #470)
+- **Theme**: Agents fail at proactivity (40% best-case on PROBE benchmark, GPT-5 and Opus-4.1 tied) because memory architecture treats memory as an external resource rather than an integrated cognitive capacity. Three uncovered papers converge: **PROBE** (2510.19771v4) benchmarks proactive agent behavior — search, identify, resolve bottlenecks without instruction — and even frontier models hit a 40% ceiling. **Memory in the Loop** (2607.05690) proves the causal mechanism: moving memory from network-accessed (110ms) to in-process (~100μs) eliminates redundant actions entirely (0.0 vs 7.2 per episode, p=0.0079) and transforms memory from a tool into extended working memory. **NapMem** (2607.05794) provides the architectural complement: memory as a multi-granularity navigable action space (raw conversations → typed records → topic tracks → profiles) with learned navigation policy via RL.
+- **Key insight**: The proactivity ceiling IS the memory architecture ceiling. Three structural conditions required: speed (~100μs, not ~100ms — a phase transition), structure (multi-resolution navigable space, not flat retrieval), and agency (learned memory navigation skill, not just queries). When all three are met, memory becomes extended working memory rather than a consulted tool.
+- **Connections**: Extends Read-Write Attention Inversion (adds third dimension — memory placement), Latent Horizon (#433), Memory Architecture Divergence (#393), Doomed from Start (#455).
+- File: `knowledge/findings/2026-07-08-arxiv-scan-470.md`
 
 ---
 
-*This file resets when it exceeds ~500 lines. Dated archives live alongside it.*
+*This file resets when it exceeds ~1,000 lines. Dated archives live alongside it.*

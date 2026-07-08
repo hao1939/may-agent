@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: 5 security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, and forensic trajectory detection. These represent boundary-expanding research rather than enumerable defense patterns."
-triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants"]
-last_updated: "2026-11-04"
-source_basis: "Extracted from agent-security-defense-architectures.md (2026-11-04). Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures). Scan provenance: #236, #239, #264, #272, #273."
+summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, and MCP TAG-Block concealment (protocol-level encoding gap). These represent boundary-expanding research rather than enumerable defense patterns."
+triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap"]
+last_updated: "2026-07-13"
+source_basis: "Extracted from agent-security-defense-architectures.md (2026-11-04, 2026-07-11, 2026-07-13). MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (2026-07-13, scan #453). Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453."
 </ai_context>
 
 # Agent Security: Research Frontiers
@@ -188,3 +188,200 @@ during execution. The two are complementary: runtime enforcement for known
 patterns, forensic trajectory analysis for novel attack discovery.
 
 See: [findings/2026-07-01-hn-arxiv-scan-273.md](./findings/2026-07-01-hn-arxiv-scan-273.md)
+
+---
+
+## Automated Attack Frameworks & Guard Landscape (Scans #368, #375)
+
+Six scan #368 entries (Jul 2026 arXiv) and six scan #375 entries reveal that
+the attack/defense frontier is accelerating simultaneously — production
+frameworks are vulnerable, static defenses are bypassable, but behavioral
+runtime detection and simple monitoring remain effective.
+
+### Vera Automated Safety Testing (Scan #368)
+
+93.9% average attack success rate on 4 production agent frameworks (OpenClaw,
+Hermes, Codex, Claude Code) under multi-channel attacks. 1,600 executable
+cases / 124 risk categories. Proves L1 guard enforcement alone is functionally
+absent against structured attack campaigns.
+
+Source: [arXiv 2607.01793](https://arxiv.org/abs/2607.01793)
+
+### Behind the Refusal — Guardrail Reconnaissance (Scan #368)
+
+First black-box guardrail detection methodology: 100% presence detection,
+F1=98% block-type disambiguation via HTTP/lexical/timing signals. Guardrails
+are transparent to attackers.
+
+Source: [arXiv 2607.02121](https://arxiv.org/abs/2607.02121)
+
+### A-TMA Ghost Memory (Scan #368)
+
+Formalizes state coordination failure where old, current, and transition facts
+coexist and mislead answer models; ATMA overlay improves conflict accuracy
++0.240 absolute. Memory-layer analog of SkillFuzz composition attacks.
+
+Source: [arXiv 2607.01935](https://arxiv.org/abs/2607.01935)
+
+### SkillCoach Process Rubrics (Scan #368)
+
+Self-evolving rubrics for 4-dimensional skill-use evaluation (selection,
+following, composition, reflection); separates process quality from accidental
+task success.
+
+Source: [arXiv 2607.01874](https://arxiv.org/abs/2607.01874)
+
+### SafePyramid Policy Enforcement Ceiling (Scan #368)
+
+GPT-5.5 achieves only 12.9% exact-match on novel policy frameworks with 61,699
+rules. Policy composition is structurally hard.
+
+Source: [arXiv 2606.29887](https://arxiv.org/abs/2606.29887)
+
+### Guard Miniaturization — HaloGuard + kNNGuard (Scan #368)
+
+L1 guard enforcement commoditizing: 0.8B model beats 27B baselines; training-free
+50-example guardrail runs 2.7× faster.
+
+Sources: [arXiv 2607.02079](https://arxiv.org/abs/2607.02079), [arXiv 2607.02072](https://arxiv.org/abs/2607.02072)
+
+### SkillCloak Static Scanner Evasion (Scan #375)
+
+Payload-preserving evasion framework bypasses all 8 tested static skill scanners
+at >90% (SFS Packing) and >80% (Structural Obfuscation). Tested across 1,613
+in-the-wild malicious skills. Static/appearance-based skill auditing is provably
+insufficient.
+
+Source: [arXiv 2607.02357](https://arxiv.org/abs/2607.02357)
+
+### SkillDetonate Runtime Behavioral Auditor (Scan #375)
+
+Sandbox-based runtime detection using on-demand closure lift + marker-based
+taint analysis achieves 97% detection at 2% FP, 87% on real-world malicious
+skills. Only behavioral defense shown to withstand SkillCloak evasions.
+
+Source: [arXiv 2607.02357](https://arxiv.org/abs/2607.02357)
+
+### SkillFuzz Composition Intent Discovery (Scan #375)
+
+Contract-guided MCTS fuzzer discovers >1,000 implicit intents from individually
+benign skill compositions; 80%+ of highest-risk flagged compositions confirmed
+during execution. Individual skill auditing provably insufficient.
+
+Source: [arXiv 2607.02345](https://arxiv.org/abs/2607.02345)
+
+### UnderSpecBench Action Boundary Violations (Scan #375)
+
+55.8–67.8% of coding agent runs violate at least one action boundary under
+underspecified instructions. Agents guess rather than refuse/clarify.
+Completion-centric evaluation overstates safe autonomy.
+
+Source: [arXiv 2607.02294](https://arxiv.org/abs/2607.02294)
+
+### Steerability via Constraints (Scan #375)
+
+Traditional engineering controls (access control, network policies, coding
+conventions) transfer directly to coding agents; cheaper in tokens than agentic
+scaffolding. Backdoor detection 54.5%→90.9% with substrate constraints +
+200-LoC docs CLI.
+
+Source: [arXiv 2607.02389](https://arxiv.org/abs/2607.02389)
+
+### Online Safety Monitoring — Simple Threshold (Scan #375)
+
+Simple verifier-signal thresholding with risk-control calibration matches
+complex sequential hypothesis testing monitors. More infrastructure ≠ more
+safety.
+
+Source: [arXiv 2607.02510](https://arxiv.org/abs/2607.02510)
+
+---
+
+## Data-Layer & Memory Attacks (Scan #432)
+
+Five scan #432 entries (Jul 2026 arXiv) converge on a new attack frontier:
+data injection, reasoning poisoning, cross-user privacy, and structural
+isolation defenses.
+
+### FARMA Reasoning History Poisoning (Scan #432)
+
+Forged reasoning traces (not factual knowledge) achieve 100% ASR on persistent
+agent memory. Bypasses keyword filters (evasive language) and consensus defenses
+(self-referential amplification). Defense: SENTINEL layered pipeline with
+5-signal Reasoning Guard reduces ASR to 0% with 0 FP/326 benign traces.
+
+Source: [arXiv 2607.05029](https://arxiv.org/abs/2607.05029)
+
+### ADI — Agent Data Injection (Scan #432)
+
+New IPI category injecting malicious *data* (metadata, identifiers, formats)
+rather than instructions. RCE on Claude Code, Codex, Gemini CLI. Arbitrary
+click attacks on web agents. Bypasses all existing IPI defenses because they
+only filter instructions, not data. Fundamental gap: agents don't isolate
+trusted from untrusted data.
+
+Source: [arXiv 2607.05120](https://arxiv.org/abs/2607.05120)
+
+### PiSAs Cross-User Privacy Benchmark (Scan #432)
+
+First benchmark for multi-user agentic privacy with dual CI annotations
+(task-appropriateness + user-authorization). Even SOTA models fail to prevent
+cross-user data spillage through inter-agent messages, shared memory, and agent
+state. System-agnostic across topologies and memory regimes.
+
+Source: [arXiv 2607.05318](https://arxiv.org/abs/2607.05318)
+
+### UCM — Untrusted Content Masking (Scan #432)
+
+DOM-based structural isolation for web agents. Leverages DOM structure (not
+content) to distinguish trusted from untrusted regions. Provides security
+*guarantees* (not heuristic filtering). Extends provable defenses from text-based
+APIs to visual web environments.
+
+Source: [arXiv 2607.05277](https://arxiv.org/abs/2607.05277)
+
+### DualView Stored IPI Prevention (Scan #432)
+
+Dual-view tracking extends untrusted data isolation from agent context to full
+user environment (filesystem, shell, network, other agents). AgentView sees
+symbols; HumanView preserves originals. Blocks every IPI including stored IPI.
+Deploys as OpenClaw plugin with zero agent logic changes.
+
+Source: [arXiv 2607.03821](https://arxiv.org/abs/2607.03821)
+
+---
+
+## The Appearance Collapse (Scan #411)
+
+Scan #411 elevates the SkillFuzz/SkillCloak/SkillDetonate findings (#375) into
+a broader thesis: **surface trust fails everywhere simultaneously** — brand
+trust (Anthropic goodwill erosion, 97pts HN), marketing trust (AI-first
+backlash, 49pts), benchmark trust (Regression to the Mean, 54pts), and static
+scanning trust (>90% bypass). Only behavioral runtime detection works. The
+Appearance Collapse establishes behavioral evidence as the successor to
+appearance-based security at every layer.
+
+See: [findings/2026-07-06-hn-arxiv-github-scan-411.md](./findings/2026-07-06-hn-arxiv-github-scan-411.md)
+
+---
+
+## MCP TAG-Block Concealment — Protocol-Level Encoding Gap (Scan #453)
+
+Unicode TAG block (U+E0000–U+E007F) payloads invisible to human approval view
+survive byte-for-byte into model tokenizer. 8/8 techniques deliver payload into
+model context; 0/8 trigger MCP re-approval (even under TOCTOU rug-pull); 4/8
+evade string-matching sanitizer. Consistent across 3 independent server
+implementations (32/32 cross-library outcome cells agree).
+
+**Attack class**: Protocol-level encoding gap.
+**Implication**: Approval-surface defenses (rendering-dependent review, string-matching
+sanitization) are structurally insufficient when the approval view and model
+input diverge at the encoding layer. Extends the Appearance Collapse thesis —
+visual trust fails at the protocol encoding level, not just the application level.
+
+**Connection to defense architecture**: CXI (§2.44 in
+[verified-enforcement](./agent-security-verified-enforcement.md)) is explicitly
+immune to this attack class because it binds at the execution surface, not the
+approval surface.
+
+*(arXiv [2607.05744](https://arxiv.org/abs/2607.05744), Jul 2026. Scan #453)*
