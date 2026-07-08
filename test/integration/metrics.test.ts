@@ -197,4 +197,179 @@ describe("MetricService", () => {
     });
     expect(emitted[0].data).not.toHaveProperty("owner");
   });
+
+  it("suppresses alert lifecycle for metrics with disabled alert config", () => {
+    const { db, service, emitted } = harness();
+
+    service.define({
+      id: "alias.queue-depth",
+      name: "Alias queue depth",
+      owner: "may",
+      type: "gauge",
+      target: 0,
+      threshold: 0,
+      unit: "count",
+      alertOp: ">",
+      priority: "P0",
+      config: { alert: { mode: "disabled", disabled: true } },
+    });
+
+    service.record("alias.queue-depth", 5, { measuredAt: 1_000 });
+    expect(service.evaluate("alias.queue-depth")).toMatchObject([
+      { metricId: "alias.queue-depth", status: "ok" },
+    ]);
+    expect(
+      db
+        .prepare("SELECT COUNT(*) AS c FROM metric_alerts WHERE metric_id = ?")
+        .get("alias.queue-depth"),
+    ).toMatchObject({ c: 0 });
+    expect(emitted).toHaveLength(0);
+
+    db.prepare(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+    ).run("alias.queue-depth", "threshold", "stale alias alert", 500);
+
+    service.record("alias.queue-depth", 0, { measuredAt: 2_000 });
+    expect(service.evaluate("alias.queue-depth")).toMatchObject([
+      { metricId: "alias.queue-depth", status: "ok" },
+    ]);
+    expect(
+      db
+        .prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 1")
+        .get("alias.queue-depth"),
+    ).toMatchObject({ resolved_at: 10_000 });
+    expect(emitted).toHaveLength(0);
+  });
+
+  it("keeps canonical metric alerting while a disabled compatibility alias stays measurement-only", () => {
+    const { db, service, emitted } = harness();
+
+    service.define({
+      id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      name: "Canonical overdue blocked waits",
+      owner: "app-ops",
+      project: "aks-rp-e2e",
+      type: "gauge",
+      target: 0,
+      threshold: 0,
+      unit: "count",
+      alertOp: ">",
+      priority: "P0",
+      config: { alert: { mode: "consecutive_failures", count: 1 } },
+    });
+    service.define({
+      id: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      name: "Compatibility alias overdue blocked waits",
+      owner: "app-ops",
+      project: "aks-rp-e2e",
+      type: "gauge",
+      target: 0,
+      threshold: 0,
+      unit: "count",
+      alertOp: ">",
+      priority: "P0",
+      config: {
+        alert: {
+          mode: "disabled",
+          disabled: true,
+        },
+      },
+    });
+
+    service.record("aks-rp-e2e.process.blocked.overdue-unworked-count", 2, {
+      measuredAt: 1_000,
+      sampleSize: 2,
+      note: '{"offenderTaskIds":["wait-1","wait-2"]}',
+    });
+    service.record(
+      "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      2,
+      {
+        measuredAt: 1_000,
+        sampleSize: 2,
+        note: '{"offenderTaskIds":["wait-1","wait-2"],"compatibilityAliasFor":"aks-rp-e2e.process.blocked.overdue-unworked-count"}',
+      },
+    );
+
+    expect(service.evaluate()).toMatchObject([
+      {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        status: "breached",
+      },
+      {
+        metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+        status: "ok",
+      },
+    ]);
+    expect(
+      db
+        .prepare(
+          "SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id IN (?, ?) ORDER BY metric_id",
+        )
+        .all(
+          "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+          "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        ),
+    ).toEqual([
+      {
+        metric_id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        resolved_at: null,
+      },
+    ]);
+    expect(emitted.filter((event) => event.type === "metric.breach")).toMatchObject([
+      {
+        data: {
+          metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        },
+      },
+    ]);
+
+    service.record("aks-rp-e2e.process.blocked.overdue-unworked-count", 0, {
+      measuredAt: 2_000,
+      sampleSize: 0,
+      note: '{"offenderTaskIds":[]}',
+    });
+    service.record(
+      "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      0,
+      {
+        measuredAt: 2_000,
+        sampleSize: 0,
+        note: '{"offenderTaskIds":[],"compatibilityAliasFor":"aks-rp-e2e.process.blocked.overdue-unworked-count"}',
+      },
+    );
+
+    expect(service.evaluate()).toMatchObject([
+      {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        status: "recovered",
+      },
+      {
+        metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+        status: "ok",
+      },
+    ]);
+    expect(
+      db
+        .prepare(
+          "SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id IN (?, ?) ORDER BY metric_id",
+        )
+        .all(
+          "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+          "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        ),
+    ).toEqual([
+      {
+        metric_id: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        resolved_at: 10_000,
+      },
+    ]);
+    expect(emitted.filter((event) => event.type === "metric.recovered")).toMatchObject([
+      {
+        data: {
+          metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        },
+      },
+    ]);
+  });
 });

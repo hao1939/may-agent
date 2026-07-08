@@ -348,6 +348,8 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       const metricType = row.type || "gauge";
       const config = parseConfig(row.config);
       const alertConfig = config?.alert;
+      const alertsDisabled =
+        alertConfig?.disabled === true || alertConfig?.mode === "disabled";
       let breached = false;
       let thresholdBreached = false;
       let rateBreached = false;
@@ -426,6 +428,14 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
           "SELECT id, alert_type, message FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1",
         )
         .get(row.id) as { id: number; alert_type?: string; message?: string } | null;
+
+      if (alertsDisabled) {
+        if (openAlert) {
+          db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [ts, openAlert.id]);
+        }
+        results.push({ metricId: row.id, status: "ok" });
+        continue;
+      }
 
       if (breached) {
         const thresholdDirection = row.alert_op === ">" || row.alert_op === "above" ? "above" : "below";
