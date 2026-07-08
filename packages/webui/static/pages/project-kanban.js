@@ -534,33 +534,40 @@ function renderIssueRow(issue) {
 function renderControlReadout(tree) {
   const readout = buildProjectControlReadout(tree);
   window._currentProjectReadout = readout;
+  const current = projectCurrentState(tree);
   const lead = [...readout.bottlenecks].find((row) => row.tone === "bad") ||
     [...readout.bottlenecks].find((row) => row.tone === "watch") ||
     null;
+  const openBottlenecks = readout.bottlenecks.filter((row) => row.tone !== "ok");
   const leadHtml = lead
     ? `<div class="readout-lead readout-${esc(lead.tone)}">
-        <strong>First check: ${esc(lead.question)}</strong>
-        <span>Raw fact: ${esc(lead.rawValue)}. ${esc(lead.meaning)} ${esc(lead.next)}</span>
+        <div>
+          <strong>${esc(lead.question)}</strong>
+          <span>Raw fact: ${esc(lead.rawValue)}. ${esc(lead.meaning)}</span>
+          ${lead.candidates.length ? `<span>Affected: ${esc(lead.candidates.join(", "))}</span>` : ""}
+        </div>
+        <button class="readout-action" onclick="prefillProjectReadoutAction(${jsStringAttr(lead.key)}, 'bottleneck')">Prepare Review</button>
       </div>`
     : `<div class="readout-lead readout-ok">
-        <strong>First check: no generic process bottleneck is firing.</strong>
-        <span>Use the coverage and issue rows before treating the project as fully healthy.</span>
+        <div>
+          <strong>No generic process bottleneck is firing.</strong>
+          <span>Use diagnostics when you need to audit coverage, handlers, or raw issue rows.</span>
+        </div>
       </div>`;
   const gaps = readout.coverage.filter((row) => row.coverage !== "complete").length;
   return `<section class="project-readout">
-    <div class="readout-panel">
+    <div class="readout-panel readout-compact-panel">
       <div class="readout-head">
         <div>
-          <div class="readout-kicker">Start Here</div>
-          <h3>Is The Project Moving?</h3>
-          <p>The cards show raw process facts, not final judgment. Use them to decide what to review first.</p>
+          <div class="readout-kicker">Project Status</div>
+          <h3>${esc(current.label)}</h3>
+          <p>${esc(current.text)}</p>
         </div>
         <div class="readout-status">
-          <span>${readout.issues.length ? `${readout.issues.length} signal(s)` : "no open signal"}</span>
-          <span>${gaps} coverage gap(s)</span>
+          <span>${lead ? "attention needed" : "no primary signal"}</span>
+          <span>${openBottlenecks.length} signal(s), ${gaps} gap(s)</span>
         </div>
       </div>
-      ${leadHtml}
       <div class="readout-metrics">
         ${renderReadoutMetric("last movement", readout.movement ? formatAge(readout.movement) : "unknown")}
         ${renderReadoutMetric("active", readout.taskStats.active, readout.taskStats.active ? "ok" : "watch")}
@@ -569,33 +576,38 @@ function renderControlReadout(tree) {
         ${renderReadoutMetric("roots", readout.taskStats.roots, readout.taskStats.roots === 1 ? "ok" : "bad")}
         ${renderReadoutMetric("capacity", `${readout.taskStats.active}/${readout.taskStats.maxConcurrent}`, readout.taskStats.active > readout.taskStats.maxConcurrent ? "bad" : "ok")}
       </div>
-      <div class="bottleneck-grid">
-        ${readout.bottlenecks.map(renderBottleneckCard).join("")}
-      </div>
-    </div>
-    <div class="readout-split">
-      <section class="readout-panel">
-        <div class="readout-head compact">
-          <div>
-            <div class="readout-kicker">Trust</div>
-            <h3>What This Page Can Prove</h3>
+      ${leadHtml}
+      <details class="readout-diagnostics">
+        <summary>
+          <span>Diagnostics</span>
+          <b>${openBottlenecks.length} bottleneck(s) · ${gaps} coverage gap(s) · ${readout.issues.length} issue row(s)</b>
+        </summary>
+        <div class="diagnostic-section">
+          <div class="readout-head compact">
+            <div><div class="readout-kicker">Bottlenecks</div><h3>Open Signals</h3></div>
+            <span>${openBottlenecks.length} row(s)</span>
           </div>
-          <span>${gaps} gap(s)</span>
-        </div>
-        <div class="coverage-list">${readout.coverage.map(renderCoverageRow).join("")}</div>
-      </section>
-      <section class="readout-panel">
-        <div class="readout-head compact">
-          <div>
-            <div class="readout-kicker">Raw Facts With Hints</div>
-            <h3>Things Worth Checking</h3>
+          <div class="bottleneck-grid">
+            ${openBottlenecks.length ? openBottlenecks.map(renderBottleneckCard).join("") : '<div class="lane-empty">No open generic bottlenecks.</div>'}
           </div>
-          <span>${readout.issues.length} row(s)</span>
         </div>
-        <div class="issue-list">
-          ${readout.issues.length ? readout.issues.slice(0, 8).map(renderIssueRow).join("") : '<div class="lane-empty">No generic issue rows. Coverage may still be partial.</div>'}
+        <div class="diagnostic-section">
+          <div class="readout-head compact">
+            <div><div class="readout-kicker">Trust</div><h3>What This Page Can Prove</h3></div>
+            <span>${gaps} gap(s)</span>
+          </div>
+          <div class="coverage-list">${readout.coverage.map(renderCoverageRow).join("")}</div>
         </div>
-      </section>
+        <div class="diagnostic-section">
+          <div class="readout-head compact">
+            <div><div class="readout-kicker">Raw Facts With Hints</div><h3>Issue Rows</h3></div>
+            <span>${readout.issues.length} row(s)</span>
+          </div>
+          <div class="issue-list">
+            ${readout.issues.length ? readout.issues.slice(0, 8).map(renderIssueRow).join("") : '<div class="lane-empty">No generic issue rows. Coverage may still be partial.</div>'}
+          </div>
+        </div>
+      </details>
     </div>
   </section>`;
 }
@@ -620,10 +632,6 @@ async function renderProjectKanban(el) {
 
   window._currentProjectTaskTree = data;
   const tasks = Object.values(data.tasks || {});
-  const current = projectCurrentState(data);
-  const countSummary = TASK_LANES
-    .map(lane => `${lane.label.toLowerCase()} ${data.statusCounts?.[lane.id] || 0}`)
-    .join(" · ");
   const laneHtml = TASK_LANES.map(lane => {
     const laneTasks = tasks
       .filter(t => taskLane(t) === lane.id)
@@ -644,18 +652,6 @@ async function renderProjectKanban(el) {
   el.className = "";
   el.innerHTML = `<div class="kanban-shell">
     ${renderControlReadout(data)}
-    <div class="kanban-banner">
-      <div>
-        <div class="banner-label">${esc(current.label)}</div>
-        <div class="banner-text">${esc(current.text)}</div>
-      </div>
-      <div class="banner-meta">
-        <span>updated ${esc(data.updated_at || "unknown")}</span>
-        <span>${Object.keys(data.tasks || {}).length} tasks</span>
-        <span>${esc(countSummary)}</span>
-        <span>max ${esc(data.max_concurrent || 3)} workers</span>
-      </div>
-    </div>
     <div class="kanban-board">${laneHtml}</div>
     <div class="task-tree-panel">
       <h3>Task Tree</h3>
