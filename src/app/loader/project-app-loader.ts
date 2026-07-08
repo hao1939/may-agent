@@ -123,9 +123,13 @@ export interface ProjectAppLoaderOptions {
   bus: EventBus;
   agentCrons: Map<string, Cron>;
   /**
-   * Called when an app's owner agent is not yet registered.
-   * The app brings its own agent — this callback registers it from the
+   * Called when an app-local agent used by the app is not yet registered.
+   * The app brings its own agents; this callback registers one from its
    * project-local agent.json. Returns true if registration succeeded.
+   */
+  registerLocalAgent?: (agentName: string, appDir: string, agentDir?: string) => Promise<boolean>;
+  /**
+   * Backward-compatible name for older callers. Prefer registerLocalAgent.
    */
   registerOwnerAgent?: (ownerName: string, appDir: string) => Promise<boolean>;
 }
@@ -591,6 +595,32 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
   return cron;
 }
 
+function requiredAppAgentNames(descriptor: ProjectAppDescriptor): string[] {
+  const names = new Set<string>([descriptor.owner]);
+  for (const handler of descriptor.app.workflowHandlers ?? []) {
+    const agentName = handler.handler.agent ?? descriptor.owner;
+    if (agentName.trim()) names.add(agentName.trim());
+  }
+  return [...names];
+}
+
+async function ensureAppAgentRegistered(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  agentName: string,
+): Promise<boolean> {
+  if (opts.manager.hasAgent(agentName)) return true;
+
+  const agentDir = localAgentDir(descriptor.appDir, agentName);
+  const registered = opts.registerLocalAgent
+    ? await opts.registerLocalAgent(agentName, descriptor.appDir, agentDir)
+    : opts.registerOwnerAgent
+      ? await opts.registerOwnerAgent(agentName, descriptor.appDir)
+      : false;
+
+  return registered || opts.manager.hasAgent(agentName);
+}
+
 const projectAppWorkflowSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 
@@ -893,16 +923,20 @@ export async function installProjectApps(
       owner: configuredProjectAppOwner(app, appDir),
       app,
     };
-    if (!opts.manager.hasAgent(descriptor.owner)) {
-      // App brings its own agent — try to register from local agent.json
-      const registered = opts.registerOwnerAgent ? await opts.registerOwnerAgent(descriptor.owner, appDir) : false;
-      if (!registered) {
-        opts.bus.emit({
-          type: "info",
-          message: `[project-app] Skipping ${id}: owner agent "${descriptor.owner}" not registered and local registration failed`,
-        });
-        continue;
+
+    let missingAgent = "";
+    for (const agentName of requiredAppAgentNames(descriptor)) {
+      if (!(await ensureAppAgentRegistered(opts, descriptor, agentName))) {
+        missingAgent = agentName;
+        break;
       }
+    }
+    if (missingAgent) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] Skipping ${id}: required app agent "${missingAgent}" not registered and local registration failed`,
+      });
+      continue;
     }
     syncProjectReadModel(opts, descriptor);
     const cron = ensureOwnerCron(opts, descriptor);
@@ -939,6 +973,11 @@ function projectAppManifestFingerprint(projectsRoot: string): string {
     const jsPath = join(appDir, "app.js");
     const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
     parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
+    for (const agent of localAgents(appDir)) {
+      const agentDir = join(appDir, "agents", agent.dirName);
+      const configPath = join(agentDir, "agent.json");
+      parts.push(`${appDir}\t${configPath}\t${hashFile(configPath)}`);
+    }
   }
   return createHash("sha256").update(parts.join("\n")).digest("hex");
 }

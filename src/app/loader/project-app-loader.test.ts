@@ -987,6 +987,60 @@ export async function execute(ctx: any) {
     }
   });
 
+  it("registers app-local agents referenced by workflow handlers", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeAgent(appDir, "ops", "sample-ops");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-planner",
+          enabled: true,
+          on: ["project.planning.requested"],
+          handler: { workflow: "planner", agent: "sample-ops", task: "plan" }
+        }]
+      }`,
+      );
+
+      const knownAgents = new Set(["sample-owner"]);
+      const registered: Array<{ agentName: string; appDir: string; agentDir?: string }> = [];
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+
+      const result = await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => knownAgents.has(name) } as any,
+        bus,
+        agentCrons,
+        registerLocalAgent: async (agentName, localAppDir, agentDir) => {
+          registered.push({ agentName, appDir: localAppDir, agentDir });
+          knownAgents.add(agentName);
+          return true;
+        },
+      });
+
+      expect(result.installed.map((app) => app.id)).toEqual(["sample"]);
+      expect(registered).toEqual([
+        {
+          agentName: "sample-ops",
+          appDir,
+          agentDir: join(appDir, "agents", "ops"),
+        },
+      ]);
+      const entry = agentCrons.get("sample-owner")!.getEntries()[0]!;
+      expect(entry.agent).toBe("sample-ops");
+      expect((entry.handler as any).agent).toBe("sample-ops");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reinstalls project app handlers and router state on reload", async () => {
     const root = tempRoot();
     try {
@@ -1448,6 +1502,59 @@ export async function execute(ctx: any) {
       const updatedEntry = agentCrons.get("sample-owner")!.getEntries()[0]!;
       expect((updatedEntry.handler as any).workflow).toBe("worker-v2");
       expect((updatedEntry.handler as any).task).toBe("work v2");
+    } finally {
+      watcher?.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("auto-reloads project app manifests when a local agent config changes", async () => {
+    const root = tempRoot();
+    let watcher: ReturnType<typeof startProjectAppWatcher> | undefined;
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeAgent(appDir, "ops", "sample-ops");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker", agent: "sample-ops", task: "work" }
+        }]
+      }`,
+      );
+
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = { hasAgent: () => true } as any;
+      const opts = {
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      };
+
+      await installProjectApps(opts);
+      watcher = startProjectAppWatcher(opts, { intervalMs: 60_000 });
+
+      writeFileSync(
+        join(appDir, "agents", "ops", "agent.json"),
+        JSON.stringify({
+          name: "sample-ops",
+          description: "updated ops agent",
+          domain: "test",
+          model: "opus",
+          tools: [],
+        }),
+      );
+
+      expect(await watcher.scanNow()).toBe(true);
     } finally {
       watcher?.close();
       rmSync(root, { recursive: true, force: true });
