@@ -2,7 +2,8 @@
 
 **Status**: Partially shipped (2026-05-08); modular route proposal added for review (2026-06-13)
 **Date**: 2026-05-06 (revised 2026-05-08, 2026-06-13)
-**Aligned with**: `../architecture.md`, `../work-model.md`, `metrics.md`, `heartbeat.md`
+**Aligned with**: `../architecture.md`, `../work-model.md`, `metrics.md`,
+`heartbeat.md`, `default-project-ui.md`
 
 ## What this UI is for
 
@@ -243,6 +244,10 @@ Human feedback should attach directly to task nodes. The UI can expose this as
 task, and the project owner receives feedback with task id, parent chain,
 current state, and surrounding context. Project-wide discussion remains useful, but it
 is not the primary steering mechanism once a task tree exists.
+
+For the refined default project control readout, including bottlenecks,
+coverage/blind-spot rows, durable loop readouts, issue rows, and structured
+steering, see [default-project-ui.md](default-project-ui.md).
 
 Deep links should support:
 

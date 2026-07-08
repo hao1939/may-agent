@@ -113,7 +113,17 @@ async function loadProjects() {
   }
 }
 
-async function showProjectDetail(path) {
+function projectIdFromPath(path) {
+  return projectIdOf({ path: path || '' });
+}
+
+function projectRouteFor(path, surface) {
+  const id = projectIdFromPath(path);
+  const suffix = surface && surface !== 'project' ? `/${surface}` : '';
+  return `/projects/${id.split('/').map(encodeURIComponent).join('/')}${suffix}`;
+}
+
+async function showProjectDetail(path, initialTab) {
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
   el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading project…</div>';
@@ -155,7 +165,7 @@ async function showProjectDetail(path) {
   html += `</div>`;
   // Owner / dates / iteration row.
   html += `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:6px">`;
-  html += `<span>owner: <a href="#/agents/${esc(detail.owner)}" style="color:var(--accent);text-decoration:none">${esc(detail.owner)}</a></span>`;
+  html += `<span>owner: <a href="/agents/${esc(detail.owner)}" style="color:var(--accent);text-decoration:none">${esc(detail.owner)}</a></span>`;
   html += `<span>iteration ${detail.iteration ?? 0}</span>`;
   html += `<span title="Sessions tagged with projectId; +mentions = task body references this project but wasn't dispatched through it">${detail.sessionCount} sessions${detail.mentionCount ? ` (+${detail.mentionCount} mentions)` : ''}</span>`;
   if (detail.updatedAt) html += `<span>updated ${esc(timeAgo(detail.updatedAt))}</span>`;
@@ -230,16 +240,17 @@ async function showProjectDetail(path) {
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
 
   // ── Sub-tabs ──
-  const defaultProjectTab = 'project';
+  const defaultProjectTab = initialTab === 'tasks' ? 'kanban' : initialTab === 'functions' ? 'functions' : 'project';
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
-  html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'kanban')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Kanban</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
+  html += projectTabButton('project', 'Project', defaultProjectTab);
+  html += projectTabButton('kanban', 'Tasks', defaultProjectTab);
+  html += projectTabButton('functions', 'Functions', defaultProjectTab);
+  html += projectTabButton('journal', 'Journal', defaultProjectTab);
+  html += projectTabButton('discussion', 'Discussion', defaultProjectTab);
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'lineage')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Lineage</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}</button>`;
-  html += `<button class="tab-btn" onclick="switchProjectTab(this,'learning')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Learning</button>`;
+  html += projectTabButton('lineage', 'Lineage', defaultProjectTab);
+  html += projectTabButton('sessions', `Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}`, defaultProjectTab);
+  html += projectTabButton('learning', 'Learning', defaultProjectTab);
   html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px"></div>`;
 
@@ -271,9 +282,17 @@ async function showProjectDetail(path) {
   loadProjectTab(defaultProjectTab);
 }
 
+function projectTabButton(tab, label, activeTab) {
+  const active = tab === activeTab;
+  return `<button class="tab-btn ${active ? 'active' : ''}" onclick="switchProjectTab(this,'${tab}')" style="background:none;border:none;border-bottom:2px solid ${active ? 'var(--accent)' : 'transparent'};color:${active ? 'var(--accent)' : 'var(--fg2)'};padding:8px 16px;cursor:pointer;font-size:13px">${label}</button>`;
+}
+
 function switchProjectTab(btn, tab) {
   btn.parentElement.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottomColor = 'transparent'; b.style.color = 'var(--fg2)'; });
   btn.style.borderBottomColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
+  if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks'));
+  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions'));
+  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath));
   loadProjectTab(tab);
 }
 
@@ -305,6 +324,9 @@ async function loadProjectTab(tab) {
     } else if (tab === 'kanban') {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       await renderProjectKanban(el);
+    } else if (tab === 'functions') {
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
+      await renderProjectFunctions(el);
     } else if (tab === 'lineage') {
       const res = await fetch(`/api/projects/lineage?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
@@ -339,7 +361,7 @@ async function loadProjectTab(tab) {
         h += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
         for (const s of group) {
           const sessionIdArg = jsStringAttr(s.sessionId);
-          const sessionHref = attrEsc('#/sessions/' + encodeURIComponent(s.sessionId || ''));
+          const sessionHref = attrEsc('/sessions/' + encodeURIComponent(s.sessionId || ''));
           h += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openSessionRoute(${sessionIdArg})" title="Open interactive session">`;
           h += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
           h += `<td>${esc(s.agent||'')}</td>`;
@@ -360,6 +382,108 @@ async function loadProjectTab(tab) {
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
+  }
+}
+
+async function renderProjectFunctions(el) {
+  const detail = _currentProjectDetail || {};
+  const projectId = projectIdFromPath(_projectDetailPath);
+  const domainUiHref = `/projects/${projectId.split('/').map(encodeURIComponent).join('/')}/ui/`;
+  const hasDomainUi = detail.app?.hasUi !== false;
+  const actions = Array.isArray(detail.app?.actions) ? detail.app.actions : [];
+  let html = `<div class="project-functions">
+    <div class="function-surface-grid">
+      <a class="function-card" href="${attrEsc(domainUiHref)}">
+        <b>Domain UI</b>
+        <span>${hasDomainUi ? 'Open the project-owned UI surface.' : 'Conventional project UI path. The project may not expose one yet.'}</span>
+        <code>${esc(domainUiHref)}</code>
+      </a>
+      <button class="function-card" onclick="emitProjectPlanningRequest()">
+        <b>Request Planning</b>
+        <span>Emit a project planning event for the project owner agent.</span>
+        <code>project.planning.requested</code>
+      </button>
+    </div>`;
+
+  html += `<div class="function-panel">
+    <h3>Action Bridge</h3>
+    <p>Project actions enter through <code>POST /api/events</code>. The project app owns validation, handlers, and side effects.</p>`;
+  if (actions.length) {
+    html += `<div class="action-list">`;
+    for (const action of actions) {
+      html += `<button class="action-row" onclick="selectProjectAction(${jsStringAttr(action.id)})">
+        <b>${esc(action.id)}</b>
+        <span>${esc(action.description || action.type || 'Project app action')}</span>
+      </button>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="empty-state">No declared actions were detected in this project app. You can still emit a named action below.</div>`;
+  }
+  html += `<div class="action-form">
+    <label>Action id<input id="project-action-id" value="${actions[0] ? esc(actions[0].id) : ''}" placeholder="review-library"></label>
+    <label>Params JSON<textarea id="project-action-params" placeholder='{"reason":"manual review"}'>{}</textarea></label>
+    <button onclick="emitProjectAction()">Emit Action Event</button>
+    <span id="project-action-status"></span>
+  </div></div></div>`;
+  el.innerHTML = html;
+}
+
+function selectProjectAction(actionId) {
+  const input = document.getElementById('project-action-id');
+  if (input) input.value = actionId || '';
+}
+
+async function emitProjectPlanningRequest() {
+  await emitProjectActionEvent('project.planning.requested', 'manual-functions-page', {});
+}
+
+async function emitProjectAction() {
+  const action = document.getElementById('project-action-id')?.value?.trim();
+  const paramsText = document.getElementById('project-action-params')?.value || '{}';
+  const status = document.getElementById('project-action-status');
+  if (!action) {
+    if (status) status.textContent = 'Action id required.';
+    return;
+  }
+  let params = {};
+  try {
+    params = JSON.parse(paramsText || '{}');
+  } catch (e) {
+    if (status) status.textContent = `Invalid JSON: ${e.message}`;
+    return;
+  }
+  await emitProjectActionEvent('project.action.invoked', action, params);
+}
+
+async function emitProjectActionEvent(type, action, params) {
+  const status = document.getElementById('project-action-status');
+  if (status) status.textContent = 'Sending...';
+  try {
+    const project = projectIdFromPath(_projectDetailPath).replace(/\.app$/, '');
+    const res = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type,
+        source: 'web-ui',
+        data: {
+          projectPath: _projectDetailPath,
+          project,
+          projectId: project,
+          action,
+          params,
+          reason: action,
+        },
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || res.statusText);
+    if (status) status.innerHTML = `Accepted${body.workflowRunId ? ` · workflow <code>${esc(body.workflowRunId)}</code>` : ''}`;
+    toast('Project event accepted', 'ok');
+  } catch (e) {
+    if (status) status.textContent = `Failed: ${e.message}`;
+    toast(`Project event failed: ${e.message}`, 'error');
   }
 }
 
@@ -448,12 +572,12 @@ function renderProjectLineage(el, data) {
     html += `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">`;
     html += `<span style="background:${c.bg};color:${c.fg};padding:1px 7px;border-radius:8px;font-size:9px;font-weight:600;text-transform:uppercase">${esc(s.link)}</span>`;
     html += `<span style="color:${statusColor};font-size:8px">●</span>`;
-    html += `<a href="#/agents/${esc(s.agent || '')}" style="color:var(--accent);text-decoration:none;font-weight:500" onclick="event.stopPropagation()">${esc(s.agent || '?')}</a>`;
+    html += `<a href="/agents/${esc(s.agent || '')}" style="color:var(--accent);text-decoration:none;font-weight:500" onclick="event.stopPropagation()">${esc(s.agent || '?')}</a>`;
     html += `<span style="color:var(--fg2);font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</span>`;
     if (s.kind && s.kind !== 'call') html += `<span style="color:var(--fg2);font-size:10px">${esc(s.kind)}</span>`;
     if (s.opCount != null) html += `<span style="color:var(--fg2);font-size:10px" title="operations">${s.opCount} ops</span>`;
     if (digests.length > 0) html += `<span style="font-size:10px;color:var(--accent)" title="${digests.length} digest entries available">≡ ${digests.length}</span>`;
-    html += `<a href="#/sessions/${esc(s.sessionId)}" onclick="event.stopPropagation()" style="margin-left:auto;color:var(--fg2);text-decoration:none;font-size:11px">open →</a>`;
+    html += `<a href="/sessions/${esc(s.sessionId)}" onclick="event.stopPropagation()" style="margin-left:auto;color:var(--fg2);text-decoration:none;font-size:11px">open →</a>`;
     html += `</div>`;
     html += `<div style="font-size:11px;color:var(--fg2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(taskSnippet)}</div>`;
     html += `</div>`;
@@ -476,7 +600,7 @@ function toggleLineageDigest(triggerEl, sessionId) {
       const digests = (window._lineageDigests || {})[sessionId] || [];
       let h = '';
       if (digests.length === 0) {
-        h = `<div style="color:var(--fg2);font-style:italic">No session_digests recorded for this session. <a href="#/sessions/${esc(sessionId)}" style="color:var(--accent)">Open full session →</a></div>`;
+        h = `<div style="color:var(--fg2);font-style:italic">No session_digests recorded for this session. <a href="/sessions/${esc(sessionId)}" style="color:var(--accent)">Open full session →</a></div>`;
       } else {
         for (const d of digests) {
           h += `<div style="margin-bottom:8px">`;

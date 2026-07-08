@@ -1,6 +1,6 @@
 // ── Metrics Tab ───────────────────────────────────────────────────────
-const PINNED_METRICS = ['handler.success-rate', 'handler.worst-failure-count', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.blocked-count', 'project.blocked-over-6h', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
-const HEALTH_METRICS = ['handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
+const PINNED_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
+const HEALTH_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
 
 async function loadMetricsTab() {
   try {
@@ -21,15 +21,28 @@ async function loadMetricsTab() {
     }
     const hardAlerts = (data.alerts || []).filter(m => metricSurface(m) !== 'watch');
     const watchSignals = (data.alerts || []).filter(m => metricSurface(m) === 'watch');
+    function alertCard(a, tone) {
+      var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : '');
+      var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below';
+      var color = tone === 'watch' ? 'var(--fg2)' : 'var(--red)';
+      var bg = tone === 'watch' ? 'var(--bg2)' : 'rgba(244,67,54,0.1)';
+      var border = tone === 'watch' ? 'var(--border)' : 'rgba(244,67,54,0.3)';
+      return '<div style="padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;margin-bottom:6px;font-size:13px;color:' + color + '">'
+        + (tone === 'watch' ? '' : '\u26a0 ')
+        + '<b>' + esc(a.name || a.metricId) + '</b> (' + esc(a.owner || 'may') + '): '
+        + esc(a.current) + esc(u) + ' — ' + esc(desc) + ' threshold ' + esc(a.threshold) + esc(u)
+        + renderAlertJudgment(a)
+        + '</div>';
+    }
 
     // Alerts
     if (hardAlerts.length === 0) {
       alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ No health/gauge alerts</div>';
     } else {
-      alertsEl.innerHTML = hardAlerts.map(function(a) { var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : ''); var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below'; return '<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">\u26a0 <b>' + a.name + '</b> (' + a.owner + '): ' + a.current + u + ' — ' + desc + ' threshold ' + a.threshold + u + '</div>'; }).join('');
+      alertsEl.innerHTML = hardAlerts.map(function(a) { return alertCard(a, 'hard'); }).join('');
     }
     if (watchSignals.length > 0) {
-      alertsEl.innerHTML += '<div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-top:6px;font-size:13px;color:var(--fg2)">' + watchSignals.length + ' watch signal' + (watchSignals.length === 1 ? '' : 's') + ' outside threshold</div>';
+      alertsEl.innerHTML += '<div style="margin-top:6px">' + watchSignals.map(function(a) { return alertCard(a, 'watch'); }).join('') + '</div>';
     }
 
     const snapMap = {};
@@ -39,6 +52,8 @@ async function loadMetricsTab() {
 
     // ── Health Metrics Section (with larger graphs) ──
     html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">`;
+    html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Runtime Self-Drive</h3>`;
+    html += `<div id="runtime-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
     html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Handler Health</h3>`;
     html += `<div id="handler-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
     html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Project Health</h3>`;
@@ -63,7 +78,7 @@ async function loadMetricsTab() {
     // Mapping is a cheap prefix rule. Anything unmatched falls into 'Other'.
     function axisOf(id) {
       if (id.startsWith('agent.') || id.startsWith('capability.')) return 'Agency';
-      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('v2.')) return 'Infrastructure';
+      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('runtime.') || id.startsWith('escalation.') || id.startsWith('v2.')) return 'Infrastructure';
       if (id.startsWith('project.') || id.startsWith('system.')) return 'Output';
       return 'Other';
     }
@@ -113,13 +128,15 @@ async function loadMetricsTab() {
   } catch (e) { document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
 }
 
+var RUNTIME_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h'];
 var HANDLER_METRICS = ['handler.completed-count', 'handler.failed-count', 'handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour'];
-var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
+var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
 
 async function loadHealthMetricGraphs() {
   var metricsRes = await fetch('/api/metrics');
   var metricsData = await metricsRes.json();
 
+  await renderMetricGroup('runtime-metrics-graphs', RUNTIME_METRICS, metricsData);
   await renderMetricGroup('handler-metrics-graphs', HANDLER_METRICS, metricsData);
   await renderMetricGroup('project-metrics-graphs', PROJECT_METRICS, metricsData);
 }
@@ -140,19 +157,21 @@ async function renderMetricGroup(containerId, metricIds, metricsData) {
       var name = metricInfo ? metricInfo.name : metricId.split('.').pop();
       var unit = metricInfo ? (metricInfo.unit || '') : '';
       var current = metricInfo ? metricInfo.current : null;
+      var alertOp = metricInfo ? metricInfo.alert_op : null;
+      var breaches = current != null && threshold != null && ((alertOp === 'above' || alertOp === '>') ? current > threshold : current < threshold);
 
       var currentStr = current != null ? Number(current).toFixed(2) + unit : '—';
-      var color = current == null ? 'var(--fg2)' : (threshold != null && current >= threshold) ? 'var(--green)' : 'var(--red)';
+      var color = current == null ? 'var(--fg2)' : (threshold == null || !breaches) ? 'var(--green)' : 'var(--red)';
 
       html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;cursor:pointer" onclick="showMetricHistory(\'' + metricId + '\')">';
       html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">';
       html += '<span style="font-size:12px;color:var(--fg2)">' + esc(name) + '</span>';
       html += '<span style="font-size:16px;font-weight:700;color:' + color + '">' + currentStr + '</span>';
       html += '</div>';
-      html += renderSparklineWithValues(snaps, threshold, 300, 60);
+      html += renderSparklineWithValues(snaps, threshold, 300, 60, alertOp);
       html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--fg2);opacity:0.7">';
       html += '<span>24h ago</span>';
-      if (threshold != null) html += '<span>threshold: ' + threshold + unit + '</span>';
+      if (threshold != null) html += '<span>' + ((alertOp === 'above' || alertOp === '>') ? 'max: ' : 'min: ') + threshold + unit + '</span>';
       html += '<span>now</span>';
       html += '</div></div>';
     } catch (e) {

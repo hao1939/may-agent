@@ -2,7 +2,60 @@
 let kbCurrentPath = '';
 
 async function loadKnowledge() {
+  const searchInput = document.getElementById('kb-search-input');
+  if (searchInput && !searchInput.dataset.bound) {
+    searchInput.dataset.bound = '1';
+    searchInput.addEventListener('input', () => {
+      if (!searchInput.value.trim()) {
+        const results = document.getElementById('kb-search-results');
+        const status = document.getElementById('kb-search-status');
+        if (results) results.innerHTML = '';
+        if (status) status.textContent = '';
+      }
+    });
+  }
   browsePath('');
+}
+
+async function searchKnowledge() {
+  const input = document.getElementById('kb-search-input');
+  const results = document.getElementById('kb-search-results');
+  const status = document.getElementById('kb-search-status');
+  const q = input?.value?.trim() || '';
+  if (!results || !status) return;
+  if (q.length < 2) {
+    status.textContent = 'Enter at least 2 characters.';
+    results.innerHTML = '';
+    return;
+  }
+  status.textContent = 'Searching...';
+  results.innerHTML = '';
+  try {
+    const res = await fetch(`/api/knowledge/search?q=${encodeURIComponent(q)}&limit=40`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    status.textContent = `${data.results?.length || 0} result${data.results?.length === 1 ? '' : 's'}`;
+    if (!data.results?.length) {
+      results.innerHTML = '<div class="empty-state">No knowledge matches found.</div>';
+      return;
+    }
+    results.innerHTML = `<div class="knowledge-results">${data.results.map(renderKnowledgeResult).join('')}</div>`;
+  } catch (e) {
+    status.textContent = '';
+    results.innerHTML = `<div style="color:var(--red);margin-bottom:12px">Search failed: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderKnowledgeResult(result) {
+  const open = result.browsePath
+    ? `onclick="viewFile(${jsStringAttr(result.browsePath)})"`
+    : '';
+  const clickable = result.browsePath ? ' knowledge-result-clickable' : '';
+  return `<div class="knowledge-result${clickable}" ${open}>
+    <div class="knowledge-result-path">${esc(result.path || '')}</div>
+    <div class="knowledge-result-meta">${esc(result.source || '')} · ${esc(result.match || 'match')}</div>
+    <div class="knowledge-result-snippet">${esc(result.snippet || '')}</div>
+  </div>`;
 }
 
 async function browsePath(path) {
