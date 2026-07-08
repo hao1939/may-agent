@@ -1,6 +1,6 @@
 # Default Project UI
 
-Status: phase 1 browser-side control readout implemented
+Status: phase 1 browser-side control readout implemented; layout simplified
 
 The default project UI should be the shared control surface for every project
 app. Project-specific UIs can go deeper into a domain, but the default UI must
@@ -37,11 +37,9 @@ Project overview
   - goal, owner, status, current state, last movement
 
 Control readout
-  - start-here process summary
-  - bottlenecks
-  - trust and blind spots
-  - durable loops
-  - raw issue rows
+  - compact status strip
+  - one primary signal
+  - collapsed diagnostics for bottlenecks, trust, loops, and raw issue rows
 
 Task board
   - backlog, active, review, blocked, done
@@ -60,8 +58,37 @@ Trace
 ```
 
 The first screen for a project should not force the user to infer health from
-board columns. It should lead with the control readout, then let the user drill
-into the board and task tree.
+board columns, but it also should not front-load every diagnostic. Lead with a
+small readout, one primary signal, and the task board. Keep deeper diagnostic
+facts one click away.
+
+## Layout Rule
+
+The default project page should stay lean:
+
+```text
+Status strip
+  - state, last movement, active/review/blocked/capacity
+
+Primary signal
+  - one question/fact to check first
+  - affected task ids
+  - one structured action
+
+Task board
+  - backlog, active, review, blocked, done
+
+Task tree
+  - structure and drill-down
+
+Diagnostics
+  - collapsed bottlenecks
+  - coverage and blind spots
+  - raw issue rows
+```
+
+Visible by default means "operator needs this before choosing the next click".
+Everything else belongs in diagnostics or the selected task drawer.
 
 ## Read Model
 
@@ -117,8 +144,8 @@ project UI from inventing its own health semantics.
 
 ## Bottlenecks
 
-Bottlenecks are the "start here" cards. They should be generic by default and
-project-extensible.
+Bottlenecks are diagnostic inputs for the "start here" signal. They should be
+generic by default and project-extensible.
 
 Default bottlenecks:
 
@@ -173,6 +200,10 @@ complete | partial | inferred | missing | unknown
 
 Every incomplete coverage row should explain the blind spot and, when useful,
 offer a structured action to review or repair observability.
+
+Coverage is important, but it is not first-screen material. It should be shown
+inside the collapsed diagnostics section unless a coverage gap is selected as
+the primary signal.
 
 ## Durable Loops
 
@@ -234,7 +265,9 @@ shows "no declared durable loops" and relies on task tree and metrics.
 
 ## Issue Rows
 
-Issue rows are not verdicts. They are raw facts plus hints.
+Issue rows are not verdicts. They are raw facts plus hints, and should normally
+stay in diagnostics. The main page may surface only the highest-priority issue
+as the primary signal.
 
 ```ts
 type ProjectIssueRow = {
@@ -368,9 +401,10 @@ should not require editing unrelated static trees by hand.
 ## Implementation Plan
 
 1. Add `/api/projects/readout` with only generic task tree and metric facts.
-2. Render the control readout above the current task board. Done in phase 1.
-3. Add coverage rows and issue rows, even if some rows are `missing`. Done in
-   phase 1 for browser-side task-tree facts.
+2. Render the compact control readout above the current task board. Done in
+   phase 1.
+3. Add coverage rows and issue rows inside collapsed diagnostics, even if some
+   rows are `missing`. Done in phase 1 for browser-side task-tree facts.
 4. Add structured steering from bottleneck, coverage, loop, issue, and task
    rows.
 5. Add project-declared loop metadata and loop state loading.
