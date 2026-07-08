@@ -234,6 +234,9 @@ export type CreateTaskInput = {
   blockerOwner?: string;
   resumeCondition?: string;
   resumeAt?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 };
 
 export type MarkTaskDoneInput = {
@@ -1162,6 +1165,9 @@ type TaskBlockerInput = {
   blockerOwner?: string;
   resumeCondition?: string;
   resumeAt?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 };
 
 function trimmed(value: string | undefined): string | undefined {
@@ -1174,7 +1180,10 @@ function hasStructuredBlockerInput(input: TaskBlockerInput): boolean {
     trimmed(input.blockerCategory) ||
     trimmed(input.blockerOwner) ||
     trimmed(input.resumeCondition) ||
-    trimmed(input.resumeAt),
+    trimmed(input.resumeAt) ||
+    trimmed(input.nextCheckAt) ||
+    trimmed(input.fallbackAt) ||
+    trimmed(input.fallbackAction),
   );
 }
 
@@ -1193,6 +1202,9 @@ function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
     ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
     ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
     ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
+    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
+    ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
+    ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
   };
 }
 
@@ -1207,6 +1219,9 @@ function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput
     ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
     ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
     ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
+    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
+    ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
+    ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
   };
 }
 
@@ -1219,7 +1234,15 @@ function blockerText(blocker: TaskNode["blocker"]): string | undefined {
   if (!blocker) return undefined;
   const resumeCondition = blocker.resume_condition ?? blocker.resumeCondition;
   const resumeAt = blocker.resume_at ?? blocker.resumeAt;
-  return [blocker.condition, resumeCondition, resumeAt ? `Resume at: ${resumeAt}` : undefined]
+  const nextCheckAt = blocker.next_check_at ?? blocker.nextCheckAt;
+  const fallbackAt = blocker.fallback_at ?? blocker.fallbackAt;
+  return [
+    blocker.condition,
+    resumeCondition,
+    resumeAt ? `Resume at: ${resumeAt}` : undefined,
+    nextCheckAt ? `Next check at: ${nextCheckAt}` : undefined,
+    fallbackAt ? `Fallback at: ${fallbackAt}` : undefined,
+  ]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" Resume: ");
 }
