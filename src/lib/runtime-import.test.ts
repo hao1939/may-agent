@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -62,5 +68,6 @@ describe("importRuntimeModule", () => {
 
     expect(await mod.loadValue()).toBe("relative-ok");
     expect(readdirSync(root).some((name) => name.startsWith(".may-runtime-module-"))).toBe(false);
+    expect(existsSync(join(root, ".state", "runtime-modules"))).toBe(true);
   });
 });
