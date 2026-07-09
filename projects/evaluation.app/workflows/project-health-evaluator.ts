@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -8,11 +15,29 @@ export const description =
   "Human-facing project/app health review for a watched target app.";
 
 const EVALUATION_APP_DIR = "/app/projects/evaluation.app";
-const DEFAULT_TARGET = {
-  targetProject: "aks-rp-e2e.app",
-  targetAppDir: "/app/projects/aks-rp-e2e.app",
-  targetDomainDir: "/app/projects/aks-rp-e2e",
-};
+const WATCHED_TARGETS = [
+  {
+    targetProject: "aks-rp-e2e.app",
+    targetAppDir: "/app/projects/aks-rp-e2e.app",
+    targetDomainDir: "/app/projects/aks-rp-e2e",
+  },
+  {
+    targetProject: "may-agent.app",
+    targetAppDir: "/app/projects/may-agent.app",
+    targetDomainDir: "/app/projects/may-agent",
+  },
+  {
+    targetProject: "scout-knowledge-lib.app",
+    targetAppDir: "/app/projects/scout-knowledge-lib.app",
+    targetDomainDir: "/app/projects/scout-knowledge-lib",
+  },
+  {
+    targetProject: "evaluation.app",
+    targetAppDir: "/app/projects/evaluation.app",
+    targetDomainDir: "/app/projects/evaluation.app",
+  },
+] as const;
+const DEFAULT_TARGET = WATCHED_TARGETS[0];
 const NOTIFY_VERDICTS = new Set(["concern", "urgent", "blocked-on-human"]);
 const VERDICTS = new Set([
   "ok",
@@ -49,12 +74,22 @@ type Judgment = {
   notify: boolean;
   dedupeKey: string;
   message: string;
+  evaluatorWantedNotify?: boolean;
+  notificationReason?: string;
+  humanActionDetail?: string;
 };
 
 type ProjectHealthState = {
   lastVerdict?: string;
   lastDedupeKey?: string;
   lastNotify?: boolean;
+};
+
+type ContractCheck = {
+  id: string;
+  label: string;
+  pass: boolean;
+  detail: string;
 };
 
 function objectRecord(value: unknown): Record<string, unknown> {
@@ -107,6 +142,73 @@ function loopSummary(loops: Record<string, unknown>): string {
   return lines.length > 0 ? lines.join("\n") : "- none";
 }
 
+function projectStateMetricsSummary(
+  projectState: Record<string, unknown>,
+): string {
+  const currentState = objectRecord(projectState.currentState);
+  const metrics = objectRecord(currentState.metrics);
+  const entries = Object.entries(metrics)
+    .filter(([, value]) => typeof value === "number")
+    .sort(([left], [right]) => left.localeCompare(right));
+  if (entries.length === 0) return "none";
+  return entries.map(([key, value]) => `${key}=${String(value)}`).join(", ");
+}
+
+function readText(path: string): string {
+  if (!existsSync(path)) return "";
+  try {
+    return readFileSync(path, "utf-8");
+  } catch {
+    return "";
+  }
+}
+
+function hasAny(text: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function selfRecoverySummary(selfRecovery: Record<string, unknown>): string {
+  const status = String(selfRecovery.status ?? "unknown");
+  const missing = asArray(selfRecovery.missing)
+    .map(String)
+    .slice(0, 8)
+    .join(", ");
+  const checks = asArray(selfRecovery.checks)
+    .map((item) => {
+      const check = objectRecord(item);
+      const marker = check.pass === true ? "yes" : "no";
+      return `${String(check.id ?? "unknown")}=${marker}`;
+    })
+    .join(", ");
+  const patterns = asArray(
+    selfRecovery.sharedOpsPattern ?? selfRecovery.aksOpsPattern,
+  )
+    .map((item) => {
+      const check = objectRecord(item);
+      const marker = check.pass === true ? "yes" : "no";
+      return `${String(check.id ?? "unknown")}=${marker}`;
+    })
+    .join(", ");
+
+  return [
+    `- status: ${status}`,
+    `- checks: ${checks || "none"}`,
+    `- shared ops pattern fit: ${patterns || "none"}`,
+    `- missing/weak: ${missing || "none"}`,
+  ].join("\n");
+}
+
+function runArtifactSummary(recentRuns: Record<string, unknown>): string {
+  const discovered = asArray(recentRuns.discovered);
+  if (discovered.length === 0 && typeof recentRuns.note === "string") {
+    return `- ${recentRuns.note}`;
+  }
+  const entries = Object.entries(recentRuns)
+    .filter(([key]) => key !== "discovered" && key !== "note")
+    .map(([name, value]) => `- ${name}: ${compactList(value, 5)}`);
+  return entries.length > 0 ? entries.join("\n") : "- none";
+}
+
 function humanFactSummary(
   packet: Record<string, unknown>,
   factsRelativePath: string,
@@ -115,6 +217,9 @@ function humanFactSummary(
   const counts = objectRecord(taskTree.counts);
   const loops = objectRecord(packet.loops);
   const runtime = objectRecord(packet.runtime);
+  const projectState = objectRecord(packet.projectState);
+  const selfRecovery = objectRecord(packet.selfRecovery);
+  const recentRuns = objectRecord(packet.recentRuns);
   const targetGit = objectRecord(packet.targetGit);
 
   return [
@@ -131,8 +236,15 @@ function humanFactSummary(
     "Loops:",
     loopSummary(loops),
     "",
+    "Self-recovery contract:",
+    selfRecoverySummary(selfRecovery),
+    "",
+    "App-local run artifacts:",
+    runArtifactSummary(recentRuns),
+    "",
     "Runtime:",
-    `- metrics: ${compactList(runtime.metrics, 8)}`,
+    `- target readout metrics: ${projectStateMetricsSummary(projectState)}`,
+    `- runtime DB metrics: ${compactList(runtime.metrics, 8)}`,
     `- recent events: ${compactList(runtime.events, 8)}`,
     `- recent workflows: ${compactList(runtime.workflows, 8)}`,
     "",
@@ -174,7 +286,20 @@ function eventDetails(
   }
   const data = event.data;
   if (data && typeof data === "object" && !Array.isArray(data)) {
-    return { ...event, ...(data as Record<string, unknown>) };
+    const dataRecord = data as Record<string, unknown>;
+    const nestedParams = dataRecord.params;
+    if (
+      nestedParams &&
+      typeof nestedParams === "object" &&
+      !Array.isArray(nestedParams)
+    ) {
+      return {
+        ...event,
+        ...dataRecord,
+        ...(nestedParams as Record<string, unknown>),
+      };
+    }
+    return { ...event, ...dataRecord };
   }
   return event;
 }
@@ -185,15 +310,23 @@ function stringValue(value: unknown): string | undefined {
 
 function targetConfig(trigger: Record<string, unknown> | null): TargetConfig {
   const details = eventDetails(trigger);
+  const requestedTarget =
+    stringValue(details.targetProject) ??
+    stringValue(details.target) ??
+    DEFAULT_TARGET.targetProject;
+  const watchedTarget =
+    WATCHED_TARGETS.find(
+      (target) =>
+        target.targetProject === requestedTarget ||
+        target.targetProject.replace(/\.app$/, "") === requestedTarget,
+    ) ?? DEFAULT_TARGET;
+
   return {
-    targetProject:
-      stringValue(details.targetProject) ??
-      stringValue(details.target) ??
-      DEFAULT_TARGET.targetProject,
+    targetProject: watchedTarget.targetProject,
     targetAppDir:
-      stringValue(details.targetAppDir) ?? DEFAULT_TARGET.targetAppDir,
+      stringValue(details.targetAppDir) ?? watchedTarget.targetAppDir,
     targetDomainDir:
-      stringValue(details.targetDomainDir) ?? DEFAULT_TARGET.targetDomainDir,
+      stringValue(details.targetDomainDir) ?? watchedTarget.targetDomainDir,
     reason:
       stringValue(details.reason) ?? stringValue(details.lane) ?? "manual",
   };
@@ -242,6 +375,12 @@ function countBy<T>(
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});
+}
+
+function targetProjectIds(target: TargetConfig): string[] {
+  return Array.from(
+    new Set([target.targetProject, target.targetProject.replace(/\.app$/, "")]),
+  );
 }
 
 function compactTask(task: TaskRecord): Record<string, unknown> {
@@ -317,12 +456,218 @@ function taskTreePacket(targetAppDir: string): Record<string, unknown> {
   };
 }
 
+function contractCheck(
+  id: string,
+  label: string,
+  pass: boolean,
+  detail: string,
+): ContractCheck {
+  return { id, label, pass, detail };
+}
+
+function selfRecoveryContractPacket(
+  target: TargetConfig,
+  taskTree: Record<string, unknown>,
+): Record<string, unknown> {
+  const appTsPath = join(target.targetAppDir, "app.ts");
+  const appSource = readText(appTsPath);
+  const counts = objectRecord(taskTree.counts);
+  const leafByState = objectRecord(counts.leafByState);
+  const totalLeaves = numberFromRecord(counts, "leaves");
+  const active = numberFromRecord(leafByState, "active");
+  const review = numberFromRecord(leafByState, "review");
+  const runnable =
+    numberFromRecord(leafByState, "backlog") +
+    numberFromRecord(leafByState, "ready") +
+    numberFromRecord(leafByState, "todo") +
+    numberFromRecord(leafByState, "pending");
+  const blocked = numberFromRecord(leafByState, "blocked");
+  const unfinished = totalLeaves - numberFromRecord(leafByState, "done");
+  const hasTaskTree = totalLeaves > 0;
+  const hasOwnerWake = hasAny(appSource, [
+    /project\.owner\.requested/,
+    /project\.planning\.requested/,
+  ]);
+  const hasMetricHandling = hasAny(appSource, [
+    /metric\.breach/,
+    /metric\.alerted/,
+    /metric\.stalled/,
+  ]);
+  const hasScheduledObserver =
+    hasAny(appSource, [/schedules\s*:/]) &&
+    hasAny(appSource, [
+      /watchdog/i,
+      /health/i,
+      /heartbeat/i,
+      /patrol/i,
+      /digest/i,
+      /tick/i,
+    ]);
+  const hasFallback = hasAny(appSource, [
+    /watchdog/i,
+    /stall/i,
+    /ops[-_]health/i,
+    /library[_-]health/i,
+    /project-health/i,
+    /aftermath\.scan/i,
+  ]);
+  const hasHumanPath = hasAny(appSource, [
+    /ctx\.notify/,
+    /notification/i,
+    /escalation/i,
+    /digest/i,
+    /human/i,
+  ]);
+  const frontierIsRepresented =
+    unfinished === 0 || active + review + runnable > 0 || blocked === 0;
+
+  const checks = [
+    contractCheck(
+      "task-state",
+      "Task state exists",
+      hasTaskTree,
+      hasTaskTree
+        ? `${totalLeaves} leaf task(s) found`
+        : "No readable task tree leaves found",
+    ),
+    contractCheck(
+      "owner-wake",
+      "There is a path to wake the project owner/planner",
+      hasOwnerWake,
+      hasOwnerWake
+        ? "project.owner.requested or project.planning.requested is wired"
+        : "No owner/planner wake event is visible in app.ts",
+    ),
+    contractCheck(
+      "metric-signal",
+      "Project-owned metric breaches can be handled first by the app",
+      hasMetricHandling,
+      hasMetricHandling
+        ? "metric breach/alert/stall handling is visible"
+        : "No metric breach/alert/stall route is visible",
+    ),
+    contractCheck(
+      "scheduled-observer",
+      "A timer periodically observes project health or progress",
+      hasScheduledObserver,
+      hasScheduledObserver
+        ? "scheduled observer/heartbeat/health lane is visible"
+        : "No scheduled observation lane is visible",
+    ),
+    contractCheck(
+      "fallback",
+      "There is a fallback path for stuck or abnormal work",
+      hasFallback,
+      hasFallback
+        ? "watchdog/stall/health/project-health style fallback is visible"
+        : "No watchdog/stall/health fallback is visible",
+    ),
+    contractCheck(
+      "human-path",
+      "The app can surface issues to a human when it cannot finish alone",
+      hasHumanPath,
+      hasHumanPath
+        ? "notification/escalation/digest/human wording is visible"
+        : "No human notification/escalation path is visible",
+    ),
+    contractCheck(
+      "frontier",
+      "Unfinished task work has an active/review/runnable/frontier path",
+      frontierIsRepresented,
+      `unfinished=${unfinished}; active=${active}; review=${review}; runnable=${runnable}; blocked=${blocked}`,
+    ),
+  ];
+
+  const sharedOpsPattern = [
+    contractCheck(
+      "owner-planner",
+      "Owner/planner wake",
+      hasOwnerWake,
+      "Shared pattern: owner/planner handles project state changes",
+    ),
+    contractCheck(
+      "metric-first",
+      "Metric breach first handled by owning app",
+      hasMetricHandling,
+      "Shared pattern: app-owned metrics wake app-owned ops",
+    ),
+    contractCheck(
+      "scheduled-observer",
+      "Scheduled observer",
+      hasScheduledObserver,
+      "Shared pattern: timers keep loops moving without human polling",
+    ),
+    contractCheck(
+      "watchdog-or-stall",
+      "Watchdog/deep-dive fallback",
+      hasFallback,
+      "Shared pattern: watchdog/stall review catches work left behind",
+    ),
+    contractCheck(
+      "human-escalation",
+      "Human escalation/reporting",
+      hasHumanPath,
+      "Shared pattern: unresolved issues become visible to human",
+    ),
+  ];
+  const missing = checks
+    .filter((check) => !check.pass)
+    .map((check) => `${check.id}: ${check.detail}`);
+  const criticalMissing = checks
+    .filter(
+      (check) =>
+        !check.pass &&
+        ["task-state", "owner-wake", "scheduled-observer", "frontier"].includes(
+          check.id,
+        ),
+    )
+    .map((check) => check.id);
+  const status =
+    criticalMissing.length === 0 && missing.length <= 1
+      ? "strong"
+      : criticalMissing.length <= 1
+        ? "partial"
+        : "weak";
+
+  return {
+    targetProject: target.targetProject,
+    appTsPath,
+    status,
+    checks,
+    sharedOpsPattern,
+    aksOpsPattern: sharedOpsPattern,
+    missing,
+    criticalMissing,
+    recommendation:
+      status === "strong"
+        ? "Target already has the core self-recovery pieces; evaluate whether they are effective."
+        : "Target should adopt the missing pieces from the aks-rp-e2e ops pattern before evaluation treats it as self-recovering.",
+  };
+}
+
+function safeDirEntries(path: string): string[] {
+  if (!existsSync(path)) return [];
+  try {
+    return readdirSync(path).sort((left, right) => left.localeCompare(right));
+  } catch {
+    return [];
+  }
+}
+
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function loopPacket(targetAppDir: string): Record<string, unknown> {
-  const loops = [
-    ["spec-loop", ".state/spec-loop/state.json"],
-    ["feature-reference-loop", ".state/feature-reference-loop/state.json"],
-    ["feature-compact-loop", ".state/feature-compact-loop/state.json"],
-  ] as const;
+  const stateDir = join(targetAppDir, ".state");
+  const loops = safeDirEntries(stateDir)
+    .filter((entry) => entry.includes("loop"))
+    .map((entry) => [entry, `.state/${entry}/state.json`] as const)
+    .filter(([, relPath]) => existsSync(join(targetAppDir, relPath)));
 
   return Object.fromEntries(
     loops.map(([name, relPath]) => {
@@ -379,12 +724,50 @@ function loopPacket(targetAppDir: string): Record<string, unknown> {
   );
 }
 
+function recentRunPacket(targetAppDir: string): Record<string, unknown> {
+  const stateDir = join(targetAppDir, ".state");
+  const topLevel = safeDirEntries(stateDir)
+    .filter((entry) => /(?:runs|packets|digests)\.jsonl$/.test(entry))
+    .map(
+      (entry) => [entry.replace(/\.jsonl$/, ""), `.state/${entry}`] as const,
+    );
+  const nested = safeDirEntries(stateDir)
+    .filter((entry) => isDirectory(join(stateDir, entry)))
+    .flatMap((dir) =>
+      safeDirEntries(join(stateDir, dir))
+        .filter((entry) => /(?:runs|packets|digests)\.jsonl$/.test(entry))
+        .map(
+          (entry) =>
+            [
+              `${dir}/${entry.replace(/\.jsonl$/, "")}`,
+              `.state/${dir}/${entry}`,
+            ] as const,
+        ),
+    );
+  const files = [...topLevel, ...nested].slice(0, 20);
+
+  if (files.length === 0) {
+    return {
+      discovered: [],
+      note: "No app-local .state/*runs.jsonl, *packets.jsonl, or *digests.jsonl artifacts discovered.",
+    };
+  }
+
+  return Object.fromEntries(
+    files.map(([name, relPath]) => [
+      name,
+      tailLines(join(targetAppDir, relPath), 8),
+    ]),
+  );
+}
+
 function runtimePacket(
   ctx: WorkflowContext,
   target: TargetConfig,
 ): Record<string, unknown> {
   const now = Date.now();
   const since = now - 6 * 60 * 60 * 1000;
+  const projectIds = targetProjectIds(target);
   const safeQuery = (label: string, fn: () => unknown): unknown => {
     try {
       return fn();
@@ -399,11 +782,12 @@ function runtimePacket(
 
   return {
     now,
+    projectIds,
     metrics: safeQuery("metrics", () =>
-      ctx.query
-        .metrics({ project: target.targetProject, limit: 40 })
-        .rows.map((row) => ({
+      projectIds.flatMap((project) =>
+        ctx.query.metrics({ project, limit: 40 }).rows.map((row) => ({
           id: row.id,
+          project,
           name: row.name,
           status: row.status,
           current: row.current,
@@ -413,13 +797,14 @@ function runtimePacket(
           priority: row.priority,
           updated_at: row.updated_at,
         })),
+      ),
     ),
     events: safeQuery("events", () =>
       ctx.query
         .events({ since, limit: 80 })
         .rows.filter((row) => {
           const text = JSON.stringify(row);
-          return text.includes(target.targetProject);
+          return projectIds.some((project) => text.includes(project));
         })
         .slice(0, 30)
         .map((row) => ({
@@ -433,15 +818,18 @@ function runtimePacket(
         })),
     ),
     workflows: safeQuery("workflowRuns", () =>
-      ctx.query
-        .workflowRuns({ since, projectId: target.targetProject, limit: 30 })
-        .rows.map((row) => ({
-          workflow: row.workflow,
-          status: row.status,
-          startedAt: row.startedAt ?? row.started_at,
-          completedAt: row.completedAt ?? row.completed_at,
-          result: row.result_summary ?? row.summary,
-        })),
+      projectIds.flatMap((projectId) =>
+        ctx.query
+          .workflowRuns({ since, projectId, limit: 30 })
+          .rows.map((row) => ({
+            workflow: row.workflow,
+            projectId,
+            status: row.status,
+            startedAt: row.startedAt ?? row.started_at,
+            completedAt: row.completedAt ?? row.completed_at,
+            result: row.result_summary ?? row.summary,
+          })),
+      ),
     ),
   };
 }
@@ -450,36 +838,17 @@ function targetFactPacket(
   ctx: WorkflowContext,
   target: TargetConfig,
 ): Record<string, unknown> {
+  const taskTree = taskTreePacket(target.targetAppDir);
   return {
     target,
     sampledAt: new Date().toISOString(),
     projectState: readJson(
       join(target.targetAppDir, ".state/project-state.json"),
     ),
-    taskTree: taskTreePacket(target.targetAppDir),
+    taskTree,
+    selfRecovery: selfRecoveryContractPacket(target, taskTree),
     loops: loopPacket(target.targetAppDir),
-    recentRuns: {
-      planner: tailLines(
-        join(target.targetAppDir, ".state/planner-runs.jsonl"),
-        8,
-      ),
-      taskReviewer: tailLines(
-        join(target.targetAppDir, ".state/task-reviewer-runs.jsonl"),
-        8,
-      ),
-      stallReview: tailLines(
-        join(target.targetAppDir, ".state/stall-review-runs.jsonl"),
-        8,
-      ),
-      focusPlan: tailLines(
-        join(target.targetAppDir, ".state/focus-plan-runs.jsonl"),
-        8,
-      ),
-      problem: tailLines(
-        join(target.targetAppDir, ".state/problem-runs.jsonl"),
-        8,
-      ),
-    },
+    recentRuns: recentRunPacket(target.targetAppDir),
     targetGit: gitPacket(target.targetDomainDir),
     runtime: runtimePacket(ctx, target),
   };
@@ -542,6 +911,27 @@ function fallbackJudgment(
     (leafByState?.ready ?? 0) +
     (leafByState?.todo ?? 0) +
     (leafByState?.pending ?? 0);
+  const selfRecovery = objectRecord(packet.selfRecovery);
+  const selfRecoveryStatus = String(selfRecovery.status ?? "unknown");
+  const criticalMissing = asArray(selfRecovery.criticalMissing).map(String);
+  const totalLeaves = typeof counts?.leaves === "number" ? counts.leaves : 0;
+  const unfinished = totalLeaves - (leafByState?.done ?? 0);
+
+  if (
+    unfinished > 0 &&
+    selfRecoveryStatus === "weak" &&
+    criticalMissing.length > 0
+  ) {
+    return {
+      verdict: "concern",
+      mainConcern:
+        "The target has unfinished work but its own self-recovery contract is weak.",
+      requestedHumanAction: "watch",
+      notify: true,
+      dedupeKey: `${target.targetProject}:weak-self-recovery-contract`,
+      message: `${target.targetProject} may miss its own failures: unfinished work remains and these self-recovery pieces are missing or weak: ${criticalMissing.join(", ")}.`,
+    };
+  }
 
   if (blocked > 0 && active + review + runnable === 0) {
     return {
@@ -724,6 +1114,15 @@ function shouldNotify(
   judgment: Judgment,
   previous: ProjectHealthState,
 ): boolean {
+  const actionableHumanRequest = [
+    "approve",
+    "decide",
+    "assign-owner",
+    "provide-input",
+  ].includes(judgment.requestedHumanAction.toLowerCase());
+  if (!NOTIFY_VERDICTS.has(judgment.verdict) && !actionableHumanRequest) {
+    return false;
+  }
   if (!judgment.notify) return false;
   if (
     dedupeFamily(previous.lastDedupeKey) !== dedupeFamily(judgment.dedupeKey)
@@ -731,6 +1130,72 @@ function shouldNotify(
     return true;
   }
   return severity(judgment.verdict) > severity(previous.lastVerdict);
+}
+
+function notificationReason(
+  judgment: Judgment,
+  previous: ProjectHealthState,
+  finalNotify: boolean,
+): string {
+  if (!judgment.notify) {
+    return "Evaluator did not request human notification for this sample.";
+  }
+  const actionableHumanRequest = [
+    "approve",
+    "decide",
+    "assign-owner",
+    "provide-input",
+  ].includes(judgment.requestedHumanAction.toLowerCase());
+  if (!NOTIFY_VERDICTS.has(judgment.verdict) && !actionableHumanRequest) {
+    return `Notification suppressed because verdict ${judgment.verdict} with action ${judgment.requestedHumanAction} is report-only. The next scheduled report is the watch mechanism.`;
+  }
+  const previousFamily = dedupeFamily(previous.lastDedupeKey);
+  const currentFamily = dedupeFamily(judgment.dedupeKey);
+  if (finalNotify && previousFamily !== currentFamily) {
+    return `Notify because this is a new concern family: ${currentFamily || judgment.dedupeKey}.`;
+  }
+  if (finalNotify) {
+    return `Notify because severity increased from ${previous.lastVerdict ?? "none"} to ${judgment.verdict}.`;
+  }
+  return `Notification suppressed because the same concern family was already reported and severity did not increase. Previous verdict: ${previous.lastVerdict ?? "none"}.`;
+}
+
+function humanActionDetail(
+  target: TargetConfig,
+  packet: Record<string, unknown>,
+  judgment: Judgment,
+): string {
+  const action = judgment.requestedHumanAction.toLowerCase();
+  const projectState = objectRecord(packet.projectState);
+  const currentFocus = objectRecord(projectState.currentFocus);
+  const focusReview = objectRecord(currentFocus.focusReview);
+  const priorFocusPlanId =
+    typeof currentFocus.priorFocusPlanId === "string"
+      ? currentFocus.priorFocusPlanId
+      : "the prior focus";
+  const focusNote =
+    typeof focusReview.note === "string" && focusReview.note.length > 0
+      ? ` Current review note: ${focusReview.note}`
+      : "";
+  if (action === "none") {
+    return "No human action requested. Continue scheduled evaluation.";
+  }
+  if (action === "watch") {
+    return "Watch the next scheduled report. Human action is only needed if the same concern persists or worsens.";
+  }
+  if (action === "approve") {
+    return `Approve or reject the replacement focus for ${target.targetProject}. The prior focus is ${priorFocusPlanId}. If approving, tell the target app to proceed with the proposed focus; if rejecting, provide the replacement focus explicitly.${focusNote}`;
+  }
+  if (action === "decide") {
+    return `Make the named project decision for ${target.targetProject}; the target app should not keep retrying around this without a decision. Use the report facts to choose proceed, reject, assign owner, or wait.${focusNote}`;
+  }
+  if (action === "assign-owner") {
+    return `Assign a concrete owner for the unresolved project concern in ${target.targetProject}, then expect the target app to create or update an exact task/wait.`;
+  }
+  if (action === "provide-input") {
+    return `Provide the missing input named by the report, then expect ${target.targetProject} to resume or replace the blocked work.`;
+  }
+  return `Review the report and take the requested action for ${target.targetProject}: ${judgment.requestedHumanAction}.`;
 }
 
 function writeReport(
@@ -761,8 +1226,14 @@ Project: ${target.targetProject}
 Verdict: ${judgment.verdict}
 Main concern: ${judgment.mainConcern}
 Requested human action: ${judgment.requestedHumanAction}
-Notify: ${judgment.notify ? "yes" : "no"}
+Evaluator requested notification: ${judgment.evaluatorWantedNotify ? "yes" : "no"}
+Final notification sent: ${judgment.notify ? "yes" : "no"}
 Dedupe key: ${judgment.dedupeKey}
+Notification reason: ${judgment.notificationReason ?? "not recorded"}
+
+## What The Human Should Do
+
+${judgment.humanActionDetail ?? "No action detail recorded."}
 
 ## Human Message
 
@@ -822,6 +1293,9 @@ Reason: ${target.reason}
 
 Judge the target app from raw facts. Keep raw facts visible; do not hide uncertainty.
 Do not mutate the target app. Do not become a second planner. Decide whether a human should be notified.
+Check whether the target app first tried to catch and handle its own metric breaches, failures, and stalled tasks.
+Use the self-recovery contract facts to say whether the shared ops pattern is already present, partially present, or missing.
+When one app shows a better recovery behavior, call out whether that lesson should be reused by other project apps.
 
 Return a markdown report, and include exactly one fenced json block with:
 {
@@ -865,7 +1339,16 @@ ${JSON.stringify(packet, null, 2)}
     fallback,
   );
   judgment.dedupeKey = stableDedupeKey(target, packet, judgment);
-  judgment.notify = shouldNotify(judgment, previous);
+  const evaluatorWantedNotify = judgment.notify;
+  const finalNotify = shouldNotify(judgment, previous);
+  judgment.evaluatorWantedNotify = evaluatorWantedNotify;
+  judgment.notify = finalNotify;
+  judgment.notificationReason = notificationReason(
+    { ...judgment, notify: evaluatorWantedNotify },
+    previous,
+    finalNotify,
+  );
+  judgment.humanActionDetail = humanActionDetail(target, packet, judgment);
   const report = writeReport(
     target,
     packet,

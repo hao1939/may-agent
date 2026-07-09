@@ -54,10 +54,40 @@ Start by reading:
 
 Valid durable outcomes:
 - update an existing knowledge note to reduce duplication or improve reuse
+- create or update ${projectDir}/knowledge/README.md as a short human landing page
 - repair ${projectDir}/knowledge/INDEX.md navigation
 - add a source-grounded finding only when no existing note fits
 - write a compact report under ${projectDir}/reports/
+- move a small verified report batch into reports/health, reports/merge,
+  reports/triage, reports/migration, or reports/operations
 - update the task tree when project understanding or next work changes
+
+Health-signal closure rules:
+- If the trigger contains library-health signals, do not only update a broad
+  parent task. For each P1 signal, either update/create one concrete child task
+  with current evidence and next action, or record an exact accepted no-op
+  reason.
+- Treat future-dated project/library content as a time-trust repair before
+  doing more synthesis. Correct the date when it is wrong; otherwise record why
+  the future date is intentional.
+- If a repeated-library-health-signal appears, inspect the matching task. If the
+  task is real, refresh it with current facts and a next action. If no concrete
+  task exists, create one.
+- A bare active task with only a next_action is not closure. When a represented
+  health task lacks progress evidence, do one small concrete library step or
+  record the exact reason it cannot move yet.
+- If the trigger contains active-task-not-moving, inspect each named task and
+  finish one of these outcomes: make a small domain change and record evidence,
+  close the task with result, or escalate with the exact blocker and waiting
+  condition.
+- If oversized notes are intentionally tolerated, record that per note with the
+  reason. Do not let tolerated notes keep firing as unexplained drift.
+- If unsourced backlog keeps growing, select a small batch or record the exact
+  capacity blocker and next batch target.
+- If human-navigation-missing appears, create knowledge/README.md first. Keep it
+  short and human-facing; do not duplicate the full INDEX.
+- If reports-layout-backlog appears, move only one small report batch and update
+  references. Do not reorganize the whole library in one pass.
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.

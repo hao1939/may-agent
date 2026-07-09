@@ -10,6 +10,52 @@ Project/app evaluation answers the bigger human-facing question:
 
 > Is this project app moving toward its goal, or does a human need to intervene?
 
+## Responsibility Boundary
+
+The simple rule is:
+
+```text
+each app exists to achieve its own domain goal
+project app owns the work
+evaluation.app audits whether the app is working correctly
+```
+
+Each project app must:
+
+- understand and push its own goal forward;
+- run its own domain work;
+- catch its own metric breaches, failed workflows, stale tasks, blocked work,
+  and suspicious outputs;
+- turn each problem into repair work, an exact wait, a retry with changed
+  conditions, a completed result, or a human escalation;
+- keep raw state visible enough that another app can tell whether the loop is
+  closing.
+
+`evaluation.app` must:
+
+- stay outside the target app's domain judgment;
+- check whether the target app noticed its own issues;
+- check whether the target app reacted with useful recovery work instead of
+  silent drift, repeated churn, or vague blockers;
+- check whether project-state, task tree, metrics, workflow runs, and UI-facing
+  reports agree with each other;
+- notify the human only when the app is not self-correcting, the process is not
+  trustworthy, or a concrete human decision is needed.
+
+`evaluation.app` may inspect domain artifacts, but only as process evidence. It
+should not decide whether the domain result is correct. For example, it should
+not decide whether an AKS feature behaves correctly, but it may say a claimed
+live-test pass is suspicious if the run finished too quickly to have created the
+expected real resources.
+
+In practical terms:
+
+- the target app asks "what domain work should happen next?";
+- the target app tries to fix its own process failures first;
+- `evaluation.app` asks "did the target app notice, react, and close the loop?";
+- `evaluation.app` reports to the human when the target app is not closing the
+  loop or when a human decision is actually needed.
+
 ## What We Learned
 
 From `aks-rp-e2e.app`, the useful pattern is not more machinery. The useful
@@ -48,6 +94,7 @@ For project/app evaluation:
 
 ```text
 target app runs work
+  -> target app first tries to catch and fix its own metric breaches, failures, and stalls
   -> evaluation.app samples target state, events, metrics, and outputs
   -> evaluator judges health, progress, and risk
   -> durable report is written
@@ -56,6 +103,75 @@ target app runs work
 
 The target app remains responsible for its domain work. `evaluation.app` is the
 outside reviewer.
+
+Metric breaches follow the same boundary. The target app is the first owner of
+its own metric breach:
+
+```text
+target metric breach
+  -> target app handles, recovers, waits, or escalates
+```
+
+`evaluation.app` must not rely on receiving every target metric event. A breach
+event can be a useful fast wake-up, but it is not the source of truth. The
+reliable path is scheduled sampling:
+
+```text
+scheduled project/app review
+  -> read target metrics, task state, events, loop state, outputs, and recent reports
+  -> judge whether the target app handled its own signals well
+  -> notify human only when the target is not self-correcting or human action is useful
+```
+
+If the target app catches and fixes a breach, `evaluation.app` should usually
+report `ok` or `watch`. If the same breach pattern keeps recurring without
+burning down, or the target app hides/loses the signal, `evaluation.app` should
+report `concern` or higher. If the target app does not expose enough state for
+the evaluator to tell whether the breach was handled, that lack of
+observability is itself a project/app concern.
+
+## Self-Recovery Contract
+
+Every project app should own the first attempt to recover its own process
+failures. The minimum contract is:
+
+- task state exists and unfinished work is visible;
+- owner/planner wake exists for judgment and work creation;
+- project-owned metric breaches can be routed to the project app first;
+- a scheduled observer checks progress without human polling;
+- stuck work has a fallback path, such as watchdog, health review, stall review,
+  or owner review;
+- issues the app cannot finish alone can be reported to a human;
+- unfinished work has an active, review, runnable, exact-wait, or escalation
+  path.
+
+`evaluation.app` does not enforce this by fixing the target. It records whether
+the contract looks `strong`, `partial`, or `weak`, then reports when unfinished
+work exists without enough self-recovery.
+
+The useful reusable pattern is not owned by one app. `aks-rp-e2e.app` is a good
+source because it has exercised many failure modes, but every project app can
+teach the shared app-maintenance pattern:
+
+```text
+scheduled observer
+  -> app-owned metric/watchdog signal
+  -> owner/planner wake
+  -> worker/reviewer/problem/stall fallback
+  -> exact wait, repair work, done state, or human escalation
+```
+
+When one app handles a failure well, the useful lesson should be portable to
+the others. When one app fails to close the loop, that failure should improve
+the shared pattern.
+
+Apps do not copy each other's domain logic. They copy and refine the recovery
+shape only when their own work can stall or silently drift.
+
+The evaluator must follow the same rule. It may use any app as an example, but
+it must not treat one app's file names or domain loops as required for every
+app. The fact packet should discover the target app's own loop/run artifacts
+and report missing generic capabilities, not missing app-specific filenames.
 
 ## Non-Goals
 
@@ -77,9 +193,10 @@ It may:
 - recommend a target-app action;
 - record that the target app's own recovery path is not trustworthy.
 
-## First Target
+## Watched Targets
 
-Start with `aks-rp-e2e.app`:
+Start with `aks-rp-e2e.app` because it has the richest ops pattern and the
+largest unfinished surface:
 
 ```text
 targetProject: aks-rp-e2e.app
@@ -87,7 +204,17 @@ targetAppDir: /app/projects/aks-rp-e2e.app
 targetDomainDir: /app/projects/aks-rp-e2e
 ```
 
-The first review asks whether the target is really moving these lanes:
+Project/app review should cover all active project apps:
+
+```text
+aks-rp-e2e.app
+may-agent.app
+scout-knowledge-lib.app
+evaluation.app
+```
+
+For `aks-rp-e2e.app`, the review asks whether the target is really moving these
+lanes:
 
 - spec verification loop;
 - feature reference loop;
@@ -101,13 +228,17 @@ Each project/app review should answer:
 
 - Is the target moving toward its stated goal?
 - Are active tasks producing new evidence, or just cycling?
-- Are loop counters improving over time?
+- Are loop counters improving over time, or is the app hiding repeated churn?
+- Did the target app detect its own metric breaches, workflow failures, stale
+  tasks, blocked work, and suspicious outputs before evaluation had to point
+  them out?
 - Are blocked items valid waits, or stale parking?
 - Are overdue waits decreasing?
 - Are failures converted into repair work, exact waits, or useful escalation?
 - Are escalations exact, watched, and still actionable?
-- Are claimed outputs real and verified?
-- Are suspicious outputs detected, such as live tests passing too quickly?
+- Are claimed outputs backed by credible process evidence?
+- Are suspicious outputs detected by the target app itself, such as live tests
+  passing too quickly?
 - Are repeated watchdog/metric/recovery paths finding the same issue?
 - Does the UI/project readout match raw task/runtime facts?
 - What should the human do, if anything?
@@ -130,10 +261,21 @@ The evaluator reads raw facts first:
 - open escalations and their owner/resume/fallback state;
 - target git status when output depends on committed or pushed changes;
 - recent human steering events;
-- previous project/app evaluation reports for trend comparison.
+- previous project/app evaluation reports for trend comparison;
+- target app metric snapshots and recent metric history, even when no metric
+  breach event was routed to `evaluation.app`;
+- target app self-recovery contract: task state, owner wake, metric handling,
+  scheduled observers, fallback/watchdog path, human escalation/reporting path,
+  and unfinished-work frontier;
+- target app discovered loop/run artifacts under its own `.state` directory,
+  without requiring AKS-specific artifact names.
 
 The raw fact packet should be saved with the report or referenced from it. The
 human must be able to disagree with evaluator judgment by inspecting the facts.
+When the report shows metrics, distinguish the target app's own readout from
+runtime DB metrics. If runtime metric query returns no rows but the target app's
+project-state readout contains counters, the report should say both facts
+plainly instead of showing only `metrics: none`.
 
 ## Report Contract
 
@@ -159,23 +301,46 @@ Raw facts:
 - loop status and trend
 - recent repeated signals
 - output evidence and suspicious output
+- self-recovery contract status and missing/weak pieces
 
 Evaluator judgment:
 - what looks healthy
 - what looks abnormal
 - why the target app has or has not handled it sufficiently
+- whether the target app first tried to recover itself, and whether that path is
+  trustworthy
 - whether this is new, repeated, improving, or getting worse
 
 Notification:
-- notify: yes/no
+- evaluator requested notification: yes/no
+- final notification sent: yes/no
 - dedupe key
 - reason
 - message to human
+
+Human action:
+- exact action requested
+- what the human should decide or provide
+- what the target app should do after the human action
 ```
 
 The report is the primary human artifact. The sidecar facts file keeps the raw
 packet available without making the markdown hard to read. Events point to the
 report.
+
+The report must distinguish evaluator judgment from notification delivery. If
+the evaluator says "notify" but dedupe suppresses the notification, the report
+must say that plainly and explain why. Otherwise a human cannot tell whether the
+concern was hidden intentionally or accidentally.
+
+The requested human action must be concrete. Avoid stopping at "approve" or
+"decide" without saying what to approve or decide and what should happen next.
+The report should read like:
+
+```text
+Approve or reject the current focus direction. If approved, the target app
+should proceed with that focus. If rejected, provide the replacement focus.
+```
 
 ## Verdicts
 
@@ -191,6 +356,12 @@ report.
 
 Notify only when a human can usefully act or should be aware that the target app
 is not self-correcting.
+
+`watch` is normally report-only. A `watch` verdict should not notify just
+because the evaluator says "keep watching"; the next scheduled report is the
+watch mechanism. Notify only for `concern`, `urgent`, `blocked-on-human`, or a
+concrete human action such as `approve`, `decide`, `assign-owner`, or
+`provide-input`.
 
 Notify for:
 
@@ -223,6 +394,20 @@ evaluation.project.reviewed
 evaluation.project.notification.requested
 ```
 
+Target metric events are optional fast-path inputs. When `evaluation.app`
+receives a watched target's metric breach or recovery event, it may request a
+project/app review, but correctness must not depend on that event being routed
+to evaluation:
+
+```text
+metric.breach | metric.recovered
+  -> optional evaluation.project.review.requested
+  -> same scheduled-review workflow and report contract
+```
+
+The scheduled review remains mandatory because the target app may consume,
+recover, or suppress its own metric events before `evaluation.app` sees them.
+
 `evaluation.project.review.requested` includes:
 
 ```json
@@ -232,6 +417,15 @@ evaluation.project.notification.requested
   "targetDomainDir": "/app/projects/aks-rp-e2e",
   "reason": "scheduled"
 }
+```
+
+Runtime delivery may wrap those fields under `data.params` when the event is
+dispatched to a workflow. The evaluator must normalize both shapes:
+
+```text
+params.targetProject
+data.targetProject
+data.params.targetProject
 ```
 
 `evaluation.project.reviewed` includes:
@@ -302,7 +496,7 @@ Use a durable scheduled loop for each watched target:
 ```text
 project-health-loop
   every 30 minutes
-  -> review each configured target
+  -> review each configured target project app
   -> write report
   -> notify only if policy says notify
 ```
@@ -417,11 +611,24 @@ Phase 2: notification
 
 Phase 3: schedule and trend
 
-1. Add `project-health-loop` every 30 minutes.
+1. Add `project-health-loop` every 30 minutes for each configured target.
 2. Compare with previous reports.
 3. Notify only on trend, severity, or unresolved repeated issue.
 4. Add project-health task tree lane only for maintaining the evaluator itself,
    not for individual target reviews.
+
+Phase 3.5: self-recovery coverage
+
+1. Add a read-only self-recovery contract packet to every project/app report.
+   Done.
+2. Schedule project-health review for every active project app, not only
+   `aks-rp-e2e.app`. Done.
+3. Use the reports to decide which recovery lessons should be applied across
+   apps.
+4. Keep this observational first: no target task-tree mutation or auto-fix from
+   `evaluation.app`.
+5. Generalize fact collection so app-specific loop/run files are discovered
+   when present but are not treated as required for other apps. Done.
 
 Phase 4: feedback loop
 

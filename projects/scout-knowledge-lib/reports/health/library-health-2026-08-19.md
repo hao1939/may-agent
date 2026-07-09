@@ -21,7 +21,7 @@ structural constraints (oversized canonical notes) unchanged.
 | `findings/2026-07-31-xhs-cross-source-scan48.md` | XHS scan | Human Intervention as Missing Primitive: human steering is system's ONLY effective actuator (3 events unblocked production frontier). Eval:Worker 1.24:1 all-time low. Natural dormancy confirmed recurring. |
 | `findings/2026-06-19-arxiv-contract-layer-triage.md` | arXiv triage | The Contract Layer: 10 papers show contract quality (guidance files, tool contracts, eval criteria) is 6-12× multiplier vs <2× from model swaps. |
 | `findings/2026-06-22-arxiv-stochastic-deterministic-inversion-triage.md` | arXiv triage | The Stochastic-Deterministic Inversion: 9 papers on systematic migration of control flow OUT of LLMs into deterministic program structures. |
-| `shared/knowledge/entries/KE-055.md` | KE entry | Behavioral Temperature: ops_range / avg_ops predicts efficiency, error rate, and cost predictability across all 15 workflow types. Connects Contract Layer + SDB triages. |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-055 | KE entry | Behavioral Temperature: ops_range / avg_ops predicts efficiency, error rate, and cost predictability across all 15 workflow types. Connects Contract Layer + SDB triages. |
 
 INDEX.md updated: KE series count 54→55, 3 findings entries added, KE-055 added to notable entries.
 

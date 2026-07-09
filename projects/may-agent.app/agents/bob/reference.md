@@ -60,7 +60,7 @@ Questions: What metric confirms/refutes? Predicted effect size? Who tests?
 [WORK SESSION] Synthesize <topic> from DD#501-504
 Objective: Connect deep-dives to current system problems.
 Read: relevant DDs, KEs
-Output: shared/knowledge/synthesis/<topic>.md
+Output: projects/scout-knowledge-lib/reports/<topic>.md
 ```
 
 **Experiment result processing:**

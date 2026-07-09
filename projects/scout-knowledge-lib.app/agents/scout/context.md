@@ -2,7 +2,7 @@
 
 ## Resources
 
-- Knowledge base: `shared/knowledge/entries/`
+- Knowledge base: `projects/scout-knowledge-lib/knowledge/`
 - **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
   - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'`
     - ⚠️ MUST use `https://export.arxiv.org` — `http://` returns empty responses or 403. Never use `http://export.arxiv.org`.
@@ -54,17 +54,12 @@ BAD (will be flagged):
 - "File was updated successfully" (no specifics)
 - "Verified the changes work" (unfalsifiable)
 
-## Knowledge Entry Safety
+## Knowledge File Safety
 
-- **NEVER write() low-numbered KE files** (KE-001 through KE-010). They are canonical shared memory.
-- To add new knowledge, allocate the KE id mechanically from the shared KB, not from memory or today's digest:
-  1. Run `bash projects/scout-knowledge-lib.app/agents/scout/tools/next-ke-id.sh` from the project root (`/app`).
-  2. Use the printed `KE-NNNN` id exactly once with a descriptive slug.
-  3. Before writing, verify no collision with `ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
-- The KE allocation helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only directory scan fallback and report the helper issue instead of creating or overwriting the tool from a heartbeat.
-- Never reuse a KE number. If a nearby topic already exists, update that existing KE instead of creating a duplicate.
-- To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.
-- Before creating a new KE for an arXiv paper, search the shared KB by the arXiv id / `source_basis` URL (not just the intended slug) so existing entries for the same paper are updated instead of duplicated under a new KE number.
+- Durable Scout knowledge belongs in `projects/scout-knowledge-lib/knowledge/` or `projects/scout-knowledge-lib/reports/`.
+- Before creating a new file, search the Scout library by topic, title, source URL, arXiv id, repo name, or post id so existing notes are updated instead of duplicated.
+- To correct an existing note, **read() first**, then use **edit()** with a narrow diff. Never replace a whole note with unrelated new material.
+- Legacy KE files under `shared/knowledge/entries/` are being merged into Scout-owned reports and notes. Do not create new legacy KE files.
 
 ## How to Discover Work
 
@@ -78,7 +73,8 @@ BAD (will be flagged):
 - Findings: `projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
 - Posts: `projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
 - Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
-- Use `projects/scout-knowledge-lib/knowledge/` for the project library; do not rely on legacy agent paths.
+- Scout reports: `projects/scout-knowledge-lib/reports/`
+- Use these project paths for durable work; do not rely on legacy agent paths.
 - Before appending to `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
 

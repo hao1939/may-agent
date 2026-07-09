@@ -15,6 +15,29 @@ const evaluationContext = [
   "projects/evaluation.app/criteria/scoring.md",
 ];
 
+const watchedProjectTargets = [
+  {
+    targetProject: "aks-rp-e2e.app",
+    targetAppDir: "/app/projects/aks-rp-e2e.app",
+    targetDomainDir: "/app/projects/aks-rp-e2e",
+  },
+  {
+    targetProject: "may-agent.app",
+    targetAppDir: "/app/projects/may-agent.app",
+    targetDomainDir: "/app/projects/may-agent",
+  },
+  {
+    targetProject: "scout-knowledge-lib.app",
+    targetAppDir: "/app/projects/scout-knowledge-lib.app",
+    targetDomainDir: "/app/projects/scout-knowledge-lib",
+  },
+  {
+    targetProject: "evaluation.app",
+    targetAppDir: "/app/projects/evaluation.app",
+    targetDomainDir: "/app/projects/evaluation.app",
+  },
+];
+
 function eventParams(params: unknown): Record<string, unknown> {
   return params && typeof params === "object" && !Array.isArray(params)
     ? (params as Record<string, unknown>)
@@ -43,15 +66,27 @@ function evaluationReviewRequested(
 
 function projectHealthReviewRequested(params: unknown = {}): ProjectAppEvent {
   const details = eventParams(params);
+  const requestedTarget =
+    typeof details.targetProject === "string"
+      ? details.targetProject
+      : typeof details.target === "string"
+        ? details.target
+        : watchedProjectTargets[0].targetProject;
+  const watchedTarget =
+    watchedProjectTargets.find(
+      (target) =>
+        target.targetProject === requestedTarget ||
+        target.targetProject.replace(/\.app$/, "") === requestedTarget,
+    ) ?? watchedProjectTargets[0];
+  const reason = typeof details.reason === "string" ? details.reason : "manual";
+
   return {
     type: "evaluation.project.review.requested",
     project: projectId,
     params: {
-      targetProject: "aks-rp-e2e.app",
-      targetAppDir: "/app/projects/aks-rp-e2e.app",
-      targetDomainDir: "/app/projects/aks-rp-e2e",
-      reason: "manual",
       ...details,
+      ...watchedTarget,
+      reason,
     },
   };
 }
@@ -236,21 +271,19 @@ export default defineProjectApp({
         project: projectId,
       },
     },
-    {
-      id: "project-health-loop",
+    ...watchedProjectTargets.map((target) => ({
+      id: `project-health-loop-${target.targetProject}`,
       enabled: true,
       intervalMs: 1_800_000, // 30min human-facing app/project review baseline
       event: {
         type: "evaluation.project.review.requested",
         project: projectId,
         params: {
-          targetProject: "aks-rp-e2e.app",
-          targetAppDir: "/app/projects/aks-rp-e2e.app",
-          targetDomainDir: "/app/projects/aks-rp-e2e",
+          ...target,
           reason: "scheduled",
         },
       },
-    },
+    })),
   ],
 
   workflowHandlers: [

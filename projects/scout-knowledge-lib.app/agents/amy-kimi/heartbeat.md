@@ -16,13 +16,13 @@ When you find something interesting:
 Follow the chain. Go deep.
 
 ## 3. 带回来
-Write findings to the shared knowledge base (not your local workspace):
-- Each finding → `shared/knowledge/library/posts/HB-XXXX-short-title.md` (self-contained)
-- Update insights → `shared/knowledge/library/insights-cn.md`
-- Update digest → `shared/research-digest.md` — **after editing, read() to confirm**
-- If directly relevant to our system → hypothesis → `shared/knowledge/hypotheses/H-XXX.md`
+Write durable findings to the Scout project library:
+- Each finding → `projects/scout-knowledge-lib/knowledge/findings/YYYY-MM-DD-topic.md` (self-contained)
+- Insights → update the matching note under `projects/scout-knowledge-lib/knowledge/`
+- Deep dives or migration summaries → `projects/scout-knowledge-lib/reports/`
+- If directly relevant to our system → write a focused Scout finding or update the canonical note
 
-⚠️ **Verify writes**: After editing any shared file (research-digest.md, bulletin.md, insights-cn.md), call `read()` on that file before moving on. Edits can silently fail.
+⚠️ **Verify writes**: After editing any durable file, call `read()` on that file before moving on. Edits can silently fail.
 
 Always answer: 这个对我们的系统意味着什么？
 

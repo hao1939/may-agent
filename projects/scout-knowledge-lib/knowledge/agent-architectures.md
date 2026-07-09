@@ -2,7 +2,7 @@
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
 last_updated: "2026-07-02"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening Jul 22). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md (2026-10-31). §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-22)."
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08)."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 

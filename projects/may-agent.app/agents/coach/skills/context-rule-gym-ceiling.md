@@ -44,8 +44,7 @@ This is structural, not a bug in any specific scenario.
 
 ## Linked
 - `agents/coach/workspace/projects/prove-the-loop.md` (Iter 4/5/6/8/12)
-- `shared/knowledge/entries/KE-010.md` (gym ceiling)
-- `shared/knowledge/entries/KE-007.md` (only structural works)
+- `projects/scout-knowledge-lib/reports/shared-ke-001-090-merge-2026-07-09.md` (legacy KE-010 gym ceiling and KE-007 structural-intervention findings)
 - `shared/knowledge/entries/KE-123.md` (one change per cycle; don't stack)
 
 ## Source

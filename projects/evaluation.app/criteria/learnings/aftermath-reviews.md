@@ -359,11 +359,11 @@
 - Fix: review the follow-up artifact before scoring the first session as fully good. Keep credit for the durable empirical finding if it still stands, but downgrade output quality/root-cause quality when the original session overclaimed mechanism and the correction landed shortly after.
 
 ## Pattern: reused shared knowledge IDs can silently overwrite established entries
-- Symptom: a research session creates `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
+- Symptom: a research session creates a legacy shared KE file such as `shared/knowledge/entries/KE-0xx.md` for a fresh external finding without checking whether that ID already anchors an existing canonical knowledge entry. The landed commit then replaces an established KE with unrelated content while transcript self-report still calls it a "new" KB entry.
 - Fix: before crediting a KB addition, inspect the pre-change file (`git show <commit>^:path`) and search indexes/references for that KE id. If the id was already in active use, treat the session as partial value at best: preserve any rolling digest insight, but downgrade the KB output for destructive overwrite and recommend allocating a new unique KE id.
 
 ## Pattern: KE-id collisions can happen even when the filename is new
-- Symptom: a session creates a seemingly fresh file like `shared/knowledge/entries/KE-022.md`, but the logical id `KE-022` is already assigned elsewhere (for example `KE-022-early-exploration-errors.md`) in `shared/knowledge/INDEX.md` and downstream references.
+- Symptom: a session creates a seemingly fresh legacy KE file like `KE-022.md`, but the logical id `KE-022` is already assigned elsewhere (for example `KE-022-early-exploration-errors.md`) in the old shared index and downstream references.
 - Fix: verify both the target path and the logical KE id. Search `shared/knowledge/INDEX.md` and existing `entries/` filenames for the intended id before crediting a "new" KE. If the id already exists under another filename, treat the output as a numbering collision rather than a valid new KB entry.
 
 ## Pattern: shell echo can silently corrupt markdown artifacts

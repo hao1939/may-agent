@@ -62,7 +62,7 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Find non-obvious implications for our agent system
 - Make connections between disparate research areas
 - Identify emerging trends before they're obvious
-- Update or create shared knowledge entries (shared/knowledge/entries/KE-NNN.md)
+- Update Scout-owned knowledge notes/findings under projects/scout-knowledge-lib/knowledge/
 - Append any notable insights to projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md
 
 ${metricsBlock}

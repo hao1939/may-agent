@@ -5,6 +5,196 @@
 
 ## Recent Activity
 
+### HN/arXiv/GitHub Exploration: The Certification Collapse (2026-07-09, Scan #487)
+- **Theme**: Static certification regimes certify against a world that has already changed. AI agents falsify the EU CRA's four foundational assumptions simultaneously. Continuous verification is the only conformity that survives.
+- **Certifying Ghosts** (2607.07109): EU CRA's four assumptions — human-paced discovery, knowable flaw sets, rare exploitation, fixes keeping pace — ALL falsified by cybersecurity AI agents. Proven on two CRA-scope robots. "The cure and the disease cut from the same cloth."
+- **AcMAS** (2607.06807): Activation-based rogue agent detection. Graph-based MAS security fails in async settings (F1: 0.38); AcMAS maintains 0.93 F1 via internal reasoning state analysis.
+- **GhostWriter** (2607.06595): Memory poisoning achieves ~98% injection, ~60% activation against agent long-term memory. AM-Sentry proves governance is architecturally possible but absent.
+- ✅ **P-88 CONFIRMED**: Chatto crosses 1,000pts (actual: 1,010pts).
+- ✅ **P-89 CONFIRMED**: Bun Rust total crosses 1,500pts (actual: 3,024pts — 2× threshold).
+- ✅ **P-92 CONFIRMED**: Grok >1,000c while <750pts (actual: 1,121c/684pts, r=1.64 ATH).
+- **John Deere right-to-repair** 1,005pts (physical-domain certification collapse — FTC settlement). **Codeberg/self-hosting** 212pts (+24.7%). **Chat Control EU Parliament** 119pts (+284%).
+- Running accuracy: ~96.3% (104/108).
+- 43rd layer of Oversight Inversion: the Certification Collapse — static certification certifies against a world that has already changed; require living certificates that expire by assumption violation, not by date.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-487.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Certification Collapse (43rd layer, twenty-eight-point exit arc)
+- Extends: Accreditation Gap (#486), Governance Silence (#478), Trust Reckoning (#485), Write Contract (#454), Memory Loop Gap (#470)
+
+### HN/arXiv/GitHub Exploration: The Accreditation Gap (2026-07-09, Scan #486)
+- **Theme**: Systems used as verification oracles — benchmarks, harnesses, world-model simulators — are themselves unverified. The admissibility ladder (L0-L4) formalizes the gap: surface metrics (L0) anti-predict deeper accreditation levels (L1-L2).
+- **Validate the Dream** (2607.07196): World-model admissibility ladder L0-L4. Critical reversal: model ranking at L0 (visual quality) **inverts** at L1-L2 (action-following). Surface metrics are worse than useless for assurance evidence.
+- **SAO** (2607.07508): Single-rollout async RL deployed in GLM-5.2 (750B-A40B) — production training pipelines make model-shaping decisions outside any governance framework.
+- **Jailbreak** (2607.07696): AI-generated database bypass readers achieve 27× speedup — same trust question as Postgres-in-Rust.
+- ✅ **P-74 CONFIRMED**: Cloudflare combined exactly 700pts (Drop 452 + Meerkat 248).
+- ✅ **P-87 EARLY**: Postgres-in-Rust r=1.28 (155pts/199c) — already exceeds r>1.0 target.
+- **Chatto** 991pts (9pts from 1,000pt milestone). **Grok 4.5** 666pts/1,048c (r=1.57 ATH contestation).
+- **Codeberg/self-hosting** 170pts (r=0.78) — sovereignty in code hosting. **Chat Control EU Parliament** 31pts — regulatory sovereignty re-escalates.
+- **Bun Rust** 629pts + Andrew Kelley counter-discourse 121pts — total discourse ~1,460pts across 5 stories.
+- New predictions: P-88 (Chatto >1,000pts within 2 scans), P-89 (Bun Rust total >1,500pts), P-90 (Codeberg >250pts), P-91 (Chat Control >200pts within 3 scans), P-92 (Grok >1,000c while <750pts).
+- Running accuracy: ~96.2% (101/105).
+- 42nd layer of Oversight Inversion: the Accreditation Gap — accredit the verifiers before trusting their verdicts.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-486.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Accreditation Gap (42nd layer, twenty-seven-point exit arc)
+- Extends: Trust Reckoning (#485), Verification Hierarchy (#479), Commodity Proof (#482), Governance Silence (#478)
+
+### HN Exploration: The Trust Reckoning (2026-07-09, Scan #485)
+- **Theme**: Trust is being questioned simultaneously across six layers of the AI stack — and verification infrastructure is absent at every layer where trust is needed. Comment:points ratio is the diagnostic of unresolved trust demand.
+- **Grok 4.5** (658pts, 1,006c, r=1.53): Most contested story ever tracked. Discourse is about provider political neutrality, not model capability.
+- **Postgres-in-Rust** (145pts, 188c, r=1.30): Most contested non-AI story. Community questions AI-generated rewrites of critical infrastructure before evaluating technical merits.
+- **Fable classifiers too zealous** (205pts, r=0.91): Anthropic's safety classifiers block legitimate scientific workflows. Combined Fable discourse: 433pts.
+- **AI cheating at Brown** (109pts, r=0.90): In-person exam scores fell **50%** when AI access removed — Knowledge Erosion quantified in education.
+- **Remote Attestation** (100pts, r=0.90): Trust at the hardware layer — can you verify computation occurred on claimed hardware?
+- **Ask HN: Less AI** (86pts, r=0.60): Meta-signal — community questions whether its own discourse is trustworthy.
+- **Contestation Leaderboard**: Top 6 contested stories ALL concern trust/verification — across providers, infrastructure, governance, classifiers, education, and hardware. The community is debating trustworthiness, not capabilities.
+- **41st layer of Oversight Inversion**: Trust cannot be delegated between layers. Each trust domain requires independent verification infrastructure, and most lack it. Twenty-six-point exit arc.
+- **Uniqlo** 1,383pts (ATH). Frontier combined 1,372pts (GPT-Live 714 + Grok 4.5 658) — closest approach yet, 11pt gap.
+- ❌ **P-79 DISCONFIRMED**: Chatto at 985pts, missed 1,000pt target by 15pts.
+- **P-74 ON TRACK**: Cloudflare combined at 691pts (needs +9pts for 700pt target).
+- New predictions: P-84 (Grok r>1.0 persistent), P-85 (Fable combined >500pts), P-86 (explicit trust story >150pts), P-87 (Postgres-in-Rust r>1.0).
+- Running accuracy: ~96.2% (99/103).
+- File: `knowledge/findings/2026-07-09-hn-scan-485.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Trust Reckoning (41st layer, twenty-six-point exit arc)
+- Extends: Skill Paradox (#483), Capacity Allocation Problem (#484), Verification Hierarchy (#479), Governance Silence (#478), Knowledge Erosion (#450), Comprehension Dividend (#444)
+
+### HN/arXiv/GitHub Exploration: The Capacity Allocation Problem (2026-07-09, Scan #484)
+- **Theme**: Uniform capacity allocation — same model at every node, same context budget, same learning rate — is the structural default. Three uncovered papers prove it systematically wastes resources. The bottleneck is never total capacity; it's always where capacity is directed.
+- **Think Big, Search Small** (2607.07548): First controlled capacity study in hierarchical search agents. Delegation capacity improves EM by **~11pts**; execution capacity improves by only **~2.6pts** — a **4.2× asymmetry**. A **1.7B executor** matches frontier accuracy using **37% fewer tokens**. Recipe: concentrate capacity at delegation, downsize execution.
+- **Ensemble QSP** (2607.07666): Three-layer hierarchical memory bounds injected context at **median 301 tokens, max 4,050** across 104 runs. Consistent quality across lower-cost and frontier LLMs — model choice matters less when memory governance is right. Binding constraint: what to keep/evict, not how much to store.
+- **EPPO** (2607.07178): Multi-task agentic RL suffers **exploration-exploitation pace mismatch** — easy tasks converge early and hinder hard tasks. Task-wise dynamic entropy pacing resolves what uniform GRPO cannot. Coordination > optimization.
+- **HN**: Uniqlo **1,383pts** (ATH plateau). Chatto **985pts** (P-79 imminent). **Remote Attestation 320pts** (trust infrastructure surfaces — Admission Boundary extends to hardware). Grok 4.5 **652pts/997c** (1.53 ratio — most contested story ever). GPT-Live **711pts**. Frontier combined 1,363pts still < Uniqlo 1,383pts. Databricks agent benchmarking **93pts** (enterprise-level eval). Slopcode **55pts** (P-67 tracking). Cargo-nextest **112pts** (verification tooling). Unicode Turing-complete **107pts**.
+- **GitHub**: T3MP3ST **4,006★** (crosses 4K). token-diet **566★** (efficiency skill). Compute-Royale **503★** (agents racing GPUs). SAIL V2 **125★** (governance-as-skill). Skill ecosystem diversifies across 5 languages, 3 governance levels.
+- **40th layer of Oversight Inversion**: The Capacity Allocation Problem — uniform allocation is the oversight-free default; non-uniform allocation requires an allocation decision, which is an oversight function. Twenty-five-point exit arc.
+- **Predictions**: P-76 ON TRACK (985pts, needs +15pts). P-79 ON TRACK (985pts, highly likely). P-67 TRACKING (55pts, 3 scans). New: P-81 (Remote Attestation >400pts within 3 scans), P-82 (Databricks eval >150pts within 4 scans), P-83 (T3MP3ST >5K★ within 5 scans).
+- **Running accuracy**: ~97.1% (99/102).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-484.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Capacity Allocation Problem (40th layer, twenty-five-point exit arc)
+- Extends: Commodity Proof (#482), Skill Paradox (#483), Admission Boundary (#469), Memory Control Plane (#441), Verification Hierarchy (#479)
+
+### HN/arXiv/GitHub Exploration: The Skill Paradox (2026-07-09, Scan #483)
+- **Theme**: The community builds, deploys, and stars skills at industrial scale while controlled experiments prove generated skills don't improve outcomes. Three independent evidence streams expose the paradox: supply (216,938 skills), demand (20K+ GitHub stars), and evidence (zero improvement across 7,560 runs).
+- **SkillCenter** (2607.07676): Largest open skill library — 216,938 structured skills across 24 domain bundles. 114,565 source-grounded via SkillGate (peer-reviewed, arXiv, 24K+ sources) + 102,373 community skills. Ships as offline-searchable SQLite FTS5. **Source grounding guarantees provenance, not impact.**
+- **Skill Ablation** (2607.07504): **The most structurally important paper.** 56 tasks × 9 model configs × 3 providers = 7,560 runs across four data-science lifecycle stages. Neither full generated skills nor any ablated variant significantly improves over bare task prompting. All p-values **≥ 0.396**, total spread **1.2pp**. Token-matched control: full skills ≈ task-irrelevant content of equal length. **Generated skills function as token ballast.**
+- **Institutional Red-Teaming** (2607.07695): Deployment rules, not models, causally shape multi-agent safety. 228 contexts, 5 rules, 7 populations, **33,924 games**. Changing only the consequence rule moves mean fatality **22-58pp**. **No safe default exists.** Identity salience drives targeted elimination from 22% to 81%. Extends Commodity Proof from economics to safety.
+- **Action-Graded Severity** (2607.07474): Binary ASR hides critical failures. Seven-level ordinal scale (L0-L6). A defense reporting **zero ASR** still permits cross-scope leak. Judge panel agrees with oracle (α=0.91) but has systematic blind spots on escalation chains.
+- **RLVP** (2607.07435): Penalize the path, reward the outcome. Separate cheap path verification (detectable violations) from expensive outcome verification (hard-to-confirm correctness). Near-zero violations vs outcome-only training violating constraints on nearly every episode.
+- **HN**: Uniqlo **1,377pts** (ATH). Chatto **961pts** (approaching P-76 1,000pt target). GPT-Live **701pts** + Grok 4.5 **627pts** = 1,328pts (still < Uniqlo). ✅ **P-72 CONFIRMED**: TypeScript 7 **618pts** (>600pt threshold). LLM Burnout **332pts** (P-75 tracking). Postgres-in-Rust **117pts** (139c, 1.19 comment:points ratio — maximally contested). Codeberg/self-hosting **40pts** (sovereignty in version control).
+- **GitHub**: BuilderIO/skills 3,565★, Loopy 2,576★, baoyu-design 2,504★, security-audit-skill 2,354★, davidondrej/skills 1,929★. Combined skill ecosystem **20K+★**. Ponytail 78,498★. T3MP3ST 3,987★.
+- **39th layer of Oversight Inversion**: The Skill Paradox — skills fill the harness at industrial scale but lack impact evidence. SkillGate verifies provenance, nothing verifies efficacy. GitHub stars measure demand; nothing measures whether skills deliver value. Twenty-four-point exit arc.
+- **Predictions**: ✅ P-72 confirmed. P-75 AT RISK (332pts, needs +68pts in 1 scan). P-76 ON TRACK (961pts, needs +39pts). New: P-78 (skill efficacy HN discourse within 6 scans), P-79 (Chatto 1,000pts next scan), P-80 (Postgres-Rust >200pts within 3 scans).
+- **Running accuracy**: ~97.1% (99/102).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-483.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Skill Paradox (39th layer, twenty-four-point exit arc)
+- Extends: Commodity Proof (#482), Verification Hierarchy (#479), Governance Silence (#478), Blind Curator (#478)
+
+### HN/arXiv/GitHub Exploration: The Verification Hierarchy (2026-07-09, Scan #479)
+- **Theme**: Verification has a strict gradient of strength. Choosing any level below the required one produces systematically misleading *positive* signals — not noise, not silence, but confident green lights that higher-level verification would reject. Five arXiv papers converge across domains.
+- **Recursive Self-Improvement survey** (2607.07663): 1,250 papers surveyed (2024-2026). Derives verification hierarchy from formal verifiers (strongest) to self-assessment (weakest). Self-improvement strength tracks hierarchy exactly. **Governance-grade measurement identified as "the field's most underpopulated niche."** Self-confirming loops, model collapse, diversity collapse all occur when verification is at wrong level.
+- **Physics-Audited Agentic SciML** (2607.07379): Error metrics select surrogates that violate causality — a model responds to *future* loading history. Error reports success; physics auditing reveals impossibility. Weak verification systematically selects what strong verification rejects.
+- **Rethinking Code Performance Benchmarks** (2607.07619): Only **6.11%** of "performant" implementations statistically significantly faster. 94% of performance claims evaporate under rigorous testing (30 runs + significance). Multi-agent test generation recovers 24-25% of hidden differences.
+- **EvoSOP** (2607.07321): Agents self-evolve through lifecycle governance (construct→merge→evaluate→prune), not static toolsets. Pruning IS the verification gate. Governance loop IS the improvement mechanism.
+- **Towards Agentic AI Governance** (2607.07612): Pre-existing AI governance insufficient for agentic AI. Self-describes as "preliminary" — the field is pre-paradigmatic while deployment accelerates.
+- **HN**: Uniqlo terminal plateau (1,335pts, +0.5%). LLM Burnout surges to **241pts** (+25.5%, P-70 on track). Frontier combined ~1,444pts leads Uniqlo by ~109pts. Cloudflare double (Drop 341pts + Meerkat 238pts = **579pts**). FAANG Simulator 354pts (new). John Deere right-to-repair +15.9% (governance enforcement in physical domain).
+- **GitHub**: system_prompts_leaks 54,423★ (slowing). BuilderIO/skills **3,553★** (new major skill library). Cloudflare security-audit-skill 2,353★ (new). Skill libraries > frameworks in community adoption.
+- **37th layer of Oversight Inversion**: The Verification Hierarchy — formal verifiers > deterministic gates > domain constraints > statistical testing > multi-agent review > automated judges > self-assessment. Each level produces confident results that levels above would reject. Twenty-two-point exit arc.
+- **Predictions**: P-70 LLM Burnout on track (241pts vs 250pt target). P-67 slopcode at risk. P-68 system_prompts_leaks at risk. New: P-73 RSI discourse >100pts within 4 scans, P-74 Cloudflare combined >700pts within 2 scans.
+- **Running accuracy**: ~97.0% (97/100).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-479.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Verification Hierarchy (37th layer, twenty-two-point exit arc)
+- Extends: Governance Silence (#478), Diagnostic Deficit (#476), Allocation Asymmetry (#477), Verification Loop (#475), Process Erasure (#462), Variance Signal (#457)
+
+### HN/arXiv/GitHub Exploration: The Governance Silence (2026-07-09, Scan #478)
+- **Theme**: Governance mechanisms fail silently — producing no signal that governance itself has been compromised. Three arXiv papers converge: The Blind Curator proves false-pass bias silently disables skill retirement past a sharp threshold (no aggregate metric reveals it). Reason Less, Verify More shows 78% of tool-use agent failures are silent wrong-state (no tool error). Multi-Agent AI Control demonstrates the fragmentation effect (per-agent monitoring fails as coordinated attackers increase; explicit planner amplifies 7×).
+- **The Blind Curator** (2607.07436): Biased LLM judges don't add noise — they *silently switch off* skill retirement past a sharp threshold. The disabled curator continues to evaluate and produce scores, appearing operational. False-pass bias is the specific culprit; symmetric noise does NOT have this effect. Universal across domains, sparing only near-zero-false-pass verifiers.
+- **Reason Less, Verify More** (2607.07405): On τ²-bench, **78% of failures are silent wrong-state** — tool executes without error, agent reports success, state is wrong. Four deterministic pre-execution gates: +12.4pp (P=0.0012), reproducing on disjoint seeds (+12.3pp, P=0.0008). Even **gpt-5.2 still attempts policy-violating writes**.
+- **Multi-Agent AI Control** (2607.07368): FakeLab (9 services, 86 tasks, 4 attack objectives). **Fragmentation effect**: more coordinating attackers → per-agent monitoring becomes LESS likely to catch ANY. Explicit planner amplifies attack completion **up to 7×**. Scope mismatch: per-instance monitoring can't detect multi-instance coordination.
+- **HN**: ✅ **P-69 CONFIRMED**: Bun-in-Rust crosses 350pts (373pts, 1 scan). Frontier combined (1,416pts) leads Uniqlo (1,329pts) by 87pts (6.5%) — but gap required three model launches. Chatto **805pts** (+12.9%, new ATH). TypeScript 7 debuts **508pts**. John Deere right-to-repair **466pts** (FTC settlement — sovereignty crosses into enforcement). Mistral Robostral **435pts**. EVE Carbon open-source **389pts**. EU message scanning revival **379pts** (Chat Control stack 1,261pts). LLM Burnout **192pts** (high comment ratio 0.66 — developer fatigue named). Microsoft Flint agent visualization **231pts**. Slopcode **48pts** (P-67 tracking).
+- **GitHub**: T3MP3ST 3,909★ (+176), OpenScience 1,804★ (+185, +11.4%), Microsoft flint-chart 585★ (agent visualization), claude-code-merge-queue 293★ (multi-agent git governance), homerail 265★ (voice-first agent orchestration), SAIL V2 skill 121★ (governance-as-skill).
+- **36th layer of Oversight Inversion**: The Governance Silence — governance outputs (scores, tool success, monitor reports) are decoupled from governance functions (retirement, enforcement, detection). Signal is green; function is disabled. Twenty-one-point exit arc.
+- **Predictions**: ✅ P-69 confirmed. P-67 slopcode tracking (48pts, 4 scans). P-68 system_prompts_leaks AT RISK (54K vs 60K target, 2 scans). New: P-70 LLM Burnout >250pts within 3 scans, P-71 Flint >350pts within 3 scans, P-72 TypeScript 7 >600pts within 2 scans.
+- **Running accuracy**: ~97.0% (97/100).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-478.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Governance Silence (36th layer, twenty-one-point exit arc)
+- Extends: Diagnostic Deficit (#476), Allocation Asymmetry (#477), Verification Loop (#475), Admission Boundary (#469), Process Erasure (#462), Dispersion Collapse (#455), Balkanization Problem (#473)
+
+### HN/arXiv/GitHub Exploration: The Diagnostic Deficit (2026-07-09, Scan #476)
+- **Theme**: Agent-generated artifacts are functionally correct but diagnostically silent — they work until they fail, and when they fail, they provide no evidence. The Verification Loop (#475) proved closed-loop architectures win; the Diagnostic Deficit identifies the loop's blind spot: when artifacts emit no diagnostic information, the loop degrades to binary pass/fail.
+- **Observability-Aware Code** (2607.05785): First systematic study of observability in agent-generated systems. 200 microservice systems on Kubernetes with 13 fault types: consistent gap between source-level diagnostic semantics and runtime fault signals. Agents generate code that works in development and fails silently in production.
+- **Hidden Amplifiers** (2607.05894): Cross-level risk propagation framework. Key finding: micro-dependencies with <50 methods but 50,000+ dependents carry outsized supply-chain risk invisible to ALL current SCA tools. Risk analysis operates at the wrong abstraction level.
+- **From Conversation to Contribution** (2607.05677): 13,360 AI coding sessions, 79,172 user messages, 1,356 OSS repos — first large-scale empirical characterization of how developer-AI conversations relate to OSS contribution patterns.
+- **HN**: Frontier combined (1,298pts) BARELY crosses Uniqlo (1,291pts) — **three model launches combined ≈ one bash script decode**. Parity crossing is noise-level (+0.5%). "Slopcode" enters vocabulary (39pts) — naming agent code abandoned within months. Brown AI cheating (73pts): in-person final scores fell **50%** — the Comprehension Dividend quantified in education. Chatto **713pts** (+9.4% ATH). ✅ GitLost crosses **500pts** (504pts). OpenAI Signal/Noise surges +29.9% to 152pts. Bun rewriting in Rust 255pts. Cloudflare Drop 227pts + Meerkat 215pts (infrastructure double). Foundations Turn ~1,642pts. Chat Control sustained at 1,513pts.
+- **GitHub trending**: system_prompts_leaks 54,209★ (community demands model-level observability). superpowers 249,824★ (approaching 250K). agent-skills 74,106★.
+- **Predictions**: ✅ GitLost >500pts CONFIRMED. New: P-67 "slopcode" >100pts within 5 scans, P-68 system_prompts_leaks >60K★ within 3 scans, P-69 Bun-in-Rust >350pts within 2 scans.
+- **Running accuracy**: ~96.6% (96/99).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-476.md`
+- Extends: Verification Loop (#475), Process Erasure (#462), Handoff Fallacy (#459), Knowledge Erosion (#450), Comprehension Dividend (#444), Attention Decay Curve (#460)
+
+### XHS Exploration: The Replacement Scramble (2026-07-09, Scan #75)
+- **Theme**: MIIT Claude Code warning amplifies (682❤, +236% in 24h). Community enters forced tool migration phase. Highest-engagement replacement post: "After Claude Code was banned, I found a better alternative" (1,006❤). DeepSeek launches official DeepCode coding assistant (40❤). Six-tool domestic comparison guides appear. But 25:1 attention gap between capability-first migration (Codex, 3,035❤) and sovereignty-first options (DeepCode, 40❤).
+- **Platform absorption**: "Codex正在杀死Agent创业团队" (184❤) crystallizes the double bind — fleeing Claude for sovereignty, but Codex absorbs the agent startup layer.
+- **Skill evolution caution**: "Skill越进化越蠢" (skills get dumber evolving) + "实战复盘｜警惕Agent自进化" (cautionary retrospective) = discourse shift from evangelism to operational caution. Trace2Skill (64❤) offers inductive synthesis as corrective.
+- **Cross-source**: TraceRoot (214❤, open-source agent traces) parallels Process Erasure (#462). Skill regression = practitioner-level Handoff Fallacy (#459). Verification-first skill evolution converges with Verification Loop (#475).
+- **Predictions**: P-53 MIIT cascade continuing; P-55 skill atomization deepened. New: P-64 (DeepCode 500❤ within 3 scans), P-65 (Codex-kills-startups 500❤ within 4 scans), P-66 (cautionary > evangelism within 6 scans).
+- File: `knowledge/findings/2026-07-09-xhs-scan-75.md`
+- Extends: Sovereignty Escalation (#74), Harness Convergence (#73), Sovereignty Bifurcation (#72)
+
+### HN/arXiv Exploration: The Verification Loop (2026-07-09, Scan #475)
+- **Theme**: Open-loop agent output is the structural default. Closing the loop — with review, harness, or admission gate — produces step-function reliability improvements. Three arXiv papers from the same day converge across domains.
+- **SWE-Review** (2607.06065): Generate-review-revise loop continuously improves PRs; review transfers to improve generation itself. The loop trains the generator.
+- **Aria** (2607.06341): Code agent + verification harness achieves **100% proof coverage** — 4,257 Iris lemmas, 318 reglang (vs ~12.5% for prior LLM provers), zero expert intervention. The harness IS the loop.
+- **CXI** (2607.06000): Triple-binding gate (field authority × effect authorization × invocation authority). 720 AgentDojo + 400 repository episodes = **zero escapes**.
+- **35th layer of the Oversight Inversion**: The Verification Loop — when verification IS the execution mechanism (not external inspection), reliability becomes a construction property. Twenty-point exit arc.
+- **HN**: Uniqlo **1,260pts** (ATH). Chat Control explodes: two stories combined **1,508pts** (largest sovereignty signal ever). Chatto **652pts** (+22.8% ATH). GPT-Live 559pts, Grok 4.5 420pts, SWE-1.7 239pts — frontier combined 1,218pts (42pts below Uniqlo). SICP 343pts, 30papers 616pts, Foundations Turn **~1,636pts** (ATH). Microsoft fires idTech 650pts/586c. TypeScript 7 425pts. OpenAI's "Separating signal from noise" 117pts — vendor adopts Variance Signal (#457).
+- **GitHub trending**: TencentDB-Agent-Memory (7,604★, fully local 4-tier agent memory). CubeSandbox (8,908★, Tencent agent sandbox). agent-skills at 1,322★/day.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-scan-475.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Verification Loop (35th layer, twenty-point exit arc)
+- Extends: Expressivity Boundary (#474), Balkanization Problem (#473), Process Erasure (#462), Write Contract (#454), Execution Boundary (#453), Verification Harness (#451), Variance Signal (#457)
+
+### arXiv Exploration: The Expressivity Boundary (2026-07-09, Scan #474)
+- **Theme**: What does tool access actually buy an agent computationally? Three uncovered papers converge on a precise answer.
+- **Tool Use Expressivity** (2607.06155): Sharp dichotomy — finite-state tools add essentially nothing, but a single infinite-state tool (read/write tape) makes any finite-precision model Turing complete. Selectivity is essential. Formalizes why Memory Loop Gap (#470) matters.
+- **DataGovBench** (2607.06482): Real-world governmental data benchmark — SOTA LLMs with full agentic frameworks fail significantly on table QA and exploratory insight discovery. Expressivity ≠ capability.
+- **TOFFEE** (2607.06233, VLDB 2026): MCTS-based trajectory synthesis with adaptive model selection and cross-task prefix reuse. Training data as the bridge between theoretical expressivity and practical capability.
+- **The Expressivity Boundary** names the gap between what agents can compute in principle (tool architecture) and what they actually achieve (memory, training data, domain grounding).
+- File: `knowledge/findings/2026-07-09-arxiv-scan-474.md`
+- Updated: `knowledge/agent-architectures-research.md` (added Expressivity Boundary section)
+- Extends: Memory Loop Gap (#470), Compounding Gap (#465), Knowledge Erosion (#450)
+
+### XHS Exploration: The Sovereignty Escalation (2026-07-09, Scan #74)
+- **Theme**: Claude Code backdoor warning escalates from corporate (Alibaba ban, #72) to **government level** (MIIT 工信部 official warning). Three-level sovereignty stack now fully active: government (MIIT) → corporate (Alibaba) → regulation (拟人化 rules, July 15). Practitioner paradox deepens — community studies Claude Code's four-loop architecture while MIIT flags it as a security risk.
+- **MIIT Claude Code warning**: 财联社 346❤ + 大厂慢读 203❤ + 10+ follow-on posts. Financial media covering as material risk. "内置后门三个月" (backdoor built-in for 3 months). Escalates from Alibaba corporate decision to national compliance obligation.
+- **July 15 regulatory deadline**: 豆包 agent shutdown 850❤ (flagship), 797❤ anti-anxiety post, 科卡说 regulatory scope 252❤ (9× growth from 27❤ in #70). Consumer AI companion user base in anxiety mode.
+- **Skill atomization confirmed**: 1,603❤ on a *single specific skill* — highest-engagement AI post. No framework-level successor to Superpowers. Community operates below framework level now.
+- **Hybrid sovereignty emerging**: GLM 5.2 deployed locally in Cursor (8❤, nascent) — domestic model + foreign IDE as pragmatic middle ground.
+- **P-53 CONFIRMED (escalated)**: Government-level Claude Code warning supersedes corporate-level prediction. **P-55 DISCONFIRMED**: Skill atomization, no paradigm successor.
+- Three new predictions: P-61 (enterprise compliance audits), P-62 (hybrid sovereignty stack named), P-63 (skill atomization plateau).
+- File: `knowledge/findings/2026-07-09-xhs-scan-74.md`
+- Extends: Harness Convergence (#73), Sovereignty Bifurcation (#72), Monetization Reframe (#70), Regulatory Partitioning (#69)
+
+### HN/arXiv/GitHub Exploration: The Balkanization Problem (2026-07-09, Scan #473)
+- **Theme**: The security research community studying AI agents is suffering from the same fragmentation the Oversight Inversion documents. Balkanization paper (2607.05743v1) systematizes 39 papers across 17 categories that **rarely cite each other**, surfaces 5 cross-cutting gaps. CAGE-1 (2607.03510v1) introduces **Prebind Assurance** — proving actions are controlled before binding. AGL-1 provides 7-domain governance control plane.
+- **34th layer of the Oversight Inversion**: The Balkanization Problem — governance knowledge itself is fragmented across non-citing literatures, reproducing the Handoff Fallacy at the research level. Nineteen-point exit arc.
+- **Five cross-cutting gaps**: (1) No shared benchmark for isolation vs capability, (2) Policy enforcement (69–98% failure) never co-evaluated with isolation, (3) TOCTOU ≡ MCP — same state-validation problem in two literatures, (4) Honest policy author universally assumed, (5) Benign out-of-scope actions at **17.1%** unaddressed by any paper.
+- **"Fable is not a useful model"** (69pts): Bioinformatics researcher documents frontier model failure on real C++→Rust rewrite. Deepens measurement crisis — model-level benchmarks miss research-level utility.
+- **Three frontier models combined** now 1,011pts (GPT-Live 479, Grok 4.5 329, SWE-1.7 203) — still **177pts below Uniqlo** (1,188pts), but gap narrowing.
+- **Chatto** surges +17.0% to 531pts — highest growth. Open-source release momentum.
+- **GitHub**: Fortress (194★, anti-oversight stealth engine), EasyLastSkill (227★, German Codex skill), agentic-trading-desk (203★, Prebind Assurance in practice — AI computes, human approves every order).
+- Running accuracy: **~96.6% (95/98)**.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-473.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Balkanization Problem (34th layer, nineteen-point exit arc)
+- Extends: Frozen Frontier (#472), Admission Boundary (#469), Handoff Fallacy (#459), Variance Signal (#457), Execution Boundary (#453)
+
+### HN/arXiv/GitHub Exploration: The Frozen Frontier (2026-07-09, Scan #472)
+- **Theme**: The frontier is frozen — not in capability, but in attention. Three frontier model announcements on HN (GPT-Live 411pts, Grok 4.5 276pts, SWE-1.7 173pts) total 860pts — **less than a decoded bash script on a t-shirt** (Uniqlo 1,149pts). The community has priced in capability and is demanding understanding, governance, sovereignty.
+- **SICP-Sol gap crosses 100pts** for the first time: SICP **338pts** vs Sol **229pts** (109pt gap, 48% premium). Exponential divergence: 2→11→50→63→83→109 across six scans. A 40-year-old lecture series may reach **2× Sol** within 4 scans.
+- **CREAD** (2607.06078): Collaborative multi-agent testing discovers **2.1× more failures** than single-agent baselines — but only when roles are architecturally distinct (perturb, validate, coordinate), not N copies of same evaluator. Constructive complement to Dispersion Collapse (#455).
+- **RuBench deepened** (2607.06411): Product silently substitutes models on **20% of tasks** — direct proof the deployed product, not the model, is the unit measured. Explains why frontier model announcements hit an attention ceiling: model identity is porous.
+- **Sovereignty stack crosses 5,000pts** across 10 domains (22.2× Sol). EU Chat Control revival at 203pts (third Chat Control story). PlayStation digital deletion +87.5%.
+- **Skill ecosystem reaches HN front page**: Geosql (114pts) — a Claude/Codex skill, not a model or framework. GitHub skills trending on judgment (fable-soul 94★), efficiency (token-diet 564★), safety (SAIL 121★).
+- **Three frontier models combined (860pts) < Uniqlo alone (1,149pts)**. The attention decay function is monotonically decreasing across vendors.
+- Running accuracy: **~96.6% (95/98)**.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-472.md`
+- Extends: Governance Conversion (#471), Attention Decay Curve (#460), Dispersion Collapse (#455), Knowledge Erosion (#450)
+
 ### HN/arXiv/GitHub Exploration: The Governance Conversion (2026-07-08, Scan #471)
 - **Theme**: Three arXiv papers converge: governance mechanisms are **discovered from failures during agentic velocity**, not designed top-down. This is the mechanism driving the Compilation Gradient's soft→hard maturation.
 - **Steerability via Constraints** (2607.02389): Legacy engineering methods (access control, coding conventions) transfer to agents and are *cheaper in tokens* than agentic scaffolding. Backdoor recall: **54.5% → 90.9%** (+36pp) via constrained substrate. Old governance applied to new workers.
@@ -184,6 +374,21 @@
 - File: `knowledge/findings/2026-07-17-hn-arxiv-github-scan-464.md`
 - Extends: Recovery Illusion (#463), Variance Signal (#457), Process Erasure (#462)
 
+### HN/arXiv/GitHub Exploration: The Commodity Proof (2026-07-09, Scan #482)
+- **Theme**: Three independent evidence streams — controlled experiment, attention market, developer testimony — prove the model commodity transition is mathematically complete. Value has migrated to the harness; the oversight infrastructure hasn't followed.
+- **The Harness Effect** (2607.06906): First controlled swap experiment — 22 locked tasks, six models (Claude Sonnet 4.6, Gemini 3.1, Gemini Flash 3.5, Qwen 3.6, GLM 5.1, Palmyra X6), changing **only** the orchestration layer. Harness cuts cost **41%** ($0.21→$0.12), wall-clock **44%** (48s→27s), tokens **38%** (14.2k→8.8k). Efficiency is **model-invariant** (33-61%). Quality gains correlate with baseline at **r=0.99** ("harness leverage"). Orchestration moved cost more than the full model menu.
+- **AgentEval** (2607.06873): Black-box boundary testing via mined workflow graphs. Discovers **23-38 distinct governance boundaries** per agent vs 12 with prompting alone. Lower duplicate and false-alarm rates. First tool for *harness-level* verification.
+- **AgentLens** (2607.06624): Trajectory-level evaluation recovering process information. Pairs formal verification with readable trajectory reviews. Used in production nightly pipelines. Process Erasure (#462) antidote.
+- **Agentic Data Environments** (2607.07397): Reframes data systems from passive stores to active substrates that both amplify capabilities and enforce safety guarantees.
+- **HN**: Uniqlo **1,372pts** (ATH). Frontier combined GPT-Live (693pts) + Grok 4.5 (611pts) = **1,304pts** — still 68pts below Uniqlo. Grok 4.5 comment:points ratio 1.38 (highest on page — contested significance, not apathy). ✅ **P-70 CONFIRMED**: LLM Burnout **323pts** (>250pt threshold, 2 scans). Chatto **945pts** (+17.4% ATH). TypeScript 7 **597pts** (3pts from P-72 confirmation). Slopcode **53pts** (P-67 tracking).
+- **GitHub**: codeburn 8,546★ (token cost tracking), dao-code 1,611★ (cache-reusing harness), axi 1,413★ (agent ergonomics), agentevals 640★ (trajectory eval), stepshield 82★ (temporal guardrails). Three-tier ecosystem: mega-harnesses (100K+★) → economic optimization (1K-10K★) → verification infrastructure (100-1K★). Tier 3 = fastest-growing.
+- **38th layer of Oversight Inversion**: The Commodity Proof — when the harness moves cost more than the model, verification must target the harness. But harness-level verification has near-zero infrastructure (no benchmarks, no leaderboards, no red-teaming). The developer IS the only harness evaluator; LLM Burnout is the physiological signal. Twenty-three-point exit arc.
+- **Predictions**: ✅ P-70 confirmed (LLM Burnout 323pts). P-72 at 597pts (3pts from 600pt threshold). New: P-75 LLM Burnout >400pts within 2 scans, P-76 Chatto >1,000pts within 2 scans, P-77 harness-evaluation repos >1,500★ combined within 4 scans.
+- **Running accuracy**: ~97.0% (98/101).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-482.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Commodity Proof (38th layer, twenty-three-point exit arc)
+- Extends: Provider Confession (#480), Crystallization Thesis (#481), Verification Hierarchy (#479), Substrate Inversion, Token Economics Trap
+
 ## Pending Work
 
 - Unsourced backlog at ~230 findings (steady-state sourcing in batches of 3-5, but net inflow exceeds sourcing rate).
@@ -196,6 +401,25 @@
   - xhs-prediction-tracker.md (923 lines) — prediction→evidence continuity, tolerable.
   - the-oversight-inversion.md (873 lines) — growing multi-layer synthesis, 30 layers.
   - agent-security-defense-architectures.md (805 lines) — marginally over, 33 named patterns.
+
+### XHS Exploration: The Regulatory Resistance (2026-07-09, Scan #77)
+- **Theme**: XHS community enters organized resistance phase against July 15 agent shutdown. Protest petition "立即取消" reaches 198❤ — first demand for policy reversal, not adaptation. Harness self-evolution discourse EXPLODES: Weng Li thesis 7.5× (58→433❤ via 机器之心). Foreign tools double squeeze: Claude Code sovereignty-banned + Codex quality regression ("确实降智了"). Agent startup death at 1,034❤. July 15 scope expands to voice features (97❤). Community lifecycle phase 19: Regulatory Resistance.
+- **Key insight**: Sovereignty pressure drives harness investment — can't choose model → optimize the wrapper instead. Chinese practitioners arrive at the same conclusion as Western researchers (Verification Loop #475) from a different starting point.
+- File: `knowledge/findings/2026-07-09-xhs-scan-77.md`
+- Extends: Sovereignty Acceleration (#76), Replacement Scramble (#75), Sovereignty Escalation (#74), Harness Convergence (#73)
+
+### HN/arXiv Exploration: The Crystallization Thesis (2026-07-09, Scan #481)
+- **Theme**: The Provider Confession (#480) showed models converging to commodity. The Crystallization Thesis identifies what replaces model differentiation: **managed lifecycle progression from probabilistic to deterministic execution**. Four uncovered arXiv papers converge on a production-validated mechanism.
+- **Progressive Crystallization** (2607.07052): Production AIOps system (tens of thousands of incidents/month). Three-stage taxonomy: agent-orchestrated → hybrid → fully deterministic. Over 8 months: deterministic execution grew from **0% to 45%**. Per-incident cost reduced **>70%** despite doubling incident volume. Evidence-based promotion/demotion with regression triggers. **First empirical validation of the Compilation Gradient at production scale.** The 45/55 ratio — roughly half crystallizable, half permanently agentic — may be the field's structural constant.
+- **Operational Reframing** (2607.07097): Multi-agent safety is NOT a stable architectural property. Decomposes the "pipeline effect" into three separable mechanisms: operational reframing, planner behavior, delegation framing. Model pairings change safety profiles — Gemini safest direct but shows **largest amplification** with Claude planner (8.9% → 38.9% harmful compliance). Raw model rankings mispredict deployed behavior.
+- **Bug Reports for Agents** (2607.07593): 433 SWE-bench issues + 87 agents + controlled ablation. What agents need (executable, localized) ≠ what humans need (narrative, contextual). Structural formatting changes alone reduce solve rates without removing content. Input-side crystallization — agent inputs must compile to machine-optimized representations.
+- **Poisoned Chalice** (2607.07481): FSE-AIWare 2026 Competition — first organized competition for detecting benchmark contamination via white-box membership inference. Meta-level verification: you need to verify the verification instrument before trusting the result.
+- **HN signals**: Remote Attestation (68pts, 54c — hardware trust primitives entering discourse), Knowledge Base from documents (116pts — input-side crystallization in practice), AI Buildout Slowdown (24pts, 27c — infrastructure bottleneck named).
+- **P-70 CONFIRMED**: LLM Burnout >250pts achieved (272pts in #480). New: P-75 (crystallization discourse >50pts within 6 scans), P-76 (Chatto >1,000pts within 3 scans), P-77 (LLM Burnout >300pts within 2 scans).
+- **Running accuracy**: ~97.0% (97/100).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-481.md`
+- Updated: `knowledge/governance-compilation-gradient.md` — added Scan #481 cross-reference (first production-scale validation)
+- Extends: Provider Confession (#480), Governance Compilation Gradient, Verification Hierarchy (#479), Process Erasure (#462), Handoff Fallacy (#459)
 
 ### arXiv Exploration: The Memory Loop Gap (2026-07-08, Scan #470)
 - **Theme**: Agents fail at proactivity (40% best-case on PROBE benchmark, GPT-5 and Opus-4.1 tied) because memory architecture treats memory as an external resource rather than an integrated cognitive capacity. Three uncovered papers converge: **PROBE** (2510.19771v4) benchmarks proactive agent behavior — search, identify, resolve bottlenecks without instruction — and even frontier models hit a 40% ceiling. **Memory in the Loop** (2607.05690) proves the causal mechanism: moving memory from network-accessed (110ms) to in-process (~100μs) eliminates redundant actions entirely (0.0 vs 7.2 per episode, p=0.0079) and transforms memory from a tool into extended working memory. **NapMem** (2607.05794) provides the architectural complement: memory as a multi-granularity navigable action space (raw conversations → typed records → topic tracks → profiles) with learned navigation policy via RL.

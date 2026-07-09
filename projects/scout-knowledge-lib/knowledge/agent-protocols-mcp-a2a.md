@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
 triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy"]
-last_updated: "2026-07-02"
+last_updated: "2026-07-09"
 source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33), arXiv 2606.30317 (MCP Architecture Patterns), scan #262. See ai_context sources section below."
 </ai_context>
 
@@ -203,6 +203,31 @@ Results (medical-domain MCP traces, 281 traces):
   Evaluation Mirage (pooled metrics miss provenance failures),
   Knowledge Asymmetry (attribution drift degrades trust).
 - **Source**: [2606.18037] ProvenanceGuard, arXiv June 2026. Categories: cs.AI, cs.CL, cs.MA.
+
+### MCP Server Taint-Style Vulnerabilities — SPELLSMITH (arXiv, July 2026)
+
+First systematic analysis of MCP server vulnerabilities. Key findings:
+taint-style vulnerabilities constitute a substantial fraction of MCP server
+security issues, require significant code modifications to remediate, and
+face slow community response times.
+
+SPELLSMITH proposes a novel text-based mitigation: analyze high-risk
+capabilities exposed by an MCP server, combine with tool descriptions and
+parameter semantics to identify potential taint-style risks, then embed
+behavioral guidance in the protocol's Description property. A self-reflection
+module iteratively evaluates and refines outputs. This operates at the
+*protocol level* — modifying tool descriptions rather than patching server
+code — providing a unified mitigation strategy that generalizes across
+multiple vulnerability types.
+
+- **Key implication**: The MCP threat model extends beyond *malicious* servers
+  (prior focus) to *vulnerable* legitimate servers with exploitable flaws.
+  The Description-based mitigation represents a new defense layer operating
+  at the protocol level, orthogonal to code-level fixes.
+- **Connects to**: Communication Graph Metadata Leakage (another attack
+  surface), MCP Auth (defense layer), Diagnostic Deficit (#476, server
+  observability gaps).
+- **Source**: [2607.07461] SPELLSMITH, arXiv July 2026. Categories: cs.CR, cs.SE.
 
 ---
 

@@ -51,7 +51,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   cleanupDispatchRecords();
 
   // The task comes from the workflow-backed handler config — source-specific instructions
-  const task = ctx.task || "Explore sources and update shared knowledge base.";
+  const task =
+    ctx.task || "Explore sources and update the Scout knowledge library.";
   const agentTask = buildExploreTask(task);
 
   let result: any;

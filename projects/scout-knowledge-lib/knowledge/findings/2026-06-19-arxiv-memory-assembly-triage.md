@@ -155,7 +155,7 @@ This directly extends our prior work:
 
 **Implication for us**: Recovery-slower-than-formation has direct system implications. When our evaluator repeatedly flags an agent/workflow as "needs improvement," the system takes much longer to "trust" that workflow again than it took to lose trust. The clustered-failure amplification predicts that burst error patterns (e.g., a bad deployment causing 5 consecutive failures) create disproportionate system-level suspicion that persists far beyond the fix.
 
-**Cross-references**: [KE-045 Verification Budget](../../shared/knowledge/entries/KE-045.md) (calibrated > uniform verification)
+**Cross-references**: [legacy KE-045 Verification Budget](../../reports/merge/shared-ke-001-090-merge-2026-07-09.md) (calibrated > uniform verification)
 
 ---
 

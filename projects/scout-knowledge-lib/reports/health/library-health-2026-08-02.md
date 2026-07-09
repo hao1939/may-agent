@@ -19,7 +19,7 @@ structural constraints (oversized canonical notes) unchanged.
 | File | Lines | Summary |
 |------|-------|---------|
 | `findings/2026-07-30-xhs-cross-source-scan47.md` | 301 | Boundary Crossing + Protocol Reckoning: A2A rejected at 24:1 ratio, eval:prod parity (1.02:1) without dormancy, "LLM magic box" naming event |
-| `shared/knowledge/entries/KE-054.md` | 208 | Evaluation Colonization: heartbeat inflates 4-6× when production drops, monitoring switches from demand-responsive to supply-driven |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-054 | 208 | Evaluation Colonization: heartbeat inflates 4-6× when production drops, monitoring switches from demand-responsive to supply-driven |
 
 INDEX.md updated: KE series count 53→54, scan #47 entry added.
 

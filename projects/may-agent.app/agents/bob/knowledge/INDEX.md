@@ -57,7 +57,7 @@ Before proposing ANY behavioral intervention, check the constraint hierarchy:
 ## References (read on demand)
 - `agents/shared/skills/` — all skill guides (read specific ones when needed)
 - `agents/shared/knowledge/KNOWLEDGE-APPLICATION-AUDIT.md` — deployment gap analysis
-- `agents/shared/knowledge/summaries/KE-SUMMARIES.md` — one-liner KE summaries
+- `projects/scout-knowledge-lib/reports/shared-operations-small-dirs-merge-2026-07-09.md` — merged one-liner KE summary injection pattern
 - `knowledge/library/` — research notes, context engineering, archives
 - `agents/shared/philosophy.md` — full design philosophy
 - `agents/shared/team.md` — team roster

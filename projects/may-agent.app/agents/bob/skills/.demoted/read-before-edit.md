@@ -53,7 +53,7 @@ edit("agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md", {
 These files ALWAYS need a read before edit:
 - `agents/shared/knowledge/hypotheses/PRIORITY-TRACKER.md` — most violated file
 - `agents/shared/knowledge/hypotheses/H-*.md` — hypothesis files
-- `agents/shared/knowledge/synthesis/WKWA-*.md` — synthesis documents
+- `projects/scout-knowledge-lib/reports/shared-synthesis-merge-2026-07-09.md` — merged synthesis batch
 - `agents/shared/knowledge/INDEX.md` — shared knowledge index
 - `agents/bob/workspace/journal.md` — your journal
 

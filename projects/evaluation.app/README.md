@@ -2,16 +2,18 @@
 
 Evaluates completed agent sessions for quality and efficiency. It also provides
 human-facing project/app evaluation: an outside view of whether a project app is
-healthy, moving, and producing the output it exists to produce.
+healthy, moving, and handling its own problems.
 
 This is a project-app: it owns the evaluation process, criteria, and
 calibration. The evaluator agent is a worker identity dispatched by this app.
+Every project app exists to achieve its own domain goal. `evaluation.app`
+exists to check whether that app process is closed, visible, and trustworthy.
 
 ## Process
 
 ```
-session.completed → evaluate → score → verdict → learning
-project/app sample → evaluate health/progress/output → report → notify human when needed
+session.completed -> evaluate -> score -> verdict -> learning
+project/app sample -> audit process health -> report -> notify human when needed
 ```
 
 Six lanes:
@@ -21,7 +23,7 @@ Six lanes:
 4. **Integrity patrol** — system compliance checks (every 6h)
 5. **Strategy extraction** — learn from high-scoring sessions
 6. **Project/app evaluation** — human-facing review of whether target apps are
-   moving and handling failures
+   moving, noticing failures, recovering, and escalating when needed
 
 ## Domain Knowledge
 
@@ -29,8 +31,7 @@ Six lanes:
 - `criteria/scoring.md` — scoring methodology
 - `criteria/versions/` — criteria version snapshots
 - `criteria/calibration/` — human-vs-machine agreement data
-- `design/project-app-evaluation.md` — review-ready project/app evaluation
-  proposal
+- `design/project-app-evaluation.md` — project/app evaluation design
 - `reports/` — durable summaries (calibration, drift, patrol)
 
 ## Layout
@@ -55,7 +56,11 @@ regular ticks review pipeline health instead of blindly running aftermath.
 
 Project/app evaluation is separate from session aftermath. It reads target app
 state, metrics, events, loop progress, and output evidence, then produces a
-human-facing report. The default project/app review interval is 30 minutes; use
-the `review-project-app` action for an immediate manual review. It may emit
-feedback to the target app, but it does not depend on the target app to
-self-correct before notifying a human.
+human-facing report. It does not decide target domain truth. The target app owns
+its domain work, self-recovery, and goal progress; `evaluation.app` audits
+whether that process is trustworthy.
+
+The default project/app review interval is 30 minutes; use the
+`review-project-app` action for an immediate manual review. It may emit feedback
+to the target app, but it does not depend on the target app to self-correct
+before notifying a human.

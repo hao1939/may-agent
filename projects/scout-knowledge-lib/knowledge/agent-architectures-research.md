@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion research catalog for agent-architectures.md. Deep arXiv paper summaries on agent lifecycle, memory, state management, and failure detection. Extracted 2026-07-22 to keep canonical note below 800 lines."
 triggers: ["intelligence entropy", "strained coherence", "cold start safety", "decision-aware memory", "IntentKV", "MemoPilot", "Bayesian-Agent", "concurrency anomalies", "TokenPilot", "CacheWise", "Insight Governance", "SaliMory", "agent state research"]
-last_updated: "2026-07-22"
-source_basis: "12 arXiv paper summaries extracted from agent-architectures.md. Papers from June 2026 sourcing batches (Jun 14–Jul 22). Each section cites its arXiv ID."
+last_updated: "2026-07-09"
+source_basis: "13 arXiv paper summaries extracted from agent-architectures.md. Papers from June–July 2026 sourcing batches (Jun 14–Jul 09). Each section cites its arXiv ID."
 parent_note: "agent-architectures.md"
 </ai_context>
 
@@ -240,6 +240,43 @@ over SOTA, good personalization rate more than doubled.
   Representation Gap (improvement needs different lens than execution),
   Evaluation Mirage (single-score evaluation hides stage-specific failures).
 - **Source**: [2606.04120] arXiv June 2026.
+
+## The Expressivity Boundary — Tool Access as Computational Class Gate (arXiv, July 2026)
+
+Formal-languages analysis proving when tool access changes what a
+finite-precision recurrent model can compute. Models any finite-precision
+recurrent model (including SSMs with B bits of state) as a deterministic
+finite-state controller interacting with an oracle.
+
+**Sharp dichotomy:**
+- Finite-state tools (bounded memory set M) add essentially nothing —
+  product-state simulation internalizes them at log₂|M| + O(1) additional
+  bits. The augmented system remains finite-state.
+- A single infinite-state tool (tape: read, write, move) makes the system
+  Turing complete with only O(log|Q| + log|Γ|) controller bits. Concrete
+  exponential separation: EQ_n requires 2^n states without tools but only
+  a constant-size controller with the tape.
+
+Selectivity (input-dependent state transitions) is essential to the
+construction. Non-selective (time-invariant) controllers cannot achieve
+Turing completeness — this formally validates why architectures with
+input-dependent gating (e.g., Mamba-style SSMs, attention-based models)
+show qualitative capability jumps over fixed-transition architectures.
+
+Logarithmic universal simulation: O(log B) recurrent bits suffice to
+simulate any B-state Turing machine with tool assistance, with a matching
+impossibility result proving this is tight.
+
+- **Key implication**: The minimum viable agent architecture requires at
+  least one infinite-state tool (persistent read-write memory). This
+  formalizes why the Memory Loop Gap (#470) matters — in-process memory
+  that agents can freely read/write constitutes an infinite-state tool,
+  crossing the expressivity boundary, while network-accessed memory with
+  bounded interface remains effectively finite-state during any single
+  reasoning step. Also establishes a governance boundary: finite-tool
+  agents are containable by finite verification; Turing-complete agents
+  are not (Rice's theorem).
+- **Source**: [2607.06155] Zubić et al., arXiv July 2026.
 
 ## Related Notes
 

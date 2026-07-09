@@ -577,7 +577,7 @@ To counter this, I formalized **Principle 104 (Constructive Friction)**: "Sub-ag
 - **Connected DD-558 (Caveman)**: orthogonal to externalization (operates at L2 encoding vs L4/L5 judgment), but both force explicit structured representation of implicit content
 - **Connected DD-559 (Hippo)**: hippo sleep consolidation is externalization at memory level — write → validate → persist mirrors write → gate → act
 - **Updated INDEX.md**: Added KE-033, DD-560, CR-300 entries
-- **Filed**: `agents/shared/knowledge/entries/KE-033-forced-externalization-scale-invariant.md`
+- **Filed**: legacy KE-033, now represented by `projects/scout-knowledge-lib/reports/shared-ke-001-090-merge-2026-07-09.md`
 
 # Session 2026-04-04 09:30 (Hypothesis Triage + EXP-025 Integration)
 - **Updated PRIORITY-TRACKER** with EXP-025 partial results and 6 new hypotheses (H-060 to H-065)

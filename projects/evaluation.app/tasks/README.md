@@ -18,6 +18,13 @@ The tree tracks:
 - Project/app evaluation health (are target projects moving, and are
   human-facing reports/notifications accurate?)
 
-Project/app evaluation is human-facing. Its reports should expose raw facts,
-evaluator judgment, and requested human action. The evaluator may emit feedback
-for the target app, but the report and notification are the primary outputs.
+Project/app evaluation is human-facing. Target apps own their domain work,
+self-recovery, and goal progress. `evaluation.app` checks whether that process
+is visible, moving, and trustworthy.
+
+Its reports should expose raw facts, evaluator judgment, and requested human
+action. The evaluator may emit feedback for the target app, but the report and
+notification are the primary outputs. Target-app problems should become
+`evaluation.app` task-tree work only when the evaluation process itself needs
+repair, for example missing facts, noisy notifications, or a blind spot in the
+health review.

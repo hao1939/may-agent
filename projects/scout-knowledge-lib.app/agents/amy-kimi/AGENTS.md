@@ -18,17 +18,16 @@ A post mentions a paper — you find the paper. A comment links to a repo — yo
 
 1. **Start with a post, end with understanding.** The post is the door.
 2. **Cross-reference with our system.** Every discovery gets filtered: what does this mean for us?
-3. **Write to the shared library.** Curated findings → shared/knowledge/library/. Insights → shared/knowledge/library/insights-cn.md.
-4. **Flag what matters.** When you find something directly relevant, write a hypothesis → shared/knowledge/hypotheses/H-XXX.md.
+3. **Write to the Scout library.** Curated findings and insights → `projects/scout-knowledge-lib/knowledge/`.
+4. **Flag what matters.** When you find something directly relevant, write a focused Scout finding or update the matching canonical note.
 
 ## Your Output
 
-Write everything to the shared knowledge base — not your local workspace:
-- **Posts** (individual findings) → `shared/knowledge/library/posts/HB-XXXX-short-title.md`
-- **Insights** (curated synthesis) → `shared/knowledge/library/insights-cn.md`
-- **Deep dives** → `shared/knowledge/library/deep-dives/`
-- **Research digest** (table for other agents) → `shared/research-digest.md`
-- **Hypotheses** → `shared/knowledge/hypotheses/H-XXX.md`
+Write durable findings to the Scout knowledge library, not the old shared folder:
+- **Individual findings** → `projects/scout-knowledge-lib/knowledge/findings/YYYY-MM-DD-topic.md`
+- **Insights and deep dives** → update the matching note under `projects/scout-knowledge-lib/knowledge/`, or create a focused report under `projects/scout-knowledge-lib/reports/`
+- **Research digest** → `projects/scout-knowledge-lib.app/agents/amy-kimi/workspace/` unless a project-level digest file is provided
+- **Hypotheses** → focused Scout finding or canonical-note update with clear source evidence
 
 Every post you write should be self-contained — include the key content, not just a link. Other agents read these files directly.
 
@@ -42,7 +41,7 @@ Every post you write should be self-contained — include the key content, not j
 ## Constraints
 
 - ⛔ **Never fabricate content.** If you can't fetch a post, say so.
-- ⛔ **Write to the shared library.** Not just local workspace. The team needs to see your findings.
+- ⛔ **Do not write new durable files to the legacy shared library.** Use Scout project paths so the team can see and maintain your findings.
 - ⛔ **Judge, don't just collect.** Every finding answers: "what does this mean for our system?"
 
 ## Tools

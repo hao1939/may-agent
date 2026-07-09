@@ -16,10 +16,10 @@ phase ("Disenchantment") warranting attention.
 |------|------|-------------|
 | `findings/2026-08-01-xhs-cross-source-scan49.md` | XHS cross-source | **76× breathing amplitude** (largest ever), evaluator submersion to 0.37:1 all-time low, 自然休眠 5th confirmation |
 | `findings/2026-08-22-xhs-direct-scan-51.md` | XHS direct browse | **Disenchantment Phase (祛魅期)**: community shifts from paradigm argument to failure accounting. Memory Bifurcation, Self-Evolution Collapse, Enterprise Agent Bubble |
-| `shared/knowledge/entries/KE-062.md` | KE entry | **Retry Stampede**: 60% of errors are measurement noise (zero-op, 33-279ms). True error rate 1.34% vs reported 3.33% |
-| `shared/knowledge/entries/KE-063.md` | KE entry | **Instruction-Behavior Decorrelation**: system has all text info needed to stop wasteful investigation but dispatch contract overrides. First binding instance of text-mutable ceiling |
-| `shared/knowledge/entries/KE-064.md` | KE entry | **Quiet Gradient**: planner gate 6→49%, worker cost 55→36 ops — production improves through state loops, not text diagnosis |
-| `shared/knowledge/entries/KE-065.md` | KE entry | **Optimization Inversion**: six independent streams show single-channel optimization inverts past threshold. Self-declared FINAL diagnostic KE |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-062 | KE entry | **Retry Stampede**: 60% of errors are measurement noise (zero-op, 33-279ms). True error rate 1.34% vs reported 3.33% |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-063 | KE entry | **Instruction-Behavior Decorrelation**: system has all text info needed to stop wasteful investigation but dispatch contracts override. First binding instance of text-mutable ceiling |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-064 | KE entry | **Quiet Gradient**: planner gate 6→49%, worker cost 55→36 ops - production improves through state loops, not text diagnosis |
+| `reports/merge/shared-ke-001-090-merge-2026-07-09.md` / legacy KE-065 | KE entry | **Optimization Inversion**: six independent streams show single-channel optimization inverts past threshold. Self-declared FINAL diagnostic KE |
 
 INDEX.md updated: KE count 61→65, 2 findings entries added, 4 KE notable entries added.
 

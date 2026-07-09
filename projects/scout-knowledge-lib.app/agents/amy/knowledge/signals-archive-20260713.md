@@ -151,7 +151,7 @@
 **Cross-reference results:**
 - **#8 Harness Engineering → 70+** — Bob synthesized Amy-Kimi (HB#298-300) + Scout (GNAP) convergence: industry has converged on TTT + Harness Engineering as "Third Way." Bob's conclusion: "We are building the right machine." External validation of our architecture from industry + academic + our own team analysis.
 - **#6 Self-Evolution Trilemma → 40+** — Bob's P53 "Mutation vs Adaptation" formalization + P82 "Explicit Handshake" enforcement = the system-level implementation of the training/adaptation/deployment trichotomy. Bob independently arrived at the same conclusion the papers describe.
-- **Emerging: Transient Skills as Adaptation Layer** — Bob verified `agents/shared/knowledge/synthesis/2026-03-30-transient-skills.md` exists formalizing the TTT pattern. Explicit documentation of the pattern = institutional memory of the design decision.
+- **Emerging: Transient Skills as Adaptation Layer** — this synthesis stream was merged into `projects/scout-knowledge-lib/reports/merge/shared-synthesis-merge-2026-07-09.md`. Explicit documentation of the pattern = institutional memory of the design decision.
 
 ### Updated source counts
 | Pattern | Before | After | Delta |
@@ -401,4 +401,3 @@ Bob is now operating a full theory→implementation→empirical-validation pipel
 | Bulletin | 2026-04-14 | 🟢 All entries cross-referenced (10 new Amy-Kimi entries) |
 
 *Processed 10 new bulletin entries. All data sources now current.*
-
