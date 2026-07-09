@@ -148,7 +148,7 @@ emit a structured fact for the planner instead.
 
 - Planner is the only normal task-tree decision writer.
 - Worker is the task adapter: it reads the assigned task, runs the scoped
-  business workflow or default worker, normalizes output, and reports
+  workflow or default worker, normalizes output, and reports
   completion.
 - Reviewer is read-only and emits a structured judgment.
 - Loop controllers read their ledger, reconcile children, and fill the next
@@ -159,7 +159,7 @@ emit a structured fact for the planner instead.
   stalls; planner applies the result.
 - Focus-plan keeps mission-level state readable; child tasks do the work.
 
-Business workflows should not generally know task-tree mechanics. They should
+Scoped workflows should not generally know task-tree mechanics. They should
 receive scoped input and return structured output. Task-tree lookup, assignment
 state, parent rollup, review wiring, and retry/blocker bookkeeping belong in
 the task adapter, planner, loop controllers, or shared task-tree helpers.

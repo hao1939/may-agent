@@ -1,11 +1,14 @@
 # App Extension Implementation Plan
 
-Status: review proposal
+Status: current implementation plan, updated 2026-07-09
 
 ## Purpose
 
 Move the implementation toward the current app model without adding new route
-kinds, task kinds, or configuration-heavy schema.
+kinds, task kinds, or configuration-heavy schema. This is the working checklist
+for implementation order; the mental model stays in `README.md`,
+`project-observability.md`, `project-planner-contract.md`, and the loop-specific
+docs.
 
 The target model is convention-based:
 
@@ -20,7 +23,54 @@ The target is inferred:
 - an unmatched owned event follows runtime ownership fallback;
 - external or terminal events close at the boundary.
 
+The next work should not add new concepts. It should make the existing model
+observable and convergent:
+
+```text
+event -> event route -> target -> durable outcome
+durable loop -> reconcile ledger -> one representation per open item
+failure -> classify -> diagnose/fix -> rerun/prove/wait/escalate
+```
+
 ## Plan
+
+### Current Baseline
+
+These pieces are now part of the app model and should be preserved:
+
+- one task tree with `domain/*` for AKS work and `ops/*` for app/process work;
+- task states stay `backlog`, `active`, `review`, `blocked`, and `done`;
+- ordinary task execution goes through `project.task.assigned -> task-worker`;
+- workflows can declare `workflowContract` in the workflow file when
+  structured input/output helps automation;
+- `blocked` is valid only with a real wait condition, owner, observer, check
+  method, next check, fallback time, and fallback action;
+- Azure DevOps is the live proof platform; new wording should say pipeline or
+  Azure DevOps, while old GitHub-named fields are compatibility aliases only;
+- `project-health` and the kanban UI expose loop representation signals,
+  including active compact pipeline waits;
+- `project-health --json` exposes a static process graph from `app.ts`,
+  including route count, emitted events, unhandled events, and multi-route
+  conflicts;
+- retry exhaustion is not completion; it must become repair work, exact wait,
+  escalation, or accepted terminal disposition.
+
+Remaining gaps should be handled as implementation work, not by adding another
+architecture layer:
+
+- finish runtime route-closure health so emitted events cannot disappear after
+  dispatch;
+- improve existing domain workflows from real good and bad runs, starting with
+  `single-spec-verifier` and `feature-compact-planner` as separate workflows;
+- harden compact-loop reconciliation so every feature has exactly one visible
+  representation;
+- rename or isolate GitHub-era implementation names where they still create
+  operator confusion;
+- keep adding fixture tests for stale ledger repair, duplicate pulse safety,
+  malformed waits, retry exhaustion, terminal pipeline reconciliation, and
+  crash recovery;
+- verify the UI readout against the health JSON instead of letting the browser
+  infer too much from partial state.
 
 ### Compact Loop Priority
 
@@ -35,6 +85,9 @@ The compact loop should be considered solid only when these are true:
   terminal disposition;
 - an Azure DevOps wait records the run id, run URL, watched condition, expected
   result artifact, owner, and fallback time;
+- an active Azure DevOps run is reported as represented waiting, with enough
+  detail for a human to see which feature, run, URL, condition, artifact, and
+  fallback are involved;
 - a finished Azure DevOps run is reconciled into live-pass, diagnosis, repair,
   or escalation instead of staying blocked;
 - retry exhaustion creates repair/follow-up work or escalation, not a silent
@@ -43,6 +96,78 @@ The compact loop should be considered solid only when these are true:
   expected artifacts and real Azure resource creation when the plan requires it;
 - the same controller pulse can run repeatedly without creating duplicate child
   tasks or losing track of already-created work.
+
+The immediate compact-loop bar is:
+
+```text
+for every feature:
+  done live proof
+  or active child task
+  or active pipeline wait with exact run id/artifact expectation
+  or review/repair task
+  or exact blocked wait
+  or accepted terminal disposition
+```
+
+Anything else is unrepresented work and should be reported as actionable.
+
+### Workflow Improvement Pass
+
+Before adding more control-plane machinery, improve the workflows by learning
+from the work already done.
+
+Use the same pass for spec and compact, but do not couple them:
+
+```text
+choose one workflow
+  -> sample good and bad real runs
+  -> identify what made the result efficient or wasteful
+  -> update that workflow, its tests, or its domain artifacts
+  -> verify with the smallest truthful local or Azure DevOps run
+  -> record the reusable lesson where the next run will use it
+```
+
+For `single-spec-verifier`, the main questions are:
+
+- did the spec run as a standalone live test?
+- did failure classification point to the right next action?
+- did the workflow avoid rerunning unchanged inputs?
+- did live pass proof include the expected test result and resource proof?
+
+For `feature-compact-planner`, the main questions are:
+
+- did the compact plan really reduce cluster count?
+- did diagnostics explain every split or conflict?
+- did the live proof create real AKS resources when required?
+- did a failure become feature repair, spec repair, exact wait, or escalation?
+
+Only repeated lessons should become workflow changes. One-off findings can stay
+as notes, but a repeated failure or repeated success pattern should become
+automation, tests, prompt guidance, a metric, or a domain artifact update.
+
+Run this through the existing task system first:
+
+```text
+domain/workflow-improvement/<workflow-name>/<case>
+  -> project.task.assigned
+  -> task-worker
+  -> default-task-worker or declared workflow
+  -> task-reviewer
+  -> project-planner
+```
+
+No new event route is required for the first version. The app already knows how
+to dispatch a normal task. The task should carry:
+
+- `workflowUnderReview`: for example `single-spec-verifier`;
+- `caseRefs`: run ids, result paths, state pointers, or task ids;
+- acceptance criteria that require a real workflow/test/domain change when the
+  lesson is repeated;
+- verification proof from the smallest truthful local or Azure DevOps run.
+
+Promote this to a dedicated `workflow-improvement-review` workflow only after
+the same case-packet collection and result-checking steps repeat enough to be
+worth automating.
 
 ### 1. Align Check Language
 
@@ -324,36 +449,51 @@ checks, and generated diagnostics speak in route terms.
 
 ## Suggested Order
 
-For compact-loop reliability, implement the convergence path first:
+For compact-loop reliability, keep the order narrow:
 
-1. Durable controller contract and proof tests.
+1. Finish compact-loop convergence proof.
    - Start with `feature-compact-loop-controller`.
    - Prove stale ledger repair, duplicate pulse safety, malformed blocked waits,
      retry exhaustion, terminal Azure DevOps run reconciliation, and crash
      recovery around task creation/event emit.
-2. Route closure health.
+   - Prove active Azure DevOps runs are represented waits, and expose exact run
+     details to health/UI rather than only suppressing false stall signals.
+   - Verify the real loop state: no non-terminal compact feature may exist
+     without one representation from the immediate compact-loop bar above.
+2. Make route closure visible.
    - Confirm `project.task.assigned`, `project.task.completed`,
      `project.task.reviewed`, `project.task.tick`, `project.planning.requested`,
      and `metric.breach` reach a route, owner decision, task state change,
      terminal output, or accepted no-op within the right window.
-3. Runtime observation normalization.
+   - Prefer extending `bun run health --json` over adding another command.
+3. Normalize runtime observations.
    - Use existing runtime events as route observations before adding any new
      trace schema.
-4. Task workflow extension validation.
+   - Show unknown or unobserved closure as a health finding, not hidden debug
+     text.
+4. Validate task workflow extension.
    - Make sure every task-created workflow points to a loadable workflow file
      and exports `execute`.
-5. Route validation in `bun run check`.
+   - Keep `workflowContract` optional and local to the workflow file.
+5. Validate routes in `bun run check`.
    - Validate route conflicts, emitted events, schedule/action outputs, and
      workflow references.
-6. Metric/owner fallback route review.
-   - Keep judgment-driven metric breaches going to owner fallback; turn repeated
-     mechanical fixes into explicit workflow routes later.
-7. Check language cleanup.
-   - Rename diagnostics from handler-centric language to route-centric language
-     after the behavior is protected.
-8. SDK aliases.
-   - Add route aliases later without a breaking SDK rename.
+   - Report route-centric language even while the SDK still exposes
+     `workflowHandlers`.
+6. Review metric/owner fallback routing.
+   - Keep judgment-driven metric breaches going to owner fallback.
+   - Turn repeated mechanical fixes into explicit workflow routes only after the
+     repeated pattern is proven.
+7. Clean naming debt.
+   - New surfaces use pipeline/Azure DevOps wording.
+   - Old GitHub-named implementation fields remain readable as compatibility
+     aliases until the behavior is covered by tests. They should not appear in
+     new operator-facing summaries unless the old name is the subject being
+     repaired.
+8. Add SDK route aliases later.
+   - Add route aliases without a breaking SDK rename only after app-local
+     checks and UI readouts already speak in route terms.
 
-This order gives immediate value without a runtime migration and keeps the app
-extension path simple. The first three steps are the ones expected to make the
-compact loop materially more reliable.
+This order gives immediate value without a runtime migration. The first two
+steps are the ones expected to make the compact loop and project observability
+materially more reliable.

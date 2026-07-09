@@ -39,11 +39,36 @@ It should:
 - create one `feature-compact-planner` child per feature when capacity allows;
 - dispatch runnable child leaves with `project.task.assigned`;
 - keep `task.context.workflowProgress` current;
-- represent every non-terminal feature by child work, exact wait, escalation,
-  or accepted terminal disposition.
+- represent every non-terminal feature by child work, active Azure DevOps run,
+  exact wait, escalation, or accepted terminal disposition.
 
 The controller should not decide AKS product truth and should not mark the loop
 done while any feature still lacks a passing live compact proof.
+
+## Closure Model
+
+The compact loop is feature-first. Family grouping is only a batching helper,
+not the source of truth.
+
+For each feature the controller should drive to one clear next action:
+
+- live compact proof passed;
+- exact feature repair is needed;
+- exact external wait is known;
+- owner/product/source decision is needed;
+- pipeline or app infrastructure repair is needed;
+- escalation is needed.
+
+Do not keep asking the worker to re-explain a known wait. If a feature error
+already says "do not rerun unchanged", "resume only after...", names an exact
+holder, or points at capacity/auth/artifact/owner/source/product wait, the
+controller should record a `blocked` feature wait with owner, observer, resume
+condition, and fallback. Only errors that still need active diagnosis or repair
+should stay `error`.
+
+Broad family repair tasks are a fallback for genuinely coherent unknown or
+fixable groups. They should not be the normal representation for dozens of
+unrelated exact waits.
 
 ## Planner Workflow
 
@@ -113,6 +138,16 @@ Each feature record settles as:
   fallback.
 - `error`: repair or diagnosis is needed before the feature can pass.
 
+`error` means there is work to do now. It should not mean "we already know what
+we are waiting for." Known waits belong in `blocked`, even when they were first
+discovered from a failed compact run.
+
+When `running` means an active Azure DevOps run, the loop progress should expose
+the feature key, run id, run URL, watched condition, expected artifact, owner,
+next check, and fallback time. This is represented work, not a stall, but it
+must still be visible enough for a human or watchdog to understand what is being
+waited on.
+
 `blocked` is only valid when the shared blocked contract is satisfied. A compact
 feature waiting on a pipeline result must name the exact Azure DevOps run id. If
 the run id is unknown, the feature is waiting for dispatch repair or run
@@ -132,6 +167,36 @@ feature by themselves. They must become one of:
 - an ops repair task linked to the feature;
 - an escalation;
 - a passing live result.
+
+Compact fix-forward repair tasks follow the shared fix-forward contract. A
+repair completion that claims `done` or `exact-wait` must include structured
+`FIX_FORWARD_RESULT` data and either current-attempt evidence or a clear
+explanation that the cited older evidence remains exact for the current
+fingerprint. The reviewer should reject stale compact proof instead of letting a
+feature close from old or aggregate evidence.
+
+## Operating Readout
+
+The compact loop should be easy to audit from `bun run health --json` and the
+kanban page. The readout should answer three questions without opening raw
+state first:
+
+```text
+How many features are done?
+How many are actively represented by task, review, pipeline wait, repair, or exact block?
+How many are unrepresented and need controller/planner action?
+```
+
+For active pipeline waits, the readout must show the feature key, pipeline run
+id, URL when known, current run status when known, expected artifact, next
+check, fallback, and owner. A pipeline wait without a run id is not an active
+pipeline wait; it is a dispatch/discovery repair need.
+
+For `error` records, the readout must distinguish represented errors from
+unrepresented errors. A represented error has an active/review repair task,
+exact blocked wait, escalation, or accepted terminal disposition covering the
+feature and current fingerprint. An unrepresented error is actionable backlog
+for the controller or planner.
 
 ## Relationship To Other Loops
 

@@ -8,7 +8,11 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolveTaskTreePath, type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
+import {
+  resolveTaskTreePath,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import { defaultFeatureCompactLoopStatePath } from "./lib/feature-compact-loop-store.ts";
 import { defaultFeatureReferenceLoopStatePath } from "./lib/feature-reference-loop-store.ts";
 import { defaultSpecLoopStatePath } from "./lib/spec-loop-store.ts";
@@ -24,7 +28,10 @@ import {
   type TaskNode,
   type TaskTree,
 } from "./lib/task-tree-store.ts";
-import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
+import {
+  activeExternalRunWaitProgress,
+  exactBlockedWaitStewardshipProgress,
+} from "./lib/durable-loop-wait-stewardship.ts";
 import {
   field,
   parseTriggerEvent,
@@ -63,6 +70,7 @@ type StallReviewJudgment =
   | "repaired"
   | "needs-work"
   | "exact-external-wait"
+  | "active-external-run-wait"
   | "escalate"
   | "inconclusive";
 
@@ -78,6 +86,7 @@ const judgmentValues = new Set<StallReviewJudgment>([
   "repaired",
   "needs-work",
   "exact-external-wait",
+  "active-external-run-wait",
   "escalate",
   "inconclusive",
 ]);
@@ -106,6 +115,7 @@ type LoopSummary = {
   statusCounts: Record<string, number>;
   sampleOpenKeys: string[];
   exactBlockedWaitStewardship: boolean;
+  activeExternalRunWait: boolean;
   needsAttention: boolean;
 };
 
@@ -274,6 +284,7 @@ function loopSummary(tree: TaskTree | null, def: LoopDefinition): LoopSummary {
   const ready = completionReady(task);
   const exactBlockedWaitStewardship =
     exactBlockedWaitStewardshipProgress(progress);
+  const activeExternalRunWait = activeExternalRunWaitProgress(progress);
   const unrepresentedNonTerminalCount =
     progressNumber(progress, "unrepresentedNonTerminalCount") ??
     (nonTerminalCount > 0 ? nonTerminalCount : 0);
@@ -292,9 +303,11 @@ function loopSummary(tree: TaskTree | null, def: LoopDefinition): LoopSummary {
     statusCounts: counts.counts,
     sampleOpenKeys: counts.sampleOpenKeys,
     exactBlockedWaitStewardship,
+    activeExternalRunWait,
     needsAttention:
       ready === false &&
-      (unrepresentedNonTerminalCount > 0 || !exactBlockedWaitStewardship),
+      (unrepresentedNonTerminalCount > 0 ||
+        (!exactBlockedWaitStewardship && !activeExternalRunWait)),
   };
 }
 
@@ -666,6 +679,32 @@ function fallbackDecisionFromSnapshot(
       ),
     };
   }
+  const activeRunWaitLoops = snapshot.loopSummaries.filter(
+    (loop) =>
+      loop.completionReady === false &&
+      loop.nonTerminalCount > 0 &&
+      loop.activeExternalRunWait,
+  );
+  if (
+    activeRunWaitLoops.length > 0 &&
+    snapshot.runnableBacklogTaskIds.length === 0 &&
+    snapshot.activeTaskIds.length === 0 &&
+    snapshot.reviewTaskIds.length === 0
+  ) {
+    return {
+      judgment: "active-external-run-wait",
+      rootCause:
+        "all non-terminal loop residue is represented by active external pipeline runs",
+      nextProjectMove:
+        "preserve the exact run wait and let the loop controller reconcile when the run becomes terminal",
+      whyNotMoving:
+        "project frontier is waiting for active Azure DevOps pipeline run results",
+      evidence: activeRunWaitLoops.map(
+        (loop) =>
+          `${loop.name}: ${loop.nonTerminalCount} record(s) represented by active external run wait`,
+      ),
+    };
+  }
   return null;
 }
 
@@ -892,6 +931,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       status_counts: loop.statusCounts,
       completion_ready: loop.completionReady,
       exact_blocked_wait_stewardship: loop.exactBlockedWaitStewardship,
+      active_external_run_wait: loop.activeExternalRunWait,
       task_status: loop.taskStatus,
     })),
     summary: summary.slice(0, 4000),

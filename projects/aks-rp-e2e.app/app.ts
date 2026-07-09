@@ -365,7 +365,7 @@ export default defineProjectApp({
       emits: ["project.task.assigned"],
       context: [
         ...taskTreeContext,
-        "projects/aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt",
+        "projects/aks-rp-e2e/ci/feature-sets/dev-infra-core.txt",
         "projects/aks-rp-e2e/features/",
         "projects/aks-rp-e2e/design/specs/README.md",
       ],

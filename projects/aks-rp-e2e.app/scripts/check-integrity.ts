@@ -847,6 +847,40 @@ function validateTaskTree(
     return exactBlockedWaitStewardshipProgress(workflowProgress(task));
   }
 
+  function numberProgressField(
+    progress: Record<string, unknown> | null,
+    key: string,
+  ): number | null {
+    const value = progress?.[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+
+  function durableLoopChildBlockedOnlyStewardship(task: TaskNode): boolean {
+    const taskId = task.id;
+    if (typeof taskId !== "string") return false;
+    if (!durableLoopContracts.some((contract) => contract.taskId === taskId)) {
+      return false;
+    }
+    if (taskState(task) !== "blocked") return false;
+    const progress = workflowProgress(task);
+    if (!progress || progress.completionReady !== false) return false;
+    if ((numberProgressField(progress, "running") ?? 0) > 0) return false;
+    const unrepresentedNonTerminalCount = numberProgressField(
+      progress,
+      "unrepresentedNonTerminalCount",
+    );
+    if (unrepresentedNonTerminalCount !== 0) {
+      return false;
+    }
+    const childStates = (task.children ?? [])
+      .map((childId) => taskState(tasks[childId]))
+      .filter(Boolean);
+    if (!childStates.includes("blocked")) return false;
+    return childStates.every(
+      (state) => state === "done" || state === "blocked",
+    );
+  }
+
   function isWorkflowControllerTask(task: TaskNode): boolean {
     return (
       !isLeaf(task) &&
@@ -874,7 +908,11 @@ function validateTaskTree(
       if (taskState(task) === "active") return "active";
       if (childStates.includes("active")) return "active";
       if (childStates.includes("review")) return "review";
-      if (blockedWaitStewardship(task) && childStates.includes("blocked")) {
+      if (
+        childStates.includes("blocked") &&
+        (blockedWaitStewardship(task) ||
+          durableLoopChildBlockedOnlyStewardship(task))
+      ) {
         return "blocked";
       }
       return "backlog";

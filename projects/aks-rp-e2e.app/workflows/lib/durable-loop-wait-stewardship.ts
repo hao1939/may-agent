@@ -78,6 +78,77 @@ export function exactBlockedWaitStewardshipProgress(
   );
 }
 
+function stringArrayProgressField(
+  progress: Record<string, unknown>,
+  key: string,
+): string[] {
+  const value = progress[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function arrayProgressFieldLength(
+  progress: Record<string, unknown>,
+  key: string,
+): number {
+  const value = progress[key];
+  return Array.isArray(value) ? value.length : 0;
+}
+
+export function activeExternalRunWaitProgress(
+  progress: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!progress || progress.completionReady !== false) return false;
+
+  const running = numericProgressField(progress, "running") ?? 0;
+  if (running <= 0) return false;
+
+  const activePipelineFeatureKeys = stringArrayProgressField(
+    progress,
+    "activePipelineFeatureKeys",
+  );
+  const activePipelineWaitCount = arrayProgressFieldLength(
+    progress,
+    "activePipelineWaits",
+  );
+  if (
+    Math.max(activePipelineFeatureKeys.length, activePipelineWaitCount) <
+    running
+  ) {
+    return false;
+  }
+
+  const unrepresentedNonTerminalCount =
+    numericProgressField(progress, "unrepresentedNonTerminalCount") ??
+    inferredUnrepresentedNonTerminalCount(progress);
+  if (unrepresentedNonTerminalCount !== 0) return false;
+
+  const openChildren = numericProgressField(progress, "openChildren") ?? 0;
+  const openSupportChildren =
+    numericProgressField(progress, "openSupportChildren") ?? 0;
+  const activeChildren = numericProgressField(progress, "activeChildren") ?? 0;
+  const reviewChildren = numericProgressField(progress, "reviewChildren") ?? 0;
+  const waitingChildren =
+    numericProgressField(progress, "waitingChildren") ?? 0;
+  const backlogChildren =
+    numericProgressField(progress, "backlogChildren") ?? 0;
+  const openFollowups = numericProgressField(progress, "openFollowups") ?? 0;
+  const openSpecVerifierChildren =
+    numericProgressField(progress, "openSpecVerifierChildren") ?? 0;
+
+  return (
+    openChildren === 0 &&
+    openSupportChildren === 0 &&
+    activeChildren === 0 &&
+    reviewChildren === 0 &&
+    waitingChildren === 0 &&
+    backlogChildren === 0 &&
+    openFollowups === 0 &&
+    openSpecVerifierChildren === 0
+  );
+}
+
 export function runnableDurableLoopProgress(
   progress: Record<string, unknown>,
 ): Record<string, unknown> {

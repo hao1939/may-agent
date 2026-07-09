@@ -25,6 +25,7 @@ export type FeatureCompactItemState = FeatureCompactRecord & {
   retryable?: boolean | null;
   retryReason?: string | null;
   taskId?: string | null;
+  frontierTaskIds?: string[] | null;
   attempts: number;
   lastPlanPath: string | null;
   lastSummaryPath: string | null;
@@ -203,6 +204,7 @@ function normalizeExistingItem(
       (item as FeatureCompactItemState).retryable === false ? false : true,
     retryReason: (item as FeatureCompactItemState).retryReason ?? null,
     taskId: (item as FeatureCompactItemState).taskId ?? null,
+    frontierTaskIds: (item as FeatureCompactItemState).frontierTaskIds ?? null,
     rootCauseClassification:
       (item as FeatureCompactItemState).rootCauseClassification ?? null,
     inputFingerprint:

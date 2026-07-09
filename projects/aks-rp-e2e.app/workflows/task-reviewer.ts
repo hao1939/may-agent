@@ -79,6 +79,17 @@ function isFixForwardTask(task: TaskNode): boolean {
   return taskContextString(task, "workflow") === "fix-forward";
 }
 
+function isCompactFixForwardTask(task: TaskNode): boolean {
+  const context = taskContext(task);
+  return (
+    isFixForwardTask(task) &&
+    (context.featureCompactFollowup === true ||
+      context.featureCompactFocusedDiagnostic === true ||
+      context.featureCompactFocusedSpec === true ||
+      textValue(context.subjectKind).includes("compact"))
+  );
+}
+
 function hasTerminalPipelineWaitReview(task: TaskNode): boolean {
   const context = taskContext(task);
   const trace = taskTrace(task);
@@ -265,6 +276,73 @@ function fixForwardMissingFields(
     missing.push("fixForward.nextActionReason");
   }
   return missing;
+}
+
+function repeatedFixForwardStructuredResultMiss(task: TaskNode): boolean {
+  const reason = textValue(taskTrace(task).review_reject_reason).toLowerCase();
+  return (
+    reason.includes("fix_forward_result") ||
+    reason.includes("fix-forward completion is missing") ||
+    reason.includes("structured diagnosis fields")
+  );
+}
+
+function fixForwardDetails(
+  completion: Record<string, unknown>,
+): Record<string, unknown> | null {
+  return recordValue(workflowResultDetails(completion).fixForward);
+}
+
+function fixForwardCompactFreshnessFindings(input: {
+  task: TaskNode;
+  completion: Record<string, unknown>;
+}): string[] {
+  if (!isCompactFixForwardTask(input.task)) return [];
+  const fixForward = fixForwardDetails(input.completion);
+  if (!fixForward) return [];
+  const nextAction = textValue(fixForward.nextAction);
+  if (nextAction !== "done" && nextAction !== "exact-wait") return [];
+
+  const verification = recordValue(fixForward.verification);
+  const minimumDiagnosisPacket = recordValue(fixForward.minimumDiagnosisPacket);
+  const changedFiles = stringList(fixForward.changedFiles);
+  const paths = [
+    ...evidenceRefs(input.completion),
+    ...changedFiles,
+    textValue(verification?.resultPath),
+    textValue(minimumDiagnosisPacket?.resultPath),
+  ].filter(Boolean);
+  const trace = taskTrace(input.task);
+  const attemptId = textValue(trace.current_attempt_id);
+  const attemptDate = attemptId.match(/\b(20\d{6})\d{0,6}\b/)?.[1] ?? "";
+  const hasCurrentAttemptPath =
+    Boolean(attemptId) && paths.some((path) => path.includes(attemptId));
+  const hasCurrentDatePath =
+    Boolean(attemptDate) && paths.some((path) => path.includes(attemptDate));
+  const explanation = [
+    textValue(fixForward.diagnosis),
+    textValue(fixForward.nextActionReason),
+  ]
+    .join(" ")
+    .toLowerCase();
+  const explicitlyReusesExactEvidence =
+    /existing|prior|previous|older|reused|reusing/.test(explanation) &&
+    /exact|authoritative|still valid|still truthful|remains truthful|remains exact/.test(
+      explanation,
+    );
+
+  if (
+    hasCurrentAttemptPath ||
+    hasCurrentDatePath ||
+    explicitlyReusesExactEvidence
+  ) {
+    return [];
+  }
+  return [
+    "compact-fix-forward-evidence-not-fresh",
+    `attempt:${attemptId || "missing"}`,
+    `paths:${paths.join(", ") || "none"}`,
+  ];
 }
 
 function completedSpecVerification(
@@ -480,6 +558,24 @@ function deterministicReviewForCompletion(
   if (isFixForwardTask(task)) {
     const missing = fixForwardMissingFields(completion);
     if (missing.length > 0) {
+      if (repeatedFixForwardStructuredResultMiss(task)) {
+        return {
+          decision: "escalate",
+          confidence: "high",
+          summary:
+            "Fix-forward output is repeatedly missing the required structured result, so this is now a workflow/process problem rather than another domain retry.",
+          findings: [
+            "fix-forward-structured-result-missing-repeated",
+            ...missing.map((field) => `missing:${field}`),
+          ],
+          feedback: [
+            "Stop retrying the same domain task unchanged. Repair the worker prompt/adapter or workflow route so completed fix-forward tasks emit FIX_FORWARD_RESULT in workflowResult.details.fixForward.",
+          ],
+          suggestedFollowups: [
+            "Create an ops repair for the fix-forward worker structured-result contract.",
+          ],
+        };
+      }
       return {
         decision: "redo",
         confidence: "high",
@@ -491,6 +587,23 @@ function deterministicReviewForCompletion(
         ],
         feedback: [
           "Redo the task and finish with FIX_FORWARD_RESULT containing subject, classification, diagnosis, minimumDiagnosisPacket, verification, nextAction, and nextActionReason.",
+        ],
+        suggestedFollowups: [],
+      };
+    }
+    const staleEvidenceFindings = fixForwardCompactFreshnessFindings({
+      task,
+      completion,
+    });
+    if (staleEvidenceFindings.length > 0) {
+      return {
+        decision: "redo",
+        confidence: "high",
+        summary:
+          "Compact fix-forward completion does not prove that its evidence belongs to this attempt or that reused evidence remains exact.",
+        findings: staleEvidenceFindings,
+        feedback: [
+          "Redo the task with a fresh attempt evidence path, or explicitly state in FIX_FORWARD_RESULT.diagnosis and verification.resultPath that the prior evidence remains exact and why no new evidence file or rerun is needed.",
         ],
         suggestedFollowups: [],
       };

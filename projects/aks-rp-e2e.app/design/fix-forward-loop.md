@@ -77,8 +77,8 @@ Each fix attempt records the failure class and two fingerprints:
 type FixAttempt = {
   attemptId: string;
   failureClass: string;
-  inputFingerprint: string;   // spec + scenario test + runner + plan + target
-  errorFingerprint: string;   // error class + message + failing assertion
+  inputFingerprint: string; // spec + scenario test + runner + plan + target
+  errorFingerprint: string; // error class + message + failing assertion
   changedFiles: string[];
   diagnosis: string | null;
   runId: string | null;
@@ -193,6 +193,12 @@ The task may be one leaf when the fix is small. If diagnosis shows the repair is
 larger, the leaf should complete with a concrete follow-up task proposal rather
 than becoming an unbounded long-running session.
 
+For compact work, prefer one feature or one exact branch over a broad family.
+A family task is acceptable only when the members share the same current
+repairable cause. If the family contains many already-known waits, the compact
+controller should split those into feature-level blocked waits before creating
+any family repair task.
+
 ## Agent Failure-Handling Contract
 
 The agent should handle failures as a decision problem, not as a retry problem.
@@ -269,6 +275,9 @@ For a compact feature:
 - first failing spec plus representative sibling failures;
 - compact conflict, generated-test, runner, target, or product classification;
 - input fingerprints and error fingerprints for the affected set.
+- when closing as `done` or `exact-wait`, either a current-attempt evidence path
+  or an explicit explanation that the cited older run/result/holder remains
+  exact for the current fingerprint.
 
 If the packet is incomplete because an artifact or pipeline result is missing,
 the class is `missing-result-artifact` or `pipeline-infrastructure`, not a
@@ -477,6 +486,12 @@ For malformed or incomplete fix-forward output, the reviewer should not infer
 success from prose. It should recommend `redo`, `followup`, or `escalate` with
 the missing fields named explicitly.
 
+For compact fix-forward output, the reviewer also checks evidence freshness. A
+`done` or `exact-wait` result must cite current attempt evidence, or explicitly
+state why a prior evidence path, run id, or wait holder still proves the current
+input fingerprint. Useful prose without that structured proof is rejected for
+redo.
+
 This closes the loop: verifier tries to fix → blocks if it can't → watchdog
 detects stale blocks → reviewer judges → planner creates new fix work or
 confirms the wait.
@@ -580,6 +595,6 @@ Start small:
 9. Make fix-forward task prompts require the minimum diagnosis packet and
    structured next action.
 10. Add metrics for loop errors with no visible owner and for repeated
-   same-fingerprint attempts.
+    same-fingerprint attempts.
 11. Apply the pattern first to compact package failures, then reuse it for
-   single-spec failures.
+    single-spec failures.

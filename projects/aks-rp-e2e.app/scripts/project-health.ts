@@ -11,6 +11,7 @@ import {
   type TaskNode,
   type TaskTree,
 } from "../workflows/lib/task-tree-store.ts";
+import appManifest from "../app.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -25,11 +26,81 @@ type JsonLine = JsonObject & {
 type SignalSeverity = "info" | "warn" | "critical";
 type HealthStatus = "complete" | "moving" | "attention" | "stalled";
 
+type EventSelector =
+  | string
+  | {
+      type?: string;
+      target?: {
+        project?: string;
+        taskId?: string;
+      };
+      owner?: string;
+      actions?: string[];
+    };
+
+type WorkflowRoute = {
+  name?: string;
+  enabled?: boolean;
+  accepts?: unknown;
+  on?: unknown;
+  emits?: unknown;
+};
+
+type Schedule = {
+  id?: string;
+  emits?: Array<Record<string, unknown>>;
+  event?: Record<string, unknown>;
+};
+
+type ProjectAction = {
+  event?: (params?: unknown) => Record<string, unknown>;
+};
+
+type ProjectAppManifest = {
+  workflowHandlers?: WorkflowRoute[];
+  schedules?: Schedule[];
+  actions?: Record<string, ProjectAction>;
+  eventGraph?: {
+    externalEvents?: string[];
+    limits?: {
+      maxHandlersPerEvent?: number;
+    };
+  };
+};
+
 export type ProjectHealthSignal = {
   severity: SignalSeverity;
   code: string;
   message: string;
   taskIds?: string[];
+};
+
+export type ActivePipelineWaitReport = {
+  featureKey: string;
+  runId: string;
+  runUrl: string | null;
+  runStatus: string | null;
+  runTitle: string | null;
+  watchedCondition: string;
+  expectedArtifact: string;
+  owner: string;
+  nextCheckAt: string | null;
+  fallbackAt: string | null;
+};
+
+export type ProcessGraphReport = {
+  available: boolean;
+  reason: string | null;
+  routeCount: number;
+  emittedEventCount: number;
+  consumedEventCount: number;
+  externalEventCount: number;
+  unhandledEvents: string[];
+  multiRouteEvents: Array<{
+    event: string;
+    routes: string[];
+  }>;
+  actionErrors: string[];
 };
 
 export type ProjectHealthReport = {
@@ -70,6 +141,7 @@ export type ProjectHealthReport = {
     workerCompleted24h: number;
     reviewDecisions24h: Record<string, number>;
   };
+  processGraph: ProcessGraphReport;
   loops: Array<{
     taskId: string;
     state: string;
@@ -81,6 +153,8 @@ export type ProjectHealthReport = {
     done: number | null;
     error: number | null;
     unrepresentedNonTerminalCount: number | null;
+    activePipelineFeatureKeys: string[];
+    activePipelineWaits: ActivePipelineWaitReport[];
     stateCounts: Record<string, number>;
     updatedAt: string | null;
   }>;
@@ -204,6 +278,322 @@ function stringValue(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function eventTypeFromSelector(selector: EventSelector): string | null {
+  if (typeof selector === "string") return selector;
+  return typeof selector.type === "string" && selector.type.trim()
+    ? selector.type.trim()
+    : null;
+}
+
+function routeSelectors(route: WorkflowRoute): EventSelector[] {
+  const raw = route.accepts ?? route.on;
+  return Array.isArray(raw) ? (raw as EventSelector[]) : [];
+}
+
+function routeInputEvents(route: WorkflowRoute): string[] {
+  return routeSelectors(route)
+    .map(eventTypeFromSelector)
+    .filter((event): event is string => Boolean(event));
+}
+
+function selectorConflictKey(selector: EventSelector): string | null {
+  if (typeof selector === "string") return selector;
+  const type = eventTypeFromSelector(selector);
+  if (!type) return null;
+  const target = selector.target;
+  const targetParts = [
+    target?.project ? `project=${target.project}` : "",
+    target?.taskId ? `taskId=${target.taskId}` : "",
+  ].filter(Boolean);
+  const owner = selector.owner ? `owner=${selector.owner}` : "";
+  const actions =
+    Array.isArray(selector.actions) && selector.actions.length
+      ? `actions=${selector.actions.join("|")}`
+      : "";
+  const qualifiers = [...targetParts, owner, actions].filter(Boolean);
+  return qualifiers.length ? `${type} [${qualifiers.join(",")}]` : type;
+}
+
+function eventTarget(event: Record<string, unknown>): JsonObject {
+  return objectValue(event.target);
+}
+
+function selectorMatchesEvent(
+  selector: EventSelector,
+  event: Record<string, unknown>,
+): boolean {
+  const eventType = stringValue(event.type);
+  if (!eventType) return false;
+  if (typeof selector === "string") return selector === eventType;
+  if (selector.type !== eventType) return false;
+
+  const selectorProject = selector.target?.project;
+  if (
+    typeof selectorProject === "string" &&
+    eventTarget(event).project !== selectorProject
+  ) {
+    return false;
+  }
+
+  const selectorTaskId = selector.target?.taskId;
+  if (
+    typeof selectorTaskId === "string" &&
+    eventTarget(event).taskId !== selectorTaskId
+  ) {
+    return false;
+  }
+
+  if (selector.actions?.length) {
+    return (
+      typeof event.action === "string" &&
+      selector.actions.includes(event.action)
+    );
+  }
+  return true;
+}
+
+function selectorConsumesEventType(
+  selector: EventSelector,
+  eventType: string,
+): boolean {
+  return eventTypeFromSelector(selector) === eventType;
+}
+
+function scheduleEvents(schedule: Schedule): Array<Record<string, unknown>> {
+  return Array.isArray(schedule.emits)
+    ? schedule.emits
+    : schedule.event
+      ? [schedule.event]
+      : [];
+}
+
+function addMapValue(map: Map<string, string[]>, key: string, value: string) {
+  const values = map.get(key) ?? [];
+  values.push(value);
+  map.set(key, values);
+}
+
+function actionEvents(projectApp: ProjectAppManifest): {
+  emitted: Array<{ action: string; event: string }>;
+  errors: string[];
+} {
+  const emitted: Array<{ action: string; event: string }> = [];
+  const errors: string[] = [];
+  for (const [actionName, action] of Object.entries(projectApp.actions ?? {})) {
+    if (typeof action.event !== "function") continue;
+    try {
+      const event = action.event({
+        taskId: "health-check",
+        problemKey: "health-check",
+      });
+      if (typeof event?.type === "string" && event.type.trim()) {
+        emitted.push({ action: actionName, event: event.type.trim() });
+      } else {
+        errors.push(`action ${actionName} did not return event.type`);
+      }
+    } catch (err) {
+      errors.push(
+        `action ${actionName} could not be evaluated: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+  return { emitted, errors };
+}
+
+export function buildProcessGraphReport(
+  projectApp: ProjectAppManifest,
+): ProcessGraphReport {
+  const routes = (projectApp.workflowHandlers ?? []).filter(
+    (route) => route.enabled !== false,
+  );
+  const selectors = routes.flatMap(routeSelectors);
+  const consumedEvents = new Set<string>();
+  const routeSelectorConsumers = new Map<string, string[]>();
+  for (const route of routes) {
+    for (const event of routeInputEvents(route)) {
+      consumedEvents.add(event);
+    }
+    for (const selector of routeSelectors(route)) {
+      const key = selectorConflictKey(selector);
+      if (key) addMapValue(routeSelectorConsumers, key, route.name ?? "route");
+    }
+  }
+
+  const externalEvents = new Set(projectApp.eventGraph?.externalEvents ?? []);
+  const eventObjectHandled = (event: Record<string, unknown>) => {
+    const type = stringValue(event.type);
+    return Boolean(
+      type &&
+      (externalEvents.has(type) ||
+        selectors.some((selector) => selectorMatchesEvent(selector, event))),
+    );
+  };
+  const eventTypeHandled = (eventType: string) =>
+    externalEvents.has(eventType) ||
+    selectors.some((selector) =>
+      selectorConsumesEventType(selector, eventType),
+    );
+  const unhandledEvents: string[] = [];
+  let emittedEventCount = 0;
+
+  for (const schedule of projectApp.schedules ?? []) {
+    for (const emitted of scheduleEvents(schedule)) {
+      const event = stringValue(emitted.type);
+      if (!event) continue;
+      emittedEventCount += 1;
+      if (!eventObjectHandled(emitted)) {
+        unhandledEvents.push(
+          `schedule ${schedule.id ?? "unnamed"} emits ${event}`,
+        );
+      }
+    }
+  }
+
+  const actionResult = actionEvents(projectApp);
+  for (const action of actionResult.emitted) {
+    emittedEventCount += 1;
+    if (!eventTypeHandled(action.event)) {
+      unhandledEvents.push(`action ${action.action} emits ${action.event}`);
+    }
+  }
+
+  for (const route of routes) {
+    const emits = Array.isArray(route.emits) ? route.emits : [];
+    for (const emitted of emits) {
+      if (typeof emitted !== "string" || !emitted.trim()) continue;
+      emittedEventCount += 1;
+      if (!eventTypeHandled(emitted)) {
+        unhandledEvents.push(
+          `route ${route.name ?? "unnamed"} emits ${emitted}`,
+        );
+      }
+    }
+  }
+
+  const maxRoutes = projectApp.eventGraph?.limits?.maxHandlersPerEvent ?? 1;
+  const multiRouteEvents = [...routeSelectorConsumers.entries()]
+    .filter(([, routesForEvent]) => routesForEvent.length > maxRoutes)
+    .map(([event, routesForEvent]) => ({
+      event,
+      routes: routesForEvent,
+    }));
+
+  return {
+    available: true,
+    reason: null,
+    routeCount: routes.length,
+    emittedEventCount,
+    consumedEventCount: consumedEvents.size,
+    externalEventCount: externalEvents.size,
+    unhandledEvents: unhandledEvents.sort((a, b) => a.localeCompare(b)),
+    multiRouteEvents: multiRouteEvents.sort((a, b) =>
+      a.event.localeCompare(b.event),
+    ),
+    actionErrors: actionResult.errors.sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+function unavailableProcessGraph(reason: string): ProcessGraphReport {
+  return {
+    available: false,
+    reason,
+    routeCount: 0,
+    emittedEventCount: 0,
+    consumedEventCount: 0,
+    externalEventCount: 0,
+    unhandledEvents: [],
+    multiRouteEvents: [],
+    actionErrors: [],
+  };
+}
+
+function stringArrayValue(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+}
+
+function activePipelineWaitsValue(value: unknown): ActivePipelineWaitReport[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item): ActivePipelineWaitReport | null => {
+      const record = objectValue(item);
+      const featureKey = stringValue(record.featureKey);
+      const runId = stringValue(record.runId);
+      if (!featureKey || !runId) return null;
+      return {
+        featureKey,
+        runId,
+        runUrl: stringValue(record.runUrl),
+        runStatus: stringValue(record.runStatus),
+        runTitle: stringValue(record.runTitle),
+        watchedCondition:
+          stringValue(record.watchedCondition) ||
+          `Azure DevOps run ${runId} reaches completed status`,
+        expectedArtifact:
+          stringValue(record.expectedArtifact) ||
+          ".state/feature-compact-loop/artifacts/<runId>/",
+        owner: stringValue(record.owner) || "feature-compact-loop-controller",
+        nextCheckAt: stringValue(record.nextCheckAt),
+        fallbackAt: stringValue(record.fallbackAt),
+      };
+    })
+    .filter((item): item is ActivePipelineWaitReport => Boolean(item));
+}
+
+function directFeatureCompactActivePipelineWaits(
+  appDir: string,
+): ActivePipelineWaitReport[] {
+  const state = readJson<JsonObject | null>(
+    join(appDir, ".state", "feature-compact-loop", "state.json"),
+    null,
+  );
+  const features = objectValue(state?.features);
+  return Object.entries(features)
+    .map(([featureKey, raw]): ActivePipelineWaitReport | null => {
+      const feature = objectValue(raw);
+      const runId = stringValue(feature.activeWorkflowRunId);
+      if (!runId) return null;
+      return {
+        featureKey,
+        runId,
+        runUrl: stringValue(feature.lastWorkflowRunUrl),
+        runStatus: null,
+        runTitle: null,
+        watchedCondition: `Azure DevOps run ${runId} reaches completed status`,
+        expectedArtifact:
+          stringValue(feature.lastResultPath) ||
+          ".state/feature-compact-loop/artifacts/<runId>/",
+        owner: "feature-compact-loop-controller",
+        nextCheckAt: stringValue(feature.nextCheckAt),
+        fallbackAt: stringValue(feature.fallbackAt),
+      };
+    })
+    .filter((item): item is ActivePipelineWaitReport => Boolean(item))
+    .sort((a, b) => a.featureKey.localeCompare(b.featureKey));
+}
+
+function mergeActivePipelineWaits(
+  left: ActivePipelineWaitReport[],
+  right: ActivePipelineWaitReport[],
+): ActivePipelineWaitReport[] {
+  const merged = new Map<string, ActivePipelineWaitReport>();
+  for (const wait of [...left, ...right]) {
+    merged.set(`${wait.featureKey}:${wait.runId}`, {
+      ...(merged.get(`${wait.featureKey}:${wait.runId}`) ?? {}),
+      ...wait,
+    });
+  }
+  return [...merged.values()].sort((a, b) =>
+    a.featureKey === b.featureKey
+      ? a.runId.localeCompare(b.runId)
+      : a.featureKey.localeCompare(b.featureKey),
+  );
+}
+
 function sample(values: string[], limit = 8): string[] {
   return values.slice(0, limit);
 }
@@ -306,6 +696,20 @@ function buildLoopReports(appDir: string, tree: TaskTree) {
   return durableLoopTasks.map((loop) => {
     const task = tree.tasks?.[loop.taskId];
     const progress = taskWorkflowProgress(task);
+    const directActivePipelineWaits =
+      loop.taskId === "aks-feature-compact-loop"
+        ? directFeatureCompactActivePipelineWaits(appDir)
+        : [];
+    const activePipelineWaits = mergeActivePipelineWaits(
+      activePipelineWaitsValue(progress.activePipelineWaits),
+      directActivePipelineWaits,
+    );
+    const activePipelineFeatureKeys = [
+      ...new Set([
+        ...stringArrayValue(progress.activePipelineFeatureKeys),
+        ...activePipelineWaits.map((wait) => wait.featureKey),
+      ]),
+    ].sort((a, b) => a.localeCompare(b));
     return {
       taskId: loop.taskId,
       state: taskState(task),
@@ -325,6 +729,8 @@ function buildLoopReports(appDir: string, tree: TaskTree) {
       unrepresentedNonTerminalCount: numberValue(
         progress.unrepresentedNonTerminalCount,
       ),
+      activePipelineFeatureKeys,
+      activePipelineWaits,
       stateCounts: loopStateCounts(appDir, loop),
       updatedAt: stringValue(progress.updatedAt),
     };
@@ -381,6 +787,30 @@ function buildSignals(input: {
       code: "assignment.queue-not-empty",
       message: `${input.report.assignments.queued} assignment row(s) are queued but not yet consumed by workers.`,
       taskIds: sample(input.report.assignments.taskIds),
+    });
+  }
+
+  if (input.report.processGraph.unhandledEvents.length > 0) {
+    signals.push({
+      severity: "critical",
+      code: "route.unhandled-event",
+      message: `${input.report.processGraph.unhandledEvents.length} emitted event(s) have no route or declared boundary.`,
+    });
+  }
+
+  if (input.report.processGraph.multiRouteEvents.length > 0) {
+    signals.push({
+      severity: "warn",
+      code: "route.multi-route",
+      message: `${input.report.processGraph.multiRouteEvents.length} route selector(s) have more consumers than the app graph allows.`,
+    });
+  }
+
+  if (input.report.processGraph.actionErrors.length > 0) {
+    signals.push({
+      severity: "warn",
+      code: "route.action-read-error",
+      message: `${input.report.processGraph.actionErrors.length} action event producer(s) could not be evaluated for the static route graph.`,
     });
   }
 
@@ -569,6 +999,12 @@ export function buildProjectHealth(
     nowMs,
     staleActiveMs: staleActiveMinutes * 60 * 1000,
   });
+  const processGraph =
+    appDir === defaultAppDir
+      ? buildProcessGraphReport(appManifest as ProjectAppManifest)
+      : unavailableProcessGraph(
+          "Static app manifest readout is available for the default app directory only.",
+        );
   const frontier = {
     roots: summary.roots ?? [],
     runnable: summary.frontier.runnable ?? [],
@@ -619,6 +1055,7 @@ export function buildProjectHealth(
     ],
     frontier,
     movement,
+    processGraph,
     loops,
     assignments: {
       queued: assignments.length,
@@ -685,6 +1122,18 @@ export function formatProjectHealth(report: ProjectHealthReport): string {
   lines.push(
     `- last 24h: marked done=${report.movement.tasksMarkedDone24h}, worker completed=${report.movement.workerCompleted24h}`,
   );
+  lines.push("");
+  lines.push("Process graph:");
+  if (report.processGraph.available) {
+    lines.push(
+      `- routes=${report.processGraph.routeCount}, consumed events=${report.processGraph.consumedEventCount}, emitted events=${report.processGraph.emittedEventCount}, external boundaries=${report.processGraph.externalEventCount}`,
+    );
+    lines.push(
+      `- unhandled=${report.processGraph.unhandledEvents.length}, multi-route=${report.processGraph.multiRouteEvents.length}, action read errors=${report.processGraph.actionErrors.length}`,
+    );
+  } else {
+    lines.push(`- unavailable: ${report.processGraph.reason ?? "unknown"}`);
+  }
   lines.push("");
   lines.push("Loops:");
   for (const loop of report.loops) {

@@ -328,6 +328,44 @@ describe("compact-organizer CLI", () => {
     }
   });
 
+  test("blocked upsert-holder requires --blocker-owner", async () => {
+    const fixture = await makeFixture();
+
+    const result = await runCompactOrganizer(
+      [
+        "upsert-holder",
+        "wait-compact-missing-owner-check-20260708",
+        "--target",
+        "runtime",
+        "--parent",
+        "aks-feature-compact-loop",
+        "--state",
+        "blocked",
+        "--goal",
+        "Preserve exact compact wait without owner should fail.",
+        "--output",
+        "../aks-rp-e2e/evidence/archive/missing-owner-check.md",
+        "--acceptance",
+        "blocked holders require explicit blocker owner",
+        "--conflict-scope",
+        "feature:test",
+        "--blocker",
+        "Blocked on exact review surface.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(result.exitCode).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "Blocked tasks require --blocker-owner",
+    );
+  });
+
   test("bind-task updates feature-compact-loop taskId to an existing holder", async () => {
     const fixture = await makeFixture();
 

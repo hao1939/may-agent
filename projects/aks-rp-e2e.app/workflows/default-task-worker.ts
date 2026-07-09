@@ -75,6 +75,54 @@ type SessionWorkflowContext = WorkflowContext & {
   ) => Promise<unknown>;
 };
 
+function resultTextCandidates(result: unknown): string[] {
+  const candidates: string[] = [];
+  const seen = new Set<unknown>();
+
+  function visit(value: unknown, depth: number): void {
+    if (value == null || depth > 4 || seen.has(value)) return;
+    if (typeof value === "string") {
+      if (value.trim()) candidates.push(value);
+      return;
+    }
+    if (typeof value !== "object") return;
+    seen.add(value);
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, depth + 1);
+      return;
+    }
+    const record = value as Record<string, unknown>;
+    for (const key of [
+      "lastAssistantText",
+      "message",
+      "summary",
+      "errorMessage",
+      "status",
+      "finishResult",
+      "messages",
+      "error",
+    ]) {
+      visit(record[key], depth + 1);
+    }
+    for (const nested of Object.values(record)) {
+      visit(nested, depth + 1);
+    }
+  }
+
+  visit(result, 0);
+  return candidates;
+}
+
+function fixForwardResultFromSessionResult(
+  result: unknown,
+): FixForwardResult | null {
+  for (const candidate of resultTextCandidates(result)) {
+    const parsed = parseFixForwardResult(candidate);
+    if (parsed) return parsed;
+  }
+  return null;
+}
+
 function resultEvidence(result: unknown): string[] {
   const finishResult = (
     result as {
@@ -108,6 +156,17 @@ function taskContextString(task: TaskNode, key: string): string {
 
 function isFixForwardTask(task: TaskNode): boolean {
   return taskContextString(task, "workflow") === "fix-forward";
+}
+
+function isCompactFixForwardTask(task: TaskNode): boolean {
+  const context = taskContext(task);
+  const subjectKind = taskContextString(task, "subjectKind");
+  return (
+    isFixForwardTask(task) &&
+    (context.featureCompactFollowup === true ||
+      context.featureCompactFocusedDiagnostic === true ||
+      subjectKind.includes("compact"))
+  );
 }
 
 function matchingJsonObject(text: string, start: number): string | null {
@@ -233,16 +292,32 @@ export function buildTaskTreeConfig(
   appDir: string,
   projectDir: string,
   configuredMaxConcurrent: number,
+  trigger: TriggerEvent | null = null,
 ): TaskTreeConfig {
+  const assignedWorker = triggerString(trigger, "worker").trim();
+  const taskId =
+    triggerString(trigger, "taskId").trim() ||
+    triggerString(trigger, "task_id").trim();
+  const assignedTaskOwner = taskId
+    ? String(readTaskTree(taskTreeConfig({ appDir, projectDir, worker: "", maxConcurrent: configuredMaxConcurrent })).tasks[taskId]?.owner ?? "").trim()
+    : "";
+  const taskWorker = (field(ctx.task, "worker") ?? "").trim();
+  const taskAgent = (field(ctx.task, "agent") ?? "").trim();
+  const contextAgent = typeof ctx.agent === "string" ? ctx.agent.trim() : "";
+  const worker =
+    assignedWorker ||
+    assignedTaskOwner ||
+    taskWorker ||
+    taskAgent ||
+    contextAgent;
   return {
     ...taskTreeConfig({
       appDir,
       projectDir,
-      worker:
-        field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
+      worker,
       maxConcurrent: configuredMaxConcurrent,
     }),
-    worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
+    worker,
     maxConcurrent: configuredMaxConcurrent,
   };
 }
@@ -311,6 +386,33 @@ FIX_FORWARD_RESULT:
   "nextActionReason": "why this next action is the smallest truthful move"
 }
 \`\`\`
+`
+    : "";
+  const compactFixForwardInstructions = isCompactFixForwardTask(task)
+    ? `
+Compact fix-forward training:
+- Do not broad-rerun a compact feature family just because many records are in
+  package-partial or live-workflow error. First compare the supplied
+  inputFingerprints and errorFingerprints.
+- If current facts still point to exact existing holders, terminal
+  dispositions, or environment/product waits, report nextAction="exact-wait" or
+  nextAction="done" with the exact holder/result path. Do not invent a rerun.
+- If you update compact-loop state or write an evidence memo, include those
+  paths in changedFiles and verification.resultPath.
+- Evidence must be fresh for this attempt unless the correct result is
+  "existing evidence remains exact". If you reuse an older evidence path, say
+  that explicitly in FIX_FORWARD_RESULT.diagnosis and verification.resultPath,
+  and explain why no new evidence file or rerun is needed.
+- Do not claim "done" from stale compact evidence alone. A done/exact-wait
+  result must name the current attempt evidence path, the existing exact holder,
+  or the exact prior evidence that remains authoritative.
+- The reviewer will reject useful prose without FIX_FORWARD_RESULT. Always end
+  with a complete FIX_FORWARD_RESULT block, even when the correct outcome is
+  "no rerun; exact wait remains".
+- For family tasks, subject.kind should be "feature-family" and subject.id
+  should be the compact error class or family name. For focused branch tasks,
+  subject.kind should be "compact-feature" or "spec" and subject.id should name
+  the exact feature/spec.
 `
     : "";
   return `Task Worker Mode
@@ -418,6 +520,7 @@ assigned task's own id, goal text, conflict scope, or review state suppress the
 blocked waits it is supposed to inspect. Report both the pre-audit contributor
 set and the post-action represented set when they differ.
 ${fixForwardInstructions}
+${compactFixForwardInstructions}
 
 Assigned task:
 \`\`\`json
@@ -925,7 +1028,7 @@ async function runAssignedMode(
   const claim = workerResultFromSession(result, message);
   const evidence = resultEvidence(result);
   const fixForwardResult = isFixForwardTask(task)
-    ? parseFixForwardResult(message)
+    ? fixForwardResultFromSessionResult(result)
     : null;
   const fixForwardDetails = isFixForwardTask(task)
     ? {
@@ -975,6 +1078,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appDir,
     projectDir,
     configuredMaxConcurrent,
+    trigger,
   );
 
   if (trigger?.type === "project.task.assigned") {

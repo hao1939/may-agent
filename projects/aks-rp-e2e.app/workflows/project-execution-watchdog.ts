@@ -27,14 +27,24 @@ import {
 } from "./lib/task-tree-store.ts";
 import {
   listRunnableBacklogTaskIds,
+  saveTaskTreeWithKanbanSnapshot,
   waitingBacklogTaskSnapshots,
 } from "./lib/task-tree-tools.ts";
+import {
+  getWorkflowRun,
+  resolvePipelineClient,
+  type PipelineClient,
+  type PipelineRun,
+} from "./lib/ado-pipelines.ts";
 import {
   completeStartedAttempt,
   emitTaskCompleted,
 } from "./default-task-worker.ts";
 import { syncProjectReadout } from "./lib/project-readout-sync.ts";
-import { exactBlockedWaitStewardshipProgress } from "./lib/durable-loop-wait-stewardship.ts";
+import {
+  activeExternalRunWaitProgress,
+  exactBlockedWaitStewardshipProgress,
+} from "./lib/durable-loop-wait-stewardship.ts";
 import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
@@ -129,6 +139,17 @@ type WatchdogTreeSnapshot = {
   durableLoopLiveness: DurableLoopLiveness[];
 };
 
+type TerminalPipelineWaitHarvest = {
+  harvestedTaskIds: string[];
+  checkedRunIds: string[];
+  terminalRunIds: string[];
+};
+
+type TerminalPipelineWaitCandidate = {
+  taskId: string;
+  runId: string;
+};
+
 type BlockedFrontierSummary = {
   totalCount: number;
   overdueCount: number;
@@ -159,6 +180,7 @@ type DurableLoopLiveness = {
   nonTerminalCount: number;
   unrepresentedNonTerminalCount: number;
   exactBlockedWaitStewardship: boolean;
+  activeExternalRunWait: boolean;
   needsAttention: boolean;
 };
 
@@ -341,6 +363,166 @@ function taskRecord(value: unknown): Record<string, unknown> | null {
 function compactText(value: unknown, limit = 700): string | undefined {
   if (typeof value !== "string" || !value.trim()) return undefined;
   return value.trim().replace(/\s+/g, " ").slice(0, limit);
+}
+
+function stringField(record: unknown, key: string): string {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return "";
+  }
+  const value = (record as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function runIdFromPipelineWaitTask(
+  task: TaskTree["tasks"][string],
+): string {
+  const blocker = blockerRecord(task.blocker);
+  const waitingFor =
+    blocker && typeof blocker.waiting_for === "object"
+      ? (blocker.waiting_for as Record<string, unknown>)
+      : null;
+  const context = taskRecord(task.context);
+  const trace = taskRecord(task.trace);
+  for (const source of [waitingFor, context, trace]) {
+    for (const key of [
+      "adoRunId",
+      "runId",
+      "workflowRunId",
+      "activeWorkflowRunId",
+      "lastRunId",
+      "sourceCompactWorkflowRunId",
+      "terminal_pipeline_wait_run_id",
+      "terminal_github_wait_run_id",
+    ]) {
+      const value = stringField(source, key);
+      if (/^\d{6,}$/.test(value)) return value;
+    }
+  }
+
+  const haystack = JSON.stringify({
+    id: task.id,
+    goal: task.goal,
+    result: task.result,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+  });
+  const match =
+    haystack.match(/\b(?:ado run|ado-run|buildId=|pipeline run|run)\s*[`"']?(\d{6,})\b/i) ??
+    haystack.match(/\b(?:adoRunId|runId|workflowRunId)["':\s]+(\d{6,})\b/i);
+  return match?.[1] ?? "";
+}
+
+function terminalRunSummary(run: PipelineRun): string {
+  return [
+    `status=${run.status ?? "unknown"}`,
+    `conclusion=${run.conclusion ?? "unknown"}`,
+    run.url ? `url=${run.url}` : "",
+    run.displayTitle ? `title=${run.displayTitle}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
+function terminalPipelineWaitCandidates(
+  config: TaskTreeConfig,
+  limit = 50,
+): TerminalPipelineWaitCandidate[] {
+  const snapshot = readTree(config.treePath);
+  return snapshot === null
+    ? []
+    : leafTasksByStatus(snapshot, "blocked")
+        .concat(leafTasksByStatus(snapshot, "waiting"))
+        .map((task) => ({
+          taskId: task.id,
+          runId: runIdFromPipelineWaitTask(task),
+        }))
+        .filter((candidate) => candidate.runId)
+        .slice(0, limit);
+}
+
+function harvestTerminalPipelineWaits(input: {
+  config: TaskTreeConfig;
+  projectDir: string;
+  client: PipelineClient;
+  limit?: number;
+}): TerminalPipelineWaitHarvest {
+  const candidates = terminalPipelineWaitCandidates(
+    input.config,
+    input.limit ?? 50,
+  );
+
+  const checkedRunIds: string[] = [];
+  const terminalByTaskId = new Map<string, PipelineRun>();
+  for (const candidate of candidates) {
+    checkedRunIds.push(candidate.runId);
+    const run = getWorkflowRun({
+      client: input.client,
+      projectDir: input.projectDir,
+      runId: candidate.runId,
+    });
+    if (run?.status === "completed") {
+      terminalByTaskId.set(candidate.taskId, run);
+    }
+  }
+
+  const harvestedTaskIds: string[] = [];
+  const terminalRunIds: string[] = [];
+  if (terminalByTaskId.size === 0) {
+    return { harvestedTaskIds, checkedRunIds, terminalRunIds };
+  }
+
+  withTreeLock(input.config, () => {
+    const tree = readTree(input.config.treePath);
+    if (!tree) return;
+    const now = new Date().toISOString();
+    for (const candidate of candidates) {
+      const run = terminalByTaskId.get(candidate.taskId);
+      if (!run) continue;
+      const task = tree.tasks[candidate.taskId];
+      if (!task) continue;
+      const state = task.status ?? task.state ?? "backlog";
+      if (state !== "blocked" && state !== "waiting") continue;
+      if (runIdFromPipelineWaitTask(task) !== candidate.runId) continue;
+      const previousBlocker = task.blocker;
+      task.status = "review";
+      task.state = "review";
+      task.blocker = undefined;
+      task.result = [
+        `Azure DevOps pipeline run ${candidate.runId} is terminal; inspect the returned artifacts and update this wait to pass, repair, refreshed wait, or exact artifact blocker.`,
+        terminalRunSummary(run),
+      ]
+        .filter(Boolean)
+        .join(" ");
+      task.context = {
+        ...(taskRecord(task.context) ?? {}),
+        terminalPipelineWaitReview: {
+          runId: candidate.runId,
+          runStatus: run.status ?? null,
+          runConclusion: run.conclusion ?? null,
+          runUrl: run.url ?? null,
+          runTitle: run.displayTitle ?? null,
+          observedAt: now,
+        },
+      };
+      task.trace = {
+        ...(taskRecord(task.trace) ?? {}),
+        terminal_pipeline_wait_observed_at: now,
+        terminal_pipeline_wait_run_id: candidate.runId,
+        terminal_pipeline_wait_run_status: run.status ?? null,
+        terminal_pipeline_wait_run_conclusion: run.conclusion ?? null,
+        terminal_pipeline_wait_run_url: run.url ?? null,
+        previous_blocker_before_terminal_pipeline_wait_review: previousBlocker,
+      };
+      harvestedTaskIds.push(task.id);
+      terminalRunIds.push(candidate.runId);
+    }
+    if (harvestedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(input.config, tree);
+    }
+  });
+
+  return { harvestedTaskIds, checkedRunIds, terminalRunIds };
 }
 
 function reviewSnapshotFields(
@@ -883,6 +1065,7 @@ function durableLoopLiveness(
     const ready = taskCompletionReady(task);
     const exactBlockedWaitStewardship =
       exactBlockedWaitStewardshipProgress(progress);
+    const activeExternalRunWait = activeExternalRunWaitProgress(progress);
     const unrepresentedNonTerminalCount =
       progressNumber(progress, "unrepresentedNonTerminalCount") ??
       (nonTerminalCount > 0 ? nonTerminalCount : 0);
@@ -897,9 +1080,11 @@ function durableLoopLiveness(
       nonTerminalCount,
       unrepresentedNonTerminalCount,
       exactBlockedWaitStewardship,
+      activeExternalRunWait,
       needsAttention:
         ready === false &&
-        (unrepresentedNonTerminalCount > 0 || !exactBlockedWaitStewardship),
+        (unrepresentedNonTerminalCount > 0 ||
+          (!exactBlockedWaitStewardship && !activeExternalRunWait)),
     };
   });
 }
@@ -1340,6 +1525,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (recoveredTerminalTasks.length > 0) {
     return ctx.done(
       `Watchdog recovered completed active task(s): ${recoveredTerminalTasks.join(", ")}.`,
+    );
+  }
+  const pipelineWaitCandidates = terminalPipelineWaitCandidates(sharedConfig);
+  const pipelineAccess =
+    pipelineWaitCandidates.length > 0
+      ? resolvePipelineClient(config.projectDir)
+      : { client: null };
+  const terminalPipelineWaitHarvest = pipelineAccess.client
+    ? harvestTerminalPipelineWaits({
+        config: sharedConfig,
+        projectDir: config.projectDir,
+        client: pipelineAccess.client,
+      })
+    : { harvestedTaskIds: [], checkedRunIds: [], terminalRunIds: [] };
+  if (terminalPipelineWaitHarvest.harvestedTaskIds.length > 0) {
+    return ctx.done(
+      `Watchdog moved terminal Azure DevOps wait(s) to review: ${terminalPipelineWaitHarvest.harvestedTaskIds.join(", ")}.`,
     );
   }
   const loopsNeedingAttention = recovery.durableLoopLiveness.filter(

@@ -12,6 +12,7 @@ import {
   completeStartedAttempt,
   markAttemptStartedOnce,
 } from "./default-task-worker.ts";
+import { buildTaskTreeConfig } from "./default-task-worker.ts";
 import { execute } from "./task-worker.ts";
 
 async function makeProject() {
@@ -47,6 +48,229 @@ function assignedEvent(assignment: TaskAssignment): Record<string, unknown> {
 }
 
 describe("task worker", () => {
+  test("uses assigned worker from trigger event for task execution config", async () => {
+    const projectDir = await makeProject();
+    const trigger = {
+      type: "project.task.assigned",
+      project: "aks-rp-e2e",
+      taskId: "ops-task",
+      attemptId: "attempt-ops-1",
+      worker: "app-ops",
+    };
+
+    const config = buildTaskTreeConfig(
+      {
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "worker: aks-explorer",
+          eventBlock(trigger),
+        ].join("\n"),
+        agent: "aks-explorer",
+      } as any,
+      projectDir,
+      projectDir,
+      1,
+      trigger as any,
+    );
+
+    expect(config.worker).toBe("app-ops");
+  });
+
+  test("runs assigned task sessions under the event worker when it differs from the handler default", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops-task",
+          active_task_ids: ["ops-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["ops-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops-task": {
+              id: "ops-task",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair one app task.",
+              inputs: [],
+              outputs: ["evidence/archive/ops-task.md"],
+              acceptance: ["done"],
+              conflict_scope: ["ops:test"],
+              depends_on: [],
+              session_id: "s_task_ops-task",
+              trace: {
+                current_attempt_id: "attempt-ops-1"
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    let observedAgent = "";
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "worker: aks-explorer",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          taskId: "ops-task",
+          attemptId: "attempt-ops-1",
+          worker: "app-ops",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (agent: string) => {
+        observedAgent = agent;
+        return {
+          status: "success",
+          finishResult: { status: "success" },
+          message: "completed",
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedAgent).toBe("app-ops");
+
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(updated.tasks["ops-task"].trace.worker_started_attempt_id).toBe(
+      "attempt-ops-1",
+    );
+
+    const journal = await readFile(join(projectDir, ".state", "journal.jsonl"), "utf8");
+    expect(journal).toContain('"kind":"task_worker_started"');
+    expect(journal).toContain('"task_id":"ops-task"');
+    expect(journal).toContain('"worker":"app-ops"');
+  });
+
+  test("ignores blank event worker and uses task owner for worker-start attribution", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops-task",
+          active_task_ids: ["ops-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["ops-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops-task": {
+              id: "ops-task",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair one app task.",
+              inputs: [],
+              outputs: ["evidence/archive/ops-task.md"],
+              acceptance: ["done"],
+              conflict_scope: ["ops:test"],
+              depends_on: [],
+              session_id: "s_task_ops-task",
+              trace: {
+                current_attempt_id: "attempt-ops-blank"
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    let observedAgent = "";
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "worker: aks-explorer",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          taskId: "ops-task",
+          attemptId: "attempt-ops-blank",
+          worker: "",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (agent: string) => {
+        observedAgent = agent;
+        return {
+          status: "success",
+          finishResult: { status: "success" },
+          message: "completed",
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedAgent).toBe("app-ops");
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"task_worker_started"');
+    expect(journal).toContain('"task_id":"ops-task"');
+    expect(journal).toContain('"worker":"app-ops"');
+    expect(journal).not.toContain('"worker":""');
+  });
+
   test("persists a stable session id for spec-runner leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -215,7 +439,11 @@ describe("task worker", () => {
               depends_on: [],
               context: {
                 workflow: "fix-forward",
-                subjectKind: "spec-family",
+                subjectKind: "compact-feature-family",
+                featureCompactFollowup: true,
+                errorClass: "package-partial",
+                inputFingerprints: ["input-a"],
+                errorFingerprints: ["error-a"],
               },
             },
           },
@@ -302,6 +530,125 @@ FIX_FORWARD_RESULT:
       workflow: "fix-forward",
       classification: "request-shape-invalid",
       nextAction: "done",
+    });
+    expect(
+      dispatched[0].payload.workflowResult.details
+        .fixForwardStructuredResultPresent,
+    ).toBe(true);
+  });
+
+  test("captures structured fix-forward result from nested session finish payload when runtime summary omits marker", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["fix-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "fix-task": {
+              id: "fix-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Fix one failed spec.",
+              inputs: ["spec:one"],
+              outputs: ["runs/test-results/"],
+              acceptance: ["Fix-forward result is structured"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+                subjectKind: "compact-feature-family",
+                featureCompactFollowup: true,
+                errorClass: "package-partial",
+                inputFingerprints: ["input-a"],
+                errorFingerprints: ["error-a"],
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "fix-task" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, any>;
+    }> = [];
+    let observedPrompt = "";
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, prompt: string) => {
+        observedPrompt = prompt;
+        return {
+          status: "success",
+          message:
+            "Reviewed the family and wrote durable evidence at evidence/fix.md.",
+          finishResult: {
+            status: "success",
+            summary:
+              "Reviewed the family and wrote durable evidence at evidence/fix.md.",
+            deliverables: [{ path: "evidence/fix.md" }],
+            verification_evidence: [
+              'FIX_FORWARD_RESULT:\n```json\n{\n  "workflow": "fix-forward",\n  "subject": { "kind": "feature-family", "id": "secops-fips" },\n  "classification": "other-known-class",\n  "diagnosis": "Family is already split across exact waits and successor reviews.",\n  "minimumDiagnosisPacket": {\n    "target": "staging",\n    "branch": "dev",\n    "runId": "171423554",\n    "resultPath": "evidence/fix.md",\n    "failingPhase": "review",\n    "failingAssertion": "",\n    "requestOrResponseExcerpt": "",\n    "referencesChecked": ["state.json"],\n    "inputFingerprint": "",\n    "errorFingerprint": ""\n  },\n  "changedFiles": ["evidence/fix.md"],\n  "verification": {\n    "runId": "",\n    "resultPath": "evidence/fix.md",\n    "status": "not-run"\n  },\n  "nextAction": "exact-wait",\n  "nextActionReason": "No single truthful family-wide rerun remains."\n}\n```',
+            ],
+          },
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedPrompt).toContain("Compact fix-forward training");
+    expect(observedPrompt).toContain(
+      "The reviewer will reject useful prose without FIX_FORWARD_RESULT",
+    );
+    expect(observedPrompt).toContain("Evidence must be fresh for this attempt");
+    expect(observedPrompt).toContain(
+      'Do not claim "done" from stale compact evidence alone',
+    );
+    expect(observedPrompt).toContain("no rerun; exact wait remains");
+    expect(dispatched).toHaveLength(1);
+    expect(
+      dispatched[0].payload.workflowResult.details.fixForward,
+    ).toMatchObject({
+      workflow: "fix-forward",
+      classification: "other-known-class",
+      nextAction: "exact-wait",
     });
     expect(
       dispatched[0].payload.workflowResult.details

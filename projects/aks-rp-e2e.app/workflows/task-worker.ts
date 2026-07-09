@@ -75,6 +75,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appDir,
     projectDir,
     configuredMaxConcurrent,
+    trigger,
   );
 
   if (trigger?.type !== "project.task.assigned") {

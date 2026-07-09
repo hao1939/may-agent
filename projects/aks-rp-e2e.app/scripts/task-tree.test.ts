@@ -247,6 +247,17 @@ describe("task-tree CLI", () => {
       condition: "Waiting for returned operator proof.",
       category: "external-wait",
       owner: "human",
+      waiting_for: {
+        type: "evidence.available",
+        taskId: "blocked-task",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        schedule: "blocked-frontier-app-ops-review",
+        trigger: "project.planning.requested",
+      },
+      observation_method:
+        "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
       resume_condition: "Resume when proof lands.",
       resume_at: "2099-06-26T00:00:00.000Z",
       next_check_at: "2099-06-26T12:00:00.000Z",
@@ -296,6 +307,75 @@ describe("task-tree CLI", () => {
     });
   });
 
+  test("update-text supports full structured blocker replacement via --blocker-json", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "capacity-wait",
+        "--parent",
+        "project",
+        "--goal",
+        "Keep exact capacity wait.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "capacity wait stays truthful",
+        "--state",
+        "blocked",
+        "--blocker-json",
+        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait","sourceRunId":"28676489009"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.planning.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+    expect(JSON.parse(add.stdout).blocker.waiting_for).toMatchObject({
+      type: "azure.capacity.available",
+      taskId: "capacity-wait",
+      sourceRunId: "28676489009",
+    });
+
+    const update = await runTaskTree(
+      [
+        "update-text",
+        "capacity-wait",
+        "--blocker-json",
+        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.planning.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(update.exitCode).toBe(0);
+    expect(JSON.parse(update.stdout).blocker.waiting_for).toMatchObject({
+      type: "azure.capacity.available",
+      taskId: "capacity-wait",
+    });
+    expect(JSON.parse(update.stdout).blocker.waiting_for.sourceRunId).toBeUndefined();
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["capacity-wait"].blocker.waiting_for).toMatchObject({
+      type: "azure.capacity.available",
+      taskId: "capacity-wait",
+    });
+    expect(
+      tree.tasks["capacity-wait"].blocker.waiting_for.sourceRunId,
+    ).toBeUndefined();
+  });
+
   test("repair-blocked-contracts backfills explicit wait and observer fields", async () => {
     const fixture = await makeFixture();
 
@@ -327,7 +407,20 @@ describe("task-tree CLI", () => {
     );
 
     expect(add.exitCode).toBe(0);
-    expect(typeof JSON.parse(add.stdout).blocker).toBe("string");
+    expect(JSON.parse(add.stdout).blocker).toMatchObject({
+      condition:
+        "Blocked until GitHub Actions run 28702280698 returns authoritative logs.",
+      waiting_for: {
+        type: "github.workflow_run.completed",
+        runId: "28702280698",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        schedule: "blocked-frontier-app-ops-review",
+      },
+      resume_condition:
+        "Resume when run 28702280698 has reviewed same-run logs.",
+    });
 
     const repaired = await runTaskTree(["repair-blocked-contracts"], {
       ...process.env,
@@ -339,8 +432,8 @@ describe("task-tree CLI", () => {
     expect(repaired.exitCode).toBe(0);
     expect(JSON.parse(repaired.stdout)).toMatchObject({
       treePath: runtimePaths.taskTreePath,
-      repairedCount: 1,
-      repaired: ["github-wait"],
+      repairedCount: 0,
+      unchanged: ["github-wait"],
     });
 
     const tree = JSON.parse(
@@ -421,6 +514,72 @@ describe("task-tree CLI", () => {
     expect(tree.tasks["ado-wait"].blocker.waiting_for.runUrl).toContain(
       "buildId=171186535",
     );
+  });
+
+  test("repair-blocked-contracts dry run sees no missing wait-target on already-normalized ADO waits", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["planner-ado-wait"] = {
+      id: "planner-ado-wait",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal:
+        "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["ADO result reviewed"],
+      blocker: {
+        condition:
+          "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+        category: "external-wait",
+        owner: "aks-explorer",
+        blocked_at: "2026-07-09T00:35:52.527Z",
+        waiting_for: {
+          type: "environment.available",
+          taskId: "planner-ado-wait",
+          sourceRunId: "171477458",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          schedule: "blocked-frontier-app-ops-review",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+        next_check_at: "2026-07-09T00:45:52.527Z",
+        resume_condition:
+          "Resume only when run 171477458 returns accessible artifacts or proves an exact artifact-recovery blocker that changes the next action.",
+        fallback_at: "2026-07-10T00:35:52.527Z",
+        fallback_action:
+          "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
+      },
+      trace: {
+        created_at: "2026-07-09T00:35:52.527Z",
+        created_by: "task-tree-tool",
+        blocked_contract_seeded_at: "2026-07-09T00:35:52.527Z",
+        blocked_contract_seeded_by: "project-planner",
+      },
+    };
+    tree.tasks.project.children.push("planner-ado-wait");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const repaired = await runTaskTree(["repair-blocked-contracts", "--dry-run"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repairedCount: 0,
+      unchanged: ["planner-ado-wait"],
+    });
   });
 
   test("repair-blocked-contracts corrects migrated Azure DevOps waits that still name GitHub", async () => {

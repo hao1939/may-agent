@@ -42,13 +42,13 @@ For task-backed work, keep task-tree mechanics in adapters and orchestration
 workflows:
 
 ```text
-project.task.assigned -> task-worker adapter -> business workflow
-business workflow -> structured result -> reviewer/planner
+project.task.assigned -> task-worker adapter -> scoped workflow
+scoped workflow -> structured result -> reviewer/planner
 ```
 
-Business workflows should receive scoped input and return structured output.
-They should not need to know parent rollup, assignment queues, review state, or
-task-tree storage unless their business purpose is orchestration, such as
+Scoped workflows should receive the work input they need and return structured
+output. They should not need to know parent rollup, assignment queues, review
+state, or task-tree storage unless their purpose is orchestration, such as
 `project-planner` or a durable loop controller.
 
 Keep one task tree with two visible roots:
@@ -87,6 +87,8 @@ logs, source links, review notes, or test results.
 - Use task scope/name for domain versus ops. Do not add `workKind`.
 - One-off work is allowed. When the same shape repeats, tidy it into a reusable
   workflow and task context convention.
+- Existing workflows should learn from real good and bad runs. Repeated lessons
+  become workflow, test, prompt, doc, metric, or domain-artifact changes.
 - Add workflow before adding event. Add event only when a new durable command
   or fact cannot be expressed by the existing vocabulary.
 - App-ops may route domain work but must not decide AKS correctness.

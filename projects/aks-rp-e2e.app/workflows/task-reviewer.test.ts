@@ -22,6 +22,7 @@ async function writeTree(
     state?: string;
     attemptId?: string;
     context?: Record<string, unknown>;
+    trace?: Record<string, unknown>;
   } = {},
 ) {
   await writeFile(
@@ -64,6 +65,7 @@ async function writeTree(
               current_attempt_id: input.attemptId ?? "attempt-1",
               last_worker_result: "done",
               last_worker_summary: "GitHub live workflow passed.",
+              ...(input.trace ?? {}),
             },
           },
         },
@@ -817,6 +819,153 @@ describe("task reviewer", () => {
           "fix-forward-structured-result-missing",
           "missing:workflowResult.details.fixForward",
         ],
+      },
+    });
+  });
+
+  test("escalates repeated fix-forward completion missing structured result", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: { workflow: "fix-forward" },
+      trace: {
+        review_reject_reason:
+          "Redo the task and finish with FIX_FORWARD_RESULT containing subject, classification, diagnosis, minimumDiagnosisPacket, verification, nextAction, and nextActionReason.",
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "done",
+            summary: "Retried but still produced prose only.",
+            evidenceRefs: ["evidence/fix.md"],
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "escalate",
+        confidence: "high",
+        findings: [
+          "fix-forward-structured-result-missing-repeated",
+          "missing:workflowResult.details.fixForward",
+        ],
+      },
+    });
+  });
+
+  test("emits redo for compact fix-forward completion that reuses stale evidence without saying it remains exact", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      attemptId: "a_reconcile-compact-loop-live-workflow_20260709022911",
+      context: {
+        workflow: "fix-forward",
+        featureCompactFollowup: true,
+        subjectKind: "compact-feature-family",
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            attemptId: "a_reconcile-compact-loop-live-workflow_20260709022911",
+            result: "done",
+            summary:
+              "Reconciled compact live-workflow using older evidence path.",
+            evidenceRefs: [
+              "evidence/archive/reconcile-compact-loop-live-workflow-task-202607080313-worker.md",
+            ],
+            workflowResult: {
+              details: {
+                fixForward: {
+                  workflow: "fix-forward",
+                  subject: {
+                    kind: "feature-family",
+                    id: "live-workflow",
+                  },
+                  classification: "other-known-class",
+                  diagnosis: "The sampled features remain on known waits.",
+                  minimumDiagnosisPacket: {
+                    target: "staging",
+                    branch: "dev",
+                    runId: "",
+                    resultPath:
+                      "evidence/archive/reconcile-compact-loop-live-workflow-task-202607080313-worker.md",
+                  },
+                  changedFiles: [],
+                  verification: {
+                    runId: "",
+                    resultPath:
+                      "evidence/archive/reconcile-compact-loop-live-workflow-task-202607080313-worker.md",
+                    status: "not-run",
+                  },
+                  nextAction: "done",
+                  nextActionReason: "No rerun is needed.",
+                },
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        throw new Error("reviewer session should not run");
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "redo",
+        confidence: "high",
+        findings: expect.arrayContaining([
+          "compact-fix-forward-evidence-not-fresh",
+        ]),
       },
     });
   });

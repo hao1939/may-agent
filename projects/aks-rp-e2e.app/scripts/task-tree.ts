@@ -22,6 +22,7 @@ import {
   summarizeTaskTree,
   updateAcceptedReviewMetadata,
   updateArchivedTaskOutputs,
+  updateArchivedTaskEvidence,
   updateTaskOutputs,
   updateTaskText,
   taskTreeConfig,
@@ -48,7 +49,7 @@ function usage(): never {
   bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
-  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
+  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-json '{"condition":"..."}'] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
   bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
@@ -57,7 +58,8 @@ function usage(): never {
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
   bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
   bun run task-tree set-archived-outputs <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --output <path> [--output <path> ...]
-  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."] [--clear-blocker]
+  bun run task-tree set-archived-evidence <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --evidence <path> [--evidence <path> ...]
+  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-json '{"condition":"..."}'] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."] [--clear-blocker]
   bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
   bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
@@ -150,7 +152,7 @@ function contextOption(): Record<string, unknown> | undefined {
 }
 
 function blockerOptions(): {
-  blocker?: string;
+  blocker?: string | Record<string, unknown>;
   blockerCategory?: string;
   blockerOwner?: string;
   resumeCondition?: string;
@@ -159,8 +161,17 @@ function blockerOptions(): {
   fallbackAt?: string;
   fallbackAction?: string;
 } {
+  const blockerJson = option("--blocker-json");
+  let parsedBlocker: Record<string, unknown> | undefined;
+  if (blockerJson) {
+    const parsed = JSON.parse(blockerJson);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("--blocker-json must be a JSON object");
+    }
+    parsedBlocker = parsed as Record<string, unknown>;
+  }
   return {
-    blocker: option("--blocker"),
+    blocker: parsedBlocker ?? option("--blocker"),
     blockerCategory: option("--blocker-category"),
     blockerOwner: option("--blocker-owner"),
     resumeCondition: option("--resume-condition"),
@@ -457,6 +468,148 @@ function addHours(iso: string, hours: number): string {
   return new Date(Date.parse(iso) + hours * 3_600_000).toISOString();
 }
 
+function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
+  const taskId = task.id;
+  if (!taskId || (task.status ?? task.state) !== "blocked") return false;
+  if ((task.children ?? []).length > 0) return false;
+
+  const blocker = recordValue(task.blocker);
+  const text = blockerText(task.blocker);
+  if (!text && blocker) return false;
+
+  const condition = stringField(blocker, ["condition"]) || conditionText(text);
+  const existingWaitingFor = objectField(blocker, ["waiting_for", "waitingFor"]);
+  const waitCorrection = correctedWaitingFor(
+    taskId,
+    [condition, text].filter(Boolean).join(" "),
+    existingWaitingFor,
+  );
+  const nonGithubWaitCorrection = correctedNonGithubWaitingFor(
+    taskId,
+    [condition, text].filter(Boolean).join(" "),
+    existingWaitingFor,
+  );
+  const existingOwner = stringField(blocker, ["owner"]);
+  const shouldUseAdoOwner =
+    textNamesAdo([condition, text].filter(Boolean).join(" ")) &&
+    stringField(existingWaitingFor, ["type"]) ===
+      "ado.pipeline_run.completed" &&
+    (existingOwner.toLowerCase() === "human" || !existingOwner);
+
+  let normalizedBlocker = blocker ? { ...blocker } : null;
+  let normalizedChanged = false;
+  if (waitCorrection && normalizedBlocker) {
+    const correctedType = stringField(waitCorrection, ["type"]);
+    const fallbackOwner =
+      typeof task.owner === "string" && task.owner.trim()
+        ? task.owner.trim()
+        : "aks-explorer";
+    const correctedOwner =
+      correctedType === "ado.pipeline_run.completed"
+        ? existingOwner.toLowerCase() === "human" || !existingOwner
+          ? "ado"
+          : existingOwner
+        : existingOwner.toLowerCase() === "ado"
+          ? fallbackOwner
+          : existingOwner || fallbackOwner;
+    normalizedBlocker = {
+      ...normalizedBlocker,
+      owner: correctedOwner,
+      waiting_for: waitCorrection,
+      waitingFor: undefined,
+    };
+    normalizedChanged = true;
+  } else if (nonGithubWaitCorrection && normalizedBlocker) {
+    normalizedBlocker = {
+      ...normalizedBlocker,
+      waiting_for: nonGithubWaitCorrection,
+      waitingFor: undefined,
+    };
+    normalizedChanged = true;
+  } else if (shouldUseAdoOwner && normalizedBlocker) {
+    normalizedBlocker = {
+      ...normalizedBlocker,
+      owner: "ado",
+    };
+    normalizedChanged = true;
+  }
+
+  const blockerForContract = normalizedBlocker ?? blocker;
+  const hasFullContract =
+    !!objectField(blockerForContract, ["waiting_for", "waitingFor"]) &&
+    !!objectField(blockerForContract, ["observed_by", "observedBy"]) &&
+    !!stringField(blockerForContract, [
+      "observation_method",
+      "observationMethod",
+    ]) &&
+    !!stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) &&
+    !!stringField(blockerForContract, ["owner"]) &&
+    !!stringField(blockerForContract, ["fallback_at", "fallbackAt"]) &&
+    !!stringField(blockerForContract, ["fallback_action", "fallbackAction"]);
+
+  if (hasFullContract) {
+    if (!normalizedChanged || !normalizedBlocker) return false;
+    (task as { blocker?: unknown }).blocker = normalizedBlocker;
+    task.trace = {
+      ...(recordValue(task.trace) ?? {}),
+      blocked_contract_repaired_at: now,
+    } as typeof task.trace;
+    return true;
+  }
+
+  const trace = taskTrace(task);
+  const blockedAt =
+    stringField(blockerForContract, ["blocked_at", "blockedAt"]) ||
+    stringField(trace, ["blocked_at", "created_at", "assigned_at"]) ||
+    now;
+  const owner =
+    stringField(blockerForContract, ["owner"]) ||
+    (typeof task.owner === "string" && task.owner.trim()
+      ? task.owner.trim()
+      : "aks-explorer");
+  (task as { blocker?: unknown }).blocker = {
+    ...(blockerForContract ?? {}),
+    condition,
+    category:
+      stringField(blockerForContract, ["category"]) ||
+      inferBlockedCategory(text),
+    owner,
+    blocked_at: blockedAt,
+    waiting_for:
+      objectField(blockerForContract, ["waiting_for", "waitingFor"]) ??
+      inferWaitingFor(taskId, [condition, text].filter(Boolean).join(" ")),
+    observed_by: objectField(blockerForContract, [
+      "observed_by",
+      "observedBy",
+    ]) ?? {
+      workflow: "project-planner",
+      schedule: "blocked-frontier-app-ops-review",
+      trigger: "project.planning.requested",
+    },
+    observation_method:
+      stringField(blockerForContract, [
+        "observation_method",
+        "observationMethod",
+      ]) ||
+      "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+    next_check_at:
+      stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) ||
+      addMinutes(now, 10),
+    resume_condition: resumeCondition(text, blockerForContract),
+    fallback_at:
+      stringField(blockerForContract, ["fallback_at", "fallbackAt"]) ||
+      addHours(now, 24),
+    fallback_action:
+      stringField(blockerForContract, ["fallback_action", "fallbackAction"]) ||
+      "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
+  };
+  task.trace = {
+    ...(recordValue(task.trace) ?? {}),
+    blocked_contract_repaired_at: now,
+  } as typeof task.trace;
+  return true;
+}
+
 function repairBlockedContracts(dryRun: boolean) {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
@@ -473,147 +626,11 @@ function repairBlockedContracts(dryRun: boolean) {
         unchanged.push(taskId);
         continue;
       }
-      const condition =
-        stringField(blocker, ["condition"]) || conditionText(text);
-      const existingWaitingFor = objectField(blocker, [
-        "waiting_for",
-        "waitingFor",
-      ]);
-      const waitCorrection = correctedWaitingFor(
-        taskId,
-        [condition, text].filter(Boolean).join(" "),
-        existingWaitingFor,
-      );
-      const nonGithubWaitCorrection = correctedNonGithubWaitingFor(
-        taskId,
-        [condition, text].filter(Boolean).join(" "),
-        existingWaitingFor,
-      );
-      const existingOwner = stringField(blocker, ["owner"]);
-      const shouldUseAdoOwner =
-        textNamesAdo([condition, text].filter(Boolean).join(" ")) &&
-        stringField(existingWaitingFor, ["type"]) ===
-          "ado.pipeline_run.completed" &&
-        (existingOwner.toLowerCase() === "human" || !existingOwner);
-      let normalizedBlocker = blocker ? { ...blocker } : null;
-      let normalizedChanged = false;
-      if (waitCorrection && normalizedBlocker) {
-        const correctedType = stringField(waitCorrection, ["type"]);
-        const fallbackOwner =
-          typeof task.owner === "string" && task.owner.trim()
-            ? task.owner.trim()
-            : "aks-explorer";
-        const correctedOwner =
-          correctedType === "ado.pipeline_run.completed"
-            ? existingOwner.toLowerCase() === "human" || !existingOwner
-              ? "ado"
-              : existingOwner
-            : existingOwner.toLowerCase() === "ado"
-              ? fallbackOwner
-              : existingOwner || fallbackOwner;
-        normalizedBlocker = {
-          ...normalizedBlocker,
-          owner: correctedOwner,
-          waiting_for: waitCorrection,
-          waitingFor: undefined,
-        };
-        normalizedChanged = true;
-      } else if (nonGithubWaitCorrection && normalizedBlocker) {
-        normalizedBlocker = {
-          ...normalizedBlocker,
-          waiting_for: nonGithubWaitCorrection,
-          waitingFor: undefined,
-        };
-        normalizedChanged = true;
-      } else if (shouldUseAdoOwner && normalizedBlocker) {
-        normalizedBlocker = {
-          ...normalizedBlocker,
-          owner: "ado",
-        };
-        normalizedChanged = true;
+      if (normalizeBlockedTaskContract(task, now)) {
+        repaired.push(taskId);
+      } else {
+        unchanged.push(taskId);
       }
-      const blockerForContract = normalizedBlocker ?? blocker;
-      const hasFullContract =
-        !!objectField(blockerForContract, ["waiting_for", "waitingFor"]) &&
-        !!objectField(blockerForContract, ["observed_by", "observedBy"]) &&
-        !!stringField(blockerForContract, [
-          "observation_method",
-          "observationMethod",
-        ]) &&
-        !!stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) &&
-        !!stringField(blockerForContract, ["owner"]) &&
-        !!stringField(blockerForContract, ["fallback_at", "fallbackAt"]) &&
-        !!stringField(blockerForContract, [
-          "fallback_action",
-          "fallbackAction",
-        ]);
-      if (hasFullContract) {
-        if (normalizedChanged && normalizedBlocker) {
-          (task as { blocker?: unknown }).blocker = normalizedBlocker;
-          task.trace = {
-            ...(recordValue(task.trace) ?? {}),
-            blocked_contract_repaired_at: now,
-          } as typeof task.trace;
-          repaired.push(taskId);
-        } else {
-          unchanged.push(taskId);
-        }
-        continue;
-      }
-      const trace = taskTrace(task);
-      const blockedAt =
-        stringField(blockerForContract, ["blocked_at", "blockedAt"]) ||
-        stringField(trace, ["blocked_at", "created_at", "assigned_at"]) ||
-        now;
-      const owner =
-        stringField(blockerForContract, ["owner"]) ||
-        (typeof task.owner === "string" && task.owner.trim()
-          ? task.owner.trim()
-          : "aks-explorer");
-      (task as { blocker?: unknown }).blocker = {
-        ...(blockerForContract ?? {}),
-        condition,
-        category:
-          stringField(blockerForContract, ["category"]) ||
-          inferBlockedCategory(text),
-        owner,
-        blocked_at: blockedAt,
-        waiting_for:
-          objectField(blockerForContract, ["waiting_for", "waitingFor"]) ??
-          inferWaitingFor(taskId, [condition, text].filter(Boolean).join(" ")),
-        observed_by: objectField(blockerForContract, [
-          "observed_by",
-          "observedBy",
-        ]) ?? {
-          workflow: "project-planner",
-          schedule: "blocked-frontier-app-ops-review",
-          trigger: "project.planning.requested",
-        },
-        observation_method:
-          stringField(blockerForContract, [
-            "observation_method",
-            "observationMethod",
-          ]) ||
-          "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
-        next_check_at:
-          stringField(blockerForContract, ["next_check_at", "nextCheckAt"]) ||
-          addMinutes(now, 10),
-        resume_condition: resumeCondition(text, blockerForContract),
-        fallback_at:
-          stringField(blockerForContract, ["fallback_at", "fallbackAt"]) ||
-          addHours(now, 24),
-        fallback_action:
-          stringField(blockerForContract, [
-            "fallback_action",
-            "fallbackAction",
-          ]) ||
-          "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
-      };
-      task.trace = {
-        ...(recordValue(task.trace) ?? {}),
-        blocked_contract_repaired_at: now,
-      } as typeof task.trace;
-      repaired.push(taskId);
     }
     if (!dryRun && repaired.length > 0) {
       saveTaskTreeWithKanbanSnapshot(config, tree);
@@ -761,30 +778,35 @@ if (command === "summary") {
     acceptance.length === 0
   )
     usage();
-  console.log(
-    JSON.stringify(
-      createTask(config, {
-        id: taskId,
-        parentId,
-        state: stateOption(),
-        kind: option("--kind") ?? "domain_leaf",
-        priority: priorityOption(),
-        owner: option("--owner") ?? process.env.WORKER ?? "aks-explorer",
-        workflow: option("--workflow"),
-        goal,
-        inputs: repeatedStringOption("--input"),
-        outputs,
-        acceptance,
-        forbidden: repeatedStringOption("--forbidden"),
-        conflict_scope: commaListOption("--conflict-scope"),
-        depends_on: commaListOption("--depends-on"),
-        context: contextOption(),
-        ...blockerOptions(),
-      }),
-      null,
-      2,
-    ),
-  );
+  const created = createTask(config, {
+    id: taskId,
+    parentId,
+    state: stateOption(),
+    kind: option("--kind") ?? "domain_leaf",
+    priority: priorityOption(),
+    owner: option("--owner") ?? process.env.WORKER ?? "aks-explorer",
+    workflow: option("--workflow"),
+    goal,
+    inputs: repeatedStringOption("--input"),
+    outputs,
+    acceptance,
+    forbidden: repeatedStringOption("--forbidden"),
+    conflict_scope: commaListOption("--conflict-scope"),
+    depends_on: commaListOption("--depends-on"),
+    context: contextOption(),
+    ...blockerOptions(),
+  });
+  if ((created.status ?? created.state) === "blocked") {
+    withTreeLock(config, () => {
+      const tree = readTaskTree(config);
+      const task = tree.tasks[created.id];
+      if (!task) return;
+      if (normalizeBlockedTaskContract(task, new Date().toISOString())) {
+        saveTaskTreeWithKanbanSnapshot(config, tree);
+      }
+    });
+  }
+  console.log(JSON.stringify(readTask(config, taskId) ?? created, null, 2));
 } else if (command === "mark-done") {
   const taskId = process.argv[3];
   const summary = option("--summary");
@@ -881,6 +903,21 @@ if (command === "summary") {
       updateArchivedTaskOutputs(config, {
         taskId,
         outputs,
+        archiveFile: option("--archive-file"),
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "set-archived-evidence") {
+  const taskId = process.argv[3];
+  const evidence = repeatedStringOption("--evidence");
+  if (!taskId || evidence.length === 0) usage();
+  console.log(
+    JSON.stringify(
+      updateArchivedTaskEvidence(config, {
+        taskId,
+        evidence,
         archiveFile: option("--archive-file"),
       }),
       null,

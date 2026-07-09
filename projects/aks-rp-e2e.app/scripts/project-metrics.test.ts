@@ -1947,6 +1947,83 @@ describe("project metrics", () => {
     });
   });
 
+  test("blocked missing-waiting-for metric stays at zero for exact run-return wait targets", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "planner-ado-wait": {
+          id: "planner-ado-wait",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal:
+            "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
+          kind: "domain_leaf",
+          blocker: {
+            condition:
+              "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+            category: "external-wait",
+            owner: "aks-explorer",
+            blocked_at: "2026-07-09T00:35:52.527Z",
+            waiting_for: {
+              type: "environment.available",
+              taskId: "planner-ado-wait",
+              sourceRunId: "171477458",
+            },
+            observed_by: {
+              workflow: "project-planner",
+              schedule: "blocked-frontier-app-ops-review",
+              trigger: "project.planning.requested",
+            },
+            observation_method:
+              "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+            next_check_at: "2026-07-09T00:45:52.527Z",
+            resume_condition:
+              "Resume only when run 171477458 returns accessible artifacts or proves an exact artifact-recovery blocker that changes the next action.",
+            fallback_at: "2026-07-10T00:35:52.527Z",
+            fallback_action:
+              "If the wait is still true at fallback time, create or reuse an owner recovery/escalation task, or update the blocked wait with fresh evidence.",
+          },
+          trace: {
+            created_at: "2026-07-09T00:35:52.527Z",
+            created_by: "task-tree-tool",
+            blocked_contract_seeded_at: "2026-07-09T00:35:52.527Z",
+            blocked_contract_seeded_by: "project-planner",
+          },
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.blocked.missing-waiting-for-count",
+      ),
+    ).toBe("0");
+
+    const waitingFor = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.blocked.missing-waiting-for-count",
+        "--json",
+      ),
+    ) as { value: number; sampleSize?: number; note?: string };
+    expect(waitingFor.value).toBe(0);
+    expect(waitingFor.sampleSize).toBe(0);
+    expect(JSON.parse(waitingFor.note ?? "{}")).toMatchObject({
+      offenderTaskIds: [],
+    });
+  });
+
   test("metrics-snapshot persists blocked metric offender ids from json sampler output", async () => {
     const fixture = await makeFixture();
     await writeTree(

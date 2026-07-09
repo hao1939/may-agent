@@ -417,6 +417,32 @@
         line-height: 1.35;
         overflow-wrap: anywhere;
       }
+      .active-pipeline-waits {
+        border-top: 1px solid var(--border);
+        display: grid;
+        gap: 6px;
+        grid-column: 1 / -1;
+        padding-top: 8px;
+      }
+      .pipeline-wait-list {
+        display: grid;
+        gap: 6px;
+      }
+      .pipeline-wait-row {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        display: grid;
+        gap: 8px;
+        grid-template-columns:
+          minmax(100px, 0.7fr) minmax(115px, 0.7fr)
+          minmax(180px, 1.2fr) minmax(180px, 1.2fr)
+          minmax(130px, 0.8fr);
+        padding: 8px;
+      }
+      .pipeline-wait-row a {
+        color: var(--blue);
+        overflow-wrap: anywhere;
+      }
       .issue-row {
         grid-template-columns:
           minmax(170px, 0.9fr) minmax(190px, 1fr)
@@ -1081,6 +1107,7 @@
         }
         .coverage-row,
         .loop-row,
+        .pipeline-wait-row,
         .issue-row {
           grid-template-columns: 1fr;
         }

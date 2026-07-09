@@ -16,6 +16,9 @@ import {
   orderedPendingSpecIds,
   type SpecLoopState,
 } from "./lib/spec-loop-store.ts";
+import {
+  specStateSelfRepresentsExactFrontier,
+} from "./lib/spec-loop-frontier.ts";
 import { execute, harvestTerminalGitHubWaits } from "./spec-loop-controller.ts";
 
 async function makeProject() {
@@ -1293,7 +1296,35 @@ describe("spec-loop-controller", () => {
     expect(tree.tasks[secondChild].state).toBe("active");
   });
 
-  test("keeps reviewed existing-wait successors from recreating grouped followups after the repair leaf is archived", async () => {
+  test("treats exact nonlive pending residue as self-represented so false family followups do not regenerate", async () => {
+    const selfRepresented: SpecLoopState["specs"][string] = {
+      status: "pending",
+      attempts: 3,
+      taskId: null,
+      lastRunId: "171461207",
+      lastRunUrl: "https://dev.azure.example/runs/171461207",
+      lastResultPath: "evidence/archive/spec.json",
+      lastPrUrl: null,
+      updatedAt: new Date().toISOString(),
+      successorDisposition: "repaired-ready-residue-no-new-leaf",
+      resumeCondition:
+        "Resume only if the owner explicitly selects one bounded same-spec live rerun from the repaired carrier or a metadata decision materially changes this spec's posture.",
+      review: {
+        classification: "repaired_ready",
+        lastAction:
+          "Keep pending; treat as exact ready-rerun residue. Owner may either preserve draft/source-grounded metadata or queue one bounded same-spec live rerun on the repaired carrier.",
+        reviewedAt: new Date().toISOString(),
+      },
+    };
+
+    expect(specStateSelfRepresentsExactFrontier(selfRepresented)).toBe(true);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition: "same-run-review-wait-after-bounded-rerun-dispatch",
+      }),
+    ).toBe(false);
+
     const projectDir = await makeProject();
     await writeFile(
       join(

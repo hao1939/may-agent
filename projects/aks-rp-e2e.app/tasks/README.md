@@ -20,7 +20,13 @@ reconciliation tasks, live execution assumptions, and current user steering.
 
 ## Files
 
-- `tree.json` - canonical current task tree.
+- `.state/tasks/tree.json` - authoritative live task tree consumed by planner,
+  reviewer, metrics, and task-tree tooling.
+- `seed.json` - git-tracked boot skeleton used when a runtime task tree does
+  not exist yet.
+- `tree.json` - legacy durable snapshot/export surface kept only for audit or
+  manual comparison; it may lag the live runtime tree and must not be treated
+  as planner/review source of truth.
 - `archive/` - historical task-wave files kept for reference only.
 
 May-agent infrastructure owns event, session, workflow-run, and attempt history.
@@ -257,10 +263,12 @@ folder does not keep a parallel task event log.
 - App-ops/planner is the process decision boundary. Workflows wake agent
   sessions and expose safe task-tree primitives; workflows do not encode project
   strategy, branch repair policy, or domain judgment.
-- Agents should mutate `tasks/tree.json` through task-tree tools, not by direct
-  whole-file edits. Tool writes take the tree lock, repair rollups, refresh
-  kanban, and prevent stale sessions from overwriting newer planner/watchdog
-  changes. If a needed mutation has no safe primitive, create an app-tooling
+- Agents should mutate the live task tree through task-tree tools, not by
+  direct whole-file edits. In this app the reviewed tool surface resolves the
+  live tree to `.state/tasks/tree.json`; tool writes take the tree lock, repair
+  rollups, refresh kanban, and prevent stale sessions from overwriting newer
+  planner/watchdog changes. `tasks/tree.json` is only a legacy snapshot/export
+  surface. If a needed mutation has no safe primitive, create an app-tooling
   task before hand-editing the live tree.
 - The task tree is the shared workspace and context container. It serves
   app-ops, aks-explorer, aks-reviewer, and humans; it is not the controller.

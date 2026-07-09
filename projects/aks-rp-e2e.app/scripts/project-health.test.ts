@@ -3,7 +3,11 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildProjectHealth } from "./project-health.ts";
+import app from "../app.ts";
+import {
+  buildProcessGraphReport,
+  buildProjectHealth,
+} from "./project-health.ts";
 
 const nowIso = "2026-07-03T12:00:00.000Z";
 const nowMs = Date.parse(nowIso);
@@ -104,6 +108,7 @@ describe("project health", () => {
     });
 
     expect(report.status).toBe("moving");
+    expect(report.processGraph.available).toBe(false);
     expect(report.frontier.counts.active).toBe(1);
     expect(report.signals.map((signal) => signal.code)).toContain(
       "frontier.active",
@@ -170,6 +175,192 @@ describe("project health", () => {
     expect(report.loops[0].stateCounts).toMatchObject({ error: 1 });
   });
 
+  test("shows active compact pipeline feature keys in loop health", async () => {
+    const fixture = await makeFixture();
+    await mkdir(join(fixture.appDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          features: {
+            windows: {
+              status: "running",
+              lastWorkflowRunId: "123",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeTree(
+      fixture.appDir,
+      {
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          workflow: "feature-compact-loop-controller",
+          children: [],
+          goal: "Compact features.",
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason: "waiting on active Azure DevOps compact run",
+              pending: 0,
+              running: 1,
+              done: 0,
+              error: 0,
+              unrepresentedNonTerminalCount: 0,
+              activePipelineFeatureKeys: ["windows"],
+              activePipelineWaits: [
+                {
+                  featureKey: "windows",
+                  runId: "123",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+                  runStatus: "in_progress",
+                  runTitle: "AKS RP E2E compact-feature-windows staging",
+                  watchedCondition:
+                    "Azure DevOps run 123 reaches completed status",
+                  expectedArtifact:
+                    ".state/feature-compact-loop/artifacts/<runId>/",
+                  owner: "feature-compact-loop-controller",
+                  nextCheckAt: "2026-07-03T11:10:00.000Z",
+                  fallbackAt: "2026-07-03T23:00:00.000Z",
+                },
+              ],
+              updatedAt: "2026-07-03T11:00:00.000Z",
+            },
+          },
+        },
+      },
+      ["aks-feature-compact-loop"],
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    const compactLoop = report.loops.find(
+      (loop) => loop.taskId === "aks-feature-compact-loop",
+    );
+    expect(compactLoop).toMatchObject({
+      running: 1,
+      unrepresentedNonTerminalCount: 0,
+      activePipelineFeatureKeys: ["windows"],
+      activePipelineWaits: [
+        {
+          featureKey: "windows",
+          runId: "123",
+          runUrl:
+            "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+          runStatus: "in_progress",
+          watchedCondition: "Azure DevOps run 123 reaches completed status",
+          expectedArtifact: ".state/feature-compact-loop/artifacts/<runId>/",
+          owner: "feature-compact-loop-controller",
+          nextCheckAt: "2026-07-03T11:10:00.000Z",
+          fallbackAt: "2026-07-03T23:00:00.000Z",
+        },
+      ],
+      stateCounts: { running: 1 },
+    });
+  });
+
+  test("merges exact active compact pipeline waits from loop state", async () => {
+    const fixture = await makeFixture();
+    await mkdir(join(fixture.appDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          features: {
+            "kms-etcd-encryption": {
+              status: "error",
+              activeWorkflowRunId: "171495586",
+              lastWorkflowRunUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171495586",
+              lastResultPath:
+                "runs/test-results/feature-compact-kms-etcd-encryption-staging_659390",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeTree(
+      fixture.appDir,
+      {
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          workflow: "feature-compact-loop-controller",
+          children: [],
+          goal: "Compact features.",
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason: "feature-compact loop state still has non-terminal features",
+              pending: 0,
+              running: 0,
+              done: 33,
+              error: 1,
+              unrepresentedNonTerminalCount: 0,
+              activePipelineFeatureKeys: [],
+              activePipelineWaits: [],
+              updatedAt: "2026-07-03T11:00:00.000Z",
+            },
+          },
+        },
+      },
+      ["aks-feature-compact-loop"],
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    const compactLoop = report.loops.find(
+      (loop) => loop.taskId === "aks-feature-compact-loop",
+    );
+    expect(compactLoop).toMatchObject({
+      activePipelineFeatureKeys: ["kms-etcd-encryption"],
+      activePipelineWaits: [
+        {
+          featureKey: "kms-etcd-encryption",
+          runId: "171495586",
+          runUrl:
+            "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171495586",
+          runStatus: null,
+          runTitle: null,
+          watchedCondition:
+            "Azure DevOps run 171495586 reaches completed status",
+          expectedArtifact:
+            "runs/test-results/feature-compact-kms-etcd-encryption-staging_659390",
+          owner: "feature-compact-loop-controller",
+          nextCheckAt: null,
+          fallbackAt: null,
+        },
+      ],
+    });
+  });
+
   test("surfaces assignment rows that have not been consumed", async () => {
     const fixture = await makeFixture();
     await writeTree(
@@ -214,5 +405,17 @@ describe("project health", () => {
     expect(report.signals.map((signal) => signal.code)).toContain(
       "assignment.queue-not-empty",
     );
+  });
+
+  test("static process graph flags no unhandled events for the real app manifest", () => {
+    const graph = buildProcessGraphReport(app);
+
+    expect(graph.available).toBe(true);
+    expect(graph.routeCount).toBeGreaterThan(0);
+    expect(graph.emittedEventCount).toBeGreaterThan(0);
+    expect(graph.consumedEventCount).toBeGreaterThan(0);
+    expect(graph.unhandledEvents).toEqual([]);
+    expect(graph.multiRouteEvents).toEqual([]);
+    expect(graph.actionErrors).toEqual([]);
   });
 });

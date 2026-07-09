@@ -44,6 +44,10 @@ import {
   updateSpecLoopSpec,
 } from "./lib/spec-loop-store.ts";
 import {
+  specLoopSpecHasStructuredSuccessor,
+  specStateSelfRepresentsExactFrontier,
+} from "./lib/spec-loop-frontier.ts";
+import {
   acceptTerminalReviewChildren,
   consumeDispatchedAssignments,
   reopenControllerRootWhenIncomplete,
@@ -603,26 +607,6 @@ function taskRepresentsEverySpec(
   return specIds.every((specId) => taskExplicitlyRepresentsSpec(task, specId));
 }
 
-function specLoopSpecHasStructuredSuccessor(
-  spec: SpecLoopState["specs"][string] | undefined,
-): boolean {
-  if (!spec) return false;
-  const record = spec as Record<string, unknown>;
-  if (
-    typeof record.successorDisposition === "string" &&
-    record.successorDisposition.trim()
-  ) {
-    return true;
-  }
-  if (
-    typeof record.resumeCondition === "string" &&
-    record.resumeCondition.trim()
-  ) {
-    return true;
-  }
-  return !!spec.review && typeof spec.review === "object";
-}
-
 function exactSpecLoopOwnerTaskId(input: {
   tasks: Record<string, TaskNode>;
   state: SpecLoopState;
@@ -666,33 +650,6 @@ function exactSpecLoopOwnerTaskId(input: {
   }
 
   return null;
-}
-
-function specStateSelfRepresentsExactFrontier(
-  spec: SpecLoopState["specs"][string] | undefined,
-): boolean {
-  if (!spec || !specLoopSpecHasStructuredSuccessor(spec)) return false;
-  const record = spec as Record<string, unknown>;
-  if (record.terminalDisposition === true) return true;
-  if (typeof record.normalizedAt === "string" && record.normalizedAt.trim()) {
-    return true;
-  }
-  if (
-    typeof record.successorRunId === "string" &&
-    record.successorRunId.trim()
-  ) {
-    return true;
-  }
-  const review = recordValue(spec.review);
-  if (!review) return false;
-  return Boolean(
-    (typeof review.acceptedByTaskId === "string" &&
-      review.acceptedByTaskId.trim()) ||
-      (typeof review.acceptedRunId === "string" &&
-        review.acceptedRunId.trim()) ||
-      (typeof review.pendingReviewTaskId === "string" &&
-        review.pendingReviewTaskId.trim()),
-  );
 }
 
 function exactSpecLoopRepresentationExists(input: {

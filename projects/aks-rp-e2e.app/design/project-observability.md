@@ -96,21 +96,21 @@ project.planning.requested
   -> done, redo, follow-up, blocked, escalation-created, or another dispatch
 ```
 
-For task-backed business work, task-tree mechanics belong in the adapter layer:
+For task-backed scoped work, task-tree mechanics belong in the adapter layer:
 
 ```text
 project.task.assigned
   -> task-worker adapter
-  -> task.workflow business input
-  -> business workflow structured result
+  -> task.workflow scoped input
+  -> scoped workflow structured result
   -> project.task.completed
 ```
 
-The business workflow should not need to know parent rollup, assignment queue,
+The scoped workflow should not need to know parent rollup, assignment queue,
 review state, or task-tree storage. Orchestration workflows are the exception:
 `project-planner`, task adapters, loop controllers, watchdog, and review/stall
-adapters may read task or loop state because their business purpose is operating
-the project process.
+adapters may read task or loop state because their purpose is operating the
+project process.
 
 Focus plans follow the same closure model, but at mission scope:
 
@@ -1066,30 +1066,30 @@ Read them as dispatch health metrics: `project.task.assigned` was emitted, and
 `task-worker` must consume it and close the attempt through completion,
 stale-noop, or recovery.
 
-| Metric id                                                    | Type   | Breach meaning                                                    |
-| ------------------------------------------------------------ | ------ | ----------------------------------------------------------------- |
-| `aks-rp-e2e.process.closed`                                  | health | 0 means at least one process black hole exists                    |
-| `aks-rp-e2e.process.graph.problem-count`                     | gauge  | static graph has route or cycle problems                          |
-| `aks-rp-e2e.process.graph.unhandled-event-count`             | gauge  | emitted internal events have no event route                       |
-| `aks-rp-e2e.process.graph.multi-handler-count`               | gauge  | event has too many matching event routes                          |
-| `aks-rp-e2e.process.graph.missing-routing-key-count`         | gauge  | shared event lacks action/target key                              |
-| `aks-rp-e2e.process.route.unobserved-count`                  | gauge  | emitted event has no route run after SLA                          |
-| `aks-rp-e2e.process.workflow.no-next-step-count`             | gauge  | workflow ended without expected next step                         |
-| `aks-rp-e2e.process.assignment.not-consumed-count`           | gauge  | task-dispatch queue rows are stale                                |
-| `aks-rp-e2e.task.stale-active-count`                         | gauge  | active leaves lack live worker activity                           |
-| `aks-rp-e2e.process.task.review-not-applied-count`           | gauge  | review facts not applied/stale-nooped                             |
-| `aks-rp-e2e.process.unowned-work-count`                      | gauge  | unfinished work has no active owner                               |
-| `aks-rp-e2e.process.unpublished-change-count`                | gauge  | project repo changes are not visible to pipeline runs             |
-| `aks-rp-e2e.process.assignment-state-mismatch-count`         | gauge  | dispatch stayed open after task left active                       |
-| `aks-rp-e2e.process.loop.unrepresented-record-count`         | gauge  | non-terminal loop records lack live work                          |
-| `aks-rp-e2e.process.integrity.task-tree-problem-count`       | gauge  | root/orphan/parent-child integrity problems                       |
-| `aks-rp-e2e.process.blocked.missing-waiting-for-count`       | gauge  | blocked leaves/records lack the real wait target                  |
-| `aks-rp-e2e.process.blocked.missing-observer-count`          | gauge  | blocked leaves/records lack who checks the wait                   |
-| `aks-rp-e2e.process.blocked.missing-owner-count`             | gauge  | blocked leaves/records lack owner fields                          |
-| `aks-rp-e2e.process.blocked.missing-fallback-count`          | gauge  | blocked leaves/records lack fallback behavior                     |
-| `aks-rp-e2e.process.blocked.overdue-unworked-count`          | gauge  | blocked waits passed fallback with no active recovery/handoff     |
+| Metric id                                                    | Type   | Breach meaning                                                                                                                              |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aks-rp-e2e.process.closed`                                  | health | 0 means at least one process black hole exists                                                                                              |
+| `aks-rp-e2e.process.graph.problem-count`                     | gauge  | static graph has route or cycle problems                                                                                                    |
+| `aks-rp-e2e.process.graph.unhandled-event-count`             | gauge  | emitted internal events have no event route                                                                                                 |
+| `aks-rp-e2e.process.graph.multi-handler-count`               | gauge  | event has too many matching event routes                                                                                                    |
+| `aks-rp-e2e.process.graph.missing-routing-key-count`         | gauge  | shared event lacks action/target key                                                                                                        |
+| `aks-rp-e2e.process.route.unobserved-count`                  | gauge  | emitted event has no route run after SLA                                                                                                    |
+| `aks-rp-e2e.process.workflow.no-next-step-count`             | gauge  | workflow ended without expected next step                                                                                                   |
+| `aks-rp-e2e.process.assignment.not-consumed-count`           | gauge  | task-dispatch queue rows are stale                                                                                                          |
+| `aks-rp-e2e.task.stale-active-count`                         | gauge  | active leaves lack live worker activity                                                                                                     |
+| `aks-rp-e2e.process.task.review-not-applied-count`           | gauge  | review facts not applied/stale-nooped                                                                                                       |
+| `aks-rp-e2e.process.unowned-work-count`                      | gauge  | unfinished work has no active owner                                                                                                         |
+| `aks-rp-e2e.process.unpublished-change-count`                | gauge  | project repo changes are not visible to pipeline runs                                                                                       |
+| `aks-rp-e2e.process.assignment-state-mismatch-count`         | gauge  | dispatch stayed open after task left active                                                                                                 |
+| `aks-rp-e2e.process.loop.unrepresented-record-count`         | gauge  | non-terminal loop records lack live work                                                                                                    |
+| `aks-rp-e2e.process.integrity.task-tree-problem-count`       | gauge  | root/orphan/parent-child integrity problems                                                                                                 |
+| `aks-rp-e2e.process.blocked.missing-waiting-for-count`       | gauge  | blocked leaves/records lack the real wait target                                                                                            |
+| `aks-rp-e2e.process.blocked.missing-observer-count`          | gauge  | blocked leaves/records lack who checks the wait                                                                                             |
+| `aks-rp-e2e.process.blocked.missing-owner-count`             | gauge  | blocked leaves/records lack owner fields                                                                                                    |
+| `aks-rp-e2e.process.blocked.missing-fallback-count`          | gauge  | blocked leaves/records lack fallback behavior                                                                                               |
+| `aks-rp-e2e.process.blocked.overdue-unworked-count`          | gauge  | blocked waits passed fallback with no active recovery/handoff                                                                               |
 | `aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count` | gauge  | compatibility alias sample for overdue blocked waits without active work; snapshots stay live but alert lifecycle is intentionally disabled |
-| `aks-rp-e2e.process.blocked.stale-fingerprint-count`         | gauge  | blocked records no longer match current inputs                    |
+| `aks-rp-e2e.process.blocked.stale-fingerprint-count`         | gauge  | blocked records no longer match current inputs                                                                                              |
 
 Alert policy:
 
@@ -1184,7 +1184,7 @@ wait that ties project state back to the escalation.
 | `process.blocked.missing-owner-count>0`             | `project-planner`                 | Add exact owner or reopen as actionable diagnosis/repair work.                                                                                                                | blocked item has an owner or is no longer blocked.                                                    |
 | `process.blocked.missing-fallback-count>0`          | `project-planner`                 | Add fallback time/action or convert to active work/escalation.                                                                                                                | blocked item has fallback behavior or is no longer blocked.                                           |
 | `process.blocked.overdue-unworked-count>0`          | `project-planner`                 | For each overdue wait, create/reopen a runnable recovery task, verify an existing active handoff/escalation, or refresh the wait with new evidence and next check.            | no overdue blocked wait lacks active recovery, handoff, escalation, or accepted terminal/no-op proof. |
-| `process.blocked.overdue-nonhuman-unworked-count>0` | none (measurement-only alias)     | Compatibility alias sample for `process.blocked.overdue-unworked-count`; keep snapshots for compatibility readers, but do not open a separate alert lifecycle.                 | same sampled value as `process.blocked.overdue-unworked-count`, with no distinct breach/recovery row. |
+| `process.blocked.overdue-nonhuman-unworked-count>0` | none (measurement-only alias)     | Compatibility alias sample for `process.blocked.overdue-unworked-count`; keep snapshots for compatibility readers, but do not open a separate alert lifecycle.                | same sampled value as `process.blocked.overdue-unworked-count`, with no distinct breach/recovery row. |
 | `process.blocked.stale-fingerprint-count>0`         | loop controller -> planner        | Recheck changed input state and either unblock, refresh blocker, or create repair/retry work.                                                                                 | blocked item matches current inputs or has moved to work/done.                                        |
 
 ### Escalation Rules
@@ -2003,10 +2003,21 @@ is working and producing useful failure information.
 
 ## Current Gap
 
-The first health implementation reports frontier movement and several task/loop
-signals, but it does not yet build the full process graph or correlate emitted
-events to route/target observations. That means it can say "the project is moving" but cannot
-yet prove "every route is connected and no event fell into a black hole."
+The health readout now reports frontier movement, task/loop signals, and a
+static process graph from `app.ts`. It can show route count, consumed events,
+emitted events, external boundaries, unhandled emitted events, and multi-route
+conflicts.
 
-The next implementation step should be Phase 1: static graph readout and
-dead-end classification.
+The remaining observability gap is runtime closure correlation. Static graph
+readout can prove the manifest is connected, but it cannot yet prove that one
+specific emitted event reached its route, produced the expected durable outcome,
+or closed inside its SLA.
+
+For the observability subsystem, the next implementation step is Phase 2:
+runtime trace correlation.
+
+For the whole app implementation plan, compact-loop convergence remains the
+first reliability target because it is the current highest-impact loop. The two
+pieces should meet in `bun run health --json`: compact-loop representation
+shows whether the domain loop is converging, and route/runtime readouts show
+whether the process routes that should move it are connected and closing.

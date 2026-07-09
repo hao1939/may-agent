@@ -390,6 +390,54 @@ describe("project owner workflow", () => {
     expect(prompts).toHaveLength(0);
   });
 
+  test("accepted task review creates structured Azure DevOps wait for queued rerun", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+      conflictScope: ["spec:kms.v2plus-enable-pmk-from-v2-public"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Worker evidence satisfies the repair and queued the verification run.",
+          completion: {
+            summary:
+              "Cross-checked ADO run 171501538 against current source, verified local gates, and queued bounded rerun 171529560 for spec.kms.v2plus-enable-pmk-from-v2-public.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const wait =
+      tree.tasks[
+        "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result"
+      ];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "created pipeline wait wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result",
+    );
+    expect(wait.state).toBe("blocked");
+    expect(wait.blocker.waiting_for).toMatchObject({
+      type: "ado.pipeline_run.completed",
+      runId: "171529560",
+      specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
+      sourceTaskId:
+        "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+    });
+    expect(JSON.stringify(wait)).not.toContain("171501538");
+  });
+
   test("accepted structured single-spec review marks spec-loop item passed", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -3177,6 +3225,156 @@ describe("project owner workflow", () => {
       "settled/non-active after live-tree revalidation",
     );
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for stale-active watchdog review when the cited task still has a running runtime session", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dbPath = join(appDir, ".state", "may.db");
+    await mkdir(join(appDir, ".state"), { recursive: true });
+    const db = new Database(dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        agent text not null,
+        task text not null,
+        status text not null,
+        kind text,
+        source text,
+        parentSessionId text,
+        requestId text,
+        workflowRunId text,
+        projectId text,
+        startedAt integer not null,
+        endedAt integer,
+        error text,
+        outcome text,
+        opCount integer default 0,
+        stepLabel text,
+        lastActivityAt integer
+      )
+    `);
+    db.query(
+      `insert into sessions (
+        sessionId, agent, task, status, kind, source, startedAt, outcome, opCount, stepLabel, lastActivityAt
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "s_task_active-task",
+      "aks-explorer",
+      "active task still running",
+      "running",
+      "call",
+      "workflow:task-worker",
+      Date.now() - 30_000,
+      "running",
+      4,
+      "aks-explorer",
+      Date.now() - 2_000,
+    );
+    db.close();
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const priorDb = process.env.MAY_DB_PATH;
+    process.env.MAY_DB_PATH = dbPath;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          "## Trigger Event",
+          "```json",
+          JSON.stringify({
+            type: "project.planning.requested",
+            data: {
+              project: "aks-rp-e2e",
+              reason: "watchdog-stale-active-review",
+              staleActiveTasks: [
+                { taskId: "active-task", reason: "session-not-running" },
+              ],
+            },
+          }),
+          "```",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, task: string) => {
+          prompts.push(task);
+          return { status: "success", message: "should not run" };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("false positive");
+      expect(result.message).toContain("currently running runtime session");
+      expect(prompts).toHaveLength(0);
+      expect(dispatched).toHaveLength(0);
+
+      const plannerRuns = await readFile(
+        join(appDir, ".state", "planner-runs.jsonl"),
+        "utf8",
+      );
+      expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+      expect(plannerRuns).toContain(
+        "currently running runtime session after live-tree revalidation",
+      );
+      expect(plannerRuns).toContain('"ran_agent":false');
+    } finally {
+      if (priorDb === undefined) delete process.env.MAY_DB_PATH;
+      else process.env.MAY_DB_PATH = priorDb;
+    }
   });
 
   test("skips owner session for stale watchdog-runnable-backlog packets whose ids already moved active", async () => {

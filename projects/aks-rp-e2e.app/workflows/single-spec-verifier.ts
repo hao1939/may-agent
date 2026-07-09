@@ -104,6 +104,9 @@ type CommandResult = {
 
 type ProjectResult = {
   status?: string;
+  target?: {
+    surface?: string;
+  };
   specResults?: Array<{
     specId?: string;
     status?: string;
@@ -652,6 +655,28 @@ function classifyProjectResult(
     .trim()
     .toLowerCase();
   const compactReason = reason.toLowerCase();
+  const targetSurface = String(result.target?.surface ?? "")
+    .trim()
+    .toLowerCase();
+  const nonLiveSurface = ["dry-run-validation", "check-validation"].includes(
+    targetSurface,
+  );
+  const passedStatus = String(spec?.status ?? result.status ?? "error")
+    .trim()
+    .toLowerCase();
+
+  if (
+    nonLiveSurface &&
+    ["pass", "passed", "success", "succeeded"].includes(passedStatus)
+  ) {
+    return {
+      loopStatus: "error",
+      claim: "partial",
+      reason:
+        reason ||
+        `Spec completed on non-live surface ${targetSurface}; dry-run/check validation is useful evidence but not a live pass verdict.`,
+    };
+  }
   if (
     category === "environment_blocker" &&
     (compactReason.includes("akscapacityheavyusage") ||

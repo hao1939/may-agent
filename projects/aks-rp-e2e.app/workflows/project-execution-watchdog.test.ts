@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute } from "./project-execution-watchdog.ts";
+import { setPipelineBackendForTests } from "./lib/ado-pipelines.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-watchdog-"));
@@ -1973,6 +1974,61 @@ describe("project execution watchdog", () => {
         reviewCount: 1,
       },
     });
+  });
+
+  test("moves blocked Azure DevOps wait to review when the run is terminal", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "wait-dev-infra-core-ado-run-123456789-result": task(
+        "wait-dev-infra-core-ado-run-123456789-result",
+        "blocked",
+        {
+          parent_id: "focus-dev-infra-core-live-pass",
+          goal: "Wait for Azure DevOps run 123456789 to prove dev-infra-core.",
+          context: {
+            adoRunId: "123456789",
+            adoRunUrl:
+              "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+          },
+        },
+      ),
+    });
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "completed",
+        conclusion: "failure",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+        displayTitle: "aks-e2e_staging_feature-set_123456789 dev-infra-core",
+      }),
+    });
+    try {
+      const result = await execute(context({ projectDir }));
+      expect(result).toEqual({
+        status: "done",
+        message:
+          "Watchdog moved terminal Azure DevOps wait(s) to review: wait-dev-infra-core-ado-run-123456789-result.",
+      });
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      const task =
+        tree.tasks["wait-dev-infra-core-ado-run-123456789-result"];
+      expect(task.state).toBe("review");
+      expect(task.context.terminalPipelineWaitReview).toMatchObject({
+        runId: "123456789",
+        runStatus: "completed",
+        runConclusion: "failure",
+      });
+      expect(task.result).toContain(
+        "Azure DevOps pipeline run 123456789 is terminal",
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
   });
 
   test("leaves running active leaves alone when capacity is full", async () => {

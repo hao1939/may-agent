@@ -440,13 +440,20 @@ function runtimeSessionDbPath(appDir: string): string {
   return existsSync(defaultRuntimePath) ? defaultRuntimePath : configured;
 }
 
-function runtimeSessionIsTerminal(appDir: string, sessionId: string): boolean {
-  if (!sessionId) return false;
+function runtimeSessionRow(
+  appDir: string,
+  sessionId: string,
+): {
+  status?: unknown;
+  outcome?: unknown;
+  endedAt?: unknown;
+} | null {
+  if (!sessionId) return null;
   const dbPath = runtimeSessionDbPath(appDir);
-  if (!existsSync(dbPath)) return false;
+  if (!existsSync(dbPath)) return null;
   const db = new Database(dbPath, { readonly: true });
   try {
-    const row = db
+    return db
       .query(
         `
           select status, outcome, endedAt
@@ -460,20 +467,35 @@ function runtimeSessionIsTerminal(appDir: string, sessionId: string): boolean {
       outcome?: unknown;
       endedAt?: unknown;
     } | null;
-    if (!row) return false;
-    const status = typeof row.status === "string" ? row.status : "";
-    const outcome = typeof row.outcome === "string" ? row.outcome : "";
-    if (typeof row.endedAt === "number" && Number.isFinite(row.endedAt)) {
-      return true;
-    }
-    return ["done", "error", "failed", "cancelled", "canceled"].includes(
-      status || outcome,
-    );
   } catch {
-    return false;
+    return null;
   } finally {
     db.close();
   }
+}
+
+function runtimeSessionIsRunning(appDir: string, sessionId: string): boolean {
+  const row = runtimeSessionRow(appDir, sessionId);
+  if (!row) return false;
+  const status = typeof row.status === "string" ? row.status : "";
+  const outcome = typeof row.outcome === "string" ? row.outcome : "";
+  if (typeof row.endedAt === "number" && Number.isFinite(row.endedAt)) {
+    return false;
+  }
+  return status === "running" && outcome !== "error";
+}
+
+function runtimeSessionIsTerminal(appDir: string, sessionId: string): boolean {
+  const row = runtimeSessionRow(appDir, sessionId);
+  if (!row) return false;
+  const status = typeof row.status === "string" ? row.status : "";
+  const outcome = typeof row.outcome === "string" ? row.outcome : "";
+  if (typeof row.endedAt === "number" && Number.isFinite(row.endedAt)) {
+    return true;
+  }
+  return ["done", "error", "failed", "cancelled", "canceled"].includes(
+    status || outcome,
+  );
 }
 
 function prepareFreshSessionForTerminalRuntime(
@@ -1132,6 +1154,12 @@ type AcceptedSpecVerifierResult = {
   reason: string;
 };
 
+type QueuedPipelineRun = {
+  runId: string;
+  specIds: string[];
+  runUrl: string;
+};
+
 function normalizeSpecVerifierStatus(
   value: unknown,
 ): "pass" | "fail" | "error" | "" {
@@ -1149,6 +1177,12 @@ function normalizeSpecVerifierStatus(
 function artifactResultPath(value: unknown): string {
   const refs = stringList(value);
   return refs.find((ref) => /result\.json$/i.test(ref)) ?? refs[0] ?? "";
+}
+
+function reviewedCompletion(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): Record<string, unknown> | null {
+  return objectValue(triggerValue(trigger, "completion"));
 }
 
 function acceptedSpecVerifierResults(
@@ -1309,6 +1343,234 @@ function applyAcceptedSpecVerifierResults(input: {
     spec_ids: acceptedSpecIds,
   });
   return acceptedSpecIds;
+}
+
+function textFromValues(...values: unknown[]): string {
+  return values
+    .map((value) => {
+      if (typeof value === "string") return value;
+      if (value && typeof value === "object") return JSON.stringify(value);
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function queuedRunIdFromText(text: string): string {
+  const patterns = [
+    /\bqueued\b[^.\n]{0,180}?\b(?:ado\s+)?(?:pipeline\s+)?(?:rerun|run)?\s*[`"']?(\d{6,})\b/i,
+    /\b(?:queued|triggered|started)\b[^.\n]{0,180}?\b(?:buildId=|runId["':\s]+)(\d{6,})\b/i,
+    /\b(?:rerun|run)\s*[`"']?(\d{6,})\b[^.\n]{0,80}?\bqueued\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return "";
+}
+
+function specIdsFromQueuedRunText(
+  text: string,
+  task: NonNullable<ReturnType<typeof readTask>>,
+): string[] {
+  const ids = new Set<string>();
+  for (const match of text.matchAll(/\bspec\.[A-Za-z0-9_.-]+/g)) {
+    ids.add(match[0].replace(/[),.;:]+$/, ""));
+  }
+  for (const scope of taskStringList(task, "conflict_scope")) {
+    if (!scope.startsWith("spec:")) continue;
+    const scoped = scope.slice("spec:".length).trim();
+    if (!scoped) continue;
+    ids.add(scoped.startsWith("spec.") ? scoped : `spec.${scoped}`);
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function queuedPipelineRunFromAcceptedReview(input: {
+  trigger: ReturnType<typeof parseTriggerEvent>;
+  task: NonNullable<ReturnType<typeof readTask>>;
+}): QueuedPipelineRun | null {
+  const completion = reviewedCompletion(input.trigger);
+  const workflowResult = reviewedCompletionWorkflowResult(input.trigger);
+  const details = objectValue(workflowResult?.details);
+  const fixForward = objectValue(details?.fixForward);
+  const verification = objectValue(fixForward?.verification);
+  const verificationRunId = stringValue(verification?.runId);
+  const verificationStatus = stringValue(verification?.status).toLowerCase();
+  const structuredQueued =
+    verificationRunId &&
+    (verificationStatus === "" ||
+      verificationStatus === "not-run" ||
+      verificationStatus === "queued" ||
+      verificationStatus === "running" ||
+      verificationStatus === "pending");
+
+  const text = textFromValues(
+    completion?.summary,
+    completion?.result,
+    workflowResult?.summary,
+    details,
+  );
+  const runId = structuredQueued
+    ? verificationRunId
+    : queuedRunIdFromText(text);
+  if (!runId) return null;
+  const specIds = specIdsFromQueuedRunText(text, input.task);
+  const runUrl =
+    stringValue(verification?.runUrl) ||
+    stringValue(details?.runUrl) ||
+    `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`;
+  return { runId, specIds, runUrl };
+}
+
+function slugForTaskId(value: string): string {
+  return (
+    value
+      .replace(/^spec\./, "")
+      .replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "pipeline"
+  );
+}
+
+function openPipelineWaitExists(
+  config: TaskTreeConfig,
+  runId: string,
+): boolean {
+  const tree = readTaskTree(config);
+  const openStates = new Set(["active", "backlog", "blocked", "review", "waiting"]);
+  for (const task of Object.values(tree.tasks ?? {})) {
+    const state = taskState(task);
+    if (!openStates.has(state)) continue;
+    const haystack = JSON.stringify({
+      id: task.id,
+      goal: task.goal,
+      context: task.context,
+      blocker: task.blocker,
+      trace: task.trace,
+      result: task.result,
+    });
+    if (haystack.includes(runId)) return true;
+  }
+  return false;
+}
+
+function createAcceptedQueuedPipelineWait(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  attemptId: string;
+  summary: string;
+  queuedRun: QueuedPipelineRun;
+}): string | null {
+  if (!input.task.parent_id) return null;
+  if (openPipelineWaitExists(input.config, input.queuedRun.runId)) return null;
+  const scopeId = input.queuedRun.specIds[0] ?? input.task.id;
+  const id = uniqueTaskId(
+    input.config,
+    `wait-${slugForTaskId(scopeId)}-ado-run-${input.queuedRun.runId}-result`,
+  );
+  const specText = input.queuedRun.specIds.length
+    ? ` for ${input.queuedRun.specIds.join(", ")}`
+    : "";
+  const blocker = `Wait for Azure DevOps run ${input.queuedRun.runId}${specText} queued by accepted task ${input.task.id}.`;
+  createTask(input.config, {
+    id,
+    parentId: input.task.parent_id,
+    state: "blocked",
+    kind: "domain_leaf",
+    priority: taskPriority(input.task),
+    owner: input.task.owner,
+    goal: `${blocker} When it is terminal, inspect the artifacts and record the exact pass/fail/error result.`,
+    inputs: [
+      `Reviewed task: ${input.task.id}`,
+      `Attempt: ${input.attemptId}`,
+      `ADO run: ${input.queuedRun.runId}`,
+      ...input.queuedRun.specIds.map((specId) => `Spec: ${specId}`),
+    ],
+    outputs: ["runs/test-results/"],
+    acceptance: [
+      "The Azure DevOps run reaches terminal status and the result artifact is inspected.",
+      "The affected spec or feature branch records pass, repair, exact wait, or escalation from the returned artifact.",
+    ],
+    conflict_scope: [
+      ...new Set([
+        ...taskStringList(input.task, "conflict_scope"),
+        ...input.queuedRun.specIds.map((specId) => `spec:${specId}`),
+        `ado-run:${input.queuedRun.runId}`,
+      ]),
+    ],
+    context: {
+      ...taskContext(input.task),
+      acceptedQueuedPipelineRun: {
+        sourceTaskId: input.task.id,
+        sourceAttemptId: input.attemptId,
+        runId: input.queuedRun.runId,
+        runUrl: input.queuedRun.runUrl,
+        specIds: input.queuedRun.specIds,
+        summary: input.summary,
+      },
+      terminalPipelineWaitReview: {
+        runId: input.queuedRun.runId,
+        runUrl: input.queuedRun.runUrl,
+        namedSpecIds: input.queuedRun.specIds,
+      },
+    },
+    blocker,
+    blockerCategory: "external-wait",
+    blockerOwner: "ado",
+    resumeCondition: `Resume when Azure DevOps run ${input.queuedRun.runId} is terminal and its artifacts are available.`,
+  });
+  withTreeLock(input.config, () => {
+    const tree = readTaskTree(input.config);
+    const task = tree.tasks[id];
+    if (!task) return;
+    const blockedAt = new Date().toISOString();
+    const nextCheckAt = new Date(Date.parse(blockedAt) + 10 * 60 * 1000)
+      .toISOString();
+    const fallbackAt = new Date(Date.parse(blockedAt) + 2 * 60 * 60 * 1000)
+      .toISOString();
+    task.blocker = {
+      condition: blocker,
+      category: "external-wait",
+      owner: "ado",
+      blocked_at: blockedAt,
+      waiting_for: {
+        type: "ado.pipeline_run.completed",
+        runId: input.queuedRun.runId,
+        runUrl: input.queuedRun.runUrl,
+        specIds: input.queuedRun.specIds,
+        sourceTaskId: input.task.id,
+        sourceAttemptId: input.attemptId,
+      },
+      observed_by: {
+        workflow: "project-execution-watchdog",
+        trigger: "project.task.reviewed",
+      },
+      observation_method:
+        "Watchdog checks the named Azure DevOps run and moves this wait to review when the run is terminal; the reviewer then consumes artifacts and records the exact result.",
+      next_check_at: nextCheckAt,
+      resume_condition: `Resume when Azure DevOps run ${input.queuedRun.runId} is terminal and its artifacts are available.`,
+      fallback_at: fallbackAt,
+      fallback_action:
+        "If the run is still not reviewable at fallback, refresh this exact wait with current ADO status or escalate the artifact/reachability issue.",
+    };
+    task.trace = {
+      ...(task.trace ?? {}),
+      accepted_queued_pipeline_wait_created_at: blockedAt,
+      accepted_queued_pipeline_source_task_id: input.task.id,
+      accepted_queued_pipeline_source_attempt_id: input.attemptId,
+      accepted_queued_pipeline_run_id: input.queuedRun.runId,
+    };
+    saveTaskTreeWithKanbanSnapshot(input.config, tree);
+  });
+  appendToolJournal(input.config, {
+    kind: "accepted_review_queued_pipeline_wait_created",
+    task_id: id,
+    source_task_id: input.task.id,
+    run_id: input.queuedRun.runId,
+    spec_ids: input.queuedRun.specIds,
+  });
+  return id;
 }
 
 function normalizeReviewDecision(value: unknown): ReviewDecision | null {
@@ -1940,14 +2202,29 @@ function applyReviewedTaskEvent(
       taskId,
       trigger,
     });
+    const queuedRun = acceptedSpecIds.length
+      ? null
+      : queuedPipelineRunFromAcceptedReview({ trigger, task });
+    const queuedWaitTaskId = queuedRun
+      ? createAcceptedQueuedPipelineWait({
+          config,
+          task,
+          attemptId,
+          summary,
+          queuedRun,
+        })
+      : null;
     markTaskDone(config, { taskId, summary });
     return {
       handled: true,
       applied: true,
       decision,
       taskId,
+      successorTaskId: queuedWaitTaskId ?? undefined,
       message: acceptedSpecIds.length
         ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}.`
+        : queuedWaitTaskId
+          ? `Applied accept review for ${taskId}; created pipeline wait ${queuedWaitTaskId}.`
         : `Applied accept review for ${taskId}.`,
     };
   }
@@ -2204,6 +2481,19 @@ function settledActiveNoopResult(input: {
     hasOnlyActiveFrontier
   ) {
     return "Watchdog stale-active review was a false positive: active work is still running, and every cited stale-active task is already settled/non-active after live-tree revalidation.";
+  }
+  if (
+    reason === "watchdog-stale-active-review" &&
+    citedStillActive.length > 0 &&
+    citedStillActive.every((taskId) => {
+      const task = readTask(input.config, taskId);
+      const sessionId = typeof task?.session_id === "string" ? task.session_id : "";
+      return !!sessionId && runtimeSessionIsRunning(input.config.appDir, sessionId);
+    }) &&
+    noHumanSteering &&
+    hasOnlyActiveFrontier
+  ) {
+    return "Watchdog stale-active review was a false positive: every cited stale-active task still has a currently running runtime session after live-tree revalidation.";
   }
   if (settledAfterCompletion) {
     return "Task-completed wake is already settled in the task tree: the completed task no longer exists in the live tree, no review task remains, and no runnable frontier needs owner judgment.";

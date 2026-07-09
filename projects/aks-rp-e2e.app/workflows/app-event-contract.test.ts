@@ -48,7 +48,7 @@ function handler(name: string): WorkflowHandler {
     (entry) => entry.name === name,
   );
   if (!found) throw new Error(`Missing workflow handler ${name}`);
-  return found;
+  return structuredClone(found);
 }
 
 function handlerEvents(name: string): string[] {

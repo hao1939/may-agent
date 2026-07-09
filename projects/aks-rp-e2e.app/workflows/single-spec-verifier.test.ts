@@ -385,7 +385,7 @@ afterEach(async () => {
 });
 
 describe("single-spec-verifier", () => {
-  test("runs direct workflow input without requiring a task assignment", async () => {
+  test("keeps non-live direct workflow results partial even when statuses are green", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     await writeFile(
       join(binDir, "bun"),
@@ -395,9 +395,12 @@ if [ "$1" != "run" ] || [ "$2" != "spec" ]; then
   exit 2
 fi
 mkdir -p runs/test-results/direct_123
-cat > runs/test-results/direct_123/result.json <<'JSON'
+cat > runs/test-results/direct_123/result.json <<JSON
 {
   "status": "pass",
+  "target": {
+    "surface": "\${TEST_NONLIVE_SURFACE:-dry-run-validation}"
+  },
   "specResults": [
     {
       "specId": "spec.net-integration.authorized-ip-ranges",
@@ -417,37 +420,48 @@ exit 0
     const originalPath = process.env.PATH || "";
     process.env.PATH = `${binDir}:${originalPath}`;
     try {
-      const result = await execute({
-        task: [
-          `app: ${appDir}`,
-          `project: ${projectDir}`,
-          "agent: aks-explorer",
-          "specId: spec.net-integration.authorized-ip-ranges",
-          "target: staging",
-          "mode: dry-run",
-          "timeoutMinutes: 1",
-        ].join("\n"),
-        agent: "aks-explorer",
-        done: (message: string) => ({ status: "done", message }),
-        escalate: (message: string) => ({ status: "escalated", message }),
-        emit() {},
-        dispatchEvent() {},
-        runAgent: async () => ({ status: "success" }),
-        summarize: () => "",
-      } as any);
+      for (const mode of ["dry-run", "check"] as const) {
+        process.env.TEST_NONLIVE_SURFACE =
+          mode === "dry-run" ? "dry-run-validation" : "check-validation";
+        const result = await execute({
+          task: [
+            `app: ${appDir}`,
+            `project: ${projectDir}`,
+            "agent: aks-explorer",
+            "specId: spec.net-integration.authorized-ip-ranges",
+            "target: staging",
+            `mode: ${mode}`,
+            "timeoutMinutes: 1",
+          ].join("\n"),
+          agent: "aks-explorer",
+          done: (message: string) => ({ status: "done", message }),
+          escalate: (message: string) => ({ status: "escalated", message }),
+          emit() {},
+          dispatchEvent() {},
+          runAgent: async () => ({ status: "success" }),
+          summarize: () => "",
+        } as any);
 
-      expect(result.status).toBe("done");
-      expect(result.workflow).toBe("single-spec-verifier");
-      expect(result.subject).toEqual({
-        kind: "spec",
-        id: "spec.net-integration.authorized-ip-ranges",
-      });
-      expect(result.artifacts).toContain("runs/test-results/direct_123");
-      expect(result.details.command).toContain(
-        "bun run spec spec.net-integration.authorized-ip-ranges --target staging --dry-run",
-      );
+        expect(result.status).toBe("partial");
+        expect(result.workflow).toBe("single-spec-verifier");
+        expect(result.subject).toEqual({
+          kind: "spec",
+          id: "spec.net-integration.authorized-ip-ranges",
+        });
+        expect(result.summary).toContain("classified as error");
+        expect(result.summary).toContain("direct proof passed");
+        expect(result.problem?.diagnosis).toContain("direct proof passed");
+        expect(result.problem?.resumeCondition).toBe(
+          "rerun live verification after dry-run/check issues are fixed",
+        );
+        expect(result.artifacts).toContain("runs/test-results/direct_123");
+        expect(result.details.command).toContain(
+          `bun run spec spec.net-integration.authorized-ip-ranges --target staging --${mode}`,
+        );
+      }
     } finally {
       process.env.PATH = originalPath;
+      delete process.env.TEST_NONLIVE_SURFACE;
     }
   });
 

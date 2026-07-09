@@ -320,7 +320,102 @@ describe("check-integrity durable loop contracts", () => {
     const fixture = await makeFixture();
     const result = await runIntegrity(fixture.appDir);
 
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
+  });
+
+  test("accepts durable loop roots blocked on child waits even when progress open counters are stale", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      resolveTaskTreePath(fixture.appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: [
+                "aks-spec-verification-loop",
+                "aks-feature-reference-loop",
+                "aks-feature-compact-loop",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "done",
+              workflow: "spec-loop-controller",
+              children: [],
+              goal: "Verify specs.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop is current"],
+            },
+            "aks-feature-reference-loop": {
+              id: "aks-feature-reference-loop",
+              parent_id: "project",
+              state: "done",
+              workflow: "feature-reference-loop-controller",
+              children: [],
+              goal: "Collect official references.",
+              outputs: [".state/feature-reference-loop/state.json"],
+              acceptance: ["Loop is current"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              workflow: "feature-compact-loop-controller",
+              children: ["wait-compact-external-signal"],
+              goal: "Keep compact loop moving.",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Loop is current"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "feature-compact loop state still has non-terminal features",
+                  pending: 0,
+                  running: 0,
+                  error: 3,
+                  unrepresentedNonTerminalCount: 0,
+                  openChildren: 0,
+                  openSupportChildren: 1,
+                  blockedWaitChildren: 1,
+                },
+              },
+            },
+            "wait-compact-external-signal": {
+              id: "wait-compact-external-signal",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 

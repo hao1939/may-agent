@@ -14,3 +14,4 @@ tasks/kanban.json
 tasks/archive/*.json
 tasks/*.bak*
 workflows/.may-runtime-module-*.mjs
+workspace/

@@ -176,9 +176,10 @@ function buildBlocker(
 
   const condition = input.blocker?.trim();
   if (!condition) throw new Error("Blocked tasks require --blocker");
-  const blocker: Record<string, unknown> = { condition };
+  const owner = input.blockerOwner?.trim();
+  if (!owner) throw new Error("Blocked tasks require --blocker-owner");
+  const blocker: Record<string, unknown> = { condition, owner };
   if (input.blockerCategory?.trim()) blocker.category = input.blockerCategory.trim();
-  if (input.blockerOwner?.trim()) blocker.owner = input.blockerOwner.trim();
   if (input.resumeCondition?.trim()) {
     blocker.resume_condition = input.resumeCondition.trim();
   }

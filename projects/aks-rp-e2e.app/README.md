@@ -272,6 +272,15 @@ The app has separate reload surfaces:
   project-app manifest watcher; `/reload` or `runtime.reload.requested` is the
   immediate operator path.
 
+Shared-workflow caveat: when a workflow entrypoint imports helper code from
+another workflow file, a helper-only edit may not replace the already-loaded
+entrypoint module in a long-running runtime immediately. In this app,
+`task-worker.ts` imports `default-task-worker.ts`, so changes to
+`default-task-worker.ts` or other shared helper modules should be followed by an
+explicit `/reload` (or another manifest-refresh action) before using retries as
+verification evidence. Otherwise a retry can still run the old code path and
+repeat stale fallback summaries such as `Agent ended with an empty assistant turn`.
+
 To add or update a project workflow handler, add or edit the workflow file under
 `workflows/`, update the `onEvent: workflowHandlers([...])` entry in `app.ts`,
 then let the watcher reload it or issue `/reload`. Existing running sessions are

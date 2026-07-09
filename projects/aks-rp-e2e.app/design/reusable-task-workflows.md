@@ -28,8 +28,8 @@ loop/planner task
   -> task.workflow=<workflow file under workflows/>
   -> task context carries the same workflow input plus tracking fields
   -> project.task.assigned dispatches the runnable task
-  -> task-worker adapter builds business workflow input
-  -> business workflow updates scoped artifacts or state
+  -> task-worker adapter builds scoped workflow input
+  -> scoped workflow updates scoped artifacts or state
   -> task-worker adapter emits project.task.completed with structured fields
   -> task-reviewer judges the completion
   -> planner applies accept/retry/follow-up/escalation
@@ -77,8 +77,8 @@ the planner coordinates both so dependencies are visible.
 
 ## Adapter Boundary
 
-The task tree is a tracking and relationship model, not the business API for
-every workflow. For normal business workflows:
+The task tree is a tracking and relationship model, not the API for every
+workflow. For normal scoped workflows:
 
 ```text
 task tree task -> task adapter -> workflow input
@@ -168,6 +168,127 @@ one-off fix
   -> repeated task pattern
   -> reusable workflow
   -> app route or event only when the control plane needs it
+```
+
+## Improving Existing Workflows
+
+The app should also improve workflows it already has. This is domain learning,
+not a new loop type and not a new task kind.
+
+Use the same simple process for any domain workflow:
+
+```text
+pick a real run
+  -> read raw facts and result
+  -> decide what helped or hurt
+  -> update the workflow, test, prompt, doc, or domain artifact
+  -> verify with the smallest truthful run
+  -> record the lesson where the next worker will use it
+```
+
+The first candidates are `single-spec-verifier` and `feature-compact-planner`,
+but they should be improved independently:
+
+- the spec workflow learns how one spec should be audited, fixed, run, and
+  closed with live pass proof;
+- the compact workflow learns how one feature should be planned, compacted,
+  live-proved, and repaired when the plan is wasteful or wrong.
+
+They may share lessons, but neither workflow should depend on the other to make
+progress. If a compact failure exposes a broken single spec, that becomes a
+single-spec repair input. If a single-spec pass exposes a reusable carrier or
+request pattern, the compact planner may use that later.
+
+Each improvement pass should compare good and bad examples:
+
+- good example: what made the run finish cleanly, quickly, and with trustworthy
+  proof?
+- bad example: what repeated, stalled, wasted a pipeline run, created too many
+  clusters, or produced unclear proof?
+- workflow change: what should the next worker do differently?
+- verification: did the changed workflow improve a later real run?
+
+Repeated observations should become executable behavior or tests. A note is
+useful only if it changes what the next workflow run does.
+
+### Running Improvement In The App
+
+Run workflow improvement as ordinary domain work first. Do not add a new loop
+controller until the process proves it needs one.
+
+Use a normal task under the domain root:
+
+```text
+domain/workflow-improvement/<workflow-name>/<case>
+```
+
+The task goal should name one workflow and a small case set:
+
+```json
+{
+  "id": "improve-single-spec-verifier-localdns-cases",
+  "parent_id": "domain/workflow-improvement/single-spec-verifier",
+  "workflow": "default-task-worker",
+  "goal": "Review selected good and bad single-spec verifier runs, improve the workflow from repeated lessons, and verify the change on one real case.",
+  "context": {
+    "workflowUnderReview": "single-spec-verifier",
+    "caseRefs": [
+      "ado-run:171234001",
+      "ado-run:171234777",
+      ".state/spec-loop/state.json#spec.localdns.cluster-topology"
+    ],
+    "requiredOutput": "workflow-improvement-result"
+  },
+  "acceptance": [
+    "Good and bad cases were compared from raw facts.",
+    "The repeated lesson was named.",
+    "The lesson changed a workflow, test, prompt, doc, metric, or domain artifact.",
+    "The change was verified with the smallest truthful local or Azure DevOps run.",
+    "The result says what future runs should do differently."
+  ]
+}
+```
+
+Then the app uses the existing path:
+
+```text
+project.task.assigned
+  -> task-worker
+  -> default-task-worker or task.workflow
+  -> project.task.completed
+  -> task-reviewer
+  -> project-planner applies accept/retry/follow-up/escalation
+```
+
+No `app.ts` route is needed for this first version because ordinary task
+dispatch already runs task workflows.
+
+When the same improvement shape repeats and the steps become stable, promote it
+to a reusable workflow file, for example:
+
+```text
+workflows/workflow-improvement-review.ts
+```
+
+That promotion is optional. It should happen only when code can reliably collect
+the case packet or validate the structured result better than a plain task can.
+
+The structured result should be small:
+
+```json
+{
+  "workflow": "workflow-improvement",
+  "workflowUnderReview": "single-spec-verifier",
+  "casesReviewed": ["ado-run:171234001", "ado-run:171234777"],
+  "lesson": "Do not rerun unchanged inputs after request-shape failures.",
+  "changed": ["workflows/single-spec-verifier.ts", "workflows/single-spec-verifier.test.ts"],
+  "verification": {
+    "kind": "ado-run",
+    "id": "171235111",
+    "status": "pass"
+  },
+  "next": "Apply the same check to remaining request-shape failure cases."
+}
 ```
 
 ### 1. One-Off Fix

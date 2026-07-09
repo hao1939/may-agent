@@ -438,6 +438,146 @@ describe("project stall review", () => {
     });
   });
 
+  test("risk-review mode classifies active external pipeline wait as represented", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await mkdir(join(appDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          tasks: {
+            project: {
+              id: "project",
+              parent_id: null,
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-feature-compact-loop"],
+              goal: "Project root.",
+              inputs: [],
+              outputs: ["tasks/tree.json"],
+              acceptance: ["Done."],
+              forbidden: [],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "feature-compact-loop-controller",
+              children: [],
+              goal: "Create compact feature packages.",
+              inputs: [],
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Every feature has live compact proof."],
+              forbidden: [],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "feature-compact loop is waiting on active Azure DevOps run 123",
+                  pending: 0,
+                  running: 1,
+                  done: 0,
+                  error: 0,
+                  openChildren: 0,
+                  openSupportChildren: 0,
+                  unrepresentedNonTerminalCount: 0,
+                  activePipelineFeatureKeys: ["windows"],
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          loopTaskId: "aks-feature-compact-loop",
+          windowSize: 1,
+          cursor: 0,
+          features: {
+            windows: {
+              featureKey: "windows",
+              capabilityId: "windows",
+              status: "running",
+              lastWorkflowRunId: "123",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.stall.review.requested",
+          project: "aks-rp-e2e",
+          reason: "manual-stall-risk-review",
+          mode: "risk-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "No structured review returned.",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "project.stall.reviewed (active-external-run-wait, risk-review)",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.stall.reviewed",
+      payload: {
+        judgment: "active-external-run-wait",
+        dispatchedTicks: [],
+      },
+    });
+    const compactLoopSummary = (
+      dispatched[0].payload.loopSummaries as Array<Record<string, unknown>>
+    ).find((summary) => summary.taskId === "aks-feature-compact-loop");
+    expect(compactLoopSummary).toMatchObject({
+      taskId: "aks-feature-compact-loop",
+      nonTerminalCount: 1,
+      unrepresentedNonTerminalCount: 0,
+      activeExternalRunWait: true,
+      needsAttention: false,
+    });
+  });
+
   test("classifies judgment from nested structured result when runtime summary omits marker", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeTree(appDir);

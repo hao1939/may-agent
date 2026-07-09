@@ -37,6 +37,10 @@ import {
   type SpecLoopSpecState,
   type SpecLoopState,
 } from "./spec-loop-store.ts";
+import {
+  specLoopSpecHasStructuredSuccessor,
+  specStateSelfRepresentsExactFrontier,
+} from "./spec-loop-frontier.ts";
 
 export {
   appendPlannerRun,
@@ -211,29 +215,6 @@ function isRetryExhaustedSpec(
   return (spec.attempts ?? 0) >= maxDirectAttemptsPerSpec;
 }
 
-function specLoopSpecHasStructuredSuccessor(
-  spec: SpecLoopSpecState | undefined,
-): boolean {
-  if (!spec) return false;
-  const record = spec as SpecLoopSpecState & {
-    successorDisposition?: unknown;
-    resumeCondition?: unknown;
-  };
-  if (
-    typeof record.successorDisposition === "string" &&
-    record.successorDisposition.trim()
-  ) {
-    return true;
-  }
-  if (
-    typeof record.resumeCondition === "string" &&
-    record.resumeCondition.trim()
-  ) {
-    return true;
-  }
-  return !!spec.review && typeof spec.review === "object";
-}
-
 function specLoopFollowupGroupKeys(task: TaskNode | undefined): Set<string> {
   const keys = new Set<string>();
   if (!task) return keys;
@@ -340,6 +321,10 @@ function exactSpecLoopOwnerTaskId(input: {
     }
   }
 
+  if (specStateSelfRepresentsExactFrontier(spec)) {
+    return `state:${input.specId}`;
+  }
+
   return null;
 }
 
@@ -416,6 +401,37 @@ function nodeState(task: TaskNode | undefined): string {
   return String(task?.status ?? task?.state ?? "");
 }
 
+function numberProgressField(
+  progress: Record<string, unknown> | null,
+  key: string,
+): number | null {
+  const value = progress?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function durableLoopChildBlockedOnlyStewardship(
+  task: TaskNode,
+  tree: TaskTree,
+): boolean {
+  if (!durableLoopTaskIds.has(task.id)) return false;
+  if (nodeState(task) !== "blocked") return false;
+  const progress = workflowProgress(task);
+  if (!progress || progress.completionReady !== false) return false;
+  if ((numberProgressField(progress, "running") ?? 0) > 0) return false;
+  const unrepresentedNonTerminalCount = numberProgressField(
+    progress,
+    "unrepresentedNonTerminalCount",
+  );
+  if (unrepresentedNonTerminalCount !== 0) {
+    return false;
+  }
+  const childStates = normalizeStringArray(task.children)
+    .map((childId) => nodeState(tree.tasks[childId]))
+    .filter(Boolean);
+  if (!childStates.includes("blocked")) return false;
+  return childStates.every((state) => state === "done" || state === "blocked");
+}
+
 function blockerRecord(task: TaskNode): Record<string, unknown> | null {
   return task.blocker &&
     typeof task.blocker === "object" &&
@@ -454,7 +470,8 @@ function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
       appendToolJournal(config, {
         kind: "child_blocked_parent_results_repaired",
         task_ids: repaired,
-        reason: "blocked parent result text refreshed from current blocked children",
+        reason:
+          "blocked parent result text refreshed from current blocked children",
       });
     }
 
@@ -546,14 +563,17 @@ function reopenIncompleteDurableLoopRoots(config: TaskTreeConfig): string[] {
       const childStates = normalizeStringArray(task.children).map((childId) =>
         nodeState(tree.tasks[childId]),
       );
-      const blocked =
-        workflowProgressBlocksCompletion(task) ??
-        (nodeState(task) === "blocked" &&
-        childStates.some((state) =>
-          ["active", "review", "backlog"].includes(state),
-        )
-          ? `Durable loop root is blocked while child rollup is ${childStates.includes("active") ? "active" : childStates.includes("review") ? "review" : "backlog"}`
-          : null);
+      const childBlockedOnlyStewardship =
+        durableLoopChildBlockedOnlyStewardship(task, tree);
+      const blocked = childBlockedOnlyStewardship
+        ? null
+        : (workflowProgressBlocksCompletion(task) ??
+          (nodeState(task) === "blocked" &&
+          childStates.some((state) =>
+            ["active", "review", "backlog"].includes(state),
+          )
+            ? `Durable loop root is blocked while child rollup is ${childStates.includes("active") ? "active" : childStates.includes("review") ? "review" : "backlog"}`
+            : null));
       if (!blocked) continue;
       const status = nodeState(task);
       if (status === "backlog" || status === "active") continue;
@@ -618,17 +638,17 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
       finalResult.changed ||
       reopenedDurableLoopRoots.length > 0 ||
       repairedChildBlockedParentResults.length > 0,
-	    repaired: [
-	      ...new Set([
-	        ...(initialResult.repaired ?? []),
-	        ...(finalResult.repaired ?? []),
-	        ...repairedChildBlockedParentResults.map((taskId) => ({
-	          taskId,
-	          from: "child-blocked",
-	          to: "backlog",
-	        })),
-	      ]),
-	    ],
+    repaired: [
+      ...new Set([
+        ...(initialResult.repaired ?? []),
+        ...(finalResult.repaired ?? []),
+        ...repairedChildBlockedParentResults.map((taskId) => ({
+          taskId,
+          from: "child-blocked",
+          to: "backlog",
+        })),
+      ]),
+    ],
     reopenedDurableLoopRoots,
     repairedChildBlockedParentResults,
   };
@@ -790,6 +810,23 @@ export type UpdateArchivedTaskOutputsResult = {
   archiveFile: string;
   beforeOutputs: string[];
   afterOutputs: string[];
+  changed: boolean;
+  task: TaskNode;
+};
+
+export type UpdateArchivedTaskEvidenceInput = {
+  taskId: string;
+  evidence: string[];
+  archiveFile?: string;
+};
+
+export type UpdateArchivedTaskEvidenceResult = {
+  taskId: string;
+  archiveFile: string;
+  beforeEvidence: string[];
+  afterEvidence: string[];
+  beforeLastWorkerEvidence: string[];
+  afterLastWorkerEvidence: string[];
   changed: boolean;
   task: TaskNode;
 };
@@ -1112,6 +1149,30 @@ function isHumanOwnedExternalWait(task: TaskNode): boolean {
   return category === "external-wait" && owner === "human";
 }
 
+function blockerWaitingForType(task: TaskNode): string {
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return "";
+  }
+  const waitingFor = (blocker as Record<string, unknown>).waiting_for;
+  if (!waitingFor || typeof waitingFor !== "object" || Array.isArray(waitingFor)) {
+    return "";
+  }
+  const type = (waitingFor as Record<string, unknown>).type;
+  return typeof type === "string" ? type.trim().toLowerCase() : "";
+}
+
+function isFeatureCompactNonEnvironmentFrontier(task: TaskNode): boolean {
+  if (taskContext(task).featureCompactExactWait !== true) return false;
+  return [
+    "owner.decision",
+    "pipeline.result.or.artifact.available",
+    "publish.auth.ready",
+    "compact.frontier.changed",
+    "evidence.available",
+  ].includes(blockerWaitingForType(task));
+}
+
 function isRepresentedBlockedFrontier(task: TaskNode): boolean {
   const text = taskSearchText(task);
   const representedSignals = [
@@ -1132,8 +1193,7 @@ function isRepresentedBlockedFrontier(task: TaskNode): boolean {
       "remains the exact",
       "still controls",
       "represented by ",
-    ]) &&
-    includesAny(text, ["frontier", "carrier", "represented blocker"])
+    ]) && includesAny(text, ["frontier", "carrier", "represented blocker"])
   );
 }
 
@@ -1204,6 +1264,9 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           "pending authoritative",
         ]);
       if (sourceExactnessBlocked) {
+        if (isRepresentedBlockedFrontier(task)) {
+          continue;
+        }
         warnings.push({
           kind: "source-exactness-overblock",
           taskId: task.id,
@@ -1248,7 +1311,8 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
       if (environmentBlocked) {
         if (
           isHumanOwnedExternalWait(task) ||
-          isRepresentedBlockedFrontier(task)
+          isRepresentedBlockedFrontier(task) ||
+          isFeatureCompactNonEnvironmentFrontier(task)
         ) {
           continue;
         }
@@ -1547,6 +1611,72 @@ export function updateArchivedTaskOutputs(
       archiveFile: path,
       beforeOutputs,
       afterOutputs,
+      changed,
+      task,
+    };
+  });
+}
+
+export function updateArchivedTaskEvidence(
+  config: TaskTreeConfig,
+  input: UpdateArchivedTaskEvidenceInput,
+): UpdateArchivedTaskEvidenceResult {
+  return withTreeLock(config, () => {
+    const evidence = input.evidence
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (evidence.length === 0) throw new Error("Provide at least one evidence path");
+
+    const { path, bundle, task } = archiveTaskBundlePath(
+      input.taskId,
+      config,
+      input.archiveFile,
+    );
+    if (task.state !== "done" && task.status !== "done") {
+      throw new Error(`Archived task is not done: ${input.taskId}`);
+    }
+    const tasks = Array.isArray(bundle.tasks) ? bundle.tasks : [];
+    const index = tasks.findIndex((candidate) => candidate.id === input.taskId);
+    if (index < 0) throw new Error(`Archived task not found: ${input.taskId}`);
+
+    const trace = traceRecord(task);
+    const beforeEvidence = normalizeStringArray(task.evidence);
+    const beforeLastWorkerEvidence = normalizeStringArray(
+      trace.last_worker_evidence,
+    );
+    const afterEvidence = evidence;
+    const afterLastWorkerEvidence = evidence;
+    const changed =
+      JSON.stringify(beforeEvidence) !== JSON.stringify(afterEvidence) ||
+      JSON.stringify(beforeLastWorkerEvidence) !==
+        JSON.stringify(afterLastWorkerEvidence);
+
+    task.evidence = afterEvidence;
+    task.trace = {
+      ...trace,
+      last_worker_evidence: afterLastWorkerEvidence,
+    };
+    tasks[index] = task;
+    bundle.tasks = tasks;
+    writeFileSync(path, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+
+    appendToolJournal(config, {
+      kind: "archived_task_evidence_updated",
+      task_id: task.id,
+      archive_file: path,
+      before_evidence: beforeEvidence,
+      evidence: afterEvidence,
+      before_last_worker_evidence: beforeLastWorkerEvidence,
+      last_worker_evidence: afterLastWorkerEvidence,
+      changed,
+    });
+    return {
+      taskId: task.id,
+      archiveFile: path,
+      beforeEvidence,
+      afterEvidence,
+      beforeLastWorkerEvidence,
+      afterLastWorkerEvidence,
       changed,
       task,
     };

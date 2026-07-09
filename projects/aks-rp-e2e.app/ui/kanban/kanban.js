@@ -153,6 +153,15 @@ function objectValue(value) {
     : {};
 }
 
+function arrayValue(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function safeHttpUrl(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return /^https?:\/\//i.test(text) ? text : "";
+}
+
 function parseTime(value) {
   if (typeof value !== "string" || !value.trim()) return null;
   const parsed = Date.parse(value);
@@ -686,7 +695,9 @@ async function loadData() {
   state.tree = JSON.parse(taskData.content || "{}");
   const kanbanSnapshot = JSON.parse(kanbanData.content || "{}");
   if (!kanbanSnapshot?.kanban?.card_ids_by_column)
-    throw new Error("runtime task board snapshot is missing the task-tool projection");
+    throw new Error(
+      "runtime task board snapshot is missing the task-tool projection",
+    );
   state.kanban = kanbanSnapshot.kanban;
   await loadMetrics();
   state.kanbanSource = "task-tree-tools snapshot";
@@ -780,6 +791,13 @@ function loopReports(tree) {
         : null;
     const openChildren = numberOrZero(progress.openChildren);
     const activeGithubRuns = numberOrZero(progress.activeGithubRuns);
+    const activePipelineWaits = arrayValue(progress.activePipelineWaits)
+      .map(objectValue)
+      .filter((wait) => wait.featureKey || wait.runId);
+    const activePipelineRuns = Math.max(
+      activePipelineWaits.length,
+      numberOrZero(progress.activePipelineRuns ?? progress.activeGithubRuns),
+    );
     const represented = unrepresented === 0 && completionReady === false;
     const status =
       completionReady === true
@@ -805,6 +823,8 @@ function loopReports(tree) {
       unrepresented,
       openChildren,
       activeGithubRuns,
+      activePipelineRuns,
+      activePipelineWaits,
       represented,
       status,
       reason: progress.reason || "",
@@ -961,7 +981,7 @@ function buildProcessIssues(tree, loops) {
         key: `${loop.id}.nonterminal-errors`,
         group: "Failure cluster",
         severity: "P2",
-        rawFact: `${loop.error} error(s), ${loop.retryBudgetExhausted} retry-budget-exhausted, ${loop.activeGithubRuns} active GitHub run(s)`,
+        rawFact: `${loop.error} error(s), ${loop.retryBudgetExhausted} retry-budget-exhausted, ${loop.activePipelineRuns} active ADO pipeline run(s)`,
         hint: loop.represented
           ? "The loop claims non-terminal errors are represented, but result work is not complete."
           : "The loop has non-terminal error records.",
@@ -1234,13 +1254,13 @@ function buildBottleneckRows(tree, overview) {
     {
       key: "github-visible",
       signalKey: "aks-rp-e2e.process.unpublished-change-count",
-      name: "GitHub has project repo?",
+      name: "Pipeline has repo changes?",
       value: unpublished,
       tone: bottleneckTone(unpublished),
       rank: 90,
       question: "Were aks-rp-e2e repo changes committed and pushed?",
       meaning:
-        "This only checks the aks-rp-e2e repo that GitHub workflows run. App UI and task-state changes in aks-rp-e2e.app take effect locally and are not counted here.",
+        "This checks the aks-rp-e2e repo that Azure DevOps pipeline runs use. App UI and task-state changes in aks-rp-e2e.app take effect locally and are not counted here.",
       action:
         unpublished && unpublished > 0
           ? "commit and push intended aks-rp-e2e repo changes, or discard unintended churn"
@@ -1368,7 +1388,7 @@ function renderLeadReadout(bottlenecks) {
   if (!lead) {
     return `<div class="lead-readout lead-ok" data-testid="process-lead">
       <div class="lead-title">First read: no process bottleneck is firing.</div>
-      <div class="lead-detail">The board may still contain normal work, but the main sensors do not show stale GitHub-run project repo state, unowned work, stale workers, planner starvation, or overload.</div>
+      <div class="lead-detail">The board may still contain normal work, but the main sensors do not show stale pipeline repo state, unowned work, stale workers, planner starvation, or overload.</div>
       <div class="lead-next"><strong>Next:</strong> use the raw sections below if the result still feels wrong.</div>
     </div>`;
   }
@@ -1609,6 +1629,50 @@ function renderLoopRow(loop) {
       <button class="btn" onclick="selectTask('${attrEsc(loop.id)}')">Open Task</button>
       <button class="btn" onclick="prefillReviewLoop('${attrEsc(loop.id)}')">Review Loop</button>
       <button class="btn" onclick="prefillChallengeClassification('${attrEsc(loop.id)}')">Challenge</button>
+    </div>
+    ${renderActivePipelineWaits(loop.activePipelineWaits)}
+  </div>`;
+}
+
+function renderActivePipelineWaits(waits) {
+  if (!waits?.length) return "";
+  return `<div class="active-pipeline-waits">
+    <div class="coverage-label">Active ADO Waits</div>
+    <div class="pipeline-wait-list">
+      ${waits.map(renderActivePipelineWait).join("")}
+    </div>
+  </div>`;
+}
+
+function renderActivePipelineWait(wait) {
+  const runUrl = safeHttpUrl(wait.runUrl);
+  const runLabel = wait.runId ? `run ${wait.runId}` : "run unknown";
+  const runHtml = runUrl
+    ? `<a href="${attrEsc(runUrl)}" target="_blank" rel="noreferrer">${esc(runLabel)}</a>`
+    : esc(runLabel);
+  return `<div class="pipeline-wait-row">
+    <div>
+      <div class="coverage-label">Feature</div>
+      <div>${esc(wait.featureKey || "unknown")}</div>
+    </div>
+    <div>
+      <div class="coverage-label">ADO Run</div>
+      <div>${runHtml}</div>
+      <div class="coverage-evidence">${esc(wait.runStatus || "status unknown")}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Waiting For</div>
+      <div>${esc(wait.watchedCondition || "pipeline completion")}</div>
+      ${wait.runTitle ? `<div class="coverage-evidence">${esc(wait.runTitle)}</div>` : ""}
+    </div>
+    <div>
+      <div class="coverage-label">Expected Result</div>
+      <div>${esc(wait.expectedArtifact || "test result artifact")}</div>
+    </div>
+    <div>
+      <div class="coverage-label">Next/Fallback</div>
+      <div>next ${esc(formatTime(wait.nextCheckAt))}</div>
+      <div class="coverage-evidence">fallback ${esc(formatTime(wait.fallbackAt))}</div>
     </div>
   </div>`;
 }
