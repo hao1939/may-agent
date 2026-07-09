@@ -229,7 +229,7 @@ export type CreateTaskInput = {
   conflict_scope?: string[];
   depends_on?: string[];
   context?: Record<string, unknown>;
-  blocker?: string;
+  blocker?: string | TaskBlocker;
   blockerCategory?: string;
   blockerOwner?: string;
   resumeCondition?: string;
@@ -254,7 +254,7 @@ export type UpdateTaskTextInput = {
   taskId: string;
   goal?: string;
   acceptance?: string[];
-  blocker?: string;
+  blocker?: string | TaskBlocker;
   blockerCategory?: string;
   blockerOwner?: string;
   resumeCondition?: string;
@@ -1160,7 +1160,7 @@ function truncate(value: string | undefined, max = 900): string | undefined {
 }
 
 type TaskBlockerInput = {
-  blocker?: string;
+  blocker?: string | TaskBlocker;
   blockerCategory?: string;
   blockerOwner?: string;
   resumeCondition?: string;
@@ -1175,8 +1175,44 @@ function trimmed(value: string | undefined): string | undefined {
   return text ? text : undefined;
 }
 
+function blockerRecord(value: TaskBlocker | undefined): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function blockerTextField(
+  blocker: TaskBlocker | undefined,
+  ...keys: string[]
+): string | undefined {
+  const record = blockerRecord(blocker);
+  for (const key of keys) {
+    const value = record?.[key];
+    if (typeof value === "string") {
+      const text = trimmed(value);
+      if (text) return text;
+    }
+  }
+  return undefined;
+}
+
+function blockerObjectField(
+  blocker: TaskBlocker | undefined,
+  ...keys: string[]
+): Record<string, unknown> | undefined {
+  const record = blockerRecord(blocker);
+  for (const key of keys) {
+    const value = record?.[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+  }
+  return undefined;
+}
+
 function hasStructuredBlockerInput(input: TaskBlockerInput): boolean {
   return Boolean(
+    blockerRecord(input.blocker) ||
     trimmed(input.blockerCategory) ||
     trimmed(input.blockerOwner) ||
     trimmed(input.resumeCondition) ||
@@ -1189,29 +1225,21 @@ function hasStructuredBlockerInput(input: TaskBlockerInput): boolean {
 
 function blockerCondition(blocker: TaskBlocker | undefined): string | undefined {
   if (typeof blocker === "string") return trimmed(blocker);
-  return trimmed(blocker?.condition);
+  return blockerTextField(blocker, "condition");
 }
 
 function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
-  const condition = trimmed(input.blocker);
-  if (!hasStructuredBlockerInput(input)) return condition;
+  const blockerValue = input.blocker;
+  if (!hasStructuredBlockerInput(input)) {
+    return typeof blockerValue === "string" ? trimmed(blockerValue) : blockerValue;
+  }
 
-  return {
-    ...(condition ? { condition } : {}),
-    ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
-    ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
-    ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
-    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
-    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
-    ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
-    ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
-  };
-}
+  const existingRecord = blockerRecord(blockerValue) ?? {};
+  const condition =
+    typeof blockerValue === "string"
+      ? trimmed(blockerValue)
+      : blockerCondition(blockerValue);
 
-function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput): TaskBlocker | undefined {
-  if (!hasStructuredBlockerInput(input)) return trimmed(input.blocker);
-  const existingRecord = existing && typeof existing === "object" && !Array.isArray(existing) ? existing : {};
-  const condition = trimmed(input.blocker) ?? blockerCondition(existing);
   return {
     ...existingRecord,
     ...(condition ? { condition } : {}),
@@ -1225,8 +1253,33 @@ function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput
   };
 }
 
+function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput): TaskBlocker | undefined {
+  if (!hasStructuredBlockerInput(input)) {
+    const blockerValue = input.blocker;
+    return typeof blockerValue === "string" ? trimmed(blockerValue) : blockerValue;
+  }
+  const existingRecord = blockerRecord(existing) ?? {};
+  const inputRecord = blockerRecord(input.blocker) ?? {};
+  const blockerValue = input.blocker;
+  const condition =
+    (typeof blockerValue === "string" ? trimmed(blockerValue) : blockerCondition(blockerValue)) ??
+    blockerCondition(existing);
+  return {
+    ...existingRecord,
+    ...inputRecord,
+    ...(condition ? { condition } : {}),
+    ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
+    ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
+    ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
+    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
+    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
+    ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
+    ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
+  };
+}
+
 function hasBlockerInput(input: TaskBlockerInput): boolean {
-  return typeof input.blocker === "string" || hasStructuredBlockerInput(input);
+  return input.blocker !== undefined || hasStructuredBlockerInput(input);
 }
 
 function blockerText(blocker: TaskNode["blocker"]): string | undefined {
@@ -1696,6 +1749,10 @@ function stableTaskSessionId(task: TaskNode): string {
   return `s_task_${slug}`;
 }
 
+function nonEmptyTrimmedString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function createAssignmentForTask(
   task: TaskNode,
   input: {
@@ -1721,7 +1778,15 @@ function createAssignmentForTask(
     !wantsFreshSession && typeof task.session_id === "string" && task.session_id.trim()
       ? task.session_id.trim()
       : defaultSessionId;
-  const worker = input.worker ?? task.owner ?? config.worker;
+  const worker =
+    nonEmptyTrimmedString(input.worker) ||
+    nonEmptyTrimmedString(task.owner) ||
+    nonEmptyTrimmedString(config.worker);
+  if (!worker) {
+    throw new Error(
+      `Task ${task.id} cannot be assigned without a non-empty worker/owner contract`,
+    );
+  }
   task.status = "active";
   task.state = "active";
   task.owner = worker;

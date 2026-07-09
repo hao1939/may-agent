@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  assignRunnableBacklogTasks,
   assignTask,
   compactDoneLeaves,
   completeTask,
@@ -405,6 +406,150 @@ describe("project task tree SDK", () => {
     expect(retryTree.tasks.leaf.session_history).toEqual(["s_task_leaf", retry.sessionId]);
     expect(retryTree.tasks.leaf.trace?.review_reject_fresh_session).toBe(false);
     expect(retryTree.tasks.leaf.trace?.last_session).toBe(retry.sessionId);
+  });
+
+  test("rejects assignment when worker, owner, and config worker are all empty", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        leaf: {
+          id: "leaf",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "unassigned leaf",
+          outputs: ["artifact"],
+          acceptance: ["artifact exists"],
+          owner: "",
+        },
+      },
+    });
+
+    expect(() =>
+      assignTask(
+        taskTreeConfig({
+          appDir,
+          projectDir: appDir,
+          worker: "",
+          maxConcurrent: 1,
+        }),
+        { taskId: "leaf", worker: "" },
+      ),
+    ).toThrow(/non-empty worker\/owner contract/);
+
+    const tree = readTaskTree(
+      taskTreeConfig({
+        appDir,
+        projectDir: appDir,
+        worker: "",
+        maxConcurrent: 1,
+      }),
+    );
+    expect(tree.tasks.leaf.state).toBe("backlog");
+    expect(tree.tasks.leaf.status).toBe("backlog");
+    expect(tree.tasks.leaf.trace?.assigned_worker).toBeUndefined();
+    expect(peekTaskAssignments(
+      taskTreeConfig({
+        appDir,
+        projectDir: appDir,
+        worker: "",
+        maxConcurrent: 1,
+      }),
+    )).toHaveLength(0);
+  });
+
+  test("trims blank worker input and falls back to task owner", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        leaf: {
+          id: "leaf",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "owned leaf",
+          outputs: ["artifact"],
+          acceptance: ["artifact exists"],
+          owner: "app-ops",
+        },
+      },
+    });
+
+    const assignment = assignTask(config(appDir), {
+      taskId: "leaf",
+      worker: "   ",
+      attemptId: "attempt-blank-worker",
+    });
+
+    expect(assignment.worker).toBe("app-ops");
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks.leaf.owner).toBe("app-ops");
+    expect(tree.tasks.leaf.trace?.assigned_worker).toBe("app-ops");
+    const queued = peekTaskAssignments(config(appDir));
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.worker).toBe("app-ops");
+  });
+
+  test("assignRunnableBacklogTasks skips blank worker input and preserves truthful owner fallback", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        leaf: {
+          id: "leaf",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "owned leaf",
+          outputs: ["artifact"],
+          acceptance: ["artifact exists"],
+          owner: "aks-explorer",
+        },
+      },
+    });
+
+    const result = assignRunnableBacklogTasks(config(appDir), {
+      worker: "",
+      limit: 1,
+    });
+
+    expect(result.assignments).toHaveLength(1);
+    expect(result.assignments[0]?.worker).toBe("aks-explorer");
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks.leaf.owner).toBe("aks-explorer");
+    expect(tree.tasks.leaf.trace?.assigned_worker).toBe("aks-explorer");
   });
 
   test("planningPacket includes model_status_summary when model.json exists", async () => {
