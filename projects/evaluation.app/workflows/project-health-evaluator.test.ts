@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { taskEscalationPacket } from "./project-health-evaluator.ts";
+import {
+  taskEscalationPacket,
+  taskTreePacket,
+} from "./project-health-evaluator.ts";
 
 async function makeAppDirWithTree(tree: Record<string, unknown>) {
   const appDir = await mkdtemp(join(tmpdir(), "project-health-evaluator-"));
@@ -56,5 +59,50 @@ describe("project health evaluator escalation audit", () => {
       blockedWithOwnerOrExternalPath: 1,
       blockedWithoutOwnerOrExternalPath: 0,
     });
+  });
+});
+
+describe("project health evaluator task reporting", () => {
+  test("surfaces design and legacy hygiene tasks separately from runnable sample", async () => {
+    const tasks: Record<string, unknown> = {
+      project: {
+        id: "project",
+        state: "active",
+        children: [
+          "work-1",
+          "work-2",
+          "work-3",
+          "work-4",
+          "work-5",
+          "work-6",
+          "legacy-design-hygiene-audit",
+        ],
+      },
+    };
+    for (let i = 1; i <= 6; i += 1) {
+      tasks[`work-${i}`] = {
+        id: `work-${i}`,
+        parent_id: "project",
+        state: "backlog",
+        children: [],
+        goal: `Generic backlog work ${i}`,
+      };
+    }
+    tasks["legacy-design-hygiene-audit"] = {
+      id: "legacy-design-hygiene-audit",
+      parent_id: "project",
+      state: "backlog",
+      children: [],
+      goal: "Review legacy terms, stale design assumptions, and hygiene debt.",
+      conflict_scope: ["evaluation-design-hygiene"],
+    };
+
+    const appDir = await makeAppDirWithTree({ tasks });
+    const packet = taskTreePacket(appDir);
+
+    expect(packet.runnable).toHaveLength(7);
+    expect(packet.designHygiene).toEqual([
+      expect.objectContaining({ id: "legacy-design-hygiene-audit" }),
+    ]);
   });
 });

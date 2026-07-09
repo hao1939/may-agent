@@ -260,6 +260,7 @@ function humanFactSummary(
     `- active: ${compactList(taskTree.active, 5)}`,
     `- review: ${compactList(taskTree.review, 5)}`,
     `- runnable: ${compactList(taskTree.runnable, 5)}`,
+    `- design/hygiene: ${compactList(taskTree.designHygiene, 8)}`,
     `- blocked sample: ${compactList(taskTree.blockedSample, 5)}`,
     "",
     "Loops:",
@@ -485,7 +486,30 @@ function compactTask(task: TaskRecord): Record<string, unknown> {
   };
 }
 
-function taskTreePacket(targetAppDir: string): Record<string, unknown> {
+function compactTaskForReport(task: TaskRecord): Record<string, unknown> {
+  return {
+    id: task.id,
+    state: task.state ?? "unknown",
+    priority: task.priority ?? "P2",
+    owner: task.owner,
+    parent: task.parent_id ?? null,
+    goal: task.goal,
+    updated_at: task.updated_at,
+  };
+}
+
+function isDesignHygieneTask(task: TaskRecord): boolean {
+  const text = JSON.stringify({
+    id: task.id,
+    goal: task.goal,
+    conflict_scope: (task as any).conflict_scope,
+  });
+  return /legacy|design[- ]?hygiene|terminology|cleanup|obsolete|stale design|stale assumption/i.test(
+    text,
+  );
+}
+
+export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
   const path = join(targetAppDir, ".state/tasks/tree.json");
   const tree = readJson(path);
   if (!tree || typeof tree !== "object" || Array.isArray(tree)) {
@@ -520,6 +544,10 @@ function taskTreePacket(targetAppDir: string): Record<string, unknown> {
     )
     .slice(0, 30)
     .map(compactTask);
+  const designHygiene = leaves
+    .filter(isDesignHygieneTask)
+    .slice(0, 20)
+    .map(compactTaskForReport);
 
   return {
     path,
@@ -539,6 +567,7 @@ function taskTreePacket(targetAppDir: string): Record<string, unknown> {
     active,
     review,
     runnable,
+    designHygiene,
     blockedSample: blocked,
   };
 }
