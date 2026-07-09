@@ -1324,6 +1324,19 @@ describe("spec-loop-controller", () => {
         successorDisposition: "same-run-review-wait-after-bounded-rerun-dispatch",
       }),
     ).toBe(false);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition: "reviewed_nonlive_source_grounded_wait",
+      }),
+    ).toBe(true);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition:
+          "environment_setup_blocker_node_subnet_http409_before_product_assertion",
+      }),
+    ).toBe(true);
 
     const projectDir = await makeProject();
     await writeFile(

@@ -76,8 +76,23 @@ describe("approval-dispatch workflow", () => {
         packetPath,
         pathId: "path.network-cni-azure-overlay-dual-stack-migration",
         requestedAction: "Approve one bounded live execution",
+        approvalId:
+          "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        waitId:
+          "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        correlationKey:
+          "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId:
+            "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        },
       },
     });
+    expect(String(dispatched[0].payload.content)).toContain("Approval id:");
+    expect(String(dispatched[0].payload.content)).toContain("Wait id:");
     expect(String(dispatched[0].payload.content)).toContain(packetPath);
     expect(String(dispatched[0].payload.content)).toContain(
       "path.network-cni-azure-overlay-dual-stack-migration",
@@ -93,5 +108,8 @@ describe("approval-dispatch workflow", () => {
     expect(runs).toContain('"workflow":"approval-dispatch"');
     expect(runs).toContain('"result":"message.created"');
     expect(runs).toContain(packetPath);
+    expect(runs).toContain('"approvalId"');
+    expect(runs).toContain('"waitId"');
+    expect(runs).toContain('"expectedResponse"');
   });
 });

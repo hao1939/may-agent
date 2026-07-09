@@ -1200,33 +1200,93 @@ Consumers should use the lightest workflow that can close the signal:
 5. **Escalation** only when the responsible consumer cannot close the signal
    within its authority.
 
+Escalation is not a final state. It is an active wait whose missing answer is
+owned outside the current app/workflow.
+
+Keep the model simple:
+
+```text
+local consumer cannot close
+  -> escalation.created records the external ask
+  -> routing/message event proves delivery was attempted
+  -> blocked/wait task records the live wait
+  -> watcher rechecks at next_check_at / fallback_at
+  -> escalation.resolved or escalation.dismissed records the returned decision
+  -> planner reconciles the wait into work, refreshed wait, done, or terminal finding
+```
+
+Events are facts. The task tree carries the live project state. A routed
+message proves delivery, not closure. A handled event proves an owner workflow
+saw it, not that the project is unblocked.
+
 Use the existing escalation vocabulary and events:
 
 ```text
 escalation.created
+escalation.routed
 escalation.resolved
 escalation.dismissed
 ```
 
-When creating an escalation, also create or update the owning blocked/wait task:
+`message.created` and `project.approval.requested` are delivery/approval
+surfaces. They may be used to send an escalation to a human or operator, but
+they are not themselves the escalation lifecycle.
+
+When creating an escalation, also create or update the owning blocked/wait task.
+The blocker must name the real wait and how it will be checked:
 
 ```json
 {
   "blocker": {
     "owner": "platform-runtime",
     "escalationId": "esc_...",
-    "resume_condition": "Resume when escalation is resolved or dismissed."
+    "waitingFor": "Auth-capable Azure DevOps runtime can download run 171538136 artifacts.",
+    "observer": "app-ops",
+    "check": "Look for escalation.resolved/dismissed, project.approval.submitted, or returned artifact evidence.",
+    "next_check_at": "2026-07-10T00:00:00.000Z",
+    "fallback_at": "2026-07-10T12:00:00.000Z",
+    "fallback_action": "If no returned signal exists, recheck delivery proof and either refresh the wait, send one bounded follow-up, or escalate the missing response path.",
+    "resume_condition": "Resume when escalation is resolved/dismissed or the exact requested artifact/decision is returned."
   }
 }
 ```
 
-The planner already consumes `escalation.resolved` and
-`escalation.dismissed`. On either event, it should reconcile the owning wait:
-unblock, reopen, mark terminal, or create the next bounded task.
+The planner consumes `escalation.resolved` and `escalation.dismissed`. On either
+event, it should reconcile the owning wait: unblock, reopen, mark terminal, or
+create the next bounded task.
+
+Allowed escalation closure states:
+
+- `waiting`: the linked blocked task is exact and `fallback_at` has not passed.
+- `resolved`: a returned answer satisfies the resume condition and work can
+  continue or close.
+- `dismissed`: the ask is duplicate, wrong, superseded, or no longer needed.
+- `expired`: `fallback_at` passed without an answer; planner/watchdog must
+  recheck, send one bounded follow-up, reroute, or create repair work.
+
+Do not add a separate task status for these. The project task remains
+`blocked`; these are escalation/wait conditions inside the blocker context.
+
+Every escalation must eventually be represented by one of:
+
+- `escalation.resolved`;
+- `escalation.dismissed`;
+- linked blocked task with future `next_check_at` / `fallback_at`;
+- linked blocked task whose fallback has fired and is now owned by active
+  recovery/follow-up work.
 
 Repeated signals should not create duplicate work. Before creating a new task,
 the consumer must look for an open task with the same `signalKey` or
 `rootCauseClass`.
+
+Duplicate follow-up rule:
+
+- If the old ask is still valid and within fallback, do not resend.
+- If fallback passed and no response exists, send at most one bounded follow-up
+  that references the original ask and preserves the same scope.
+- If a second follow-up still gets no response, escalate the response-path
+  failure or convert the branch into a longer external wait with explicit human
+  ownership.
 
 Suggested task context for signal-owned work:
 

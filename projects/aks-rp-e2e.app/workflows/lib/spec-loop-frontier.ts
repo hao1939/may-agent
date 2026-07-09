@@ -38,6 +38,22 @@ export function specLoopSpecHasStructuredSuccessor(
 function selfRepresentingDisposition(disposition: string): boolean {
   if (!disposition) return false;
 
+  const exactAllow = new Set([
+    "repaired-ready-residue-no-new-leaf",
+    "accepted-explicit-narrowing-source-only",
+    "combined-boundary-nonlive-split-required",
+    "blocked-hypothesis-nonlive-hold",
+    "reviewed-negative-create-stage-contract",
+    "reviewed-product-behavior-mismatch",
+    "source-grounded-nonlive-hold",
+    "intentional-lineage-only-nonlive",
+    "reviewed-source-mismatch-no-unchanged-rerun",
+    "reviewed-nonlive-source-grounded-wait",
+    "environment-blocker-node-subnet-http409-before-product-assertion",
+    "environment-setup-blocker-node-subnet-http409-before-product-assertion",
+  ]);
+  if (exactAllow.has(disposition)) return true;
+
   const negativeFragments = [
     "-wait",
     "wait-",
@@ -54,19 +70,6 @@ function selfRepresentingDisposition(disposition: string): boolean {
   if (negativeFragments.some((fragment) => disposition.includes(fragment))) {
     return false;
   }
-
-  const exactAllow = new Set([
-    "repaired-ready-residue-no-new-leaf",
-    "accepted-explicit-narrowing-source-only",
-    "combined-boundary-nonlive-split-required",
-    "blocked-hypothesis-nonlive-hold",
-    "reviewed-negative-create-stage-contract",
-    "reviewed-product-behavior-mismatch",
-    "source-grounded-nonlive-hold",
-    "intentional-lineage-only-nonlive",
-    "reviewed-source-mismatch-no-unchanged-rerun",
-  ]);
-  if (exactAllow.has(disposition)) return true;
 
   const positiveFragments = [
     "no-new-leaf",

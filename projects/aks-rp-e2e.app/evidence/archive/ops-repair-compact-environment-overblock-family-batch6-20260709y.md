@@ -8,12 +8,15 @@
 
 ## Executive result
 
-I confirmed that `hold-compact-aad-rbac-package-partial-frontier` was **already** a truthful residual compact frontier rather than a generic environment blocker, and I applied the smallest app-side repair in warning logic so that compact exact-wait holders with clearly non-environment `waiting_for.type` values stop surfacing as `environment-overblock` noise.
+I confirmed that `hold-compact-aad-rbac-package-partial-frontier` was **already** a truthful residual compact frontier rather than a generic environment blocker, and that `hold-compact-workload-autoscaler-package-partial-frontier` was **already** a truthful exact two-member split frontier rather than a real missing-source blocker.
 
-That repair immediately cleared at least these two still-flagged compact holders from the live planning packet:
+I then applied the smallest app-side repair in warning logic so that compact exact-wait holders with clearly non-environment `waiting_for.type` values stop surfacing as stale `environment-overblock` or `source-exactness-overblock` noise.
+
+That bounded repair now clears all of these previously misleading compact warnings from the live planning packet:
 
 - `hold-compact-aad-rbac-package-partial-frontier`
 - `hold-compact-defender-profile-reviewed-exception-frontier`
+- `hold-compact-workload-autoscaler-package-partial-frontier`
 
 I also audited one additional peer that remains flagged:
 
@@ -25,21 +28,23 @@ That residue is **not** the same false positive. Its current holder still projec
 
 ## What was true before the repair
 
-Pre-change packet inspection showed all of these compact holders still appearing as `environment-overblock` warnings even though at least some of them were already preserved as sharper non-environment exact frontiers:
+Pre-change packet inspection showed these compact holders still appearing as blocked-action warning residue even though some were already preserved as sharper exact frontiers:
 
-- `hold-compact-aad-rbac-package-partial-frontier`
-- `hold-compact-defender-profile-reviewed-exception-frontier`
-- `hold-compact-upgrade-reviewed-exception-frontier`
-- `hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier`
+- `hold-compact-aad-rbac-package-partial-frontier` as `environment-overblock`
+- `hold-compact-defender-profile-reviewed-exception-frontier` as `environment-overblock`
+- `hold-compact-workload-autoscaler-package-partial-frontier` as `source-exactness-overblock`
+- `hold-compact-upgrade-reviewed-exception-frontier` as `environment-overblock`
+- `hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier` as `environment-overblock`
 
 The important split was:
 
 1. **aad-rbac** already represented a mixed exact residual trio, not one broad environment blocker.
 2. **defender-profile** already represented owner promotion / eligibility review, not environment setup.
-3. **upgrade** remained a true underlay/control-plane prerequisite wait.
-4. **ccp-vpa-os-arch-variants** remained a true pipeline + ARM64/K8s>=1.34 capacity boundary.
+3. **workload-autoscaler** already represented an exact two-member split frontier, not a generic missing-source ask.
+4. **upgrade** remained a true underlay/control-plane prerequisite wait.
+5. **ccp-vpa-os-arch-variants** remained a true pipeline + ARM64/K8s>=1.34 capacity boundary.
 
-So the actionable bug was in the warning classifier, not in `aad-rbac` domain truth.
+So the actionable bug was in the warning classifier, not in compact domain truth.
 
 ## Evidence that `aad-rbac` was already exact frontier truth
 
@@ -68,7 +73,7 @@ Live tree inspection of `.state/tasks/tree.json` showed `hold-compact-aad-rbac-p
 
 So the holder already carried non-environment runtime shape, but the packet classifier still flagged it because its text contains words like `capacity`, `external`, `staging`, and `required` from the preserved exact carrier descriptions.
 
-## Additional sampled peer: defender-profile
+## Additional sampled peers: defender-profile and workload-autoscaler
 
 Live tree inspection showed `hold-compact-defender-profile-reviewed-exception-frontier` already had:
 
@@ -77,6 +82,15 @@ Live tree inspection showed `hold-compact-defender-profile-reviewed-exception-fr
 - exact next step: owner promotion / compact-eligibility reclassification after accepted request-plus-runtime floor proof
 
 So `defender-profile` was another clear false positive from warning classification, not a real environment setup blocker.
+
+Live tree inspection also showed `hold-compact-workload-autoscaler-package-partial-frontier` already had:
+
+- `context.featureCompactExactWait = true`
+- `blocker.waiting_for.type = owner.decision`
+- blocker text that explicitly preserves one reviewed runtime frontier plus one bounded source-equivalent evidence ceiling
+- resume only when one of those two exact members changes materially
+
+Its task text still contains source language (`mounted-source/public-doc`, `source-equivalent evidence`) because that is part of the exact represented split. But the holder is no longer asking planning to discover missing source proof; it is already the exact compact split frontier.
 
 ## Additional sampled peer that still remains truthful residue
 
@@ -108,16 +122,17 @@ That means this is **not** just stale non-environment prose hidden behind an env
 
 ### Change
 
-Added a narrow suppression helper for compact exact-wait holders that are already known to be **non-environment** frontiers:
+Kept the existing narrow suppression helper for compact exact-wait holders that are already known to be **non-environment** frontiers, and extended the same exact-frontier exception into the `source-exactness-overblock` path.
 
 - helper reads `blocker.waiting_for.type`
 - applies only when `context.featureCompactExactWait === true`
-- suppresses `environment-overblock` when the holder already projects one of these non-environment types:
+- already suppresses `environment-overblock` when the holder projects one of these non-environment types:
   - `owner.decision`
   - `pipeline.result.or.artifact.available`
   - `publish.auth.ready`
   - `compact.frontier.changed`
   - `evidence.available`
+- now also suppresses `source-exactness-overblock` for those same compact exact-wait non-environment holders
 
 This is intentionally narrow:
 
@@ -125,6 +140,7 @@ This is intentionally narrow:
 - no compact reruns
 - no broad family reclassification
 - no suppression of true environment/prerequisite waits such as `azure.capacity.available` or `environment.prerequisite.ready`
+- no suppression of genuine standalone source-proof blockers that are **not** already exact compact non-environment frontiers
 
 ## Regression coverage added
 
@@ -132,27 +148,29 @@ This is intentionally narrow:
 
 - `workflows/task-tree-tools.test.ts`
 
-### New test
+### New tests
 
-Added:
+Added/kept coverage for:
 
 - `planning packet suppresses environment-overblock warning for feature-compact exact non-environment frontiers`
+- `planning packet suppresses source-exactness-overblock warning for feature-compact exact non-environment frontiers`
 
-The test proves that a compact exact-wait holder with:
+Together the tests prove that compact exact-wait holders with:
 
 - `waiting_for.type = owner.decision`, and
-- a compact exact-wait holder with `waiting_for.type = pipeline.result.or.artifact.available`
+- `waiting_for.type = pipeline.result.or.artifact.available`
 
-are both suppressed from `environment-overblock`, while a real environment blocker still remains in the packet.
+are suppressed from both stale warning paths when they are already exact compact non-environment frontiers, while a separate genuine environment blocker and a separate genuine standalone source-proof blocker still remain in the packet.
 
 ## Live post-repair result
 
-After the code/test change, `bun run task-tree packet` showed the compact `environment-overblock` set dropped for the sampled holders:
+After the code/test change, `bun run task-tree packet` showed the compact warning residue dropped for the sampled holders.
 
-Cleared:
+Cleared from `blocked_action_warnings`:
 
 - `hold-compact-aad-rbac-package-partial-frontier`
 - `hold-compact-defender-profile-reviewed-exception-frontier`
+- `hold-compact-workload-autoscaler-package-partial-frontier`
 
 Still flagged:
 
@@ -160,16 +178,20 @@ Still flagged:
 - `hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier`
 - plus other true environment-family holders such as `gpu`, `private-cluster`, `node-http-proxy`, and `remediator-node-not-ready-restart-runtime-product-lineage`
 
-Current compact `environment-overblock` sample after repair:
+Current compact warning sample after repair:
 
-- `hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier`
-- `hold-compact-gpu-package-partial-frontier`
-- `hold-compact-node-http-proxy-package-partial-frontier`
-- `hold-compact-private-cluster-package-partial-frontier-202607090641-ownerfix`
-- `hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier`
-- `hold-compact-upgrade-reviewed-exception-frontier`
+- `hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier` as `environment-overblock`
+- `hold-compact-gpu-package-partial-frontier` as `environment-overblock`
+- `hold-compact-node-http-proxy-package-partial-frontier` as `environment-overblock`
+- `hold-compact-private-cluster-package-partial-frontier-202607090641-ownerfix` as `environment-overblock`
+- `hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier` as `environment-overblock`
+- `hold-compact-upgrade-reviewed-exception-frontier` as `environment-overblock`
 
-So this bounded repair removed misleading non-environment residue without suppressing true environment/prerequisite waits.
+Notably absent after the repair:
+
+- no `source-exactness-overblock` warning for `hold-compact-workload-autoscaler-package-partial-frontier`
+
+So this bounded repair removed misleading non-environment and non-source-proof residue without suppressing true environment/prerequisite waits.
 
 ## Acceptance mapping
 
@@ -183,14 +205,15 @@ Live compact summary plus live task-tree holder text already showed `aad-rbac` w
 
 Satisfied.
 
-- `defender-profile` was handled directly by the same bounded warning repair and is now cleared.
+- `defender-profile` was handled directly by the same bounded warning repair and is now cleared from `environment-overblock`.
+- `workload-autoscaler` was specifically handled for the retry ask and is now cleared from stale `source-exactness-overblock`.
 - `ccp-vpa-os-arch-variants` was audited as a peer that still remains truthfully flagged because it still depends on CCP pipeline environment plus ARM64/K8s>=1.34 capacity in staging.
 
 ### 3. Leave the compact loop with fewer misleading environment-overblock warnings or one exact documented reason residue cannot be reduced further
 
 Satisfied.
 
-The live packet now has fewer misleading warnings because `aad-rbac` and `defender-profile` no longer surface as generic `environment-overblock` noise. The remaining sampled residue (`upgrade`, `ccp-vpa-os-arch-variants`) is documented here as true prerequisite/capacity residue that should remain until controller/runtime semantics or exact external conditions change.
+The live packet now has fewer misleading warnings because `aad-rbac` and `defender-profile` no longer surface as generic `environment-overblock` noise, and `workload-autoscaler` no longer surfaces as fake `source-exactness-overblock` noise. The remaining sampled residue (`upgrade`, `ccp-vpa-os-arch-variants`) is documented here as true prerequisite/capacity residue that should remain until controller/runtime semantics or exact external conditions change.
 
 ## Remaining residue boundary
 

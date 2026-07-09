@@ -354,6 +354,7 @@ export function loadFeatureCompactLoopState(input: {
       retryable: existing?.retryable === false ? false : true,
       retryReason: existing?.retryReason ?? null,
       taskId: existing?.taskId ?? null,
+      frontierTaskIds: existing?.frontierTaskIds ?? null,
       attempts: existing?.attempts ?? 0,
       lastPlanPath: existing?.lastPlanPath ?? null,
       lastSummaryPath: existing?.lastSummaryPath ?? null,

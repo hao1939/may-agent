@@ -1170,6 +1170,7 @@ function isFeatureCompactNonEnvironmentFrontier(task: TaskNode): boolean {
     "publish.auth.ready",
     "compact.frontier.changed",
     "evidence.available",
+    "azure.capacity.available",
   ].includes(blockerWaitingForType(task));
 }
 
@@ -1265,6 +1266,7 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
         ]);
       if (sourceExactnessBlocked) {
         if (
+          isHumanOwnedExternalWait(task) ||
           isRepresentedBlockedFrontier(task) ||
           isFeatureCompactNonEnvironmentFrontier(task)
         ) {

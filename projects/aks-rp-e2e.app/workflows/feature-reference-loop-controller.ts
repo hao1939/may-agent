@@ -598,6 +598,30 @@ function updateControllerWorkflowProgress(input: {
           ? "feature-reference loop frontier is exact blocked wait stewardship; keep the durable root blocked until one named wait resolves or is replaced"
           : "feature-reference loop progress is incomplete; durable controller root must stay runnable until all feature references are done or exactly escalated",
       });
+    } else {
+      const openChildren =
+        typeof input.progress.openChildren === "number" &&
+        Number.isFinite(input.progress.openChildren)
+          ? input.progress.openChildren
+          : 0;
+      if (openChildren === 0) {
+        const now = new Date().toISOString();
+        task.status = "done";
+        task.state = "done";
+        task.blocker = undefined;
+        task.resolution = "completed";
+        task.done_at = task.done_at ?? now;
+        task.done_by = task.done_by ?? "loop-controller";
+        task.trace = {
+          ...(task.trace ?? {}),
+          completion_ready_at: now,
+          completion_ready_by: "feature-reference-loop-controller",
+          completion_ready_reason:
+            "workflowProgress.completionReady=true with zero open children; keep durable loop root as done context, not runnable backlog",
+          current_attempt_id: undefined,
+          worker_started_attempt_id: undefined,
+        };
+      }
     }
     task.context = {
       ...taskContext(task),

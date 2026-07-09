@@ -1577,6 +1577,115 @@ status: draft
     ).toContain("no runnable collector children");
   });
 
+  test("controller preserves completion-ready durable root as done context when no open children remain", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    await writeFile(
+      join(projectDir, "features", "alpha.yaml"),
+      `featureId: alpha\nstatus: draft\n`,
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "feature-reference-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "evidence", "archive", "feature-reference-alpha-20260709.md"),
+      `# Alpha\n\n## Official API References\n- https://github.com/Azure/azure-rest-api-specs/blob/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2024-05-01/managedClusters.json\n\n## Official Documentation References\n- https://learn.microsoft.com/azure/aks/learn/alpha\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, ".state", "feature-reference-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          loopTaskId: "aks-feature-reference-loop",
+          windowSize: 5,
+          cursor: 0,
+          features: {
+            alpha: {
+              featureKey: "alpha",
+              packetPath: "features/alpha.yaml",
+              packetKind: "feature",
+              layout: "migration-root-feature",
+              capabilityId: null,
+              coveredFeatureIds: [],
+              status: "done",
+              taskId: null,
+              attempts: 1,
+              lastOutputPath: "evidence/archive/feature-reference-alpha-20260709.md",
+              lastSummary: "Collected official feature references for alpha.",
+              collectorContractVersion:
+                featureReferenceCollectorContractVersion,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-reference-loop"].state = "backlog";
+    tree.tasks["aks-feature-reference-loop"].status = "backlog";
+    tree.tasks["aks-feature-reference-loop"].trace = {
+      current_attempt_id: "attempt-finished-loop",
+      worker_started_attempt_id: "attempt-finished-loop",
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-reference-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-reference-loop",
+          target: { taskId: "aks-feature-reference-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    const updatedTree = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      String(
+        updatedTree.tasks["aks-feature-reference-loop"].status ??
+          updatedTree.tasks["aks-feature-reference-loop"].state,
+      ),
+    ).toBe("done");
+    expect(updatedTree.tasks["aks-feature-reference-loop"].state).toBe("done");
+    expect(updatedTree.tasks["aks-feature-reference-loop"].resolution).toBe(
+      "completed",
+    );
+    expect(
+      updatedTree.tasks["aks-feature-reference-loop"].context.workflowProgress,
+    ).toMatchObject({
+      completionReady: true,
+      pending: 0,
+      running: 0,
+      done: 1,
+      error: 0,
+      openChildren: 0,
+    });
+    expect(
+      updatedTree.tasks["aks-feature-reference-loop"].trace
+        .completion_ready_reason,
+    ).toContain("done context");
+  });
+
   test("controller keeps completion open when non-held running features remain", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);

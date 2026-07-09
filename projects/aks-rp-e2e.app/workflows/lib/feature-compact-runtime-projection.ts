@@ -64,6 +64,12 @@ function lowerText(...values: unknown[]): string {
     .toLowerCase();
 }
 
+const durableLoopTaskIds = new Set([
+  "aks-spec-verification-loop",
+  "aks-feature-reference-loop",
+  "aks-feature-compact-loop",
+]);
+
 function jsonEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -91,6 +97,11 @@ function blockerCondition(task: TaskNode | undefined): string {
 function blockerWaitingFor(task: TaskNode | undefined): Record<string, unknown> | null {
   const blocker = recordValue(task?.blocker);
   return recordValue(blocker?.waiting_for);
+}
+
+function blockerOwner(task: TaskNode | undefined): string {
+  const blocker = recordValue(task?.blocker);
+  return stringValue(blocker?.owner);
 }
 
 function taskOwner(task: TaskNode | undefined): string {
@@ -163,6 +174,15 @@ export function compactWaitingForProjection(input: {
   };
 
   if (
+    input.errorClass === "runtime-product-lineage" ||
+    /(owner-decision|owner decision|human:|approve|approved|decline|declined|reroute|owner response|owner surface)/i.test(
+      text,
+    )
+  ) {
+    return { ...base, type: "owner.decision" };
+  }
+
+  if (
     /(kubeconfig|underlay|runtime[-_\s]?input|aks_rp_e2e_underlay_kubeconfig)/i.test(
       text,
     )
@@ -171,11 +191,19 @@ export function compactWaitingForProjection(input: {
   }
 
   if (
-    /(pipeline|artifact|reviewable artifacts|terminal azure devops pipeline|terminal github wait|workflow run|run \d+)/i.test(
+    /(pipeline|artifact|reviewable artifacts|terminal azure devops pipeline|terminal github wait|workflow run)/i.test(
       text,
     )
   ) {
     return { ...base, type: "pipeline.result.or.artifact.available" };
+  }
+
+  if (
+    /(owner|owner\/runtime|runtime\/product|runtime-product|runtime product|product|source|reclassif|promotion|authoritative|authority|rehome)/i.test(
+      text,
+    )
+  ) {
+    return { ...base, type: "owner.decision" };
   }
 
   if (
@@ -188,14 +216,6 @@ export function compactWaitingForProjection(input: {
       type: "azure.capacity.available",
       resource: "managedClusters",
     };
-  }
-
-  if (
-    /(owner|product|source|reclassif|promotion|authoritative|authority|rehome)/i.test(
-      text,
-    )
-  ) {
-    return { ...base, type: "owner.decision" };
   }
 
   if (/(\bauth\b|authentication|credential|publish)/i.test(text)) {
@@ -243,16 +263,19 @@ function uniqueSorted(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-function crossLoopExactFrontierTaskIds(input: {
+function featureRelatedBlockedTasks(input: {
   featureKey: string;
   tasks: Record<string, TaskNode>;
-}): string[] {
+  includeLoopChildren?: boolean;
+}): TaskNode[] {
   const featureScope = `feature:${input.featureKey}`;
   const featureCompactScope = `feature-compact:${input.featureKey}`;
   const specPrefix = `spec:spec.${input.featureKey}.`;
-  const matches = Object.values(input.tasks)
+  return Object.values(input.tasks)
     .filter((task) => taskStatus(task) === "blocked")
-    .filter((task) => task.parent_id !== "aks-feature-compact-loop")
+    .filter((task) =>
+      input.includeLoopChildren ? true : task.parent_id !== "aks-feature-compact-loop",
+    )
     .filter((task) => {
       const scopes = taskConflictScopes(task);
       if (
@@ -263,15 +286,46 @@ function crossLoopExactFrontierTaskIds(input: {
         return true;
       }
       const text = lowerText(
+        task?.id,
         task?.goal,
-        blockerCondition(task),
         JSON.stringify(task?.conflict_scope ?? []),
         JSON.stringify(taskContext(task)),
+        JSON.stringify(task?.inputs ?? []),
+        JSON.stringify(task?.outputs ?? []),
       );
       return text.includes(input.featureKey.toLowerCase());
     })
-    .map((task) => task.id);
-  return uniqueSorted(matches);
+    .filter((task) => !durableLoopTaskIds.has(task.id));
+}
+
+function crossLoopExactFrontierTaskIds(input: {
+  featureKey: string;
+  tasks: Record<string, TaskNode>;
+}): string[] {
+  return uniqueSorted(
+    featureRelatedBlockedTasks(input).map((task) => task.id),
+  );
+}
+
+function explicitNamedFrontierTaskIds(input: {
+  featureKey: string;
+  sourceTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+}): string[] {
+  const sourceTaskId = stringValue(input.sourceTask?.id);
+  if (!sourceTaskId) return [];
+  const text = exactWaitText(input.sourceTask);
+  if (!text) return [];
+  return uniqueSorted(
+    featureRelatedBlockedTasks({
+      featureKey: input.featureKey,
+      tasks: input.tasks,
+      includeLoopChildren: true,
+    })
+      .filter((task) => task.id !== sourceTaskId)
+      .filter((task) => text.includes(task.id.toLowerCase()))
+      .map((task) => task.id),
+  );
 }
 
 function exactWaitText(task: TaskNode | undefined): string {
@@ -310,7 +364,12 @@ function shouldRefreshExistingExactProjection(input: {
     text.includes("owner wait") ||
     text.includes("underlay") ||
     text.includes("kubeconfig") ||
-    text.includes("runtime-input")
+    text.includes("runtime-input") ||
+    text.includes("reviewed-exception") ||
+    text.includes("live-ready filter") ||
+    text.includes("mixed-frontier") ||
+    text.includes("split frontier") ||
+    text.includes("split-frontier")
   ) {
     return true;
   }
@@ -342,7 +401,9 @@ function featureStillNeedsSharperProjection(input: {
     text.includes("mixed-frontier") ||
     text.includes("split frontier") ||
     text.includes("split-frontier") ||
-    text.includes("compact-facing")
+    text.includes("compact-facing") ||
+    text.includes("execute-ready") ||
+    text.includes("promotion")
   ) {
     return true;
   }
@@ -360,6 +421,7 @@ function projectedCrossLoopCompactTaskId(input: {
   const candidates = Object.values(input.tasks)
     .filter((task) => taskStatus(task) === "blocked")
     .filter((task) => task.parent_id !== "aks-feature-compact-loop")
+    .filter((task) => !durableLoopTaskIds.has(task.id))
     .filter((task) => {
       const scopes = taskConflictScopes(task);
       if (scopes.includes(featureCompactScope)) return true;
@@ -393,6 +455,7 @@ function compatibleSharedReplacementTaskId(input: {
   const candidates = Object.values(input.tasks)
     .filter((task) => task.id !== input.excludeTaskId)
     .filter((task) => taskStatus(task) === "blocked")
+    .filter((task) => !durableLoopTaskIds.has(task.id))
     .map((task) => ({ task, text: sharedWaitText(task) }))
     .filter(({ text }) => text.includes(input.featureKey.toLowerCase()))
     .filter(({ text }) => text.includes("shared") && text.includes("wait"))
@@ -455,7 +518,8 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
     if (blocker) {
       const desiredOwner = compactWaitOwner(blockerCondition(child));
       const existingOwner = taskOwner(child);
-      if (!existingOwner && desiredOwner) {
+      const existingBlockerOwner = blockerOwner(child);
+      if (desiredOwner && existingOwner !== desiredOwner) {
         child.owner = desiredOwner;
         taskRepairs.push({
           taskId: child.id,
@@ -463,7 +527,22 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
           field: "task.owner",
           before: existingOwner,
           after: desiredOwner,
-          reason: `Backfilled blank surviving exact compact wait owner on ${child.id}.`,
+          reason: existingOwner
+            ? `Aligned surviving exact compact wait owner on ${child.id}.`
+            : `Backfilled blank surviving exact compact wait owner on ${child.id}.`,
+        });
+      }
+      if (desiredOwner && existingBlockerOwner !== desiredOwner) {
+        blocker.owner = desiredOwner;
+        taskRepairs.push({
+          taskId: child.id,
+          featureKey,
+          field: "task.projection",
+          before: existingBlockerOwner,
+          after: desiredOwner,
+          reason: existingBlockerOwner
+            ? `Aligned blocker owner on ${child.id} with the exact compact frontier.`
+            : `Backfilled blocker owner on ${child.id} from the exact compact frontier.`,
         });
       }
 
@@ -493,35 +572,42 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
   for (const [featureKey, feature] of Object.entries(input.state.features)) {
     if (feature.status !== "blocked" && feature.status !== "error") continue;
 
-    const crossLoopTaskIds = crossLoopExactFrontierTaskIds({
-      featureKey,
-      tasks: input.tasks,
-    });
-    if (crossLoopTaskIds.length > 0) {
-      const previousFrontierTaskIds = uniqueSorted(
-        Array.isArray(feature.frontierTaskIds)
-          ? feature.frontierTaskIds.filter(
-              (taskId): taskId is string => typeof taskId === "string",
-            )
-          : [],
-      );
-      if (!sameSet(previousFrontierTaskIds, crossLoopTaskIds)) {
-        stateRepairs.push({
-          featureKey,
-          field: "frontierTaskIds",
-          before: previousFrontierTaskIds,
-          after: crossLoopTaskIds,
-          reason: `Reprojected ${featureKey} to exact cross-loop frontier holders ${crossLoopTaskIds.join(", ")}.`,
-        });
-        feature.frontierTaskIds = crossLoopTaskIds;
-      }
-    }
-
     const liveExactWaitTaskId =
       liveExactWaitTaskIds.get(featureKey) ??
       fallbackGenericExactWaitTaskIds.get(featureKey) ??
       projectedCrossLoopCompactTaskId({ featureKey, tasks: input.tasks }) ??
       null;
+    const namedFrontierTaskIds = explicitNamedFrontierTaskIds({
+      featureKey,
+      sourceTask: liveExactWaitTaskId ? input.tasks[liveExactWaitTaskId] : undefined,
+      tasks: input.tasks,
+    });
+    const crossLoopTaskIds = crossLoopExactFrontierTaskIds({
+      featureKey,
+      tasks: input.tasks,
+    });
+    const projectedFrontierTaskIds =
+      namedFrontierTaskIds.length > 0 ? namedFrontierTaskIds : crossLoopTaskIds;
+    const previousFrontierTaskIds = uniqueSorted(
+      Array.isArray(feature.frontierTaskIds)
+        ? feature.frontierTaskIds.filter(
+            (taskId): taskId is string => typeof taskId === "string",
+          )
+        : [],
+    );
+    if (!sameSet(previousFrontierTaskIds, projectedFrontierTaskIds)) {
+      stateRepairs.push({
+        featureKey,
+        field: "frontierTaskIds",
+        before: previousFrontierTaskIds,
+        after: projectedFrontierTaskIds,
+        reason:
+          namedFrontierTaskIds.length > 0
+            ? `Reprojected ${featureKey} to the exact downstream carrier(s) named by ${liveExactWaitTaskId}: ${projectedFrontierTaskIds.join(", ")}.`
+            : `Reprojected ${featureKey} to exact cross-loop frontier holders ${projectedFrontierTaskIds.join(", ")}.`,
+      });
+      feature.frontierTaskIds = projectedFrontierTaskIds;
+    }
     if (featureKey === "serverless-schedulerctrl" && liveExactWaitTaskId) {
       const liveTask = input.tasks[liveExactWaitTaskId];
       if (boundedServerlessUnderlayProjection(liveTask)) {

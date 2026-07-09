@@ -6,6 +6,8 @@
  * completion.
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { isAbsolute, resolve } from "node:path";
 import {
   workflowResult,
   type StructuredWorkflowResult,
@@ -75,6 +77,44 @@ type SessionWorkflowContext = WorkflowContext & {
   ) => Promise<unknown>;
 };
 
+function normalizedFinishDeliverablePaths(result: unknown): string[] {
+  const finishResult = (
+    result as {
+      finishResult?: { deliverables?: Array<{ path?: unknown }> };
+    }
+  )?.finishResult;
+  const deliverables = Array.isArray(finishResult?.deliverables)
+    ? finishResult.deliverables
+    : [];
+  return [
+    ...new Set(
+      deliverables
+        .map((item) =>
+          typeof item?.path === "string" ? item.path.trim() : "",
+        )
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function resolveDeliverableTexts(result: unknown): string[] {
+  const texts: string[] = [];
+  for (const deliverablePath of normalizedFinishDeliverablePaths(result)) {
+    const absolutePath = isAbsolute(deliverablePath)
+      ? deliverablePath
+      : resolve("/app/projects/aks-rp-e2e", deliverablePath);
+    if (!existsSync(absolutePath)) continue;
+    try {
+      const text = readFileSync(absolutePath, "utf8").trim();
+      if (text) texts.push(text);
+    } catch {
+      // Best-effort only; keep the worker completion durable even if a cited
+      // deliverable cannot be read locally.
+    }
+  }
+  return texts;
+}
+
 function resultTextCandidates(result: unknown): string[] {
   const candidates: string[] = [];
   const seen = new Set<unknown>();
@@ -116,7 +156,10 @@ function resultTextCandidates(result: unknown): string[] {
 function fixForwardResultFromSessionResult(
   result: unknown,
 ): FixForwardResult | null {
-  for (const candidate of resultTextCandidates(result)) {
+  for (const candidate of [
+    ...resultTextCandidates(result),
+    ...resolveDeliverableTexts(result),
+  ]) {
     const parsed = parseFixForwardResult(candidate);
     if (parsed) return parsed;
   }
@@ -124,21 +167,7 @@ function fixForwardResultFromSessionResult(
 }
 
 function resultEvidence(result: unknown): string[] {
-  const finishResult = (
-    result as {
-      finishResult?: { deliverables?: Array<{ path?: unknown }> };
-    }
-  )?.finishResult;
-  const deliverables = Array.isArray(finishResult?.deliverables)
-    ? finishResult.deliverables
-    : [];
-  return [
-    ...new Set(
-      deliverables
-        .map((item) => (typeof item?.path === "string" ? item.path.trim() : ""))
-        .filter(Boolean),
-    ),
-  ];
+  return normalizedFinishDeliverablePaths(result);
 }
 
 function taskContext(task: TaskNode): Record<string, unknown> {

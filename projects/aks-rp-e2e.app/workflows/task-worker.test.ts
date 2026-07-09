@@ -656,6 +656,107 @@ FIX_FORWARD_RESULT:
     ).toBe(true);
   });
 
+  test("captures structured fix-forward result from cited deliverable when session result omits marker", async () => {
+    const projectDir = await makeProject();
+    const deliverablePath = join(projectDir, "fix-forward-from-deliverable.md");
+    await writeFile(
+      deliverablePath,
+      `# deliverable\n\nFIX_FORWARD_RESULT:\n\
+\`\`\`json\n{\n  "workflow": "fix-forward",\n  "subject": { "kind": "feature-family", "id": "kms" },\n  "classification": "other-known-class",\n  "diagnosis": "The durable evidence file carries the structured result.",\n  "minimumDiagnosisPacket": {\n    "target": "staging",\n    "branch": "dev",\n    "runId": "28819401584",\n    "resultPath": "evidence/fix-forward-from-deliverable.md",\n    "failingPhase": "review",\n    "failingAssertion": "same frontier remains",\n    "requestOrResponseExcerpt": "unchanged exact wait",\n    "referencesChecked": ["state.json"],\n    "inputFingerprint": "",\n    "errorFingerprint": ""\n  },\n  "changedFiles": ["evidence/fix-forward-from-deliverable.md"],\n  "verification": {\n    "runId": "",\n    "resultPath": "evidence/fix-forward-from-deliverable.md",\n    "status": "not-run"\n  },\n  "nextAction": "exact-wait",\n  "nextActionReason": "The deliverable itself is the authoritative structured packet."\n}\n\`\`\`\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["fix-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "fix-task": {
+              id: "fix-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Fix one failed spec.",
+              inputs: ["spec:one"],
+              outputs: ["runs/test-results/"],
+              acceptance: ["Fix-forward result is structured"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+                subjectKind: "spec-family",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "fix-task" });
+    const dispatched: Array<{ type: string; payload: Record<string, any> }> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "Reviewed the family and wrote durable evidence.",
+        finishResult: {
+          status: "success",
+          summary: "Reviewed the family and wrote durable evidence.",
+          deliverables: [{ path: deliverablePath }],
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(
+      dispatched[0].payload.workflowResult.details.fixForward,
+    ).toMatchObject({
+      workflow: "fix-forward",
+      classification: "other-known-class",
+      nextAction: "exact-wait",
+    });
+    expect(
+      dispatched[0].payload.workflowResult.details
+        .fixForwardStructuredResultPresent,
+    ).toBe(true);
+  });
+
   test("completion helpers accept legacy state-only active tasks", async () => {
     const projectDir = await makeProject();
     await writeFile(

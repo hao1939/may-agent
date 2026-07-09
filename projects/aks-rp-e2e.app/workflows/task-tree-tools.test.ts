@@ -940,6 +940,75 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses source-exactness-overblock warning for exact human-owned external waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["exact-human-source-holder", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "exact-human-source-holder": {
+              id: "exact-human-source-holder",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Preserve the exact authoritative owner/source wait for the LocalDNS reviewed-exception pair until the human owner returns a narrowed answer.",
+              outputs: ["evidence/archive/exact-human-source-holder.md"],
+              acceptance: ["exact holder remains visible"],
+              blocker: {
+                condition:
+                  "Blocked on returned authoritative owner/source decision after source-equivalent evidence was exhausted; resume only when the human owner returns one exact narrowed source answer.",
+                category: "external-wait",
+                owner: "human",
+                waiting_for: {
+                  type: "evidence.available",
+                  taskId: "exact-human-source-holder",
+                },
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses environment-overblock warning for feature-compact exact non-environment frontiers", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -1017,6 +1086,84 @@ describe("task tree tools", () => {
                   featureKey: "aad-rbac",
                   target: "staging",
                   errorClass: "package-partial",
+                  scope: "feature-compact",
+                },
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses environment-overblock warning for compact exact capacity waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["compact-capacity-frontier", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-capacity-frontier": {
+              id: "compact-capacity-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Hold compact feature ccp-vpa-os-arch-variants only while the exact CCP pipeline / ARM64 capacity boundary remains unchanged.",
+              outputs: ["evidence/archive/compact-capacity-frontier.md"],
+              acceptance: ["capacity frontier remains visible"],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "ccp-vpa-os-arch-variants",
+                errorClass: "reviewed-exception",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Do not rerun unchanged. Compact check already passes and the only remaining compact member still depends on the same exact external execution boundary: CCP pipeline infrastructure in project staging or ARM64 node pools with Kubernetes >= 1.34 in the test subscription.",
+                category: "external-wait",
+                owner: "product-owner",
+                waiting_for: {
+                  type: "azure.capacity.available",
+                  featureKey: "ccp-vpa-os-arch-variants",
+                  target: "staging",
+                  errorClass: "reviewed-exception",
                   scope: "feature-compact",
                 },
               },

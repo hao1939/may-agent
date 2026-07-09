@@ -25,6 +25,15 @@ function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function stableIdPart(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
 function packetAbsolutePath(input: {
   appDir: string;
   projectDir: string;
@@ -112,6 +121,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "target") ||
     stringValue(triggerValue(trigger, "target")) ||
     "human";
+  const explicitApprovalId =
+    triggerString(trigger, "approvalId") ||
+    triggerString(trigger, "approval_id") ||
+    stringValue(triggerValue(trigger, "approvalId")) ||
+    stringValue(triggerValue(trigger, "approval_id"));
+  const explicitWaitId =
+    triggerString(trigger, "waitId") ||
+    triggerString(trigger, "wait_id") ||
+    stringValue(triggerValue(trigger, "waitId")) ||
+    stringValue(triggerValue(trigger, "wait_id"));
   const sender =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
 
@@ -165,9 +184,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
+  const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
+  const approvalId = explicitApprovalId || correlationKey;
+  const waitId = explicitWaitId || `wait:${correlationKey}`;
+  const expectedResponse = {
+    type: "project.approval.submitted",
+    target: { project: "aks-rp-e2e" },
+    approvalId,
+    waitId,
+    pathId,
+    packetPath: repoPacketPath,
+    acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+  };
+  const resumeCondition =
+    "Resume the linked wait when project.approval.submitted carries this approvalId or waitId with a bounded decision.";
+
   const content = [
     "AKS RP E2E approval packet dispatch",
     "",
+    `Approval id: ${approvalId}`,
+    `Wait id: ${waitId}`,
     `Requested action: ${requestedAction}`,
     `Feature path: ${pathId}`,
     `Packet: ${repoPacketPath}`,
@@ -193,9 +229,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       priority: "P2",
       reason,
       requestedAction,
+      approvalId,
+      waitId,
+      correlationKey,
       pathId,
       packetPath: repoPacketPath,
       packetAbsolutePath: absolutePacketPath,
+      expectedResponse,
+      resumeCondition,
       summary: truncate(summary, 3000),
       content,
       evidence: {
@@ -205,7 +246,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         appTaskTree: resolveTaskTreePath(appDir),
         projectState: join(appDir, ".state", "project-state.json"),
       },
-      dedupKey: `aks-rp-e2e:approval-dispatch:${pathId}:${requestedAction}:${repoPacketPath}`,
+      dedupKey: correlationKey,
     });
   } catch {
     appendDispatchRun(appDir, {
@@ -225,6 +266,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packetAbsolutePath: absolutePacketPath,
     pathId,
     requestedAction,
+    approvalId,
+    waitId,
+    correlationKey,
+    expectedResponse,
+    resumeCondition,
     target,
   });
 

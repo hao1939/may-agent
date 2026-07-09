@@ -1454,6 +1454,16 @@ function materializeFocusedFailedBranchDiagnosticTasks(
   for (const [featureKey, item] of Object.entries(input.state.features)) {
     if (createdTaskIds.length >= input.maxTasks) break;
     if (item.status !== "error") continue;
+    if (
+      hasAuthoritativeBlockedFeatureRepresentation({
+        loopTask: input.loopTask,
+        featureKey,
+        item,
+        tasks: input.tasks,
+      })
+    ) {
+      continue;
+    }
     const result = compactResultFromItem({
       appDir: input.appDir,
       item,
@@ -1947,6 +1957,25 @@ function compactWaitingFor(
     errorClass,
     scope: "feature-compact",
   };
+  if (text.includes("kubeconfig") || text.includes("underlay")) {
+    return { ...base, type: "environment.prerequisite.ready" };
+  }
+  if (text.includes("pipeline") || text.includes("artifact")) {
+    return { ...base, type: "pipeline.result.or.artifact.available" };
+  }
+  if (
+    errorClass === "runtime-product-lineage" ||
+    text.includes("owner") ||
+    text.includes("runtime/product") ||
+    text.includes("runtime-product") ||
+    text.includes("runtime product") ||
+    text.includes("product") ||
+    text.includes("source") ||
+    text.includes("reclassification") ||
+    text.includes("promotion")
+  ) {
+    return { ...base, type: "owner.decision" };
+  }
   if (text.includes("capacity") || text.includes("quota")) {
     return {
       ...base,
@@ -1960,21 +1989,6 @@ function compactWaitingFor(
     text.includes("publish")
   ) {
     return { ...base, type: "publish.auth.ready" };
-  }
-  if (text.includes("pipeline") || text.includes("artifact")) {
-    return { ...base, type: "pipeline.result.or.artifact.available" };
-  }
-  if (text.includes("kubeconfig") || text.includes("underlay")) {
-    return { ...base, type: "environment.prerequisite.ready" };
-  }
-  if (
-    text.includes("owner") ||
-    text.includes("product") ||
-    text.includes("source") ||
-    text.includes("reclassification") ||
-    text.includes("promotion")
-  ) {
-    return { ...base, type: "owner.decision" };
   }
   return { ...base, type: "compact.frontier.changed" };
 }
@@ -2266,6 +2280,80 @@ function hasOpenProjectedFeatureRepresentation(input: {
   }
 
   return false;
+}
+
+function hasAuthoritativeBlockedFeatureRepresentation(input: {
+  loopTask: TaskNode | undefined;
+  featureKey: string;
+  item: FeatureCompactItemState;
+  tasks: Record<string, TaskNode>;
+}): boolean {
+  if (input.loopTask) {
+    for (const childId of input.loopTask.children ?? []) {
+      const child = input.tasks[childId];
+      if (!child) continue;
+      const status = taskStatus(child);
+      if (status !== "blocked" && status !== "waiting") continue;
+      if (
+        featureKeysRepresentedByTask({
+          task: child,
+          knownFeatureKeys: [input.featureKey],
+        }).has(input.featureKey)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  const projectedTaskIds = new Set<string>();
+  if (typeof input.item.taskId === "string" && input.item.taskId.trim()) {
+    projectedTaskIds.add(input.item.taskId.trim());
+  }
+  if (Array.isArray(input.item.frontierTaskIds)) {
+    for (const taskId of input.item.frontierTaskIds) {
+      if (typeof taskId === "string" && taskId.trim()) {
+        projectedTaskIds.add(taskId.trim());
+      }
+    }
+  }
+
+  for (const taskId of projectedTaskIds) {
+    const task = input.tasks[taskId];
+    if (!task) continue;
+    const status = taskStatus(task);
+    if (status !== "blocked" && status !== "waiting") continue;
+    if (featureKeysRepresentedByTask({ task }).has(input.featureKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function projectedBlockedFeatureKeys(input: {
+  state: FeatureCompactLoopState;
+  tasks: Record<string, TaskNode>;
+}): Set<string> {
+  const keys = new Set<string>();
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (item.status !== "blocked") continue;
+    const hasProjectedFrontierTaskIds =
+      Array.isArray(item.frontierTaskIds) &&
+      item.frontierTaskIds.some(
+        (taskId) => typeof taskId === "string" && taskId.trim().length > 0,
+      );
+    if (
+      hasProjectedFrontierTaskIds ||
+      hasOpenProjectedFeatureRepresentation({
+        featureKey,
+        item,
+        tasks: input.tasks,
+      })
+    ) {
+      keys.add(featureKey);
+    }
+  }
+  return keys;
 }
 
 function hasCurrentLiveProof(
@@ -2807,6 +2895,7 @@ function compactLoopWorkflowProgress(input: {
   openSupportChildren: number;
   blockedWaitChildren: number;
   blockedWaitFeatureKeys?: Set<string>;
+  projectedBlockedFeatureKeys?: Set<string>;
   representedFeatureKeys?: Set<string>;
   activePipelineFeatureKeys?: Set<string>;
   activePipelineWaits?: ActivePipelineWait[];
@@ -2874,9 +2963,17 @@ function compactLoopWorkflowProgress(input: {
       representedFeatureErrorCount -
       representedSupportErrorCount,
   );
+  const representedBlockedFeatureKeys = new Set<string>([
+    ...(input.blockedWaitFeatureKeys ?? new Set<string>()),
+    ...(input.projectedBlockedFeatureKeys ?? new Set<string>()),
+  ]);
+  const representedBlockedCount = Object.entries(input.state.features).filter(
+    ([featureKey, feature]) =>
+      feature.status === "blocked" && representedBlockedFeatureKeys.has(featureKey),
+  ).length;
   const unrepresentedBlockedCount = Math.max(
     0,
-    blocked - blockedWaitBlockedCount,
+    blocked - representedBlockedCount,
   );
   const unrepresentedNonTerminalCount =
     pending +
@@ -3571,6 +3668,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     latestLoopTask,
     latestTree.tasks,
   );
+  const latestProjectedBlockedFeatureKeys = projectedBlockedFeatureKeys({
+    state,
+    tasks: latestTree.tasks,
+  });
   const latestRepresentedSupportErrorClasses = new Set<string>([
     ...(latestLoopTask
       ? representedSupportErrorClasses(latestLoopTask, latestTree.tasks)
@@ -3626,6 +3727,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             knownFeatureKeys,
           )
         : new Set<string>(),
+      projectedBlockedFeatureKeys: latestProjectedBlockedFeatureKeys,
       representedFeatureKeys: latestRepresentedFeatureKeys,
       activePipelineFeatureKeys: latestActivePipelineFeatureKeys,
       activePipelineWaits: latestActivePipelineWaits,
