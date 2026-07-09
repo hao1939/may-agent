@@ -89,7 +89,7 @@ Updated: 2026-04-11 ~22:25 UTC
 | **Wave 1 Gym Validation** | ✅ COMPLETE | coach | 9/9 behavioral pass. know-when-blocked 3/3, evidence-over-narrative 3/3 (8/8 checks), classify-then-act 3/3 (6/6). Results: `agents/coach/workspace/growth-receipts/wave1-deployment-results.md`. |
 | **Bob Wave 1 Treatment Scenarios** | ✅ COMPLETE | bob | 3 treatment scenarios created in gym. DD-660 KB integration done. |
 | **DD-660 KB Integration** | ✅ COMPLETE | bob | Positional privilege findings integrated into KE-065 and H-091. |
-| **Bob "Graduate the Gym" Review** | ✅ COMPLETE | bob | APPROVED WITH CONDITIONS. Two exit conditions: EXP-098 + Wave 2 validation. 188-line review at `agents/shared/knowledge/synthesis/GYM-GRADUATION-REVIEW.md`. |
+| **Bob "Graduate the Gym" Review** | ✅ COMPLETE | bob | APPROVED WITH CONDITIONS. Two exit conditions: EXP-098 + Wave 2 validation. Merged into `projects/scout-knowledge-lib/reports/shared-synthesis-merge-2026-07-09.md`. |
 | **Wave 2 Coach Validation** | ✅ COMPLETE | coach | All 5 scenarios tested 3x each. Part 2: convention-verify 17% convention / context-xref 100% behavior. Part 3: missing-prereq 87% / silent-dep 100% / judgment-ambiguous 100%. Cross-ref consistently strong. |
 | **EXP-098 L3 Treatment Testing** | ✅ COMPLETE | coach | **LANDMARK**: Cross-reference 100% (3/3) on L3 cascading-state. Baseline 0%, externalization 0%. Strongest treatment effect observed in any experiment: 0%→100%. |
 | **Gym Graduation Exit Conditions** | ✅ BOTH MET | - | EXP-098 ✅ (cross-ref 100% on L3) + Wave 2 validation ✅ (5 scenarios done). **Gym can now enter maintenance/regression mode.** |

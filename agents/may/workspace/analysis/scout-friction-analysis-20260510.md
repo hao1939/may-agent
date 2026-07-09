@@ -12,7 +12,7 @@ Examining the last 19 evaluated scout sessions reveals a **recurring pattern**: 
 
 **Session s_1778423107793 (overridden to needs_improvement)**:
 - Overwrote `scout/workspace/digest/today.md` — lost prior digest entries
-- Clobbered `shared/knowledge/entries/KE-004.md` and `KE-005.md` with unrelated content
+- Clobbered legacy KE-004 and KE-005 files, now represented by `projects/scout-knowledge-lib/reports/shared-ke-001-090-merge-2026-07-09.md`, with unrelated content
 - Commit `5995adb14` shows **40 insertions, 304 deletions** — destructive shape
 
 **Session s_1778430307430 (overridden to needs_improvement)**:

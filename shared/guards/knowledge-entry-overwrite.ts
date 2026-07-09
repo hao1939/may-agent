@@ -5,10 +5,11 @@ import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
  *
  * Scout/explore sessions recently used whole-file writes against legacy shared
  * knowledge entries (KE-001, KE-002, KE-021), replacing canonical content while
- * claiming they had created new knowledge entries. Low-numbered KE files are
- * established shared memory; new entries should use the current high-numbered
- * namespace, and corrections to legacy entries should be explicit read()+edit()
- * changes rather than blind write()/shell redirection overwrites.
+ * claiming they had created new knowledge entries. The shared KE directory is
+ * now a legacy source being merged into Scout-owned project knowledge. New
+ * durable knowledge should be written under projects/scout-knowledge-lib, and
+ * corrections to legacy entries should be explicit read()+edit() changes rather
+ * than blind write()/shell redirection overwrites.
  *
  * This guard warns instead of blocking. Guard signals are evidence for review
  * and follow-up; the workflow remains responsible for judging whether to fix,
@@ -59,16 +60,20 @@ function normalizePath(p: string): string {
 function legacyKnowledgeEntryFromPath(p: string | undefined): string | null {
   if (!p) return null;
   const normalized = normalizePath(p);
-  const match = normalized.match(/^shared\/knowledge\/entries\/(KE-\d{1,3}(?!\d)(?:[-\w]*)?\.md)$/);
+  const match = normalized.match(
+    /^shared\/knowledge\/entries\/(KE-\d+(?:[-\w]*)?\.md)$/,
+  );
   return match ? `shared/knowledge/entries/${match[1]}` : null;
 }
 
-function legacyKnowledgeEntriesFromShellWrite(command: string | undefined): string[] {
+function legacyKnowledgeEntriesFromShellWrite(
+  command: string | undefined,
+): string[] {
   if (!command) return [];
   const hits = new Set<string>();
   const patterns = [
-    /(?:>|>>)\s*['"]?(?:\/app\/agents\/|\/app\/|agents\/)?(shared\/knowledge\/entries\/KE-\d{1,3}(?!\d)(?:[-\w]*)?\.md)/g,
-    /\btee\s+(?:-a\s+)?['"]?(?:\/app\/agents\/|\/app\/|agents\/)?(shared\/knowledge\/entries\/KE-\d{1,3}(?!\d)(?:[-\w]*)?\.md)/g,
+    /(?:>|>>)\s*['"]?(?:\/app\/agents\/|\/app\/|agents\/)?(shared\/knowledge\/entries\/KE-\d+(?:[-\w]*)?\.md)/g,
+    /\btee\s+(?:-a\s+)?['"]?(?:\/app\/agents\/|\/app\/|agents\/)?(shared\/knowledge\/entries\/KE-\d+(?:[-\w]*)?\.md)/g,
   ];
 
   for (const pattern of patterns) {
@@ -99,7 +104,9 @@ export const guard: WorkflowGuard = {
         if (legacyPath) risky.add(legacyPath);
       }
       if (call.name === "bash") {
-        for (const legacyPath of legacyKnowledgeEntriesFromShellWrite(call.command)) {
+        for (const legacyPath of legacyKnowledgeEntriesFromShellWrite(
+          call.command,
+        )) {
           risky.add(legacyPath);
         }
       }
@@ -107,13 +114,15 @@ export const guard: WorkflowGuard = {
 
     if (risky.size === 0) return [];
 
-    return [{
-      type: "warn",
-      reason:
-        `Shared Knowledge Integrity risk: finish(success) followed whole-file writing legacy KE path(s): ` +
-        `${[...risky].join(", ")}. Low-numbered KE files are canonical shared memory. ` +
-        `If you are adding new knowledge, choose a new unused high-numbered KE id and verify it does not exist. ` +
-        `If you are updating an existing KE, read() it first and use edit() with a narrow diff or dated follow-up rather than write()/shell redirection.`,
-    }];
+    return [
+      {
+        type: "warn",
+        reason:
+          `Shared Knowledge Integrity risk: finish(success) followed whole-file writing legacy KE path(s): ` +
+          `${[...risky].join(", ")}. The shared KE directory is legacy material being merged into Scout-owned knowledge. ` +
+          `If you are adding new durable knowledge, write under projects/scout-knowledge-lib/knowledge/ or projects/scout-knowledge-lib/reports/. ` +
+          `If you are updating an existing KE, read() it first and use edit() with a narrow diff or dated follow-up rather than write()/shell redirection.`,
+      },
+    ];
   },
 };
