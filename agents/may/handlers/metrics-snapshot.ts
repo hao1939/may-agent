@@ -1438,7 +1438,6 @@ export const create: HandlerModule["create"] = (
                      s.app_id || '-schedule-' || s.schedule_id,
                      s.app_id || '-' || s.schedule_id
                    )
-                   AND follow.owner = s.owner
                  )
                  OR (
                    json_valid(follow.data)

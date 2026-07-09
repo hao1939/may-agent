@@ -148,11 +148,8 @@ async function routePlatformEvent(
       // (guard noise scoping). Remove these once the scoping fix lands.
       "guard.triggered-count-24h",
       "guard.warned-count-24h",
-      // Category 3: schedule-orphan — measurement fixed to count
-      // handler.completed for the self-handler as valid follow-up proof.
-      // Keeping deferred until next metrics-snapshot confirms value=0.
-      // Remove once confirmed recovered.
-      "runtime.project-app-schedule-orphan-count-1h",
+      // Category 3: (removed — measurement query fixed to not require owner
+      // match on handler.completed events, since handler name already correlates)
       // Category 4: escalation pending count measures a human-action
       // backlog. All pending escalations require human-provided artifacts
       // (external files, clean git baselines) that the owner cannot self-service.
