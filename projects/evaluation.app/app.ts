@@ -434,6 +434,7 @@ export default defineProjectApp({
           "evaluation.project.review_started",
           "evaluation.project.reviewed",
           "evaluation.project.notification.requested",
+          "project.planning.requested",
         ],
         description:
           "Samples a target project app and writes a human-facing health report.",
@@ -474,6 +475,7 @@ export default defineProjectApp({
       "evaluation.triage_closed",
       "evaluation.learning_created",
       "evaluation.project.review_started",
+      "project.owner.requested",
       "heartbeat.step_started",
       "heartbeat.skipped",
       "handler.workflow_dispatched",

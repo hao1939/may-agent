@@ -12,5 +12,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts", "workflows/**/*.ts"]
+  "include": ["app.ts", "workflows/**/*.ts"],
+  "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
 }

@@ -80,8 +80,10 @@ type Judgment = {
 };
 
 type ProjectHealthState = {
+  lastReportPath?: string;
   lastVerdict?: string;
   lastDedupeKey?: string;
+  lastRequestedHumanAction?: string;
   lastNotify?: boolean;
 };
 
@@ -100,6 +102,10 @@ function objectRecord(value: unknown): Record<string, unknown> {
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+function truncate(text: string, max = 500): string {
+  return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
 function formatCountMap(value: unknown): string {
@@ -209,10 +215,26 @@ function runArtifactSummary(recentRuns: Record<string, unknown>): string {
   return entries.length > 0 ? entries.join("\n") : "- none";
 }
 
+function escalationSummary(escalations: Record<string, unknown>): string {
+  const counts = objectRecord(escalations.counts);
+  const usage = objectRecord(escalations.usage);
+  return [
+    `- created in lookback: ${String(counts.created ?? "unknown")}`,
+    `- open: ${String(counts.open ?? "unknown")}; stale open: ${String(counts.staleOpen ?? "unknown")}; closed: ${String(counts.closed ?? "unknown")}`,
+    `- approval dispatch: ${formatCountMap(counts.approvalDispatchByResult)}`,
+    `- task linkage: blocked-with-escalation-hint=${String(usage.blockedWithEscalationHint ?? "unknown")}; blocked-with-owner-or-external-path=${String(usage.blockedWithOwnerOrExternalPath ?? "unknown")}; blocked-without-owner-or-external-path=${String(usage.blockedWithoutOwnerOrExternalPath ?? "unknown")}`,
+    `- open sample: ${compactList(escalations.openSample, 5)}`,
+    `- stale sample: ${compactList(escalations.staleOpenSample, 5)}`,
+    `- recent approval asks: ${compactList(escalations.recentApprovalDispatches, 5)}`,
+    `- warnings: ${asArray(escalations.warnings).map(String).join("; ") || "none"}`,
+  ].join("\n");
+}
+
 function humanFactSummary(
   packet: Record<string, unknown>,
   factsRelativePath: string,
 ): string {
+  const previousReview = objectRecord(packet.previousReview);
   const taskTree = objectRecord(packet.taskTree);
   const counts = objectRecord(taskTree.counts);
   const loops = objectRecord(packet.loops);
@@ -220,10 +242,17 @@ function humanFactSummary(
   const projectState = objectRecord(packet.projectState);
   const selfRecovery = objectRecord(packet.selfRecovery);
   const recentRuns = objectRecord(packet.recentRuns);
+  const escalations = objectRecord(packet.escalations);
   const targetGit = objectRecord(packet.targetGit);
 
   return [
     `Full facts: ${factsRelativePath}`,
+    "",
+    "Previous review:",
+    `- report: ${String(previousReview.reportPath ?? "none")}`,
+    `- verdict: ${String(previousReview.verdict ?? "none")}`,
+    `- concern: ${String(previousReview.mainConcern ?? "none")}`,
+    `- action: ${String(previousReview.requestedHumanAction ?? "none")}`,
     "",
     "Task tree:",
     `- total=${String(counts.total ?? "unknown")}; leaves=${String(counts.leaves ?? "unknown")}`,
@@ -241,6 +270,9 @@ function humanFactSummary(
     "",
     "App-local run artifacts:",
     runArtifactSummary(recentRuns),
+    "",
+    "Escalations and approvals:",
+    escalationSummary(escalations),
     "",
     "Runtime:",
     `- target readout metrics: ${projectStateMetricsSummary(projectState)}`,
@@ -366,6 +398,13 @@ function tailLines(path: string, count: number): unknown {
   }
 }
 
+function readJsonlTail(path: string, count: number): Record<string, unknown>[] {
+  const rows = tailLines(path, count);
+  return asArray(rows)
+    .map(objectRecord)
+    .filter((row) => Object.keys(row).length > 0);
+}
+
 function countBy<T>(
   items: T[],
   fn: (item: T) => string | undefined,
@@ -381,6 +420,54 @@ function targetProjectIds(target: TargetConfig): string[] {
   return Array.from(
     new Set([target.targetProject, target.targetProject.replace(/\.app$/, "")]),
   );
+}
+
+function parseRowData(row: Record<string, unknown>): Record<string, unknown> {
+  const raw = row.data;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw !== "string" || raw.length === 0) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function stringFromRecord(
+  record: Record<string, unknown>,
+  keys: string[],
+): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return "";
+}
+
+function escalationKey(row: Record<string, unknown>): string {
+  const data = parseRowData(row);
+  return (
+    stringFromRecord(data, [
+      "escalationId",
+      "escalation_id",
+      "id",
+      "dedupKey",
+      "dedupeKey",
+    ]) || String(row.id ?? "")
+  );
+}
+
+function rowMatchesTarget(
+  row: Record<string, unknown>,
+  target: TargetConfig,
+): boolean {
+  const text = JSON.stringify(row);
+  return targetProjectIds(target).some((project) => text.includes(project));
 }
 
 function compactTask(task: TaskRecord): Record<string, unknown> {
@@ -761,6 +848,277 @@ function recentRunPacket(targetAppDir: string): Record<string, unknown> {
   );
 }
 
+export function taskEscalationPacket(
+  targetAppDir: string,
+): Record<string, unknown> {
+  const path = join(targetAppDir, ".state/tasks/tree.json");
+  const tree = readJson(path);
+  if (!tree || typeof tree !== "object" || Array.isArray(tree)) {
+    return { path, error: "task tree is not an object" };
+  }
+  const taskMap = objectRecord(objectRecord(tree).tasks);
+  const tasks = Object.values(taskMap).map(objectRecord);
+  const leafTasks = tasks.filter((task) => asArray(task.children).length === 0);
+  const blockedLeaves = leafTasks.filter((task) => task.state === "blocked");
+  const taskSearchText = (task: Record<string, unknown>): string =>
+    JSON.stringify({
+      id: task.id,
+      owner: task.owner,
+      goal: task.goal,
+      summary: task.summary,
+      context: task.context,
+      blocker: task.blocker,
+    });
+  const hasEscalationHint = (task: Record<string, unknown>): boolean => {
+    if (task.escalation_id || task.escalation) return true;
+    const text = taskSearchText(task);
+    return /escalat|approval|human:operator|owner decision|owner-response|requestedAction/i.test(
+      text,
+    );
+  };
+  const hasOwnerOrExternalPath = (task: Record<string, unknown>): boolean => {
+    if (hasEscalationHint(task)) return true;
+    return /external|owner|operator|response|return|fallback|next_check|resume|auth|credential|runtime|capacity|permission|handoff|source-authority|prereq|prerequisite|input|surface|trusted-ref|publication/i.test(
+      taskSearchText(task),
+    );
+  };
+  const escalationTasks = leafTasks.filter(hasEscalationHint);
+  const blockedWithEscalation = blockedLeaves.filter(hasEscalationHint);
+  const blockedWithOwnerOrExternalPath = blockedLeaves.filter(
+    hasOwnerOrExternalPath,
+  );
+  const blockedWithoutOwnerOrExternalPath = blockedLeaves.filter(
+    (task) => !hasOwnerOrExternalPath(task),
+  );
+
+  return {
+    path,
+    counts: {
+      leafTasks: leafTasks.length,
+      blockedLeaves: blockedLeaves.length,
+      escalationHintLeaves: escalationTasks.length,
+      blockedWithEscalationHint: blockedWithEscalation.length,
+      blockedWithOwnerOrExternalPath: blockedWithOwnerOrExternalPath.length,
+      blockedWithoutOwnerOrExternalPath:
+        blockedWithoutOwnerOrExternalPath.length,
+    },
+    escalationTaskSample: escalationTasks.slice(0, 20).map(compactTask),
+    blockedWithEscalationSample: blockedWithEscalation
+      .slice(0, 20)
+      .map(compactTask),
+    blockedWithOwnerOrExternalPathSample: blockedWithOwnerOrExternalPath
+      .slice(0, 20)
+      .map(compactTask),
+    blockedWithoutOwnerOrExternalPathSample: blockedWithoutOwnerOrExternalPath
+      .slice(0, 10)
+      .map(compactTask),
+  };
+}
+
+function compactEscalationRow(
+  row: Record<string, unknown>,
+  state: string,
+): Record<string, unknown> {
+  const data = parseRowData(row);
+  const timestamp =
+    typeof row.timestamp === "number"
+      ? row.timestamp
+      : Number(row.timestamp ?? 0);
+  const ageHours =
+    timestamp > 0
+      ? Math.round(((Date.now() - timestamp) / 3_600_000) * 10) / 10
+      : null;
+  return {
+    id: row.id,
+    key: escalationKey(row),
+    state,
+    ageHours,
+    timestamp,
+    owner: row.owner,
+    source: row.source,
+    status: row.status,
+    sourceAgent: data.sourceAgent,
+    targetProject:
+      data.targetProject ??
+      data.project ??
+      data.projectId ??
+      objectRecord(data.target).project,
+    reason: truncate(
+      String(data.reason ?? data.summary ?? data.message ?? data.error ?? ""),
+      240,
+    ),
+    requestedAction: truncate(
+      String(data.requestedAction ?? data.requested_action ?? ""),
+      240,
+    ),
+    resumeCondition: truncate(
+      String(data.resumeCondition ?? data.resume_condition ?? ""),
+      240,
+    ),
+    packetPath: data.packetPath ?? data.packet_path,
+    dedupeKey: data.dedupeKey ?? data.dedupKey,
+  };
+}
+
+function escalationPacket(
+  ctx: WorkflowContext,
+  target: TargetConfig,
+): Record<string, unknown> {
+  const now = Date.now();
+  const lookbackMs = 14 * 24 * 60 * 60_000;
+  const since = now - lookbackMs;
+  const staleCutoff = now - 24 * 60 * 60_000;
+  const safeQuery = (label: string, fn: () => unknown): unknown => {
+    try {
+      return fn();
+    } catch (err) {
+      return {
+        unavailable: true,
+        label,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  };
+
+  const eventRowsRaw = safeQuery(
+    "escalation-events",
+    () =>
+      ctx.query.sql(
+        `SELECT id, event_type, source, owner, timestamp, status, data
+         FROM events
+        WHERE timestamp >= ?
+          AND event_type IN (
+            'escalation.created',
+            'escalation.resolved',
+            'escalation.dismissed',
+            'escalation.resume_failed',
+            'project.approval.requested',
+            'project.approval.submitted',
+            'message.created'
+          )
+        ORDER BY timestamp DESC, id DESC`,
+        [since],
+        { limit: 1000 },
+      ).rows,
+  );
+
+  const eventRows = asArray(eventRowsRaw)
+    .map(objectRecord)
+    .filter((row) => rowMatchesTarget(row, target));
+  const created = eventRows.filter(
+    (row) => row.event_type === "escalation.created",
+  );
+  const closed = eventRows.filter((row) =>
+    ["escalation.resolved", "escalation.dismissed"].includes(
+      String(row.event_type),
+    ),
+  );
+  const closedKeys = new Set(
+    closed.map((row) => {
+      const data = parseRowData(row);
+      return (
+        stringFromRecord(data, ["escalationId", "escalation_id", "id"]) ||
+        escalationKey(row)
+      );
+    }),
+  );
+  const open = created.filter((row) => !closedKeys.has(escalationKey(row)));
+  const staleOpen = open.filter(
+    (row) => Number(row.timestamp ?? 0) < staleCutoff,
+  );
+  const approvalRequests = eventRows.filter(
+    (row) => row.event_type === "project.approval.requested",
+  );
+  const approvalSubmissions = eventRows.filter(
+    (row) => row.event_type === "project.approval.submitted",
+  );
+  const humanMessages = eventRows.filter((row) => {
+    if (row.event_type !== "message.created") return false;
+    return /human|operator|approval|escalat/i.test(JSON.stringify(row));
+  });
+  const resumeFailures = eventRows.filter(
+    (row) => row.event_type === "escalation.resume_failed",
+  );
+
+  const approvalDispatchPath = join(
+    target.targetAppDir,
+    ".state/approval-dispatch-runs.jsonl",
+  );
+  const approvalDispatches = readJsonlTail(approvalDispatchPath, 40);
+  const taskPacket = taskEscalationPacket(target.targetAppDir);
+  const taskCounts = objectRecord(taskPacket.counts);
+
+  const warnings: string[] = [];
+  if (created.length > 0 && open.length === created.length) {
+    warnings.push(
+      "no matching escalation.resolved/dismissed events in lookback",
+    );
+  }
+  if (staleOpen.length > 0) {
+    warnings.push(`${staleOpen.length} open escalation(s) older than 24h`);
+  }
+  if (approvalDispatches.some((row) => row.result !== "message.created")) {
+    warnings.push("some approval-dispatch attempts did not create a message");
+  }
+  if (
+    Number(taskCounts.blockedLeaves ?? 0) > 0 &&
+    Number(taskCounts.blockedWithOwnerOrExternalPath ?? 0) === 0 &&
+    created.length === 0 &&
+    approvalDispatches.length === 0
+  ) {
+    warnings.push(
+      "blocked work exists but no owner/external/escalation path was found",
+    );
+  }
+
+  return {
+    lookbackHours: Math.round(lookbackMs / 3_600_000),
+    source: "runtime events plus target task tree and approval-dispatch log",
+    counts: {
+      created: created.length,
+      open: open.length,
+      staleOpen: staleOpen.length,
+      closed: closed.length,
+      resumeFailures: resumeFailures.length,
+      approvalRequests: approvalRequests.length,
+      approvalSubmissions: approvalSubmissions.length,
+      humanMessages: humanMessages.length,
+      approvalDispatchByResult: countBy(approvalDispatches, (row) =>
+        typeof row.result === "string" ? row.result : "unknown",
+      ),
+    },
+    usage: taskCounts,
+    openSample: open
+      .slice(0, 20)
+      .map((row) => compactEscalationRow(row, "open")),
+    staleOpenSample: staleOpen
+      .slice(0, 20)
+      .map((row) => compactEscalationRow(row, "stale-open")),
+    closedSample: closed
+      .slice(0, 20)
+      .map((row) => compactEscalationRow(row, "closed")),
+    recentApprovalDispatches: approvalDispatches
+      .slice(-20)
+      .reverse()
+      .map((row) => ({
+        id: row.pathId ?? row.packetPath ?? row.ts,
+        state: row.result,
+        ts: row.ts,
+        target: row.target,
+        pathId: row.pathId,
+        packetPath: row.packetPath,
+        requestedAction: truncate(String(row.requestedAction ?? ""), 240),
+        reason: row.reason,
+      })),
+    taskLinkage: taskPacket,
+    warnings,
+    rawQueryUnavailable:
+      objectRecord(eventRowsRaw).unavailable === true
+        ? eventRowsRaw
+        : undefined,
+  };
+}
+
 function runtimePacket(
   ctx: WorkflowContext,
   target: TargetConfig,
@@ -842,6 +1200,7 @@ function targetFactPacket(
   return {
     target,
     sampledAt: new Date().toISOString(),
+    previousReview: previousReviewPacket(target),
     projectState: readJson(
       join(target.targetAppDir, ".state/project-state.json"),
     ),
@@ -849,6 +1208,7 @@ function targetFactPacket(
     selfRecovery: selfRecoveryContractPacket(target, taskTree),
     loops: loopPacket(target.targetAppDir),
     recentRuns: recentRunPacket(target.targetAppDir),
+    escalations: escalationPacket(ctx, target),
     targetGit: gitPacket(target.targetDomainDir),
     runtime: runtimePacket(ctx, target),
   };
@@ -914,6 +1274,19 @@ function fallbackJudgment(
   const selfRecovery = objectRecord(packet.selfRecovery);
   const selfRecoveryStatus = String(selfRecovery.status ?? "unknown");
   const criticalMissing = asArray(selfRecovery.criticalMissing).map(String);
+  const escalations = objectRecord(packet.escalations);
+  const escalationCounts = objectRecord(escalations.counts);
+  const staleOpenEscalations = numberFromRecord(escalationCounts, "staleOpen");
+  const dispatchCounts = objectRecord(
+    escalationCounts.approvalDispatchByResult,
+  );
+  const failedApprovalDispatches = Object.entries(dispatchCounts).reduce(
+    (sum, [key, value]) =>
+      key !== "message.created" && typeof value === "number"
+        ? sum + value
+        : sum,
+    0,
+  );
   const totalLeaves = typeof counts?.leaves === "number" ? counts.leaves : 0;
   const unfinished = totalLeaves - (leafByState?.done ?? 0);
 
@@ -942,6 +1315,18 @@ function fallbackJudgment(
       notify: true,
       dedupeKey: `${target.targetProject}:no-active-frontier-with-blocked-leaves`,
       message: `${target.targetProject} may not be moving: blocked leaves remain while no active/runnable/review work is visible.`,
+    };
+  }
+
+  if (staleOpenEscalations > 0 || failedApprovalDispatches > 0) {
+    return {
+      verdict: "concern",
+      mainConcern:
+        "The target has escalation/approval signals that may not be closing cleanly.",
+      requestedHumanAction: "watch",
+      notify: true,
+      dedupeKey: `${target.targetProject}:escalation-use-needs-review`,
+      message: `${target.targetProject} has stale open escalation(s) or failed approval-dispatch records; check whether escalation is exact, watched, and useful.`,
     };
   }
 
@@ -1008,6 +1393,35 @@ function readState(target: TargetConfig): ProjectHealthState {
   } catch {
     return {};
   }
+}
+
+function previousReviewPacket(target: TargetConfig): Record<string, unknown> {
+  const state = readState(target);
+  const reportPath = state.lastReportPath;
+  const packet: Record<string, unknown> = {
+    reportPath: reportPath ?? null,
+    verdict: state.lastVerdict ?? null,
+    dedupeKey: state.lastDedupeKey ?? null,
+    requestedHumanAction: state.lastRequestedHumanAction ?? null,
+    notified: state.lastNotify ?? null,
+  };
+  if (!reportPath) return packet;
+
+  const absolutePath = join(EVALUATION_APP_DIR, reportPath);
+  if (!existsSync(absolutePath)) {
+    return { ...packet, missing: absolutePath };
+  }
+
+  const text = readText(absolutePath);
+  const concern = text.match(/^Main concern:\s*(.+)$/m)?.[1];
+  const message = text.match(
+    /^## Human Message\s*\n+([\s\S]*?)(?:\n## |\n# |$)/m,
+  )?.[1];
+  return {
+    ...packet,
+    mainConcern: concern ?? null,
+    messageExcerpt: message ? truncate(message.trim(), 800) : null,
+  };
 }
 
 function severity(verdict: string | undefined): number {
@@ -1279,6 +1693,17 @@ function writeState(
   );
 }
 
+function targetOwnerProjectId(target: TargetConfig): string {
+  return target.targetProject.replace(/\.app$/, "");
+}
+
+function shouldFeedbackTargetOwner(
+  target: TargetConfig,
+  judgment: Judgment,
+): boolean {
+  return target.targetProject !== "evaluation.app" && judgment.verdict !== "ok";
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = parseTrigger(String(ctx.task ?? ""));
   const target = targetConfig(trigger);
@@ -1294,6 +1719,7 @@ Reason: ${target.reason}
 Judge the target app from raw facts. Keep raw facts visible; do not hide uncertainty.
 Do not mutate the target app. Do not become a second planner. Decide whether a human should be notified.
 Check whether the target app first tried to catch and handle its own metric breaches, failures, and stalled tasks.
+Specifically judge whether the target app uses escalation correctly and efficiently: escalate only when local recovery is exhausted or human/infra action is required; include exact owner, requested action, resume condition, fallback/watch; avoid vague or duplicate escalations; close or replace escalations when resolved; and keep task state linked to the escalation.
 Use the self-recovery contract facts to say whether the shared ops pattern is already present, partially present, or missing.
 When one app shows a better recovery behavior, call out whether that lesson should be reused by other project apps.
 
@@ -1374,6 +1800,31 @@ ${JSON.stringify(packet, null, 2)}
     owner: "agent:evaluator",
     data: reviewedData,
   });
+
+  if (shouldFeedbackTargetOwner(target, judgment)) {
+    const ownerProject = targetOwnerProjectId(target);
+    ctx.emit({
+      type: "project.planning.requested",
+      source: "evaluation.app",
+      target: { project: ownerProject },
+      data: {
+        project: ownerProject,
+        reason: "evaluation-project-health-feedback",
+        params: {
+          fromProject: "evaluation.app",
+          targetProject: target.targetProject,
+          reportPath: report.relativePath,
+          verdict: judgment.verdict,
+          mainConcern: judgment.mainConcern,
+          requestedHumanAction: judgment.requestedHumanAction,
+          message: judgment.message,
+          dedupeKey: judgment.dedupeKey,
+          instruction:
+            "Review this evaluation.app health report as owner feedback. If the finding is real, update your own task tree or workflow state; if already handled, record the evidence and do not create duplicate work.",
+        },
+      },
+    } as any);
+  }
 
   if (judgment.notify) {
     ctx.notify(

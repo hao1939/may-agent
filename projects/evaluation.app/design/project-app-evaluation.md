@@ -37,6 +37,7 @@ Each project app must:
 - check whether the target app noticed its own issues;
 - check whether the target app reacted with useful recovery work instead of
   silent drift, repeated churn, or vague blockers;
+- check whether the target app uses escalation correctly and efficiently;
 - check whether project-state, task tree, metrics, workflow runs, and UI-facing
   reports agree with each other;
 - notify the human only when the app is not self-correcting, the process is not
@@ -53,8 +54,118 @@ In practical terms:
 - the target app asks "what domain work should happen next?";
 - the target app tries to fix its own process failures first;
 - `evaluation.app` asks "did the target app notice, react, and close the loop?";
+- `evaluation.app` asks "did the target app use escalation as a useful tool,
+  not as a parking lot or noise generator?";
 - `evaluation.app` reports to the human when the target app is not closing the
   loop or when a human decision is actually needed.
+
+## Escalation Evaluation
+
+Escalation is an infrastructure ability. It lets an app ask for human,
+platform, credential, environment, or ownership help when local work cannot
+truthfully continue.
+
+The mental model is:
+
+```text
+escalation is not done
+escalation is an active wait with an outside owner
+```
+
+The lifecycle is:
+
+```text
+local recovery exhausted
+  -> escalation.created
+  -> routed/message-created/approval-requested delivery proof
+  -> linked blocked/wait task carries the live wait
+  -> watcher rechecks next_check_at/fallback_at
+  -> returned answer creates escalation.resolved or escalation.dismissed
+  -> target app converts the answer into work, refreshed wait, done, or terminal finding
+```
+
+Events record facts. The task tree records the live state. `handled`,
+`routed`, or `message.created` are useful delivery facts, but they do not mean
+the target project is unblocked.
+
+The escalation itself does not need to be routed to `evaluation.app` as a work
+item. `evaluation.app` can read the runtime database and target app artifacts:
+
+- `escalation.created`;
+- `escalation.resolved`;
+- `escalation.dismissed`;
+- `escalation.resume_failed`;
+- target app approval or human-message events;
+- target app task-tree waits that reference an escalation, approval, owner
+  decision, or human/operator ask;
+- target app local dispatch logs such as `approval-dispatch-runs.jsonl`.
+
+The evaluator is not judging the domain answer inside the escalation. It is
+judging whether the app is using the escalation mechanism well.
+
+A good escalation has:
+
+- exact owner or target surface;
+- exact requested action;
+- exact reason why local recovery is exhausted or unsafe;
+- affected task/spec/feature/run ids;
+- delivery proof, such as routed event, message, approval request, or local
+  dispatch log;
+- linked blocked/wait task, so the project does not lose the wait;
+- `waitingFor`, resume condition, observer/check method, next check, and
+  fallback;
+- closure when the answer arrives, or replacement when the ask becomes stale.
+
+The allowed healthy states are:
+
+- waiting with a linked exact wait and future next check/fallback;
+- resolved and converted back into work, done, or a terminal finding;
+- dismissed because the ask is duplicate, wrong, superseded, or no longer
+  needed;
+- expired but already represented by active recovery, follow-up, reroute, or
+  repair work.
+
+Bad escalation use includes:
+
+- vague "human please look" asks;
+- duplicate asks for the same unresolved blocker;
+- escalation without a linked blocked/wait task;
+- blocked task that claims external dependency but no escalation/owner path
+  exists;
+- stale escalation with no recheck or fallback;
+- using escalation before trying obvious local diagnosis;
+- continuing to retry unchanged work after escalation already proved a human or
+  infrastructure decision is required;
+- treating a sent escalation as final success instead of waiting for a returned
+  signal or recording a valid exact wait.
+- treating `handled` as resolved;
+- letting `escalation.routed` or `message.created` remain pending forever
+  without a linked wait/fallback.
+
+The project/app health report should therefore say:
+
+- how many escalation/approval signals exist in the review window;
+- how many are open, stale, resolved, dismissed, expired, or failed to resume;
+- whether approval dispatch actually created human-visible messages;
+- whether blocked waits are linked to escalation/owner paths when needed;
+- whether routed/handled events have an actual project-state closure path;
+- whether escalation is reducing uncertainty and work, or just accumulating.
+
+Efficient escalation does not mean "few escalations." It means the app escalates
+only when escalation is the right next tool, makes the ask exact, watches the
+answer, and converts the result back into project progress.
+
+The evaluator should grade escalation use by asking:
+
+- Was escalation necessary, or could the app still do local diagnosis/repair?
+- Was the ask exact enough that the recipient can answer without re-triage?
+- Was the ask delivered?
+- Is there one linked wait that carries the escalation id or equivalent packet
+  path?
+- Does that wait have next check/fallback behavior?
+- If the answer arrived, did the target app consume it?
+- If the answer did not arrive, did the app follow up once, reroute, or record a
+  longer explicit wait rather than repeatedly sending the same ask?
 
 ## What We Learned
 
@@ -236,6 +347,9 @@ Each project/app review should answer:
 - Are overdue waits decreasing?
 - Are failures converted into repair work, exact waits, or useful escalation?
 - Are escalations exact, watched, and still actionable?
+- Is escalation being used at the right time: after bounded local recovery, not
+  too early and not too late?
+- Are escalations closing, being replaced with clearer waits, or piling up?
 - Are claimed outputs backed by credible process evidence?
 - Are suspicious outputs detected by the target app itself, such as live tests
   passing too quickly?
@@ -259,6 +373,10 @@ The evaluator reads raw facts first:
 - registered metrics and recent breach/recovery events;
 - open blocked waits and overdue waits;
 - open escalations and their owner/resume/fallback state;
+- recent escalation lifecycle events from the runtime DB;
+- approval dispatch/message records that prove an escalation was actually sent
+  to the intended human/operator surface;
+- task-tree linkage between blocked waits and escalation/owner paths;
 - target git status when output depends on committed or pushed changes;
 - recent human steering events;
 - previous project/app evaluation reports for trend comparison;
@@ -298,6 +416,7 @@ Raw facts:
 - concise task counts and trend
 - active/review/runnable state
 - blocked/overdue/escalation counts
+- escalation/approval usage: open, stale, closed, failed dispatch, task linkage
 - loop status and trend
 - recent repeated signals
 - output evidence and suspicious output
@@ -309,6 +428,8 @@ Evaluator judgment:
 - why the target app has or has not handled it sufficiently
 - whether the target app first tried to recover itself, and whether that path is
   trustworthy
+- whether escalation use is exact, watched, efficient, and tied back to project
+  progress
 - whether this is new, repeated, improving, or getting worse
 
 Notification:

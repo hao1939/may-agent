@@ -865,8 +865,8 @@ export function shouldRefreshEvaluation(
   return evaluationHeuristicVersion(evaluation) < HEURISTIC_VERSION;
 }
 
-function getSessionIdFromTrigger(trigger: any): string | undefined {
-  const data = trigger?.data ?? trigger ?? {};
+export function getSessionIdFromTrigger(trigger: any): string | undefined {
+  const data = trigger?.data ?? trigger?.params ?? trigger ?? {};
   const direct = data.sessionId;
   const nested = data.session?.sessionId;
   return typeof direct === "string"
@@ -876,12 +876,26 @@ function getSessionIdFromTrigger(trigger: any): string | undefined {
       : undefined;
 }
 
+function getTriggerType(trigger: any): string {
+  return typeof trigger?.type === "string" ? trigger.type : "";
+}
+
 function getModeFromTrigger(trigger: any): string {
   const data = trigger?.data ?? trigger ?? {};
   return typeof data.mode === "string" ? data.mode : "completed";
 }
 
-function backfillCandidateSessionId(ctx: WorkflowContext): string | undefined {
+export function triggerRequiresSessionId(trigger: any): boolean {
+  return [
+    "session.completed",
+    "evaluation.session.requested",
+    "evaluation.deep.requested",
+  ].includes(getTriggerType(trigger));
+}
+
+export function backfillCandidateSessionId(
+  ctx: WorkflowContext,
+): string | undefined {
   const now = Date.now();
   const graceCutoff = now - 7 * 60_000;
   const result = ctx.query.sql(
@@ -906,8 +920,9 @@ function backfillCandidateSessionId(ctx: WorkflowContext): string | undefined {
      LIMIT 1`,
     [graceCutoff],
     { limit: 1 },
-  ) as { rows?: Array<{ sessionId?: string }> };
-  const sessionId = result?.rows?.[0]?.sessionId;
+  ) as { rows?: Array<{ sessionId?: string }> } | Array<{ sessionId?: string }>;
+  const rows = Array.isArray(result) ? result : result?.rows;
+  const sessionId = rows?.[0]?.sessionId;
   return typeof sessionId === "string" && sessionId ? sessionId : undefined;
 }
 
@@ -931,6 +946,37 @@ function readArtifact(path: string): string {
   } catch {
     return "";
   }
+}
+
+export function reviewFailureDetails(review: any): Record<string, unknown> {
+  const text = JSON.stringify(review ?? {});
+  const providerUnavailable =
+    /\b429\b|no deployments available|rate limit|capacity|temporarily unavailable|overloaded/i.test(
+      text,
+    );
+  const authFailure =
+    /\b401\b|\b403\b|unauthorized|forbidden|permission|api key|token/i.test(
+      text,
+    );
+  const emptyRuntime =
+    Number(review?.opCount ?? 0) === 0 ||
+    (/status["']?\s*:\s*["']?error/i.test(text) &&
+      !/tool|assistant|content/i.test(text));
+  const failureType = providerUnavailable
+    ? "provider_unavailable"
+    : authFailure
+      ? "provider_auth"
+      : emptyRuntime
+        ? "reviewer_runtime_empty_turn"
+        : "reviewer_runtime";
+  return {
+    failureScope: "review_process",
+    reviewCompleted: false,
+    reviewFailureType: failureType,
+    retryable: failureType !== "provider_auth",
+    reviewSessionId: review?.sessionId,
+    reviewStatus: review?.status,
+  };
 }
 
 export function sessionEvalTrailPath(transcriptPath: string): string {
@@ -2184,12 +2230,20 @@ export function buildReviewTask(params: {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
   const triggerSessionId = getSessionIdFromTrigger(trigger);
+  const triggerType = getTriggerType(trigger);
   const mode = getModeFromTrigger(trigger);
   const sessionId =
     triggerSessionId ??
-    (mode === "completed" ? backfillCandidateSessionId(ctx) : undefined);
+    (triggerRequiresSessionId(trigger) || mode !== "completed"
+      ? undefined
+      : backfillCandidateSessionId(ctx));
 
   if (!sessionId) {
+    if (!triggerRequiresSessionId(trigger)) {
+      return ctx.done(
+        `No eligible aftermath backfill candidate found for ${triggerType || "unspecified trigger"}.`,
+      );
+    }
     return ctx.escalate("evaluator-aftermath requires a sessionId", {
       trigger,
     });
@@ -2459,9 +2513,50 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const review = await ctx.runAgent("evaluator", reviewTask);
 
-  if ((review as any).status === "error") {
-    return ctx.escalate(`Evaluator review failed for ${sessionId}`, {
-      reviewSessionId: (review as any).sessionId,
+  if (["error", "interrupted"].includes(String((review as any).status))) {
+    const details = reviewFailureDetails(review);
+    await (ctx as any).runFunction(
+      "record-review-process-failure",
+      async () => {
+        const db = ctx.getDb() as any;
+        const prior = db
+          .prepare("SELECT overall FROM evaluations WHERE sessionId = ?")
+          .get(sessionId) as any;
+        let overall: Record<string, unknown> = {};
+        try {
+          overall = prior?.overall ? JSON.parse(prior.overall) : {};
+        } catch {
+          overall = {};
+        }
+        overall.review = {
+          ...(typeof overall.review === "object" && overall.review
+            ? (overall.review as Record<string, unknown>)
+            : {}),
+          ...details,
+        };
+        db.run(
+          `UPDATE evaluations
+            SET overall = ?
+          WHERE sessionId = ?`,
+          [JSON.stringify(overall), sessionId],
+        );
+        return `recorded review process failure for ${sessionId}`;
+      },
+    );
+    ctx.emit({
+      type: "evaluation.review_failed",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      projectId: session.projectId ?? null,
+      workflowRunId: session.workflowRunId ?? null,
+      ...details,
+    } as any);
+    return ctx.blocked(`Evaluator review process failed for ${sessionId}`, {
+      sessionId,
+      agent: session.agent,
+      ...details,
     });
   }
 
