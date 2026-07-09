@@ -14,6 +14,7 @@ import {
   appendPlannerRun,
   appendToolJournal,
   assignTask,
+  compactDoneLeaves,
   createTask,
   drainTaskAssignments,
   listRunnableBacklogTaskIds,
@@ -740,6 +741,13 @@ Core operating model:
   external wait, record one exact wait with owner, resume condition, affected
   scope, and next review trigger. Do not let the reviewed event disappear into
   another generic no-op.
+- When project.approval.submitted wakes you, treat approvalId, waitId, pathId,
+  and packetPath as the returned owner decision for the matching wait. Find the
+  blocked task or response-await branch that references the same id/path. If the
+  decision approves or adjusts the work, clear/replace the wait and create or
+  assign the next concrete task. If it holds, declines, or reroutes, record that
+  exact decision in the task tree with the next owner action or terminal reason.
+  Do not no-op a submitted approval while a matching wait remains open.
 - Treat the task tree as the project-specific source of truth. Read root and
   lane context before deciding that the project is complete or blocked.
 - Project-specific progress signals, completion criteria, gap reconciliation,
@@ -1438,7 +1446,13 @@ function openPipelineWaitExists(
   runId: string,
 ): boolean {
   const tree = readTaskTree(config);
-  const openStates = new Set(["active", "backlog", "blocked", "review", "waiting"]);
+  const openStates = new Set([
+    "active",
+    "backlog",
+    "blocked",
+    "review",
+    "waiting",
+  ]);
   for (const task of Object.values(tree.tasks ?? {})) {
     const state = taskState(task);
     if (!openStates.has(state)) continue;
@@ -1525,10 +1539,12 @@ function createAcceptedQueuedPipelineWait(input: {
     const task = tree.tasks[id];
     if (!task) return;
     const blockedAt = new Date().toISOString();
-    const nextCheckAt = new Date(Date.parse(blockedAt) + 10 * 60 * 1000)
-      .toISOString();
-    const fallbackAt = new Date(Date.parse(blockedAt) + 2 * 60 * 60 * 1000)
-      .toISOString();
+    const nextCheckAt = new Date(
+      Date.parse(blockedAt) + 10 * 60 * 1000,
+    ).toISOString();
+    const fallbackAt = new Date(
+      Date.parse(blockedAt) + 2 * 60 * 60 * 1000,
+    ).toISOString();
     task.blocker = {
       condition: blocker,
       category: "external-wait",
@@ -2225,7 +2241,7 @@ function applyReviewedTaskEvent(
         ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}.`
         : queuedWaitTaskId
           ? `Applied accept review for ${taskId}; created pipeline wait ${queuedWaitTaskId}.`
-        : `Applied accept review for ${taskId}.`,
+          : `Applied accept review for ${taskId}.`,
     };
   }
 
@@ -2487,8 +2503,11 @@ function settledActiveNoopResult(input: {
     citedStillActive.length > 0 &&
     citedStillActive.every((taskId) => {
       const task = readTask(input.config, taskId);
-      const sessionId = typeof task?.session_id === "string" ? task.session_id : "";
-      return !!sessionId && runtimeSessionIsRunning(input.config.appDir, sessionId);
+      const sessionId =
+        typeof task?.session_id === "string" ? task.session_id : "";
+      return (
+        !!sessionId && runtimeSessionIsRunning(input.config.appDir, sessionId)
+      );
     }) &&
     noHumanSteering &&
     hasOnlyActiveFrontier
@@ -2957,6 +2976,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   let humanSteering = recentHumanSteering(ctx);
   const initialRepair = repairTaskTreeRollups(config);
+  compactDoneLeaves(config, {
+    limit: 50,
+    reason: "planner task-tree maintenance",
+  });
   syncPlannerProjectReadout(config);
   const trigger = parseTriggerEvent(ctx.task);
   const overdueOwnerActionCount = triggerOverdueOwnerActions(ctx.task).length;

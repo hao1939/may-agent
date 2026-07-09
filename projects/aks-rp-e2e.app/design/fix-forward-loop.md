@@ -203,6 +203,8 @@ any family repair task.
 
 The agent should handle failures as a decision problem, not as a retry problem.
 Code and tools collect facts; the agent judges the next action from those facts.
+Collected facts are starting points, not ground truth. The packet tells the
+agent where to look; the agent must verify current state before deciding.
 
 For every failure, the agent must do this in order:
 
@@ -210,20 +212,31 @@ For every failure, the agent must do this in order:
    family.
 2. Classify the failure. If it cannot classify, use `needs-diagnosis` and run
    diagnosis before any rerun.
-3. Preserve the raw failure facts: run id, result path, failing assertion,
+3. Read current facts directly from the live project surfaces before trusting
+   stale summaries:
+   - task tree and task trace;
+   - durable loop state;
+   - latest pipeline/run/result artifact;
+   - current backend, target environment, and workflow/pipeline config;
+   - relevant checked-in spec/test code, official docs/API/design docs, or
+     mounted source when needed.
+4. Preserve the raw failure facts: run id, result path, failing assertion,
    request/response excerpt, command, target, branch, and artifact refs when
    available.
-4. Compare the current input and error fingerprints with prior attempts.
-5. Decide the smallest truthful next action:
+5. Compare current facts against old claims. Ask: is the blocker still true, is
+   the run actually terminal, is the spec still non-pass, did backend/env/config
+   change, and is there already an active owner?
+6. Compare the current input and error fingerprints with prior attempts.
+7. Decide the smallest truthful next action:
    - apply a bounded domain fix and verify;
    - apply an ops fix and verify the pipeline/process;
    - create a focused follow-up task;
    - record an exact blocked wait;
    - escalate with proof;
    - accept a terminal finding with proof.
-6. Write the result as structured output. Prose explains the judgment, but
+8. Write the result as structured output. Prose explains the judgment, but
    structured fields drive planner decisions.
-7. Record the learning:
+9. Record the learning:
    - what pattern succeeded or failed;
    - what should be reused for similar specs;
    - what should be avoided;
@@ -231,6 +244,8 @@ For every failure, the agent must do this in order:
 
 The agent must not:
 
+- trust summaries, stale task text, previous agent claims, or old wait text
+  without checking current files/runtime/pipeline facts;
 - rerun the same input after the same error without a changed input,
   changed diagnosis, or new external fact;
 - turn "I am unsure" into `blocked`;
@@ -454,6 +469,21 @@ The watchdog should scan blocked tasks for:
 5. **Rerun wave completed**: a task waiting for queued pipeline runs that have
    already reached terminal state. Action: release the wait.
 
+6. **Retry-drained or stranded loop work**: durable loop records are still
+   non-pass or pending, but direct retry guards prevent new dispatch and there
+   is no active owner/review/fix-forward task for the affected family. Action:
+   create or wake a grouped stall/review task with the current facts. Do not
+   blindly reset attempts, and do not hide the residue behind exact wait
+   stewardship unless each affected record is represented by a real exact wait
+   or accepted terminal disposition.
+
+7. **Backend, environment, or workflow route changed**: the execution route
+   changed since the recorded attempts, such as GitHub Actions to Azure DevOps,
+   target environment wiring, auth path, runner schema, or result artifact
+   contract. Action: surface the change as a re-evaluation reason. The agent
+   decides whether to rerun, repair, split, keep waiting, escalate, or emit a
+   retry-reset directive.
+
 The watchdog should not create domain fix tasks directly. It should wake the
 planner or create a review task. The planner or reviewer then decides whether
 to dispatch domain work or ops work.
@@ -470,6 +500,7 @@ reviewer examines:
   - the fix attempts already made (from fingerprint history)
   - the Go source and official docs for the affected scenario
   - whether the environment has changed since the block
+  - current task/loop/runtime/pipeline state, read directly during review
 
 reviewer recommends:
   - agent-fixable: "the agent should try X" → planner creates fix-forward task
@@ -526,6 +557,12 @@ Loop controllers should:
 Retry budgets may remain as a churn guard, but they are not a terminal verdict.
 When a budget is exhausted, the result must become visible repair work, exact
 wait, escalation, or accepted terminal finding.
+Budget exhaustion is a signal for renewed judgment, not a command to retry and
+not permission to park forever. Code should collect the stalled facts and make
+them visible. The agent should verify current state and try to find a different
+workable path. Only after that judgment should the planner reset attempts,
+dispatch a rerun, create repair work, keep an exact wait, escalate, or close the
+item with proof.
 
 ## The Closed Loop
 

@@ -40,14 +40,15 @@ completed task output reviewed by `aks-reviewer`.
 Normal planner wakes follow this shape:
 
 1. Repair task-tree rollups.
-2. Dispatch already-runnable backlog leaves when safe.
-3. Build a compact planning packet from the current task tree.
-4. Skip `app-ops` only for deterministic, structured no-op cases.
-5. Otherwise run two bounded `app-ops` steps:
+2. Compact a bounded batch of completed leaf tasks into the task archive.
+3. Dispatch already-runnable backlog leaves when safe.
+4. Build a compact planning packet from the current task tree.
+5. Skip `app-ops` only for deterministic, structured no-op cases.
+6. Otherwise run two bounded `app-ops` steps:
    - event review: classify what changed without mutating the tree;
    - planning update: review results, repair tree meaning, create or dispatch
      concrete leaves, and record exact blockers.
-6. Repair rollups again, drain planner-created dispatches, emit
+7. Repair rollups again, drain planner-created dispatches, emit
    `project.task.assigned`, and append `.state/planner-runs.jsonl`.
 
 Task completion review is split from general planning:
@@ -91,6 +92,13 @@ Project-level liveness fallback is split from routine planning:
 5. `project-planner` consumes the reviewed fact and remains the workflow that
    decides task-tree mutations, task dispatch, grouped follow-up work, or exact
    external waits.
+
+The stall packet is not ground truth. It is a map of where to look. `app-ops`
+must verify current facts before judging: task tree, durable loop state, latest
+pipeline/run artifacts, backend/environment config, and any relevant spec,
+test, source, or official/API/design documentation. A long stall should trigger
+renewed judgment and a different workable next move when possible, not blind
+retry and not passive waiting.
 
 ## Ownership
 
@@ -593,6 +601,13 @@ The live task tree is the project source of truth for current work. The planner
 must mutate it through task-tree tools, not direct whole-file edits. Runtime
 history belongs in May-agent session/workflow history and compact app-local
 state such as `.state/planner-runs.jsonl`.
+
+Completed leaf tasks are not active project frontier. The planner should archive
+them in small bounded batches during normal wakes, after their result and output
+references have been recorded. The archive keeps the full task record under
+`.state/tasks/archive/`; the live tree keeps the parent summary and the open
+work. Durable loop roots themselves are never archived by this mechanical
+cleanup.
 
 Task states remain the canonical five-state set:
 

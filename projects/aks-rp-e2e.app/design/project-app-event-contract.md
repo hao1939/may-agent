@@ -296,6 +296,14 @@ collects structured state and applies only safe mechanical repairs, such as
 task-tree rollup repair, only in fallback mode. The agent judges the stall
 class and recommends the next project move.
 
+The packet is a starting point, not a verdict. The agent must verify current
+facts from live state before deciding: task tree, loop ledger, latest
+pipeline/result artifacts, backend/environment config, and relevant source or
+official/API/design documentation. Long-stalled work should become renewed
+judgment: try a different workable path, create repair work, reset/retry only
+with a reason, keep an exact wait with current proof, escalate with an exact
+ask, or close with proof.
+
 Supported `data.mode` values:
 
 - `fallback` - automatic watchdog path for a true global stall. The workflow may
@@ -430,28 +438,28 @@ does not replace `project.task.completed` when a task owns the run.
 
 ## Target Event Map
 
-| Event                                                 | Destination                         | Purpose                                           |
-| ----------------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `project.planning.requested`                          | workflow: `project-planner`         | App-ops planner wake/reconciliation.              |
-| `project.task.assigned`                               | workflow: `task-worker`             | Execute one dispatched leaf.                      |
-| `project.task.completed`                              | workflow: `task-reviewer`           | Independently judge completed worker output.      |
-| `project.task.reviewed`                               | workflow: `project-planner`         | Apply reviewer judgment to the task tree.         |
-| `project.task.tick` + `action=spec-loop`              | workflow: `spec-loop-controller`    | Refill spec verification loop.                    |
-| `project.task.tick` + `action=feature-reference-loop` | workflow: `feature-reference-loop-controller` | Refill feature reference loop.          |
-| `project.task.tick` + `action=feature-compact-loop`   | workflow: `feature-compact-loop-controller` | Refill compact planning loop.             |
-| `project.watchdog.check.requested`                    | workflow: `project-execution-watchdog` | Inspect liveness and wake planner if needed.   |
-| `project.stall.review.requested`                      | workflow: `project-stall-review`    | Collect stall packet and ask agent to judge.      |
-| `project.stall.reviewed`                              | workflow: `project-planner`         | Apply stall-review judgment to the task tree.     |
-| `project.problem.investigation.requested`             | workflow: `problem-solver`          | Investigate a bounded blocker/root cause.         |
-| `project.problem.resolved`                            | workflow: `project-planner`         | Reconcile resolved problem evidence.              |
-| `project.problem.escalated`                           | workflow: `project-planner`         | Reconcile external/human wait.                    |
-| `project.problem.inconclusive`                        | workflow: `project-planner`         | Decide next step after unresolved investigation.  |
-| `project.focus.review.requested`                      | workflow: `focus-plan`              | Propose or review focus, selected by `data.mode`. |
-| `project.approval.requested`                          | workflow: `approval-dispatch`       | Create a human-facing approval message.           |
-| `project.approval.submitted`                          | workflow: `project-planner`         | Reconcile a human approval decision.              |
-| `project.test_run.completed`                          | workflow: `project-planner`         | Reconcile an out-of-band test backend result.     |
-| `metric.breach` affecting project closure             | owner: `app-ops`                    | Judge whether to plan, stall-review, wait, or escalate. |
-| `learning.feedback` for project agents                | workflow: `project-planner`         | Reconcile evaluator findings about project work.  |
+| Event                                                 | Destination                                   | Purpose                                                 |
+| ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| `project.planning.requested`                          | workflow: `project-planner`                   | App-ops planner wake/reconciliation.                    |
+| `project.task.assigned`                               | workflow: `task-worker`                       | Execute one dispatched leaf.                            |
+| `project.task.completed`                              | workflow: `task-reviewer`                     | Independently judge completed worker output.            |
+| `project.task.reviewed`                               | workflow: `project-planner`                   | Apply reviewer judgment to the task tree.               |
+| `project.task.tick` + `action=spec-loop`              | workflow: `spec-loop-controller`              | Refill spec verification loop.                          |
+| `project.task.tick` + `action=feature-reference-loop` | workflow: `feature-reference-loop-controller` | Refill feature reference loop.                          |
+| `project.task.tick` + `action=feature-compact-loop`   | workflow: `feature-compact-loop-controller`   | Refill compact planning loop.                           |
+| `project.watchdog.check.requested`                    | workflow: `project-execution-watchdog`        | Inspect liveness and wake planner if needed.            |
+| `project.stall.review.requested`                      | workflow: `project-stall-review`              | Collect stall packet and ask agent to judge.            |
+| `project.stall.reviewed`                              | workflow: `project-planner`                   | Apply stall-review judgment to the task tree.           |
+| `project.problem.investigation.requested`             | workflow: `problem-solver`                    | Investigate a bounded blocker/root cause.               |
+| `project.problem.resolved`                            | workflow: `project-planner`                   | Reconcile resolved problem evidence.                    |
+| `project.problem.escalated`                           | workflow: `project-planner`                   | Reconcile external/human wait.                          |
+| `project.problem.inconclusive`                        | workflow: `project-planner`                   | Decide next step after unresolved investigation.        |
+| `project.focus.review.requested`                      | workflow: `focus-plan`                        | Propose or review focus, selected by `data.mode`.       |
+| `project.approval.requested`                          | workflow: `approval-dispatch`                 | Create a human-facing approval message.                 |
+| `project.approval.submitted`                          | workflow: `project-planner`                   | Reconcile a human approval decision.                    |
+| `project.test_run.completed`                          | workflow: `project-planner`                   | Reconcile an out-of-band test backend result.           |
+| `metric.breach` affecting project closure             | owner: `app-ops`                              | Judge whether to plan, stall-review, wait, or escalate. |
+| `learning.feedback` for project agents                | workflow: `project-planner`                   | Reconcile evaluator findings about project work.        |
 
 Fresh worker completions route to read-only review first. The planner consumes
 only the structured `project.task.reviewed` result in the normal path. Watchdog

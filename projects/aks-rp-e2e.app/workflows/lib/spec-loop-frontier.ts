@@ -90,9 +90,6 @@ export function specStateSelfRepresentsExactFrontier(
   if (!spec || !specLoopSpecHasStructuredSuccessor(spec)) return false;
   const record = spec as Record<string, unknown>;
   if (record.terminalDisposition === true) return true;
-  if (typeof record.normalizedAt === "string" && record.normalizedAt.trim()) {
-    return true;
-  }
   if (
     typeof record.successorRunId === "string" &&
     record.successorRunId.trim()
@@ -105,12 +102,10 @@ export function specStateSelfRepresentsExactFrontier(
 
   const review = recordValue(spec.review);
   if (!review) return false;
+  const acceptedStatus = normalizedDisposition(review.acceptedStatus);
   return Boolean(
-    (typeof review.acceptedByTaskId === "string" &&
-      review.acceptedByTaskId.trim()) ||
-      (typeof review.acceptedRunId === "string" &&
-        review.acceptedRunId.trim()) ||
-      (typeof review.pendingReviewTaskId === "string" &&
-        review.pendingReviewTaskId.trim()),
+    acceptedStatus === "pass" &&
+    typeof review.acceptedRunId === "string" &&
+    review.acceptedRunId.trim(),
   );
 }

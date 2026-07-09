@@ -16,9 +16,7 @@ import {
   orderedPendingSpecIds,
   type SpecLoopState,
 } from "./lib/spec-loop-store.ts";
-import {
-  specStateSelfRepresentsExactFrontier,
-} from "./lib/spec-loop-frontier.ts";
+import { specStateSelfRepresentsExactFrontier } from "./lib/spec-loop-frontier.ts";
 import { execute, harvestTerminalGitHubWaits } from "./spec-loop-controller.ts";
 
 async function makeProject() {
@@ -1321,7 +1319,8 @@ describe("spec-loop-controller", () => {
     expect(
       specStateSelfRepresentsExactFrontier({
         ...selfRepresented,
-        successorDisposition: "same-run-review-wait-after-bounded-rerun-dispatch",
+        successorDisposition:
+          "same-run-review-wait-after-bounded-rerun-dispatch",
       }),
     ).toBe(false);
     expect(
@@ -1337,6 +1336,28 @@ describe("spec-loop-controller", () => {
           "environment_setup_blocker_node_subnet_http409_before_product_assertion",
       }),
     ).toBe(true);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition: "environment_blocker",
+        review: {
+          acceptedRunId: "171341286",
+          acceptedStatus: "error",
+          acceptedByTaskId: "archived-review-task",
+        },
+      }),
+    ).toBe(false);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition:
+          "same-run-review-wait-after-bounded-rerun-dispatch",
+        review: {
+          pendingReviewTaskId: "archived-wait-task",
+          pendingReviewRunId: "171389443",
+        },
+      }),
+    ).toBe(false);
 
     const projectDir = await makeProject();
     await writeFile(
@@ -2386,10 +2407,6 @@ describe("spec-loop-controller", () => {
               lastRunUrl: null,
               lastResultPath: null,
               lastPrUrl: null,
-              failureClass: "request-shape-invalid",
-              diagnosis: "BadRequest from agentPool create.",
-              inputFingerprint: "input:spec-a-staging",
-              errorFingerprint: "error:badrequest-agentpool",
               updatedAt: new Date().toISOString(),
             },
           },
@@ -2566,6 +2583,8 @@ describe("spec-loop-controller", () => {
               diagnosis: "BadRequest from agentPool create.",
               inputFingerprint: "input:spec-a-staging",
               errorFingerprint: "error:badrequest-agentpool",
+              priorGithubAttempts: 2,
+              budgetResetReason: "ado-migration-backend-change",
               updatedAt: new Date().toISOString(),
             },
           },
@@ -2671,14 +2690,31 @@ describe("spec-loop-controller", () => {
         featureFamily: "a",
         workflow: "fix-forward",
         subjectKind: "spec-family",
+        reviewMode: "stalled-work-review",
         failureClasses: ["request-shape-invalid"],
         inputFingerprints: ["input:spec-a-staging"],
         errorFingerprints: ["error:badrequest-agentpool"],
+        retryGuardedSpecIds: ["spec.a.first"],
+        routeChangeSpecIds: ["spec.a.first"],
+        routeChangeReasons: [
+          "ado-migration-backend-change",
+          "prior-github-attempts:2",
+        ],
       },
     });
+    expect(followup.inputs).toContain("currentBackend:ado");
+    expect(followup.inputs).toContain(
+      "routeChange:ado-migration-backend-change",
+    );
     expect(followup.inputs).toContain("failureClass:request-shape-invalid");
     expect(followup.acceptance.join("\n")).toContain(
       "repaired in the aks-rp-e2e domain repo, committed, pushed",
+    );
+    expect(followup.acceptance.join("\n")).toContain(
+      "Treat the controller packet, old task text, and prior reviews as hints",
+    );
+    expect(followup.acceptance.join("\n")).toContain(
+      "emit specRetryReset for only the affected specs",
     );
     expect(followup.acceptance.join("\n")).toContain(
       "compare inputFingerprint and errorFingerprint",

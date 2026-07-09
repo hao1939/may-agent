@@ -1266,9 +1266,13 @@ type NonPassSpecGroup = {
   count: number;
   specIds: string[];
   sampledSpecIds: string[];
+  retryGuardedSpecIds: string[];
+  routeChangeSpecIds: string[];
   failureClasses: string[];
   inputFingerprints: string[];
   errorFingerprints: string[];
+  routeChangeReasons: string[];
+  lastRunBackends: string[];
 };
 
 function safeTaskIdPart(value: string): string {
@@ -1283,6 +1287,33 @@ function safeTaskIdPart(value: string): string {
 function specFamily(specId: string): string {
   const withoutPrefix = specId.replace(/^spec\./, "");
   return withoutPrefix.split(".")[0]?.trim() || "unknown";
+}
+
+function specLastRunBackend(spec: Record<string, unknown>): string {
+  const url = typeof spec.lastRunUrl === "string" ? spec.lastRunUrl : "";
+  if (/dev\.azure\.com/i.test(url)) return "ado";
+  if (/github\.com/i.test(url)) return "github";
+  return url ? "other" : "none";
+}
+
+function specRouteChangeReasons(spec: Record<string, unknown>): string[] {
+  const reasons: string[] = [];
+  if (
+    typeof spec.budgetResetReason === "string" &&
+    spec.budgetResetReason.trim()
+  ) {
+    reasons.push(spec.budgetResetReason.trim());
+  }
+  if (
+    typeof spec.priorGithubAttempts === "number" &&
+    spec.priorGithubAttempts > 0
+  ) {
+    reasons.push(`prior-github-attempts:${spec.priorGithubAttempts}`);
+  }
+  if (specLastRunBackend(spec) === "github") {
+    reasons.push("last-run-backend:github");
+  }
+  return [...new Set(reasons)];
 }
 
 function hasPendingOrRunningSpecs(state: SpecLoopState): boolean {
@@ -1352,14 +1383,36 @@ function nonPassSpecGroups(
       count: 0,
       specIds: [],
       sampledSpecIds: [],
+      retryGuardedSpecIds: [],
+      routeChangeSpecIds: [],
       failureClasses: [],
       inputFingerprints: [],
       errorFingerprints: [],
+      routeChangeReasons: [],
+      lastRunBackends: [],
     };
     group.count += 1;
     group.specIds.push(specId);
     if (group.sampledSpecIds.length < input.maxSpecSamples) {
       group.sampledSpecIds.push(specId);
+    }
+    if ((spec.attempts ?? 0) >= input.maxDirectAttemptsPerSpec) {
+      group.retryGuardedSpecIds.push(specId);
+    }
+    const backend = specLastRunBackend(spec as Record<string, unknown>);
+    if (!group.lastRunBackends.includes(backend)) {
+      group.lastRunBackends.push(backend);
+    }
+    const routeReasons = specRouteChangeReasons(
+      spec as Record<string, unknown>,
+    );
+    if (routeReasons.length > 0) {
+      group.routeChangeSpecIds.push(specId);
+      for (const reason of routeReasons) {
+        if (!group.routeChangeReasons.includes(reason)) {
+          group.routeChangeReasons.push(reason);
+        }
+      }
     }
     if (
       typeof spec.failureClass === "string" &&
@@ -1499,6 +1552,9 @@ function materializeSpecLoopFollowups(
         `target:${input.target}`,
         `branch:${input.branch}`,
         `state:${input.stateRef}`,
+        `currentBackend:ado`,
+        ...group.lastRunBackends.map((backend) => `lastRunBackend:${backend}`),
+        ...group.routeChangeReasons.map((reason) => `routeChange:${reason}`),
         ...group.failureClasses.map(
           (failureClass) => `failureClass:${failureClass}`,
         ),
@@ -1507,10 +1563,13 @@ function materializeSpecLoopFollowups(
       outputs: [input.stateRef, "evidence/archive/", "features/", "specs/"],
       acceptance: [
         "Every affected non-pass spec has a concrete root-cause classification.",
+        "Treat the controller packet, old task text, and prior reviews as hints, not ground truth: re-read the current task tree, spec-loop state, latest ADO run/result artifacts, backend/env config, and relevant spec/test/source/docs before deciding.",
+        "If the old attempts came from a different backend, environment, auth path, workflow schema, or result-artifact contract, explicitly judge whether that route change makes a bounded rerun meaningful; do not reset attempts automatically.",
         "Before any rerun, compare inputFingerprint and errorFingerprint; rerun only after the input changed, the diagnosis changed, or a new external fact makes the run meaningful.",
         "Every fixable test/spec/runtime/planner/workflow issue was repaired in the aks-rp-e2e domain repo, committed, pushed to the target branch, and queued for a meaningful Azure DevOps live rerun.",
         "App-only evidence or task-state changes are used only as audit trail and are not counted as the fix for domain test failures.",
         "If no bounded repo-local fix remains, an escalation task records the exact owner/environment/product reason, affected specs, attempted fixes, and resume condition.",
+        "If rerun is justified after current-fact review, emit specRetryReset for only the affected specs or feature family with the concrete reason; otherwise create repair work, preserve an exact wait, escalate, or close with proof.",
         "Relevant spec-loop state, spec/model files, or evidence notes were updated to match that pass/fix/escalate decision.",
       ],
       conflict_scope: [
@@ -1522,13 +1581,18 @@ function materializeSpecLoopFollowups(
         status: group.status,
         featureFamily: group.family,
         workflow: "fix-forward",
+        reviewMode: "stalled-work-review",
         subjectKind: "spec-family",
         totalSpecCount: group.count,
         sampledSpecIds: group.sampledSpecIds,
         representedSpecIds: group.specIds,
+        retryGuardedSpecIds: group.retryGuardedSpecIds,
+        routeChangeSpecIds: group.routeChangeSpecIds,
         failureClasses: group.failureClasses,
         inputFingerprints: group.inputFingerprints,
         errorFingerprints: group.errorFingerprints,
+        routeChangeReasons: group.routeChangeReasons,
+        lastRunBackends: group.lastRunBackends,
         stateRef: input.stateRef,
         target: input.target,
         branch: input.branch,

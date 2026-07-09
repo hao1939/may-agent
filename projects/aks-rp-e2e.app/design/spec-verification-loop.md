@@ -250,6 +250,20 @@ every spec is `pass`; stranded `pending`, `fail`, `error`, `pr_open`, and legacy
 `done` all keep the loop incomplete. Drained non-pass or stranded-pending
 results are backlog pressure, not project completion.
 
+Retry budgets are loop guardrails, not truth. When a spec becomes direct-run
+ineligible because the retry guard fired, the controller should not blindly
+retry it and should not park it forever. It should publish the current facts and
+create or preserve visible owner work so an agent can re-evaluate the situation
+with fresh evidence.
+
+The agent review must treat controller summaries as hints, not ground truth.
+Before deciding to reset attempts, rerun, repair, split, compact, escalate, keep
+waiting, or close, the agent must read the current task tree, spec-loop state,
+latest pipeline run/result artifact, target environment/backend config, and
+relevant spec/test/source/documentation. The question is not "did this exact
+attempt already fail?" but "given the current project state, what different
+workable next move exists?"
+
 Blocked wait leaves narrow the affected scope, but they do not suppress
 unrelated ledger pressure. The controller must publish
 `unrepresentedNonTerminalCount`; while it is greater than zero the loop root is
@@ -276,6 +290,14 @@ ledger records into visible grouped recovery tasks, exact waits, escalations, or
 passing results. A pulse cap may limit direct verifier dispatch, but it must not
 leave retry-drained feature families without any recovery owner when direct
 execution is drained.
+
+Backend, environment, auth, workflow, or result-artifact route changes are
+especially important stall-review inputs. Code should not automatically reset
+all attempts because a route changed; that would treat the agent like an
+idempotent scheduler. Instead, it should surface the changed route and affected
+records as grouped review work. The agent decides whether the old attempts are
+still meaningful, whether a bounded rerun is justified, and whether to emit a
+`specRetryReset` directive for the affected specs or feature family.
 
 ## Controller Workflow
 
