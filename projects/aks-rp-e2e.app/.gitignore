@@ -15,3 +15,9 @@ tasks/archive/*.json
 tasks/*.bak*
 workflows/.may-runtime-module-*.mjs
 workspace/
+
+# Runtime evidence artifacts (metric alerts, ops repair notes)
+evidence/metric-alert-*
+evidence/metric-recovered-*
+evidence/archive/metric-alert-*
+evidence/archive/ops-*

@@ -1264,7 +1264,10 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           "pending authoritative",
         ]);
       if (sourceExactnessBlocked) {
-        if (isRepresentedBlockedFrontier(task)) {
+        if (
+          isRepresentedBlockedFrontier(task) ||
+          isFeatureCompactNonEnvironmentFrontier(task)
+        ) {
           continue;
         }
         warnings.push({

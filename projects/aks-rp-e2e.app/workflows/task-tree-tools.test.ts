@@ -1050,6 +1050,116 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses source-exactness-overblock warning for feature-compact exact non-environment frontiers", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: [
+                "compact-owner-frontier",
+                "compact-pipeline-frontier",
+                "source-exactness-blocker",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-owner-frontier": {
+              id: "compact-owner-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep the compact workload-autoscaler split frontier visible while source-equivalent evidence remains the exact carrier.",
+              outputs: ["evidence/archive/workload-autoscaler-owner.md"],
+              acceptance: ["owner frontier remains visible"],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "workload-autoscaler",
+                errorClass: "package-partial",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Do not rerun unchanged; the compact package remains partial on an exact two-member frontier. One member is already preserved by bounded mounted-source/public-doc source-equivalent evidence, not by an unresolved exact-source wait, and the other remains the reviewed runtime frontier until owner reclassification changes the split.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "owner.decision",
+                  featureKey: "workload-autoscaler",
+                  target: "staging",
+                  errorClass: "package-partial",
+                  scope: "feature-compact",
+                },
+              },
+            },
+            "compact-pipeline-frontier": {
+              id: "compact-pipeline-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep the compact aad-rbac residual frontier visible while exact carriers remain unchanged.",
+              outputs: ["evidence/archive/aad-rbac-source.md"],
+              acceptance: ["mixed frontier remains visible"],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "aad-rbac",
+                errorClass: "package-partial",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "The compact frontier remains blocked on exact carriers, including a source-backed authorization ceiling and a capacity family member, until one represented carrier materially changes.",
+                category: "external-wait",
+                owner: "operator",
+                waiting_for: {
+                  type: "pipeline.result.or.artifact.available",
+                  featureKey: "aad-rbac",
+                  target: "staging",
+                  errorClass: "package-partial",
+                  scope: "feature-compact",
+                },
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
   test("repairs parent rollups and lifecycle from active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
