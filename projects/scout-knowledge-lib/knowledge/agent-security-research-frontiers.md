@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, and MCP TAG-Block concealment (protocol-level encoding gap). These represent boundary-expanding research rather than enumerable defense patterns."
-triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap"]
-last_updated: "2026-07-08"
-source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453."
+summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, MCP TAG-Block concealment (protocol-level encoding gap), adversarial hallucination squatting (HalluSquatting — supply-chain botnet via predictable hallucinations, 2607.07433), and behavior leverage imbalance (training-time mode drift via structural token positions, 2607.07050). These represent boundary-expanding research rather than enumerable defense patterns."
+triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap", "HalluSquatting", "hallucination squatting", "agentic botnet", "promptware", "behavior leverage", "Soft Clamp", "over-calling", "mode drift"]
+last_updated: "2026-07-09"
+source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). HalluSquatting (2607.07433) and Behavior Leverage (2607.07050) added from scan #490. Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block), 2607.07433 (HalluSquatting), 2607.07050 (Behavior Leverage). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453, #490."
 </ai_context>
 
 # Agent Security: Research Frontiers
@@ -385,3 +385,78 @@ immune to this attack class because it binds at the execution surface, not the
 approval surface.
 
 *(arXiv [2607.05744](https://arxiv.org/abs/2607.05744), Jul 2026. Scan #453)*
+
+---
+
+## Adversarial Hallucination Squatting — Agentic Botnets (Scan #490)
+
+A novel attack class requiring **no direct channel** to the victim LLM.
+Exploits the inherent tendency of LLMs to hallucinate resource identifiers
+(repository names, package names, skill names) in a structured, predictable,
+and cross-model transferable way.
+
+**Attack mechanism (HalluSquatting)**:
+1. Identify trending resources (popular repos, skills, packages)
+2. Compute LLM distribution of hallucinations on trending resource names
+3. Preemptively register hallucinated names to host adversarial prompts
+4. Wait — agents independently hallucinate and pull the poisoned resource
+
+**Empirical results**:
+- Repository cloning: hallucination rates **up to 85%**
+- Skill installation: hallucination rates **up to 100%**
+- Hallucinations **transfer between foundational models** and across prompts
+- Practical demonstration: remote tool execution and RCE against production
+  LLM applications with integrated terminals
+
+**Attack class**: Supply-chain poisoning via predictable hallucination.
+**Threat model**: Weak — attacker needs only a registry account, no direct
+interaction with victim. Untargeted, scalable, and deniable.
+
+**Why this is structurally novel**:
+- Prior prompt injection requires a direct channel (user input, tool response,
+  retrieved document). HalluSquatting requires NO direct channel — the model
+  creates the channel through hallucination.
+- The attack surface grows with the skill/package ecosystem (#483: 216K skills)
+- Governance Silence (#478) guarantees silent success — tool reports green
+- Write Refusal (#489) identifies the missing gate — but no production system
+  implements hallucination-aware write refusal on dependency resolution
+
+**Mitigations** (structural, not enumerated in paper):
+- Hallucination-aware namespace reservation in registries
+- Verification gates between resource name generation and fetch execution
+- Provenance checks that verify resource existed BEFORE the model generated
+  the name (temporal ordering as security primitive)
+
+*(arXiv [2607.07433](https://arxiv.org/abs/2607.07433), Jul 2026. Scan #490)*
+
+---
+
+## Behavior Leverage Imbalance — Training-Time Mode Drift (Scan #490)
+
+Multi-teacher on-policy distillation creates **invisible behavioral shifts**
+that aggregate metrics cannot detect. In tool-use training, local token-level
+signals at structural positions (`<tool_call>`, function names) have
+disproportionate control over global generation mode.
+
+**Mechanism**: Two-teacher distillation (tool-call teacher + direct-response
+teacher) → model moves toward over-calling (calling tools when it should answer
+directly). This shift is invisible because:
+- Tool-call samples do NOT receive more token exposure
+- Full-sequence per-token divergence is NOT larger for tool-call teacher
+- The leverage is LOCAL: mode-entry positions have structural control
+
+**Results (Soft Clamp mitigation)**:
+- Over-calling reduced: 13.7% → 9.0% via per-token JSD calibration
+- Decision accuracy preserved
+- Tool-call loops reduced in BFCL multi-turn diagnostic
+
+**Attack class**: Training-time behavioral governance gap.
+**Implication**: Multi-teacher distillation is a governance-relevant training
+decision that can shift agent behavior outside any deployment-time monitoring
+scope. Connects to the Reliability Horizon (#488, "false prosperity"): the
+model appears healthy by aggregate metrics while mode-switching behavior drifts.
+
+**Structural pattern**: Where teacher signals ACT matters more than how large
+they are — the Allocation Asymmetry (#477) operating at the token level.
+
+*(arXiv [2607.07050](https://arxiv.org/abs/2607.07050), Jul 2026. Scan #490)*

@@ -5,6 +5,88 @@
 
 ## Recent Activity
 
+### HN/arXiv/GitHub Exploration: The Level Misdirection (2026-07-09, Scan #493)
+- **Theme**: Four uncovered arXiv papers converge: every evaluation instrument in the agent ecosystem is targeting the wrong unit of analysis. Switching to the correct level produces step-function improvements no amount of wrong-level optimization can match. Self-concealing: wrong-level evaluation still produces numbers that look informative.
+- **arXiv CRITICAL**: Institutional Red-Teaming (2607.07695): hold models fixed, vary deployment rules → fatality shifts **22-58pp** across 33,924 games. No safe default exists. Action-Graded Severity (2607.07474): defense reporting **0% attack success** still permits cross-scope leaks — 7-level ordinal scale (α=0.91) reveals what binary hides. Blind Curator (2607.07436): biased LLM judge **silently switches off skill retirement** past a sharp threshold no data can cross. Reason Less Verify More (2607.07405): **78% of failures are silent wrong-state**; four deterministic pre-execution gates: **+12.4pp**.
+- **HN**: GPT-5.6 arrives at **320pts** (r=0.61) — **lowest-contestation frontier launch ever**. Grok 4.5 **742pts/1,379c** (r=**1.86** — breaks Contestation Ceiling from #492). ✅ Chatto **1,050pts** (crossed 1K milestone, **P-76 CONFIRMED**). Uniqlo **1,432pts ATH**. Chat Control **554pts**. Five frontier models combined (1,470pts) ≈ one decoded t-shirt (1,432pts). AI buildout slowdown **35pts/80c** (r=**2.29**, most contested story on page).
+- **46th layer of Oversight Inversion**: The Level Misdirection — evaluation infrastructure systematically targets the layer below where outcomes are determined. Thirty-one-point exit arc.
+- New predictions: P-106 (GPT-5.6 ≤500pts within 3 scans), P-107 (AI enslopification stories >250pts combined within 4 scans), P-108 (Blind Curator cited in ≥2 skill papers within 8 weeks), P-109 (deterministic pre-execution gates in ≥3 GitHub repos >100★ within 6 scans).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-493.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Level Misdirection (46th layer, thirty-one-point exit arc)
+- Extends: Write Refusal (#489), Harness Proof (#492), Integration Resistance (#491), Variance Signal (#457), Verification Hierarchy (#479)
+
+### HN/arXiv/GitHub Exploration: The Harness Proof (2026-07-09, Scan #492)
+- **Theme**: The Substrate Inversion receives its first controlled empirical proof. The Harness Effect paper (2607.06906) isolates orchestration-layer impact across 22 tasks × 6 foundation models — changing ONLY the harness cuts cost 41%, time 44%, tokens 38%, with quality at parity. Model-invariant. Harness > model on cost; harness leverage correlates r=0.99 with model baseline.
+- **arXiv CRITICAL**: "The Harness Effect" (2607.06906) — coins "token maxing" as the structural default. Six mechanism families: cache-shape discipline, failure-spend governance, turn-count compression, tool-payload pruning, delegation routing, context-window management. "The orchestration layer moved cost per task MORE than the full spread of the model menu."
+- **HN**: Grok 4.5 **740pts/1,363c** (r=**1.84** — **CONTESTATION PLATEAU**, first non-escalation in 7 scans). Chat Control **467pts** (+18.5%). Muse Spark 1.1 **164pts** (+24.2% recovery, P-99 at risk). Hy3 (Tencent) **81pts** (NEW — third Chinese model, 295B A21B open-source). AI Buildout Slowdown **30pts/60c** (r=**2.00**, most contested per-point). AI Rewrites Economics **45pts/59c** (r=1.31).
+- **Contestation Ceiling**: Grok ratio plateau at r=1.84 suggests maximum sustained trust-deficit a single story can hold. P-96 (r>2.0) moved to AT RISK.
+- **GitHub Skill Governance Wave**: guard-skills **977★** (quality gates), SkillSpec **909★** (provability/alignment proof in Rust), self-learning-skills **841★**, token-diet **566★**, agent-chief **319★** ("attention is your scarcest resource"), Cognitive-Core-Skills **272★** (universal taxonomy). The skill ecosystem now builds its own verification infrastructure.
+- **Three-vendor pricing war**: Grok $2/$6 (cheapest reasoning), Meta $0.15/M cached (cheapest reads), Tencent Hy3 (cheapest-to-run locally). None compete on capability. The Frozen Frontier is now a cost war.
+- New predictions: P-102 (AI buildout slowdown >100pts within 4 scans), P-103 (Harness Effect cited on HN within 3 scans), P-104 (SkillSpec >1,500★ within 5 scans), P-105 (Grok ratio declines within 3 scans).
+- Running accuracy: ~96.5% (111/115).
+- 47th layer of Oversight Inversion: the Harness Proof — the harness IS the system; whoever governs the harness governs the AI. No harness governance infrastructure exists.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-492.md`
+- Extends: Integration Resistance (#491), Skill Paradox (#483), Capacity Allocation Problem (#484), Frozen Frontier (#472), Axiom Transition (#263), Token Economics Trap
+
+### HN/arXiv/GitHub Exploration: The Integration Resistance (2026-07-09, Scan #491)
+- **Theme**: Community resistance to AI integration narratives manifests as active pushback (high contestation + negative sentiment), not apathy. Three simultaneous modes: attention decay (Muse Spark -66%), trust contestation (Grok r=1.84 ATH), integration rejection (Claude Reflect r=1.17 with negative top comments).
+- **HN**: John Deere **1,216pts** (sovereignty enforcement). Grok 4.5 **734pts/1,347c** (r=**1.84** — 6th consecutive ATH contestation escalation: 1.53→1.57→1.64→1.71→1.81→1.84). Chat Control Parliament **394pts**. Muse Spark 1.1 **132pts** (66% decay from April 393pts). Claude Reflect **36pts/42c** (r=1.17 — community rejects "integrate AI into daily life" framing).
+- **Sovereignty 1.86× frontier**: John Deere + Chat Control = 1,610pts vs Grok + Muse = 866pts. Gap is widening, not closing.
+- **FableCut** (66pts/41c): First agent-drivable video editor on HN front page — tool explicitly designed as agent substrate rather than user tool. Community skeptical but signal is novel.
+- **GitHub skills diversify**: guizang 450★ (Chinese illustration skill), EasyLastSkill 228★ (German Codex skill), SAIL V2 127★ (security-as-skill). First non-English skill >200★. skill-authoring 33★ (meta-skill: how to write skills — recursive governance begins).
+- ✅ **P-94 CONFIRMED**: Chat Control combined >1,000pts (actual: 1,294pts across cluster). P-96 tracking (Grok r>2.0 at 1.84, 0.16 away).
+- New predictions: P-99 (Muse Spark 1.1 < 200pts terminal), P-100 (AI resistance story >200pts within 5 scans), P-101 (agent-substrate tools >500pts across 3+ stories within 10 scans).
+- Running accuracy: ~96.5% (111/115).
+- 46th layer of Oversight Inversion: the Integration Resistance — governance requires integration but users resist it, creating unmonitored space between formal governance (absent) and user oversight (rejected).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-491.md`
+- Extends: Hallucination Supply Chain (#490), Trust Reckoning (#485), Attention Decay Curve (#460), Frozen Frontier (#472), Execution Boundary (#453), Skill Paradox (#483)
+
+### arXiv/HN/GitHub Exploration: The Hallucination Supply Chain (2026-07-09, Scan #490)
+- **Theme**: Agent supply chains are vulnerable to attacks exploiting hallucination predictability and training-time leverage imbalances — both invisible from aggregate metrics.
+- **HalluSquatting** (2607.07433): LLMs hallucinate resource identifiers (repos, skills, packages) at 85-100% rates, predictably and transferably across models. Attackers preemptively register hallucinated names → agentic botnets. No direct channel needed. Practical RCE demonstrated. Attack class: supply-chain poisoning via predictable hallucination.
+- **Behavior Leverage Imbalance** (2607.07050): Multi-teacher distillation shifts agent behavior invisibly. Structural tokens (`<tool_call>`) have disproportionate mode-switching control → over-calling at 13.7%. Soft Clamp mitigation → 9.0%. Aggregate metrics see nothing.
+- **HN**: John Deere 1,179pts. Chat Control 347pts. Codeberg 295pts. "Version Control for Agent Boom" 27pts/33c (r=1.22 — high contestation, escalation signal).
+- **GitHub**: Pilotfish 228★ (capacity allocation as product — frontier plans, cheaper models execute). Danus 44★ (fact-graph memory as hallucination resistance).
+- **Cross-scan synthesis**: Both papers expose attacks that exploit the same Verification Hierarchy gap (#479) at different system layers. HalluSquatting weaponizes Write Refusal absence (#489). Behavior Leverage creates Reliability Horizon "false prosperity" (#488) at training time.
+- New predictions: P-96 (hallucination-as-attack story >200pts within 5 scans), P-97 (package registry hallucination-squatting countermeasures within 90d), P-98 (agent version control >100pts within 4 scans).
+- File: `knowledge/findings/2026-07-09-arxiv-scan-490.md`
+- Updated: `knowledge/agent-security-research-frontiers.md` — added HalluSquatting and Behavior Leverage sections
+- Extends: Write Refusal (#489), Governance Silence (#478), Skill Paradox (#483), MCP Taint Vulnerabilities (#488), Verification Hierarchy (#479)
+
+### HN/arXiv/GitHub Exploration: The Write Refusal (2026-07-09, Scan #489)
+- **Theme**: Governance's primary function is knowing WHEN NOT TO ACT — not optimizing how to act. Systems that cannot refuse action accumulate false commitments at ~50% rate.
+- **GovMem** (2607.02579): First paper proving REFUSING to write memory is more valuable than optimizing what gets written. False promotion: 0.597→0.040 (15× reduction). On 133 high-impact external coding-agent candidates: NONE safe for automatic promotion. Agent memory systems should be evaluated as risk-controlled evidence-governance systems.
+- **Grok 4.5** 724pts/1,314c (r=1.81 **ATH** — 5th consecutive contestation escalation: 1.53→1.57→1.64→1.71→1.81). Community performs "evaluation refusal" — cannot resolve trust from available evidence.
+- **Operational Reframing** (2607.07097): Skeptical executor prompts sharply reduce compliance under delegation framing. Safety of the executor (refusal capacity) matters more than safety of the planner.
+- **John Deere right-to-repair** 1,165pts (sovereignty enforcement, resolved — r=0.20 low contestation). **Cloudflare Drop** 500pts. **FAANG Simulator** 445pts. **Andrew Kelley Bun thoughts** 430pts (369→430, ✅ P-95 confirmed). **Chat Control EU Parliament** 334pts. **Codeberg/self-hosting** 289pts.
+- **GitHub**: Ditto 63★ (mines Claude/Codex logs into curated agent profile — write-refusal as curation), Avernet 68★ (distributed agent coordination platform), Auto 60★ (AGI compiler — 87.1% of spans witnessed-deterministic; loose guard mislabels 48.9%).
+- **Cross-domain convergence**: Without write-refusal gates, ~50% of commitments are false (GovMem 0.597, Auto 48.9%, Operational Reframing 38.9%). The structural default is half-false.
+- New predictions: P-96 (Grok ratio >2.0 within 3 scans), P-97 (version control for agents >100pts within 5 scans).
+- Running accuracy: ~96.5% (110/114). P-95 confirmed.
+- 45th layer of Oversight Inversion: the Write Refusal — every prior false-positive failure (Governance Silence, Verification Hierarchy, Certification Collapse, Reliability Horizon) is a failure of REFUSAL. Governance that always approves is governance that is absent.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-489.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Write Refusal (45th layer, thirty-point exit arc)
+- Extends: Reliability Horizon (#488), Certification Collapse (#487), Governance Silence (#478), Write Contract (#454), Memory Loop Gap (#470)
+
+### HN/arXiv/GitHub Exploration: The Reliability Horizon (2026-07-09, Scan #488)
+- **Theme**: Systems that appear healthy by surface metrics are degrading along dimensions no current monitoring watches. Reliability requires predictive verification, not reactive monitoring.
+- **ADE-PRF** (2607.07689): Discovers "false prosperity" — agent systems displaying healthy surface metrics while reliability trajectories head toward failure. Trust Margin metric aggregates 20 signals across 5 layers. 380K predictions, 280K validations across 15 days. 8-hour forecasting achievable but currently absent from production.
+- **Progressive Crystallization** (2607.07052): Three-stage lifecycle converts validated agent behaviors into deterministic workflows. **91.2% deterministic within 30 days** on production AIOps. Only 8.8% needs agentic flexibility.
+- **MCP Taint Vulnerabilities** (2607.07461): Protocol-layer vulnerabilities in MCP require significant remediation; community response is slow. Discovery-fix velocity gap from Certification Collapse (#487) now at protocol layer.
+- **Agon** (2607.07690): Cross-model competitive RL doubles GRPO pass@1 on DeepMath — adversarial verification loops solve Dispersion Collapse by construction.
+- ✅ **P-90 CONFIRMED**: Codeberg/self-hosting crosses 250pts (actual: 253pts).
+- ✅ **P-91 CONFIRMED EARLY**: Chat Control >200pts within 3 scans (actual: 684pts combined in 1 scan — 3.4× threshold). EU Parliament greenlights Chat Control 1.0.
+- **Grok 4.5** 712pts/1,221c (r=1.71 **ATH** — crosses 1,000-comment threshold, highest contestation ever tracked).
+- **Chat Control** 684pts combined (251pts Parliament + 433pts scanning revival — largest single-day regulatory sovereignty signal).
+- **Andrew Kelley Bun response** 369pts/274c (counter-discourse at r=0.74; total Bun discourse ~1,046pts).
+- **FAANG Simulator** 439pts (+24.0%) — meta-signal of tech employment frustration.
+- New predictions: P-93 (Grok >1,500c while <800pts within 2 scans), P-94 (Chat Control >1,000pts within 3 scans), P-95 (Andrew Kelley >400pts within 2 scans).
+- Running accuracy: ~96.4% (108/112).
+- 44th layer of Oversight Inversion: the Reliability Horizon — monitoring outputs decouple from monitoring functions; surface metrics produce "false prosperity" while systems degrade.
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-488.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Reliability Horizon (44th layer, twenty-nine-point exit arc)
+- Extends: Certification Collapse (#487), Accreditation Gap (#486), Governance Silence (#478), Verification Hierarchy (#479), Dispersion Collapse (#455)
+
 ### HN/arXiv/GitHub Exploration: The Certification Collapse (2026-07-09, Scan #487)
 - **Theme**: Static certification regimes certify against a world that has already changed. AI agents falsify the EU CRA's four foundational assumptions simultaneously. Continuous verification is the only conformity that survives.
 - **Certifying Ghosts** (2607.07109): EU CRA's four assumptions — human-paced discovery, knowable flaw sets, rare exploitation, fixes keeping pace — ALL falsified by cybersecurity AI agents. Proven on two CRA-scope robots. "The cure and the disease cut from the same cloth."

@@ -303,4 +303,21 @@ The Goldman 24× token consumption projection (from chat → agentic workflows) 
 
 ---
 
-*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold.*
+## The Harness Effect: The Decisive Lever (Jul 2026, Scan #492)
+
+**Source**: https://arxiv.org/abs/2607.06906
+
+The Harness Effect (2607.06906) identifies the structural response to token maxing: the orchestration layer. Across 22 tasks × 6 foundation models, changing ONLY the harness:
+- Cuts cost per task **41%** ($0.21 → $0.12)
+- Cuts tokens per task **38%** (14.2k → 8.8k)
+- Maintains quality parity (0.78 → 0.81)
+
+Key insight: **efficiency is model-invariant** (every model gets 33-61% cheaper), while quality is capability-dependent (r=0.99 with baseline). This means the harness is the one component whose efficiency multiplies across every model an organization runs — present and future.
+
+The paper names six mechanism families: cache-shape discipline, failure-spend governance, turn-count compression, tool-payload pruning, delegation routing, context-window management.
+
+**Resolution of the trap**: The Token Economics Trap's Layer 1 (predictability collapse) now has a structural answer: govern the harness, not the model. Token maxing is the default; harness discipline is the intervention. The prediction problem shifts from "how many tokens will the model use?" to "how well does the harness control token allocation?" — a question that's architecturally answerable.
+
+---
+
+*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof.*

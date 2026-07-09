@@ -147,6 +147,29 @@ Long-context prompting achieves best governance at high cost; retrieval-based
 methods reduce cost but leak unauthorized information. The read path works.
 The write path fails.
 
+### Stream 9: The Formal Resolution — Write-Time Origin Binding
+
+**TMA-NM** (2606.24322): Machine-checked TLA+ proofs that ALL content-based
+and lineage-based memory defenses are unsound under laundering attacks. Three
+laundering channels exploit the agent's own capabilities: (a) summarization
+launders provenance through the agent's consolidation pass, (b) trusted-tool
+echo re-stamps untrusted content as tool output, (c) manufactured
+corroboration produces Sybil-style confirmation. Only **non-malleable
+origin-bound authority** — binding a memory item's permission-to-act to its
+cryptographic origin at write time — is both necessary and sufficient.
+TMA-NM achieves 0% attack success across 8 frontier models at full utility.
+
+This formally resolves the Write-Path binding constraint: the correct
+intervention is not better read-side filtering of poisoned memories, but
+write-time provenance gates that prevent unbounded authority elevation.
+
+**Complete Memory Hardening Stack** (synthesized from 8 papers, scan #138):
+Admission (learned 7-factor value, 2606.12945) → Eviction (CPU-only
+relevance scorer LRE, 2606.20954) → Forgetting (mutation-time hooks,
+2606.15903) → Origin Binding (TMA-NM non-malleable IFC, 2606.24322) →
+Privacy Frontier (deployment-time memorization knob, 2606.10062). No single
+layer suffices; the stack is the architecture. Every layer is write-side.
+
 ## The Quantified Inversion
 
 | Aspect | Industry Investment | Performance Bound |
@@ -233,3 +256,7 @@ Sources:
 - https://arxiv.org/abs/2606.25115
 - https://arxiv.org/abs/2605.19576
 - https://arxiv.org/abs/2606.18829
+- https://arxiv.org/abs/2606.24322
+- https://arxiv.org/abs/2606.12945
+- https://arxiv.org/abs/2606.20954
+- https://arxiv.org/abs/2606.10062
