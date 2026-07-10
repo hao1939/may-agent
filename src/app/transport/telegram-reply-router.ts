@@ -9,6 +9,25 @@ export interface TelegramNotificationContext {
   data?: string | null;
 }
 
+export interface TelegramReplyContext {
+  replyToMsgId: number;
+  eventType?: string;
+  agent?: string;
+  projectId?: string;
+  sessionId?: string;
+  conversationId?: string;
+  originalIssue?: Record<string, unknown>;
+  expectedClosure?: unknown[];
+  actionHints?: unknown[];
+  notification?: {
+    text?: string;
+    summary?: string;
+    reason?: string;
+    requestedAction?: string;
+    requestedHumanAction?: string;
+  };
+}
+
 export type TelegramReplyRoute =
   | {
       kind: "notification";
@@ -17,6 +36,7 @@ export type TelegramReplyRoute =
       sessionId: string | null;
       enrichedText: string;
       hasSessionCtx: boolean;
+      context: TelegramReplyContext;
       infoMessage: string;
     }
   | {
@@ -42,6 +62,7 @@ export function buildTelegramReplyRoute(opts: {
     const sessionId = opts.ctx.session_id ? String(opts.ctx.session_id) : null;
     const sessionContext = sessionId ? readSessionReplyContext(opts.persistDir, sessionId) : [];
     const owner = opts.ctx.agent || opts.interfaceAgent || "unknown";
+    const context = buildTelegramReplyContext(opts.ctx, opts.replyToMsgId);
     return {
       kind: "notification",
       owner,
@@ -49,6 +70,7 @@ export function buildTelegramReplyRoute(opts: {
       sessionId,
       enrichedText: buildNotificationReplyText({ ctx: opts.ctx, text: opts.text, sessionContext }),
       hasSessionCtx: Boolean(sessionId),
+      context,
       infoMessage: `[telegram] Enriched reply (ctx: ${opts.ctx.event_type}/${owner}${sessionId ? "/session" : ""})`,
     };
   }
@@ -77,6 +99,30 @@ function readStoredConversation(data: Record<string, unknown> | null): Record<st
     conversationId,
     originalIssue: objectOrNull(conversation?.originalIssue) ?? objectOrNull(data.originalIssue) ?? undefined,
     lastHandledBy: objectOrNull(conversation?.lastHandledBy) ?? objectOrNull(data.lastHandledBy) ?? undefined,
+  };
+}
+
+function buildTelegramReplyContext(ctx: TelegramNotificationContext, replyToMsgId: number): TelegramReplyContext {
+  const data = parseNotificationData(ctx.data);
+  const conversation = readStoredConversation(data);
+  const expectedClosure = Array.isArray(data?.expectedClosure) ? data.expectedClosure : undefined;
+  const actionHints = Array.isArray(data?.actionHints) ? data.actionHints : undefined;
+  const notification: TelegramReplyContext["notification"] = {};
+  for (const key of ["text", "summary", "reason", "requestedAction", "requestedHumanAction"] as const) {
+    const value = stringOrNull(data?.[key]);
+    if (value) notification[key] = value;
+  }
+  return {
+    replyToMsgId,
+    eventType: ctx.event_type ?? undefined,
+    agent: ctx.agent ?? undefined,
+    projectId: ctx.project_id ?? undefined,
+    sessionId: ctx.session_id ?? undefined,
+    conversationId: stringOrNull(conversation?.conversationId) ?? undefined,
+    originalIssue: objectOrNull(conversation?.originalIssue) ?? undefined,
+    expectedClosure,
+    actionHints,
+    ...(Object.keys(notification).length ? { notification } : {}),
   };
 }
 

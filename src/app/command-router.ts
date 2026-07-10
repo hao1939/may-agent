@@ -171,6 +171,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!message) return;
     const conversation = isRecord(data.conversation) ? data.conversation : {};
     const target = isRecord(data.target) ? data.target : {};
+    const context = isRecord(data.context) ? data.context : {};
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
 
     const targetSessionId = nonEmptyString(target.sessionId);
@@ -179,7 +180,11 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         type: "session.steer.requested",
         source,
         owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
-        data: { sessionId: targetSessionId, message },
+        data: {
+          sessionId: targetSessionId,
+          message,
+          ...(Object.keys(context).length ? { context } : {}),
+        },
       } as any);
       return;
     }
@@ -251,7 +256,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const eventOwner =
       typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
-    const context = isRecord(data.context) ? data.context : {};
     bus.emit({
       type: "chat.start.requested",
       source,

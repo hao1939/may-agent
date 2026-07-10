@@ -65,7 +65,12 @@ export type AgentCommand =
         requestId?: string;
       };
     }
-  | { type: "session.steer.requested"; source: string; owner: string; data: { sessionId: string; message: string } }
+  | {
+      type: "session.steer.requested";
+      source: string;
+      owner: string;
+      data: { sessionId: string; message: string; context?: Record<string, unknown> };
+    }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
