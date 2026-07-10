@@ -227,7 +227,7 @@ ergonomic. That local state is not authoritative.
 |---|---|
 | May Console | Prompt shows the selected target and status: May with chat id when known, a session, or disconnected. Bare text targets the selected session with `session.steer.requested`, or the selected May chat session; if no May chat is known, emit `chat.start.requested`. |
 | CLI | Non-interactive commands must name the intent: `chat`, `steer`, `cancel`, `comment`, `emit`. Ambiguous commands fail locally. |
-| Telegram | Reply-to-message context selects project/session. Otherwise the chat has a current May chat session; if absent, emit `chat.start.requested`. |
+| Telegram | Reply-to-message context is attached to `human.input.received`; command-router may steer a known session or route to May with an enriched delivery message. Otherwise the chat has a current May chat session; if absent, emit `chat.start.requested`. |
 | Web | Visible UI context selects target. A session page steers that session; an agent chat page targets or creates that agent's chat session; buttons emit one explicit intent event. |
 
 If a target cannot be resolved, the channel should fail locally with a clear
@@ -256,10 +256,16 @@ Exit behavior:
 
 ## Telegram Contract
 
-Telegram is optimized around reply context.
+Telegram is optimized around reply context. The human reply is plain text; the
+system attaches notification metadata and command-router enriches the internal
+delivery message.
 
-- Replying to a project notification emits `project.comment.created`.
-- Replying to a session notification emits `session.steer.requested`.
+- Replying to a project notification emits `human.input.received` with project
+  context; command-router or May decides whether that becomes
+  `project.comment.created`, a May chat turn, or a project event.
+- Replying to a session notification emits `human.input.received` with session
+  context; command-router may emit `session.steer.requested` for that known
+  session using an enriched delivery message.
 - A normal message targets the Telegram chat's current May chat session.
 - If that chat session is unknown, the message emits `chat.start.requested`.
 - Unknown slash commands should show help or fail locally. They should not have

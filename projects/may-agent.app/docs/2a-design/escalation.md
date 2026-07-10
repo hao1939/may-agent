@@ -1,15 +1,18 @@
 # Design: Escalation System
 
-> **Status (2026-06-18):** Routing (slices 1-2) is shipped: `escalation.created`
-> events route to the owner via the `escalation` handler, which emits
-> `escalation.routed`. Lifecycle tracking (slices 3-5) is NOT implemented —
+> **Status (2026-07-11):** Routing (slices 1-2) is shipped: `escalation.created`
+> events route to the owner via the `escalation` handler. The handler records
+> routing with `handler.routed`; it no longer emits `escalation.routed` because
+> that event was not consumed and accumulated as pending noise. Lifecycle
+> tracking (slices 3-5) is only partially implemented —
 > there is no `escalations` entity table, no `escalation.resolved` handler,
 > and no lifecycle metrics.
 >
-> In practice, escalations accumulate as `pending` event rows and are
-> bulk-resolved manually. The events.md delivery proposal includes paired-event
-> tracking for `escalation.created` → `escalation.resolved/dismissed` which
-> would detect orphan escalations automatically.
+> In practice, escalations can still accumulate if no owner emits
+> `escalation.resolved` or `escalation.dismissed`. The events.md delivery
+> proposal includes paired-event tracking for `escalation.created` →
+> `escalation.resolved/dismissed` which would detect orphan escalations
+> automatically.
 >
 > Immediate gap: 400+ escalations accumulated before anyone noticed. The system
 > has no way to answer "what escalations are open?" without querying raw events.
@@ -126,7 +129,54 @@ Infra persists the event and routes it by owner:
 May, but it must preserve `owner: "human:<role>"` on the event.
 
 Routing is mechanical. The owner decides the actual fix. A valid route emits
-`escalation.routed`; malformed or unowned input emits `handler.skipped`.
+`handler.routed`; malformed or unowned input emits `handler.skipped`.
+
+### Human Reply Bridge
+
+Human-owned escalations are usually delivered through May and a human channel
+such as Telegram. The human reply is not itself the lifecycle resolution until
+May or another owner converts it into a terminal escalation event.
+
+End-to-end path:
+
+```text
+escalation.created(owner = human:operator)
+  -> May emits message.created to human
+     data.conversationId = escalation:<id>
+     data.originalIssue.eventType = escalation.created
+     data.expectedClosure = [escalation.resolved, escalation.dismissed]
+  -> human replies in Telegram/Web/etc.
+  -> channel emits human.input.received with attached originalIssue metadata
+  -> command-router delivers an enriched internal message to May/escalation resolver
+  -> resolver emits escalation.resolved or escalation.dismissed
+  -> escalation-lifecycle resumes sourceSessionId/checkpointRef
+```
+
+`sourceSessionId` and `resume.checkpointRef` are context for step 4, not a
+direct reply target. A human reply must not be steered straight into the
+original blocked source session, because that bypasses `escalation.resolved`
+and leaves the escalation open. The source session resumes only after the
+terminal resolution event.
+
+The internal delivery message should include enough attached context for the
+resolver to act without guessing:
+
+```text
+Human reply
+approve
+
+Attached context
+Conversation: escalation:esc_123
+Original issue: escalation.created
+Escalation: esc_123
+Source session: s_blocked
+Reason: Needs owner approval.
+Original ask: Approve the run or provide an alternate target.
+Expected closure: escalation.resolved, escalation.dismissed
+
+Use the human reply as the decision or missing input. Emit the expected
+resolution/dismissal event when done.
+```
 
 ### 3. Resolve
 
@@ -298,9 +348,10 @@ Metrics should measure lifecycle health, not replace judgment:
 | Workflow-backed handler | `handler: { workflow, agent, task, includeEvent: true }` uses the SDK workflow adapter, appends the event envelope, and can skip when missing. | Good for event-to-workflow bridges without custom handler code. |
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
 | Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 35 escalations originate from session-finish boundary code, not proactive mid-session calls. |
-| Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `escalation.routed`, and sends a message to the owner. | Implemented (Slice 2). All 35 created → all 35 routed. |
-| Resolution | **Not implemented.** No agent emits `escalation.resolved` or `escalation.dismissed`. Zero events in DB. | Slice 3 is unbuilt. Escalations are fire-and-forget: created, routed, then the lifecycle ends. No owner closes the loop. |
-| Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
+| Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `handler.routed`, and sends a message to the owner. Human-owned routes emit `message.created` with `conversationId`, `originalIssue`, and `expectedClosure`. | Implemented (Slice 2). Keep routing evidence as `handler.routed`; do not reintroduce orphan `escalation.routed` events. |
+| Human reply bridge | Telegram can recover `message.created` context and emit `human.input.received` with `context.telegramReply`. Command-router can enrich internal delivery messages from that context. | Needs escalation-specific guard: replies to `originalIssue.eventType = escalation.created` must route through May/escalation resolver, not directly to `sourceSessionId`. |
+| Resolution | **Owner convention still needed.** May or the target owner must turn human/agent answers into `escalation.resolved` or `escalation.dismissed`. | Slice 3 remains the critical missing closure path. Without it, human replies are acknowledged but escalations stay open. |
+| Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Slice 4 infra exists. It works only after Slice 3 emits terminal resolution events. Directly steering the source session bypasses this lifecycle and should be avoided for escalations. |
 | `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
 | Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
 | Workflow blocking | Workflow `ctx.blocked(reason, context)` returns a local blocked workflow result and stops the synchronous workflow. | It should not automatically publish `escalation.created`; boundary code decides whether the local blocker needs owner routing. |
@@ -403,7 +454,7 @@ escalation lifecycle.
 
 - Add or update an event-subscribed owner routing handler for `escalation.created`.
 - Validate that `owner` resolves to `agent:<name>` or `human:<role>`.
-- Emit `handler.skipped` for malformed events and `escalation.routed` for valid ones.
+- Emit `handler.skipped` for malformed events and `handler.routed` for valid ones.
 - Wake the owner through inbox/handler dispatch without domain-specific payload hacks.
 
 ### Slice 3: Resolution
