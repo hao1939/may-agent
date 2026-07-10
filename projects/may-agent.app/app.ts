@@ -354,7 +354,7 @@ export default defineProjectApp({
           "You are entering the may-agent.app ops-health observer workflow.",
           "Build and record a deterministic health packet. Do not wake the project owner unless a meaningful signal needs owner judgment or closure.",
         ].join("\n"),
-        timeoutMs: 120_000,
+        timeoutMs: 180_000,
       },
       context: [
         ...taskTreeContext,
