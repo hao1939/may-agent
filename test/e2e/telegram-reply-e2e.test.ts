@@ -297,10 +297,10 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
-    const humanInputs: string[] = [];
+    const humanInputs: any[] = [];
     const replies: any[] = [];
     bus.subscribe((event: any) => {
-      if (event.type === "human.input.received") humanInputs.push(String(event.data?.text ?? ""));
+      if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "telegram.reply") replies.push(event);
     });
 
@@ -342,15 +342,26 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(humanInputs).toHaveLength(1);
-      expect(humanInputs[0]).toContain("Conversation: approval:approval-123");
-      expect(humanInputs[0]).toContain('Original issue: {"eventType":"project.approval.requested"');
-      expect(humanInputs[0]).toContain("Approval id: approval-123");
-      expect(humanInputs[0]).toContain("Wait id: wait-123");
-      expect(humanInputs[0]).toContain("Path id: path.network.example");
-      expect(humanInputs[0]).toContain("Packet: evidence/archive/example-approval.md");
-      expect(humanInputs[0]).toContain('Expected response: {"type":"project.approval.submitted"');
-      expect(humanInputs[0]).toContain("User says: approve");
-      expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
+      const inputText = String(humanInputs[0].data?.text ?? "");
+      expect(inputText).toContain("Human reply");
+      expect(inputText).toContain("approve");
+      expect(inputText).toContain("Situation: Need exact owner decision");
+      expect(inputText).toContain("Original ask: Approve one bounded replay");
+      expect(inputText).not.toContain("Conversation: approval:approval-123");
+      expect(inputText).not.toContain("Approval id:");
+      expect(humanInputs[0].data?.conversation?.id).toBe("approval:approval-123");
+      expect(humanInputs[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "approval:approval-123",
+        expectedClosure: ["project.approval.submitted"],
+      });
+      expect(
+        replies.some(
+          (event) =>
+            event.data?.enriched === true &&
+            event.data?.conversationId === "approval:approval-123" &&
+            event.data?.expectedClosure?.[0] === "project.approval.submitted",
+        ),
+      ).toBe(true);
       expect(
         sentMessages.some(
           (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 511,
@@ -427,11 +438,13 @@ describe("telegram reply e2e", () => {
     const bus = new EventBus();
     const chatStarts: any[] = [];
     const handledInputs: Array<{ message: string; source?: string }> = [];
+    const humanInputs: any[] = [];
     const comments: any[] = [];
     const steers: any[] = [];
     const replies: any[] = [];
     let activeChatSessionId = "";
     bus.subscribe((event: any) => {
+      if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
       if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
@@ -468,14 +481,18 @@ describe("telegram reply e2e", () => {
     await waitFor(() => {
       expect(chatStarts).toHaveLength(1);
       expect(String(chatStarts[0].data?.message)).toContain("Project needs review");
-      expect(String(chatStarts[0].data?.message)).toContain("Conversation: tg_project_review_1");
-      expect(String(chatStarts[0].data?.message)).toContain("Original issue:");
+      expect(String(chatStarts[0].data?.message)).not.toContain("Conversation: tg_project_review_1");
+      expect(String(chatStarts[0].data?.message)).not.toContain("Original issue:");
       expect(String(chatStarts[0].data?.message)).toContain("please revise the scoped plan");
+      expect(humanInputs[0].data?.conversation?.id).toBe("tg_project_review_1");
+      expect(humanInputs[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "tg_project_review_1",
+      });
       expect(comments).toHaveLength(0);
       expect(steers).toHaveLength(0);
       expect(handledInputs).toHaveLength(1);
       expect(handledInputs[0].source).toBe("telegram");
-      expect(handledInputs[0].message).toContain("Conversation: tg_project_review_1");
+      expect(handledInputs[0].message).not.toContain("Conversation: tg_project_review_1");
       expect(handledInputs[0].message).toContain("please revise the scoped plan");
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
       expect(
@@ -590,14 +607,35 @@ describe("telegram reply e2e", () => {
       getSessionId: () => "",
       interfaceAgent: "may",
     });
+    const router = attachCommandRouter({
+      bus,
+      manager: {
+        status: () => [],
+        cancel: () => {},
+        resumeSession: () => "s_reply_target",
+        run: () => "unexpected-new-session",
+      } as any,
+      getChatSession: () => null,
+      clearCancelLatch: () => {},
+      projectRoot: "/tmp/project",
+      reload: () => {},
+      restart: () => {},
+      shutdown: () => {},
+    });
 
     await waitFor(() => {
       expect(humanInputs).toHaveLength(1);
       expect(String(humanInputs[0].data?.text)).toContain("Session needs input");
-      expect(String(humanInputs[0].data?.text)).toContain("Conversation: tg_session_input_1");
+      expect(String(humanInputs[0].data?.text)).not.toContain("Conversation: tg_session_input_1");
       expect(String(humanInputs[0].data?.text)).toContain("Session context");
       expect(String(humanInputs[0].data?.text)).toContain("continue with the smaller plan");
-      expect(steers).toHaveLength(0);
+      expect(humanInputs[0].data?.conversation?.id).toBe("tg_session_input_1");
+      expect(steers).toHaveLength(1);
+      expect(steers[0].data?.sessionId).toBe("s_reply_target");
+      expect(steers[0].data?.context?.telegramReply).toMatchObject({
+        conversationId: "tg_session_input_1",
+        sessionId: "s_reply_target",
+      });
       expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
       expect(
         sentMessages.some(
@@ -607,6 +645,7 @@ describe("telegram reply e2e", () => {
     });
 
     bot.close();
+    router.close();
   });
 
   it("normalizes Telegram slash commands into daemon events", async () => {
