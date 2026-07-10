@@ -268,24 +268,16 @@ function fitActiveTerminal() {
 }
 
 function terminalMountHeight(mount) {
-  const shell = mount.closest('.terminal-shell');
-  const toolbar = shell?.querySelector('.terminal-toolbar');
-  const quickbar = shell?.querySelector('.terminal-quickbar:not(.hidden)');
   const main = document.querySelector('body.terminal-mode .main');
   const mainRect = main?.getBoundingClientRect();
-  const shellStyle = shell ? getComputedStyle(shell) : null;
-  const gap = shellStyle ? parseFloat(shellStyle.rowGap || shellStyle.gap || '0') || 0 : 0;
+  const mainStyle = main ? getComputedStyle(main) : null;
+  const mainPaddingBottom = mainStyle ? parseFloat(mainStyle.paddingBottom || '0') || 0 : 0;
+  const mountRect = mount.getBoundingClientRect();
   const border = 2;
-  const available = Math.floor(
-    (mainRect?.height || window.innerHeight)
-    - (toolbar?.getBoundingClientRect().height || 0)
-    - (quickbar?.getBoundingClientRect().height || 0)
-    - gap * (quickbar && !quickbar.classList.contains('hidden') ? 2 : 1)
-  );
-  const min = Math.min(360, Math.max(180, window.innerHeight - 140));
-  const raw = Math.max(min, available);
+  const bottom = (mainRect?.bottom || window.innerHeight) - mainPaddingBottom;
+  const available = Math.max(120, Math.floor(bottom - mountRect.top));
   const cell = terminal?.element?.querySelector('.xterm-rows > div')?.getBoundingClientRect().height || 19;
-  const rows = Math.max(8, Math.floor((raw - border) / cell));
+  const rows = Math.max(8, Math.floor((available - border) / cell));
   return Math.floor(rows * cell + border);
 }
 
