@@ -3,7 +3,7 @@
 **Status**: Partially shipped (2026-05-08); modular route proposal added for review (2026-06-13)
 **Date**: 2026-05-06 (revised 2026-05-08, 2026-06-13)
 **Aligned with**: `../architecture.md`, `../work-model.md`, `metrics.md`,
-`heartbeat.md`, `default-project-ui.md`
+`heartbeat.md`, `default-project-ui.md`, `web-terminal.md`
 
 ## What this UI is for
 
@@ -141,6 +141,11 @@ event, task, or session.
 | `/metrics` | Metrics and alerts. Show health signals and ownership. |
 | `/knowledge/*` | Knowledge browser. Show durable knowledge, design docs, proposals, and references. |
 | `/terminal` | Terminal surface for daemon/client operation, not the primary demo path. |
+
+The terminal route follows the separate Web Terminal contract in
+`web-terminal.md`: xterm.js owns rendering, the browser owns visible size, tmux
+keeps profile processes alive, and the transport must preserve terminal output
+losslessly for every profile.
 
 ### Module Layout
 

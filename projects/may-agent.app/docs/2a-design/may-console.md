@@ -2,7 +2,7 @@
 
 **Status**: Draft
 **Date**: 2026-06-05
-**Aligned with**: `human-control-surfaces.md`, `runtime.md`, `sessions.md`, `events.md`, `webui.md`
+**Aligned with**: `human-control-surfaces.md`, `runtime.md`, `sessions.md`, `events.md`, `webui.md`, `web-terminal.md`
 
 ## Purpose
 
@@ -337,6 +337,10 @@ warm for its idle TTL and asks the terminal bridge to replay a bounded tmux
 pane snapshot to the new browser client. That replay must include the latest
 visible prompt/status so a refresh does not make the operator lose context or
 wonder whether the selected agent is still responding.
+
+The Web terminal transport and resize rules are defined in `web-terminal.md`.
+May Console should not need special browser rendering behavior beyond that
+shared terminal contract.
 
 ## Rendering
 
