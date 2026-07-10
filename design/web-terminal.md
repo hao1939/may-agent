@@ -28,6 +28,23 @@ Only the active browser client should control the pty size:
 This keeps stale localhost/tunnel tabs from fighting over the terminal size
 while preserving normal multi-window viewing.
 
+## Scrollback
+
+All web terminal profiles use tmux scrollback/copy-mode.
+
+Even Shell and Ops are displayed by attaching a browser pty to a tmux session.
+That means the browser is not connected directly to the shell process; it is
+viewing a tmux client. Browser/xterm scrollback is therefore not a reliable way
+to inspect previous output.
+
+Tmux mouse support is enabled for every web terminal session. Wheel/PageUp
+behavior should inspect the real tmux pane history instead of trying to fake
+browser scrollback.
+
+This is especially important for full-screen TUIs such as Claude and Codex,
+which use the terminal alternate screen. It also applies to Shell, Ops, and May
+Console because they are still viewed through tmux.
+
 ## Expected Refresh Behavior
 
 After web terminal code is deployed, already-open browser tabs may still be
@@ -65,3 +82,13 @@ tmux -L may-web display-message -p -t may-web-codex '#{pane_width}x#{pane_height
 
 Use the matching tmux target for the profile being checked, such as
 `may-web-shell`, `may-web-claude`, or `may-web-codex`.
+
+If a profile cannot scroll to previous output, confirm its tmux session has
+mouse enabled:
+
+```sh
+tmux -L may-web show-options -t may-web-codex mouse
+tmux -L may-web show-options -t may-web-claude mouse
+tmux -L may-web show-options -t may-web-shell mouse
+tmux -L may-web show-options -t may-web-ops mouse
+```
