@@ -28,7 +28,6 @@ interface TerminalSession {
   ptyPid?: number;
   clients: Set<TerminalSocket>;
   stdoutBuffer: string;
-  replayBuffer: string;
   idleTimer?: ReturnType<typeof setTimeout>;
   idleUntil?: number;
 }
@@ -37,7 +36,6 @@ const DEFAULT_COLS = 120;
 const DEFAULT_ROWS = 32;
 const DEFAULT_IDLE_TTL_MS = 10 * 60 * 1000;
 const TMUX_SOCKET = "may-web";
-const MAX_REPLAY_BUFFER_BYTES = 8 * 1024 * 1024;
 
 function enabledFromEnv(): boolean {
   return /^(1|true|yes|on)$/i.test(process.env.MAY_WEB_TERMINAL || "");
@@ -149,7 +147,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     session.idleTimer = undefined;
     session.idleUntil = undefined;
     session.child.kill();
-    sessions.delete(profileId);
+    if (sessions.get(profileId) === session) sessions.delete(profileId);
   }
 
   function clearIdleTimer(session: TerminalSession): void {
@@ -233,18 +231,9 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       child,
       clients: new Set(),
       stdoutBuffer: "",
-      replayBuffer: "",
     };
 
-    function rememberOutput(data: string): void {
-      session.replayBuffer += data;
-      if (session.replayBuffer.length > MAX_REPLAY_BUFFER_BYTES) {
-        session.replayBuffer = session.replayBuffer.slice(-MAX_REPLAY_BUFFER_BYTES);
-      }
-    }
-
     function broadcastData(data: string): void {
-      rememberOutput(data);
       const frame = { type: "data", data };
       for (const client of session.clients) {
         try {
@@ -269,7 +258,6 @@ export function createTerminalManager(opts: { projectRoot: string }) {
           frame = { type: "data", data: line + "\n" };
         }
         if (frame.type === "ready" && typeof frame.pid === "number") session.ptyPid = frame.pid;
-        if (frame.type === "data") rememberOutput(String(frame.data || ""));
         for (const client of session.clients) {
           try {
             client.send(JSON.stringify(frame));
@@ -300,7 +288,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
         } catch {}
       }
       session.clients.clear();
-      sessions.delete(profile.id);
+      if (sessions.get(profile.id) === session) sessions.delete(profile.id);
     });
 
     sessions.set(profile.id, session);
@@ -308,6 +296,10 @@ export function createTerminalManager(opts: { projectRoot: string }) {
   }
 
   async function attach(profileId: string, socket: TerminalSocket, cols?: number, rows?: number): Promise<void> {
+    const existing = sessions.get(profileId);
+    if (existing && existing.clients.size === 0) {
+      closeSession(profileId, existing);
+    }
     const session = await ensureSession(profileId, cols, rows);
     clearIdleTimer(session);
     session.clients.add(socket);
@@ -316,9 +308,6 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile: session.profile,
       pid: session.ptyPid ?? session.child.pid,
     }));
-    if (session.replayBuffer) {
-      socket.send(JSON.stringify({ type: "replay", data: session.replayBuffer }));
-    }
   }
 
   function detach(profileId: string, socket: TerminalSocket): void {
