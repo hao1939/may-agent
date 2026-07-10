@@ -49,4 +49,71 @@ describe("telegram client", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("stores approval notification context for reply enrichment", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-approval-"));
+    try {
+      const client = createTelegramClient({
+        token: "token",
+        persistDir,
+        emitInfo: () => {},
+        fetchImpl: (async () => {
+          return new Response(JSON.stringify({ ok: true, result: { message_id: 654 } }), {
+            headers: { "content-type": "application/json" },
+          });
+        }) as typeof fetch,
+      });
+
+      await client.sendMessage("chat-1", "📋 Approval packet dispatch", undefined, {
+        eventType: "message.created",
+        agent: "aks-explorer",
+        projectId: "projects/aks-rp-e2e.app",
+        data: JSON.stringify({
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+          packetPath: "evidence/archive/example-approval.md",
+          conversationId: "approval:approval-123",
+          originalIssue: {
+            eventType: "project.approval.requested",
+            approvalId: "approval-123",
+            waitId: "wait-123",
+          },
+          expectedResponse: {
+            type: "project.approval.submitted",
+            approvalId: "approval-123",
+            waitId: "wait-123",
+          },
+        }),
+      });
+
+      const { getNotificationMessage } = await import("../../lib/db/notifications.js");
+      const row = getNotificationMessage(persistDir, 654);
+      expect(row).toMatchObject({
+        event_type: "message.created",
+        agent: "aks-explorer",
+        project_id: "projects/aks-rp-e2e.app",
+      });
+      expect(JSON.parse(String(row?.data))).toMatchObject({
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+        packetPath: "evidence/archive/example-approval.md",
+        conversationId: "approval:approval-123",
+        originalIssue: {
+          eventType: "project.approval.requested",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+        },
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+        },
+      });
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });

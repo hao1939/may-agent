@@ -36,6 +36,53 @@ function sessionData(event: any): Record<string, unknown> {
   return messageData(event);
 }
 
+function isHumanTarget(target: unknown): boolean {
+  if (typeof target !== "string") return false;
+  const normalized = target.trim().toLowerCase();
+  return normalized === "human" || normalized === "human:operator";
+}
+
+function approvalConversationContext(message: Record<string, unknown>): Record<string, unknown> {
+  const approval =
+    message.approval && typeof message.approval === "object" && !Array.isArray(message.approval)
+      ? (message.approval as Record<string, unknown>)
+      : null;
+  const approvalId = typeof message.approvalId === "string" ? message.approvalId : typeof approval?.approvalId === "string" ? approval.approvalId : undefined;
+  const waitId = typeof message.waitId === "string" ? message.waitId : typeof approval?.waitId === "string" ? approval.waitId : undefined;
+  const pathId = typeof message.pathId === "string" ? message.pathId : typeof approval?.pathId === "string" ? approval.pathId : undefined;
+  const packetPath = typeof message.packetPath === "string" ? message.packetPath : typeof approval?.packetPath === "string" ? approval.packetPath : undefined;
+  const requestedAction = typeof message.requestedAction === "string" ? message.requestedAction : undefined;
+  const reason = typeof message.reason === "string" ? message.reason : undefined;
+  const expectedResponse =
+    message.expectedResponse && typeof message.expectedResponse === "object" && !Array.isArray(message.expectedResponse)
+      ? (message.expectedResponse as Record<string, unknown>)
+      : approval?.directEvent && typeof approval.directEvent === "object" && !Array.isArray(approval.directEvent)
+        ? (approval.directEvent as Record<string, unknown>)
+        : undefined;
+  const approvalKind = typeof approval?.kind === "string" ? approval.kind : undefined;
+
+  if (!approvalId && !waitId && !pathId && !packetPath && !expectedResponse) {
+    return {};
+  }
+
+  return {
+    conversationId: approvalId ? `approval:${approvalId}` : waitId ? `approval-wait:${waitId}` : undefined,
+    originalIssue: {
+      eventType: "project.approval.requested",
+      approvalKind,
+      approvalId,
+      waitId,
+      pathId,
+      packetPath,
+      requestedAction,
+      reason,
+      expectedResponse,
+    },
+    expectedClosure:
+      typeof expectedResponse?.type === "string" ? [expectedResponse.type] : undefined,
+  };
+}
+
 export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramOutbound {
   const { bus, getSessionId, pendingChatId, sendToUser } = opts;
 
@@ -184,7 +231,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
     if (event.type === "message.created") {
       const message = messageData(event);
-      if (message.to !== "human") return;
+      if (!isHumanTarget(message.to)) return;
       if (pendingChatId) {
         const content = String(message.content ?? "").slice(0, 4000);
         const projectId =
@@ -194,6 +241,13 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         const data: Record<string, unknown> = {};
         for (const key of [
           "approval",
+          "approvalId",
+          "waitId",
+          "pathId",
+          "packetPath",
+          "requestedAction",
+          "reason",
+          "expectedResponse",
           "projectPath",
           "projectId",
           "conversationId",
@@ -204,6 +258,16 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "actionHints",
         ]) {
           if (message[key] !== undefined) data[key] = message[key];
+        }
+        const approvalContext = approvalConversationContext(message);
+        if (approvalContext.conversationId !== undefined && data.conversationId === undefined) {
+          data.conversationId = approvalContext.conversationId;
+        }
+        if (approvalContext.originalIssue !== undefined && data.originalIssue === undefined) {
+          data.originalIssue = approvalContext.originalIssue;
+        }
+        if (approvalContext.expectedClosure !== undefined && data.expectedClosure === undefined) {
+          data.expectedClosure = approvalContext.expectedClosure;
         }
         sendToUser(`📋 ${content}`, {
           eventType: "message.created",

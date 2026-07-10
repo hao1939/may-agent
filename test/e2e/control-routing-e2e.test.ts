@@ -114,6 +114,10 @@ describe("control routing e2e", () => {
         content: "Review the deploy checklist",
         intent: "notify",
         priority: "P1",
+        approvalId: "approval-abc",
+        waitId: "wait-abc",
+        pathId: "path.example",
+        packetPath: "evidence/archive/example.md",
       },
     });
     await waitForSocketDispatch();
@@ -130,6 +134,10 @@ describe("control routing e2e", () => {
         content: "Review the deploy checklist",
         intent: "notify",
         priority: "P1",
+        approvalId: "approval-abc",
+        waitId: "wait-abc",
+        pathId: "path.example",
+        packetPath: "evidence/archive/example.md",
       },
     });
 
@@ -149,6 +157,10 @@ describe("control routing e2e", () => {
       intent: "notify",
       artifact: null,
       priority: "P1",
+      approvalId: "approval-abc",
+      waitId: "wait-abc",
+      pathId: "path.example",
+      packetPath: "evidence/archive/example.md",
     });
     expect(stateDir.startsWith(root)).toBe(true);
   });

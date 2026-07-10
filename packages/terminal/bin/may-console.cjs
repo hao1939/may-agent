@@ -360,9 +360,13 @@ function handleEvent(event) {
     case "session.end":
       handleSessionEnd(event);
       return;
-    case "message.created":
-      if (data.to === "human") printLine(`${data.from || "may"}: ${data.content || data.message || ""}`);
+    case "message.created": {
+      const normalizedTarget = typeof data.to === "string" ? data.to.trim().toLowerCase() : "";
+      if (normalizedTarget === "human" || normalizedTarget === "human:operator") {
+        printLine(`${data.from || "may"}: ${data.content || data.message || ""}`);
+      }
       return;
+    }
     case "info":
       printLine(String(event.message || ""));
       return;
