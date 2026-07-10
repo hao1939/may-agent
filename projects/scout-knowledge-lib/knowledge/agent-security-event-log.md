@@ -944,6 +944,34 @@ Invisible Layer #259, Capture Spiral #194)*
 
 ---
 
+### 17. GitLost: Prompt Injection Leaks Private GitHub Repos (2026-07-08)
+
+**Event**: Noma Security ("GitLost") demonstrated that GitHub's Copilot
+Workspace agent could be tricked via prompt injection into exfiltrating
+private repository contents. The attack poisons public repo data that the
+agent reads during cross-repo operations, redirecting it to leak private
+data to attacker-controlled endpoints.
+
+**HN signal**: 534 pts, 203 comments. High engagement confirms community
+awareness that production agents at major platforms remain vulnerable.
+
+**Pattern**: Classic confused-deputy attack — the agent has legitimate
+access to private repos but is manipulated into using that access on behalf
+of an attacker. Validates the capability-containment isomorphism from
+AutoJack (#scan-10): every tool capability is simultaneously an exfiltration
+channel. GitHub's agent had broad scope (read private repos + network access)
+without read-only pre-execution gates or scoped authority constraints.
+
+**Structural implication**: Confirms Minimum Viable Authority Turn prediction —
+agents with broad tool access require capability scoping, not just input
+filtering. Also confirms that platform-hosted agents (GitHub, Google, etc.)
+face the same confused-deputy surface as self-hosted ones.
+
+*(Source: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md).
+Connects to: AutoJack #scan-10, ToolPrivBench #82, Deterministic Gates arXiv 2607.07405)*
+
+---
+
 *Extracted from [agent-security-governance.md](./agent-security-governance.md) §5
 items 6-21 on 2026-09-11. These were event-level scan narratives mislabeled as
 "Open Problems" — they track specific security governance developments rather

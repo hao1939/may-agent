@@ -5,6 +5,85 @@
 
 ## Recent Activity
 
+### XHS Exploration: The Methodology Maturation (2026-07-11, Scan #79)
+- **Theme**: Loop Engineering hits peak naming — authority backing (吴恩达 309❤, Claude Code official 156❤) simultaneous with counter-narrative (任川 "趁它刚火，先说它会过时" 284❤). Community is now meta-aware of its own paradigm velocity.
+- **Vibe Coding backlash** crystallized as genre: "毁掉程序员最快的方法" (352❤), "AI Coding pitfalls" (544❤). Original guide still dominates at 5,567❤.
+- **Agent Memory** crosses into named academic subfield: ICML2026 paper compilation (603❤), Tsinghua self-evolving agent survey (209❤), Mem0 new algorithm (63❤), TencentDB-Agent-Memory enters.
+- **Sovereignty/替代** steady state: no new urgency, alternatives content at 93-174❤ engagement.
+- **Phase 20: Methodology Maturation** — distinguishing feature: counter-narratives appear *concurrent* with peaks, not after. Paradigm lifecycle acceleration itself has been named by practitioners.
+- File: `knowledge/findings/2026-07-11-xhs-scan-79.md`
+- Extends: Harness Bifurcation (#78), Practitioner Industrialization (#61), Memory Loop Gap (#470)
+
+### XHS Exploration: The Harness Bifurcation (2026-07-10, Scan #78)
+- **Theme**: Coding agent ecosystem explicitly splits into "官方绑定型" (official-bound: Claude Code, Codex, Gemini CLI) vs "开源中立型" (open-source neutral: OpenCode, Cursor, Pi). Chinese practitioners pushed toward neutral side by sovereignty pressure, not technical preference.
+- **Claude Code sub-agent lockdown** (1,000❤, 1,309 collects, 153 comments): Anthropic blocks sub-agent spawning in VS Code plugin across versions 166-170. Community workaround via ccswitch routing layer; OpenCode confirmed as seamless drop-in replacement. DeepSeek token hit rate via ccswitch "99%以上".
+- **Karpathy "VibeCoding过时了"** (1,045❤): Paradigm shift to "Agentic Engineering" — AI orchestrates agents, not generates code. Comment meta-prediction: "再过几个月是AI编排你" (next phase: AI orchestrates *you*).
+- **JADEPUFFER** (5❤, low engagement but structurally critical): First fully autonomous AI agent ransomware documented by Sysdig. Exploited CVE-2025-3248 on public Langflow. Zero human intervention from vuln discovery to ransom. Execution Boundary (#453) crossed in adversarial domain.
+- **Sovereignty squeeze**: MIIT backdoor posts still appearing. 阶跃星辰 announces AI agent phone (hardware sovereignty). "中国用不了" as casual knowledge on Claude feature posts.
+- **Community lifecycle phase 20**: Harness Bifurcation. Sequence: Shock (#74) → Scramble (#75) → Acceleration (#76) → Resistance (#77) → Bifurcation (#78).
+- File: `knowledge/findings/2026-07-10-xhs-scan-78.md`
+- Extends: Regulatory Resistance (#77), Sovereignty Acceleration (#76), Replacement Scramble (#75), Commodity Proof (#482)
+
+### HN/arXiv/GitHub Exploration: The Trust Debt (2026-07-09, Scan #498)
+- **Theme**: Trust in AI systems follows an inverted temporal pattern — accepted first, contested second. Every unverified decision at time T compounds an obligation at T+n that no current infrastructure can discharge.
+- **HN**: GPT-5.6 **786pts/578c** (r=0.74 sustained — retroactive contestation confirmed over 5 scans: 0.61→0.66→0.68→0.69→0.74). AI rewrites economics **92pts/103c** (r=1.12 — naming trust debt at codebase level). Mozilla Control Layer **21pts** (infrastructure > models thesis enters vendor discourse). Glass Backbone **227pts/291c** (r=1.28 — fragility discourse dominates). Chat Control 1.0 **793pts** (sustained #1).
+- **arXiv CRITICAL**: Progressive Crystallization (2607.07052) — agent systems converge to **91.2% deterministic** within 30 days. Only 8.8% remains agentic. Critical implication: crystallized 91.2% was never audited during exploration phase. Trust debt of exploration carried forward permanently. GovMem (2607.02579) — false-promotion rate 0.597 → 0.040 with write-refusal gates (15× reduction). Without gates, ~60% of agent memory is incorrectly promoted.
+- **GitHub**: GateMem **165★** (memory governance benchmark), MakerChecker **46★** (segregation of duties for agents, signed audit trails), kakunin-ai **26★** (behavioral risk scoring + auto-revocation = temporal trust degradation detection). Trust separation infrastructure emerging but no retroactive audit capability exists.
+- **50th layer of Oversight Inversion**: The Trust Debt — trust debt is the compound consequence of the production-oversight cost gap over time. Systems that bypass initial verification accumulate obligations that compound super-linearly through dependency chains, memory contamination, and crystallization lock-in. Self-concealing: invisible during accumulation, visible only when retroactive audit is needed (by then, intractable).
+- **Key synthesis**: The Accountability Stack (#497) has 6 spatial layers (L0-L5) — all verify at decision-time. The Trust Debt reveals a missing L6 (Temporal Audit): retroactive re-evaluation of historical decisions against current evidence. No product exists for this layer.
+- Predictions: P-122 (GPT-5.6 r>0.80 within 4 scans), P-123 ("trust debt"/"verification debt" on HN >30pts within 8 scans), P-124 (retroactive audit tool >50★ within 10 scans), P-125 (Mozilla Control Layer >50pts within 3 scans), P-126 (AI rewrite economics >200pts combined within 4 scans).
+- Running accuracy: ~96.2% (111/115).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-498.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Trust Debt (50th layer, thirty-five-point exit arc)
+- Extends: Accountability Stack (#497), Crystallization Spiral (internal), Write Refusal (#489), Reliability Horizon (#488), Trust Reckoning (#485)
+
+### HN/arXiv/GitHub Exploration: The Accountability Stack (2026-07-09, Scan #497)
+- **Theme**: Six independent projects each address a single layer of agent accountability (identity, authorization, trajectory, provenance, causality, memory) — but no project spans more than 2 layers. The governance gap lives in the transitions between layers, not within them.
+- **GitHub CRITICAL**: kakunin-ai/kakunin-core **26★** (created 2026-07-07) — first platform combining X.509 agent certificates via AWS KMS, behavioral risk scoring, auto-revocation, and EU AI Act compliance. Brain0's identity-layer complement. Companion SDKs in TypeScript (27★) and Python indicate production intent.
+- **HN**: GPT-5.6 contestation **rising** to r=0.74 (was 0.61 at launch → 0.66 → 0.68 → 0.69 → 0.74). Retroactive questioning — accepted first, contested second. Temporal inverse of Grok 4.5 (immediately contested). Mozilla "Control Layer" article (19pts) on front page — infrastructure > models thesis entering vendor discourse, echoing Harness Proof (#492).
+- **The Accountability Stack (6 layers)**: L0 Identity (kakunin-ai 26★), L1 Authorization (Delego 26★), L2 Trajectory (TraceProbe 2607.06184 + AgentLens 2607.06624), L3 Provenance (Brain0 132★), L4 Causality (STRACE 2607.07702), L5 Memory (notmemory 5★). Total NHI governance ecosystem: ~71★ across 6 repos — categorically novel since June 2026.
+- **49th layer of Oversight Inversion**: The Accountability Stack — accountability infrastructure is being built layer-by-layer from independent origins, but accountability requires all layers connected. A failure at any transition breaks the chain. Zero multi-layer integrations exist.
+- **Validates**: Governance Plane Coupling Crisis (#233) — "attack surface lives in the transitions between planes" now observable in GitHub ecosystem.
+- Predictions: P-118 (kakunin >100★ within 6 scans), P-119 (GPT-5.6 ratio >0.80 within 3 scans), P-120 (accountability integration project spanning ≥3 layers within 10 scans), P-121 (Mozilla Control Layer >50pts within 3 scans).
+- Running accuracy: ~96.2% (111/115).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-497.md`
+- Extends: Audit Absence (#496), Governance Plane Coupling Crisis (#233), Certification Collapse (#487), Write Refusal (#489), Trust Reckoning (#485)
+
+### HN/arXiv/GitHub Exploration: The Audit Absence (2026-07-09, Scan #496)
+- **Theme**: Capability accepted, audit missing. The HN front page bifurcates — frontier launches generate points but not discourse (GPT-5.6 r=0.69, ChatGPT Work r=0.42, Hy3 r=0.27). Fragility stories consume all contestation energy (Glass Backbone r=1.26, AI rewrite economics r=1.07, AI buildout r=2.08). The community has stopped debating whether AI works and started debating whether anything can verify what it did.
+- **HN**: GPT-5.6 **664pts/459c** (r=0.69). Chat Control 1.0 **699pts** (sustained #1). 18 Words **666pts** (r=0.37, creative tool). Muse Spark 1.1 **247pts** (r=0.58). ChatGPT Work **244pts** (r=0.42). Hy3 **227pts** (r=0.27, lowest model ratio ever). Glass Backbone **204pts/257c** (r=1.26, most contested non-AI story). AI rewrite economics **80pts/86c** (r=1.07). AI buildout **51pts/110c** (r=2.08, most contested per-point). GLM 5.2 bookkeeping **69pts** (domain-specific accuracy). Combined frontier model stories: ~1,451pts with average ratio 0.49. **Capability is boring; fragility is terrifying.**
+- **arXiv**: STRACE (2607.07702) — causal extraction from agent traces. Textual dependency graphs remove non-causal steps and identify root-cause modules. 1.4× success-rate improvement on VeruSAGE-Bench (42.5% → 58.5%), optimizing **human-expert designed agents**. Traces contain improvement evidence — if causal steps can be separated from noise.
+- **GitHub CRITICAL**: Brain0 **132★** — first tool building commit-level audit chains for AI-written code. Passive decision graph, drift detection, DLP audit of agent reads, signed provenance attestations, MCP memory, offline by default. Written in Rust. Directly answers the Diagnostic Deficit (#476) at the commit level. Three architectural properties: passivity (observe, don't self-report), signing (cryptographic attribution), and causal extraction (separate causal from coincidental).
+- **48th layer of Oversight Inversion**: The Audit Absence — every governance function requires an audit trail connecting actions to outcomes; the structural default is no trail. Brain0 demonstrates passive-signed audit at commit level; STRACE demonstrates causal extraction at optimization level. Without both, governance operates on declarations, not evidence.
+- Predictions: P-114 (Brain0 >300★ within 5 scans), P-115 (AI economics/rewrite stories >200pts combined within 3 scans), P-116 (GPT-5.6 ratio <0.80 lifetime), P-117 (agent audit/provenance story >50pts within 6 scans).
+- Running accuracy: ~96.2% (111/115).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-496.md`
+- Extends: Generation Ceiling (#495), Diagnostic Deficit (#476), Write Refusal (#489), Verification Loop (#475), Trust Reckoning (#485)
+
+### arXiv/HN/GitHub Exploration: The Generation Ceiling (2026-07-09, Scan #495)
+- **Theme**: Three independent evidence streams converge: agent systems are **generation-bound, not selection-bound**. Selection/ranking/evaluation infrastructure captures ~95% of candidates already generated — improvement requires architecturally different generation, not better filters.
+- **arXiv CRITICAL**: Cost-Effective Agent Harnesses for ARC-AGI-1 (2607.06764): On 400 ARC tasks, selection captures **~95% of the candidate ceiling**. Explorer-Definer Pipeline: 57.50% pass@2 at $0.25/task. Reflective Orchestrator adds adaptive re-exploration: **67.25% pass@2** at $0.62/task (+9.81pp from broader generation, matching selection-mediated gains). Think-tool removal costs -5.75pp. **The entire field's evaluation infrastructure optimizes a layer that is already ~95% efficient.**
+- **HN**: GPT-5.6 **580pts/393c** (r=0.68 — **lowest-contestation frontier launch** ever). AI buildout slowdown **48pts/100c** (r=**2.08** — most contested story per-point). Chat Control **668pts** (sustained #1). Muse Spark 1.1 **237pts** (recovery, P-99 AT RISK). Three frontier models combined (1,020pts) < Chat Control + 18 Words (1,309pts). Non-AI stories still dominate aggregate attention.
+- **Cross-scan convergence**: ARC-AGI generation-bound diagnostic explains why Skill Paradox (#483, zero improvement from 216K skills), Harness Effect (#492, cost reduction but no quality lift), and Verification Hierarchy (#479, strong verification but only of existing candidates) all hit the same wall. **Past ~95% selection efficiency, every percent must come from what gets generated, not from better filtering.**
+- ❌ P-106 DISCONFIRMED (GPT-5.6 580pts vs ≤500pt target). P-99 AT RISK (Muse Spark recovery 237pts).
+- New predictions: P-110 (AI buildout slowdown >150pts combined within 4 scans), P-111 ("generation-bound"/"candidate ceiling" on HN within 8 scans), P-112 (GPT-5.6 ratio stays <0.80 for 3 scans).
+- Running accuracy: ~96.2% (111/115).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-495.md`
+- Extends: Level Misdirection (#493), Harness Proof (#492), Skill Paradox (#483), Capacity Allocation Problem (#484), Frozen Frontier (#472), Verification Hierarchy (#479)
+
+### HN/arXiv/GitHub Exploration: The Specification Mismatch (2026-07-09, Scan #494)
+- **Theme**: Every specification layer in the agent ecosystem — bug reports, benchmarks, test suites — was authored for a human consumer. Three papers prove the mismatch is systematic and measurable: structure alone (not content) degrades agent performance; benchmark specifications have a ceiling encoded by their human author; human-specified tests miss ~50% of agent boundaries.
+- **arXiv CRITICAL**: Bug Reports for Agents (2607.07593): 433 SWE-bench issues × 87 agents. Features emphasized for humans (NL steps-to-reproduce) correlate *negatively* with agent success. Removing section headers reduces solve rates WITHOUT removing content. Measuring Intelligence Beyond Scale (2607.07040): benchmarks saturate at human capability — proposes adversarial psychometric system. AgentEval (2607.06873): workflow-graph-derived tests find **23-38 boundaries** vs **12** from human-specified prompts (~2×).
+- **HN**: GPT-5.6 **531pts/350c** (r=0.66 — **lowest-contestation frontier launch**). Chat Control **640pts** (sustained #1). AI Buildout Slowdown **46pts/96c** (r=**2.09** — most contested per-point). Muse Spark 1.1 **233pts** (recovery from 164pts). Hy3 (Tencent) **188pts**. ChatGPT Work **180pts**. Four frontier model stories combined (1,132pts) < Chat Control alone (640pts) + 18 Words creative tool (628pts).
+- **GitHub skills update**: BuilderIO/skills 3,576★, Loopy 2,582★, baoyu-design 2,510★, security-audit-skill 2,359★. Verification-adjacent repos collectively reach 5,121★ — verification deploying *as skills*, not as external infrastructure.
+- **47th layer of Oversight Inversion**: The Specification Mismatch — specifications embed a consumer assumption (human) that silently degrades when the consumer is an agent. Thirty-two-point exit arc.
+- ❌ P-106 DISCONFIRMED (GPT-5.6 531pts vs ≤500pt target). P-99 AT RISK (Muse Spark recovery to 233pts). ✅ P-94 CONFIRMED (Chat Control >1,000pts).
+- New predictions: P-110 (bug-reports-for-agents discourse >50pts within 5 scans), P-111 (agent-derived test tools >3 repos at >200★ within 8 scans), P-112 (GPT-5.6 falls below Chat Control within 2 scans), P-113 (Muse Spark terminal band 150-300pts).
+- Running accuracy: ~96.3% (112/116).
+- File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-494.md`
+- Updated: `knowledge/the-oversight-inversion.md` — added Specification Mismatch (47th layer, thirty-two-point exit arc)
+- Extends: Level Misdirection (#493), Verification Hierarchy (#479), Skill Paradox (#483), Governance Silence (#478), Diagnostic Deficit (#476)
+
 ### HN/arXiv/GitHub Exploration: The Level Misdirection (2026-07-09, Scan #493)
 - **Theme**: Four uncovered arXiv papers converge: every evaluation instrument in the agent ecosystem is targeting the wrong unit of analysis. Switching to the correct level produces step-function improvements no amount of wrong-level optimization can match. Self-concealing: wrong-level evaluation still produces numbers that look informative.
 - **arXiv CRITICAL**: Institutional Red-Teaming (2607.07695): hold models fixed, vary deployment rules → fatality shifts **22-58pp** across 33,924 games. No safe default exists. Action-Graded Severity (2607.07474): defense reporting **0% attack success** still permits cross-scope leaks — 7-level ordinal scale (α=0.91) reveals what binary hides. Blind Curator (2607.07436): biased LLM judge **silently switches off skill retirement** past a sharp threshold no data can cross. Reason Less Verify More (2607.07405): **78% of failures are silent wrong-state**; four deterministic pre-execution gates: **+12.4pp**.

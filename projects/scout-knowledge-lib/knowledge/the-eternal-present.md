@@ -375,7 +375,13 @@ evidence_basis:  string (what made this true)
 The Insight Governance paper (2606.17591) proves this is sufficient for
 knowledge lifecycle. The MemTrace paper (2606.17328) proves evidence is
 retrievable but unused — meaning the metadata EXISTS but isn't structured
-for temporal queries. Adding these three fields to KE entries, learnings,
+for temporal queries. **Engram** [2606.09900] provides the strongest external
+validation: a bi-temporal memory engine (valid-time + transaction-time) that
+invalidates but never deletes, preserving supersession chains. On
+LongMemEval_S it scores 83.6% vs 73.2% for full-context (+10.4pp) at 8×
+fewer tokens — proving that temporally-curated context *beats* exhaustive
+context. Engram's "as-of" query capability (what did we know at date X?)
+is exactly the PROVENANCE primitive this synthesis identifies as highest-leverage. Adding these three fields to KE entries, learnings,
 guards, and task tree nodes would enable all other temporal primitives to
 be built on top.
 

@@ -1,22 +1,116 @@
 <ai_context>
-summary: "Companion note to agent-architectures.md: 10+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, process harness governance, and architecture evolution. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276). Extracted from the Runtime Hardening and Process Harness sections of the canonical architecture note."
-triggers: ["runtime hardening", "semantic transactions", "Cordon", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory"]
-last_updated: "2026-07-01"
-source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276."
+summary: "Companion note to agent-architectures.md: 14+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, bounded recovery, typed safety, source-level evolution, process harness governance, and architecture evolution. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276) and Harness Discipline papers (lifecycle adaptation, bounded recovery, typed holes, source-level rewriting)."
+triggers: ["runtime hardening", "semantic transactions", "Cordon", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting"]
+last_updated: "2026-07-09"
+source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]."
 </ai_context>
 
 # Agent Runtime Hardening
 
 **Companion note** to [Agent Architectures](./agent-architectures.md).
 
-This note catalogs 8 named runtime hardening patterns addressing containment
-of agent effects before they escape to the world. Ten converging papers define
-layers R0–R9 of the runtime hardening stack.
+This note catalogs 14+ named runtime hardening patterns addressing containment
+of agent effects, lifecycle adaptation, bounded recovery, typed safety, and
+source-level self-evolution. Includes the Runtime Trust Gap five-layer
+vulnerability stack.
 
 **Cross-references:**
 - [Agent Architectures](./agent-architectures.md) — core patterns, harness engineering, state management
 - [Agent Security: Defense Architectures](./agent-security-defense-architectures.md) — security-specific defense patterns
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — protocol-layer containment
+
+---
+
+## Lifecycle Runtime Adaptation — Life-Harness (arXiv, May 2026)
+
+Proposes a lifecycle-aware harness that **evolves interventions from agent
+failure trajectories**, then transfers them across model backbones. Classifies
+interface mismatches into four intervention layers: environment contracts,
+procedural skills, action realization, and trajectory regulation.
+
+Results: improves 116 of 126 model–environment settings across 18 backbones.
+Average relative improvement **88.5%**. Harnesses evolved from Qwen3-4B-Instruct
+trajectories transfer to 17 other models including frontier models. This is
+possible because failures are **interface mismatches, not capability gaps** —
+the environment-side structure is model-independent.
+
+- **Key implication**: Directly resolves the Harness Evolution Paradox (below):
+  harness-updating is flat across tiers but harness-benefit is non-monotonic.
+  Life-Harness explains why — the harness captures environment structure, not
+  model quirks, so a cheap model's failures produce interventions that work
+  everywhere. Suggests our context.md and compiled_lessons should be classified
+  by intervention layer (contract / skill / realization / regulation).
+- **Connects to**: Harness Evolution Paradox (provides the resolution),
+  Cold Start Tax (reusable interventions reduce per-session reconstruction),
+  Substrate Inversion (harness captures environment, not model intelligence).
+- **Source**: [2605.22166] Life-Harness, arXiv May 2026. Categories: cs.AI.
+
+## Bounded Recovery — Self-Healing Orchestrators (arXiv, May 2026)
+
+Treats agent reliability as a **bounded runtime control problem**. The
+orchestrator maps observable failure signals to inferred failure classes,
+selects targeted recovery actions under explicit budgets, verifies recovered
+trajectories, and records observability traces.
+
+Results on 100-task controlled fault-injection benchmark: self-healing achieves
+**98.8% task success** vs 94.5% retry-only and 93.8% full replanning. Largest
+gap under a single recovery attempt: **94.0% vs 85.3%** (retry) and 88.2%
+(replanning). Targeted recovery far outperforms both brute-force retry and
+expensive replanning.
+
+- **Key implication**: The recovery budget makes the key difference — not
+  unlimited retries but classified, cheapest-sufficient recovery. Creates an
+  observability feedback loop: failure classification improves over time.
+  Directly applicable: classify our agent failures (tool timeout, malformed
+  output, file not found, context overflow) and pre-test targeted recovery
+  actions for each class.
+- **Connects to**: Run Compilation (PreAct: compiled success vs bounded
+  recovery from failure), Harness Evolution Paradox (recovery budgets
+  make mid-tier models viable), ADE (bounded stabilization effort).
+- **Source**: [2606.01416] Self-Healing Orchestrators, arXiv May 2026.
+
+## Typed Safety Holes — LACUNA (arXiv, May 2026)
+
+Makes each agent action a **typed call `agent[T](task)`** that the LLM fills
+with code. The code must type-check against the surrounding program before
+execution. Rejected actions leave the environment untouched; compiler
+diagnostics guide retry. The same type check bounds which tools and data an
+action may use.
+
+Expresses ReAct loops, sub-agents, skills, and parallel decomposition through
+one primitive. Addresses MOSS's Turing-completeness argument: agents can write
+arbitrary code (Turing-complete) but it must be **type-correct** against
+declared interfaces before running.
+
+- **Key implication**: The programming-languages answer to agent safety — not
+  restricting what agents can do, but requiring declared-interface compliance.
+  Total rejection (no partial effects) plus informative errors is a stronger
+  guarantee than post-hoc checking. Applicable to our system: each agent action
+  could be typed against a declared interface (scout findings must have
+  ai_context/triggers/date fields; KE updates must preserve structural
+  invariants).
+- **Connects to**: Semantic Transactions (Cordon: effect containment at task
+  scope), Process Harness (CUGA FLO: policy-governed execution),
+  Agent Security: Verified Enforcement (enforcement without agent cooperation).
+- **Source**: [2605.28617] LACUNA, arXiv May 2026. Categories: cs.AI, cs.PL.
+
+## Source-Level Self-Rewriting — MOSS (arXiv, May 2026)
+
+Argues that text-mutable evolution (skill files, prompts, memory, workflow
+graphs) is **fundamentally limited**: routing, hook ordering, state invariants,
+and dispatch live in code. Only source-level adaptation is Turing-complete.
+MOSS performs source-level rewriting on production agent substrates, anchored
+to curated production-failure evidence via a deterministic multi-stage pipeline.
+
+- **Key implication**: Establishes a hierarchy of evolution scopes:
+  Skill (text) ⊂ Interface (contracts) ⊂ Source (code). Any system that only
+  mutates text artifacts (prompts, lessons, context) will eventually hit an
+  improvement ceiling. Recurring failures that persist despite good guidance
+  may be in the text-unreachable class.
+- **Connects to**: Harness Evolution Paradox (text-level evolution is flat),
+  Substrate Inversion (intelligence in code, not prompts),
+  Architecture Gradient (NOVA: non-differentiable architecture evolution).
+- **Source**: [2605.22794] MOSS, arXiv May 2026. Categories: cs.AI, cs.LG.
 
 ---
 

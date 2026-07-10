@@ -278,6 +278,32 @@ impossibility result proving this is tight.
   are not (Rice's theorem).
 - **Source**: [2607.06155] Zubić et al., arXiv July 2026.
 
+## Generation-Bound Diagnostic — Architecture Determines Candidate Ceiling (arXiv, July 2026)
+
+Cost-Effective Agent Harnesses for ARC-AGI-1 studies a non-thinking
+open-weight model (DeepSeek V3.2) under strict budget with no ARC-specific
+fine-tuning. Two harness architectures: Explorer-Definer Pipeline (57.50%
+pass@2 at $0.25/task) separates pattern discovery from program synthesis;
+Reflective Orchestrator (67.25% pass@2 at $0.62/task) adds adaptive
+re-exploration when hypotheses fail.
+
+Key architectural diagnostic: unbiased pass@k analysis proves the pipeline
+is **generation-bound, not selection-bound** — selection via training-pair
+accuracy captures ~95% of the candidate ceiling. The Orchestrator confirms:
+adaptive re-exploration (broader generation) delivers +9.81pp, matching
+selection-mediated pass@2 lift. Think-tool ablation costs -5.75pp —
+reasoning during generation matters.
+
+- **Key implication**: Systems where pass@k ≈ pass@1 × k^(small exponent)
+  are generation-bound. The correct intervention is architecturally
+  different generation strategies, not better judges/verifiers/selectors.
+  This formalizes why the Skill Paradox (#483) shows zero improvement:
+  skills are selection-layer artifacts applied to a generation-bound
+  system. Connects directly to Capacity Allocation Problem (#484) — 
+  concentrating capacity at delegation (generation-directing) outperforms
+  execution (selection-relevant) by 4.2×.
+- **Source**: [2607.06764] Moghe & Chin, arXiv July 2026.
+
 ## Related Notes
 
 - [Agent Architectures](./agent-architectures.md) — canonical architecture patterns
