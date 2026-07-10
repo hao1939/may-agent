@@ -253,6 +253,114 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
+  it("forwards approval packets addressed to human:operator and preserves reply context for approval closure", async () => {
+    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
+    let approvalPacketTelegramMsgId: number | null = null;
+    let approvalReplyDelivered = false;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        if (!approvalReplyDelivered && approvalPacketTelegramMsgId) {
+          approvalReplyDelivered = true;
+          return jsonResponse([
+            {
+              update_id: 9,
+              message: {
+                message_id: 511,
+                chat: { id: 12345 },
+                text: "approve",
+                reply_to_message: {
+                  message_id: approvalPacketTelegramMsgId,
+                  text: "📋 Alpha Project approval packet dispatch",
+                },
+              },
+            },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        const messageId = 500 + sentMessages.length;
+        if (approvalPacketTelegramMsgId === null && String(body.text || "").includes("Alpha Project approval packet dispatch")) {
+          approvalPacketTelegramMsgId = messageId;
+        }
+        return jsonResponse({ message_id: messageId });
+      }
+
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const humanInputs: string[] = [];
+    const replies: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "human.input.received") humanInputs.push(String(event.data?.text ?? ""));
+      if (event.type === "telegram.reply") replies.push(event);
+    });
+
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "",
+      interfaceAgent: "may",
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:aks-explorer",
+      owner: "human:operator",
+      data: {
+        from: "aks-explorer",
+        to: "human:operator",
+        content: "Alpha Project approval packet dispatch",
+        projectPath: "projects/alpha-project.app",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+        packetPath: "evidence/archive/example-approval.md",
+        requestedAction: "Approve one bounded replay",
+        reason: "Need exact owner decision",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+        },
+      },
+    } as any);
+
+    await waitFor(() => {
+      expect(sentMessages.some((m) => m.text.includes("Alpha Project approval packet dispatch"))).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(humanInputs).toHaveLength(1);
+      expect(humanInputs[0]).toContain("Conversation: approval:approval-123");
+      expect(humanInputs[0]).toContain('Original issue: {"eventType":"project.approval.requested"');
+      expect(humanInputs[0]).toContain("Approval id: approval-123");
+      expect(humanInputs[0]).toContain("Wait id: wait-123");
+      expect(humanInputs[0]).toContain("Path id: path.network.example");
+      expect(humanInputs[0]).toContain("Packet: evidence/archive/example-approval.md");
+      expect(humanInputs[0]).toContain('Expected response: {"type":"project.approval.submitted"');
+      expect(humanInputs[0]).toContain("User says: approve");
+      expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
+      expect(
+        sentMessages.some(
+          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 511,
+        ),
+      ).toBe(true);
+    });
+
+    bot.close();
+  });
+
   it("enriches a project notification reply and sends it to May", async () => {
     const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
 

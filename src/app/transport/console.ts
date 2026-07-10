@@ -22,6 +22,12 @@ function messageData(event: unknown): Record<string, unknown> {
     : record;
 }
 
+function isHumanTarget(target: unknown): boolean {
+  if (typeof target !== "string") return false;
+  const normalized = target.trim().toLowerCase();
+  return normalized === "human" || normalized === "human:operator";
+}
+
 export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
   // ── Log channel (from log.ts — lib/infra messages) ────────────────────
   addLogSubscriber((level: LogLevel, message: string) => {
@@ -40,7 +46,7 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
 
     // Chat mode: only show primary session + human-directed messages
     if (chatMode) {
-      if (event.type === "message.created" && messageData(event).to === "human") {
+      if (event.type === "message.created" && isHumanTarget(messageData(event).to)) {
         const message = messageData(event);
         console.log(`\n📋 ${message.from}: ${message.content}`);
         return;
@@ -100,7 +106,7 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
       case "message.created":
         {
           const message = messageData(event);
-          if (message.to === "human") {
+          if (isHumanTarget(message.to)) {
             console.log(`📋 ${message.from}: ${message.content}`);
           }
         }

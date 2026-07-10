@@ -231,6 +231,58 @@ describe("event-native: events table", () => {
     });
   });
 
+  it("preserves additional message.created payload fields for approval lineage queries", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "message.created",
+      source: "agent:aks-explorer",
+      owner: "human:operator",
+      urgency: "high",
+      data: {
+        from: "aks-explorer",
+        to: "human:operator",
+        content: "Approval packet dispatch",
+        priority: "P1",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+        packetPath: "evidence/archive/example-approval.md",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+        },
+      },
+    });
+
+    const row = db.prepare(
+      "SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id DESC LIMIT 1",
+    ).get("message.created") as { source: string; owner: string; urgency: string; data: string };
+
+    expect(row).toMatchObject({
+      source: "agent:aks-explorer",
+      owner: "human:operator",
+      urgency: "high",
+    });
+    expect(JSON.parse(row.data)).toMatchObject({
+      from: "aks-explorer",
+      to: "human:operator",
+      content: "Approval packet dispatch",
+      priority: "P1",
+      approvalId: "approval-123",
+      waitId: "wait-123",
+      pathId: "path.network.example",
+      packetPath: "evidence/archive/example-approval.md",
+      expectedResponse: {
+        type: "project.approval.submitted",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+      },
+    });
+  });
+
   it("does not persist flat message.created events", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);

@@ -1960,6 +1960,94 @@ describe("project task tree SDK", () => {
     });
   });
 
+  test("does not roll durable workflow controller to blocked when dispatch hold still leaves unrepresented residue", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "blocked",
+          children: ["aks-feature-compact-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          workflow: "feature-compact-loop-controller",
+          priority: "P1",
+          children: ["wait-compact-proof"],
+          goal: "Keep feature compact planning current.",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              dispatchHeld: true,
+              dispatchHold:
+                "feature-compact loop live dispatch held because 5 Azure DevOps pipeline run(s) are already in progress on dev; limit=5",
+              reason:
+                "feature-compact loop live dispatch held because 5 Azure DevOps pipeline run(s) are already in progress on dev; limit=5",
+              pending: 19,
+              running: 1,
+              done: 33,
+              blocked: 27,
+              error: 4,
+              unrepresentedNonTerminalCount: 19,
+              activeGithubRuns: 5,
+              githubActiveRunLimit: 5,
+              openChildren: 0,
+              openSupportChildren: 0,
+              blockedWaitChildren: 1,
+            },
+          },
+          blocker: {
+            condition: "Child blocked: wait-compact-proof.",
+            category: "child-blocked",
+          },
+        },
+        "wait-compact-proof": {
+          id: "wait-compact-proof",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Wait for exact compact proof return.",
+          outputs: ["evidence/archive/wait-compact-proof.md"],
+          acceptance: ["Proof returned"],
+          blocker: {
+            condition: "compact proof required",
+            category: "external-wait",
+          },
+        },
+      },
+    });
+
+    const repair = repairTaskTreeRollups(config(appDir));
+    expect(repair.repaired).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "aks-feature-compact-loop",
+          from: "blocked",
+          to: "backlog",
+        }),
+      ]),
+    );
+
+    const summary = summarizeTaskTree(config(appDir));
+    expect(summary.frontier.runnable).toContain("aks-feature-compact-loop");
+    expect(summary.frontier.blocked).not.toContain("aks-feature-compact-loop");
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("backlog");
+    expect(tree.tasks["aks-feature-compact-loop"].blocker).toBeUndefined();
+  });
+
   test("rollup parent refuses to archive unfinished child leaves", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
