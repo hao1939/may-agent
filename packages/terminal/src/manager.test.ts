@@ -74,7 +74,7 @@ afterEach(() => {
 });
 
 describe("terminal manager", () => {
-  test("keeps a detached terminal warm briefly and reuses it on reattach", async () => {
+  test("reattaches a detached terminal through a fresh bridge", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
       process.env.MAY_WEB_TERMINAL = "1";
@@ -101,7 +101,7 @@ describe("terminal manager", () => {
       await manager.attach("may", secondSocket);
       await delay(20);
       const secondStatus = manager.getStatus().profiles.find((profile) => profile.id === "may");
-      expect(secondStatus?.pid).toBe(firstPid);
+      expect(secondStatus?.pid).not.toBe(firstPid);
       expect(secondStatus?.clients).toBe(1);
       expect(secondStatus?.idleUntil).toBeUndefined();
 
@@ -114,7 +114,7 @@ describe("terminal manager", () => {
     }
   });
 
-  test("replays terminal output when a browser reattaches", async () => {
+  test("does not replay raw terminal output when a browser reattaches", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
       process.env.MAY_WEB_TERMINAL = "1";
@@ -141,14 +141,13 @@ describe("terminal manager", () => {
         .filter((frame: any) => frame.type === "replay")
         .map((frame: any) => frame.data)
         .join("");
-      expect(replayed).toContain("before refresh\n");
-      expect(replayed).toContain("while detached\n");
+      expect(replayed).toBe("");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  test("routes attach replay only to the newly attached browser", async () => {
+  test("does not send replay frames to concurrent browser clients", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
       process.env.MAY_WEB_TERMINAL = "1";
@@ -168,7 +167,7 @@ describe("terminal manager", () => {
       await manager.attach("may", secondSocket);
       await delay(20);
 
-      const firstAfterReplay = firstSocket.frames
+      const firstReplay = firstSocket.frames
         .slice(firstFrameCount)
         .filter((frame: any) => frame.type === "replay")
         .map((frame: any) => frame.data)
@@ -178,8 +177,8 @@ describe("terminal manager", () => {
         .map((frame: any) => frame.data)
         .join("");
 
-      expect(firstAfterReplay).not.toContain("visible once\n");
-      expect(secondReplay).toContain("visible once\n");
+      expect(firstReplay).toBe("");
+      expect(secondReplay).toBe("");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
