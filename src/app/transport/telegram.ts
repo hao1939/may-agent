@@ -155,20 +155,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     source = "telegram",
     channelMessageId?: number,
     target?: { sessionId?: string; agent?: string; projectPath?: string },
+    context?: Record<string, unknown>,
   ): void {
     bus.emit({
       type: "human.input.received",
       source,
       owner: normalizeEventOwner(opts.interfaceAgent),
       data: {
+        inputId: channelMessageId ? `telegram:${channelMessageId}` : undefined,
         actor: "human",
         text: message,
         conversation: {
+          id: typeof context?.conversationId === "string" ? context.conversationId : undefined,
           channel: "telegram",
           channelThreadId: pendingChatId ?? undefined,
           channelMessageId,
         },
         target: target ?? { agent: opts.interfaceAgent },
+        context,
       },
     } as any);
   }
@@ -217,6 +221,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // Context-enriched reply: if user replied to a notification, enrich their text
     let enrichedText = text;
     let inputTarget: { sessionId?: string; agent?: string; projectPath?: string } | undefined;
+    let inputContext: Record<string, unknown> | undefined;
     const replyToMsg = msg.reply_to_message;
     const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
@@ -234,6 +239,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
         if (route.kind === "notification") {
           enrichedText = route.enrichedText;
+          inputContext = {
+            conversationId: route.context.conversationId,
+            telegramReply: route.context,
+          };
           if (route.sessionId) {
             inputTarget = { sessionId: route.sessionId };
           }
@@ -247,6 +256,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               enriched: true,
               hasSessionCtx: route.hasSessionCtx,
               originalMsgId: replyToMsgId,
+              conversationId: route.context.conversationId,
+              originalIssue: route.context.originalIssue,
+              expectedClosure: route.context.expectedClosure,
+              actionHints: route.context.actionHints,
+              notification: route.context.notification,
               target: {
                 owner: route.owner,
                 sessionId: route.sessionId ?? undefined,
@@ -264,6 +278,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           });
         } else if (route.kind === "quote") {
           enrichedText = route.enrichedText;
+          inputContext = {
+            telegramReply: {
+              replyToMsgId,
+              fallback: "telegram-quote",
+            },
+          };
           bus.emit({ type: "info", message: route.infoMessage });
           bus.emit({
             type: "telegram.reply",
@@ -283,6 +303,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             replyToMessageId: msg.message_id,
           });
         } else {
+          inputContext = {
+            telegramReply: {
+              replyToMsgId,
+              fallback: "missing-context",
+            },
+          };
           bus.emit({ type: "info", message: route.infoMessage });
           bus.emit({
             type: "telegram.reply",
@@ -332,7 +358,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
-    emitChatStart(finalMessage, "telegram", msg.message_id, inputTarget);
+    emitChatStart(finalMessage, "telegram", msg.message_id, inputTarget, inputContext);
   }
 
   async function handleTelegramCommand(text: string, chatIdStr: string): Promise<boolean> {

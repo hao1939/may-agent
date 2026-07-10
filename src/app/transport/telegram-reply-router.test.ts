@@ -56,25 +56,35 @@ describe("telegram reply router helpers", () => {
   });
 
   it("keeps conversation metadata out of the notification reply text", () => {
-    const text = buildNotificationReplyText({
-      ctx: {
-        event_type: "message.created",
-        agent: "may",
-        project_id: "projects/aks-rp-e2e.app",
-        data: JSON.stringify({
-          text: "AKS RP E2E needs focus-plan approval",
-          conversationId: "tg_focus_1",
-          conversation: {
-            originalIssue: {
-              eventType: "project.focus.plan.requested",
-              projectPath: "projects/aks-rp-e2e.app",
-              planId: "focus-live-staging",
-            },
-            lastHandledBy: { agent: "may", sessionId: "s_may_1" },
+    const ctx = {
+      event_type: "message.created",
+      agent: "may",
+      project_id: "projects/aks-rp-e2e.app",
+      data: JSON.stringify({
+        text: "AKS RP E2E needs focus-plan approval",
+        conversationId: "tg_focus_1",
+        conversation: {
+          originalIssue: {
+            eventType: "project.focus.plan.requested",
+            projectPath: "projects/aks-rp-e2e.app",
+            planId: "focus-live-staging",
           },
-        }),
-      },
+          lastHandledBy: { agent: "may", sessionId: "s_may_1" },
+        },
+      }),
+    };
+    const text = buildNotificationReplyText({
+      ctx,
       text: "approved, keep going",
+    });
+    const route = buildTelegramReplyRoute({
+      text: "approved, keep going",
+      replyToMsgId: 99,
+      ctx,
+      quotedText: "",
+      projectRoot: root,
+      persistDir: "/tmp/missing",
+      interfaceAgent: "may",
     });
 
     expect(text).toContain("Human reply");
@@ -85,6 +95,19 @@ describe("telegram reply router helpers", () => {
     expect(text).not.toContain("Original issue:");
     expect(text).not.toContain("Last handled by:");
     expect(text).not.toContain("project.focus.plan.requested");
+    expect(route.kind).toBe("notification");
+    if (route.kind === "notification") {
+      expect(route.context).toMatchObject({
+        replyToMsgId: 99,
+        conversationId: "tg_focus_1",
+        projectId: "projects/aks-rp-e2e.app",
+        originalIssue: {
+          eventType: "project.focus.plan.requested",
+          projectPath: "projects/aks-rp-e2e.app",
+          planId: "focus-live-staging",
+        },
+      });
+    }
   });
 
   it("keeps approval lineage fields out of the notification reply text", () => {
