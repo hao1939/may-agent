@@ -8,11 +8,16 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import {
+  normalizeTaskTreeInPlace,
+  type TaskTree,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 
 export const name = "project-health-evaluator";
 export const description =
-  "Human-facing project/app health review for a watched target app.";
+  "Project/app health review that reports findings to the target owner.";
 
 const EVALUATION_APP_DIR = "/app/projects/evaluation.app";
 const WATCHED_TARGETS = [
@@ -498,6 +503,13 @@ function compactTaskForReport(task: TaskRecord): Record<string, unknown> {
   };
 }
 
+function normalizedTaskMap(
+  tree: Record<string, unknown>,
+): Record<string, TaskRecord> {
+  const normalized = normalizeTaskTreeInPlace(tree as unknown as TaskTree);
+  return normalized.tasks as Record<string, TaskRecord>;
+}
+
 function isDesignHygieneTask(task: TaskRecord): boolean {
   const text = JSON.stringify({
     id: task.id,
@@ -518,12 +530,7 @@ export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
   if ("missing" in tree || "unreadable" in tree) return { path, tree };
 
   const typed = tree as Record<string, unknown>;
-  const taskMap =
-    typed.tasks &&
-    typeof typed.tasks === "object" &&
-    !Array.isArray(typed.tasks)
-      ? (typed.tasks as Record<string, TaskRecord>)
-      : {};
+  const taskMap = normalizedTaskMap(typed);
   const tasks = Object.values(taskMap);
   const leaves = tasks.filter((task) => (task.children ?? []).length === 0);
   const byState = countBy(tasks, (task) => task.state);
@@ -885,7 +892,7 @@ export function taskEscalationPacket(
   if (!tree || typeof tree !== "object" || Array.isArray(tree)) {
     return { path, error: "task tree is not an object" };
   }
-  const taskMap = objectRecord(objectRecord(tree).tasks);
+  const taskMap = normalizedTaskMap(objectRecord(tree));
   const tasks = Object.values(taskMap).map(objectRecord);
   const leafTasks = tasks.filter((task) => asArray(task.children).length === 0);
   const blockedLeaves = leafTasks.filter((task) => task.state === "blocked");
@@ -1674,11 +1681,11 @@ Final notification sent: ${judgment.notify ? "yes" : "no"}
 Dedupe key: ${judgment.dedupeKey}
 Notification reason: ${judgment.notificationReason ?? "not recorded"}
 
-## What The Human Should Do
+## What The Owner Should Do
 
 ${judgment.humanActionDetail ?? "No action detail recorded."}
 
-## Human Message
+## Owner Message
 
 ${judgment.message}
 
@@ -1726,11 +1733,8 @@ function targetOwnerProjectId(target: TargetConfig): string {
   return target.targetProject.replace(/\.app$/, "");
 }
 
-function shouldFeedbackTargetOwner(
-  target: TargetConfig,
-  judgment: Judgment,
-): boolean {
-  return target.targetProject !== "evaluation.app" && judgment.verdict !== "ok";
+function shouldFeedbackTargetOwner(judgment: Judgment): boolean {
+  return judgment.verdict !== "ok";
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -1746,7 +1750,7 @@ Target: ${target.targetProject}
 Reason: ${target.reason}
 
 Judge the target app from raw facts. Keep raw facts visible; do not hide uncertainty.
-Do not mutate the target app. Do not become a second planner. Decide whether a human should be notified.
+Do not mutate the target app. Do not become a second planner. Write the result and recommendation for the target owner. Decide whether a human should also be notified.
 Check whether the target app first tried to catch and handle its own metric breaches, failures, and stalled tasks.
 Specifically judge whether the target app uses escalation correctly and efficiently: escalate only when local recovery is exhausted or human/infra action is required; include exact owner, requested action, resume condition, fallback/watch; avoid vague or duplicate escalations; close or replace escalations when resolved; and keep task state linked to the escalation.
 Use the self-recovery contract facts to say whether the shared ops pattern is already present, partially present, or missing.
@@ -1830,7 +1834,7 @@ ${JSON.stringify(packet, null, 2)}
     data: reviewedData,
   });
 
-  if (shouldFeedbackTargetOwner(target, judgment)) {
+  if (shouldFeedbackTargetOwner(judgment)) {
     const ownerProject = targetOwnerProjectId(target);
     ctx.emit({
       type: "project.planning.requested",

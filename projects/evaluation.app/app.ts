@@ -129,6 +129,16 @@ async function routeEvaluationEvent(
     return ctx.noop(`${event.type} is handled by workflowHandlers`);
   }
 
+  if (event.type === "evaluation.review_failed") {
+    return ctx.emit(
+      projectHealthReviewRequested({
+        targetProject: "evaluation.app",
+        reason: "review-failed",
+        reviewFailure: eventDetails(event),
+      }),
+    );
+  }
+
   if (
     event.type === "project.owner.requested" ||
     event.type === "project.planning.requested"
@@ -274,7 +284,7 @@ export default defineProjectApp({
     ...watchedProjectTargets.map((target) => ({
       id: `project-health-loop-${target.targetProject}`,
       enabled: true,
-      intervalMs: 1_800_000, // 30min human-facing app/project review baseline
+      intervalMs: 7_200_000, // 2h owner-facing app/project review baseline
       event: {
         type: "evaluation.project.review.requested",
         project: projectId,
@@ -373,13 +383,13 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Human-facing review of whether a target project app is moving and self-correcting.",
+        "Owner-facing review of whether a target project app is moving and self-correcting.",
       on: ["evaluation.project.review.requested"],
       handler: {
         workflow: "project-health-evaluator",
         agent: "evaluator",
         includeEvent: true,
-        task: `${appTaskContext}\nReview the target project/app health from the trigger event. Write a report and notify only when useful.`,
+        task: `${appTaskContext}\nReview the target project/app health from the trigger event. Write owner feedback and notify a human only when useful.`,
         timeoutMs: 900_000,
       },
       context: [
@@ -394,6 +404,7 @@ export default defineProjectApp({
     "evaluation.session.requested",
     "evaluation.deep.requested",
     "evaluation.tick",
+    "evaluation.review_failed",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
     "evaluation.project.review.requested",
@@ -412,6 +423,7 @@ export default defineProjectApp({
       "evaluation-aftermath": {
         emits: [
           "evaluation.reviewed",
+          "evaluation.review_failed",
           "evaluation.success_candidate",
           "evaluation.triage_closed",
           "evaluation.learning_created",
@@ -437,7 +449,7 @@ export default defineProjectApp({
           "project.planning.requested",
         ],
         description:
-          "Samples a target project app and writes a human-facing health report.",
+          "Samples a target project app and writes an owner-facing health report.",
       },
     },
     adapters: [
@@ -461,6 +473,12 @@ export default defineProjectApp({
         emits: ["evaluation.tick"],
         description:
           "Ready task-tree leaves wake the evaluation owner through the existing heartbeat lane.",
+      },
+      {
+        event: "evaluation.review_failed",
+        emits: ["evaluation.project.review.requested"],
+        description:
+          "Review-process failures request the same project/app review path for evaluation.app.",
       },
       {
         event: "evaluation.project.review.requested",
@@ -519,7 +537,7 @@ export default defineProjectApp({
     "review-project-app": {
       type: "async",
       description:
-        "Review a target project app from the outside and write a human-facing health report.",
+        "Review a target project app from the outside and write owner-facing health feedback.",
       event(params) {
         return projectHealthReviewRequested(params);
       },

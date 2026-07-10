@@ -1,30 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { resolveTaskTreePath } from "@may-agent/sdk";
+import {
+  normalizeTaskTreeInPlace,
+  resolveTaskTreePath,
+  type TaskTree,
+} from "@may-agent/sdk";
 import app from "../app";
 
 type Issue = {
   code: string;
   message: string;
-};
-
-type TaskNode = {
-  id?: string;
-  parent_id?: string | null;
-  children?: unknown;
-  state?: string;
-  status?: string;
-  goal?: string;
-  outputs?: unknown;
-  acceptance?: unknown;
-  depends_on?: unknown;
-};
-
-type TaskTree = {
-  root_task_id?: string;
-  active_task_id?: string | null;
-  active_task_ids?: unknown;
-  tasks?: Record<string, TaskNode>;
 };
 
 const appDir = resolve(dirname(new URL(import.meta.url).pathname), "..");
@@ -250,7 +235,9 @@ function checkTaskTree(): void {
     return;
   }
 
-  const tree = JSON.parse(readFileSync(treePath, "utf8")) as TaskTree;
+  const tree = normalizeTaskTreeInPlace(
+    JSON.parse(readFileSync(treePath, "utf8")) as TaskTree,
+  );
   const tasks = tree.tasks ?? {};
   const rootId = tree.root_task_id;
   if (!rootId || !tasks[rootId]) {

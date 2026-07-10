@@ -1,7 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  dependenciesSatisfied,
+  isLeaf,
+  readTaskTree,
   resolveTaskTreePath,
+  taskState,
+  type TaskTreeConfig,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
@@ -16,15 +21,6 @@ const ownerEventOwner = `agent:${ownerAgent}`;
 // the platform agent (agent:may). Both land in the may-agent.app owner inbox
 // via routing, so lifecycle drain must cover both to prevent accumulation.
 const platformOwnerAliases = new Set([ownerEventOwner, "agent:may"]);
-
-type TaskNode = {
-  id?: string;
-  state?: string;
-  status?: string;
-  children?: string[];
-  depends_on?: string[];
-  goal?: string;
-};
 
 function field(task: string, name: string): string | undefined {
   const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
@@ -49,42 +45,29 @@ function parseJsonFile(path: string): Record<string, unknown> {
   }
 }
 
-function taskState(task: TaskNode): string {
-  const raw = task.state ?? task.status ?? "backlog";
-  if (raw === "ready" || raw === "proposed" || raw === "decomposed")
-    return "backlog";
-  if (raw === "accepted" || raw === "superseded" || raw === "cancelled")
-    return "done";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
-  return raw;
-}
-
-function leafTasks(tasks: Record<string, TaskNode>): Array<[string, TaskNode]> {
-  return Object.entries(tasks).filter(
-    ([, task]) => !Array.isArray(task.children) || task.children.length === 0,
-  );
-}
-
-function depsDone(tasks: Record<string, TaskNode>, task: TaskNode): boolean {
-  return (task.depends_on ?? []).every(
-    (id) => taskState(tasks[id] ?? {}) === "done",
-  );
-}
-
 function taskTreePacket(appDir: string): Record<string, unknown> {
   const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return { available: false, path: treePath };
-  const tree = parseJsonFile(treePath);
-  const tasks = asRecord(tree.tasks) as Record<string, TaskNode>;
+  const treeConfig: TaskTreeConfig = {
+    appDir,
+    projectDir: appDir,
+    treePath,
+    journalPath: join(appDir, ".state", "journal.jsonl"),
+    worker: ownerAgent,
+    maxConcurrent: 3,
+  };
+  const tree = readTaskTree(treeConfig);
+  const tasks = tree.tasks;
   const counts: Record<string, number> = {};
   for (const task of Object.values(tasks)) {
     const state = taskState(task);
     counts[state] = (counts[state] ?? 0) + 1;
   }
-  const leaves = leafTasks(tasks);
+  const leaves = Object.entries(tasks).filter(([, task]) => isLeaf(task));
   const runnable = leaves
     .filter(
-      ([, task]) => taskState(task) === "backlog" && depsDone(tasks, task),
+      ([, task]) =>
+        taskState(task) === "backlog" && dependenciesSatisfied(tree, task),
     )
     .map(([id, task]) => ({ id, goal: task.goal }));
   const active = leaves

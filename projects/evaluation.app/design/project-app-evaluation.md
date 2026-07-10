@@ -6,7 +6,7 @@ Status: implemented first pass
 answers whether one worker session did useful work. That is necessary, but it is
 not enough to judge whether a whole project app is healthy.
 
-Project/app evaluation answers the bigger human-facing question:
+Project/app evaluation answers the bigger owner-facing question:
 
 > Is this project app moving toward its goal, or does a human need to intervene?
 
@@ -18,6 +18,8 @@ The simple rule is:
 each app exists to achieve its own domain goal
 project app owns the work
 evaluation.app audits whether the app is working correctly
+review result goes to the target owner
+the owner resolves or records the exact wait
 ```
 
 Each project app must:
@@ -40,8 +42,21 @@ Each project app must:
 - check whether the target app uses escalation correctly and efficiently;
 - check whether project-state, task tree, metrics, workflow runs, and UI-facing
   reports agree with each other;
-- notify the human only when the app is not self-correcting, the process is not
-  trustworthy, or a concrete human decision is needed.
+- write a plain review result and recommendation to the target owner;
+- notify the human only when the owner needs a concrete human decision or the
+  app is not self-correcting.
+
+The same path applies when the target is `evaluation.app` itself:
+
+```text
+review evaluation.app
+  -> write the result
+  -> send owner feedback to evaluation.app
+  -> evaluation owner resolves, waits, or escalates
+```
+
+There is no separate self-review branch. A review failure is just another input
+that asks for a review of `evaluation.app`.
 
 `evaluation.app` may inspect domain artifacts, but only as process evidence. It
 should not decide whether the domain result is correct. For example, it should
@@ -177,7 +192,7 @@ app organizes work
 workflows execute reusable experience
 task tree records durable state
 metrics/watchdog detect process failure
-human sees raw facts plus judgment
+owner sees raw facts plus judgment
 ```
 
 The failure mode we saw is also important: a target app can have watchdogs,
@@ -185,9 +200,9 @@ metrics, planners, and recovery loops, yet still sit with stale blocked work,
 misleading progress, or repeated recovery churn. If the target app could always
 recognize and fix that itself, the issue would already be fixed.
 
-Therefore project/app evaluation must be independent and human-facing. It may
-send structured feedback to the target app, but it must not depend on the target
-app to handle that feedback before notifying the human.
+Therefore project/app evaluation must be independent and owner-facing. It sends
+the result to the target owner and may also notify the human when a human
+decision or intervention is the right next step.
 
 ## Mental Model
 
@@ -209,7 +224,8 @@ target app runs work
   -> evaluation.app samples target state, events, metrics, and outputs
   -> evaluator judges health, progress, and risk
   -> durable report is written
-  -> human is notified when useful
+  -> owner receives the recommendation
+  -> human is notified only when useful
 ```
 
 The target app remains responsible for its domain work. `evaluation.app` is the
@@ -300,7 +316,7 @@ It should not:
 It may:
 
 - emit a human-facing notification;
-- emit `learning.feedback` or another target-scoped feedback event;
+- send owner feedback through the target owner's normal request path;
 - recommend a target-app action;
 - record that the target app's own recovery path is not trustworthy.
 
@@ -432,6 +448,12 @@ Evaluator judgment:
   progress
 - whether this is new, repeated, improving, or getting worse
 
+Owner feedback:
+- target owner
+- recommendation
+- report path
+- what the owner should accept, reject, fix, wait on, or prove already handled
+
 Notification:
 - evaluator requested notification: yes/no
 - final notification sent: yes/no
@@ -445,9 +467,9 @@ Human action:
 - what the target app should do after the human action
 ```
 
-The report is the primary human artifact. The sidecar facts file keeps the raw
+The report is the primary owner artifact. The sidecar facts file keeps the raw
 packet available without making the markdown hard to read. Events point to the
-report.
+report. Human notification is optional delivery, not the closure path.
 
 The report must distinguish evaluator judgment from notification delivery. If
 the evaluator says "notify" but dedupe suppresses the notification, the report
@@ -473,7 +495,11 @@ should proceed with that focus. If rejected, provide the replacement focus.
 - `blocked-on-human`: progress requires a human decision, approval, credential,
   capacity decision, or ownership assignment.
 
-## Notification Policy
+## Owner Feedback And Notification Policy
+
+Every non-`ok` project/app review should send owner feedback to the target
+owner. The owner is responsible for accepting it, proving it is already handled,
+turning it into work, or recording an exact wait.
 
 Notify only when a human can usefully act or should be aware that the target app
 is not self-correcting.
@@ -510,9 +536,24 @@ Do not notify for:
 Use explicit evaluation events:
 
 ```text
+evaluation.review_failed
 evaluation.project.review.requested
 evaluation.project.reviewed
 evaluation.project.notification.requested
+```
+
+`evaluation.review_failed` is emitted when the evaluation review process itself
+fails, for example when the reviewer session ends with provider/runtime
+unavailability before producing a judgment. It is not a target-project quality
+verdict. The event is adapted into `evaluation.project.review.requested` with
+`targetProject: "evaluation.app"` and `reason: "review-failed"`. That keeps
+review failures on the same path as every other app review:
+
+```text
+evaluation.review_failed
+  -> evaluation.project.review.requested(targetProject=evaluation.app)
+  -> project-health-evaluator
+  -> owner feedback to evaluation.app
 ```
 
 Target metric events are optional fast-path inputs. When `evaluation.app`
@@ -566,13 +607,14 @@ data.params.targetProject
 `evaluation.project.notification.requested` includes the same dedupe key plus a
 short human message and report path.
 
-Optional feedback to the target app should be separate:
+Owner feedback to the target app uses the target owner's normal request path:
 
 ```text
-learning.feedback
+project.planning.requested(target=<target owner>)
 ```
 
-Feedback is useful, but the human-facing review is the closure path.
+The owner request is the closure path. Human notification is extra visibility
+when the recommendation needs human action or the owner path is not trustworthy.
 
 ## Trigger Model
 
@@ -616,13 +658,14 @@ Use a durable scheduled loop for each watched target:
 
 ```text
 project-health-loop
-  every 30 minutes
+  every 2 hours
   -> review each configured target project app
   -> write report
-  -> notify only if policy says notify
+  -> send owner feedback for non-ok findings
+  -> notify human only if policy says notify
 ```
 
-The default interval is **30 minutes**. That is the baseline safety net for slow
+The default interval is **2 hours**. That is the baseline safety net for slow
 stalls and repeated churn. Faster reaction should come from manual review or
 target signals, not from making the scheduled loop noisy.
 
@@ -732,7 +775,7 @@ Phase 2: notification
 
 Phase 3: schedule and trend
 
-1. Add `project-health-loop` every 30 minutes for each configured target.
+1. Add `project-health-loop` every 2 hours for each configured target. Done.
 2. Compare with previous reports.
 3. Notify only on trend, severity, or unresolved repeated issue.
 4. Add project-health task tree lane only for maintaining the evaluator itself,
@@ -753,7 +796,7 @@ Phase 3.5: self-recovery coverage
 
 Phase 4: feedback loop
 
-1. Optionally emit target-scoped `learning.feedback`.
+1. Emit target-owner feedback for every non-`ok` project/app review. Done.
 2. Track whether the target app reacts.
 3. Notify if feedback is ignored and the issue persists.
 

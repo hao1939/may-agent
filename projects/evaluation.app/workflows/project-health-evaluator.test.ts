@@ -105,4 +105,37 @@ describe("project health evaluator task reporting", () => {
       expect.objectContaining({ id: "legacy-design-hygiene-audit" }),
     ]);
   });
+
+  test("normalizes list-shaped task trees before reporting", async () => {
+    const appDir = await makeAppDirWithTree({
+      tasks: [
+        {
+          id: "project",
+          state: "active",
+          children: ["task-a"],
+        },
+        {
+          id: "task-a",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "Runnable task from an array-shaped tree.",
+        },
+      ],
+    });
+
+    const taskPacket = taskTreePacket(appDir);
+    const escalationPacket = taskEscalationPacket(appDir);
+
+    expect(taskPacket.counts).toMatchObject({
+      total: 2,
+      leaves: 1,
+    });
+    expect(taskPacket.runnable).toEqual([
+      expect.objectContaining({ id: "task-a" }),
+    ]);
+    expect(escalationPacket.counts).toMatchObject({
+      leafTasks: 1,
+    });
+  });
 });
