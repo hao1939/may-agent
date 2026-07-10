@@ -9,16 +9,22 @@ function enrichReply(db: SqliteDb, replyToMsgId: number, userText: string): stri
 
   const parts: string[] = [];
   parts.push(`[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`);
+  parts.push("");
+  parts.push("Human reply");
+  parts.push(userText);
   if (ctx.data) {
     try {
       const data = JSON.parse(ctx.data);
-      if (data.summary) parts.push(`Context: ${data.summary}`);
-      if (data.text) parts.push(`Original notification: ${data.text}`);
+      if (data.summary || data.text) {
+        parts.push("");
+        parts.push("Notification context");
+      }
+      if (data.summary) parts.push(`Situation: ${data.summary}`);
+      if (data.text) parts.push(`Visible notification: ${data.text}`);
     } catch {}
   }
-  if (ctx.event_type) parts.push(`Event type: ${ctx.event_type}`);
   parts.push("");
-  parts.push(`User says: ${userText}`);
+  parts.push("Use the human reply as the decision or missing input, then continue the tracked work.");
   return parts.join("\n");
 }
 
@@ -62,7 +68,8 @@ describe("Telegram Context Enrichment", () => {
 
     const enriched = enrichReply(db, 12345, "focus on output not cost");
     expect(enriched).toContain("[User replying to notification from may about project \"system-efficiency\"]");
-    expect(enriched).toContain("User says: focus on output not cost");
+    expect(enriched).toContain("Human reply");
+    expect(enriched).toContain("focus on output not cost");
     expect(enriched).toContain("system-efficiency is WAITING");
   });
 
@@ -75,8 +82,9 @@ describe("Telegram Context Enrichment", () => {
 
     const enriched = enrichReply(db, 67890, "cancel it and move on");
     expect(enriched).toContain("[User replying to notification from bob]");
-    expect(enriched).toContain("Context: Ship EXP-188 retried 15x");
-    expect(enriched).toContain("User says: cancel it and move on");
+    expect(enriched).toContain("Situation: Ship EXP-188 retried 15x");
+    expect(enriched).toContain("Human reply");
+    expect(enriched).toContain("cancel it and move on");
     expect(enriched).not.toContain("project");
   });
 
@@ -85,7 +93,7 @@ describe("Telegram Context Enrichment", () => {
     expect(result).toBe("hello world");
   });
 
-  it("includes event type", () => {
+  it("does not expose event type in the enriched text", () => {
     storeNotification(db, 11111, {
       eventType: "metric_breach",
       agent: "may",
@@ -93,8 +101,10 @@ describe("Telegram Context Enrichment", () => {
     });
 
     const enriched = enrichReply(db, 11111, "increase timeout");
-    expect(enriched).toContain("Event type: metric_breach");
-    expect(enriched).toContain("User says: increase timeout");
+    expect(enriched).not.toContain("Event type:");
+    expect(enriched).not.toContain("metric_breach");
+    expect(enriched).toContain("Human reply");
+    expect(enriched).toContain("increase timeout");
   });
 
   it("handles malformed data gracefully", () => {
@@ -106,7 +116,8 @@ describe("Telegram Context Enrichment", () => {
 
     const enriched = enrichReply(db, 22222, "tell me more");
     expect(enriched).toContain("[User replying to notification from scout]");
-    expect(enriched).toContain("User says: tell me more");
+    expect(enriched).toContain("Human reply");
+    expect(enriched).toContain("tell me more");
     // Should not throw
   });
 
@@ -180,17 +191,20 @@ describe("Session Context Enrichment", () => {
     // Simulate what the enrichment builds:
     const parts: string[] = [];
     parts.push('[User replying to notification from may]');
-    parts.push('Event type: response');
+    parts.push('');
+    parts.push('Human reply');
+    parts.push('continue where you left off');
     parts.push(`\nSession context (135 messages):`);
     parts.push(`  Summary: ${sessionSummary}`);
     parts.push(`  Last action: ${lastAction}`);
     parts.push('');
-    parts.push('User says: continue where you left off');
+    parts.push('Use the human reply as the decision or missing input, then continue the tracked work.');
     
     const enriched = parts.join("\n");
     expect(enriched).toContain("Session context");
     expect(enriched).toContain("fix project failures");
     expect(enriched).toContain("switching from grep");
-    expect(enriched).toContain("User says: continue where you left off");
+    expect(enriched).toContain("Human reply");
+    expect(enriched).toContain("continue where you left off");
   });
 });

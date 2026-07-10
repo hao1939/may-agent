@@ -80,6 +80,15 @@ function readStoredConversation(data: Record<string, unknown> | null): Record<st
   };
 }
 
+function parseNotificationData(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    return objectOrNull(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
 function objectOrNull(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
@@ -128,34 +137,41 @@ export function buildNotificationReplyText(opts: {
   parts.push(
     `[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`,
   );
-  if (ctx.data) {
-    try {
-      const data = JSON.parse(ctx.data);
-      if (data.summary) parts.push(`Context: ${data.summary}`);
-      if (data.text) parts.push(`Original notification: ${data.text}`);
-      const conversation = readStoredConversation(objectOrNull(data));
-      if (conversation?.conversationId) parts.push(`Conversation: ${conversation.conversationId}`);
-      if (conversation?.originalIssue) parts.push(`Original issue: ${JSON.stringify(conversation.originalIssue)}`);
-      if (conversation?.lastHandledBy) parts.push(`Last handled by: ${JSON.stringify(conversation.lastHandledBy)}`);
-      const directApprovalFields = [
-        ["Approval id", stringOrNull(data.approvalId)],
-        ["Wait id", stringOrNull(data.waitId)],
-        ["Path id", stringOrNull(data.pathId)],
-        ["Packet", stringOrNull(data.packetPath)],
-      ] as const;
-      for (const [label, value] of directApprovalFields) {
-        if (value) parts.push(`${label}: ${value}`);
-      }
-      const expectedResponse = objectOrNull(data.expectedResponse);
-      if (expectedResponse) parts.push(`Expected response: ${JSON.stringify(expectedResponse)}`);
-    } catch {
-      /* ignore malformed notification context */
-    }
-  }
-  if (ctx.event_type) parts.push(`Event type: ${ctx.event_type}`);
-  if (opts.sessionContext?.length) parts.push(...opts.sessionContext);
   parts.push("");
-  parts.push(`User says: ${opts.text}`);
+  parts.push("Human reply");
+  parts.push(opts.text);
+
+  const data = parseNotificationData(ctx.data);
+  const situation =
+    stringOrNull(data?.reason) ??
+    stringOrNull(data?.summary) ??
+    stringOrNull(data?.verdict);
+  const requestedAction =
+    stringOrNull(data?.requestedAction) ??
+    stringOrNull(data?.requestedHumanAction);
+  const visibleNotification =
+    stringOrNull(data?.text) ??
+    stringOrNull(data?.message);
+
+  if (situation || requestedAction || visibleNotification || ctx.project_id) {
+    parts.push("");
+    parts.push("Notification context");
+    if (ctx.project_id) parts.push(`Project: ${ctx.project_id}`);
+    if (situation) parts.push(`Situation: ${situation}`);
+    if (requestedAction) parts.push(`Original ask: ${requestedAction}`);
+    if (visibleNotification) parts.push(`Visible notification: ${visibleNotification.slice(0, 800)}`);
+  }
+
+  if (opts.sessionContext?.length) parts.push(...opts.sessionContext);
+  if (readStoredConversation(data)?.conversationId || data?.expectedClosure || data?.actionHints) {
+    parts.push("");
+    parts.push("System note");
+    parts.push(
+      "This reply was matched to the original Telegram notification. Routing metadata is stored with that notification record; do not ask the human for internal ids.",
+    );
+  }
+  parts.push("");
+  parts.push("Use the human reply as the decision or missing input, then continue the tracked work.");
 
   return parts.join("\n");
 }
