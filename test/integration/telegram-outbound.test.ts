@@ -222,6 +222,70 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
+  it("preserves escalation reply context on human notifications", () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/tmp/project",
+      pendingChatId: "12345",
+      getSessionId: () => "",
+      sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human:operator",
+        content: "Approval return path needs a human decision.",
+        projectPath: "projects/aks-rp-e2e.app",
+        escalationId: "esc_1",
+        reason: "Approval return path is not visibly closing.",
+        requestedAction: "Approve retry or dismiss the escalation.",
+        originalIssue: {
+          eventType: "escalation.created",
+          escalationId: "esc_1",
+          sourceSessionId: "s_blocked",
+        },
+        expectedClosure: ["escalation.resolved", "escalation.dismissed"],
+        resume: {
+          sourceSessionId: "s_blocked",
+          checkpointRef: "checkpoint:esc_1",
+        },
+      },
+    } as any);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      text: "📋 Approval return path needs a human decision.",
+      context: {
+        eventType: "message.created",
+        agent: "may",
+        projectId: "projects/aks-rp-e2e.app",
+      },
+    });
+    expect(sent[0].context?.data).toMatchObject({
+      escalationId: "esc_1",
+      reason: "Approval return path is not visibly closing.",
+      requestedAction: "Approve retry or dismiss the escalation.",
+      originalIssue: {
+        eventType: "escalation.created",
+        escalationId: "esc_1",
+        sourceSessionId: "s_blocked",
+      },
+      expectedClosure: ["escalation.resolved", "escalation.dismissed"],
+      resume: {
+        sourceSessionId: "s_blocked",
+        checkpointRef: "checkpoint:esc_1",
+      },
+    });
+    outbound.close();
+  });
+
   it("stops forwarding after close", () => {
     const bus = new EventBus();
     const sent: string[] = [];
