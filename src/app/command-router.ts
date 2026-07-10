@@ -42,6 +42,80 @@ function ownerAgent(owner: unknown): string | null {
   return trimmed.startsWith("agent:") ? trimmed.slice("agent:".length) : trimmed;
 }
 
+function objectField(value: unknown, key: string): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  const next = value[key];
+  return isRecord(next) ? next : null;
+}
+
+function stringField(value: unknown, key: string): string | null {
+  if (!isRecord(value)) return null;
+  return nonEmptyString(value[key]);
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)
+    : [];
+}
+
+function telegramReplyContext(context: Record<string, unknown>): Record<string, unknown> | null {
+  return objectField(context, "telegramReply");
+}
+
+function isEscalationReplyContext(context: Record<string, unknown>): boolean {
+  const reply = telegramReplyContext(context);
+  if (!reply) return false;
+  const issue = objectField(reply, "originalIssue");
+  if (stringField(issue, "eventType") === "escalation.created") return true;
+  const closures = stringList(reply.expectedClosure);
+  return closures.includes("escalation.resolved") || closures.includes("escalation.dismissed");
+}
+
+function buildDeliveredHumanMessage(message: string, context: Record<string, unknown>): string {
+  const reply = telegramReplyContext(context);
+  if (!reply) return message;
+
+  const issue = objectField(reply, "originalIssue");
+  const notification = objectField(reply, "notification");
+  const lines = ["Human reply", message, "", "Attached context"];
+
+  const conversationId = stringField(reply, "conversationId");
+  const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
+  const escalationId = stringField(issue, "escalationId") ?? stringField(reply, "escalationId");
+  const project =
+    stringField(issue, "projectPath") ??
+    stringField(reply, "projectId") ??
+    stringField(issue, "targetProject");
+  const sourceSessionId = stringField(issue, "sourceSessionId") ?? stringField(reply, "sessionId");
+  const reason =
+    stringField(issue, "reason") ??
+    stringField(notification, "reason") ??
+    stringField(notification, "summary");
+  const requestedAction =
+    stringField(issue, "requestedAction") ??
+    stringField(notification, "requestedAction") ??
+    stringField(notification, "requestedHumanAction");
+  const visibleNotification = stringField(notification, "text");
+  const expectedClosure = stringList(reply.expectedClosure);
+
+  if (conversationId) lines.push(`Conversation: ${conversationId}`);
+  if (eventType) lines.push(`Original issue: ${eventType}`);
+  if (escalationId) lines.push(`Escalation: ${escalationId}`);
+  if (project) lines.push(`Project: ${project}`);
+  if (sourceSessionId) lines.push(`Source session: ${sourceSessionId}`);
+  if (reason) lines.push(`Reason: ${reason}`);
+  if (requestedAction) lines.push(`Original ask: ${requestedAction}`);
+  if (visibleNotification) lines.push(`Visible notification: ${visibleNotification.slice(0, 800)}`);
+  if (expectedClosure.length) lines.push(`Expected closure: ${expectedClosure.join(", ")}`);
+
+  lines.push("");
+  lines.push(
+    "Use the human reply as the decision or missing input. Continue the tracked work and emit the expected closure/update event when done.",
+  );
+  return lines.join("\n");
+}
+
 /**
  * Routes human/control input from console, socket, Telegram, and the event bus.
  *
@@ -173,16 +247,18 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const target = isRecord(data.target) ? data.target : {};
     const context = isRecord(data.context) ? data.context : {};
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
+    const deliveredMessage = buildDeliveredHumanMessage(message, context);
+    const escalationReply = isEscalationReplyContext(context);
 
     const targetSessionId = nonEmptyString(target.sessionId);
-    if (targetSessionId) {
+    if (targetSessionId && !escalationReply) {
       bus.emit({
         type: "session.steer.requested",
         source,
         owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
         data: {
           sessionId: targetSessionId,
-          message,
+          message: deliveredMessage,
           ...(Object.keys(context).length ? { context } : {}),
         },
       } as any);
@@ -255,19 +331,20 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     const eventOwner =
       typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
-    const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
+    const agent = escalationReply ? "may" : (nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may");
     bus.emit({
       type: "chat.start.requested",
       source,
       owner: normalizeEventOwner(agent),
       data: {
         agent,
-        message,
+        message: deliveredMessage,
         channel: nonEmptyString(conversation.channel) ?? source,
         channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
         channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
         requestId: nonEmptyString(data.inputId) ?? undefined,
         forceNew: context.forceNew === true,
+        ...(Object.keys(context).length ? { context } : {}),
       },
     } as any);
   }
