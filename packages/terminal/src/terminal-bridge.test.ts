@@ -208,7 +208,7 @@ describe("terminal bridge tmux profile validation", () => {
       expect(log).toContain("set-option -g mouse off");
       expect(log).toContain("set-option -g history-limit 100000");
       expect(log).toContain("set-option -g status off");
-      expect(log).toContain("set-option -g terminal-overrides xterm-256color:smcup@:rmcup@");
+      expect(log).toContain("set-option -gu terminal-overrides");
       expect(log).not.toContain("capture-pane");
       expect(log).not.toContain("bind-key");
     } finally {

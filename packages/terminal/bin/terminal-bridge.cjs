@@ -56,9 +56,10 @@ function configureTmux() {
     // The browser toolbar is the visible profile/status UI. tmux is only the
     // persistence layer, so do not spend a terminal row on tmux chrome.
     ["set-option", "-g", "status", "off"],
-    // Let xterm own scrollback. Without this, tmux attach enters the terminal
-    // alternate screen, where xterm has no normal scrollback to scroll.
-    ["set-option", "-g", "terminal-overrides", "xterm-256color:smcup@:rmcup@"],
+    // Keep terminal capabilities intact for full-screen TUIs such as Codex.
+    // Older bridge versions disabled smcup/rmcup here; unset that override so
+    // tmux and xterm can use the normal alternate-screen/cursor contract.
+    ["set-option", "-gu", "terminal-overrides"],
   ];
 
   for (const args of options) {
