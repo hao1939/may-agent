@@ -8,6 +8,7 @@ let terminalResizeObserver = null;
 let terminalReplayWrites = 0;
 let terminalClientGeneration = 0;
 let terminalFitFrame = 0;
+let terminalHasFocus = false;
 
 function initTerminalPage(requestedProfileId) {
   const host = document.getElementById('terminal-content');
@@ -15,6 +16,8 @@ function initTerminalPage(requestedProfileId) {
   if (requestedProfileId) activeTerminalId = requestedProfileId;
   if (!terminalInitialized) {
     terminalInitialized = true;
+    window.addEventListener('focus', sendTerminalFocusFrame);
+    document.addEventListener('visibilitychange', sendTerminalFocusFrame);
     host.innerHTML = `
       <div class="terminal-shell">
         <div class="terminal-toolbar">
@@ -125,6 +128,7 @@ function disposeTerminalClient() {
   }
   fitAddon = null;
   terminalReplayWrites = 0;
+  terminalHasFocus = false;
 }
 
 async function waitForTerminalLayout() {
@@ -188,6 +192,14 @@ async function connectTerminal(profileId) {
   terminal.loadAddon(fitAddon);
   terminal.open(mount);
   terminal.focus();
+  terminalHasFocus = document.visibilityState !== 'hidden' && document.hasFocus();
+  terminal.element?.addEventListener('focusin', () => {
+    terminalHasFocus = true;
+    sendTerminalFocusFrame();
+  });
+  terminal.element?.addEventListener('focusout', () => {
+    terminalHasFocus = false;
+  });
   if (status) status.textContent = `Opening ${profileId}`;
 
   terminal.onData(data => {
@@ -197,7 +209,7 @@ async function connectTerminal(profileId) {
     }
   });
   terminal.onResize(size => {
-    if (terminalSocket?.readyState === WebSocket.OPEN) {
+    if (terminalCanOwnSize() && terminalSocket?.readyState === WebSocket.OPEN) {
       terminalSocket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
     }
   });
@@ -231,6 +243,7 @@ async function connectTerminal(profileId) {
         status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${idle}`;
       }
       terminal.focus();
+      sendTerminalFocusFrame();
       scheduleActiveTerminalFit();
     } else if (frame.type === 'error') {
       if (status) status.textContent = frame.message || 'terminal error';
@@ -289,6 +302,15 @@ function sendTerminalData(data) {
   terminalSocket.send(JSON.stringify({ type: 'input', data }));
   terminal?.focus();
   return true;
+}
+
+function sendTerminalFocusFrame() {
+  if (!terminalCanOwnSize() || terminalSocket?.readyState !== WebSocket.OPEN || !terminal) return;
+  terminalSocket.send(JSON.stringify({ type: 'focus', cols: terminal.cols, rows: terminal.rows }));
+}
+
+function terminalCanOwnSize() {
+  return terminalHasFocus && document.visibilityState !== 'hidden' && document.hasFocus();
 }
 
 function sendTerminalCommand(command) {
