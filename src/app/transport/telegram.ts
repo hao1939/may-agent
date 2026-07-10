@@ -150,7 +150,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
-  function emitChatStart(message: string, source = "telegram", channelMessageId?: number): void {
+  function emitChatStart(
+    message: string,
+    source = "telegram",
+    channelMessageId?: number,
+    target?: { sessionId?: string; agent?: string; projectPath?: string },
+  ): void {
     bus.emit({
       type: "human.input.received",
       source,
@@ -163,7 +168,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           channelThreadId: pendingChatId ?? undefined,
           channelMessageId,
         },
-        target: { agent: opts.interfaceAgent },
+        target: target ?? { agent: opts.interfaceAgent },
       },
     } as any);
   }
@@ -211,6 +216,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // Context-enriched reply: if user replied to a notification, enrich their text
     let enrichedText = text;
+    let inputTarget: { sessionId?: string; agent?: string; projectPath?: string } | undefined;
     const replyToMsg = msg.reply_to_message;
     const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
@@ -228,6 +234,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
         if (route.kind === "notification") {
           enrichedText = route.enrichedText;
+          if (route.sessionId) {
+            inputTarget = { sessionId: route.sessionId };
+          }
           bus.emit({ type: "info", message: route.infoMessage });
 
           bus.emit({
@@ -238,6 +247,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               enriched: true,
               hasSessionCtx: route.hasSessionCtx,
               originalMsgId: replyToMsgId,
+              target: {
+                owner: route.owner,
+                sessionId: route.sessionId ?? undefined,
+                projectPath: route.projectPath ?? undefined,
+              },
             },
           } as any);
 
@@ -318,7 +332,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
-    emitChatStart(finalMessage, "telegram", msg.message_id);
+    emitChatStart(finalMessage, "telegram", msg.message_id, inputTarget);
   }
 
   async function handleTelegramCommand(text: string, chatIdStr: string): Promise<boolean> {

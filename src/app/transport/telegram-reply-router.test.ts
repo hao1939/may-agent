@@ -47,13 +47,15 @@ describe("telegram reply router helpers", () => {
     });
 
     expect(text).toContain('[User replying to notification from may about project "projects/demo"]');
-    expect(text).toContain("Context: Needs review");
-    expect(text).toContain("Original notification: Original alert");
+    expect(text).toContain("Human reply");
+    expect(text).toContain("Looks good");
+    expect(text).toContain("Situation: Needs review");
+    expect(text).toContain("Visible notification: Original alert");
     expect(text).toContain("Session context (3 messages):");
-    expect(text).toContain("User says: Looks good");
+    expect(text).toContain("Use the human reply as the decision or missing input");
   });
 
-  it("adds conversation context to notification reply text", () => {
+  it("keeps conversation metadata out of the notification reply text", () => {
     const text = buildNotificationReplyText({
       ctx: {
         event_type: "message.created",
@@ -75,15 +77,17 @@ describe("telegram reply router helpers", () => {
       text: "approved, keep going",
     });
 
-    expect(text).toContain("Conversation: tg_focus_1");
-    expect(text).toContain(
-      'Original issue: {"eventType":"project.focus.plan.requested","projectPath":"projects/alpha-project.app","planId":"focus-live-staging"}',
-    );
-    expect(text).toContain('Last handled by: {"agent":"may","sessionId":"s_may_1"}');
-    expect(text).toContain("User says: approved, keep going");
+    expect(text).toContain("Human reply");
+    expect(text).toContain("approved, keep going");
+    expect(text).toContain("Visible notification: Alpha Project needs focus-plan approval");
+    expect(text).toContain("System note");
+    expect(text).not.toContain("Conversation: tg_focus_1");
+    expect(text).not.toContain("Original issue:");
+    expect(text).not.toContain("Last handled by:");
+    expect(text).not.toContain("project.focus.plan.requested");
   });
 
-  it("includes approval lineage fields in notification reply text", () => {
+  it("keeps approval lineage fields out of the notification reply text", () => {
     const text = buildNotificationReplyText({
       ctx: {
         event_type: "message.created",
@@ -105,14 +109,67 @@ describe("telegram reply router helpers", () => {
       text: "approve",
     });
 
-    expect(text).toContain("Approval id: approval-123");
-    expect(text).toContain("Wait id: wait-123");
-    expect(text).toContain("Path id: path.network.example");
-    expect(text).toContain("Packet: evidence/archive/example-approval.md");
+    expect(text).toContain("Human reply");
+    expect(text).toContain("approve");
+    expect(text).toContain("Visible notification: Alpha Project approval packet dispatch");
+    expect(text).not.toContain("Approval id:");
+    expect(text).not.toContain("Wait id:");
+    expect(text).not.toContain("Path id:");
+    expect(text).not.toContain("Packet:");
+    expect(text).not.toContain("Expected response:");
+    expect(text).not.toContain("project.approval.submitted");
+  });
+
+  it("summarizes escalation and project-health context without dumping routing metadata", () => {
+    const text = buildNotificationReplyText({
+      ctx: {
+        event_type: "message.created",
+        agent: "evaluator",
+        project_id: "projects/alpha-project.app",
+        data: JSON.stringify({
+          subject: "Project health review: alpha-project.app",
+          kind: "project-health",
+          severity: "P1",
+          dedupKey: "aks:approval-return",
+          targetProject: "alpha-project.app",
+          reportPath: "reports/project-health/alpha-project.app/latest.md",
+          verdict: "blocked-on-human",
+          requestedHumanAction: "assign-owner",
+          reason: "Approval return path is not visibly closing.",
+          requestedAction: "Assign one owner to drain the approval return path.",
+          conversationId: "project-health:alpha-project.app:aks:approval-return",
+          originalIssue: {
+            eventType: "evaluation.project.reviewed",
+            targetProject: "alpha-project.app",
+          },
+          expectedClosure: ["project.planning.requested"],
+          actionHints: ["accepted", "assign <owner>"],
+          escalationId: "esc_1",
+          sourceAgent: "evaluator",
+          blockedOn: "owner decision",
+        }),
+      },
+      text: "assign May and continue",
+    });
+
+    expect(text).toContain("Human reply");
+    expect(text).toContain("assign May and continue");
+    expect(text).toContain("Project: projects/alpha-project.app");
     expect(text).toContain(
-      'Expected response: {"type":"project.approval.submitted","approvalId":"approval-123","waitId":"wait-123"}',
+      "Situation: Approval return path is not visibly closing.",
     );
-    expect(text).toContain("User says: approve");
+    expect(text).toContain(
+      "Original ask: Assign one owner to drain the approval return path.",
+    );
+    expect(text).toContain("System note");
+    expect(text).not.toContain("Subject:");
+    expect(text).not.toContain("Kind:");
+    expect(text).not.toContain("Dedup key:");
+    expect(text).not.toContain("Report:");
+    expect(text).not.toContain("Expected closure:");
+    expect(text).not.toContain("Action hints:");
+    expect(text).not.toContain("Escalation id:");
+    expect(text).not.toContain("Source agent:");
   });
 
   it("builds quote fallback reply text", () => {
@@ -184,7 +241,8 @@ describe("telegram reply router helpers", () => {
       expect(route.projectPath).toBe("projects/demo");
       expect(route.sessionId).toBe("s_route");
       expect(route.enrichedText).toContain("Route summary");
-      expect(route.enrichedText).toContain("User says: please continue");
+      expect(route.enrichedText).toContain("Human reply");
+      expect(route.enrichedText).toContain("please continue");
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }
