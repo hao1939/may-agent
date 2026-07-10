@@ -1860,15 +1860,83 @@ ${JSON.stringify(packet, null, 2)}
   }
 
   if (judgment.notify) {
-    ctx.notify(
-      [
-        `Project health review: ${target.targetProject}`,
-        `Verdict: ${judgment.verdict}`,
-        `Action: ${judgment.requestedHumanAction}`,
-        judgment.message,
-        `Report: ${report.relativePath}`,
-      ].join("\n"),
-    );
+    const notificationContent = [
+      `${target.targetProject} needs a decision`,
+      "",
+      "What happened",
+      judgment.mainConcern,
+      "",
+      "Decision needed",
+      judgment.humanActionDetail ?? judgment.message,
+      "",
+      "You can reply with",
+      "- accept the recommendation",
+      "- assign an owner",
+      "- provide the missing decision or input",
+      "- say it is already handled and why",
+      "- hold and explain what we are waiting for",
+      "",
+      "What happens next",
+      `May will attach your reply to the tracked ${target.targetProject} review and route the result back to the target owner.`,
+    ].join("\n");
+    ctx.emit({
+      type: "message.created",
+      source: "agent:evaluator",
+      owner: "human:operator",
+      target: { human: true, project: targetOwnerProjectId(target) },
+      data: {
+        from: "evaluator",
+        to: "human",
+        content: notificationContent,
+        priority:
+          judgment.verdict === "urgent" ||
+          judgment.verdict === "blocked-on-human"
+            ? "P1"
+            : "P2",
+        intent: "project-health-review",
+        subject: `Project health review: ${target.targetProject}`,
+        kind: "project-health",
+        severity:
+          judgment.verdict === "urgent"
+            ? "P0"
+            : judgment.verdict === "blocked-on-human"
+              ? "P1"
+              : "P2",
+        project: targetOwnerProjectId(target),
+        projectId: target.targetProject,
+        projectPath: target.targetAppDir,
+        targetProject: target.targetProject,
+        reportPath: report.relativePath,
+        verdict: judgment.verdict,
+        requestedHumanAction: judgment.requestedHumanAction,
+        reason: judgment.mainConcern,
+        requestedAction:
+          judgment.humanActionDetail ?? judgment.requestedHumanAction,
+        message: judgment.message,
+        dedupKey: judgment.dedupeKey,
+        conversationId: `project-health:${target.targetProject}:${judgment.dedupeKey}`,
+        originalIssue: {
+          eventType: "evaluation.project.reviewed",
+          targetProject: target.targetProject,
+          reportPath: report.relativePath,
+          verdict: judgment.verdict,
+          requestedHumanAction: judgment.requestedHumanAction,
+          summary: judgment.mainConcern,
+          dedupeKey: judgment.dedupeKey,
+        },
+        expectedClosure: [
+          "project.planning.requested",
+          "evaluation.project.reviewed",
+        ],
+        actionHints: [
+          "accepted",
+          "already handled <evidence>",
+          "assign <owner>",
+          "decide <decision>",
+          "hold <why waiting>",
+        ],
+      },
+    });
     ctx.emit({
       type: "evaluation.project.notification.requested",
       source: "agent:evaluator",
