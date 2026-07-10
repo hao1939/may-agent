@@ -83,6 +83,38 @@ describe("telegram reply router helpers", () => {
     expect(text).toContain("User says: approved, keep going");
   });
 
+  it("includes approval lineage fields in notification reply text", () => {
+    const text = buildNotificationReplyText({
+      ctx: {
+        event_type: "message.created",
+        agent: "aks-explorer",
+        project_id: "projects/alpha-project.app",
+        data: JSON.stringify({
+          text: "AKS RP E2E approval packet dispatch",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+          packetPath: "evidence/archive/example-approval.md",
+          expectedResponse: {
+            type: "project.approval.submitted",
+            approvalId: "approval-123",
+            waitId: "wait-123",
+          },
+        }),
+      },
+      text: "approve",
+    });
+
+    expect(text).toContain("Approval id: approval-123");
+    expect(text).toContain("Wait id: wait-123");
+    expect(text).toContain("Path id: path.network.example");
+    expect(text).toContain("Packet: evidence/archive/example-approval.md");
+    expect(text).toContain(
+      'Expected response: {"type":"project.approval.submitted","approvalId":"approval-123","waitId":"wait-123"}',
+    );
+    expect(text).toContain("User says: approve");
+  });
+
   it("builds quote fallback reply text", () => {
     expect(buildTelegramQuoteReplyText("continue", "Previous message")).toBe(
       [

@@ -244,12 +244,13 @@ export class DbWriter {
           const urgency = eventUrgency(ev);
           // v2 inter-agent message — persist with canonical source/owner so
           // inbox queries key on the event owner.
+          // Preserve any additional payload fields (for example approval
+          // dispatch lineage metadata) so exact follow-up queries can rely on
+          // events.data instead of parsing freeform content.
           this.insertEventRow(
             event,
             {
-              from: payload.from,
-              to: payload.to,
-              content: payload.content,
+              ...payload,
               intent: payload.intent ?? null,
               artifact: payload.artifact ?? null,
               priority,

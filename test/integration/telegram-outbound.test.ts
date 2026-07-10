@@ -141,6 +141,87 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
+  it("forwards approval packets addressed to human:operator and preserves approval reply context", () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/tmp/project",
+      pendingChatId: "12345",
+      getSessionId: () => "",
+      sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:aks-explorer",
+      owner: "human:operator",
+      data: {
+        from: "aks-explorer",
+        to: "human:operator",
+        content: "Approval packet dispatch",
+        priority: "P1",
+        projectPath: "projects/alpha-project.app",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+        packetPath: "evidence/archive/example-approval.md",
+        requestedAction: "Approve one bounded replay",
+        reason: "Need exact owner decision",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+        },
+      },
+    } as any);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      text: "📋 Approval packet dispatch",
+      context: {
+        eventType: "message.created",
+        agent: "aks-explorer",
+        projectId: "projects/alpha-project.app",
+        summary: "Approval packet dispatch",
+      },
+    });
+    expect(sent[0].context?.data).toMatchObject({
+      approvalId: "approval-123",
+      waitId: "wait-123",
+      pathId: "path.network.example",
+      packetPath: "evidence/archive/example-approval.md",
+      requestedAction: "Approve one bounded replay",
+      reason: "Need exact owner decision",
+      expectedResponse: {
+        type: "project.approval.submitted",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+      },
+      conversationId: "approval:approval-123",
+      originalIssue: {
+        eventType: "project.approval.requested",
+        approvalId: "approval-123",
+        waitId: "wait-123",
+        pathId: "path.network.example",
+        packetPath: "evidence/archive/example-approval.md",
+        requestedAction: "Approve one bounded replay",
+        reason: "Need exact owner decision",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+        },
+      },
+      expectedClosure: ["project.approval.submitted"],
+    });
+    outbound.close();
+  });
+
   it("stops forwarding after close", () => {
     const bus = new EventBus();
     const sent: string[] = [];

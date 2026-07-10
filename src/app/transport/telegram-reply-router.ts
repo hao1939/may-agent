@@ -137,6 +137,17 @@ export function buildNotificationReplyText(opts: {
       if (conversation?.conversationId) parts.push(`Conversation: ${conversation.conversationId}`);
       if (conversation?.originalIssue) parts.push(`Original issue: ${JSON.stringify(conversation.originalIssue)}`);
       if (conversation?.lastHandledBy) parts.push(`Last handled by: ${JSON.stringify(conversation.lastHandledBy)}`);
+      const directApprovalFields = [
+        ["Approval id", stringOrNull(data.approvalId)],
+        ["Wait id", stringOrNull(data.waitId)],
+        ["Path id", stringOrNull(data.pathId)],
+        ["Packet", stringOrNull(data.packetPath)],
+      ] as const;
+      for (const [label, value] of directApprovalFields) {
+        if (value) parts.push(`${label}: ${value}`);
+      }
+      const expectedResponse = objectOrNull(data.expectedResponse);
+      if (expectedResponse) parts.push(`Expected response: ${JSON.stringify(expectedResponse)}`);
     } catch {
       /* ignore malformed notification context */
     }

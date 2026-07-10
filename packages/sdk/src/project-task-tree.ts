@@ -500,17 +500,10 @@ function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
     .filter((state): state is string => Boolean(state));
   if (!childStates.length) return task.status ?? "backlog";
   if (workflowProgressIncomplete(task)) {
-    const progress = contextObject(task).workflowProgress;
-    const holdBlocked =
-      progress && typeof progress === "object" && !Array.isArray(progress)
-        ? (progress as Record<string, unknown>).noRefillNow === true ||
-          (progress as Record<string, unknown>).backendBlocked === true ||
-          (progress as Record<string, unknown>).dispatchHeld === true
-        : false;
     if (isAssignedWorkflowController(task)) return "active";
     if (childStates.includes("active")) return "active";
     if (childStates.includes("review")) return "review";
-    if (holdBlocked || blockedOnlyWorkflowWaitStewardship(tree, task)) {
+    if (blockedOnlyWorkflowWaitStewardship(tree, task)) {
       return "blocked";
     }
     return "backlog";
