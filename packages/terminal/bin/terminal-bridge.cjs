@@ -49,13 +49,13 @@ function existingTmuxSessionIsCurrent() {
 
 function configureTmux() {
   const options = [
-    ["set-option", "-g", "mouse", "off"],
-    ["set-option", "-g", "history-limit", "100000"],
+    ["set-option", "-t", tmuxName, "mouse", "on"],
+    ["set-option", "-t", tmuxName, "history-limit", "100000"],
     ["set-option", "-g", "focus-events", "on"],
     ["set-option", "-g", "escape-time", "10"],
     // The browser toolbar is the visible profile/status UI. tmux is only the
     // persistence layer, so do not spend a terminal row on tmux chrome.
-    ["set-option", "-g", "status", "off"],
+    ["set-option", "-t", tmuxName, "status", "off"],
     // Keep terminal capabilities intact for full-screen TUIs such as Codex.
     // Older bridge versions disabled smcup/rmcup here; unset that override so
     // tmux and xterm can use the normal alternate-screen/cursor contract.

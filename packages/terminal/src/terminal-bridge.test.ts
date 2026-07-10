@@ -205,9 +205,9 @@ describe("terminal bridge tmux profile validation", () => {
       expect(log).not.toContain("kill-session -t may-web-claude");
       expect(log).not.toContain("new-session -d -s may-web-claude");
       expect(log).toContain("attach-session -t may-web-claude");
-      expect(log).toContain("set-option -g mouse off");
-      expect(log).toContain("set-option -g history-limit 100000");
-      expect(log).toContain("set-option -g status off");
+      expect(log).toContain("set-option -t may-web-claude mouse on");
+      expect(log).toContain("set-option -t may-web-claude history-limit 100000");
+      expect(log).toContain("set-option -t may-web-claude status off");
       expect(log).toContain("set-option -gu terminal-overrides");
       expect(log).not.toContain("capture-pane");
       expect(log).not.toContain("bind-key");
@@ -241,6 +241,8 @@ describe("terminal bridge tmux profile validation", () => {
       await new Promise<void>((resolveExit) => child.once("exit", () => resolveExit()));
 
       const input = readFileSync(fake.inputPath, "utf8");
+      const log = readFileSync(fake.logPath, "utf8");
+      expect(log).toContain("set-option -t may-web-shell mouse on");
       expect(input).toContain(data);
       expect(input).not.toContain("�");
     } finally {

@@ -151,9 +151,9 @@ async function connectTerminal(profileId) {
     cursorBlink: true,
     cursorStyle: 'block',
     convertEol: true,
-    // xterm/browser owns scrollback and selection. tmux is used only to keep
-    // the process alive across reconnects; its mouse/copy-mode UX is disabled
-    // in the bridge so browser copy/paste remains predictable.
+    // tmux owns persistent scrollback for every web terminal profile. xterm
+    // renders the active browser client and keeps local scrollback only as a
+    // best-effort convenience.
     scrollback: 50000,
     fontFamily: '"JetBrains Mono", "Cascadia Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace',
     fontSize: 14,
