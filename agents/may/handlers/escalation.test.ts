@@ -37,14 +37,8 @@ describe("escalation handler", () => {
       },
     });
 
-    expect(ctx.sdk.emit).toHaveBeenCalledWith("escalation.routed", {
-      escalationId: "esc_1",
-      route: "human:operator",
-      reason: "blocked: needs human",
-    }, {
-      source: "agent:may",
-      owner: "human:operator",
-    });
+    // escalation.routed no longer emitted (was orphaning as pending rows)
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("escalation.routed", expect.anything(), expect.anything());
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.routed", expect.objectContaining({
       handler: "escalation",
       escalationId: "esc_1",

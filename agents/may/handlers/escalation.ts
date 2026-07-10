@@ -80,14 +80,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const projectPath = stringField(data, "projectPath") || undefined;
 
     ctx.sdk.log("info", `[escalation] route=${route} escalation=${escalationId} sourceAgent=${sourceAgent}`);
-    ctx.sdk.emit("escalation.routed", {
-      escalationId,
-      route,
-      reason,
-    }, {
-      source: "agent:may",
-      owner: route,
-    });
+    // NOTE: Previously emitted escalation.routed here, but nothing consumed it
+    // and events accumulated as orphan pending rows (36+). The handler.routed
+    // event below captures the same audit trail without orphan accumulation.
     ctx.sdk.emit("handler.routed", {
       handler: "escalation",
       escalationId,
