@@ -6,6 +6,8 @@ let fitAddon = null;
 let terminalSocket = null;
 let terminalResizeObserver = null;
 let terminalReplayWrites = 0;
+let terminalClientGeneration = 0;
+let terminalFitFrame = 0;
 
 function initTerminalPage(requestedProfileId) {
   const host = document.getElementById('terminal-content');
@@ -103,6 +105,11 @@ function renderTerminalQuickbar() {
 }
 
 function disposeTerminalClient() {
+  terminalClientGeneration++;
+  if (terminalFitFrame) {
+    cancelAnimationFrame(terminalFitFrame);
+    terminalFitFrame = 0;
+  }
   if (terminalResizeObserver) {
     terminalResizeObserver.disconnect();
     terminalResizeObserver = null;
@@ -120,8 +127,14 @@ function disposeTerminalClient() {
   terminalReplayWrites = 0;
 }
 
-function connectTerminal(profileId) {
+async function waitForTerminalLayout() {
+  await new Promise(resolve => requestAnimationFrame(() => resolve()));
+  await new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
+async function connectTerminal(profileId) {
   disposeTerminalClient();
+  const generation = terminalClientGeneration;
   renderTerminalQuickbar();
   const mount = document.getElementById('terminal-mount');
   const status = document.getElementById('terminal-status');
@@ -175,6 +188,24 @@ function connectTerminal(profileId) {
   terminal.loadAddon(fitAddon);
   terminal.open(mount);
   terminal.focus();
+  if (status) status.textContent = `Opening ${profileId}`;
+
+  terminal.onData(data => {
+    if (terminalReplayWrites > 0) return;
+    if (terminalSocket?.readyState === WebSocket.OPEN) {
+      terminalSocket.send(JSON.stringify({ type: 'input', data }));
+    }
+  });
+  terminal.onResize(size => {
+    if (terminalSocket?.readyState === WebSocket.OPEN) {
+      terminalSocket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
+    }
+  });
+  terminalResizeObserver = new ResizeObserver(() => scheduleActiveTerminalFit());
+  terminalResizeObserver.observe(mount);
+
+  await waitForTerminalLayout();
+  if (generation !== terminalClientGeneration || !terminal) return;
   fitActiveTerminal();
 
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -200,7 +231,7 @@ function connectTerminal(profileId) {
         status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${idle}`;
       }
       terminal.focus();
-      fitActiveTerminal();
+      scheduleActiveTerminalFit();
     } else if (frame.type === 'error') {
       if (status) status.textContent = frame.message || 'terminal error';
       terminal.writeln(`\r\n[terminal error] ${frame.message || 'unknown error'}\r\n`);
@@ -214,19 +245,14 @@ function connectTerminal(profileId) {
   terminalSocket.onclose = () => {
     if (status) status.textContent = 'Disconnected';
   };
-  terminal.onData(data => {
-    if (terminalReplayWrites > 0) return;
-    if (terminalSocket?.readyState === WebSocket.OPEN) {
-      terminalSocket.send(JSON.stringify({ type: 'input', data }));
-    }
+}
+
+function scheduleActiveTerminalFit() {
+  if (terminalFitFrame) return;
+  terminalFitFrame = requestAnimationFrame(() => {
+    terminalFitFrame = 0;
+    fitActiveTerminal();
   });
-  terminal.onResize(size => {
-    if (terminalSocket?.readyState === WebSocket.OPEN) {
-      terminalSocket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
-    }
-  });
-  terminalResizeObserver = new ResizeObserver(() => fitActiveTerminal());
-  terminalResizeObserver.observe(mount);
 }
 
 function fitActiveTerminal() {
@@ -234,7 +260,8 @@ function fitActiveTerminal() {
   try {
     const mount = document.getElementById('terminal-mount');
     if (mount) {
-      mount.style.height = terminalMountHeight(mount) + 'px';
+      const height = terminalMountHeight(mount) + 'px';
+      if (mount.style.height !== height) mount.style.height = height;
     }
     fitAddon.fit();
   } catch {}

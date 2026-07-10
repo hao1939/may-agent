@@ -35,6 +35,22 @@ function makeFakeBridge(root: string): string {
   return bridge;
 }
 
+function makeSplitUtf8Bridge(root: string): string {
+  const bridge = join(root, "fake-terminal-bridge.cjs");
+  writeFileSync(bridge, [
+    "#!/usr/bin/env node",
+    "process.stdout.write(JSON.stringify({ type: 'ready', pid: process.pid }) + '\\n');",
+    "const payload = 'progress █▒ ✓\\n';",
+    "const frame = JSON.stringify({ type: 'data', data: payload }) + '\\n';",
+    "const bytes = Buffer.from(frame, 'utf8');",
+    "const splitAt = bytes.indexOf(Buffer.from('█')) + 1;",
+    "process.stdout.write(bytes.subarray(0, splitAt));",
+    "setTimeout(() => process.stdout.write(bytes.subarray(splitAt)), 5);",
+    "process.stdin.resume();",
+  ].join("\n"), "utf-8");
+  return bridge;
+}
+
 function makeSocket(): TerminalSocket & { frames: unknown[]; closed: boolean } {
   return {
     frames: [],
@@ -164,6 +180,30 @@ describe("terminal manager", () => {
 
       expect(firstAfterReplay).not.toContain("visible once\n");
       expect(secondReplay).toContain("visible once\n");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves split UTF-8 inside bridge JSONL frames", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeSplitUtf8Bridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const socket = makeSocket();
+      await manager.attach("may", socket);
+      await delay(50);
+
+      const output = socket.frames
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+
+      expect(output).toContain("progress █▒ ✓\n");
+      expect(output).not.toContain("�");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
