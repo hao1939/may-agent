@@ -22,6 +22,7 @@ const dbPath = resolve(process.env.MAY_DB_PATH ?? `${rootDir}/.state/may.db`);
 const sampleCommand = (id: string) => {
   const jsonMetrics = new Set([
     "aks-rp-e2e.process.unowned-work-count",
+    "aks-rp-e2e.task.blocked-actionable-count",
     "aks-rp-e2e.process.blocked.missing-waiting-for-count",
     "aks-rp-e2e.process.blocked.missing-observer-count",
     "aks-rp-e2e.process.blocked.missing-resume-condition",
@@ -81,7 +82,20 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P3",
     description:
-      "Blocked-leaf review signal: the accepted wind-down frontier now carries about 105-109 exact blocked leaves while three active support leaves and two review leaves continue moving useful no-cloud work. Keep this as a dashboard/consolidation signal; only alert when blocked leaves grow materially beyond the current plateau or when paired capacity signals show blocked waits crowding out active work. Recalibrated 2026-07-08 from the stable 105-109 leaf samples.",
+      "Blocked-leaf inventory signal: counts every blocked leaf, including durable exact family holders that intentionally preserve a represented frontier. Use this as the raw plateau/dashboard view; route actionability from the companion aks-rp-e2e.task.blocked-actionable-count metric instead of paging repeatedly on the same represented wait frontier.",
+  },
+  {
+    id: "aks-rp-e2e.task.blocked-actionable-count",
+    name: "AKS RP E2E actionable blocked task count",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Blocked-frontier actionability signal: counts blocked wait families that the planning packet still flags as actionable warnings or repeated blocker groups, excluding durable exact represented holders. This should wake app-ops only when blocked volume corresponds to repairable process work rather than the stable represented frontier.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
     id: "aks-rp-e2e.task.completed-24h",
@@ -131,7 +145,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 process signal: unfinished work exists but is not actively owned by a healthy worker, recovery task, exact wait, or accepted terminal disposition. This intentionally covers both task-tree leaves and loop-ledger records, because some dead work can be hidden in loop state before a task exists.",
+      "P0 process signal: unfinished work exists but is not actively owned by a healthy worker, recovery task, exact wait, or accepted terminal disposition. This intentionally covers task-tree leaves, loop-ledger records, and running workflow rows that lost their runtime session, because dead work can be hidden outside the task tree.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {

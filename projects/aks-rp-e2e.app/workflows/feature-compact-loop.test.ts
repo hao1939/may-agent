@@ -4837,7 +4837,121 @@ describe("feature compact loop", () => {
         ],
         lastPulseCreated: 0,
       });
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress
+          .unrepresentedErrorCount,
+      ).toBe(0);
       expect(updated.tasks["compact-feature-windows"]).toBeUndefined();
+    } finally {
+      restoreGh();
+    }
+  });
+
+  test("controller treats error rows with active Azure DevOps runs as represented pipeline waits", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const restoreGh = await installCompactPipelineBackend(
+      projectDir,
+      "success",
+    );
+    const pipelineState = process.env.FAKE_GH_STATE;
+    if (!pipelineState) throw new Error("missing fake pipeline state path");
+    await writeFile(
+      pipelineState,
+      JSON.stringify(
+        {
+          run: {
+            databaseId: 123,
+            status: "in_progress",
+            conclusion: "",
+            url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+            createdAt: new Date().toISOString(),
+            displayTitle: "AKS RP E2E compact-feature-windows staging",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      attempts: 1,
+      retryable: true,
+      lastWorkflowRunId: "123",
+      activeWorkflowRunId: "123",
+      lastWorkflowRunUrl:
+        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+      lastSummary:
+        "Live compact workflow is still running while the feature row has not been reconciled yet.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    try {
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      const updated = JSON.parse(await readFile(treePath, "utf8"));
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
+      ).toMatchObject({
+        completionReady: false,
+        unrepresentedNonTerminalCount: 0,
+        activePipelineFeatureKeys: ["windows"],
+        activePipelineWaits: [
+          {
+            featureKey: "windows",
+            runId: "123",
+            runUrl:
+              "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+            runStatus: "in_progress",
+            runTitle: "AKS RP E2E compact-feature-windows staging",
+            watchedCondition: "Azure DevOps run 123 reaches completed status",
+            expectedArtifact: ".state/feature-compact-loop/artifacts/<runId>/",
+            owner: "feature-compact-loop-controller",
+          },
+        ],
+      });
+      expect(
+        updated.tasks["aks-feature-compact-loop"].context.workflowProgress
+          .unrepresentedErrorCount,
+      ).toBe(0);
     } finally {
       restoreGh();
     }
@@ -7558,6 +7672,368 @@ describe("feature compact loop", () => {
     );
     expect(savedState.features["cluster-autoscaler"].taskId).toBe(
       "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
+    );
+  });
+
+  test("aligns compact owner-decision holder watch windows to represented downstream owner-decision lineages", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-aad-rbac-package-partial-frontier",
+      "hold-compact-defender-profile-reviewed-exception-frontier",
+      "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
+    ];
+    tree.tasks["hold-compact-aad-rbac-package-partial-frontier"] = {
+      id: "hold-compact-aad-rbac-package-partial-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature aad-rbac on exact package-partial wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["aad-rbac holder stays visible"],
+      conflict_scope: ["feature-compact:aad-rbac", "feature:aad-rbac"],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "aad-rbac",
+        errorClass: "package-partial",
+        target: "staging",
+      },
+      blocker: {
+        condition:
+          "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface. The live aad-rbac compact frontier is now only the residual reviewed-exception trio under the existing live-ready filter. Resume only when one of the preserved reviewed-exception branches changes materially.",
+        waiting_for: {
+          featureKey: "aad-rbac",
+          target: "staging",
+          errorClass: "package-partial",
+          scope: "feature-compact",
+          type: "owner.decision",
+        },
+        next_check_at: "2026-07-09T04:22:20.953Z",
+        fallback_at: "2026-07-10T03:52:20.953Z",
+      },
+    };
+    tree.tasks["hold-compact-defender-profile-reviewed-exception-frontier"] = {
+      id: "hold-compact-defender-profile-reviewed-exception-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature defender-profile on exact reviewed-exception wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["defender-profile holder stays visible"],
+      conflict_scope: ["feature-compact:defender-profile", "feature:defender-profile"],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "defender-profile",
+        errorClass: "reviewed-exception",
+        target: "staging",
+      },
+      blocker: {
+        condition:
+          "Do not regenerate a generic compact-error repair leaf. The current truthful next review step is the accepted owner-promotion note evidence/archive/review-compact-defender-profile-promotion-frontier-20260704.md; compact eligibility still depends on owner promotion or explicit reclassification under the accepted request-plus-runtime floor.",
+        waiting_for: {
+          featureKey: "defender-profile",
+          target: "staging",
+          errorClass: "reviewed-exception",
+          scope: "feature-compact",
+          type: "owner.decision",
+        },
+        next_check_at: "2026-07-10T18:30:00Z",
+        fallback_at: "2026-07-11T18:30:00Z",
+      },
+    };
+    tree.tasks["hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier"] = {
+      id: "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature ccp-security-patch-os-variants only as a represented split-frontier carrier while the exact represented blocker remains wait-ccp-security-patch-reviewed-exception-owner-response-20260708.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["ccp holder stays visible"],
+      conflict_scope: [
+        "feature-compact:ccp-security-patch-os-variants",
+        "feature:ccp-security-patch-os-variants",
+      ],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "ccp-security-patch-os-variants",
+        errorClass: "reviewed-exception",
+        target: "staging",
+      },
+      blocker: {
+        condition:
+          "Represented by wait-ccp-security-patch-reviewed-exception-owner-response-20260708. This compact leaf is a split-frontier carrier for feature-local state only; the exact represented blocker remains the human-owned owner/source-authority response wait.",
+        waiting_for: {
+          featureKey: "ccp-security-patch-os-variants",
+          target: "staging",
+          errorClass: "reviewed-exception",
+          scope: "feature-compact",
+          type: "owner.decision",
+        },
+        next_check_at: "2026-07-09T04:22:21.848Z",
+        fallback_at: "2026-07-10T03:52:21.848Z",
+      },
+    };
+    tree.tasks["hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"] = {
+      id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+      parent_id: "aks-spec-verification-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "human",
+      children: [],
+      goal: "Preserve the exact aad-rbac run-command-access authorization frontier.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["aad-rbac exact frontier stays visible"],
+      conflict_scope: ["feature:aad-rbac"],
+      blocker: {
+        condition: "Owner decision still gates the aad-rbac run-command-access authorization branch.",
+        waiting_for: { type: "owner.decision", taskId: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706" },
+        next_check_at: "2026-07-10T18:20:00Z",
+        fallback_at: "2026-07-11T18:20:00Z",
+      },
+    };
+    tree.tasks["hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"] = {
+      id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+      parent_id: "aks-spec-verification-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "human",
+      children: [],
+      goal: "Preserve the exact managed-v2 lifecycle contradiction frontier for aad-rbac row 37.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["aad-rbac exact frontier stays visible"],
+      conflict_scope: ["feature:aad-rbac"],
+      blocker: {
+        condition: "Owner decision still gates the aad-rbac managed-v2 lifecycle contradiction branch.",
+        waiting_for: { type: "owner.decision", taskId: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705" },
+        next_check_at: "2026-07-10T18:00:00Z",
+        fallback_at: "2026-07-11T18:00:00Z",
+      },
+    };
+    tree.tasks["wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"] = {
+      id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "human",
+      children: [],
+      goal: "Preserve the shared secops-fips automatic managedsystem capacity family.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["aad-rbac capacity frontier stays visible"],
+      conflict_scope: ["feature:aad-rbac"],
+      blocker: {
+        condition: "Capacity-family recovery still gates aad-rbac automatic SKU coverage.",
+        waiting_for: { type: "owner.decision", taskId: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702" },
+        next_check_at: "2026-07-10T18:00:00Z",
+        fallback_at: "2026-07-11T18:00:00Z",
+      },
+    };
+    tree.tasks["wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704"] = {
+      id: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "human",
+      children: [],
+      goal: "Preserve the exact shared owner-promotion/auth frontier for defender-profile compact eligibility.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["defender-profile exact frontier stays visible"],
+      conflict_scope: ["feature:defender-profile"],
+      blocker: {
+        condition: "Owner promotion frontier still governs defender-profile compact eligibility.",
+        waiting_for: { type: "owner.decision", taskId: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704" },
+        next_check_at: "2026-07-10T18:30:00Z",
+        fallback_at: "2026-07-11T18:30:00Z",
+      },
+    };
+    tree.tasks["wait-ccp-security-patch-reviewed-exception-owner-response-20260708"] = {
+      id: "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
+      parent_id: "aks-spec-verification-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Hold the exact owner/source-authority response wait for the remaining ccp-security-patch reviewed-exception slice after durable send proof exists, without reopening unchanged reruns.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["shared CCP wait stays visible"],
+      conflict_scope: ["spec-loop-followup:pending:ccp-security-patch", "feature:ccp-security-patch-os-variants"],
+      blocker: {
+        condition:
+          "Blocked on the returned owner/source-authority decision for the remaining ccp-security-patch slice after durable send proof exists.",
+        waiting_for: {
+          type: "owner.decision",
+          taskId: "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
+        },
+        next_check_at: "2026-07-10T18:00:00Z",
+        fallback_at: "2026-07-11T18:00:00Z",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "aad-rbac", {
+      status: "blocked",
+      errorClass: "package-partial",
+      taskId: "hold-compact-aad-rbac-package-partial-frontier",
+      frontierTaskIds: [
+        "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+      ],
+      waitingFor: {
+        featureKey: "aad-rbac",
+        target: "staging",
+        errorClass: "package-partial",
+        scope: "feature-compact",
+        type: "owner.decision",
+      },
+      blockedReason:
+        "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface. The remaining live-dispatch blocker is one reviewed-exception branch, one bounded promotion carrier, and one upheld unsplit truthful-wait carrier rather than missing package membership.",
+      resumeCondition:
+        "Resume only when one of the preserved reviewed-exception branches changes materially.",
+      nextCheckAt: "2026-07-09T04:22:20.953Z",
+      fallbackAt: "2026-07-10T03:52:20.953Z",
+    });
+    updateFeatureCompactItem(state, "defender-profile", {
+      status: "blocked",
+      errorClass: "reviewed-exception",
+      taskId: "hold-compact-defender-profile-reviewed-exception-frontier",
+      frontierTaskIds: [
+        "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
+      ],
+      waitingFor: {
+        featureKey: "defender-profile",
+        target: "staging",
+        errorClass: "reviewed-exception",
+        scope: "feature-compact",
+        type: "owner.decision",
+      },
+      blockedReason:
+        "The current truthful next review step is the accepted owner-promotion note; compact eligibility still depends on owner promotion or explicit reclassification under the accepted request-plus-runtime floor.",
+      resumeCondition:
+        "Resume only after the owner promotes or intentionally reclassifies spec.defender-profile.vm-prerelease-matrix.",
+      nextCheckAt: "2026-07-09T04:22:22.748Z",
+      fallbackAt: "2026-07-10T03:52:22.748Z",
+    });
+    updateFeatureCompactItem(state, "ccp-security-patch-os-variants", {
+      status: "blocked",
+      errorClass: "reviewed-exception",
+      taskId: "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
+      frontierTaskIds: [
+        "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
+      ],
+      waitingFor: {
+        featureKey: "ccp-security-patch-os-variants",
+        target: "staging",
+        errorClass: "reviewed-exception",
+        scope: "feature-compact",
+        type: "owner.decision",
+      },
+      blockedReason:
+        "Represented by wait-ccp-security-patch-reviewed-exception-owner-response-20260708; the next truthful step is owner/source-authority reclassification of the MarinerV2 carrier rather than another same-scope rerun.",
+      resumeCondition:
+        "Resume only if accepted evidence re-authors the MarinerV2 carrier or intentionally reclassifies/removes it.",
+      nextCheckAt: "2026-07-09T04:22:21.848Z",
+      fallbackAt: "2026-07-10T03:52:21.848Z",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const savedTree = JSON.parse(await readFile(treePath, "utf8"));
+    const savedState = JSON.parse(await readFile(statePath, "utf8"));
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: savedTree.tasks["aks-feature-compact-loop"],
+      tasks: savedTree.tasks,
+      state: savedState,
+    });
+
+    expect(repair.stateRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          featureKey: "aad-rbac",
+          field: "nextCheckAt",
+          before: "2026-07-09T04:22:20.953Z",
+          after: "2026-07-10T18:20:00Z",
+        }),
+        expect.objectContaining({
+          featureKey: "aad-rbac",
+          field: "fallbackAt",
+          before: "2026-07-10T03:52:20.953Z",
+          after: "2026-07-11T18:20:00Z",
+        }),
+        expect.objectContaining({
+          featureKey: "ccp-security-patch-os-variants",
+          field: "nextCheckAt",
+          before: "2026-07-09T04:22:21.848Z",
+          after: "2026-07-10T18:00:00Z",
+        }),
+        expect.objectContaining({
+          featureKey: "ccp-security-patch-os-variants",
+          field: "fallbackAt",
+          before: "2026-07-10T03:52:21.848Z",
+          after: "2026-07-11T18:00:00Z",
+        }),
+      ]),
+    );
+    expect(savedState.features["aad-rbac"].nextCheckAt).toBe(
+      "2026-07-10T18:20:00Z",
+    );
+    expect(savedState.features["aad-rbac"].fallbackAt).toBe(
+      "2026-07-11T18:20:00Z",
+    );
+    expect(savedState.features["defender-profile"].nextCheckAt).toBe(
+      "2026-07-10T18:30:00Z",
+    );
+    expect(savedState.features["defender-profile"].fallbackAt).toBe(
+      "2026-07-11T18:30:00Z",
+    );
+    expect(savedState.features["ccp-security-patch-os-variants"].nextCheckAt).toBe(
+      "2026-07-10T18:00:00Z",
+    );
+    expect(savedState.features["ccp-security-patch-os-variants"].fallbackAt).toBe(
+      "2026-07-11T18:00:00Z",
     );
   });
 

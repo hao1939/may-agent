@@ -2956,12 +2956,20 @@ function compactLoopWorkflowProgress(input: {
       feature.status === "running" &&
       input.activePipelineFeatureKeys?.has(featureKey),
   ).length;
+  const activePipelineErrorCount = Object.entries(
+    input.state.features,
+  ).filter(
+    ([featureKey, feature]) =>
+      feature.status === "error" &&
+      input.activePipelineFeatureKeys?.has(featureKey),
+  ).length;
   const unrepresentedErrorCount = Math.max(
     0,
     error -
       blockedWaitErrorCount -
       representedFeatureErrorCount -
-      representedSupportErrorCount,
+      representedSupportErrorCount -
+      activePipelineErrorCount,
   );
   const representedBlockedFeatureKeys = new Set<string>([
     ...(input.blockedWaitFeatureKeys ?? new Set<string>()),

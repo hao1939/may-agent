@@ -42,6 +42,7 @@ import {
 import {
   bindKnownWorkflowRun,
   defaultSpecLoopStatePath,
+  featureSetPrioritySpecIds,
   loadSpecLoopState,
   saveSpecLoopState,
   updateSpecLoopSpec,
@@ -1257,6 +1258,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "loopTaskId",
     "aks-spec-verification-loop",
   );
+  const priorityFeatureSet = contextString(task, "priorityFeatureSet", "");
+  const prioritySpecIds = priorityFeatureSet
+    ? featureSetPrioritySpecIds(projectDir, priorityFeatureSet)
+    : undefined;
   const statePath = stateRef.startsWith("/")
     ? stateRef
     : join(appDir, stateRef);
@@ -1266,6 +1271,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     loopTaskId,
     windowSize: 5,
     statePath,
+    prioritySpecIds,
   });
 
   if (!specId) {
@@ -1309,6 +1315,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         loopTaskId,
         windowSize: 5,
         statePath,
+        prioritySpecIds,
       }).state;
       const patch =
         typeof patchOrFactory === "function"
@@ -1327,6 +1334,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     loopTaskId,
     windowSize: 5,
     statePath,
+    prioritySpecIds,
   }).state;
   const previousSpecState = attemptState.specs[specId];
   const reusableWorkflowRunId =
@@ -1351,6 +1359,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         loopTaskId,
         windowSize: 5,
         statePath,
+        prioritySpecIds,
       }).state;
       bindKnownWorkflowRun(latest, specId, {
         runId: recoveredWorkflowRunId,

@@ -76,6 +76,27 @@ describe("approval-dispatch workflow", () => {
         packetPath,
         pathId: "path.network-cni-azure-overlay-dual-stack-migration",
         requestedAction: "Approve one bounded live execution",
+        approval: {
+          kind: "approval-packet-dispatch",
+          approvalId:
+            "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+          pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+          packetPath,
+          directEvent: {
+            type: "project.approval.submitted",
+            project: "aks-rp-e2e",
+            projectPath: "projects/aks-rp-e2e.app",
+            approvalKind: "approval-packet-dispatch",
+            approvalId:
+              "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+            waitId:
+              "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+            pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+            packetPath,
+          },
+        },
         approvalId:
           "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
         waitId:
@@ -84,6 +105,7 @@ describe("approval-dispatch workflow", () => {
           "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
         expectedResponse: {
           type: "project.approval.submitted",
+          approvalKind: "approval-packet-dispatch",
           approvalId:
             "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
           waitId:
@@ -96,6 +118,12 @@ describe("approval-dispatch workflow", () => {
     expect(String(dispatched[0].payload.content)).toContain(packetPath);
     expect(String(dispatched[0].payload.content)).toContain(
       "path.network-cni-azure-overlay-dual-stack-migration",
+    );
+    expect(String(dispatched[0].payload.content)).toContain(
+      "Reply to this notification with one bounded decision",
+    );
+    expect(String(dispatched[0].payload.content)).toContain(
+      "project.approval.submitted",
     );
     expect(String((dispatched[0].payload as any).dedupKey)).toContain(
       "path.network-cni-azure-overlay-dual-stack-migration",
@@ -111,5 +139,76 @@ describe("approval-dispatch workflow", () => {
     expect(runs).toContain('"approvalId"');
     expect(runs).toContain('"waitId"');
     expect(runs).toContain('"expectedResponse"');
+  });
+
+  test("suppresses duplicate message.created for the same approval lineage", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath = "evidence/archive/network-cni-approval-packet.md";
+    await writeFile(
+      join(projectDir, packetPath),
+      "# exact packet\n\nPlease approve the bounded replay.\n",
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const baseTask = [
+      `app: ${appDir}`,
+      `project: ${projectDir}`,
+      "agent: aks-explorer",
+      triggerEvent({
+        type: "project.approval.requested",
+        project: "aks-rp-e2e",
+        packetPath,
+        pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+        requestedAction: "Approve one bounded live execution",
+        reason: "Need durable local send proof for the exact packet.",
+        summary:
+          "This is the exact execute-approval packet for the migration replay.",
+      }),
+    ].join("\n");
+
+    const first = await execute({
+      task: baseTask,
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    const second = await execute({
+      task: baseTask,
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(first.status).toBe("done");
+    expect(second.status).toBe("done");
+    expect(second.message).toContain(
+      "Approval dispatch suppressed duplicate message.created",
+    );
+    expect(dispatched).toHaveLength(1);
+
+    const runs = await readFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      "utf8",
+    );
+    expect(runs).toContain('"result":"message.created"');
+    expect(runs).toContain('"result":"duplicate-suppressed"');
   });
 });

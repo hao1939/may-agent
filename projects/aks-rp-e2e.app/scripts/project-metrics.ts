@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
 import {
   listRunnableBacklogTaskIds,
+  peekTaskAssignments,
+  planningPacket,
   summarizeTaskTree,
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
@@ -13,6 +15,10 @@ import {
   type TaskNode,
   type TaskTree,
 } from "../workflows/lib/task-tree-store.ts";
+import {
+  parseTriggerEvent,
+  triggerString,
+} from "../workflows/lib/workflow-input.ts";
 
 type ModelStatus = {
   features?: {
@@ -78,9 +84,31 @@ type MetricSampleOutput = {
   treePath?: string;
 };
 
+type BlockedFrontierParentGroupSummary = {
+  parentId: string;
+  blockedLeafCount: number;
+  sampleBlockedLeafIds: string[];
+};
+
+type BlockedFrontierActionability = {
+  blockedLeafCount: number;
+  durableExactHolderCount: number;
+  actionableCount: number;
+  actionableWarningTaskIds: string[];
+  repeatedBlockerGroupKeys: string[];
+  parentGroups: BlockedFrontierParentGroupSummary[];
+  motionStarved: boolean;
+};
+
 type StaleActiveTaskInfo = {
   taskId: string;
   sessionId: string | null;
+  restartReason: string;
+};
+
+type StaleWorkflowRunInfo = {
+  runId: string;
+  workflow: string;
   restartReason: string;
 };
 
@@ -341,6 +369,108 @@ function archivedCompletedTaskIds24h(): Set<string> {
   return completed;
 }
 
+function blockedFrontierActionability(): BlockedFrontierActionability {
+  try {
+    const packet = planningPacket(runtimeTaskTreeConfig()) as {
+      blocked_frontier_summary?: {
+        blocked_leaf_count?: unknown;
+        parent_groups?: Array<{
+          parent_id?: unknown;
+          blocked_leaf_count?: unknown;
+          sample_blocked_leaf_ids?: unknown;
+        }>;
+        repeated_blocker_groups?: Array<{
+          blocker_group_key?: unknown;
+          key?: unknown;
+        }>;
+      };
+      blocked_action_warnings?: Array<{
+        taskId?: unknown;
+      }>;
+      frontier?: {
+        active?: unknown;
+        review?: unknown;
+      };
+    };
+    const summary = packet.blocked_frontier_summary;
+    const warnings = Array.isArray(packet.blocked_action_warnings)
+      ? packet.blocked_action_warnings
+      : [];
+    const blockedLeafCount =
+      typeof summary?.blocked_leaf_count === "number" &&
+      Number.isFinite(summary.blocked_leaf_count)
+        ? summary.blocked_leaf_count
+        : 0;
+    const parentGroups = Array.isArray(summary?.parent_groups)
+      ? summary.parent_groups
+          .map((group) => ({
+            parentId:
+              typeof group.parent_id === "string" ? group.parent_id : "",
+            blockedLeafCount:
+              typeof group.blocked_leaf_count === "number" &&
+              Number.isFinite(group.blocked_leaf_count)
+                ? group.blocked_leaf_count
+                : 0,
+            sampleBlockedLeafIds: Array.isArray(group.sample_blocked_leaf_ids)
+              ? group.sample_blocked_leaf_ids.filter(
+                  (value): value is string => typeof value === "string",
+                )
+              : [],
+          }))
+          .filter((group) => group.parentId)
+      : [];
+    const actionableWarningTaskIds = warnings
+      .map((warning) =>
+        typeof warning.taskId === "string" ? warning.taskId.trim() : "",
+      )
+      .filter(Boolean);
+    const repeatedBlockerGroupKeys = Array.isArray(summary?.repeated_blocker_groups)
+      ? summary.repeated_blocker_groups
+          .map((group) => {
+            if (typeof group.blocker_group_key === "string") {
+              return group.blocker_group_key.trim();
+            }
+            if (typeof group.key === "string") return group.key.trim();
+            return "";
+          })
+          .filter(Boolean)
+      : [];
+    const actionableCount = Math.max(
+      actionableWarningTaskIds.length,
+      repeatedBlockerGroupKeys.length,
+    );
+    const durableExactHolderCount = Math.max(
+      0,
+      blockedLeafCount - actionableCount,
+    );
+    const activeCount = Array.isArray(packet.frontier?.active)
+      ? packet.frontier?.active.length
+      : 0;
+    const reviewCount = Array.isArray(packet.frontier?.review)
+      ? packet.frontier?.review.length
+      : 0;
+    return {
+      blockedLeafCount,
+      durableExactHolderCount,
+      actionableCount,
+      actionableWarningTaskIds,
+      repeatedBlockerGroupKeys,
+      parentGroups,
+      motionStarved: activeCount + reviewCount === 0,
+    };
+  } catch {
+    return {
+      blockedLeafCount: 0,
+      durableExactHolderCount: 0,
+      actionableCount: 0,
+      actionableWarningTaskIds: [],
+      repeatedBlockerGroupKeys: [],
+      parentGroups: [],
+      motionStarved: false,
+    };
+  }
+}
+
 function taskCounts() {
   const tree = loadTaskTree();
   const taskMap = tree.tasks ?? {};
@@ -447,13 +577,18 @@ function taskCounts() {
   const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
     (task, index) => {
       const blocker = recordValue(task.blocker);
-      const watchTimes = [
-        stringRecordField(blocker, ["resume_at", "resumeAt"]),
+      const fallbackAt = Date.parse(
         stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
-      ]
-        .map((value) => Date.parse(value))
-        .filter((value) => Number.isFinite(value));
-      if (watchTimes.length === 0 || Math.min(...watchTimes) > now) {
+      );
+      const resumeAt = Date.parse(
+        stringRecordField(blocker, ["resume_at", "resumeAt"]),
+      );
+      const overdueAt = Number.isFinite(fallbackAt)
+        ? fallbackAt
+        : Number.isFinite(resumeAt)
+          ? resumeAt
+          : Number.NaN;
+      if (!Number.isFinite(overdueAt) || overdueAt > now) {
         return [];
       }
       const taskId = typeof task.id === "string" ? task.id.toLowerCase() : "";
@@ -1156,6 +1291,126 @@ function sessionRestartReason(sessionId: string): string | null {
   }
 }
 
+function sqliteTableExists(db: Database, tableName: string): boolean {
+  const row = db
+    .query(
+      `
+      select name
+      from sqlite_master
+      where type = 'table' and name = ?
+      limit 1
+    `,
+    )
+    .get(tableName);
+  return Boolean(row);
+}
+
+function workflowRunClaimsHealthyLoopOwnership(
+  row: Record<string, unknown>,
+): boolean {
+  const workflow =
+    typeof row.workflow === "string" ? row.workflow.trim() : "";
+  if (workflow !== "task-worker") return false;
+  const taskText = typeof row.task === "string" ? row.task : "";
+  const trigger = parseTriggerEvent(taskText);
+  const taskId =
+    triggerString(trigger, "taskId") || triggerString(trigger, "task_id");
+  if (!taskId) return false;
+  const tree = loadTaskTree();
+  const task = tree.tasks[taskId];
+  if (!task || taskState(task) !== "active") return false;
+  const restartReason = activeTaskRestartReason(task);
+  return restartReason === null;
+}
+
+function staleRunningWorkflowRunDetails(): StaleWorkflowRunInfo[] {
+  if (!existsSync(stateDbPath)) return [];
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    if (!sqliteTableExists(db, "workflow_runs")) return [];
+    const hasSessions = sqliteTableExists(db, "sessions");
+    const rows = hasSessions
+      ? (db
+          .query(
+            `
+            select
+              w.runId as runId,
+              w.workflow as workflow,
+              w.task as task,
+              w.startedAt as startedAt,
+              count(s.sessionId) as sessionCount,
+              sum(case when s.status = 'running' then 1 else 0 end) as runningSessionCount,
+              max(coalesce(s.lastActivityAt, s.startedAt)) as lastSessionActivityAt
+            from workflow_runs w
+            left join sessions s on s.workflowRunId = w.runId
+            where w.projectId = ? and w.status = 'running'
+            group by w.runId, w.workflow, w.task, w.startedAt
+          `,
+          )
+          .all("aks-rp-e2e") as Array<Record<string, unknown>>)
+      : (db
+          .query(
+            `
+            select
+              runId,
+              workflow,
+              task,
+              startedAt,
+              0 as sessionCount,
+              0 as runningSessionCount,
+              null as lastSessionActivityAt
+            from workflow_runs
+            where projectId = ? and status = 'running'
+          `,
+          )
+          .all("aks-rp-e2e") as Array<Record<string, unknown>>);
+
+    return rows.flatMap((row) => {
+      const runId = typeof row.runId === "string" ? row.runId.trim() : "";
+      const workflow =
+        typeof row.workflow === "string" ? row.workflow.trim() : "";
+      const startedAt =
+        typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
+          ? row.startedAt
+          : null;
+      const lastSessionActivityAt =
+        typeof row.lastSessionActivityAt === "number" &&
+        Number.isFinite(row.lastSessionActivityAt)
+          ? row.lastSessionActivityAt
+          : startedAt;
+      const sessionCount =
+        typeof row.sessionCount === "number" && Number.isFinite(row.sessionCount)
+          ? row.sessionCount
+          : 0;
+      const runningSessionCount =
+        typeof row.runningSessionCount === "number" &&
+        Number.isFinite(row.runningSessionCount)
+          ? row.runningSessionCount
+          : 0;
+      if (!runId || !workflow || startedAt == null) return [];
+      if (Date.now() - startedAt <= sessionStartGraceMs) return [];
+      if (workflowRunClaimsHealthyLoopOwnership(row)) return [];
+      if (sessionCount === 0) {
+        return [{ runId, workflow, restartReason: "workflow-no-session" }];
+      }
+      if (
+        runningSessionCount === 0 &&
+        lastSessionActivityAt != null &&
+        Date.now() - lastSessionActivityAt > sessionStartGraceMs
+      ) {
+        return [
+          { runId, workflow, restartReason: "workflow-no-running-session" },
+        ];
+      }
+      return [];
+    });
+  } catch {
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
 function activeTaskWorkerSessionRow(
   taskId: string,
 ): Record<string, unknown> | null {
@@ -1328,6 +1583,21 @@ function activeLeafTasks(): TaskNode[] {
   );
 }
 
+function activeTaskQueuedAssignmentMatches(task: TaskNode): boolean {
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  if (!taskId) return false;
+  const attemptId =
+    typeof task.trace?.current_attempt_id === "string"
+      ? task.trace.current_attempt_id.trim()
+      : "";
+  if (!attemptId) return false;
+  return peekTaskAssignments(taskTreeConfig({ appDir: effectiveAppDir, projectDir }))
+    .some(
+      (assignment) =>
+        assignment.taskId === taskId && assignment.attemptId === attemptId,
+    );
+}
+
 function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   const trace = task.trace ?? {};
   const candidates = [
@@ -1442,10 +1712,20 @@ function activeTaskRestartReason(task: TaskNode): string | null {
   }
 
   if (!sessionId) {
-    return activeTaskIsWithinStartGrace(task) ? null : "missing-session";
+    if (
+      activeTaskIsWithinStartGrace(task) ||
+      activeTaskQueuedAssignmentMatches(task)
+    ) {
+      return null;
+    }
+    return "missing-session";
   }
   const reason = sessionRestartReason(sessionId);
-  if (reason === "session-not-running" && activeTaskIsWithinStartGrace(task)) {
+  if (
+    reason === "session-not-running" &&
+    (activeTaskIsWithinStartGrace(task) ||
+      activeTaskQueuedAssignmentMatches(task))
+  ) {
     return null;
   }
   if (
@@ -1672,12 +1952,27 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     tasks.activeRunning > 0
       ? tasks.activeRunning
       : Math.max(0, tasks.active - tasks.activeStale);
+  const blockedActionability = blockedFrontierActionability();
 
   const values: Record<string, () => MetricSampleOutput> = {
     "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
     "aks-rp-e2e.task.active-count": () => ({ value: tasks.active }),
     "aks-rp-e2e.task.stale-active-count": () => ({ value: tasks.activeStale }),
     "aks-rp-e2e.task.blocked-count": () => ({ value: tasks.blocked }),
+    "aks-rp-e2e.task.blocked-actionable-count": () => ({
+      value: blockedActionability.actionableCount,
+      sampleSize: blockedActionability.actionableWarningTaskIds.length,
+      note: JSON.stringify({
+        blockedLeafCount: blockedActionability.blockedLeafCount,
+        durableExactHolderCount: blockedActionability.durableExactHolderCount,
+        actionableWarningTaskIds:
+          blockedActionability.actionableWarningTaskIds,
+        repeatedBlockerGroupKeys:
+          blockedActionability.repeatedBlockerGroupKeys,
+        motionStarved: blockedActionability.motionStarved,
+        parentGroups: blockedActionability.parentGroups,
+      }),
+    }),
     "aks-rp-e2e.task.completed-24h": () => ({ value: tasks.completed24h }),
     "aks-rp-e2e.task.no-work-with-gaps": () => ({
       value:
@@ -1713,17 +2008,20 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     }),
     "aks-rp-e2e.process.unowned-work-count": () => {
       const staleActiveTasks = staleActiveTaskDetails();
+      const staleWorkflowRuns = staleRunningWorkflowRunDetails();
       const assignmentMismatches =
         openTaskAssignmentStateMismatchDetails(loadTaskTree());
       const value = tasks.projectClosed
         ? 0
         : staleActiveTasks.length +
+          staleWorkflowRuns.length +
           assignmentMismatches.length +
           specRecovery.recoveryUnowned;
       return {
         value,
         sampleSize:
           staleActiveTasks.length +
+          staleWorkflowRuns.length +
           assignmentMismatches.length +
           specRecovery.recoveryUnownedSpecIds.length,
         note: JSON.stringify({
@@ -1734,6 +2032,7 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
             sessionId: task.sessionId,
             restartReason: task.restartReason,
           })),
+          staleWorkflowRuns,
           assignmentMismatchKeys: assignmentMismatches.map(
             (mismatch) => mismatch.correlationKey,
           ),

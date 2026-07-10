@@ -40,6 +40,7 @@ import {
   orderedPendingSpecIds,
   safeTaskIdForSpec,
   saveSpecLoopState,
+  featureSetPrioritySpecIds,
   type SpecLoopState,
   updateSpecLoopSpec,
 } from "./lib/spec-loop-store.ts";
@@ -2163,6 +2164,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const pipelineName = pipelineNameContext(loopTask, "ado-pipeline-467665");
   const target = stringContext(loopTask, "target", "staging");
   const branch = stringContext(loopTask, "branch", "dev");
+  const priorityFeatureSet = stringContext(
+    loopTask,
+    "priorityFeatureSet",
+    "dev-infra-core",
+  );
+  const prioritySpecIds = featureSetPrioritySpecIds(
+    projectDir,
+    priorityFeatureSet,
+  );
   const timeoutMinutes = String(numberContext(loopTask, "timeoutMinutes", 60));
   const maxDirectAttemptsPerSpec = numberContext(
     loopTask,
@@ -2183,6 +2193,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     loopTaskId: loopTask.id,
     windowSize,
     statePath: stateRef.startsWith("/") ? stateRef : join(appDir, stateRef),
+    prioritySpecIds,
   });
   const projectStatePath = join(
     projectDir,
@@ -2410,6 +2421,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         adoPipeline: pipelineName,
         target,
         branch,
+        priorityFeatureSet,
         timeoutMinutes,
         stateRef,
         loopTaskId: loopTask.id,
@@ -2585,7 +2597,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Target running spec workflows: ${targetRunning}.`,
     `Active Azure DevOps pipeline runs: ${activePipelineRuns}/${pipelineActiveRunLimit}.`,
     `Max direct attempts per spec: ${maxDirectAttemptsPerSpec}.`,
-    `Priority specs from dev-infra-core: ${state.prioritySpecIds.length}.`,
+    `Priority specs from ${priorityFeatureSet}: ${state.prioritySpecIds.length}.`,
   ]
     .filter(Boolean)
     .join(" ");

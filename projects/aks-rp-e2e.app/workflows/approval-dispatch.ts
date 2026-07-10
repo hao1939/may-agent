@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
   resolveTaskTreePath,
@@ -82,6 +82,46 @@ function appendDispatchRun(
       ...entry,
     })}\n`,
   );
+}
+
+function approvalDispatchLedgerPath(appDir: string): string {
+  return join(appDir, ".state", "approval-dispatch-runs.jsonl");
+}
+
+function hasPriorDispatchForCorrelation(input: {
+  appDir: string;
+  correlationKey: string;
+}): boolean {
+  const path = approvalDispatchLedgerPath(input.appDir);
+  if (!existsSync(path)) return false;
+
+  try {
+    const lines = readFileSync(path, "utf8").trim().split("\n");
+    for (let index = lines.length - 1; index >= 0; index -= 1) {
+      const line = lines[index]?.trim();
+      if (!line) continue;
+      try {
+        const parsed = JSON.parse(line) as {
+          workflow?: unknown;
+          result?: unknown;
+          correlationKey?: unknown;
+        };
+        if (
+          parsed.workflow === "approval-dispatch" &&
+          parsed.correlationKey === input.correlationKey &&
+          parsed.result === "message.created"
+        ) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -185,11 +225,33 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
+  if (
+    hasPriorDispatchForCorrelation({
+      appDir,
+      correlationKey,
+    })
+  ) {
+    appendDispatchRun(appDir, {
+      result: "duplicate-suppressed",
+      packetPath: repoPacketPath,
+      packetAbsolutePath: absolutePacketPath,
+      pathId,
+      requestedAction,
+      correlationKey,
+      duplicateReason:
+        "prior approval-dispatch ledger row already emitted message.created for this correlationKey",
+    });
+    return ctx.done(
+      `Approval dispatch suppressed duplicate message.created for ${pathId} using ${repoPacketPath}.`,
+    );
+  }
+
   const approvalId = explicitApprovalId || correlationKey;
   const waitId = explicitWaitId || `wait:${correlationKey}`;
   const expectedResponse = {
     type: "project.approval.submitted",
     target: { project: "aks-rp-e2e" },
+    approvalKind: "approval-packet-dispatch",
     approvalId,
     waitId,
     pathId,
@@ -198,6 +260,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   };
   const resumeCondition =
     "Resume the linked wait when project.approval.submitted carries this approvalId or waitId with a bounded decision.";
+  const approval = {
+    kind: "approval-packet-dispatch",
+    approvalId,
+    waitId,
+    pathId,
+    packetPath: repoPacketPath,
+    question: `Review the approval packet for ${pathId} and choose one bounded decision.`,
+    options: [
+      {
+        id: "approve",
+        label: "Approve",
+        effect: "Accept the exact requested action and let planner/app-ops continue.",
+      },
+      {
+        id: "adjust",
+        label: "Adjust",
+        effect:
+          "Accept the request with bounded changes; planner/app-ops must use the returned adjustments.",
+      },
+      {
+        id: "hold",
+        label: "Hold",
+        effect:
+          "Keep the linked wait blocked for now while preserving the same approval lineage.",
+      },
+      {
+        id: "decline",
+        label: "Decline",
+        effect:
+          "Reject the current ask so planner/app-ops can record the exact terminal or replacement reason.",
+      },
+      {
+        id: "reroute",
+        label: "Reroute",
+        effect:
+          "Return the exact replacement owner/surface that should take over this approval lineage.",
+      },
+    ],
+    directEvent: {
+      type: "project.approval.submitted",
+      project: "aks-rp-e2e",
+      projectPath: "projects/aks-rp-e2e.app",
+      approvalKind: "approval-packet-dispatch",
+      approvalId,
+      waitId,
+      pathId,
+      packetPath: repoPacketPath,
+    },
+  };
 
   const content = [
     "AKS RP E2E approval packet dispatch",
@@ -211,7 +322,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     summary ? "" : "",
     summary ? `Context: ${truncate(summary, 1200)}` : "",
     "",
-    `Please review the exact packet at ${repoPacketPath} and reply through the normal human/operator channel if action is approved or adjusted.`,
+    "Reply to this notification with one bounded decision: approve, adjust <changes>, hold, decline, or reroute.",
+    "That reply should emit project.approval.submitted carrying the approval id or wait id above.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -221,14 +333,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       target: { project: "aks-rp-e2e", human: true },
       from: sender,
       to: target,
+      content,
+      priority: "P2",
       intent: "approval-packet-dispatch",
       project: "aks-rp-e2e",
       projectId: "projects/aks-rp-e2e.app",
       domainProjectId: "aks-rp-e2e",
       projectPath: "projects/aks-rp-e2e.app",
-      priority: "P2",
       reason,
       requestedAction,
+      approval,
       approvalId,
       waitId,
       correlationKey,
@@ -238,7 +352,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       expectedResponse,
       resumeCondition,
       summary: truncate(summary, 3000),
-      content,
       evidence: {
         packetPath: repoPacketPath,
         packetAbsolutePath: absolutePacketPath,

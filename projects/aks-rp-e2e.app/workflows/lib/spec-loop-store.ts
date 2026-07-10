@@ -294,15 +294,30 @@ function applyCatalogDisposition(
       };
 }
 
-export function devInfraCorePrioritySpecIds(projectDir: string): string[] {
+export function featureSetPrioritySpecIds(
+  projectDir: string,
+  featureSet: string,
+): string[] {
+  const safeFeatureSet = featureSet
+    .trim()
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!safeFeatureSet) return [];
+  const ciFeatureSetPath = join(
+    projectDir,
+    "ci",
+    "feature-sets",
+    `${safeFeatureSet}.txt`,
+  );
+  const legacyFeatureSetPath = join(
+    projectDir,
+    ".github",
+    "workflows",
+    "feature-sets",
+    `${safeFeatureSet}.txt`,
+  );
   const selectors = selectorsFromFeatureSet(
-    join(
-      projectDir,
-      ".github",
-      "workflows",
-      "feature-sets",
-      "dev-infra-core.txt",
-    ),
+    existsSync(ciFeatureSetPath) ? ciFeatureSetPath : legacyFeatureSetPath,
   );
   const specs = loadSpecs(projectDir);
   const byId = new Map(specs.map((spec) => [spec.id, spec]));
@@ -321,12 +336,17 @@ export function devInfraCorePrioritySpecIds(projectDir: string): string[] {
   return [...new Set(ordered)];
 }
 
+export function devInfraCorePrioritySpecIds(projectDir: string): string[] {
+  return featureSetPrioritySpecIds(projectDir, "dev-infra-core");
+}
+
 export function loadSpecLoopState(input: {
   appDir: string;
   projectDir: string;
   loopTaskId: string;
   windowSize: number;
   statePath?: string;
+  prioritySpecIds?: string[];
 }): { state: SpecLoopState; path: string; created: boolean } {
   const path = input.statePath ?? defaultSpecLoopStatePath(input.appDir);
   const now = new Date().toISOString();
@@ -342,7 +362,8 @@ export function loadSpecLoopState(input: {
     });
     state.loopTaskId ||= input.loopTaskId;
     state.windowSize ||= input.windowSize;
-    state.prioritySpecIds = devInfraCorePrioritySpecIds(input.projectDir);
+    state.prioritySpecIds =
+      input.prioritySpecIds ?? devInfraCorePrioritySpecIds(input.projectDir);
     state.specs ||= {};
     for (const specId of Object.keys(state.specs)) {
       if (!specsById.has(specId)) delete state.specs[specId];
@@ -386,7 +407,8 @@ export function loadSpecLoopState(input: {
     return { state, path, created: false };
   }
 
-  const prioritySpecIds = devInfraCorePrioritySpecIds(input.projectDir);
+  const prioritySpecIds =
+    input.prioritySpecIds ?? devInfraCorePrioritySpecIds(input.projectDir);
   const specs: Record<string, SpecLoopSpecState> = {};
   for (const spec of loadSpecs(input.projectDir)) {
     specs[spec.id] = applyCatalogDisposition(

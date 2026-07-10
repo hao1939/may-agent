@@ -198,6 +198,42 @@ function writeProjectTaskPair(
   db.close();
 }
 
+function writeWorkflowRun(
+  dbPath: string,
+  input: {
+    runId: string;
+    workflow: string;
+    status: "running" | "done" | "error";
+    startedAt: number;
+    task?: string;
+    projectId?: string;
+  },
+) {
+  const db = new Database(dbPath);
+  db.exec(`
+    create table if not exists workflow_runs (
+      runId text primary key,
+      workflow text not null,
+      task text,
+      status text not null,
+      startedAt integer not null,
+      endedAt integer,
+      projectId text
+    )
+  `);
+  db.query(
+    "insert into workflow_runs (runId, workflow, task, status, startedAt, projectId) values (?, ?, ?, ?, ?, ?)",
+  ).run(
+    input.runId,
+    input.workflow,
+    input.task ?? null,
+    input.status,
+    input.startedAt,
+    input.projectId ?? "aks-rp-e2e",
+  );
+  db.close();
+}
+
 async function metricValue(
   fixture: Awaited<ReturnType<typeof makeFixture>>,
   metricId: string,
@@ -319,6 +355,108 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("counts a running workflow row that never started a session as unowned process work", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_not_started_yet",
+      trace: {
+        assigned_at: new Date().toISOString(),
+      },
+    });
+    writeWorkflowRun(fixture.dbPath, {
+      runId: "wr_orphan",
+      workflow: "task-worker",
+      status: "running",
+      startedAt: Date.now() - 60_000,
+    });
+
+    const raw = await metricValue(
+      fixture,
+      "aks-rp-e2e.process.unowned-work-count",
+      "--json",
+    );
+    const sample = JSON.parse(raw);
+    const note = JSON.parse(sample.note);
+
+    expect(sample.value).toBe(1);
+    expect(note.staleWorkflowRuns).toEqual([
+      {
+        runId: "wr_orphan",
+        workflow: "task-worker",
+        restartReason: "workflow-no-session",
+      },
+    ]);
+  });
+
+  test("does not count task-worker workflow rows without sessions when the assigned feature-compact planner still has healthy loop ownership", async () => {
+    const fixture = await makeFixture();
+    const attemptId = "a_compact-feature-example_20260710151520";
+    const assignedAt = new Date(Date.now() - 120_000).toISOString();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_compact-feature-example",
+      workflow: "feature-compact-planner",
+      context: {
+        featureKey: "example",
+      },
+      trace: {
+        current_attempt_id: attemptId,
+        assigned_at: assignedAt,
+      },
+    });
+    await writeFeatureCompactLoopState(fixture, {
+      example: {
+        status: "running",
+        taskId: "active-task",
+        activeAttemptId: attemptId,
+        activeTaskSessionId: "s_task_compact-feature-example",
+        activeWorkflowRunId: "28804755656",
+        heartbeatAt: new Date().toISOString(),
+      },
+    });
+    writeWorkflowRun(fixture.dbPath, {
+      runId: "wr_compact",
+      workflow: "task-worker",
+      status: "running",
+      startedAt: Date.now() - 120_000,
+      task: [
+        "app: /app/projects/aks-rp-e2e.app",
+        "project: /app/projects/aks-rp-e2e",
+        "source: /app/sources/aks-rp",
+        "maxAttempts: 1",
+        "maxConcurrent: 80",
+        "",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.task.assigned",
+          source: "agent:aks-explorer",
+          owner: "project:aks-rp-e2e",
+          target: { project: "aks-rp-e2e", taskId: "active-task" },
+          data: {
+            project: "aks-rp-e2e",
+            taskId: "active-task",
+            attemptId,
+            sessionId: "s_task_compact-feature-example",
+            worker: "aks-explorer",
+            assignedAt,
+          },
+        }),
+        "```",
+      ].join("\n"),
+    });
+
+    const raw = await metricValue(
+      fixture,
+      "aks-rp-e2e.process.unowned-work-count",
+      "--json",
+    );
+    const sample = JSON.parse(raw);
+    const note = JSON.parse(sample.note);
+
+    expect(sample.value).toBe(0);
+    expect(note.staleWorkflowRuns).toEqual([]);
+  });
+
   test("counts overdue blocked waits only when no active recovery references them", async () => {
     const overdueBlocker = {
       waiting_for: { type: "workflow.completed" },
@@ -326,6 +464,14 @@ describe("project metrics", () => {
       owner: "aks-explorer",
       resume_at: "2001-01-01T00:00:00.000Z",
       fallback_at: "2001-01-02T00:00:00.000Z",
+      fallback_action: "Recheck the workflow and create recovery work.",
+    };
+    const futureFallbackPastResumeBlocker = {
+      waiting_for: { type: "workflow.completed" },
+      resume_condition: "Resume when the named workflow completes.",
+      owner: "aks-explorer",
+      resume_at: "2001-01-01T00:00:00.000Z",
+      fallback_at: "2999-01-02T00:00:00.000Z",
       fallback_action: "Recheck the workflow and create recovery work.",
     };
 
@@ -482,6 +628,34 @@ describe("project metrics", () => {
     expect(
       await metricValue(
         scopedAudit,
+        "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+      ),
+    ).toBe("0");
+
+    const notYetOverdue = await makeFixture();
+    await writeTree(
+      notYetOverdue.appDir,
+      { goal: "Unrelated active work." },
+      {
+        "blocked-agent-wait": {
+          id: "blocked-agent-wait",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for workflow result.",
+          blocker: futureFallbackPastResumeBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        notYetOverdue,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      ),
+    ).toBe("0");
+    expect(
+      await metricValue(
+        notYetOverdue,
         "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
       ),
     ).toBe("0");
@@ -1353,6 +1527,38 @@ describe("project metrics", () => {
     ).toBe("1");
   });
 
+  test("does not count freshly queued active assignments as unowned stale-active work", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_active-task",
+      trace: {
+        current_attempt_id: "a_active-task_1",
+        assigned_at: "2026-07-03T12:05:00.000Z",
+      },
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "task-assignments.jsonl"),
+      `${JSON.stringify({
+        taskId: "active-task",
+        task_id: "active-task",
+        attemptId: "a_active-task_1",
+        attempt_id: "a_active-task_1",
+        sessionId: "s_task_active-task",
+        session_id: "s_task_active-task",
+        worker: "app-ops",
+        assignedAt: "2026-07-03T12:05:00.000Z",
+        assigned_at: "2026-07-03T12:05:00.000Z",
+      })}\n`,
+    );
+
+    expect(await metricValue(fixture, "aks-rp-e2e.task.stale-active-count")).toBe(
+      "0",
+    );
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
+    ).toBe("0");
+  });
+
   test("emits contributor details for unowned-work-count in json mode and metrics-snapshot records them", async () => {
     const fixture = await makeFixture();
     await writeTree(
@@ -1811,6 +2017,74 @@ describe("project metrics", () => {
     expect(await metricValue(fixture, "aks-rp-e2e.task.blocked-count")).toBe(
       "25",
     );
+  });
+
+  test("blocked actionable metric suppresses represented holders and reports planner warning families", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "represented-frontier": {
+          id: "represented-frontier",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal:
+            "Preserve one split-frontier holder represented by exact downstream carriers until one represented blocker materially changes.",
+          kind: "domain_leaf",
+          blocker:
+            "This holder is represented by exact carriers and remains blocked only while the represented frontier is unchanged.",
+        },
+        "response-await-no-send": {
+          id: "response-await-no-send",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal:
+            "Wait for owner/operator reply on the exact source-holder response while no durable proof-of-send exists yet.",
+          kind: "domain_leaf",
+          blocker:
+            "Blocked pending owner/operator reply with no durable proof-of-send/handoff yet.",
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    const sample = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.task.blocked-actionable-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+
+    expect(sample.value).toBe(1);
+    expect(sample.sampleSize).toBe(1);
+    expect(JSON.parse(sample.note ?? "{}")).toMatchObject({
+      blockedLeafCount: 2,
+      durableExactHolderCount: 1,
+      actionableWarningTaskIds: ["response-await-no-send"],
+      repeatedBlockerGroupKeys: [],
+      motionStarved: false,
+      parentGroups: [
+        {
+          parentId: "project",
+          blockedLeafCount: 2,
+          sampleBlockedLeafIds: ["represented-frontier", "response-await-no-send"],
+        },
+      ],
+    });
   });
 
   test("blocked contract metrics flag parked blocked leaves without owner, resume, or fallback", async () => {

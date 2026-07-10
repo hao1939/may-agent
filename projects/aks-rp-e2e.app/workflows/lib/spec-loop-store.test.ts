@@ -3,7 +3,12 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { bindKnownWorkflowRun, loadSpecLoopState } from "./spec-loop-store.ts";
+import {
+  bindKnownWorkflowRun,
+  loadSpecLoopState,
+  saveSpecLoopState,
+  updateSpecLoopSpec,
+} from "./spec-loop-store.ts";
 
 describe("spec-loop-store", () => {
   test("reconciles existing state with the current spec catalog", async () => {
@@ -241,6 +246,66 @@ describe("spec-loop-store", () => {
       lastRunUrl: "https://github.com/example/repo/actions/runs/123",
       lastWorkflowLoopKey: "verify-spec-a-a_verify-spec-a_20260630",
       lastDispatchMetadataPath: "/tmp/spec-a-dispatch.json",
+    });
+  });
+
+  test("saveSpecLoopState persists taskId-only rebinds performed through updateSpecLoopSpec", async () => {
+    const root = await mkdtemp(join(tmpdir(), "spec-loop-store-"));
+    const projectDir = join(root, "project");
+    const appDir = join(root, "app");
+    const statePath = join(appDir, ".state", "spec-loop", "state.json");
+
+    await mkdir(join(projectDir, "specs"), { recursive: true });
+    await mkdir(join(projectDir, ".github", "workflows", "feature-sets"), {
+      recursive: true,
+    });
+    await mkdir(join(appDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      `${JSON.stringify({ specFiles: ["a.json"] }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "a.json"),
+      `${JSON.stringify({ id: "spec.a" }, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+
+    const { state } = loadSpecLoopState({
+      appDir,
+      projectDir,
+      loopTaskId: "aks-spec-verification-loop",
+      windowSize: 5,
+      statePath,
+    });
+
+    updateSpecLoopSpec(state, "spec.a", {
+      taskId: "wait-spec-a-current-owner-return",
+    });
+    saveSpecLoopState(statePath, state);
+
+    const reloaded = loadSpecLoopState({
+      appDir,
+      projectDir,
+      loopTaskId: "aks-spec-verification-loop",
+      windowSize: 5,
+      statePath,
+    }).state;
+
+    expect(reloaded.specs["spec.a"]).toMatchObject({
+      taskId: "wait-spec-a-current-owner-return",
+      status: "pending",
     });
   });
 });

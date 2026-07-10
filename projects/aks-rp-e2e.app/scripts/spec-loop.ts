@@ -11,6 +11,8 @@ import {
   defaultSpecLoopStatePath,
   devInfraCorePrioritySpecIds,
   loadSpecs,
+  saveSpecLoopState,
+  updateSpecLoopSpec,
   type SpecLoopState,
 } from "../workflows/lib/spec-loop-store.ts";
 
@@ -20,6 +22,7 @@ function usage(): never {
   console.error(`Usage:
   bun run spec-loop status
   bun run spec-loop seed
+  bun run spec-loop bind-task <spec-id> --task-id <task-id> [--state-path <path>] [--allow-missing-task]
 
 Environment:
   APP_DIR=/app/projects/aks-rp-e2e.app
@@ -35,8 +38,29 @@ function readJson<T>(path: string): T | null {
   }
 }
 
+function option(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return undefined;
+  return process.argv[index + 1];
+}
+
+function hasFlag(name: string): boolean {
+  return process.argv.includes(name);
+}
+
 function taskStatus(task: { state?: string; status?: string } | undefined) {
   return String(task?.status ?? task?.state ?? "");
+}
+
+function taskExists(taskId: string): { durable: boolean; runtime: boolean } {
+  const tree = readTaskTree(config);
+  const runtimeTask = tree.tasks?.[taskId];
+  return {
+    durable: Boolean(readTask(config, taskId)),
+    runtime:
+      Boolean(runtimeTask) ||
+      Object.values(tree.tasks ?? {}).some((task) => task.id === taskId),
+  };
 }
 
 const appDir = resolve(
@@ -140,6 +164,43 @@ if (command === "seed") {
         totalSpecs: specs.length,
         devInfraCorePrioritySpecs: prioritySpecIds.length,
         stateCounts: counts,
+      },
+      null,
+      2,
+    ),
+  );
+} else if (command === "bind-task") {
+  const specId = process.argv[3];
+  const taskId = option("--task-id");
+  if (!specId || !taskId) usage();
+
+  const statePath = resolve(option("--state-path") ?? defaultSpecLoopStatePath(appDir));
+  const state = readJson<SpecLoopState>(statePath);
+  if (!state?.specs || !state.specs[specId]) {
+    throw new Error(`Spec ${specId} not found in spec loop state: ${statePath}`);
+  }
+
+  const existence = taskExists(taskId);
+  if (!hasFlag("--allow-missing-task") && !existence.durable && !existence.runtime) {
+    throw new Error(
+      `Task ${taskId} does not exist in durable or runtime task trees; create/publish the successor before rebinding ${specId}`,
+    );
+  }
+
+  const beforeTaskId = state.specs[specId]?.taskId ?? null;
+  updateSpecLoopSpec(state, specId, { taskId });
+  saveSpecLoopState(statePath, state);
+  const after = readJson<SpecLoopState>(statePath)?.specs?.[specId];
+
+  console.log(
+    JSON.stringify(
+      {
+        command: "bind-task",
+        specId,
+        statePath,
+        beforeTaskId,
+        afterTaskId: after?.taskId ?? null,
+        taskExists: existence,
       },
       null,
       2,

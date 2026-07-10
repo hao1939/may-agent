@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-07-10T14:59:30Z",
+  "updated_at": "2026-07-10T16:54:06Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "compact-feature-cluster-autoscaler",
@@ -257,8 +257,8 @@
         "current_focus_proposal": {
           "id": "focus-bounded-compact-publication-and-blocker-truth-20260710",
           "status": "needs_approval",
-          "reviewed_at": "2026-07-10T15:06:52Z",
-          "reason": "Regular focus review found the current focus branch materially stale again within the same planning window. The exact frontier is now three active compact publication leaves, one runners accounting/next-batch leaf, one shared auth-capable runtime fallback bundle, and four review leaves; there are no runnable leaves and live execution remains idle. The next 12-24h mission should therefore center on bounded repo-local compact/spec convergence, exact review closure, and shared execution-surface unblock packets rather than the earlier four-compact-plus-runnable-followups frame."
+          "reviewed_at": "2026-07-10T17:27:00Z",
+          "reason": "Regular focus review found the current focus proposal materially stale relative to the latest packet. The exact frontier is now five active leaves and one review leaf: three compact publication leaves, one aks-explorer secops-fips request-shape repair leaf, one app-ops overdue egress-lockdown coverage repair leaf, and one traffic-applink overdue-coverage review leaf, while runnable remains empty and 24h live execution remains at zero starts and zero successes. The next 12-24h mission should therefore narrow to bounded compact publication, exact blocked-family coverage repair, and review closure rather than broad repo-local repair waves or renewed live execution." 
         }
       },
       "trace": {
@@ -10204,67 +10204,64 @@
       "kind": "focus_plan",
       "priority": "P1",
       "owner": "aks-explorer",
-      "goal": "Proposed next 12-24h focus: keep the project on bounded repo-local compact/spec convergence and exact review closure instead of live execution. Drive the currently active compact publication leaves (cluster-autoscaler, net-integration, rp-nodepool-lifecycle), close the four review leaves into exact evidence/state outcomes, keep the runners accounting plus next-batch planning truthful, and advance the shared auth-capable runtime fallback bundle so blocked execution surfaces have one clear next owner packet.",
+      "goal": "Proposed next 12-24h focus: keep the project on bounded repo-local compact publication, exact blocked-family coverage repair, and one remaining review closure instead of broad repair waves or live execution. Drive the three active compact publication leaves (cluster-autoscaler, net-integration, rp-nodepool-lifecycle), the active aks-explorer secops-fips shared-cluster request-shape repair, the active app-ops overdue egress-lockdown FIPS UDR coverage repair, and the single traffic-applink overdue-coverage review leaf to exact evidence/state outcomes.",
       "acceptance": [
-        "The focus branch remains the single readable 12-24h mission and now matches the current frontier: three active compact publication leaves, one active runners accounting/next-batch leaf, one active shared-runtime fallback bundle, and four review leaves with no runnable residue invented by planning drift.",
+        "The focus branch remains the single readable 12-24h mission and now matches the current frontier: five active leaves and one review leaf, with runnable and waiting both empty.",
         "cluster-autoscaler, net-integration, and rp-nodepool-lifecycle compact work each ends in one truthful outcome: publishable repo-local slice, exact unchanged-rerun hold, or bounded repair successor with cited evidence.",
-        "The review leaves for compact package-partial reconciliation, LocalDNS pending reconciliation, net-integration pending reconciliation, and rp-cluster-lifecycle compact partial frontier each end in exact evidence and aligned state surfaces without reopening blind live reruns from focus maintenance alone.",
-        "Runners accounting and shared auth-capable runtime fallback work leave one exact next execution surface decision per family, while live-started-24h and live-succeeded-24h remain 0 unless a separately approved gate opens."
+        "The secops-fips shared-cluster request-shape repair and overdue egress-lockdown FIPS UDR coverage repair each end in exact evidence and aligned state surfaces without reopening blind live reruns from focus maintenance alone.",
+        "The traffic-applink overdue-coverage review leaf moves to exact closure or truthful bounded follow-up, while live-started-24h and live-succeeded-24h remain 0 unless a separately approved gate opens."
       ],
       "context": {
-        "horizon": "12-24h from 2026-07-10T15:06:52Z",
+        "horizon": "12-24h from 2026-07-10T17:27:00Z",
         "success_criteria": [
           "The three active compact features either land as coherent publishable repo-local slices or resolve to one exact holder/escalation each; no broad compact rerun wave is reopened just to keep workers busy.",
-          "Review/frontier closure stays exact: compact package-partial, LocalDNS pending, net-integration pending, and rp-cluster-lifecycle partial-review leaves each produce precise blocker/evidence/state updates rather than blind reruns.",
-          "Runners coverage accounting is corrected into one truthful next-batch or blocker packet, and the shared auth-capable runtime fallback bundle clarifies whether one returned helper/runtime can unblock both Azure DevOps and GitHub dependent families.",
-          "Task-tree durable focus, project context, and runtime readout all agree that the next owner loop is bounded compact/spec/model convergence plus execution-surface unblock packets, not live execution expansion."
+          "The secops-fips repair leaf, overdue egress-lockdown coverage leaf, and traffic-applink review leaf each produce precise blocker/evidence/state updates rather than blind reruns, keeping the spec-verification and blocker-truth surfaces current.",
+          "Task-tree durable focus, project context, and runtime readout all agree that the next owner loop is bounded compact/spec/model convergence plus blocked-family coverage repair, not live execution expansion."
         ],
         "progress_review": {
-          "last_reviewed_at": "2026-07-10T15:06:52Z",
+          "last_reviewed_at": "2026-07-10T17:27:00Z",
           "status": "needs_approval",
-          "summary": "The current focus branch is materially stale relative to the latest packet. The present frontier shows three active compact leaves, one active runners accounting leaf, one active shared-runtime fallback bundle, and four review leaves, with no runnable leaves and 24h live execution still at zero starts and zero successes. The truthful next 12-24h mission is therefore bounded compact/spec convergence, exact review closure, and unblock-packet preparation rather than the earlier broader active-plus-runnable frame.",
+          "summary": "The current focus branch needed a material truth refresh. The latest task-tree summary shows only five active leaves and one review leaf, with no runnable leaves and 24h live execution still at zero starts and zero successes. The truthful next 12-24h mission is therefore narrower: bounded compact publication, exact blocked-family coverage repair, and review closure rather than broad repo-local repair waves or live execution recovery.",
           "evidence": [
-            "2026-07-10 task-tree packet shows active_task_ids = compact-feature-cluster-autoscaler, compact-feature-net-integration, compact-feature-rp-nodepool-lifecycle, domain/reconcile-runners-feature-set-coverage-20260710, and ops/prepare-shared-auth-capable-runtime-fallback-bundle-20260710 with tree_counts active=8, review=4, blocked=145, needs_approval=1, done=1.",
-            "2026-07-10 task-tree packet frontier shows runnable = [], active = aks-feature-compact-loop, aks-spec-verification-loop, the three compact leaves, the runners accounting leaf, and the shared auth-capable runtime fallback bundle; review = reconcile-compact-loop-package-partial, reconcile-spec-loop-pending-localdns, reconcile-spec-loop-pending-net-integration, and hold-compact-rp-cluster-lifecycle-package-partial-frontier.",
-            "2026-07-10 metrics sampling shows completed-24h=322, live-started-24h=0, live-succeeded-24h=0, spec-unverified-count=0, spec-failed-count=0, and model-unknown-path-count=70, so recent motion is repo-local convergence and blocker maintenance rather than live verification.",
-            "2026-07-10 bun run status -- --json reports zero structural coverage gaps (pathsWithoutSpec=0, pathsWithoutEvidence=0, featuresWithoutPaths=0), which means the next pressure is on bounded compact/spec/model closure and exact execution-surface clarification rather than rebuilding missing scaffolding.",
-            "2026-07-10 git status --short remains concentrated in compact artifacts, selected spec files, and knowledge-map views, supporting a publishable-slice/hygiene focus rather than a new live-execution envelope."
+            "2026-07-10 bun run task-tree summary showed active_task_ids = compact-feature-cluster-autoscaler, compact-feature-net-integration, compact-feature-rp-nodepool-lifecycle, domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710, and ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710.",
+            "2026-07-10 bun run task-tree frontier showed runnable=[], waiting=[], active=[aks-feature-compact-loop, aks-spec-verification-loop, compact-feature-cluster-autoscaler, compact-feature-net-integration, compact-feature-rp-nodepool-lifecycle, domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710, ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710], review=[ops/restore-overdue-traffic-applink-superseded-lineage-coverage-20260710].",
+            "2026-07-10 task-tree summary counts showed active=8 including controller roots, review=1, blocked=137, needs_approval=1, done=3, while runnable remained empty, so the meaningful owner loop is exact active/review closure rather than dispatching fresh execution leaves.",
+            "2026-07-10 metrics sampling showed task.completed-24h=373, live-started-24h=0, live-succeeded-24h=0, spec.unverified-count=0, spec.failed-count=0, and model.unknown-path-count=70, so recent motion is repo-local convergence and blocker maintenance rather than live verification.",
+            "2026-07-10 bun run status -- --json reported zero structural coverage gaps (pathsWithoutSpec=0, pathsWithoutEvidence=0, featuresWithoutPaths=0), and git status --short remained concentrated in compact artifacts, selected spec/test/replay files, and knowledge-map views, supporting a publishable-slice/hygiene focus rather than a new live-execution envelope."
           ]
         },
         "allowed_risk": "Allow only exact task-tree/frontier reconciliation, blocker sharpening, repo-local compact/spec/model publication work, and owner-loop routing inside existing approved execution gates. Do not run live tests or reopen broad rerun waves from focus maintenance alone.",
         "needs_approval": true,
         "observations": {
-          "focus_reason": "The prior focus proposal is stale because the latest packet no longer has runnable leaves and now includes shared auth-capable runtime fallback work plus runners accounting in the active set, while rp-cluster-lifecycle appears as a review holder rather than an active compact publication leaf.",
-          "what_changed_since_last_review": "The frontier collapsed from active-plus-runnable follow-through to active plus review only: three compact publications remain active, LocalDNS and net-integration pending work moved to review, rp-cluster-lifecycle is preserved as review, and a shared execution-surface fallback bundle is now active.",
-          "live_execution_value": "Still low at focus-review time. The sampled 24h window shows zero live starts and zero live successes, and this session is explicitly non-executional, so the focus should optimize publishability, exact blocker truth, and unblock packet clarity rather than force cloud runs.",
-          "blocker_shape": "Immediate blockers are a mix of repo-local publication coherence, exact review/state alignment, and shared external execution-surface waits. The highest-value work is truthful closure of active/review leaves and sharper unblock packets, not additional cloud dispatch.",
-          "parallel_work_filled": "Yes: three active compact features, one active runners accounting leaf, one active shared-runtime fallback bundle, and four review leaves provide a concrete bounded frontier for the normal owner loop.",
+          "focus_reason": "The visible focus branch still points at the right class of work, but its frontier description had become materially stale. The current packet is a smaller bounded queue: three compact publications, one aks-explorer secops-fips repair, one app-ops overdue-coverage repair, and one review leaf.",
+          "what_changed_since_last_review": "The earlier proposal overstated the frontier with five review leaves and several repair tracks that are no longer current. The latest packet narrows the owner loop to three compact publications, one secops-fips request-shape repair, one overdue egress-lockdown coverage repair, and one traffic-applink review closure.",
+          "live_execution_value": "Still low at focus-review time. The sampled 24h window shows zero live starts and zero live successes, and this session is explicitly non-executional, so the focus should optimize publishability, exact blocker truth, and review-state accuracy rather than force cloud runs.",
+          "blocker_shape": "Immediate blockers are now mostly repo-local publication coherence plus blocked-family coverage truth, with shared external execution-surface waits already represented elsewhere in the tree. The highest-value work is closure of the current compact, repair, and review leaves rather than new cloud dispatch.",
+          "parallel_work_filled": "Yes: five active leaves and one review leaf provide a concrete bounded frontier for the normal owner loop without introducing new execution risk.",
           "frontier_active_leaf_count": 5,
-          "frontier_review_leaf_count": 4,
+          "frontier_review_leaf_count": 1,
           "frontier_waiting_leaf_count": 0,
           "frontier_runnable_leaf_count": 0,
-          "frontier_blocked_leaf_count": 145,
+          "frontier_blocked_leaf_count": 137,
           "linked_active_task_ids": [
             "compact-feature-cluster-autoscaler",
             "compact-feature-net-integration",
             "compact-feature-rp-nodepool-lifecycle",
-            "domain/reconcile-runners-feature-set-coverage-20260710",
-            "ops/prepare-shared-auth-capable-runtime-fallback-bundle-20260710"
+            "domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710",
+            "ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710"
           ],
           "linked_review_task_ids": [
-            "reconcile-compact-loop-package-partial",
-            "reconcile-spec-loop-pending-localdns",
-            "reconcile-spec-loop-pending-net-integration",
-            "hold-compact-rp-cluster-lifecycle-package-partial-frontier"
+            "ops/restore-overdue-traffic-applink-superseded-lineage-coverage-20260710"
           ],
           "linked_runnable_task_ids": [],
           "linked_controller_root_ids": [
             "aks-feature-compact-loop",
-            "aks-spec-verification-loop"
+            "aks-spec-verification-loop",
+            "project"
           ],
-          "structural_status": "Current status output still reports zero structural coverage gaps; the mid-term focus should therefore stay on bounded compact/spec/model closure, review truthfulness, and execution-surface unblock packets rather than source/spec scaffolding expansion."
+          "structural_status": "Current status output still reports zero structural coverage gaps; the mid-term focus should therefore stay on bounded compact/spec/model closure and blocked-family coverage truthfulness rather than source/spec scaffolding expansion."
         },
-        "rollup_summary": "2026-07-10 focus review proposes a materially updated bounded mission: spend the next 12-24h on three active compact packages, four review closures, runners accounting, and the shared auth-capable runtime fallback bundle, while keeping live execution idle unless a separately approved gate changes that truth."
+        "rollup_summary": "2026-07-10 focus review refresh keeps one visible proposed branch and tightens it to the current exact frontier: five active leaves, one review leaf, no runnable queue, and live execution held idle unless a separately approved gate changes that truth."
       },
       "state": "needs_approval",
       "children": []
@@ -10274,8 +10271,11 @@
     "compact-feature-cluster-autoscaler",
     "compact-feature-net-integration",
     "compact-feature-rp-nodepool-lifecycle",
-    "domain/reconcile-runners-feature-set-coverage-20260710",
-    "ops/prepare-shared-auth-capable-runtime-fallback-bundle-20260710"
+    "domain-reconcile-net-integration-natgw-v2-byoip-prefix-state-alignment-20260710",
+    "ops-relink-cluster-autoscaler-compact-post-portability-successors-202607",
+    "ops-restore-windows-authoritative-holder-tree-state-20260710-followup",
+    "ops/escalate-egress-lockdown-fips-udr-prereq-proof-owner-ask-20260710",
+    "ops/repair-ado-sp-credential-env-contract-pipeline-467665-20260710"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {

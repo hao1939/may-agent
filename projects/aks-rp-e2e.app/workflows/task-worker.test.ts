@@ -1830,7 +1830,7 @@ FIX_FORWARD_RESULT:
     expect(calls).toBe(0);
   });
 
-  test("routes tasks with app workflow to that workflow", async () => {
+  test("routes app workflow tasks inline under the assigned task session", async () => {
     const projectDir = await makeProject();
     await writeFile(
       resolveTaskTreePath(projectDir),
@@ -1847,25 +1847,25 @@ FIX_FORWARD_RESULT:
             project: {
               id: "project",
               state: "backlog",
-              children: ["controller-task"],
+              children: ["collector-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
             },
-            "controller-task": {
-              id: "controller-task",
+            "collector-task": {
+              id: "collector-task",
               parent_id: "project",
               state: "backlog",
               status: "backlog",
-              workflow: "spec-loop-controller",
+              workflow: "feature-reference-collector",
               priority: "P1",
               children: [],
-              goal: "Pulse controller.",
+              goal: "Collect one feature reference packet.",
               inputs: [],
-              outputs: [".state/spec-loop/state.json"],
-              acceptance: ["Controller pulse completed"],
+              outputs: ["features/example/references.md"],
+              acceptance: ["Collector returns a structured result"],
               forbidden: [],
-              conflict_scope: ["controller"],
+              conflict_scope: ["feature:example"],
               depends_on: [],
             },
           },
@@ -1877,11 +1877,10 @@ FIX_FORWARD_RESULT:
     );
 
     const assignment = assignTask(config(projectDir), {
-      taskId: "controller-task",
+      taskId: "collector-task",
     });
-    let routedWorkflow = "";
-    let routedTask = "";
     let agentCalls = 0;
+    let workflowCalls = 0;
     const result = await execute({
       task: [
         `app: ${projectDir}`,
@@ -1899,18 +1898,28 @@ FIX_FORWARD_RESULT:
         agentCalls++;
         return { status: "success" };
       },
-      runWorkflow: async (workflow: string, task: string) => {
-        routedWorkflow = workflow;
-        routedTask = task;
-        return { status: "done", message: "controller pulse ok" };
+      runWorkflow: async () => {
+        workflowCalls++;
+        return { status: "done", message: "unexpected sub-workflow call" };
       },
       summarize: () => "",
     } as any);
 
     expect(result.status).toBe("done");
-    expect(routedWorkflow).toBe("spec-loop-controller");
-    expect(routedTask).toContain("## Task Workflow Route");
-    expect(routedTask).toContain("workflow: spec-loop-controller");
+    expect(result.message).toContain(
+      "routed inline to workflow feature-reference-collector under session s_task_collector-task",
+    );
     expect(agentCalls).toBe(0);
+    expect(workflowCalls).toBe(0);
+
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(updated.tasks["collector-task"].session_id).toBe(
+      "s_task_collector-task",
+    );
+    expect(updated.tasks["collector-task"].trace.last_worker_result).toBe(
+      "partial",
+    );
   });
 });

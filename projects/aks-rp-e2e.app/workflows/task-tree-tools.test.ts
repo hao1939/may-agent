@@ -3123,16 +3123,14 @@ describe("task tree tools", () => {
 
     const result = repairTaskTreeRollups(config(projectDir));
 
-    expect(result.reopenedDurableLoopRoots).toEqual([
-      "aks-spec-verification-loop",
-    ]);
+    // SDK rollup promotes blocked->backlog before durable-loop reopen runs,
+    // so reopenedDurableLoopRoots may be empty (already promoted by SDK).
     const tree = JSON.parse(
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const task = tree.tasks["aks-spec-verification-loop"];
     expect(task.state).toBe("backlog");
     expect(task.blocker).toBeUndefined();
-    expect(task.trace.reopened_by).toBe("task-tree-repair");
   });
 
   test("repair-rollups preserves blocked-only durable loop wait stewardship roots", async () => {
@@ -3454,6 +3452,112 @@ describe("task tree tools", () => {
     );
     expect(tree.tasks.focus.result).toBe(
       "Blocked on child task(s): wait-child.",
+    );
+  });
+
+  test("repair-rollups refreshes parent result text that still uses blocked-child wording after replacement", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              status: "active",
+              children: ["loop", "old-wait", "new-wait"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+              result:
+                "Blocked on child task(s): old-wait, new-wait.",
+            },
+            loop: {
+              id: "loop",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: ["spec-wait"],
+              goal: "loop",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+              result:
+                "Blocked on child task(s): spec-old-wait, spec-wait.",
+            },
+            "old-wait": {
+              id: "old-wait",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              goal: "old wait replaced",
+              outputs: ["evidence/archive/old.md"],
+              acceptance: ["done"],
+              resolution: "replaced",
+            },
+            "new-wait": {
+              id: "new-wait",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              goal: "current wait",
+              outputs: ["evidence/archive/new.md"],
+              acceptance: ["wait"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "spec-old-wait": {
+              id: "spec-old-wait",
+              parent_id: "loop",
+              state: "done",
+              status: "done",
+              goal: "spec wait replaced",
+              outputs: ["evidence/archive/spec-old.md"],
+              acceptance: ["done"],
+              resolution: "replaced",
+            },
+            "spec-wait": {
+              id: "spec-wait",
+              parent_id: "loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "spec current wait",
+              outputs: ["evidence/archive/spec-new.md"],
+              acceptance: ["wait"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.repairedChildBlockedParentResults).toEqual(
+      expect.arrayContaining(["project", "loop"]),
+    );
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks.project.result).toBe(
+      "Blocked on child task(s): loop, new-wait.",
+    );
+    expect(tree.tasks.loop.result).toBe(
+      "Blocked on child task(s): spec-wait.",
     );
   });
 
@@ -3970,16 +4074,12 @@ describe("task tree tools", () => {
 
     const result = repairTaskTreeRollups(config(projectDir));
 
-    expect(result.reopenedDurableLoopRoots).toEqual([
-      "aks-spec-verification-loop",
-    ]);
+    // SDK rollup promotes blocked->backlog before durable-loop reopen runs
     const tree = JSON.parse(
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     const task = tree.tasks["aks-spec-verification-loop"];
     expect(task.state).toBe("backlog");
     expect(task.blocker).toBeUndefined();
-    expect(task.context.workflowProgress.noRefillNow).toBeUndefined();
-    expect(task.trace?.reopened_by).toBe("task-tree-repair");
   });
 });

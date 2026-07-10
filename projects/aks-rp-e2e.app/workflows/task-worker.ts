@@ -26,8 +26,8 @@ export const name = "task-worker";
 export const description =
   "Route one assigned aks-rp-e2e task to its declared workflow or the default task worker.";
 
-type WorkflowRunnerContext = WorkflowContext & {
-  runWorkflow?: (name: string, task: string) => Promise<unknown>;
+type InlineWorkflowModule = {
+  execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
 };
 
 const DEFAULT_WORKFLOWS = new Set([
@@ -52,16 +52,35 @@ function workflowTaskPayload(input: {
   projectDir: string;
   sourceRoot: string;
   workflow: string;
+  assignedTaskId: string;
+  assignedAttemptId: string;
+  assignedSessionId: string;
 }): string {
   return [
     input.originalTask,
     "",
     `## Task Workflow Route`,
     `workflow: ${input.workflow}`,
+    `taskId: ${input.assignedTaskId}`,
+    `attemptId: ${input.assignedAttemptId}`,
+    `sessionId: ${input.assignedSessionId}`,
     `app: ${input.appDir}`,
     `project: ${input.projectDir}`,
     `source: ${input.sourceRoot}`,
   ].join("\n");
+}
+
+async function runWorkflowInline(
+  workflow: string,
+  ctx: WorkflowContext,
+): Promise<WorkflowResult> {
+  const module = (await import(`./${workflow}.ts`)) as InlineWorkflowModule;
+  if (!module || typeof module.execute !== "function") {
+    return ctx.blocked(
+      `Task workflow ${workflow} is missing an execute(ctx) export.`,
+    );
+  }
+  return module.execute(ctx);
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -93,6 +112,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       "Task assignment event ignored because it did not include taskId.",
     );
   }
+  const attemptId =
+    triggerString(trigger, "attemptId") ||
+    triggerString(trigger, "attempt_id") ||
+    "";
 
   const task = readTaskTree(config).tasks[taskId];
   if (!task) return ctx.done(`Assigned task ${taskId} was not found.`);
@@ -102,25 +125,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return executeDefaultTaskWorker(ctx);
   }
 
-  const runner = (ctx as WorkflowRunnerContext).runWorkflow;
-  if (!runner) {
-    return ctx.escalate(
-      `Task ${task.id} requires workflow ${workflow}, but runWorkflow is unavailable in this context.`,
-    );
-  }
-
-  const result = await runner(
+  const taskSessionId =
+    typeof task.session_id === "string" && task.session_id.trim()
+      ? task.session_id.trim()
+      : `s_task_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}`;
+  const routedTask = workflowTaskPayload({
+    originalTask: ctx.task,
+    appDir,
+    projectDir,
+    sourceRoot,
     workflow,
-    workflowTaskPayload({
-      originalTask: ctx.task,
-      appDir,
-      projectDir,
-      sourceRoot,
-      workflow,
-    }),
-  );
+    assignedTaskId: task.id,
+    assignedAttemptId: attemptId,
+    assignedSessionId: taskSessionId,
+  });
+
+  const result = await runWorkflowInline(workflow, {
+    ...ctx,
+    task: routedTask,
+  });
   return ctx.done(
-    `Task ${task.id} routed to workflow ${workflow}. Result: ${resultText(result)}`,
+    `Task ${task.id} routed inline to workflow ${workflow} under session ${taskSessionId}. Result: ${resultText(result)}`,
   );
 }
 

@@ -444,15 +444,26 @@ function childBlockedResultText(childIds: string[]): string {
   return `Blocked on child task(s): ${childIds.join(", ")}.`;
 }
 
+function usesChildBlockedResultText(task: TaskNode): boolean {
+  return (
+    typeof task.result === "string" &&
+    /^Blocked on child task\(s\):\s*/.test(task.result)
+  );
+}
+
 function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const repaired: string[] = [];
 
     for (const task of Object.values(tree.tasks)) {
-      if (nodeState(task) !== "blocked") continue;
       const blocker = blockerRecord(task);
-      if (blocker?.category !== "child-blocked") continue;
+      if (
+        blocker?.category !== "child-blocked" &&
+        !usesChildBlockedResultText(task)
+      ) {
+        continue;
+      }
 
       const blockedChildIds = normalizeStringArray(task.children).filter(
         (childId) => nodeState(tree.tasks[childId]) === "blocked",
@@ -471,7 +482,7 @@ function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
         kind: "child_blocked_parent_results_repaired",
         task_ids: repaired,
         reason:
-          "blocked parent result text refreshed from current blocked children",
+          "parent result text refreshed from current blocked children",
       });
     }
 

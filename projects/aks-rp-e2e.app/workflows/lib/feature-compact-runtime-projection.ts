@@ -17,7 +17,12 @@ type RuntimeProjectionTaskRepair = {
 
 type RuntimeProjectionStateRepair = {
   featureKey: string;
-  field: "waitingFor" | "taskId" | "frontierTaskIds";
+  field:
+    | "waitingFor"
+    | "taskId"
+    | "frontierTaskIds"
+    | "nextCheckAt"
+    | "fallbackAt";
   before: unknown;
   after: unknown;
   reason: string;
@@ -131,6 +136,69 @@ function featureWaitingForType(
     errorClass: feature.errorClass ?? "compact-error",
     reason: text,
   }).type as string;
+}
+
+function compactHolderWatchFields(task: TaskNode | undefined): {
+  nextCheckAt: string;
+  fallbackAt: string;
+} {
+  const blocker = recordValue(task?.blocker);
+  return {
+    nextCheckAt: stringValue(blocker?.next_check_at),
+    fallbackAt: stringValue(blocker?.fallback_at),
+  };
+}
+
+function taskIdSet(values: unknown): Set<string> {
+  const ids = new Set<string>();
+  if (!Array.isArray(values)) return ids;
+  for (const value of values) {
+    const id = stringValue(value);
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+function ownerDecisionWatchSourceTask(input: {
+  feature: FeatureCompactLoopState["features"][string];
+  liveTask: TaskNode;
+  tasks: Record<string, TaskNode>;
+}): TaskNode | null {
+  const desiredType = featureWaitingForType(input.feature);
+  if (desiredType !== "owner.decision") return null;
+
+  for (const taskId of taskIdSet(input.feature.frontierTaskIds)) {
+    const task = input.tasks[taskId];
+    if (!task || taskStatus(task) !== "blocked") continue;
+    const waitingForType = stringValue(blockerWaitingFor(task)?.type);
+    if (waitingForType === "owner.decision") return task;
+  }
+
+  const text = lowerText(
+    input.feature.blockedReason,
+    input.feature.resumeCondition,
+    input.feature.waitingCondition,
+    input.feature.ownerReason,
+    input.feature.nextStepClassification,
+    input.feature.summary,
+    input.feature.lastSummary,
+    input.liveTask.goal,
+    blockerCondition(input.liveTask),
+  );
+
+  const selfRepresentsOwnerDecision =
+    text.includes("represented by") ||
+    text.includes("represented blocker") ||
+    text.includes("owner-response") ||
+    text.includes("owner response") ||
+    text.includes("owner/source-authority") ||
+    text.includes("promotion") ||
+    text.includes("reclassification") ||
+    text.includes("shared wait") ||
+    text.includes("reviewed-exception trio") ||
+    text.includes("residual reviewed-exception");
+
+  return selfRepresentsOwnerDecision ? input.liveTask : null;
 }
 
 function isExactBlockedWaitTask(task: TaskNode | undefined): task is TaskNode {
@@ -690,6 +758,43 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
             after: desiredWaitingFor,
             reason: `Refreshed ${liveTask.id} waiting_for to match the exact compact frontier for ${featureKey}.`,
           });
+        }
+      }
+
+      if (liveTask && isExactBlockedWaitTask(liveTask)) {
+        const watchSourceTask = ownerDecisionWatchSourceTask({
+          feature,
+          liveTask,
+          tasks: input.tasks,
+        });
+        if (watchSourceTask) {
+          const inheritedWatch = compactHolderWatchFields(watchSourceTask);
+          if (
+            inheritedWatch.nextCheckAt &&
+            feature.nextCheckAt !== inheritedWatch.nextCheckAt
+          ) {
+            stateRepairs.push({
+              featureKey,
+              field: "nextCheckAt",
+              before: feature.nextCheckAt ?? null,
+              after: inheritedWatch.nextCheckAt,
+              reason: `Aligned ${featureKey} compact holder nextCheckAt to represented downstream owner-decision frontier ${watchSourceTask.id}.`,
+            });
+            feature.nextCheckAt = inheritedWatch.nextCheckAt;
+          }
+          if (
+            inheritedWatch.fallbackAt &&
+            feature.fallbackAt !== inheritedWatch.fallbackAt
+          ) {
+            stateRepairs.push({
+              featureKey,
+              field: "fallbackAt",
+              before: feature.fallbackAt ?? null,
+              after: inheritedWatch.fallbackAt,
+              reason: `Aligned ${featureKey} compact holder fallbackAt to represented downstream owner-decision frontier ${watchSourceTask.id}.`,
+            });
+            feature.fallbackAt = inheritedWatch.fallbackAt;
+          }
         }
       }
     }

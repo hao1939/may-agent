@@ -380,6 +380,10 @@ Do not rerun the same input after the same error without a changed input,
 changed diagnosis, or new external fact. Do not turn "I am unsure" into
 blocked. Do not hide agent/tool/pipeline/artifact failure as AKS product
 behavior.
+If you cite a durable evidence memo or other file in deliverables, include the
+complete FIX_FORWARD_RESULT block in that same file as well as in your final
+worker response. The worker may need to recover the structured result from the
+cited deliverable when the runtime/session summary omits it.
 
 Finish your worker response with this structured block:
 
