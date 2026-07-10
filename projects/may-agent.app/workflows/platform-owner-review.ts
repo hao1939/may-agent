@@ -567,6 +567,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "- If project.json and the runtime project row disagree, treat that as a platform read-model/sync issue unless another session already fixed it.",
     "- Prefer project-local app workflow/design fixes over adding behavior to global May handlers.",
     "- Do not claim the platform is healthy or waiting from a narrow post-restart check while open alerts, recent failures, stale state, or evaluator findings remain.",
+    "- NEVER write to the runtime DB (may.db) directly via bash/bun:sqlite. All state changes must go through ctx.emit() or the event system. Direct DB inserts violate runtime safety and will be flagged by the evaluator.",
     "- If you edit files, run focused checks and cite them before finish.",
     "",
     "Start with these files:",
