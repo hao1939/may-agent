@@ -481,8 +481,94 @@ function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
       appendToolJournal(config, {
         kind: "child_blocked_parent_results_repaired",
         task_ids: repaired,
+        reason: "parent result text refreshed from current blocked children",
+      });
+    }
+
+    return repaired;
+  });
+}
+
+function addHours(iso: string, hours: number): string {
+  return new Date(Date.parse(iso) + hours * 3_600_000).toISOString();
+}
+
+function repairLegacyFocusApprovalStates(config: TaskTreeConfig): string[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const now = new Date().toISOString();
+    const repaired: string[] = [];
+
+    for (const task of Object.values(tree.tasks ?? {})) {
+      if (task.kind !== "focus_plan") continue;
+      const rawState = String(task.status ?? task.state ?? "");
+      if (rawState !== "needs_approval") continue;
+
+      const taskRecord = task as Record<string, unknown>;
+      const updatedAt =
+        typeof taskRecord.updated_at === "string" ? taskRecord.updated_at : "";
+      const blockedAt =
+        updatedAt && Number.isFinite(Date.parse(updatedAt)) ? updatedAt : now;
+      const nextCheckAt = addHours(now, 24);
+      const fallbackAt = addHours(now, 48);
+      const context =
+        task.context &&
+        typeof task.context === "object" &&
+        !Array.isArray(task.context)
+          ? (task.context as Record<string, unknown>)
+          : {};
+
+      task.state = "blocked";
+      delete taskRecord.status;
+      task.blocker = {
+        condition:
+          "Focus plan is waiting for human approval of the proposed direction and risk envelope.",
+        category: "human-approval",
+        owner: "human",
+        blocked_at: blockedAt,
+        waiting_for: {
+          type: "project.approval.submitted",
+          approvalKind: "focus-plan",
+          taskId: task.id,
+          decision: "approve | adjust | hold",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.approval.submitted",
+        },
+        observation_method:
+          "Planner handles the returned project.approval.submitted event and reconciles this focus wait.",
+        next_check_at: nextCheckAt,
+        resume_condition:
+          "Resume when the human owner submits approve, adjust, or hold for this focus plan.",
+        resume_at: nextCheckAt,
+        fallback_at: fallbackAt,
+        fallback_action:
+          "If no approval arrives, app-ops should refresh or resend the human approval request, or replace this focus with a safer bounded plan.",
+      };
+      task.context = {
+        ...context,
+        needs_approval: true,
+        approval_wait_normalized_at: now,
+        approval_wait_normalization_note:
+          "Runtime focus-plan context requested human approval; legacy task state needs_approval was normalized to blocked.",
+      };
+      task.trace = {
+        ...(task.trace ?? {}),
+        legacy_state_repaired_at: now,
+        legacy_state_repaired_by: "task-tree-repair",
+        previous_state: rawState,
+      };
+      repaired.push(task.id);
+    }
+
+    if (repaired.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "legacy_focus_approval_states_repaired",
+        task_ids: repaired,
         reason:
-          "parent result text refreshed from current blocked children",
+          "focus-plan needs_approval is a workflow result, not a task-tree state; represented it as a structured human approval wait",
       });
     }
 
@@ -634,8 +720,11 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
 > & {
   reopenedDurableLoopRoots: string[];
   repairedChildBlockedParentResults: string[];
+  repairedLegacyFocusApprovalStates: string[];
 } {
   const initialResult = sdkRepairTaskTreeRollups(config);
+  const repairedLegacyFocusApprovalStates =
+    repairLegacyFocusApprovalStates(config);
   const reopenedDurableLoopRoots = reopenIncompleteDurableLoopRoots(config);
   const finalResult = reopenedDurableLoopRoots.length
     ? sdkRepairTaskTreeRollups(config)
@@ -647,12 +736,18 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
     changed:
       initialResult.changed ||
       finalResult.changed ||
+      repairedLegacyFocusApprovalStates.length > 0 ||
       reopenedDurableLoopRoots.length > 0 ||
       repairedChildBlockedParentResults.length > 0,
     repaired: [
       ...new Set([
         ...(initialResult.repaired ?? []),
         ...(finalResult.repaired ?? []),
+        ...repairedLegacyFocusApprovalStates.map((taskId) => ({
+          taskId,
+          from: "needs_approval",
+          to: "blocked",
+        })),
         ...repairedChildBlockedParentResults.map((taskId) => ({
           taskId,
           from: "child-blocked",
@@ -662,6 +757,7 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
     ],
     reopenedDurableLoopRoots,
     repairedChildBlockedParentResults,
+    repairedLegacyFocusApprovalStates,
   };
 }
 
@@ -1166,7 +1262,11 @@ function blockerWaitingForType(task: TaskNode): string {
     return "";
   }
   const waitingFor = (blocker as Record<string, unknown>).waiting_for;
-  if (!waitingFor || typeof waitingFor !== "object" || Array.isArray(waitingFor)) {
+  if (
+    !waitingFor ||
+    typeof waitingFor !== "object" ||
+    Array.isArray(waitingFor)
+  ) {
     return "";
   }
   const type = (waitingFor as Record<string, unknown>).type;
@@ -1182,6 +1282,7 @@ function isFeatureCompactNonEnvironmentFrontier(task: TaskNode): boolean {
     "compact.frontier.changed",
     "evidence.available",
     "azure.capacity.available",
+    "environment.prerequisite.ready",
   ].includes(blockerWaitingForType(task));
 }
 
@@ -1641,7 +1742,8 @@ export function updateArchivedTaskEvidence(
     const evidence = input.evidence
       .map((value) => value.trim())
       .filter(Boolean);
-    if (evidence.length === 0) throw new Error("Provide at least one evidence path");
+    if (evidence.length === 0)
+      throw new Error("Provide at least one evidence path");
 
     const { path, bundle, task } = archiveTaskBundlePath(
       input.taskId,

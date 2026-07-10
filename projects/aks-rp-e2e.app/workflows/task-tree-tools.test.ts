@@ -1197,6 +1197,84 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for compact exact environment prerequisite waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["compact-env-frontier", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-env-frontier": {
+              id: "compact-env-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Hold compact feature cost-analysis only on the exact shared underlay/runtime-input family wait until the named frontier materially changes.",
+              outputs: ["evidence/archive/compact-env-frontier.md"],
+              acceptance: ["environment prerequisite frontier remains visible"],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "cost-analysis",
+                errorClass: "reviewed-exception",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Do not regenerate a generic compact-error repair leaf. The exact surviving blocker is the shared underlay/runtime-input family wait, and any future live proof first depends on returned underlay/runtime inputs plus owner review of that carrier.",
+                category: "external-wait",
+                owner: "operator",
+                waiting_for: {
+                  type: "environment.prerequisite.ready",
+                  featureKey: "cost-analysis",
+                  target: "staging",
+                  errorClass: "reviewed-exception",
+                  scope: "feature-compact",
+                },
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses source-exactness-overblock warning for feature-compact exact non-environment frontiers", async () => {
     const projectDir = await makeProject();
     await writeFile(
