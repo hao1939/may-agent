@@ -78,6 +78,12 @@ The browser container is the source of truth for visible size. The sequence is:
 This avoids starting tmux with stale default geometry and then immediately
 redrawing into a different size.
 
+Only the focused, visible browser client should drive resize frames. A terminal
+profile is backed by one tmux session, so two browser windows attached to the
+same profile cannot have independent server-side sizes at the same time. This is
+acceptable: refreshing or focusing the window the human is using should make
+that window the current size owner.
+
 ### Reconnect and Replay
 
 Browser refresh is an attach, not a process restart. The terminal manager keeps
@@ -90,6 +96,14 @@ source of truth.
 
 If replay causes corruption for a TUI, prefer a simpler attach/current-stream
 behavior over adding server-side terminal emulation.
+
+Browser scrollback is useful but not the durable audit source. tmux owns the
+long-lived terminal session, and xterm keeps local scrollback for the attached
+browser client. A profile TUI such as Codex may also render folded or compact UI
+regions that are not normal shell lines. If those regions were not emitted as
+plain terminal output, scrolling cannot reconstruct them. When durable review of
+such content matters, use a transcript or explicit command output artifact
+rather than relying on browser scrollback.
 
 ## Implementation Checks
 

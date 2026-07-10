@@ -345,7 +345,11 @@ loadLiveness();
 loadAgentGrid();
 loadTimeline();
 loadStats();
-connectWs();
+if (typeof connectWs === 'function') {
+  connectWs();
+} else {
+  console.warn('chat websocket unavailable: connectWs is not defined');
+}
 
 // Apply initial route from URL hash (delegates to router)
 render();

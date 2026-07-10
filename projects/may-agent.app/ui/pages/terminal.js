@@ -6,6 +6,9 @@ let fitAddon = null;
 let terminalSocket = null;
 let terminalResizeObserver = null;
 let terminalReplayWrites = 0;
+let terminalClientGeneration = 0;
+let terminalFitFrame = 0;
+let terminalHasFocus = false;
 
 function initTerminalPage(requestedProfileId) {
   const host = document.getElementById('terminal-content');
@@ -13,6 +16,8 @@ function initTerminalPage(requestedProfileId) {
   if (requestedProfileId) activeTerminalId = requestedProfileId;
   if (!terminalInitialized) {
     terminalInitialized = true;
+    window.addEventListener('focus', sendTerminalFocusFrame);
+    document.addEventListener('visibilitychange', sendTerminalFocusFrame);
     host.innerHTML = `
       <div class="terminal-shell">
         <div class="terminal-toolbar">
@@ -103,6 +108,11 @@ function renderTerminalQuickbar() {
 }
 
 function disposeTerminalClient() {
+  terminalClientGeneration++;
+  if (terminalFitFrame) {
+    cancelAnimationFrame(terminalFitFrame);
+    terminalFitFrame = 0;
+  }
   if (terminalResizeObserver) {
     terminalResizeObserver.disconnect();
     terminalResizeObserver = null;
@@ -118,10 +128,17 @@ function disposeTerminalClient() {
   }
   fitAddon = null;
   terminalReplayWrites = 0;
+  terminalHasFocus = false;
 }
 
-function connectTerminal(profileId) {
+async function waitForTerminalLayout() {
+  await new Promise(resolve => requestAnimationFrame(() => resolve()));
+  await new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
+async function connectTerminal(profileId) {
   disposeTerminalClient();
+  const generation = terminalClientGeneration;
   renderTerminalQuickbar();
   const mount = document.getElementById('terminal-mount');
   const status = document.getElementById('terminal-status');
@@ -134,9 +151,9 @@ function connectTerminal(profileId) {
     cursorBlink: true,
     cursorStyle: 'block',
     convertEol: true,
-    // xterm/browser owns scrollback and selection. tmux is used only to keep
-    // the process alive across reconnects; its mouse/copy-mode UX is disabled
-    // in the bridge so browser copy/paste remains predictable.
+    // tmux owns persistent scrollback for every web terminal profile. xterm
+    // renders the active browser client and keeps local scrollback only as a
+    // best-effort convenience.
     scrollback: 50000,
     fontFamily: '"JetBrains Mono", "Cascadia Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace',
     fontSize: 14,
@@ -175,6 +192,32 @@ function connectTerminal(profileId) {
   terminal.loadAddon(fitAddon);
   terminal.open(mount);
   terminal.focus();
+  terminalHasFocus = document.visibilityState !== 'hidden' && document.hasFocus();
+  terminal.element?.addEventListener('focusin', () => {
+    terminalHasFocus = true;
+    sendTerminalFocusFrame();
+  });
+  terminal.element?.addEventListener('focusout', () => {
+    terminalHasFocus = false;
+  });
+  if (status) status.textContent = `Opening ${profileId}`;
+
+  terminal.onData(data => {
+    if (terminalReplayWrites > 0) return;
+    if (terminalSocket?.readyState === WebSocket.OPEN) {
+      terminalSocket.send(JSON.stringify({ type: 'input', data }));
+    }
+  });
+  terminal.onResize(size => {
+    if (terminalCanOwnSize() && terminalSocket?.readyState === WebSocket.OPEN) {
+      terminalSocket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
+    }
+  });
+  terminalResizeObserver = new ResizeObserver(() => scheduleActiveTerminalFit());
+  terminalResizeObserver.observe(mount);
+
+  await waitForTerminalLayout();
+  if (generation !== terminalClientGeneration || !terminal) return;
   fitActiveTerminal();
 
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -200,7 +243,8 @@ function connectTerminal(profileId) {
         status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${idle}`;
       }
       terminal.focus();
-      fitActiveTerminal();
+      sendTerminalFocusFrame();
+      scheduleActiveTerminalFit();
     } else if (frame.type === 'error') {
       if (status) status.textContent = frame.message || 'terminal error';
       terminal.writeln(`\r\n[terminal error] ${frame.message || 'unknown error'}\r\n`);
@@ -214,19 +258,14 @@ function connectTerminal(profileId) {
   terminalSocket.onclose = () => {
     if (status) status.textContent = 'Disconnected';
   };
-  terminal.onData(data => {
-    if (terminalReplayWrites > 0) return;
-    if (terminalSocket?.readyState === WebSocket.OPEN) {
-      terminalSocket.send(JSON.stringify({ type: 'input', data }));
-    }
+}
+
+function scheduleActiveTerminalFit() {
+  if (terminalFitFrame) return;
+  terminalFitFrame = requestAnimationFrame(() => {
+    terminalFitFrame = 0;
+    fitActiveTerminal();
   });
-  terminal.onResize(size => {
-    if (terminalSocket?.readyState === WebSocket.OPEN) {
-      terminalSocket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
-    }
-  });
-  terminalResizeObserver = new ResizeObserver(() => fitActiveTerminal());
-  terminalResizeObserver.observe(mount);
 }
 
 function fitActiveTerminal() {
@@ -234,31 +273,24 @@ function fitActiveTerminal() {
   try {
     const mount = document.getElementById('terminal-mount');
     if (mount) {
-      mount.style.height = terminalMountHeight(mount) + 'px';
+      const height = terminalMountHeight(mount) + 'px';
+      if (mount.style.height !== height) mount.style.height = height;
     }
     fitAddon.fit();
   } catch {}
 }
 
 function terminalMountHeight(mount) {
-  const shell = mount.closest('.terminal-shell');
-  const toolbar = shell?.querySelector('.terminal-toolbar');
-  const quickbar = shell?.querySelector('.terminal-quickbar:not(.hidden)');
   const main = document.querySelector('body.terminal-mode .main');
   const mainRect = main?.getBoundingClientRect();
-  const shellStyle = shell ? getComputedStyle(shell) : null;
-  const gap = shellStyle ? parseFloat(shellStyle.rowGap || shellStyle.gap || '0') || 0 : 0;
+  const mainStyle = main ? getComputedStyle(main) : null;
+  const mainPaddingBottom = mainStyle ? parseFloat(mainStyle.paddingBottom || '0') || 0 : 0;
+  const mountRect = mount.getBoundingClientRect();
   const border = 2;
-  const available = Math.floor(
-    (mainRect?.height || window.innerHeight)
-    - (toolbar?.getBoundingClientRect().height || 0)
-    - (quickbar?.getBoundingClientRect().height || 0)
-    - gap * (quickbar && !quickbar.classList.contains('hidden') ? 2 : 1)
-  );
-  const min = Math.min(360, Math.max(180, window.innerHeight - 140));
-  const raw = Math.max(min, available);
+  const bottom = (mainRect?.bottom || window.innerHeight) - mainPaddingBottom;
+  const available = Math.max(120, Math.floor(bottom - mountRect.top));
   const cell = terminal?.element?.querySelector('.xterm-rows > div')?.getBoundingClientRect().height || 19;
-  const rows = Math.max(8, Math.floor((raw - border) / cell));
+  const rows = Math.max(8, Math.floor((available - border) / cell));
   return Math.floor(rows * cell + border);
 }
 
@@ -270,6 +302,15 @@ function sendTerminalData(data) {
   terminalSocket.send(JSON.stringify({ type: 'input', data }));
   terminal?.focus();
   return true;
+}
+
+function sendTerminalFocusFrame() {
+  if (!terminalCanOwnSize() || terminalSocket?.readyState !== WebSocket.OPEN || !terminal) return;
+  terminalSocket.send(JSON.stringify({ type: 'focus', cols: terminal.cols, rows: terminal.rows }));
+}
+
+function terminalCanOwnSize() {
+  return terminalHasFocus && document.visibilityState !== 'hidden' && document.hasFocus();
 }
 
 function sendTerminalCommand(command) {
