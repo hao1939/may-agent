@@ -1235,6 +1235,62 @@ describe("project task tree SDK", () => {
     expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-28T00:00:00.000Z");
   });
 
+  test("refreshing next check without explicit resume moves resume watch time", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["blocked-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "blocked-leaf": {
+          id: "blocked-leaf",
+          parent_id: "project",
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "wait for owner response",
+          outputs: ["evidence/archive/blocked.md"],
+          acceptance: ["owner response handled"],
+          blocker: {
+            condition: "Waiting for owner response.",
+            category: "external-wait",
+            owner: "human",
+            resume_condition: "Resume when owner responds.",
+            resume_at: "2001-01-01T00:00:00.000Z",
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2001-01-02T00:00:00.000Z",
+            fallback_action: "Refresh or escalate.",
+          },
+        },
+      },
+    });
+
+    const updated = updateTaskText(config(appDir), {
+      taskId: "blocked-leaf",
+      nextCheckAt: "2099-06-27T12:00:00.000Z",
+      fallbackAt: "2099-06-28T00:00:00.000Z",
+      fallbackAction: "Refresh again or escalate.",
+    });
+
+    expect(updated.blocker).toMatchObject({
+      condition: "Waiting for owner response.",
+      resume_at: "2099-06-27T12:00:00.000Z",
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+      fallback_action: "Refresh again or escalate.",
+    });
+  });
+
   test("rolls up parent summary and archives selected done child leaves", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {

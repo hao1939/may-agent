@@ -259,6 +259,9 @@ export type UpdateTaskTextInput = {
   blockerOwner?: string;
   resumeCondition?: string;
   resumeAt?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
   clearBlocker?: boolean;
 };
 
@@ -1233,14 +1236,17 @@ function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
       ? trimmed(blockerValue)
       : blockerCondition(blockerValue);
 
+  const nextCheckAt = trimmed(input.nextCheckAt);
+  const resumeAt = trimmed(input.resumeAt) ?? nextCheckAt;
+
   return {
     ...existingRecord,
     ...(condition ? { condition } : {}),
     ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
     ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
     ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
-    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
-    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
+    ...(resumeAt ? { resume_at: resumeAt } : {}),
+    ...(nextCheckAt ? { next_check_at: nextCheckAt } : {}),
     ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
     ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
   };
@@ -1257,6 +1263,8 @@ function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput
   const condition =
     (typeof blockerValue === "string" ? trimmed(blockerValue) : blockerCondition(blockerValue)) ??
     blockerCondition(existing);
+  const nextCheckAt = trimmed(input.nextCheckAt);
+  const resumeAt = trimmed(input.resumeAt) ?? nextCheckAt;
   return {
     ...existingRecord,
     ...inputRecord,
@@ -1264,8 +1272,8 @@ function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput
     ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
     ...(trimmed(input.blockerOwner) ? { owner: trimmed(input.blockerOwner) } : {}),
     ...(trimmed(input.resumeCondition) ? { resume_condition: trimmed(input.resumeCondition) } : {}),
-    ...(trimmed(input.resumeAt) ? { resume_at: trimmed(input.resumeAt) } : {}),
-    ...(trimmed(input.nextCheckAt) ? { next_check_at: trimmed(input.nextCheckAt) } : {}),
+    ...(resumeAt ? { resume_at: resumeAt } : {}),
+    ...(nextCheckAt ? { next_check_at: nextCheckAt } : {}),
     ...(trimmed(input.fallbackAt) ? { fallback_at: trimmed(input.fallbackAt) } : {}),
     ...(trimmed(input.fallbackAction) ? { fallback_action: trimmed(input.fallbackAction) } : {}),
   };
