@@ -27,6 +27,7 @@ function makeFakeBridge(root: string): string {
     "    if (!line.trim()) continue;",
     "    const frame = JSON.parse(line);",
     "    if (frame.type === 'input') { const data = String(frame.data || ''); history += data; console.log(JSON.stringify({ type: 'data', data })); }",
+    "    if (frame.type === 'resize') console.log(JSON.stringify({ type: 'data', data: `resize ${frame.cols}x${frame.rows}\\n` }));",
     "    if (frame.type === 'replay') console.log(JSON.stringify({ type: 'replay', data: history }));",
     "  }",
     "});",
@@ -179,6 +180,34 @@ describe("terminal manager", () => {
 
       expect(firstReplay).toBe("");
       expect(secondReplay).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("resizes an existing bridge when a browser attaches with fitted dimensions", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const firstSocket = makeSocket();
+      await manager.attach("may", firstSocket, 90, 18);
+      await delay(20);
+
+      const secondSocket = makeSocket();
+      await manager.attach("may", secondSocket, 166, 35);
+      await delay(20);
+
+      const resized = [...firstSocket.frames, ...secondSocket.frames]
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+
+      expect(resized).toContain("resize 90x18\n");
+      expect(resized).toContain("resize 166x35\n");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

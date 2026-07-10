@@ -303,6 +303,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     const session = await ensureSession(profileId, cols, rows);
     clearIdleTimer(session);
     session.clients.add(socket);
+    writeResize(session, cols ?? DEFAULT_COLS, rows ?? DEFAULT_ROWS);
     socket.send(JSON.stringify({
       type: "ready",
       profile: session.profile,
@@ -325,12 +326,16 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     session.child.stdin.write(JSON.stringify({ type: "input", data }) + "\n");
   }
 
-  function resize(profileId: string, cols: number, rows: number): void {
-    const session = sessions.get(profileId);
-    if (!session) return;
+  function writeResize(session: TerminalSession, cols: number, rows: number): void {
     const safeCols = Math.max(20, Math.min(400, Math.floor(cols || DEFAULT_COLS)));
     const safeRows = Math.max(8, Math.min(160, Math.floor(rows || DEFAULT_ROWS)));
     session.child.stdin.write(JSON.stringify({ type: "resize", cols: safeCols, rows: safeRows }) + "\n");
+  }
+
+  function resize(profileId: string, cols: number, rows: number): void {
+    const session = sessions.get(profileId);
+    if (!session) return;
+    writeResize(session, cols, rows);
   }
 
   function restart(profileId: string): void {
