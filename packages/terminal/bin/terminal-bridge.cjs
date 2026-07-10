@@ -2,6 +2,7 @@
 const pty = require("node-pty");
 const { spawnSync } = require("node:child_process");
 const { createHash } = require("node:crypto");
+const { StringDecoder } = require("node:string_decoder");
 
 const config = JSON.parse(process.argv[2] || "{}");
 const cols = Number.isFinite(config.cols) ? config.cols : 120;
@@ -116,8 +117,10 @@ term.onExit((event) => {
 });
 
 let inputBuffer = "";
-process.stdin.on("data", (chunk) => {
-  inputBuffer += chunk.toString();
+const inputDecoder = new StringDecoder("utf8");
+
+function processInputText(text) {
+  inputBuffer += text;
   const lines = inputBuffer.split("\n");
   inputBuffer = lines.pop() || "";
   for (const line of lines) {
@@ -130,6 +133,15 @@ process.stdin.on("data", (chunk) => {
       send({ type: "error", message: err && err.message ? err.message : String(err) });
     }
   }
+}
+
+process.stdin.on("data", (chunk) => {
+  processInputText(inputDecoder.write(chunk));
+});
+
+process.stdin.on("end", () => {
+  const remaining = inputDecoder.end();
+  if (remaining) processInputText(remaining);
 });
 
 function shutdown() {

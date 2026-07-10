@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 
 export interface TerminalProfile {
   id: string;
@@ -252,8 +253,11 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       }
     }
 
-    child.stdout.on("data", (chunk: Buffer) => {
-      session.stdoutBuffer += chunk.toString();
+    const stdoutDecoder = new StringDecoder("utf8");
+    const stderrDecoder = new StringDecoder("utf8");
+
+    function processStdoutText(text: string): void {
+      session.stdoutBuffer += text;
       const lines = session.stdoutBuffer.split("\n");
       session.stdoutBuffer = lines.pop() || "";
       for (const line of lines) {
@@ -272,14 +276,22 @@ export function createTerminalManager(opts: { projectRoot: string }) {
           } catch {}
         }
       }
+    }
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      processStdoutText(stdoutDecoder.write(chunk));
     });
 
     child.stderr.on("data", (chunk: Buffer) => {
-      const data = chunk.toString();
-      broadcastData(data);
+      const data = stderrDecoder.write(chunk);
+      if (data) broadcastData(data);
     });
 
     child.on("close", (code, signal) => {
+      const remainingStdout = stdoutDecoder.end();
+      if (remainingStdout) processStdoutText(remainingStdout);
+      const remainingStderr = stderrDecoder.end();
+      if (remainingStderr) broadcastData(remainingStderr);
       if (session.idleTimer) clearTimeout(session.idleTimer);
       for (const client of session.clients) {
         try {

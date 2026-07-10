@@ -18,9 +18,11 @@ function makeFakeTmuxDir(seed?: { profileId?: string; command?: string }) {
   const binDir = join(root, "bin");
   mkdirSync(binDir, { recursive: true });
   const logPath = join(root, "tmux.log");
+  const inputPath = join(root, "tmux-input.log");
   const sessionPath = join(root, "session");
   const envPath = join(root, "env");
   writeFileSync(logPath, "");
+  writeFileSync(inputPath, "");
   if (seed) {
     writeFileSync(sessionPath, "1");
     writeFileSync(envPath, [
@@ -59,7 +61,7 @@ case "$cmd" in
     ;;
   attach-session)
     printf 'attached fake tmux\\n'
-    sleep 30
+    cat >> "$FAKE_TMUX_INPUT"
     ;;
   set-option)
     ;;
@@ -73,6 +75,7 @@ esac
     root,
     binDir,
     logPath,
+    inputPath,
     sessionPath,
     envPath,
     cleanup: () => rmSync(root, { recursive: true, force: true }),
@@ -86,6 +89,7 @@ async function runBridge(fake: ReturnType<typeof makeFakeTmuxDir>, config: Recor
       ...process.env,
       PATH: `${fake.binDir}:${process.env.PATH || ""}`,
       FAKE_TMUX_LOG: fake.logPath,
+      FAKE_TMUX_INPUT: fake.inputPath,
       FAKE_TMUX_SESSION: fake.sessionPath,
       FAKE_TMUX_ENV: fake.envPath,
     },
@@ -119,6 +123,48 @@ async function runBridge(fake: ReturnType<typeof makeFakeTmuxDir>, config: Recor
 
   child.kill("SIGTERM");
   await new Promise<void>((resolveExit) => child.once("exit", () => resolveExit()));
+}
+
+async function startBridge(fake: ReturnType<typeof makeFakeTmuxDir>, config: Record<string, unknown>) {
+  const child = spawn("node", [bridgePath, JSON.stringify(config)], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      PATH: `${fake.binDir}:${process.env.PATH || ""}`,
+      FAKE_TMUX_LOG: fake.logPath,
+      FAKE_TMUX_INPUT: fake.inputPath,
+      FAKE_TMUX_SESSION: fake.sessionPath,
+      FAKE_TMUX_ENV: fake.envPath,
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  await new Promise<void>((resolveReady, reject) => {
+    const timeout = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error("terminal bridge did not become ready"));
+    }, 5_000);
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+      if (stdout.includes('"type":"ready"')) {
+        clearTimeout(timeout);
+        resolveReady();
+      }
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("exit", (code) => {
+      if (!stdout.includes('"type":"ready"')) {
+        clearTimeout(timeout);
+        reject(new Error(`terminal bridge exited before ready: ${code}; ${stderr}`));
+      }
+    });
+  });
+
+  return child;
 }
 
 describe("terminal bridge tmux profile validation", () => {
@@ -164,6 +210,38 @@ describe("terminal bridge tmux profile validation", () => {
       expect(log).toContain("set-option -g terminal-overrides xterm-256color:smcup@:rmcup@");
       expect(log).not.toContain("capture-pane");
       expect(log).not.toContain("bind-key");
+    } finally {
+      fake.cleanup();
+    }
+  });
+
+  test("preserves split UTF-8 inside manager input frames", async () => {
+    const command = "bash -lc shell";
+    const fake = makeFakeTmuxDir({ profileId: "shell", command });
+    try {
+      const child = await startBridge(fake, {
+        profileId: "shell",
+        tmuxName: "may-web-shell",
+        tmuxSocket: "may-web",
+        command,
+        cwd: repoRoot,
+      });
+
+      const data = "typed █▒ ✓\n";
+      const frame = JSON.stringify({ type: "input", data }) + "\n";
+      const bytes = Buffer.from(frame, "utf8");
+      const splitAt = bytes.indexOf(Buffer.from("█")) + 1;
+      child.stdin.write(bytes.subarray(0, splitAt));
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      child.stdin.write(bytes.subarray(splitAt));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      child.kill("SIGTERM");
+      await new Promise<void>((resolveExit) => child.once("exit", () => resolveExit()));
+
+      const input = readFileSync(fake.inputPath, "utf8");
+      expect(input).toContain(data);
+      expect(input).not.toContain("�");
     } finally {
       fake.cleanup();
     }
