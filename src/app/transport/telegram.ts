@@ -218,7 +218,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const chatIdStr = String(chatId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
-    // Context-enriched reply: if user replied to a notification, enrich their text
+    // Reply context is structured on the event. Stored notification replies keep
+    // the human text raw; the command router builds the internal work packet.
     let enrichedText = text;
     let inputTarget: { sessionId?: string; agent?: string; projectPath?: string } | undefined;
     let inputContext: Record<string, unknown> | undefined;
@@ -238,7 +239,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         });
 
         if (route.kind === "notification") {
-          enrichedText = route.enrichedText;
           inputContext = {
             conversationId: route.context.conversationId,
             telegramReply: route.context,

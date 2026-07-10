@@ -63,6 +63,7 @@ export type AgentCommand =
         channelMessageId?: number;
         forceNew?: boolean;
         requestId?: string;
+        context?: Record<string, unknown>;
       };
     }
   | {
