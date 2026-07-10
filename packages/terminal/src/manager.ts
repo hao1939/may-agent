@@ -27,6 +27,8 @@ interface TerminalSession {
   child: ChildProcessWithoutNullStreams;
   ptyPid?: number;
   clients: Set<TerminalSocket>;
+  clientIds: Map<TerminalSocket, string>;
+  activeClientId?: string;
   stdoutBuffer: string;
   idleTimer?: ReturnType<typeof setTimeout>;
   idleUntil?: number;
@@ -230,6 +232,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile,
       child,
       clients: new Set(),
+      clientIds: new Map(),
       stdoutBuffer: "",
     };
 
@@ -295,15 +298,22 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     return session;
   }
 
-  async function attach(profileId: string, socket: TerminalSocket, cols?: number, rows?: number): Promise<void> {
+  async function attach(profileId: string, socket: TerminalSocket, cols?: number, rows?: number, clientId?: string): Promise<void> {
     const existing = sessions.get(profileId);
     if (existing && existing.clients.size === 0) {
       closeSession(profileId, existing);
     }
     const session = await ensureSession(profileId, cols, rows);
     clearIdleTimer(session);
+    const wasEmpty = session.clients.size === 0;
     session.clients.add(socket);
-    writeResize(session, cols ?? DEFAULT_COLS, rows ?? DEFAULT_ROWS);
+    if (clientId) {
+      session.clientIds.set(socket, clientId);
+      if (wasEmpty && !session.activeClientId) session.activeClientId = clientId;
+    }
+    if (wasEmpty || !session.activeClientId) {
+      writeResize(session, cols ?? DEFAULT_COLS, rows ?? DEFAULT_ROWS);
+    }
     socket.send(JSON.stringify({
       type: "ready",
       profile: session.profile,
@@ -311,18 +321,22 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     }));
   }
 
-  function detach(profileId: string, socket: TerminalSocket): void {
+  function detach(profileId: string, socket: TerminalSocket, clientId?: string): void {
     const session = sessions.get(profileId);
     if (!session) return;
     session.clients.delete(socket);
+    const removedClientId = clientId ?? session.clientIds.get(socket);
+    session.clientIds.delete(socket);
+    if (session.activeClientId === removedClientId) session.activeClientId = undefined;
     if (session.clients.size === 0) {
       scheduleIdleClose(profileId, session);
     }
   }
 
-  function input(profileId: string, data: string): void {
+  function input(profileId: string, data: string, clientId?: string): void {
     const session = sessions.get(profileId);
     if (!session) throw new Error(`Terminal is not connected: ${profileId}`);
+    if (clientId) session.activeClientId = clientId;
     session.child.stdin.write(JSON.stringify({ type: "input", data }) + "\n");
   }
 
@@ -332,9 +346,21 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     session.child.stdin.write(JSON.stringify({ type: "resize", cols: safeCols, rows: safeRows }) + "\n");
   }
 
-  function resize(profileId: string, cols: number, rows: number): void {
+  function activate(profileId: string, clientId: string, cols?: number, rows?: number): void {
     const session = sessions.get(profileId);
     if (!session) return;
+    if (!clientId) return;
+    session.activeClientId = clientId;
+    if (cols !== undefined || rows !== undefined) writeResize(session, cols ?? DEFAULT_COLS, rows ?? DEFAULT_ROWS);
+  }
+
+  function resize(profileId: string, cols: number, rows: number, clientId?: string): void {
+    const session = sessions.get(profileId);
+    if (!session) return;
+    if (clientId) {
+      if (session.activeClientId && session.activeClientId !== clientId) return;
+      session.activeClientId = clientId;
+    }
     writeResize(session, cols, rows);
   }
 
@@ -364,6 +390,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     attach,
     detach,
     input,
+    activate,
     resize,
     restart,
   };

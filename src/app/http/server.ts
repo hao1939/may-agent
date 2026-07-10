@@ -325,6 +325,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
   const terminalManager = createTerminalManager({ projectRoot: PROJECT_ROOT });
+  let terminalClientSeq = 0;
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
@@ -3775,7 +3776,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (terminalWsMatch) {
         const cols = Number(url.searchParams.get("cols") || "");
         const rows = Number(url.searchParams.get("rows") || "");
-        if (server.upgrade(req, { data: { kind: "terminal", terminalId: decodeURIComponent(terminalWsMatch[1]), cols, rows } })) return undefined;
+        const terminalClientId = `terminal-${++terminalClientSeq}`;
+        if (server.upgrade(req, { data: { kind: "terminal", terminalId: decodeURIComponent(terminalWsMatch[1]), terminalClientId, cols, rows } })) return undefined;
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/ws") {
@@ -3876,7 +3878,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     websocket: {
       open(ws: any) {
         if (ws.data?.kind === "terminal") {
-          terminalManager.attach(ws.data.terminalId, ws, ws.data.cols, ws.data.rows).catch((err) => {
+          terminalManager.attach(ws.data.terminalId, ws, ws.data.cols, ws.data.rows, ws.data.terminalClientId).catch((err) => {
             try {
               ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
               ws.close();
@@ -3890,8 +3892,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (ws.data?.kind === "terminal") {
           try {
             const frame = JSON.parse(String(msg)) as { type?: string; data?: string; cols?: number; rows?: number };
-            if (frame.type === "input") terminalManager.input(ws.data.terminalId, frame.data ?? "");
-            else if (frame.type === "resize") terminalManager.resize(ws.data.terminalId, Number(frame.cols), Number(frame.rows));
+            if (frame.type === "input") terminalManager.input(ws.data.terminalId, frame.data ?? "", ws.data.terminalClientId);
+            else if (frame.type === "focus") terminalManager.activate(ws.data.terminalId, ws.data.terminalClientId, Number(frame.cols), Number(frame.rows));
+            else if (frame.type === "resize") terminalManager.resize(ws.data.terminalId, Number(frame.cols), Number(frame.rows), ws.data.terminalClientId);
           } catch (err) {
             try {
               ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
@@ -3904,7 +3907,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       },
       close(ws: any) {
         if (ws.data?.kind === "terminal") {
-          terminalManager.detach(ws.data.terminalId, ws);
+          terminalManager.detach(ws.data.terminalId, ws, ws.data.terminalClientId);
           return;
         }
         const unix = wsToUnix.get(ws);

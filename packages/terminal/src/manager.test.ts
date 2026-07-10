@@ -185,7 +185,7 @@ describe("terminal manager", () => {
     }
   });
 
-  test("resizes an existing bridge when a browser attaches with fitted dimensions", async () => {
+  test("keeps existing bridge size when a passive browser attaches", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
       process.env.MAY_WEB_TERMINAL = "1";
@@ -194,12 +194,12 @@ describe("terminal manager", () => {
 
       const manager = createTerminalManager({ projectRoot: root });
       const firstSocket = makeSocket();
-      await manager.attach("may", firstSocket, 90, 18);
-      await delay(20);
+      await manager.attach("may", firstSocket, 90, 18, "first");
+      await delay(50);
 
       const secondSocket = makeSocket();
-      await manager.attach("may", secondSocket, 166, 35);
-      await delay(20);
+      await manager.attach("may", secondSocket, 166, 35, "second");
+      await delay(50);
 
       const resized = [...firstSocket.frames, ...secondSocket.frames]
         .filter((frame: any) => frame.type === "data")
@@ -207,7 +207,47 @@ describe("terminal manager", () => {
         .join("");
 
       expect(resized).toContain("resize 90x18\n");
+      expect(resized).not.toContain("resize 166x35\n");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("ignores resize from inactive concurrent browser clients", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const firstSocket = makeSocket();
+      await manager.attach("may", firstSocket, 90, 18, "first");
+      await delay(20);
+
+      const secondSocket = makeSocket();
+      await manager.attach("may", secondSocket, 166, 35, "second");
+      await delay(20);
+
+      manager.activate("may", "second", 166, 35);
+      await delay(20);
+
+      const dataFrames = () => [...firstSocket.frames, ...secondSocket.frames]
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+
+      const beforeInactiveResize = dataFrames();
+      manager.resize("may", 90, 18, "first");
+      await delay(20);
+      expect(dataFrames()).toBe(beforeInactiveResize);
+
+      manager.activate("may", "first", 90, 18);
+      await delay(20);
+
+      const resized = dataFrames();
       expect(resized).toContain("resize 166x35\n");
+      expect(resized).toContain("resize 90x18\n");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
