@@ -53,6 +53,9 @@ function configureTmux() {
     ["set-option", "-g", "history-limit", "100000"],
     ["set-option", "-g", "focus-events", "on"],
     ["set-option", "-g", "escape-time", "10"],
+    // The browser toolbar is the visible profile/status UI. tmux is only the
+    // persistence layer, so do not spend a terminal row on tmux chrome.
+    ["set-option", "-g", "status", "off"],
     // Let xterm own scrollback. Without this, tmux attach enters the terminal
     // alternate screen, where xterm has no normal scrollback to scroll.
     ["set-option", "-g", "terminal-overrides", "xterm-256color:smcup@:rmcup@"],
