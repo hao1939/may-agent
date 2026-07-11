@@ -99,6 +99,15 @@ type ContractCheck = {
   detail: string;
 };
 
+type ExactWait = {
+  owner: string;
+  requestedAction: string;
+  resumeCondition: string;
+  fallback?: string;
+  nextCheck?: string;
+  linkage: string;
+};
+
 function objectRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -228,6 +237,7 @@ function escalationSummary(escalations: Record<string, unknown>): string {
     `- open: ${String(counts.open ?? "unknown")}; stale open: ${String(counts.staleOpen ?? "unknown")}; closed: ${String(counts.closed ?? "unknown")}`,
     `- approval dispatch: ${formatCountMap(counts.approvalDispatchByResult)}`,
     `- task linkage: blocked-with-escalation-hint=${String(usage.blockedWithEscalationHint ?? "unknown")}; blocked-with-owner-or-external-path=${String(usage.blockedWithOwnerOrExternalPath ?? "unknown")}; blocked-without-owner-or-external-path=${String(usage.blockedWithoutOwnerOrExternalPath ?? "unknown")}`,
+    `- exact waits: blocked-exact-wait=${String(usage.blockedExactWaitLeaves ?? "unknown")}`,
     `- open sample: ${compactList(escalations.openSample, 5)}`,
     `- stale sample: ${compactList(escalations.staleOpenSample, 5)}`,
     `- recent approval asks: ${compactList(escalations.recentApprovalDispatches, 5)}`,
@@ -451,6 +461,20 @@ function stringFromRecord(
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.length > 0) return value;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+  return "";
+}
+
+function stringFromRecords(
+  records: Record<string, unknown>[],
+  keys: string[],
+): string {
+  for (const record of records) {
+    const value = stringFromRecord(record, keys);
+    if (value) return value;
   }
   return "";
 }
@@ -912,6 +936,95 @@ export function taskEscalationPacket(
       text,
     );
   };
+  const exactWaitFromTask = (
+    task: Record<string, unknown>,
+  ): ExactWait | null => {
+    const context = objectRecord(task.context);
+    const contextBlocker = objectRecord(context.blocker);
+    const blocker = objectRecord(task.blocker);
+    const waitingFor = objectRecord(
+      context.waiting_for ??
+        context.waitingFor ??
+        contextBlocker.waiting_for ??
+        contextBlocker.waitingFor ??
+        blocker.waiting_for ??
+        blocker.waitingFor,
+    );
+    const records = [task, context, contextBlocker, blocker, waitingFor];
+    const owner = stringFromRecords(records, [
+      "owner",
+      "required_owner",
+      "requiredOwner",
+      "assignee",
+    ]);
+    const requestedAction = stringFromRecords(records, [
+      "requested_action",
+      "requestedAction",
+      "required_action",
+      "requiredAction",
+      "action",
+      "decision",
+    ]);
+    const resumeCondition = stringFromRecords(records, [
+      "resume_condition",
+      "resumeCondition",
+      "unblock_condition",
+      "unblockCondition",
+      "success_condition",
+      "successCondition",
+    ]);
+    const fallback = stringFromRecords(records, [
+      "fallback",
+      "fallback_at",
+      "fallbackAt",
+      "fallback_action",
+      "fallbackAction",
+    ]);
+    const nextCheck = stringFromRecords(records, [
+      "next_check_at",
+      "nextCheckAt",
+      "next_check",
+      "nextCheck",
+      "check_at",
+      "checkAt",
+    ]);
+    const linkage = stringFromRecords(records, [
+      "escalation_ref",
+      "escalationRef",
+      "escalation_id",
+      "escalationId",
+      "approval_id",
+      "approvalId",
+      "wait_id",
+      "waitId",
+      "packet_path",
+      "packetPath",
+      "message_id",
+      "messageId",
+      "event_id",
+      "eventId",
+    ]);
+
+    if (
+      String(task.state) !== "blocked" ||
+      !owner ||
+      !requestedAction ||
+      !resumeCondition ||
+      !(fallback || nextCheck) ||
+      !linkage
+    ) {
+      return null;
+    }
+
+    return {
+      owner,
+      requestedAction,
+      resumeCondition,
+      ...(fallback ? { fallback } : {}),
+      ...(nextCheck ? { nextCheck } : {}),
+      linkage,
+    };
+  };
   const hasOwnerOrExternalPath = (task: Record<string, unknown>): boolean => {
     if (hasEscalationHint(task)) return true;
     return /external|owner|operator|response|return|fallback|next_check|resume|auth|credential|runtime|capacity|permission|handoff|source-authority|prereq|prerequisite|input|surface|trusted-ref|publication/i.test(
@@ -923,6 +1036,12 @@ export function taskEscalationPacket(
   const blockedWithOwnerOrExternalPath = blockedLeaves.filter(
     hasOwnerOrExternalPath,
   );
+  const blockedExactWaits = blockedLeaves
+    .map((task) => ({ task, wait: exactWaitFromTask(task) }))
+    .filter(
+      (item): item is { task: Record<string, unknown>; wait: ExactWait } =>
+        item.wait !== null,
+    );
   const blockedWithoutOwnerOrExternalPath = blockedLeaves.filter(
     (task) => !hasOwnerOrExternalPath(task),
   );
@@ -937,6 +1056,7 @@ export function taskEscalationPacket(
       blockedWithOwnerOrExternalPath: blockedWithOwnerOrExternalPath.length,
       blockedWithoutOwnerOrExternalPath:
         blockedWithoutOwnerOrExternalPath.length,
+      blockedExactWaitLeaves: blockedExactWaits.length,
     },
     escalationTaskSample: escalationTasks.slice(0, 20).map(compactTask),
     blockedWithEscalationSample: blockedWithEscalation
@@ -948,6 +1068,12 @@ export function taskEscalationPacket(
     blockedWithoutOwnerOrExternalPathSample: blockedWithoutOwnerOrExternalPath
       .slice(0, 10)
       .map(compactTask),
+    blockedExactWaitSample: blockedExactWaits
+      .slice(0, 10)
+      .map(({ task, wait }) => ({
+        ...compactTask(task as unknown as TaskRecord),
+        exactWait: wait,
+      })),
   };
 }
 
@@ -1406,6 +1532,52 @@ function normalizeJudgment(
   };
 }
 
+export function reconcileJudgmentWithFacts(
+  target: Pick<TargetConfig, "targetProject">,
+  packet: Record<string, unknown>,
+  judgment: Judgment,
+): Judgment {
+  const requestedAction = judgment.requestedHumanAction.toLowerCase();
+  if (requestedAction !== "assign-owner") return judgment;
+
+  const escalations = objectRecord(packet.escalations);
+  const counts = objectRecord(escalations.counts);
+  const usage = objectRecord(escalations.usage);
+  const openEscalations = numberFromRecord(counts, "open");
+  const closedEscalations = numberFromRecord(counts, "closed");
+  const blockedExactWaits = numberFromRecord(usage, "blockedExactWaitLeaves");
+  const blockedWithoutOwnerPath = numberFromRecord(
+    usage,
+    "blockedWithoutOwnerOrExternalPath",
+  );
+
+  if (
+    blockedExactWaits === 0 ||
+    blockedWithoutOwnerPath > 0 ||
+    openEscalations > blockedExactWaits
+  ) {
+    return judgment;
+  }
+
+  const hasMissingFormalClose = openEscalations > 0 && closedEscalations === 0;
+  const mainConcern = hasMissingFormalClose
+    ? "The target already records an exact owner/wait path, but the escalation lifecycle is missing a formal resolved or dismissed event."
+    : "The target already records an exact owner/wait path, so the owner-assignment ask is no longer the right human action.";
+
+  return {
+    ...judgment,
+    verdict:
+      severity(judgment.verdict) > severity("watch")
+        ? judgment.verdict
+        : "watch",
+    mainConcern,
+    requestedHumanAction: "watch",
+    notify: false,
+    dedupeKey: `${target.targetProject}:formal-escalation-closure-missing`,
+    message: `${target.targetProject} already has ${blockedExactWaits} blocked exact wait(s) with owner, requested action, resume condition, fallback, and escalation linkage. Do not ask the human to assign an owner again; send owner feedback to emit or repair the formal escalation closure/follow-up event if needed.`,
+  };
+}
+
 function timestampId(): string {
   return new Date().toISOString().replace(/[-:.]/g, "");
 }
@@ -1547,12 +1719,21 @@ function stableDedupeKey(
 
 function dedupeFamily(key: string | undefined): string {
   if (!key) return "";
+  const project = key.split(":")[0] || "";
   if (key.includes("focus-approval")) return "focus-approval";
   if (
     key.includes("no-active-frontier") ||
     key.includes("no-executable-frontier")
   ) {
     return "no-executable-frontier";
+  }
+  if (
+    key.includes("reviewer-runtime-owner-linkage") ||
+    key.includes("formal-escalation-owner-linkage") ||
+    key.includes("reviewer-provider-unavailable") ||
+    key.includes("escalation-linkage:reviewer-runtime")
+  ) {
+    return `${project}:reviewer-runtime-owner-linkage`;
   }
   if (key.includes("compact-loop") && key.includes("liveness")) {
     return "compact-loop-liveness";
@@ -1793,9 +1974,13 @@ ${JSON.stringify(packet, null, 2)}
     });
   }
 
-  const judgment = normalizeJudgment(
-    extractJsonBlock(result.lastAssistantText ?? ""),
-    fallback,
+  const judgment = reconcileJudgmentWithFacts(
+    target,
+    packet,
+    normalizeJudgment(
+      extractJsonBlock(result.lastAssistantText ?? ""),
+      fallback,
+    ),
   );
   judgment.dedupeKey = stableDedupeKey(target, packet, judgment);
   const evaluatorWantedNotify = judgment.notify;

@@ -113,6 +113,34 @@ function isEvaluationMetric(event: Record<string, unknown>): boolean {
   );
 }
 
+function isEvaluatorOwnerMessage(event: Record<string, unknown>): boolean {
+  const details = eventDetails(event);
+  const owner = String(event.owner ?? details.owner ?? "");
+  const to = String(details.to ?? "");
+  const target = details.target;
+  const targetProject =
+    target && typeof target === "object" && !Array.isArray(target)
+      ? String((target as Record<string, unknown>).project ?? "")
+      : "";
+  const targetOwner =
+    target && typeof target === "object" && !Array.isArray(target)
+      ? String((target as Record<string, unknown>).owner ?? "")
+      : "";
+  const project = String(details.project ?? details.projectId ?? "");
+
+  return (
+    owner === "agent:evaluator" ||
+    owner === "evaluator" ||
+    to === "evaluator" ||
+    targetOwner === "agent:evaluator" ||
+    targetOwner === "evaluator" ||
+    project === projectId ||
+    project === `${projectId}.app` ||
+    targetProject === projectId ||
+    targetProject === `${projectId}.app`
+  );
+}
+
 async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
@@ -135,6 +163,17 @@ async function routeEvaluationEvent(
         targetProject: "evaluation.app",
         reason: "review-failed",
         reviewFailure: eventDetails(event),
+      }),
+    );
+  }
+
+  if (event.type === "message.created" || event.type === "telegram.reply") {
+    if (!isEvaluatorOwnerMessage(event)) {
+      return ctx.noop(`${event.type} not targeted to evaluation`);
+    }
+    return ctx.emit(
+      evaluationReviewRequested("owner-message", {
+        message: eventDetails(event),
       }),
     );
   }
@@ -410,6 +449,8 @@ export default defineProjectApp({
     "evaluation.project.review.requested",
     "evaluation.project.reviewed",
     "evaluation.project.notification.requested",
+    "message.created",
+    "telegram.reply",
     { type: "metric.breach", project: projectId },
     { type: "metric.recovered", project: projectId },
     { type: "project.owner.requested", project: projectId },
@@ -473,6 +514,18 @@ export default defineProjectApp({
         emits: ["evaluation.tick"],
         description:
           "Ready task-tree leaves wake the evaluation owner through the existing heartbeat lane.",
+      },
+      {
+        event: "message.created",
+        emits: ["evaluation.tick"],
+        description:
+          "Evaluator-targeted owner messages wake evaluation owner review.",
+      },
+      {
+        event: "telegram.reply",
+        emits: ["evaluation.tick"],
+        description:
+          "Human replies attached to evaluator notifications wake evaluation owner review.",
       },
       {
         event: "evaluation.review_failed",

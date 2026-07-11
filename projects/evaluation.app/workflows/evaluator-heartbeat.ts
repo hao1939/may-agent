@@ -121,6 +121,10 @@ function parseEventData(row: Record<string, unknown>): Record<string, unknown> {
   }
 }
 
+function truncate(text: string, max = 700): string {
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
 function isEvaluationRuntimeEvent(row: Record<string, unknown>): boolean {
   const type = String(row.event_type ?? row.type ?? "");
   if (type.startsWith("evaluation.")) return true;
@@ -139,6 +143,38 @@ function isEvaluationRuntimeEvent(row: Record<string, unknown>): boolean {
     metric.startsWith("evaluator.") ||
     metric.startsWith("evaluation.") ||
     metric.startsWith("eval.")
+  );
+}
+
+function isEvaluatorOwnerCommunication(row: Record<string, unknown>): boolean {
+  const eventType = String(row.event_type ?? row.type ?? "");
+  if (eventType !== "message.created" && eventType !== "telegram.reply") {
+    return false;
+  }
+  const data = parseEventData(row);
+  const owner = String(row.owner ?? "");
+  const to = String(data.to ?? "");
+  const project = String(data.project ?? data.projectId ?? "");
+  const target = data.target;
+  const targetProject =
+    target && typeof target === "object" && !Array.isArray(target)
+      ? String((target as Record<string, unknown>).project ?? "")
+      : "";
+  const targetOwner =
+    target && typeof target === "object" && !Array.isArray(target)
+      ? String((target as Record<string, unknown>).owner ?? "")
+      : "";
+
+  return (
+    owner === "agent:evaluator" ||
+    owner === "evaluator" ||
+    to === "evaluator" ||
+    targetOwner === "agent:evaluator" ||
+    targetOwner === "evaluator" ||
+    project === "evaluation" ||
+    project === "evaluation.app" ||
+    targetProject === "evaluation" ||
+    targetProject === "evaluation.app"
   );
 }
 
@@ -185,7 +221,36 @@ function runtimePacket(ctx: WorkflowContext): Record<string, unknown> {
         timestamp: row.timestamp,
       })),
   );
-  return { now, evaluatorMetrics, recentWorkflowRuns, recentEvents };
+  const recentOwnerMessages = queryRows(ctx, "ownerMessages", () =>
+    ctx.query
+      .events({ since: last6h, limit: 160 })
+      .rows.filter((row) => isEvaluatorOwnerCommunication(row))
+      .slice(0, 20)
+      .map((row) => {
+        const data = parseEventData(row);
+        return {
+          id: row.id,
+          type: row.event_type ?? row.type,
+          source: row.source,
+          owner: row.owner,
+          status: row.status,
+          timestamp: row.timestamp,
+          from: data.from,
+          to: data.to,
+          intent: data.intent,
+          priority: data.priority,
+          conversationId: data.conversationId,
+          content: truncate(String(data.content ?? ""), 1200),
+        };
+      }),
+  );
+  return {
+    now,
+    evaluatorMetrics,
+    recentWorkflowRuns,
+    recentEvents,
+    recentOwnerMessages,
+  };
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -206,10 +271,13 @@ Rules:
 - Do not create standalone projects such as projects/evaluator-*.
 - Do not run session aftermath unless the trigger includes a concrete sessionId.
 - If the trigger is a health tick, metric breach, owner request, or task-ready signal, review the task tree and runtime packet.
+- If the trigger is an owner-message, treat it as an owner decision or instruction. Apply it to the task tree when it names a concrete task/state/resume condition.
 - Update the task tree when it needs a new leaf, clearer context, a state change, or a rollup.
 - Append projects/evaluation.app/discussion.md when you make an owner judgment that should be durable but does not need a tree edit.
 - If existing active tasks already cover the signal, say so and avoid churn.
-- If the issue belongs to platform/runtime ownership, send a concise message/escalation to the right owner and record that in discussion.md.
+- Do not send direct human messages from this owner heartbeat. Human-facing project-health notifications are handled by the deduped project-health evaluator path.
+- If the issue belongs to platform/runtime ownership, send one concise message to the exact agent owner only when there is new actionable evidence. Do not send repeated "still unresolved" status updates.
+- If an owner message says an active task is resolved, accepted as normal, or should be closed, update the task state/context instead of re-escalating the same family.
 - Finish with what changed, what remains active, and the next wake condition.
 
 Owner packet:

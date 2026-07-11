@@ -138,6 +138,44 @@ A good escalation has:
   fallback;
 - closure when the answer arrives, or replacement when the ask becomes stale.
 
+An exact wait is the task-tree shape that proves the project did not lose the
+escalation. It has:
+
+- a blocked task owned by the responsible person, agent, project, or team;
+- the requested action or decision;
+- a resume condition;
+- next check or fallback behavior;
+- an escalation id, approval id, packet path, or equivalent linkage.
+
+Those are structured fields, not prose guesses. The evaluator may display task
+goal, summary, and context text, but it should only count an exact wait when it
+can normalize these fields:
+
+```json
+{
+  "state": "blocked",
+  "owner": "human | agent:name | project:name | team:name",
+  "context": {
+    "requested_action": "what the owner must do",
+    "resume_condition": "what proves the project can continue",
+    "next_check_at": "optional ISO timestamp",
+    "fallback": "what happens if the wait does not resolve",
+    "escalation_ref": "event id, approval id, packet path, or message id"
+  }
+}
+```
+
+The same meaning can live under `blocker` when the app already uses a
+structured blocker object. Legacy prose such as "waiting for owner, fallback
+tomorrow" is useful context, but it is not enough to suppress a human
+notification.
+
+When an exact wait exists, `evaluation.app` should not keep asking the human to
+"assign owner." The owner is already recorded. If the runtime still lacks a
+matching `escalation.resolved` or `escalation.dismissed` event, the finding
+becomes owner feedback about formal lifecycle cleanup, not another human
+assignment escalation.
+
 The allowed healthy states are:
 
 - waiting with a linked exact wait and future next check/fallback;
@@ -761,6 +799,14 @@ A finding is closed when the next reports show one of:
 
 Silent disappearance is not closure. The next report must say why the concern is
 closed or downgraded.
+
+The evaluator must distinguish these two cases:
+
+- no owner/wait path exists: this can still request human action such as
+  `assign-owner`;
+- an exact wait exists but formal closure is missing: notify the target owner to
+  emit or repair the closure/follow-up signal, and suppress duplicate human
+  assignment messages.
 
 ## Implementation Plan
 
