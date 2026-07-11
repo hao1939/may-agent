@@ -15,6 +15,7 @@ type CliTaskRecord = {
   cwd: string;
   promptPath: string;
   resultPath: string;
+  structuredResultPath?: string;
   eventsPath?: string;
   sandbox?: SandboxMode;
   effectiveSandbox?: EffectiveSandboxMode;
@@ -24,6 +25,8 @@ type CliTaskRecord = {
   sourceSessionId?: string;
   resumeSessionId?: string;
   reuseSession?: boolean;
+  files?: string[];
+  worktree?: string;
   cliSessionId?: string;
   resumeCommand?: string[];
   status: "requested" | "running" | "completed" | "failed" | "orphaned";
@@ -34,6 +37,18 @@ type CliTaskRecord = {
   exitCode?: number;
   error?: string;
   summary?: string;
+};
+
+type StructuredCliResult = {
+  status: "completed" | "failed" | "partial" | "timed_out";
+  summary: string;
+  changedFiles?: string[];
+  verification?: Array<{ command: string; outcome: "passed" | "failed" | "not_run"; outputRef?: string }>;
+  evidenceRefs: string[];
+  nativeSessionId?: string;
+  nextAction?: string;
+  exitCode?: number;
+  error?: string;
 };
 
 export type CliTaskRunnerOptions = {
@@ -134,10 +149,21 @@ function appendFile(path: string, text: string): void {
 }
 
 function ensureInside(root: string, path: string): string {
-  const resolved = resolve(path);
   const base = resolve(root);
+  const resolved = resolve(base, path);
   if (resolved === base || resolved.startsWith(`${base}/`)) return resolved;
   throw new Error(`Path outside project root: ${path}`);
+}
+
+function safeOptionalPath(root: string, value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? ensureInside(root, value) : undefined;
+}
+
+function safePathList(root: string, value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const paths = value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  if (paths.length === 0) return undefined;
+  return paths.map((entry) => ensureInside(root, entry));
 }
 
 function summarize(text: string): string {
@@ -190,6 +216,17 @@ function commandFor(record: CliTaskRecord, prompt: string): { command: string; a
   return record.tool === "codex"
     ? { command: "codex", args: codexArgs(record, prompt) }
     : { command: "claude", args: claudeArgs(record, prompt) };
+}
+
+function promptForRun(record: CliTaskRecord, prompt: string): string {
+  const context: string[] = [];
+  if (record.worktree) context.push(`Worktree: ${record.worktree}`);
+  if (record.files?.length) {
+    context.push("Relevant files:");
+    for (const file of record.files) context.push(`- ${file}`);
+  }
+  if (context.length === 0) return prompt;
+  return `${context.join("\n")}\n\nTask:\n${prompt}`;
 }
 
 function extractCliSessionId(tool: CliTool, stdout: string): string | undefined {
@@ -257,8 +294,19 @@ function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
 }
 
 function sandboxMode(value: unknown): SandboxMode {
-  void value;
+  if (value === "read-only" || value === "workspace-write" || value === "danger-full-access") return value;
   return "danger-full-access";
+}
+
+function effectiveSandboxFor(_tool: CliTool, requested: SandboxMode): {
+  effectiveSandbox: EffectiveSandboxMode;
+  sandboxFallbackReason?: string;
+} {
+  if (requested === "danger-full-access") return { effectiveSandbox: "danger-full-access" };
+  return {
+    effectiveSandbox: "danger-full-access",
+    sandboxFallbackReason: `May CLI workers run with danger-full-access in the trusted container; requested ${requested} was normalized.`,
+  };
 }
 
 type CliAttemptResult = {
@@ -267,6 +315,41 @@ type CliAttemptResult = {
   stderr: string;
   error?: string;
 };
+
+function structuredStatus(record: CliTaskRecord): StructuredCliResult["status"] {
+  if (record.status === "orphaned") return "failed";
+  if (record.error?.toLowerCase().includes("timeout")) return "timed_out";
+  if (record.status === "completed") return "completed";
+  return "failed";
+}
+
+function writeStructuredResult(record: CliTaskRecord): void {
+  if (!record.structuredResultPath) return;
+  const evidenceRefs = [record.resultPath, record.eventsPath].filter((entry): entry is string => Boolean(entry));
+  const result: StructuredCliResult = {
+    status: structuredStatus(record),
+    summary: record.summary ?? record.error ?? "(no summary)",
+    evidenceRefs,
+    nativeSessionId: record.cliSessionId,
+    exitCode: record.exitCode,
+    error: record.error,
+  };
+  mkdirSync(dirname(record.structuredResultPath), { recursive: true });
+  writeFileSync(record.structuredResultPath, `${JSON.stringify(result, null, 2)}\n`);
+}
+
+function cliEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    HOME: process.env.HOME || "/app/.state",
+    LITELLM_API_KEY: process.env.LITELLM_API_KEY || "sk-local",
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || process.env.LITELLM_API_KEY || "sk-local",
+    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL || process.env.MODEL_BASE_URL || "http://localhost:4000",
+  };
+  const codexHome = process.env.CODEX_HOME || process.env.MAY_CODEX_HOME;
+  if (codexHome) env.CODEX_HOME = codexHome;
+  return env;
+}
 
 async function runCliAttempt(opts: {
   bus: EventBus;
@@ -278,18 +361,11 @@ async function runCliAttempt(opts: {
   now: () => number;
   attempt: number;
 }): Promise<CliAttemptResult> {
-  const { bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt } = opts;
+  const { bus, spawnCommand, record, recordPath, prompt, now, attempt } = opts;
   const { command, args } = commandFor(record, prompt);
   const child = spawnCommand(command, args, {
-    cwd: record.cwd,
-    env: {
-      ...process.env,
-      HOME: process.env.HOME || "/app/.state",
-      CODEX_HOME: process.env.CODEX_HOME || join(persistDir, ".codex"),
-      LITELLM_API_KEY: process.env.LITELLM_API_KEY || "sk-local",
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || process.env.LITELLM_API_KEY || "sk-local",
-      ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL || process.env.MODEL_BASE_URL || "http://localhost:4000",
-    },
+    cwd: record.worktree ?? record.cwd,
+    env: cliEnv(),
     timeout: record.timeoutMs,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -309,6 +385,7 @@ async function runCliAttempt(opts: {
       cwd: record.cwd,
       promptPath: record.promptPath,
       resultPath: record.resultPath,
+      structuredResultPath: record.structuredResultPath,
       eventsPath: record.eventsPath,
       sourceSessionId: record.sourceSessionId,
       pid: child.pid,
@@ -363,6 +440,7 @@ function emitSourceSessionUpdate(
     record.summary ? `Summary: ${record.summary}` : undefined,
     record.error ? `Error: ${record.error}` : undefined,
     `Result: ${record.resultPath}`,
+    record.structuredResultPath ? `Structured result: ${record.structuredResultPath}` : undefined,
     record.eventsPath ? `Events: ${record.eventsPath}` : undefined,
     record.cliSessionId ? `CLI session: ${record.cliSessionId}` : undefined,
     record.resumeCommand ? `Resume command: ${record.resumeCommand.join(" ")}` : undefined,
@@ -392,6 +470,8 @@ export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; 
     record.status = "orphaned";
     record.finishedAt = iso(now);
     record.error = "Runtime restarted while CLI task was running";
+    record.summary = record.error;
+    writeStructuredResult(record);
     writeRecord(path, record);
     opts.bus.emit({
       type: "cli.task.orphaned",
@@ -402,6 +482,7 @@ export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; 
         tool: record.tool,
         pid: record.pid,
         reason: record.error,
+        structuredResultPath: record.structuredResultPath,
         sourceSessionId: record.sourceSessionId,
         cliSessionId: record.cliSessionId,
         resumeCommand: record.resumeCommand,
@@ -437,6 +518,8 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
     const recordPath = taskRecordPath(opts.persistDir, taskId);
     const existing = readRecord(recordPath);
     const sourceOwner = typeof data.sourceOwner === "string" ? data.sourceOwner : ((event as any).owner ?? "agent:may");
+    const worktree = safeOptionalPath(dirname(opts.projectRoot), data.worktree);
+    const filesRoot = worktree ?? opts.projectRoot;
     const record: CliTaskRecord = existing ?? {
       taskId,
       tool: data.tool === "codex" ? "codex" : "claude",
@@ -450,6 +533,10 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
         typeof data.resultPath === "string"
           ? ensureInside(opts.projectRoot, data.resultPath)
           : join(taskDir(opts.persistDir, taskId), "result.md"),
+      structuredResultPath:
+        typeof data.structuredResultPath === "string"
+          ? ensureInside(opts.projectRoot, data.structuredResultPath)
+          : join(taskDir(opts.persistDir, taskId), "result.json"),
       eventsPath:
         typeof data.eventsPath === "string"
           ? ensureInside(opts.projectRoot, data.eventsPath)
@@ -461,6 +548,8 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
       sourceSessionId: typeof data.sourceSessionId === "string" ? data.sourceSessionId : undefined,
       resumeSessionId: typeof data.resumeSessionId === "string" ? data.resumeSessionId : undefined,
       reuseSession: data.reuseSession === true,
+      files: safePathList(filesRoot, data.files),
+      worktree,
       status: "requested",
       requestedAt: iso(now),
     };
@@ -495,9 +584,11 @@ async function runCliTask(opts: {
 }): Promise<void> {
   const { bus, spawnCommand, persistDir, record, recordPath, now } = opts;
   try {
-    const prompt = readFileSync(record.promptPath, "utf8");
+    const prompt = promptForRun(record, readFileSync(record.promptPath, "utf8"));
     record.resumeSessionId ??= reusableSessionId(persistDir, record);
-    record.effectiveSandbox = record.sandbox;
+    const sandbox = effectiveSandboxFor(record.tool, record.sandbox ?? "danger-full-access");
+    record.effectiveSandbox = sandbox.effectiveSandbox;
+    record.sandboxFallbackReason = sandbox.sandboxFallbackReason;
     record.status = "running";
     record.startedAt = iso(now);
     writeRecord(recordPath, record);
@@ -537,6 +628,7 @@ async function runCliTask(opts: {
     record.summary = summarize(resultText);
     if (attempt.exitCode === 0) {
       record.status = "completed";
+      writeStructuredResult(record);
       writeRecord(recordPath, record);
       bus.emit({
         type: "cli.task.completed",
@@ -546,6 +638,7 @@ async function runCliTask(opts: {
           taskId: record.taskId,
           tool: record.tool,
           resultPath: record.resultPath,
+          structuredResultPath: record.structuredResultPath,
           eventsPath: record.eventsPath,
           exitCode: attempt.exitCode,
           summary: record.summary,
@@ -561,6 +654,8 @@ async function runCliTask(opts: {
     } else {
       record.status = "failed";
       record.error = attempt.error ?? `CLI exited with code ${attempt.exitCode}`;
+      record.summary = record.error;
+      writeStructuredResult(record);
       writeRecord(recordPath, record);
       bus.emit({
         type: "cli.task.failed",
@@ -570,6 +665,7 @@ async function runCliTask(opts: {
           taskId: record.taskId,
           tool: record.tool,
           resultPath: record.resultPath,
+          structuredResultPath: record.structuredResultPath,
           eventsPath: record.eventsPath,
           error: record.error,
           exitCode: attempt.exitCode,
@@ -588,6 +684,8 @@ async function runCliTask(opts: {
     record.status = "failed";
     record.finishedAt = iso(now);
     record.error = message;
+    record.summary = message;
+    writeStructuredResult(record);
     writeRecord(recordPath, record);
     bus.emit({
       type: "cli.task.failed",
@@ -597,6 +695,7 @@ async function runCliTask(opts: {
         taskId: record.taskId,
         tool: record.tool,
         resultPath: record.resultPath,
+        structuredResultPath: record.structuredResultPath,
         eventsPath: record.eventsPath,
         error: message,
         sourceSessionId: record.sourceSessionId,
