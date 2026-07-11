@@ -206,6 +206,49 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("resolves relative files against requested cwd", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-cwd-files-"));
+    const project = join(root, "project");
+    const persistDir = join(root, ".state");
+    mkdirSync(join(project, "src"), { recursive: true });
+    writeFileSync(join(project, "src", "target.ts"), "export const value = 1;\n");
+    const bus = new EventBus();
+    let spawnedArgs: string[] = [];
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[]) => {
+        spawnedArgs = [command, ...args];
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        mode: "review",
+        prompt: "Review this file.",
+        cwd: project,
+        files: ["src/target.ts"],
+      });
+      await waitFor(() => spawnedArgs.length > 0);
+
+      const prompt = spawnedArgs[spawnedArgs.length - 1];
+      expect(prompt).toContain(join(project, "src", "target.ts"));
+      expect(prompt).not.toContain(join(root, "src", "target.ts"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("passes a requested native resume session to the CLI command", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-resume-"));
     const persistDir = join(root, ".state");
