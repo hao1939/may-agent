@@ -511,7 +511,7 @@ Commit: `/app` *"docs: workflow ownership model"*
 
 1. `bun test` in `repos/may-agent` → all green.
 2. `bun run tsc --noEmit` in both `/app` and `repos/may-agent` → zero errors.
-3. `bun run build && bun run reload` → container healthy, all 7 supervisord
+3. `bun run build && bun run deploy` → container healthy, all 7 supervisord
    services RUNNING.
 4. Watch `workflow_runs` for 10 minutes; verify the workflows that should fire
    (heartbeats, evaluator-aftermath, project for platform) do, with status

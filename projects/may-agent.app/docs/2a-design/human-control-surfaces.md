@@ -195,7 +195,13 @@ cd /app/projects/may-agent
 bun run deploy
 ```
 
-`bun run deploy` bundles the runtime, writes the staged deploy marker, then
+`bun run deploy` builds the current May code and applies it to the running May
+service. The script uses the available control path: the supervisor socket when
+it is reachable, otherwise `docker exec may-agent`. `bun run reload` is
+intentionally not a code deploy command; `/reload` and
+`runtime.reload.requested` reload agent/app definitions.
+
+The deploy command bundles the runtime, writes the staged deploy marker, then
 asks supervisor to start `may-agent-restarter`. The restarter installs
 `bundle/may-agent` to `/usr/local/bin/may-agent` while the runtime is stopped,
 then starts `may-agent` / `may-agent-web`. If the live restarter does not
