@@ -518,13 +518,14 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
     const recordPath = taskRecordPath(opts.persistDir, taskId);
     const existing = readRecord(recordPath);
     const sourceOwner = typeof data.sourceOwner === "string" ? data.sourceOwner : ((event as any).owner ?? "agent:may");
+    const cwd = typeof data.cwd === "string" ? ensureInside(opts.projectRoot, data.cwd) : opts.projectRoot;
     const worktree = safeOptionalPath(dirname(opts.projectRoot), data.worktree);
-    const filesRoot = worktree ?? opts.projectRoot;
+    const filesRoot = worktree ?? cwd;
     const record: CliTaskRecord = existing ?? {
       taskId,
       tool: data.tool === "codex" ? "codex" : "claude",
       mode: data.mode === "patch" || data.mode === "review" ? data.mode : "investigate",
-      cwd: typeof data.cwd === "string" ? ensureInside(opts.projectRoot, data.cwd) : opts.projectRoot,
+      cwd,
       promptPath:
         typeof data.promptPath === "string"
           ? ensureInside(opts.projectRoot, data.promptPath)
