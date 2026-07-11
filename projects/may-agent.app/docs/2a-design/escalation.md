@@ -134,8 +134,9 @@ Routing is mechanical. The owner decides the actual fix. A valid route emits
 ### Human Reply Bridge
 
 Human-owned escalations are usually delivered through May and a human channel
-such as Telegram. The human reply is not itself the lifecycle resolution until
-May or another owner converts it into a terminal escalation event.
+such as Telegram. Transport code only moves messages and restores context. May
+owns the reply as a decision task. The human reply is not itself the lifecycle
+resolution until May or another owner converts it into a structured outcome.
 
 End-to-end path:
 
@@ -146,10 +147,11 @@ escalation.created(owner = human:operator)
      data.originalIssue.eventType = escalation.created
      data.expectedClosure = [escalation.resolved, escalation.dismissed]
   -> human replies in Telegram/Web/etc.
-  -> channel emits human.input.received with attached originalIssue metadata
-  -> command-router delivers an enriched internal message to May/escalation resolver
-  -> resolver emits escalation.resolved or escalation.dismissed
-  -> escalation-lifecycle resumes sourceSessionId/checkpointRef
+  -> transport emits human.input.received with the human text and restored context
+  -> command-router gives May one correlated reply-handling work item
+  -> May agent decides what the reply means
+  -> May emits escalation.resolved, escalation.dismissed, or a clear follow-up event
+  -> escalation-lifecycle resumes sourceSessionId/checkpointRef after terminal closure
 ```
 
 `sourceSessionId` and `resume.checkpointRef` are context for step 4, not a
@@ -158,8 +160,17 @@ original blocked source session, because that bypasses `escalation.resolved`
 and leaves the escalation open. The source session resumes only after the
 terminal resolution event.
 
+Responsibility split:
+
+- Telegram/Web transport stores and restores reply context.
+- Command routing delivers one clear work item to May.
+- May agent interprets the reply and emits the next structured event.
+- Runtime lifecycle code observes terminal escalation events and resumes source
+  work when appropriate.
+- Watchdogs audit missing closure; they do not interpret the human answer.
+
 The internal delivery message should include enough attached context for the
-resolver to act without guessing:
+May agent to act without guessing:
 
 ```text
 Human reply
@@ -177,6 +188,12 @@ Expected closure: escalation.resolved, escalation.dismissed
 Use the human reply as the decision or missing input. Emit the expected
 resolution/dismissal event when done.
 ```
+
+The May reply-handling work item should not introduce a new lifecycle object
+unless it has to. It should read the attached context, decide the next event, and
+emit that event. If the reply is insufficient, it should emit or create one exact
+follow-up ask or wait with a recheck/fallback, not leave the conversation as a
+loose chat.
 
 ### 3. Resolve
 
@@ -349,7 +366,7 @@ Metrics should measure lifecycle health, not replace judgment:
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
 | Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 35 escalations originate from session-finish boundary code, not proactive mid-session calls. |
 | Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `handler.routed`, and sends a message to the owner. Human-owned routes emit `message.created` with `conversationId`, `originalIssue`, and `expectedClosure`. | Implemented (Slice 2). Keep routing evidence as `handler.routed`; do not reintroduce orphan `escalation.routed` events. |
-| Human reply bridge | Telegram can recover `message.created` context and emit `human.input.received` with `context.telegramReply`. Command-router can enrich internal delivery messages from that context. | Needs escalation-specific guard: replies to `originalIssue.eventType = escalation.created` must route through May/escalation resolver, not directly to `sourceSessionId`. |
+| Human reply bridge | Telegram can recover `message.created` context and emit `human.input.received` with `context.telegramReply`. Command-router can enrich internal delivery messages from that context. | Escalation replies must route to May as a correlated reply-handling work item, not directly to `sourceSessionId`. |
 | Resolution | **Owner convention still needed.** May or the target owner must turn human/agent answers into `escalation.resolved` or `escalation.dismissed`. | Slice 3 remains the critical missing closure path. Without it, human replies are acknowledged but escalations stay open. |
 | Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Slice 4 infra exists. It works only after Slice 3 emits terminal resolution events. Directly steering the source session bypasses this lifecycle and should be avoided for escalations. |
 | `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |

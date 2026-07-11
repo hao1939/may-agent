@@ -459,17 +459,19 @@ May should receive a packet like:
 ```
 
 May does not have to emit `escalation.resolved` immediately. It may first
-investigate and fix the issue. But it must keep the original issue attached
-until it has emitted some closure/update event.
+investigate and fix the issue. But the reply must stay attached to the original
+issue until May emits one structured outcome: resolved, dismissed, routed to the
+project owner, or converted into an exact follow-up wait.
 
 Escalation replies have one extra routing rule:
 
 > `sourceSessionId` is resume context, not the Telegram reply target.
 
-For a human-owned escalation, the reply must go to May or the escalation
-resolver first. The resolver turns the human answer into
-`escalation.resolved` or `escalation.dismissed`. Only after that terminal event
-does the escalation lifecycle resume the original source session.
+For a human-owned escalation, the reply must go to May first. May is the
+human-facing decision agent: it reads the human reply plus restored context,
+decides the next event, and emits the structured closure or follow-up. Only
+after a terminal event does the escalation lifecycle resume the original source
+session.
 
 Wrong path:
 
@@ -485,16 +487,16 @@ Correct path:
 ```text
 human reply
   -> human.input.received(context.originalIssue.eventType = "escalation.created")
-  -> May/escalation resolver receives enriched delivery message
-  -> resolver emits escalation.resolved or escalation.dismissed
+  -> May receives one enriched reply-handling work item
+  -> May emits escalation.resolved, escalation.dismissed, or an exact follow-up
   -> escalation-lifecycle resumes sourceSessionId/checkpointRef
 ```
 
 The notification may store `sourceSessionId` inside `originalIssue` and
 `resume`, but it should not store that value as the direct reply `sessionId`.
 If legacy rows do contain it, command-router should prefer the
-`expectedClosure`/`originalIssue` rule and route through the escalation resolver
-rather than steering the source session directly.
+`expectedClosure`/`originalIssue` rule and route the reply to May rather than
+steering the source session directly.
 
 ## Notification Context
 

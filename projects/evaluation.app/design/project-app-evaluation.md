@@ -95,13 +95,20 @@ local recovery exhausted
   -> routed/message-created/approval-requested delivery proof
   -> linked blocked/wait task carries the live wait
   -> watcher rechecks next_check_at/fallback_at
-  -> returned answer creates escalation.resolved or escalation.dismissed
+  -> human/owner answer returns through May with original context attached
+  -> May or the responsible owner emits escalation.resolved, escalation.dismissed,
+     project-owner feedback, or an exact follow-up wait
   -> target app converts the answer into work, refreshed wait, done, or terminal finding
 ```
 
 Events record facts. The task tree records the live state. `handled`,
 `routed`, or `message.created` are useful delivery facts, but they do not mean
 the target project is unblocked.
+
+`evaluation.app` does not consume the human answer or resolve the escalation.
+It audits whether the answer path closed cleanly: the reply was correlated to
+the original issue, May or the target owner emitted a structured result, and the
+target app reflected that result in task state or follow-up work.
 
 The escalation itself does not need to be routed to `evaluation.app` as a work
 item. `evaluation.app` can read the runtime database and target app artifacts:

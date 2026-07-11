@@ -147,6 +147,108 @@ function groupEventSymptoms(rows: Row[]): Row[] {
     .sort((a, b) => numberValue(b.count) - numberValue(a.count));
 }
 
+function objectValue(value: unknown): Row {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Row)
+    : {};
+}
+
+function addString(values: Set<string>, value: unknown): void {
+  if (typeof value === "string" && value.trim()) values.add(value.trim());
+}
+
+function escalationReplyKeys(row: Row): Set<string> {
+  const keys = new Set<string>();
+  const data = parseEventData(row);
+  const conversation = objectValue(data.conversation);
+  const context = objectValue(data.context);
+  const telegramReply = objectValue(context.telegramReply);
+  const originalIssue =
+    objectValue(data.originalIssue).eventType !== undefined
+      ? objectValue(data.originalIssue)
+      : objectValue(telegramReply.originalIssue);
+
+  addString(keys, data.conversationId);
+  addString(keys, conversation.id);
+  addString(keys, context.conversationId);
+  addString(keys, telegramReply.conversationId);
+  addString(keys, data.escalationId);
+  addString(keys, data.escalation_id);
+  addString(keys, originalIssue.escalationId);
+  addString(keys, originalIssue.escalation_id);
+
+  for (const key of [...keys]) {
+    if (!key.startsWith("escalation:")) keys.add(`escalation:${key}`);
+  }
+  return keys;
+}
+
+function staleEscalationKeys(row: Row): Set<string> {
+  const keys = new Set<string>();
+  const data = parseEventData(row);
+  addString(keys, data.escalationId);
+  addString(keys, data.escalation_id);
+  addString(keys, data.id);
+  addString(keys, data.conversationId);
+  for (const key of [...keys]) {
+    if (!key.startsWith("escalation:")) keys.add(`escalation:${key}`);
+  }
+  return keys;
+}
+
+function compactReply(row: Row): Row {
+  const data = parseEventData(row);
+  const context = objectValue(data.context);
+  const telegramReply = objectValue(context.telegramReply);
+  const originalIssue =
+    objectValue(data.originalIssue).eventType !== undefined
+      ? objectValue(data.originalIssue)
+      : objectValue(telegramReply.originalIssue);
+  return {
+    id: row.id,
+    event_type: row.event_type,
+    timestamp: row.timestamp,
+    source: row.source,
+    owner: row.owner,
+    conversationId:
+      data.conversationId ??
+      objectValue(data.conversation).id ??
+      context.conversationId ??
+      telegramReply.conversationId,
+    originalIssue: {
+      eventType: originalIssue.eventType,
+      escalationId: originalIssue.escalationId ?? originalIssue.escalation_id,
+    },
+    text:
+      typeof data.text === "string"
+        ? data.text.slice(0, 240)
+        : typeof objectValue(telegramReply.notification).text === "string"
+          ? String(objectValue(telegramReply.notification).text).slice(0, 240)
+          : undefined,
+  };
+}
+
+function attachReplyContext(escalations: Row[], replies: Row[]): Row[] {
+  return escalations.map((escalation) => {
+    const keys = staleEscalationKeys(escalation);
+    const matches = replies.filter((reply) => {
+      for (const key of escalationReplyKeys(reply)) {
+        if (keys.has(key)) return true;
+      }
+      return false;
+    });
+    if (matches.length === 0) return escalation;
+    return {
+      ...escalation,
+      reply_context: {
+        state: "reply-received-no-closure",
+        count: matches.length,
+        latest: compactReply(matches[0] ?? {}),
+      },
+    };
+  });
+}
+
 function writePacket(appDir: string, packet: Row): string {
   const stateDir = join(appDir, ".state");
   mkdirSync(stateDir, { recursive: true });
@@ -284,6 +386,21 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       { limit: 20 },
     ),
   );
+  const recentEscalationReplies = queryRows(ctx, () =>
+    ctx.query.sql(
+      `SELECT id, event_type, source, owner, timestamp, data
+         FROM events
+        WHERE timestamp >= ?
+          AND event_type IN ('telegram.reply', 'human.input.received')
+        ORDER BY timestamp DESC, id DESC`,
+      [chronicallyStaleFloor],
+      { limit: 100 },
+    ),
+  );
+  const staleEscalationsWithReplyContext = attachReplyContext(
+    staleEscalations,
+    recentEscalationReplies,
+  );
 
   // Only count blocked workflows owned by this platform project.
   // evaluation.app blocked runs (evaluator-aftermath, evaluator-heartbeat)
@@ -418,7 +535,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       kind: "stale-escalation",
       severity: "P1",
       reason: `${staleEscalations.length} platform-sourced escalation(s) (1h–6h old) without resolution/dismissal.`,
-      evidence: compactRows(staleEscalations, 5),
+      evidence: compactRows(staleEscalationsWithReplyContext, 5),
     });
   }
   if (staleBlockedWorkflowRuns.length > 0) {
@@ -504,7 +621,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       repeated_runtime_symptoms: compactRows(repeatedSymptoms, 12),
       unknown_project_events: compactRows(unknownProjectEvents, 10),
       pending_owner_messages: pendingOwnerMessages,
-      stale_escalations: compactRows(staleEscalations, 10),
+      stale_escalations: compactRows(staleEscalationsWithReplyContext, 10),
+      recent_escalation_replies: compactRows(recentEscalationReplies, 10),
       stale_blocked_workflow_runs: compactRows(staleBlockedWorkflowRuns, 10),
       chronic_blocked_workflow_runs: compactRows(
         chronicBlockedWorkflowRuns,

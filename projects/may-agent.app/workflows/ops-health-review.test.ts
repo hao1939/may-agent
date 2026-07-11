@@ -149,6 +149,74 @@ describe("ops-health-review", () => {
     });
   });
 
+  it("annotates stale escalations when a human reply arrived but closure is missing", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+    const oneHourAgo = Date.now() - 60 * 60_000;
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:tech-lead",
+        "telegram",
+        JSON.stringify({
+          escalationId: "esc_replied",
+          reason: "needs human decision",
+        }),
+        twoHoursAgo,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "telegram.reply",
+        "agent:may",
+        "telegram",
+        JSON.stringify({
+          conversationId: "escalation:esc_replied",
+          originalIssue: {
+            eventType: "escalation.created",
+            escalationId: "esc_replied",
+          },
+          expectedClosure: ["escalation.resolved", "escalation.dismissed"],
+        }),
+        oneHourAgo,
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    expect(result.type).toBe("done");
+    expect(emitted[1]).toMatchObject({
+      type: "project.owner.requested",
+      params: {
+        signals: [
+          expect.objectContaining({
+            kind: "stale-escalation",
+            evidence: [
+              expect.objectContaining({
+                reply_context: expect.objectContaining({
+                  state: "reply-received-no-closure",
+                  count: 1,
+                  latest: expect.objectContaining({
+                    event_type: "telegram.reply",
+                    conversationId: "escalation:esc_replied",
+                  }),
+                }),
+              }),
+            ],
+          }),
+        ],
+      },
+    });
+    expect(packetLines(appDir)[0].observations.stale_escalations[0]).toMatchObject({
+      reply_context: {
+        state: "reply-received-no-closure",
+      },
+    });
+  });
+
   it("wakes the owner for stale local blocked workflow groups", async () => {
     const { appDir, db, emitted, ctx, close } = setup();
     const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
