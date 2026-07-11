@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { EventEmitter } from "node:events";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
 import { EventBus, type AgentEvent } from "./event-bus.js";
@@ -84,13 +84,19 @@ describe("CLI task runner", () => {
       expect(events.map((event) => event.type)).toContain("cli.task.completed");
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.cliSessionId).toBe("codex-session-1");
+      expect(completed?.data?.structuredResultPath).toBe(payload.structuredResultPath);
       expect(completed?.data?.resumeCommand).toContain("resume");
       expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
       expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
+      const structured = JSON.parse(readFileSync(payload.structuredResultPath, "utf8")) as any;
+      expect(structured.status).toBe("completed");
+      expect(structured.summary).toContain("cli worker completed");
+      expect(structured.evidenceRefs).toContain(payload.resultPath);
       const steer = events.find((event) => event.type === "session.steer.requested") as any;
       expect(steer?.data?.sessionId).toBe("chat-1");
       expect(steer?.data?.message).toContain("CLI task");
       expect(steer?.data?.message).toContain(payload.resultPath);
+      expect(steer?.data?.message).toContain(payload.structuredResultPath);
 
       const db = getDb(persistDir);
       const pair = db
@@ -145,9 +151,58 @@ describe("CLI task runner", () => {
       expect(spawnedArgs[0]).not.toContain("read-only");
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
-      expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
+      expect(completed?.data?.sandboxFallbackReason).toContain("requested read-only was normalized");
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("passes scoped files and worktree context to the native worker", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-context-"));
+    const persistDir = join(root, ".state");
+    const worktree = join(dirname(root), `${basename(root)}-worktree-a`);
+    mkdirSync(join(worktree, "src"), { recursive: true });
+    writeFileSync(join(worktree, "src", "target.ts"), "export const value = 1;\n");
+    const bus = new EventBus();
+    let spawnedCwd: string | undefined;
+    let spawnedArgs: string[] = [];
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[], options: { cwd?: string }) => {
+        spawnedCwd = options.cwd;
+        spawnedArgs = [command, ...args];
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        mode: "review",
+        prompt: "Review this file.",
+        cwd: root,
+        worktree,
+        files: ["src/target.ts"],
+      });
+      await waitFor(() => spawnedArgs.length > 0);
+
+      expect(spawnedCwd).toBe(worktree);
+      const prompt = spawnedArgs[spawnedArgs.length - 1];
+      expect(prompt).toContain(`Worktree: ${worktree}`);
+      expect(prompt).toContain(join(worktree, "src", "target.ts"));
+      expect(prompt).toContain("Task:\nReview this file.");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(worktree, { recursive: true, force: true });
     }
   });
 
@@ -243,14 +298,17 @@ describe("CLI task runner", () => {
     }
   });
 
-  it("sets Codex skill home from the runner persist directory", async () => {
+  it("uses configured Codex home when provided", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-codex-home-"));
     const persistDir = join(root, ".state");
+    const codexHome = join(persistDir, ".codex");
     mkdirSync(persistDir, { recursive: true });
     const bus = new EventBus();
     let spawnedEnv: NodeJS.ProcessEnv | undefined;
     const originalCodexHome = process.env.CODEX_HOME;
-    delete process.env.CODEX_HOME;
+    const originalMayCodexHome = process.env.MAY_CODEX_HOME;
+    process.env.CODEX_HOME = codexHome;
+    delete process.env.MAY_CODEX_HOME;
     attachCliTaskRunner({
       bus,
       persistDir,
@@ -275,10 +333,56 @@ describe("CLI task runner", () => {
         cwd: root,
       });
       await waitFor(() => Boolean(spawnedEnv));
-      expect(spawnedEnv?.CODEX_HOME).toBe(join(persistDir, ".codex"));
+      expect(spawnedEnv?.CODEX_HOME).toBe(codexHome);
     } finally {
       if (originalCodexHome === undefined) delete process.env.CODEX_HOME;
       else process.env.CODEX_HOME = originalCodexHome;
+      if (originalMayCodexHome === undefined) delete process.env.MAY_CODEX_HOME;
+      else process.env.MAY_CODEX_HOME = originalMayCodexHome;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not force an unauthenticated Codex home by default", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-default-codex-home-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    let spawnedEnv: NodeJS.ProcessEnv | undefined;
+    const originalCodexHome = process.env.CODEX_HOME;
+    const originalMayCodexHome = process.env.MAY_CODEX_HOME;
+    delete process.env.CODEX_HOME;
+    delete process.env.MAY_CODEX_HOME;
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        spawnedEnv = options.env;
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        prompt: "Use normal Codex auth.",
+        cwd: root,
+      });
+      await waitFor(() => Boolean(spawnedEnv));
+      expect(spawnedEnv?.CODEX_HOME).toBeUndefined();
+    } finally {
+      if (originalCodexHome === undefined) delete process.env.CODEX_HOME;
+      else process.env.CODEX_HOME = originalCodexHome;
+      if (originalMayCodexHome === undefined) delete process.env.MAY_CODEX_HOME;
+      else process.env.MAY_CODEX_HOME = originalMayCodexHome;
       rmSync(root, { recursive: true, force: true });
     }
   });

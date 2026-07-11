@@ -74,7 +74,7 @@ function createTaskId(): string {
 
 function ensureInside(root: string, path: string): string {
   const base = resolve(root);
-  const resolved = resolve(path);
+  const resolved = resolve(base, path);
   if (resolved === base || resolved.startsWith(`${base}/`)) return resolved;
   throw new Error(`Path outside project root: ${path}`);
 }
@@ -105,6 +105,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
       const dir = join(opts.persistDir, "cli-tasks", taskId);
       const promptPath = join(dir, "prompt.md");
       const resultPath = join(dir, "result.md");
+      const structuredResultPath = join(dir, "result.json");
       const eventsPath = join(dir, "events.jsonl");
       const cwd = safeCwd(opts.projectRoot, params.cwd);
       const mode = params.mode ?? "investigate";
@@ -123,6 +124,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
             cwd,
             promptPath,
             resultPath,
+            structuredResultPath,
             eventsPath,
             sandbox,
             timeoutMs,
@@ -151,6 +153,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           cwd,
           promptPath,
           resultPath,
+          structuredResultPath,
           eventsPath,
           sandbox,
           timeoutMs,
@@ -168,6 +171,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           taskId,
           status: "accepted",
           resultPath,
+          structuredResultPath,
           eventsPath,
         }),
       );

@@ -463,6 +463,7 @@ export type SystemEvent =
         cwd: string;
         promptPath: string;
         resultPath: string;
+        structuredResultPath?: string;
         eventsPath?: string;
         sandbox?: "read-only" | "workspace-write" | "danger-full-access";
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
@@ -487,6 +488,7 @@ export type SystemEvent =
         cwd: string;
         promptPath: string;
         resultPath: string;
+        structuredResultPath?: string;
         eventsPath?: string;
         sourceSessionId?: string;
         pid?: number;
@@ -505,6 +507,7 @@ export type SystemEvent =
         tool: "claude" | "codex";
         resultPath: string;
         eventsPath?: string;
+        structuredResultPath?: string;
         exitCode: number;
         summary: string;
         sourceSessionId?: string;
@@ -523,6 +526,7 @@ export type SystemEvent =
         taskId: string;
         tool: "claude" | "codex";
         resultPath?: string;
+        structuredResultPath?: string;
         eventsPath?: string;
         error: string;
         exitCode?: number;
@@ -543,6 +547,7 @@ export type SystemEvent =
         tool?: "claude" | "codex";
         pid?: number;
         reason: string;
+        structuredResultPath?: string;
         sourceSessionId?: string;
         cliSessionId?: string;
         resumeCommand?: string[];
