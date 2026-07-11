@@ -319,6 +319,76 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("routes escalation human.input.received to May even when session and project targets are present", () => {
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const runs: Array<{ agent: string; task: string; source?: string; requestId?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+      run: (agent: string, task: string, opts?: { source?: string; requestId?: string }) => {
+        runs.push({ agent, task, source: opts?.source, requestId: opts?.requestId });
+        return "s_may_reply";
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        inputId: "telegram:1201",
+        actor: "human",
+        text: "approve retry",
+        conversation: { id: "escalation:esc_1", channel: "telegram", channelMessageId: 1201 },
+        target: {
+          sessionId: "s_escalation_source",
+          projectPath: "projects/aks-rp-e2e.app",
+        },
+        context: {
+          telegramReply: {
+            conversationId: "escalation:esc_1",
+            originalIssue: {
+              eventType: "escalation.created",
+              escalationId: "esc_1",
+              sourceSessionId: "s_escalation_source",
+              projectPath: "projects/aks-rp-e2e.app",
+              reason: "Approval return path is not visibly closing.",
+              requestedAction: "Approve retry or dismiss the escalation.",
+            },
+            expectedClosure: ["escalation.resolved", "escalation.dismissed"],
+          },
+        },
+      },
+    } as any);
+
+    expect(resumed).toEqual([]);
+    expect(h.emitted.some((event) => event.type === "project.comment.created")).toBe(false);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "chat.start.requested",
+        source: "telegram",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          agent: "may",
+          requestId: "telegram:1201",
+          message: expect.stringContaining("May reply-handling work item"),
+        }),
+      }),
+    );
+    expect(runs).toEqual([
+      expect.objectContaining({
+        agent: "may",
+        source: "telegram",
+        requestId: "telegram:1201",
+        task: expect.stringContaining("emit one structured result event"),
+      }),
+    ]);
+    h.router.close();
+  });
+
   it("ignores input and steer commands that do not use the canonical message field", () => {
     const handled: Array<{ message: string; source?: string }> = [];
     const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];

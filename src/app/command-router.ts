@@ -78,7 +78,14 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
 
   const issue = objectField(reply, "originalIssue");
   const notification = objectField(reply, "notification");
-  const lines = ["Human reply", message, "", "Attached context"];
+  const lines = [
+    "May reply-handling work item",
+    "",
+    "Human reply",
+    message,
+    "",
+    "Attached context",
+  ];
 
   const conversationId = stringField(reply, "conversationId");
   const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
@@ -111,7 +118,10 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
 
   lines.push("");
   lines.push(
-    "Use the human reply as the decision or missing input. Continue the tracked work and emit the expected closure/update event when done.",
+    "Handle this reply as May. Use the human reply as the decision or missing input, keep it attached to the original issue, and emit one structured result event when possible.",
+  );
+  lines.push(
+    "If the reply is insufficient, create one exact follow-up ask or wait with a recheck/fallback instead of leaving this as a loose chat.",
   );
   return lines.join("\n");
 }
@@ -249,16 +259,36 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
     const deliveredMessage = buildDeliveredHumanMessage(message, context);
     const escalationReply = isEscalationReplyContext(context);
+    const eventOwner =
+      typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
 
     const targetSessionId = nonEmptyString(target.sessionId);
     if (targetSessionId && !escalationReply) {
       bus.emit({
         type: "session.steer.requested",
         source,
-        owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
+        owner: eventOwner,
         data: {
           sessionId: targetSessionId,
           message: deliveredMessage,
+          ...(Object.keys(context).length ? { context } : {}),
+        },
+      } as any);
+      return;
+    }
+
+    if (escalationReply) {
+      bus.emit({
+        type: "chat.start.requested",
+        source,
+        owner: "agent:may",
+        data: {
+          agent: "may",
+          message: deliveredMessage,
+          channel: nonEmptyString(conversation.channel) ?? source,
+          channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
+          channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+          requestId: nonEmptyString(data.inputId) ?? undefined,
           ...(Object.keys(context).length ? { context } : {}),
         },
       } as any);
@@ -270,7 +300,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       bus.emit({
         type: "project.comment.created",
         source,
-        owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
+        owner: eventOwner,
         data: { projectPath: targetProjectPath, comment: message, author: nonEmptyString(data.actor) ?? "human" },
       } as any);
       return;
@@ -329,9 +359,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    const eventOwner =
-      typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
-    const agent = escalationReply ? "may" : (nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may");
+    const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
     bus.emit({
       type: "chat.start.requested",
       source,
