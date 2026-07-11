@@ -38,6 +38,7 @@ System architecture and subsystem designs.
 | [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
 | [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console contract: targeted sessions and event-shaped human intents |
 | [may-console.md](2a-design/may-console.md) | May Console: terminal REPL over the daemon socket, session switching, direct steering |
+| [native-coding-workers.md](2a-design/native-coding-workers.md) | Native coding workers: Codex/Claude CLI adapter model, event contract, session continuity |
 | [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
 | [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
