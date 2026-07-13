@@ -245,6 +245,10 @@ quality is the binding constraint.
 
 ---
 
+**Update 2026-07-11**: HN controlled study "Does Code Cleanliness Affect Coding Agents?" (210pts/93c) provides empirical validation — agent performance degrades measurably on messy codebases. Human code debt directly becomes agent performance debt, confirming the read-path bottleneck thesis.
+
+---
+
 Sources:
 - https://arxiv.org/abs/2606.26806
 - https://arxiv.org/abs/2606.24595

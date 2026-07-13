@@ -338,8 +338,21 @@ impossible?).
 | Agent Security Bench (ASB) | Attack success rate against tool-using agents | SecureClaw paper |
 | AgentDojo | Indirect prompt injection via tool outputs | SecureClaw paper |
 | AgentLeak | Sensitive data leakage from agent context | SecureClaw paper |
+| RBI-Eval | Memory-use boundary measurement — when models inappropriately integrate sensitive memory. Claude/DeepSeek/Qwen leak 51-83% more than GPT when sensitive memory reaches generator [2606.06055] | arXiv, Jun 2026 |
 | MalSkillBench | Runtime-verified malicious skill execution | arXiv inbox, Jun 2026 |
 | VESTA | Automated scenario generation for safety evaluation | arXiv inbox, Jun 2026 |
+
+### Knowledge-actuation gap
+
+Models *understand* secure coding principles but *fail to translate them into
+secure code*. SoK: AI Secure Code Generation [2606.25195] provides the first
+systematic decomposition: NL understanding is a statistically strong predictor
+of code-level outcomes, yet substantial gaps persist across prompting,
+fine-tuning, RL, and agentic workflows. No technique eliminates the gap.
+Implication: encoding principles in `context.md` or AGENTS.md predicts
+understanding but not compliance — principle knowledge ≠ principle actuation.
+Connects: TerraProbe deceptive fixes (§2, defense architectures), Narration-of-Thought
+externalization [2606.26366], decision-aware world models [2606.25421].
 
 ### Safety-aware training
 

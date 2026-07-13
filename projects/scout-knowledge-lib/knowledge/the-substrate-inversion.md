@@ -679,3 +679,16 @@ Source: [findings/2026-07-09-hn-arxiv-github-scan-480.md]
 production line will always be outperformed by a factory with mediocre machines
 and brilliant logistics. The machines do the work. The architecture determines
 whether the work was worth doing.*
+
+---
+
+## Cultural Signal: The "Reverse Centaur" Frame (added 2026-07-12)
+
+Doctorow's "Reverse Centaurs" essay (2025, resurfacing on HN with 84pts) provides
+the social/cultural expression of the Substrate Inversion: machines that use humans
+as components, not the inverse. HN commenters note humans are "already bred for it"
+via political/military/religious machines — the pattern predates AI but AI makes it
+explicit and scalable. The social friction emerging ("Stop Telling Me to Ask an LLM,"
+64pts same day) marks the cultural visibility threshold of this architectural shift.
+
+Source: https://pluralistic.net/2025/09/11/vulgar-thatcherism/#there-is-an-alternative

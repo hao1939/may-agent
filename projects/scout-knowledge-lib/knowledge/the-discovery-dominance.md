@@ -2,7 +2,7 @@
 summary: "Cross-source synthesis: At a predictable scale threshold (~20 agents), the cost of FINDING (discovering capabilities, routing requests, selecting tools/agents) dominates the cost of DOING (execution). The field optimizes execution but the enterprise MAS paper (2606.20058) proves discovery noise is the primary bottleneck at scale. Simple tasks degrade faster than complex ones because complex tasks amortize discovery cost across longer execution chains. ToolPro (2606.19992) independently converges on compilation as the fix — encoding multi-step discovery into executable programs. Our production data (Coordination Tax 2:1 planning:work, Cold Start Tax 46% state re-discovery, Compilation Threshold 53.5% below-threshold sessions) validates this from three angles. The next infrastructure wave will be discovery compilation: pre-resolving what-to-call at deploy time rather than runtime."
 triggers: ["discovery dominance", "discovery bottleneck", "discovery noise", "agent routing at scale", "why simple tasks fail", "scale vs complexity", "enterprise agent", "multi-agent scaling", "discovery compilation", "MCP scaling", "ToolPro", "capability routing"]
 last_updated: "2026-06-21"
-source_basis: "arXiv 2606.20058 (Enterprise Event-Driven MAS: 208 scenarios, Persona/Department/Enterprise scale, discovery noise primary bottleneck); arXiv 2606.19992 (ToolPro: tool programs, 53.4% latency reduction, 96.1% traffic reduction by compiling discovery); arXiv 2606.20537 (Execution-State Capsules: graph-bound checkpoint/restore beyond KV-cache); HN 48614631 (When I Reject AI Code: discrimination bottleneck 102pts 64c); production data (Coordination Tax 2.04:1 ratio, Cold Start Tax 46%, Compilation Threshold 53.5% below-floor sessions); Orchestration Hollowing synthesis; Compilation Gradient synthesis."
+source_basis: "arXiv 2606.20058 (Enterprise Event-Driven MAS: 208 scenarios, Persona/Department/Enterprise scale, discovery noise primary bottleneck); arXiv 2606.17519 (Enterprise Routing: 110 agents/584 tools, F1 drops 16-23pp at scale, 10pp irreducible confusion gap); arXiv 2606.19992 (ToolPro: tool programs, 53.4% latency reduction, 96.1% traffic reduction by compiling discovery); arXiv 2606.20537 (Execution-State Capsules: graph-bound checkpoint/restore beyond KV-cache); HN 48614631 (When I Reject AI Code: discrimination bottleneck 102pts 64c); production data (Coordination Tax 2.04:1 ratio, Cold Start Tax 46%, Compilation Threshold 53.5% below-floor sessions); Orchestration Hollowing synthesis; Compilation Gradient synthesis."
 </ai_context>
 
 # The Discovery Dominance: Why Finding Overtakes Doing
@@ -56,6 +56,18 @@ Key findings:
 - The Task Manager (priority inference + event merging + preemption) reduces high-priority latency 14–75%
 
 **Structural interpretation**: DAG front-loads all discovery (plan everything, then execute). ReAct interleaves discovery with execution (discover-execute-discover-execute). When discovery noise is low, DAG wins. When discovery noise dominates, interleaving wins because each discovery step can correct from the last execution result.
+
+### Stream 1b: Enterprise Routing Degradation (2606.17519)
+
+Independent validation from a deployed enterprise assistant (110 agents, 584 tools):
+routing F1 drops **16–23 percentage points** across three frontier models as the
+catalog scales from 10 to 110 agents. Oracle analysis decomposes degradation into:
+- **Retrieval gap**: candidates not surfaced (recoverable via embedding shortlisting, +10–11pp)
+- **Confusion gap**: even with perfect retrieval, ceiling drops 10pp — models genuinely can't distinguish semantically similar tools at scale
+
+This is partially irreducible: embedding-based shortlisting mitigates but doesn't
+eliminate the gap. The confusion gap confirms discovery noise is not just a search
+problem but a fundamental discrimination problem at scale.
 
 ### Stream 2: Tool Program Compilation (2606.19992)
 

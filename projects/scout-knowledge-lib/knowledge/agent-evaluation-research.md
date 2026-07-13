@@ -518,3 +518,26 @@ boundary (convergence criterion) would suffice.
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — AgentBeats evaluation-via-protocols pattern
 - [Scan #240: Capability Mutual Exclusion](./findings/2026-11-01-arxiv-scan-240.md) — full synthesis of isolated-vs-joint evaluation gap
 - [Scan #264: The Incompleteness Constraint](./findings/2026-06-30-arxiv-scan-264.md) — governance impossibility results + EMPATH safety variance
+
+---
+
+## §22b: Hidden Regressions in AI-Evolved Code — AIChilles (arXiv, June 2026)
+
+Standard benchmarks evaluate the *target workload* an AI system was optimized
+for, missing regressions on unseen workloads. AIChilles [2606.15834] discovers
+49 hidden weaknesses across 30 AI-evolved programs: performance improvements on
+the training workload co-occur with degradations on workloads outside the
+optimization distribution. This is undetectable by any single-benchmark
+evaluation because the regression exists only in the complement of what was
+measured.
+
+**Implication**: Harness evolution (APEX, SkillOpt, Life-Harness) that optimizes
+agent behavior on observed task traces will systematically create blind spots on
+unobserved task types. Evaluation must include held-out workloads that were
+*never part of the optimization signal* — analogous to adversarial test sets in
+ML, but for behavioral evolution rather than model training.
+
+- **Source**: [2606.15834] AIChilles, arXiv June 2026. Categories: cs.SE.
+- **Connects to**: The Evaluation Mirage (evaluation metrics that conceal
+  structured failures), APEX three-layer co-evolution (agent-runtime-hardening.md),
+  False-Success Detection (agent-runtime-hardening.md).

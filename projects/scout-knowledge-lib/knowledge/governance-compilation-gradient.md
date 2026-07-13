@@ -210,6 +210,28 @@ arriving at this same insight from the practitioner direction.
 
 ---
 
+## §9. Skillscript — Stage 2→3 Implementation (2026-11-16)
+
+**Finding**: Show HN "Skillscript" — a declarative sandboxed language for agent
+tool orchestration. Design principle: "the skillscript is the program; the model
+is the runtime." MCP-native, no eval/unbounded loops by design.
+
+**Significance**: First concrete product implementing the compilation gradient as
+a language design choice. Skillscript occupies the Stage 2→3 boundary: structured
+enough to be deterministic (no eval), flexible enough for agent orchestration
+(model as runtime). The constraint is architectural — you can't write unsafe
+skillscripts because the language doesn't have the primitives.
+
+**Connection**: Validates Progressive Crystallization's "hybrid" stage. Also
+connects to Constraint Transfer — safety via language restriction rather than
+runtime monitoring. Extends "From Prompts to Contracts" [2607.08028] empirical
+finding that code-owned enforcement is the only layer preserving both safety
+and utility.
+
+**Source**: HN Show HN (4pts, early), scan #284
+
+---
+
 ## Cross-References
 
 - [agent-security-governance.md](./agent-security-governance.md) §2.2 (AgentTrust auto-distillation), §2.4 (TRIAD update-option), §2.10 (SMSR provenance), §3 (Structural Turn)
@@ -225,6 +247,7 @@ arriving at this same insight from the practitioner direction.
 - [findings/2026-06-24-hn-scan-118.md](./findings/2026-06-24-hn-scan-118.md) (Stage 3 becoming product category — Statewright, Limits.dev, Aharness, Recursant)
 - [findings/2026-10-09-hn-scan-170.md](./findings/2026-10-09-hn-scan-170.md) (The Governance Vacuum — empirical proof that Stage 1 dominates: 58% of agent configs are single-commit, <1% declare permissions; Ford failure = behavioral-only governance; Rel(AI)Build proposes Stage 3 control plane)
 - [findings/2026-10-31-arxiv-scan-236.md](./findings/2026-10-31-arxiv-scan-236.md) (The Structural Inevitability Thesis — mathematical proof that the gradient is a structural necessity, not a design preference. Inseparability proof [2606.27567] shows prompt injection is provably unsolvable in shared-embedding architectures. Glite ARF [2606.27416] demonstrates Stage 3 compiled verification in production: 12 parallel agents, $450, 1% structural overhead, caught 4 data-leaking feature sets. GBC [2606.28187] provides gradient-level attribution for multi-agent coordination.)
+- [findings/2026-11-08-arxiv-agent-triage.md](./findings/2026-11-08-arxiv-agent-triage.md) (Empirical proof that code-owned harness enforcement is the ONLY layer preserving both safety and utility. "From Prompts to Contracts" [2607.08028]: prompt instructions under-enforce, external guardrails over-refuse (88/120 utility), harness achieves 120/120. Persuasion Attacks on CoT Monitoring [2607.08066]: CoT scratchpad becomes persuasion channel — monitor access INCREASES harmful approval by 9.5%. Cross-model fact-checking mitigates by 45%. The oversight stack is now a primary attack surface: monitors persuaded, guardrails DoS'd, memory extracted. Code-owned deterministic enforcement is the only layer that holds.)
 - [findings/2026-07-01-arxiv-hn-scan-269.md](./findings/2026-07-01-arxiv-hn-scan-269.md) (The Calibration Turn — five arXiv papers prove maximal governance backfires. Pessimism's Paradox [2606.30627]: higher conservatism monotonically increases reward hacking, ρ=1.0. Act-or-Defer [2606.29654]: calibrated risk budget decomposition. ECHO [2606.29745]: temporal calibration — fixed governance posture across turns is provably suboptimal. Extends the Inverted-U finding: governance has both a floor [Governance Gap #262] and a ceiling [Pessimism's Paradox]. The compilation gradient's decision function — when to compile — is itself a calibration problem.)
 - [findings/2026-07-03-hn-arxiv-github-scan-321.md](./findings/2026-07-03-hn-arxiv-github-scan-321.md) (The Governance Conversion Thesis — five papers converge: governance is CONVERTED from operational failures, not pre-designed. "Cheap Code, Costly Judgment" [2607.01087]: 12-week empirical study, 420 KLOC production + 1.16 MLOC governance, 2.76:1 ratio; develops middle-range theory of governance conversion. SEA [2607.00871]: anytime-valid certificates gate self-evolution. Self-GC [2607.00692]: context objects with governed lifecycles. Managed Autonomy [2607.00334]: five execution gears + four governance states with formal proofs. Memory→Language [2607.00233]: memory architecture > channel capacity for emergent coordination. Governance conversion explains the compilation gradient's *input mechanism*: Stage 1 behavioral governance IS the failure-generation phase whose outputs are compiled into Stage 2/3.)
 - [findings/2026-07-09-hn-arxiv-github-scan-343.md](./findings/2026-07-09-hn-arxiv-github-scan-343.md) (The Governance Sidecar Crystallization — the sidecar pattern is Stage 3 compilation instantiated as process architecture. Three independent repos (OpenFirma 100★, Doberman-Core 111★, Orloj 105★) converge on governance-as-separate-process that intercepts every agent action. The sidecar IS compilation: policy engine = compiled rules, action gate = compiled enforcement, audit log = compiled evidence. GateMem 132★ provides the measurement target. Leash-building:verification ratio narrowed from 2,023:1 to 749:1 as sidecar infrastructure grows.)

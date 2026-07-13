@@ -846,6 +846,26 @@ surface are orthogonal.
 *(arXiv: https://arxiv.org/abs/2606.20512)*
 
 ## Next Steps
+
+## Relevance-Gated Experience Memory — FinAcumen (arXiv, June 2026)
+
+Financial multimodal reasoning agent that accumulates grounded reasoning
+experience from prior trajectories, distilling successful strategies and
+failure-derived cautionary rules into a persistent memory bank. During inference,
+retrieved experiences condition reasoning **only when semantic relevance exceeds a
+calibrated threshold**; irrelevant memory is explicitly suppressed.
+
+**Key insight**: Memory injection should be relevance-gated, not always-on.
+Irrelevant context degrades performance — the system is better off with *no*
+memory than with *wrong* memory. This connects to the harness-benefit
+non-monotonicity finding (2605.30621): strong models may benefit from less
+guidance, not more.
+
+- **Source**: [2606.17642] FinAcumen, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: Engram bi-temporal memory (the-eternal-present.md),
+  Prompt Mass Problem, T-Mem write-time anticipation.
+
+## Operational Next Steps
 - ~~Review how `lessons` are currently utilized and surfaced.~~
 - ~~Track whether "Reviews Expensive" thread crosses 50pts~~ ✅ CONFIRMED at 55pts (scan #16).
 - ~~Track whether the "context/comprehension" narrative cluster generates formal tooling proposals~~ In progress: bob1029's adaptive review is first proto-methodology.

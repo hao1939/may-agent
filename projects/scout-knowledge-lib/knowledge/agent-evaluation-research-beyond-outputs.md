@@ -560,6 +560,51 @@ advantage.
   [Scan #309](./findings/2026-07-02-hn-arxiv-github-scan-309.md). Added 2026-07-02.
 
 
+## §36: The Diagnostic Architecture Crisis — Evaluation as Infrastructure (HN/arXiv, June 2026)
+
+Agent evaluation has crossed from a metric problem to an **architecture problem**.
+Seven independent signals converge: evaluation at agent scale requires
+specialized infrastructure (diagnostic loops, cascaded pipelines, identity
+primitives, noise modeling), creating a recursive dependency — evaluation agents
+themselves need evaluation.
+
+### Three Impossibilities
+
+| Constraint | Evidence | Implication |
+|---|---|---|
+| **Scale** | SAFARI [2606.24626]: trajectories exceed context 5× | Linear load-all-and-judge physically impossible |
+| **Accuracy** | RL for CUAs [2606.24515]: evaluator noise must be modeled | Evaluators produce biased rewards without correction |
+| **Business** | HN discourse: eval startups fail commercially | Evaluation information expires too fast for service model |
+
+### Architectural Responses
+
+- **SAFARI** [2606.24626]: tool-augmented diagnostic loop with STM — active
+  investigation replaces linear context loading for fault attribution.
+- **Cascaded Grading** [2606.24839]: three-layer cascade (regex → LLM → human)
+  with different failure profiles per layer.
+- **EnterpriseClawBench** [2606.23654]: 852 tasks, 6 dimensions, best agent
+  ceiling at 0.663 — single scores are informationally empty.
+- **Noise-Corrected RL** [2606.24515]: model evaluator as noisy binary channel,
+  explicit noise correction in reward estimation.
+- **Agon** [2606.24177]: separation of machine-checks vs. human-judges; Prompt
+  Economy loops handle what's mechanically checkable.
+- **LF Agent Name Service**: DNS-anchored identity verification as trust
+  primitive that evaluation architectures depend on.
+
+### The Recursive Trap
+
+The diagnostic infrastructure itself is an agent system requiring evaluation.
+No current framework resolves this recursion — it's bounded only by cascading
+to cheaper/faster evaluation at each layer (Grading the Grader pattern).
+
+- **Sources**: [2606.24626], [2606.24839], [2606.23654], [2606.24515],
+  [2606.24177], [2606.24783]. HN: eval startup failure discourse (17pts/13c).
+  [Scan #137](./findings/2026-06-24-hn-scan-137.md). Added 2026-07-12.
+- **Connects to**: Evaluation Mirage (§27), Agent Testing Tooling (parent §7),
+  Meta-Escalation Ratchet (hn-agent-operational-memory.md).
+
+---
+
 ## Related Notes
 
 - [Agent Evaluation Patterns](./agent-evaluation.md) ← parent canonical note (§1–§11)

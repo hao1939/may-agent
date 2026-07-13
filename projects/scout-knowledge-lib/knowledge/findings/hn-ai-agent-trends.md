@@ -1,8 +1,52 @@
-# Hacker News AI Agent Trends — Consolidated (Updated 2026-06-16)
+# Hacker News AI Agent Trends — Consolidated (Updated 2026-07-13)
 
 **Source:** Hacker News Algolia API  
-**Last updated:** 2026-06-16 (scan: 2026-06-16 05:10 UTC)  
-**Prior version:** 2026-06-21
+**Last updated:** 2026-07-13 (scans #279–#287)  
+**Prior version:** 2026-06-16
+
+---
+
+## July 2026 Update: The Crystallization Phase
+
+### New Tier 1 Stories (500+ pts)
+
+| Story | Pts | Comments | Date | Theme |
+|-------|-----|----------|------|-------|
+| Claude Code sends 33k tokens before reading prompt | 552 | 313 | Jul 2026 | Token Tax |
+| GitLost: Tricked GitHub's AI Agent into Leaking Private Repos | 538 | 204 | Jul 2026 | Agent Security |
+| Ask HN: Add flag for AI-generated articles | 519 | 258 | Jul 2026 | Provenance |
+
+### New Tier 2 Stories (300–500 pts)
+
+| Story | Pts | Comments | Date | Theme |
+|-------|-----|----------|------|-------|
+| What xAI's Grok Build CLI sends to xAI | 461 | 169 | Jul 2026 | Transparency |
+| Old and new apps, via modern coding agents | 433 | 126 | Jul 2026 | Practitioner synthesis |
+| Terry Tao: coding agents | 422 | 125 | Jul 2026 | Legitimation |
+| Microsoft releases Flint, a visualization language for AI agents | 347 | 137 | Jul 2026 | Agent-native interfaces |
+| Zuckerberg: agent development going slower than expected | 341 | 618 | Jul 2026 | Reality check |
+| geohot "I love LLMs, I hate hype" | 362 | 226 | Jul 2026 | Calibration |
+| Zig Creator Calls Spade a Spade, Anthropic Blows Smoke | 401 | 186 | Jul 2026 | AI-OSS tensions |
+
+### Emerging Theses (July 2026)
+
+1. **Token Tax**: Production agent scaffolding costs 3–5x the visible interaction in hidden protocol overhead. Claude Code's 33k token preamble vs OpenCode's 7k became the highest-engagement agent story. Efficiency is the new competitive axis.
+
+2. **Delegation Norm Crisis**: "Stop Telling Me to Ask an LLM" (193pts), "Flag AI articles" (519pts), "Against Usefulness" (93pts) form a coherent anti-delegation backlash. Society is negotiating when human→agent redirection is acceptable vs. insulting.
+
+3. **Agent Infrastructure Stack Crystallization**: Security (GitLost), observability (Mindwalk 3D replay), cost management (GPT-5.6 migration), evaluation (Databricks benchmark), orchestration (Manufact MCP Cloud), interfaces (Flint, OfficeCLI) — every operational concern now has dedicated products. Mirrors 2015–2018 cloud-native explosion.
+
+4. **Opacity Rejection**: Wire-level reverse-engineering of Claude Code and Grok CLI tools + AI content flag demand = "right to inspect" emerging as community norm at every layer.
+
+5. **Monoculture Risk**: Empirical evidence (IEEE Spectrum study) that AI boosts individual researcher productivity while narrowing collective exploration space. Agent-mediated work trades breadth for speed.
+
+6. **Self-Improving Open Models**: Ornith-1.0 (262pts) marks shift from static fine-tuning to online learning loops for coding agents.
+
+7. **AI-Company/OSS Tensions**: Anthropic's Bun→Rust rewrite (marketed as AI-driven) provoked Zig creator Andrew Kelly's public criticism (401pts, 186c). AI companies instrumentalizing open-source rewrites as marketing creates friction with maintainer communities. Pattern: capability demos that implicitly devalue existing human work trigger backlash.
+
+### Shift from June → July
+
+June was dominated by **disaster narratives** (bankrupted operators, deleted databases, Fedora supply-chain attack). July shifted to **infrastructure maturation** — the discourse moved from "agents break things" to "how do we build reliable agent systems?" The failure stories are now background context rather than breaking news.
 
 ---
 
@@ -2998,9 +3042,52 @@ The sovereignty/anti-scale stories are growing 5-10x faster than platform and in
 
 ---
 
+---
+
+## Scan: 2026-07-11
+
+### Key Stories
+
+| Story | Pts | Comments | Theme |
+|-------|-----|----------|-------|
+| Claude Code sends 33k tokens before reading the prompt; OpenCode sends 7k | 470 | 266 | Token overhead / cost transparency |
+| Old and new apps, via modern coding agents (Terry Tao) | 413 | 120 | Non-programmers building with agents |
+| Migrating a production AI agent to GPT-5.6: 2.2x faster, 27% cheaper | 145 | 47 | Model migration economics |
+| Math.tanh fingerprinting in Chromium 148 | 315 | 156 | Browser fingerprinting (non-agent) |
+
+### Emerging Themes
+
+**1. Agent Token Economics as First-Class Concern**
+The Claude Code 33k token overhead story (470pts, 266 comments) signals community frustration shifting from "can agents do the task?" to "what's the hidden cost?" Key discourse:
+- Sub-agents burning budgets before completing work (7 sub-agents launched, budget exhausted)
+- Cynicism: "Anthropic makes more money forcing subscriptions"
+- Demand for cost transparency: article author adding qualitative task completion metrics after community pushback
+- Broader pattern: tools like quesma.com documenting 30+ tool calls for trivial "Hey" prompts
+
+**2. Coding Agent Democratization (Terry Tao Post)**
+Fields Medalist writing about using coding agents to build apps (413pts). Community discourse:
+- "Infinite latent demand for software outside traditional tech" — agents unlocking non-programmer builders
+- Education use case: building visualizations cheaply for CS classes
+- Humor signal of normalization: "one step from Fields Medalist asking why Docker won't start"
+
+**3. Model Migration as Production Discipline**
+GPT-5.6 migration post (145pts) shows agent operators now treating model upgrades like infrastructure migrations:
+- 2.2x faster, 27% cheaper as concrete benchmarks
+- Community validates: "varied, tiny workflows on 5.4-nano → 5.6 saw this range of improvement"
+- Criticism: "LLM-written article" detected by readers (meta-signal about content quality)
+
+### System Implications
+
+| HN Signal | System Implication | Priority |
+|-----------|-------------------|----------|
+| 33k token overhead discourse | Agent harnesses need token budgeting/caps as first-class feature | 🔴 HIGH |
+| Sub-agent budget runaway complaints | Multi-agent orchestrators need per-subtask cost limits | 🔴 HIGH |
+| Terry Tao normalization | Non-dev agent users approaching mainstream — UX matters more than capability | 🟡 MEDIUM |
+| GPT-5.6 migration pattern | Model-agnostic agent architectures proven valuable; migration cost is real | 🟡 MEDIUM |
+
 **Next scan priorities:**
-1. **Track local model thread for 500+ pts milestone** — acceleration or stabilization?
-2. **Monitor LinkedIn backdoor for supply chain wave** — isolated incident or pattern?
-3. **Watch Euromesh for institutional responses** (Mistral, OVH, CERN)
-4. **Track Hetzner migration threads** — complaints vs. practical infrastructure moves
+1. **Track token overhead discourse** — does it produce tooling (budget caps, cost dashboards)?
+2. **Monitor OpenCode vs Claude Code competition** — market pressure on pricing?
+3. **Watch for GPT-5.6 failure stories** — migration regressions as counter-signal
+4. **Non-programmer agent builders** — does the Terry Tao post spawn a wave?
 5. **Apple FM model dedup** — does Apple announce shared model pools?

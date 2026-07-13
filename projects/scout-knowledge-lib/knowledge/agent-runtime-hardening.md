@@ -2,7 +2,7 @@
 summary: "Companion note to agent-architectures.md: 14+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, bounded recovery, typed safety, source-level evolution, process harness governance, and architecture evolution. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276) and Harness Discipline papers (lifecycle adaptation, bounded recovery, typed holes, source-level rewriting)."
 triggers: ["runtime hardening", "semantic transactions", "Cordon", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting"]
 last_updated: "2026-07-09"
-source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]."
+source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. APEX integrated 2026-09-08 from Executable Turn triage."
 </ai_context>
 
 # Agent Runtime Hardening
@@ -404,3 +404,79 @@ impossible for query-driven memory.
 - **Connects to**: Operating Surface (#275), Externalization Convergence (#266),
   Indiscernibility Threshold (#270), Forensic Counter (#273), Semantic
   Transactions (Cordon).
+
+## Three-Layer Co-Evolution — APEX (arXiv, June 2026)
+
+Single-axis harness optimization (prompt patching only, or skill tuning only) is
+systematically inferior to multi-dimensional co-evolution. APEX simultaneously
+evolves three layers:
+
+- **L1 — Harness**: failure-mode patching (what we currently do via context.md)
+- **L2 — Behavioral Principles**: success-trace distillation (extracting what
+  high-quality sessions did right, not just what failures did wrong)
+- **L3 — Workflow Topology**: structural fitness selection (evolving how agents
+  are connected, not just what they do)
+
+Tested on a 15-node production compute fleet (114 real task traces, 18 days):
+Health Score 0.570 (+90% vs baseline 0.300). Distilled 6 novel reusable
+principles and selected a research-first topology scoring 0.900 (+20%). Cost:
+4 LLM calls (~270s) on local qwen2.5-coder:32b.
+
+**Key insight**: The missing evolution signal is **success-trace distillation** —
+systematically extracting what works, not just mining failures. Our fixed
+"planner → agent → evaluator" topology could itself be subject to fitness
+selection.
+
+- **Source**: [2606.15363] APEX, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: Harness Evolution Paradox (§above — flat-updating is
+  single-axis), Life-Harness (lifecycle adaptation), SkillOpt (skill-axis only),
+  Evolution Stack meta-thesis (governance-compilation-gradient.md).
+
+---
+
+## Goal-State Validation — GIST-CMTF (arXiv, June 2026)
+
+**Problem**: Agents can execute valid tool sequences for the *wrong objective*.
+Standard success metrics cannot detect this because the agent "succeeds" at an
+unintended task. Wrong-goal execution occurs when ambiguous requests are resolved
+implicitly rather than validated explicitly.
+
+**Pattern**: GIST-CMTF adds a goal-state inference layer *before* tool exposure:
+1. Predict candidate symbolic goal states from the request
+2. Estimate ambiguity across candidates
+3. If ambiguity exceeds threshold, expose *clarification* as a causal action
+4. Only after goal validation, apply Causal Minimal Tool Filtering (CMTF)
+
+Results across 7 model backends and 120 tasks: 97.0% task success vs 80.1% for
+top-goal CMTF. Wrong-goal execution drops from 19.4% to 2.5%.
+
+**Key insight**: Uncertainty about the goal is a first-class runtime state that
+the system reasons about, not a condition resolved by defaulting to the most
+likely interpretation. Clarification becomes a causal action in the execution
+graph, not a UX escape hatch.
+
+- **Source**: [2606.16813] GIST-CMTF, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: SING intention graphs (tool discovery via goal decomposition),
+  ToolPro (2606.19992, state-architecture-turn triage), The Compilation Threshold.
+
+## Trial-and-Error Harness — Sibyl (arXiv, May 2026)
+
+**Problem**: Autonomous research agents lose trial experience at four points:
+weak signals become overconfident prose, negative results are dropped, memory
+stays textual, and recurring process failures don't modify future behavior.
+
+**Pattern**: Sibyl introduces Scientific Trial-and-Error Harnesses with two
+conversion units as audit mechanisms:
+1. **Trial-to-behavior conversion**: did a trial's outcome change the agent's future actions?
+2. **Trial-to-harness-behavior conversion**: did a process failure change the system itself?
+
+If neither conversion fires, the trial was wasted — the system accumulated
+experience without learning from it.
+
+**Key insight**: The harness is not just an execution wrapper but a *learning
+substrate*. The two conversion units provide a tractable audit: trace whether
+any trial outcome actually changed downstream behavior or system design.
+
+- **Source**: [2605.22343] Sibyl-AutoResearch, arXiv May 2026. Categories: cs.MA, cs.AI, cs.SE.
+- **Connects to**: MOSS source-level self-rewriting (§above), Life-Harness lifecycle adaptation,
+  SkillOpt agent-trainable skills (agent-architectures.md), The Evaluation Mirage.

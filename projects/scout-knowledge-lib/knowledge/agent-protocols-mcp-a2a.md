@@ -764,6 +764,30 @@ feature within them."
 
 ---
 
+## §8. MCP Protocol Debt — Quantitative Evidence (2026-11-15)
+
+**Finding**: Tool `mcp-spec-check` scanned 4,356 reachable MCP servers and
+found only 1 compliant with the upcoming 2026-07-28 spec revision (0.023%
+compliance). HN reaction: "Usually a product not working with 99.995% of the
+ecosystem is a no-go."
+
+**Implication**: MCP spec velocity exceeds ecosystem adoption velocity by
+orders of magnitude. This is classic **protocol debt** — rapid spec evolution
+creating fragmentation across deployed implementations. Agent systems
+depending on MCP should:
+1. Pin to specific spec versions as first-class dependencies
+2. Budget for migration costs at each spec revision
+3. Treat MCP compliance as a runtime property to test, not assume
+
+**Connection**: Validates MCP Governance Illusion (scan #279), Specification
+Turn (#267), Enforcement Crystallization (#278). The governance tooling
+(spec-check, Kastra) is emerging *reactively* — after fragmentation, not
+before it.
+
+**Source**: https://github.com/Roee-Tsur/mcp-spec-check, HN scan #282
+
+---
+
 *This note consolidates MCP/A2A/AG-UI references scattered across 6+ library
 notes into a single canonical protocol reference. Source-dated provenance
 lives in `inbox/` archive files.*

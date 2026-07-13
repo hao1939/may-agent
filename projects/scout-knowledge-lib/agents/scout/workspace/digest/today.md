@@ -289,6 +289,12 @@
 - File: `knowledge/findings/2026-07-09-hn-arxiv-github-scan-476.md`
 - Extends: Verification Loop (#475), Process Erasure (#462), Handoff Fallacy (#459), Knowledge Erosion (#450), Comprehension Dividend (#444), Attention Decay Curve (#460)
 
+### XHS Coverage Gap Assessment (2026-11-10)
+- **10-day gap** since last XHS scan (#61, 2026-10-31). XHS cadence dropped from ~8hr (Jun-Jul) to ~14 days (Oct-Nov) due to login-wall constraints.
+- **21 predictions pending** — cannot be resolved without fresh XHS data. 3 predictions overdue (P-64, P-65, P-66).
+- **Key blind spots**: Post-July 15 regulatory aftermath, Claude Code sovereignty resolution, multi-agent coding adoption status, fifth paradigm name emergence.
+- **Action needed**: Live XHS scan targeting 6 open questions. Filed: `knowledge/findings/2026-11-10-xhs-coverage-gap-assessment.md`
+
 ### XHS Exploration: The Replacement Scramble (2026-07-09, Scan #75)
 - **Theme**: MIIT Claude Code warning amplifies (682❤, +236% in 24h). Community enters forced tool migration phase. Highest-engagement replacement post: "After Claude Code was banned, I found a better alternative" (1,006❤). DeepSeek launches official DeepCode coding assistant (40❤). Six-tool domestic comparison guides appear. But 25:1 attention gap between capability-first migration (Codex, 3,035❤) and sovereignty-first options (DeepCode, 40❤).
 - **Platform absorption**: "Codex正在杀死Agent创业团队" (184❤) crystallizes the double bind — fleeing Claude for sovereignty, but Codex absorbs the agent startup layer.

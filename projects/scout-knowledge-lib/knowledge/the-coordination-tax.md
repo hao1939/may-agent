@@ -232,3 +232,24 @@ coordination wall.
 50% of system operations and tracing the cause to a planner-to-worker session
 ratio that grew from 0:1 to 2:1 in 10 days — a live demonstration of every
 coordination overhead paper from the June triage.*
+
+---
+
+## External Validation: Human-AI Synergy (arXiv, June 2026)
+
+[2606.18413] proves the Coordination Tax extends to human-AI collaboration:
+additional collaborators (human or AI) can become *net harmful* when coordination
+overhead exceeds their productive contribution. The mechanism is **process loss**
+— shared memory and HITL gates are required to prevent coordination costs from
+dominating. Without explicit coordination infrastructure, adding a second
+collaborator introduces overhead that cancels or reverses their contribution.
+
+This is the formal version of our observation: even a single agent with k
+coordination layers hits a wall. The paper generalizes: *any* system where
+participants lack shared state and must synchronize via message-passing will
+exhibit coordination overhead that grows faster than productive throughput once
+the collaboration graph exceeds a critical density.
+
+- **Source**: [2606.18413] Human-AI Synergy, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: Brooks's Law (§above), multi-agent-coordination.md
+  (compositional incoherence), the-impedance-mismatch.md (loops growing).

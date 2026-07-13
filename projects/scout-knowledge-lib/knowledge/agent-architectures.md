@@ -144,6 +144,20 @@ Each layer addresses a different concern; all three are needed for governed skil
 Additionally, **Omnigent** (omnigent-ai/omnigent, 6,617★) validates the Configuration Layer thesis (#425) at industrial scale: a meta-harness orchestrating Claude Code, Codex, Cursor, Pi, and custom agents through a unified governance layer, treating each model/framework as interchangeable configuration. 879 forks in 5 weeks. The model is not just configuration — it's *interchangeable configuration* across providers.
 Source: findings/2026-07-18-hn-arxiv-github-scan-444.md
 
+### The Selection Bottleneck (June 2026 — Cross-Layer Pattern)
+
+Selection — not generation, memory, or reasoning — is the binding constraint
+across agent system layers. **Skill Shadowing** (2605.24050v2) proves skill
+library degradation (up to −21%) is entirely a selection failure, not context
+overhead. **Tmax** (2606.23321) achieves 9B frontier via data selection recipes.
+**OpenThoughts-Agent** (2606.24855, 172★) shows 100K curated > larger uncurated.
+**RAD/MoE Routing** (2606.22798) reveals expert routing already encodes task
+trajectory — routing IS latent selection. **Divergence-Point** (2606.23112)
+gains +16.8% reward from preference-pair selection. **Plasticity Loss**
+(2606.24752) shows scale delays but cannot prevent selection-capacity decay.
+Implication: improving what gets chosen matters more than improving the pool.
+Source: findings/2026-06-24-hn-scan-136.md
+
 ### The Apprenticeship Turn (July 2026 — Emerging)
 
 The next phase after harness engineering: agents that learn from their own
@@ -163,6 +177,13 @@ execution and produce reusable artifacts for future agents. Three pillars:
    language world models simulating agentic environments where simulated training
    surpasses real-environment training. HN community immediately sees governance
    application: world models as apprenticeship auditors.
+   Two impossibility results bound the approach: World Models in Pieces
+   (2606.24842) proves structural certification must be transition-local (general
+   worst-case analysis is uninformative), and Are We Ready (2606.24775) proves no
+   single memory architecture dominates across workloads. Together: the world
+   model must be as piecewise and workload-aligned as the agent it serves —
+   universal agent simulation is doubly impossible. This is control theory's
+   "plant model" arriving for agents as a patchwork, not a monolith.
 
 - **Value chain inversion**: Old = Model→Harness→Skill→Output (human-driven).
   Emerging = Output→Skill→Harness→Model (agent-driven, with model routing).
@@ -701,6 +722,31 @@ prevent governance capture.
 
 Sources: GitHub API data (Jul 2026), HN ZCode (48751752), arXiv [2606.32025].
 
+## The Custody Stack Race (June 2026 — Structural Compulsion)
+
+Vertical integration across the AI stack is not optional strategy — it is a
+**thermodynamic necessity** formalized by the Recoverability Collapse paper
+(arXiv 2606.24861): adding capacity to a self-referential system without gating
+certification makes collapse first-order (hysteretic, bistable, irreversible
+under load reduction alone). Six custody frontiers opened simultaneously:
+
+1. **Silicon**: OpenAI Jalapeño custom inference chip (333pts) — securing deployment stack
+2. **Model access**: NSA lost Mythos access — nation-state Availability Dependence at scale
+3. **Computer use**: Gemini 3.5 Flash commoditizes GUI interaction (98pts)
+4. **Runtime**: peerd browser-native agent (55★), Self-Harness reflexivity (52pts)
+5. **Governance**: AI labs hiring philosophers (70pts) — internalizing oversight
+6. **Hardware consolidation**: Qualcomm/Modular $4B acquisition
+
+**Key insight**: The entity most dependent on persistent access is often least
+able to build fallback capability (specialized model, classified contexts, no
+alternative). This IS the Availability Dependence Paradox at every stack layer.
+
+**Platform Tier connection**: Platform ownership (§above) is the RUNTIME layer
+of the custody stack. Custody race drives platform war from the supply side;
+governance enforcement needs drive it from the demand side.
+
+Sources: HN Scan #146 (2026-06-24), arXiv [2606.24861].
+
 ## Production Architecture Dissection (July 2026 — Academic Validation)
 
 The "Dive into Claude Code" paper (arXiv 2604.14228v2, updated Jul 2 2026)
@@ -741,3 +787,22 @@ multi-agent gateway vs. multi-surface platform) determines which boundary
 model is adopted, and no single model covers all boundary layers.
 
 Source: arXiv [2604.14228v2], scan #373.
+
+### Perception Architecture — The Missing Layer (June 2026)
+
+Query-based perception creates structural blindness: agents can only perceive
+what they explicitly query, producing no peripheral vision. Three signals
+converge on a missing **Perception Architecture** layer between Memory and
+Execution:
+
+| Signal | Key Finding |
+|--------|-------------|
+| CivBench (HN 47pts) | 48-65% plan follow-through; agents blind to un-queried state |
+| PlanBench-XL [2606.22388] | GPT-5.4 drops 51.9%→11.4% under tool blocking |
+| Kamera [2606.23581] | Multimodal agents waste 50%+ budget re-perceiving cached content |
+
+The sensorium effect: any system that can only see via explicit tool
+invocations has no ambient awareness. Agents fail not from lack of
+intelligence or memory, but from structural inability to allocate attention.
+
+Source: HN scan #116, arXiv [2606.22388], arXiv [2606.23581].

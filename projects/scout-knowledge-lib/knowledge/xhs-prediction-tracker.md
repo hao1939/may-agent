@@ -900,7 +900,49 @@ HN front page now carries 4 simultaneous agent failure stories totaling 4,879pts
 | **Total tracked** | **52** | |
 
 ### Scan Details
+Scan #80 findings: `findings/2026-07-11-xhs-scan-80.md`
 Scan #72 / HN #415 findings: `findings/2026-07-07-cross-source-scan-415.md`
+
+---
+
+## Scan #80 Update (2026-07-11, The Consolidation Wars)
+
+**Source:** XHS direct browse via Puppeteer/CDP — 8 keyword searches, ~300 posts observed
+
+### Theme: Forced Ecosystem Choice + Paradigm Succession
+
+GPT-5.6 Sol/Terra/Luna + Codex-ChatGPT merger forces practitioners into ecosystem commitment. Context Engineering crystallizes as Loop Engineering's successor (1,082❤ canonical). Multi-agent skepticism emerges (617❤). Sonnet 5 lukewarm reception proves tool-loyalty > model-loyalty.
+
+### Key Evidence Movements
+
+| # | Prediction | Previous Status | New Status | Evidence |
+|---|-----------|-----------------|------------|----------|
+| — | Context Engineering crystallizes | Predicted in #61 | **✅ CONFIRMED** | 1,082❤ canonical post, JIT sub-paradigm (596❤), Stanford + Anthropic legitimation |
+| — | Memory Cambrian no winner | Q4 2026 (scan #72) | **⏳ ON TRACK** | ICML2026 roundup 603❤, 5+ frameworks compared, no convergence |
+| — | Claude Code dominance survives | ✅ (scan #61) | **✅ REINFORCED** | Sonnet 5 "翻车" framing; CC engagement sustained |
+| — | Multi-agent skepticism | Not tracked | **NEW** | "Multi-Agent是伪技术路线？" 617❤ |
+| — | Codex China access | Not tracked | **NEW — CONFIRMED** | "终于开门了" 933❤ |
+
+### New Predictions (Scan #80)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **Ecosystem lock-in discourse** | 2-4 weeks | High | "All-in Claude vs All-in OpenAI" >500❤ |
+| **Context Engineering sub-fragmentation** | 4-6 weeks | Medium | JIT/Agentic/Proactive Context each get canonical posts |
+| **Multi-agent reconciliation** | Q3-Q4 2026 | Medium | "何时用" replaces "是否用" in discourse |
+| **GPT-5.6 Sol pricing backlash** | 2 weeks | Medium-High | Cost complaint cluster at scale |
+| **Vibe Coding → Spec Coding pivot** | Q3 2026 | Medium-Low | "Spec Coding" as named successor (currently 6❤) |
+
+### Updated Accuracy Summary (Scan #80)
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 27 | 47% |
+| ⏳ In forecast window | 4 | 7% |
+| 🔜 Future / pending | 26 | 46% |
+| 🛑 Frozen | 0 | 0% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **57** | |
 
 ---
 

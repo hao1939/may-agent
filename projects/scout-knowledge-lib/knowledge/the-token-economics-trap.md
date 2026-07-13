@@ -318,6 +318,29 @@ The paper names six mechanism families: cache-shape discipline, failure-spend go
 
 **Resolution of the trap**: The Token Economics Trap's Layer 1 (predictability collapse) now has a structural answer: govern the harness, not the model. Token maxing is the default; harness discipline is the intervention. The prediction problem shifts from "how many tokens will the model use?" to "how well does the harness control token allocation?" — a question that's architecturally answerable.
 
+## Cost-Aware Speculative Execution (arXiv, June 2026)
+
+Speculative execution for agent workflows: launch downstream operations with
+predicted upstream inputs, priced in real dollars. Five design decisions:
+1. Start downstream before upstream completes
+2. Price each speculation in real dollars
+3. Single operator dial for latency vs cost
+4. Expected-value decision rule
+5. Bayesian Beta-Binomial success probability
+
+**Critical safety constraint**: Only operations that are side-effect-free,
+idempotent, or stageable behind a commit barrier can be speculatively executed.
+This creates an architectural incentive to **design agent operations as
+idempotent** so they can be parallelized.
+
+**Key insight**: Speculation makes latency–cost a first-class economic tradeoff
+rather than a latency-only optimization. Read operations are naturally speculable;
+write operations require commit barriers.
+
+- **Source**: [2606.07846] Cost-Aware Speculative Execution, arXiv June 2026. Categories: cs.DC, cs.AI, cs.MA.
+- **Connects to**: The Harness Effect (§above, harness as cost lever), ToolPro compilation
+  (the-discovery-dominance.md, another approach to reducing stepwise overhead).
+
 ---
 
 *Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof.*

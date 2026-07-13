@@ -496,6 +496,23 @@ is non-cooperative evaluation of agent behavior.
 - [Agent Architectures](./agent-architectures.md) — Layer-Isolated Evaluation also described in §architecture
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — AgentBeats evaluation-via-protocols pattern
 
+### Execution Provenance — Evidence Tracing Survey (arXiv, June 2026)
+
+Survey of evidence tracing and execution provenance in LLM agents. Maps the
+landscape of how agent actions can be traced, audited, and verified after
+execution. Covers trace formats, provenance graphs, causal attribution across
+tool chains, and the gap between "what the agent did" and "why it did it."
+
+**Key insight**: The field has read-path provenance (which tools were called,
+what outputs were returned) but lacks write-path provenance (which internal
+reasoning steps caused which tool selections). This gap means post-hoc auditing
+can reconstruct *what happened* but not *what the agent believed* at decision
+points.
+
+- **Source**: [2606.04990] From Agent Traces to Trust, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: MemTrace evidence-use bottleneck (§above), VIGIL trace verification
+  (agent-security-verified-enforcement.md), Agent Testing Tooling (§above).
+
 ### July 2026 Research Patterns (§23–§31)
 
 > **Extracted → [Agent Evaluation Research Patterns](./agent-evaluation-research.md)**

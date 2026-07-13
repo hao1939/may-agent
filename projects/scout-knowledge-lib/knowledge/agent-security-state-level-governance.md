@@ -490,3 +490,34 @@ category within 3 months. ≥2 more organizational trust failures in
 privacy/security tools within 6 months (pattern, not incident).
 
 *(Source: [2026-11-03-hn-arxiv-scan-258.md](./findings/2026-11-03-hn-arxiv-scan-258.md))*
+
+---
+
+## EU Chat Control 1.0 Greenlit (Scan #274, Jul 2026)
+
+EU Parliament passes Chat Control 1.0 (1589pts, 1082 comments on HN — largest
+thread of the week alongside GPT-5.6). Key implications for agent systems:
+
+1. **Client-side scanning mandate**: E2E encrypted messaging services must
+   implement client-side content scanning. Agent-to-agent communications over
+   encrypted channels now subject to interception requirements.
+2. **Jurisdiction fragmentation accelerates**: EU agents must route through
+   scanning infrastructure; non-EU agents don't. Creates operational split
+   for multi-region agent deployments.
+3. **Trust stack expansion**: Agent systems must now account for a new
+   mandatory surveillance layer between transport encryption and application logic.
+4. **Chilling effect on agent memory**: If agent conversation logs are subject
+   to scanning, privacy-preserving memory architectures become compliance
+   requirements, not just preferences.
+
+**Connection to sovereignty thesis**: Chat Control is the EU instantiation of
+the browser-as-governance-chokepoint pattern (see above), applied to messaging.
+The governance surface area continues expanding from model access → compute →
+network → now communication content itself.
+
+**Design implication**: Agent architectures operating in EU jurisdiction need
+a compliance layer that can satisfy scanning mandates without exposing full
+agent reasoning chains. Compartmentalized communication (tool calls vs. reasoning
+traces) becomes a regulatory advantage.
+
+*(Source: HN front page Jul 2026, patrick-breyer.de)*

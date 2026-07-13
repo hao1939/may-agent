@@ -480,3 +480,23 @@ that **all five missing temporal primitives now have concrete implementations**:
 This synthesis's status changes from "Active hypothesis" to "Confirmed with
 engineering pathways available." The diagnosis was correct; the field has
 independently converged on solutions matching the predicted primitive set.
+
+---
+
+## Update: Behavioral State Decay — The Within-Session Eternal Present (2026-07-11)
+
+arXiv 2607.08716 names **behavioral state decay**: within a single long-horizon
+task, decision-relevant state gets buried or pushed beyond the context window.
+This is the Eternal Present applied to *intra-task* trajectories rather than
+cross-session knowledge.
+
+Key finding: a **proactive memory agent** running alongside the action agent,
+with selective (not always-on) reminder injection, yields +8.3pp on Terminal-Bench
+2.0 and +6.8pp on τ²-Bench. Critically, always-on injection *hurts* — the "when
+to remember" problem matters as much as "what to remember."
+
+This suggests the Eternal Present has two faces:
+1. **Cross-session** (original diagnosis): agent forgets between sessions
+2. **Within-session** (new): agent forgets within long tasks
+
+Both require structured intermediation, not just bigger context windows.
