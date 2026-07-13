@@ -370,10 +370,23 @@ Events are nodes; parent relationships and trace links are edges. The default
 view should show default events, with LLM turns and tool calls hidden behind a
 detail toggle.
 
+This should become a dedicated Event Review page, not only an events table.
+The same page supports four common review starts:
+
+| Review start | Start id | First question |
+|--------------|----------|----------------|
+| Session review | `sessionId` | What triggered this session and what did it emit? |
+| Escalation review | `escalation.created` event id | Was the owner/human path closed and did source work resume? |
+| Metric breach review | `metric.breach` event id or metric alert id | Did the owner judge the breach and act? |
+| Orphan review | orphan opening event id | Where did the expected closure chain stop? |
+
 Route:
 
 ```text
 /events/:eventId
+/events/review?sessionId=:sessionId
+/events/review?metricId=:metricId&alertId=:alertId
+/events/review?orphan=1
 ```
 
 API:
@@ -418,6 +431,130 @@ shows "event persisted but no accepted route" is valuable: it exposes routing
 failure. A trace that shows "event accepted but no child follow-up event" is
 also valuable: it exposes a dead end. A trace that shows "human reply received
 but no closure link" exposes an owner/reply-handling failure.
+
+#### Event Review Page Layout
+
+The page should be dense and investigation-focused:
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Event Review                                                               │
+│ [Session] [Escalation] [Metric breach] [Orphans]  search/filter            │
+├───────────────┬──────────────────────────────────────────────┬─────────────┤
+│ Start points  │ Trace graph / timeline                       │ Inspector   │
+│               │                                              │             │
+│ recent        │ selected trace, collapsed by default         │ selected    │
+│ escalations   │ detail toggle for LLM/tool/session evidence  │ event       │
+│ metric alerts │ closure/reference links                      │ raw data    │
+│ orphan events │ broken-chain diagnostics                     │ transcript  │
+└───────────────┴──────────────────────────────────────────────┴─────────────┘
+```
+
+Left rail:
+
+- start-point selector: session, escalation, metric breach, orphan
+- recent items for that selector
+- filters: project, owner, event type, status, time window
+- orphan groupings: no route, no child follow-up, no closure, no project
+  reaction
+
+Center:
+
+- default timeline rendering for quick reading
+- graph rendering for branch/merge/loop inspection
+- expand/collapse repeated loop slices
+- show closure links distinctly
+- detail toggle for LLM turns, tool calls, context reads, and raw transcript
+  refs
+
+Right inspector:
+
+- selected event envelope
+- trace metadata: `traceId`, `parentEventId`, `links`
+- delivery status: accepted/unhandled and accepted-by
+- strongest object links: session, workflow, task, metric, project
+- diagnostics and suggested next review question
+- raw JSON behind a collapsed panel
+
+The page should avoid a decorative dashboard layout. It is an operational
+investigation tool: compact rows, clear status chips, predictable navigation,
+and strong links to the underlying object.
+
+#### Scenario Defaults
+
+Session review starts from `/sessions/:sessionId` or
+`/events/review?sessionId=:sessionId`.
+
+Default graph:
+
+```text
+trigger event -> session.started -> session.completed -> emitted events
+```
+
+Default questions:
+
+- what event/task/message triggered the session?
+- what did the agent decide?
+- what follow-up events did it emit?
+- did the follow-up close or advance the source work?
+
+Escalation review starts from the `escalation.created` event id.
+
+Default graph:
+
+```text
+escalation.created
+  -> message.created or owner session
+  -> human.input.received or owner result
+  -> escalation.resolved / escalation.dismissed
+  -> resume or project reaction
+```
+
+Default diagnostics:
+
+- no human/owner notification
+- human reply received but no terminal escalation event
+- terminal escalation event missing `closure` link
+- terminal escalation event exists but no resume/project reaction
+
+Metric breach review starts from `metric.breach` or a metric alert row.
+
+Default graph:
+
+```text
+metric.breach
+  -> owner route
+  -> owner judgment / planner / watchdog
+  -> task, accepted exception, escalation, or metric.recovered
+```
+
+Default diagnostics:
+
+- breach persisted but no accepted route
+- accepted route but no owner judgment
+- owner judgment but no action/exception/recovery
+- action started but no completion
+
+Orphan review starts from `/events/review?orphan=1`.
+
+Default list groups:
+
+- opening event has no accepted route
+- opening event accepted but no child event
+- expected closing event missing
+- closing event exists but lacks `closure` link
+- event type should be unpaired
+- timeout looks wrong
+
+The orphan workflow is:
+
+```text
+pick orphan -> open trace -> find stop point -> classify -> fix trace, handler,
+timeout, event pairing, or source work
+```
+
+The UI should not guess the fix automatically. It should make the stopped chain
+obvious enough that a human or owner agent can choose the next action.
 
 ### Knowledge Search
 

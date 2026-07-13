@@ -118,7 +118,7 @@ event_traces (
   event_id INTEGER PRIMARY KEY,
   trace_id TEXT NOT NULL,
   parent_event_id INTEGER,
-  visibility TEXT DEFAULT 'default' -- default | detail
+  visibility TEXT NOT NULL DEFAULT 'default' -- default | detail
 )
 ```
 
@@ -129,8 +129,8 @@ event_trace_links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   from_event_id INTEGER NOT NULL,
   to_event_id INTEGER NOT NULL,
-  type TEXT,                  -- reference | closure
-  label TEXT,
+  type TEXT NOT NULL DEFAULT 'reference', -- reference | closure
+  label TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL,
   UNIQUE(from_event_id, to_event_id, type, label)
 )
@@ -150,6 +150,77 @@ event, but storage should keep the event's declared links as written:
 ```text
 escalation.resolved links to escalation.created with type=closure
 ```
+
+## Existing DB Records
+
+The current SQLite DB already contains valuable operational history. The trace
+model must reuse it rather than replacing it.
+
+| Table | Role in the graph | How to use it |
+|-------|-------------------|---------------|
+| `events` | Canonical event nodes | Keep append-only. Add trace metadata in side tables, not by rewriting event payloads. |
+| `event_pair_runs` | Existing lifecycle projection | Backfill parent/closure edges for request/completion pairs such as session, handler, project task, CLI task, owner inbox, and escalation. |
+| `sessions` | Execution span projection | Link session events and detail nodes by `sessionId`; do not duplicate full transcripts into event payloads. |
+| `workflow_runs` | Workflow span projection | Link handler/workflow/session events by `workflowRunId`, `parentWorkflowRunId`, and `projectId`. |
+| `notification_messages` | Transport projection | Link Telegram/Web delivery records to the event that caused the notification and to the human reply that followed. |
+| `metrics`, `metric_alerts`, `metric_snapshots` | Metric signal projection | Link `metric.breach`, `metric.recovered`, alert rows, owner reviews, and follow-up work. |
+| `session_digests`, `evaluations`, `guard.triggered` events | Detail evidence | Expose as detail nodes or side-panel evidence, hidden by default. |
+
+The migration rule is additive:
+
+- keep existing tables and fields;
+- keep legacy context fields such as `sessionId`, `workflowRunId`,
+  `taskId`, `attemptId`, `metricId`, `alertId`, `conversationId`,
+  `originalIssue`, and `escalationId`;
+- prefer new `trace` metadata for exact event-to-event relations when the
+  related event id is known;
+- use compatibility projections to make older records graphable.
+
+## Backfill Strategy
+
+Backfill should populate `event_traces` and `event_trace_links` from existing
+records. It should be deterministic and safe to rerun.
+
+Baseline rule:
+
+```text
+event without known parent -> trace_id = event:<event_id>
+```
+
+Then apply stronger relations:
+
+| Existing evidence | Backfill action |
+|-------------------|-----------------|
+| `event_pair_runs.open_event_id` and `close_event_id` | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
+| Payload has `openEventId` / `open_event_id` | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise. |
+| Same `sessionId` | Link `session.start`, `session.end`, `session.completed`, `session.receipt`, `guard.triggered`, evaluation events, and detail records into the session trace. |
+| Same `workflowRunId` | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace. |
+| Same `taskId` plus `attemptId` | Link `project.task.assigned`, worker session, `project.task.completed`, `project.task.reviewed`, and planner follow-up. |
+| Same `metricId` / `alertId` | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events. |
+| `notification_messages.telegram_msg_id` and reply context | Link notification delivery to `message.created`; link `human.input.received` to the message it replied to. |
+| Legacy `escalationId` | Resolve to the opening `escalation.created` event when possible. Use the event id as the canonical identity after that. |
+
+Backfill should not invent domain outcomes. If an escalation has no
+`escalation.resolved` or `escalation.dismissed`, the graph should show it as an
+open chain, not silently close it.
+
+## Write Path
+
+New event producers may include `trace` in the event envelope. The DB writer
+should:
+
+1. Insert the `events` row as it does today.
+2. Resolve the inserted event id.
+3. Insert or update `event_traces` for that event.
+4. Insert `event_trace_links` for `trace.links`.
+
+Manual event insertion paths, such as inbox review follow-up events, must use
+the same trace helper. Otherwise new traces will be split between writer-created
+events and direct SQL-created events.
+
+If an event has no explicit trace, the writer can still create a local trace row
+with `trace_id = event:<event_id>`. Later backfill can merge it into a stronger
+trace by updating the side table.
 
 ## Branches, Conditions, Loops, And Merges
 
@@ -349,14 +420,16 @@ reports.
 ## Implementation Plan
 
 1. Add `event_traces` and `event_trace_links` storage and helpers.
-2. Teach event emitters to accept `trace`.
-3. Link direct chains first: message replies, escalation closure, workflow
+2. Teach the DB writer and direct SQL insertion paths to persist `trace`.
+3. Backfill existing traces from `event_pair_runs` and common payload fields.
+4. Teach event emitters to accept `trace`.
+5. Link direct chains first: message replies, escalation closure, workflow
    dispatch, task completion/review.
-4. Add detail-level session/tool/LLM events as references rather than full
+6. Add detail-level session/tool/LLM events as references rather than full
    transcript duplication.
-5. Build `/api/events/:eventId/graph`.
-6. Replace ad hoc trace UI with graph rendering and detail toggle.
-7. Update evaluation checks to look for broken trace chains rather than
+7. Build `/api/events/:eventId/graph`.
+8. Replace ad hoc trace UI with graph rendering and detail toggle.
+9. Update evaluation checks to look for broken trace chains rather than
    matching strings or escalation-specific fields.
 
 ## Non-Goals
