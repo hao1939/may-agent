@@ -78,6 +78,14 @@ function compact(value: unknown, max = 180): string | undefined {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }
 
+function previewValue(value: unknown): unknown {
+  if (typeof value === "string") return compact(value, 160);
+  if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
+  if (typeof value === "bigint") return value.toString();
+  if (Array.isArray(value)) return `[${value.length} items]`;
+  return undefined;
+}
+
 function previewData(data: Record<string, unknown>): Record<string, unknown> | undefined {
   const preferred = [
     "summary",
@@ -96,11 +104,14 @@ function previewData(data: Record<string, unknown>): Record<string, unknown> | u
   ];
   const out: Record<string, unknown> = {};
   for (const key of preferred) {
-    if (data[key] != null) out[key] = data[key];
+    const value = previewValue(data[key]);
+    if (value !== undefined) out[key] = value;
   }
   for (const [key, value] of Object.entries(data)) {
     if (Object.keys(out).length >= 8) break;
-    if (out[key] == null && typeof value !== "object") out[key] = value;
+    if (out[key] != null) continue;
+    const preview = previewValue(value);
+    if (preview !== undefined) out[key] = preview;
   }
   return Object.keys(out).length ? out : undefined;
 }

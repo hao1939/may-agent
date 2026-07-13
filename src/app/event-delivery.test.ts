@@ -119,6 +119,48 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("returns bounded event graph data previews", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.created",
+        source: "test",
+        owner: "agent:owner",
+        data: {
+          projectId: "sample",
+          sessionId: "s_preview",
+          workflowRunId: "wr_preview",
+          task: `Review packet\n${"large context ".repeat(80)}`,
+          items: ["a", "b", "c"],
+          nested: { should: "not appear in preview" },
+        },
+      });
+
+      const db = getDb(root);
+      const event = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.created'").get() as {
+        id: number;
+      };
+      const graph = buildEventGraph(db, event.id);
+      const node = graph.nodes.find((item) => item.id === event.id);
+
+      expect(node?.dataPreview).toMatchObject({
+        projectId: "sample",
+        sessionId: "s_preview",
+        workflowRunId: "wr_preview",
+        items: "[3 items]",
+      });
+      expect(String(node?.dataPreview?.task).length).toBeLessThanOrEqual(160);
+      expect(String(node?.dataPreview?.task)).toEndWith("...");
+      expect(node?.dataPreview?.nested).toBeUndefined();
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reports event trace integrity gaps", () => {
     const root = tempRoot();
     try {
