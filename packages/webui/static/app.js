@@ -173,7 +173,7 @@ function render() {
   if (tab === 'terminal') initTerminalPage(params.profileId || null);
   if (tab === 'system') {
     loadEvents();
-    if (params.eventId) setTimeout(() => loadLoopTrace(params.eventId), 80);
+    if (params.eventId) setTimeout(() => loadEventGraph(params.eventId), 80);
   }
   if (tab === 'projects') {
     // Project id deep-link: /projects/<id>

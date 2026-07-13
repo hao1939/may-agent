@@ -6,6 +6,7 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "check": "tsc --noEmit",
+    "check:event-graph": "bun scripts/event-graph-check.ts",
     "ci": "bun run check && bun run check:sdk && bun run test",
     "verify": "bun run ci",
     "test": "bun test src/ packages/ test/",

@@ -11,6 +11,7 @@ import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult } from "../app/event
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
+import { persistEventTrace } from "./db/event-traces.js";
 
 /** Maximum event data payload persisted (200KB). Prevents DB bloat from
  * recursive session tasks or oversized payloads. */
@@ -338,6 +339,11 @@ export class DbWriter {
         });
       } catch {
         /* event may be frozen; delivery metadata will be skipped */
+      }
+      try {
+        persistEventTrace(this.db, event, rowId, timestamp);
+      } catch {
+        /* trace metadata is best-effort; the event row remains canonical */
       }
       this.closePairForFollowup(payload, rowId, timestamp);
       this.closeConventionPairs(event.type, payload, rowId, timestamp);

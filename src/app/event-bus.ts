@@ -193,6 +193,20 @@ export type SessionEvent =
     };
 
 type EventUrgency = "low" | "normal" | "high" | "immediate";
+export type EventTraceLink = {
+  eventId: number;
+  type?: "reference" | "closure";
+  label?: string;
+};
+export type EventTrace = {
+  traceId: string;
+  parentEventId?: number;
+  links?: EventTraceLink[];
+};
+export type EventTraceMetadata = {
+  visibility?: "default" | "detail";
+  trace?: EventTrace;
+};
 type MetricPriority = "P0" | "P1" | "P2" | "P3";
 type MetricTrendPoint = {
   ts?: number;
@@ -764,12 +778,15 @@ export type SystemEvent =
 
 /** All typed event types — commands + observations + system */
 export type AgentEvent =
-  | AgentCommand
-  | ManagementCommand
-  | SessionEvent
-  | SystemEvent
-  | { type: "info"; message: string; channel?: string }
-  | { type: "prompt"; message: string; channel?: string };
+  (
+    | AgentCommand
+    | ManagementCommand
+    | SessionEvent
+    | SystemEvent
+    | { type: "info"; message: string; channel?: string }
+    | { type: "prompt"; message: string; channel?: string }
+  ) &
+    EventTraceMetadata;
 
 // ── Helpers ────────────────────────────────────────────────────────────
 

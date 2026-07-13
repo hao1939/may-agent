@@ -930,7 +930,7 @@ export class Cron {
       // short intervals. Uses 75% of intervalMs as minimum gap, matching
       // the triggerNow debounce convention.
       if (entry.intervalMs) {
-        const cooldownMs = Math.max(entry.intervalMs * 0.75, this.defaultCooldownMs);
+        const cooldownMs = Math.max(entry.intervalMs * 0.75, 1);
         const lastFire = this.lastFireTimes.get(entry.name);
         if (lastFire && Date.now() - lastFire < cooldownMs) {
           return; // too soon — skip silently
