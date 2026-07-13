@@ -48,6 +48,57 @@ function eventExists(db: SqliteDb, eventId: number | undefined): eventId is numb
   return !!row;
 }
 
+function eventTraceId(db: SqliteDb, eventId: number): string {
+  const row = db.prepare("SELECT trace_id FROM event_traces WHERE event_id = ?").get(eventId) as {
+    trace_id?: unknown;
+  } | null;
+  return nonEmptyString(row?.trace_id) ?? `event:${eventId}`;
+}
+
+function eventDataRecord(event: Record<string, unknown>): Record<string, unknown> {
+  if (isRecord(event.data)) return event.data;
+  return event;
+}
+
+function dataEventId(data: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = positiveInteger(data[key]);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function isEscalationClosureEvent(type: string | undefined): boolean {
+  return type === "escalation.resolved" || type === "escalation.dismissed";
+}
+
+function isEscalationFollowupEvent(type: string | undefined): boolean {
+  return (
+    isEscalationClosureEvent(type) ||
+    type === "escalation.resume_attempted" ||
+    type === "escalation.resume_started" ||
+    type === "escalation.resume_failed"
+  );
+}
+
+function findPriorEscalationCreated(db: SqliteDb, escalationId: string, eventId: number): number | undefined {
+  const row = db.prepare(
+    `SELECT id
+     FROM events
+     WHERE event_type = 'escalation.created'
+       AND id != ?
+       AND json_extract(data, '$.escalationId') = ?
+     ORDER BY id DESC
+     LIMIT 1`,
+  ).get(eventId, escalationId) as { id?: unknown } | null;
+  return positiveInteger(row?.id);
+}
+
+function hasDeclaredLink(trace: EventTraceInput | undefined, eventId: number | undefined, type?: EventTraceLinkType): boolean {
+  if (!trace?.links || !eventId) return false;
+  return trace.links.some((link) => link.eventId === eventId && (!type || (link.type ?? "reference") === type));
+}
+
 export function parseEventTrace(value: unknown): EventTraceInput | undefined {
   if (!isRecord(value)) return undefined;
   const traceId = nonEmptyString(value.traceId);
@@ -83,9 +134,26 @@ export function persistEventTrace(
 ): void {
   if (!Number.isInteger(eventId) || eventId <= 0) return;
   const record = isRecord(event) ? event : {};
+  const data = eventDataRecord(record);
+  const eventType = nonEmptyString(record.type);
   const trace = parseEventTrace(record.trace);
-  const traceId = trace?.traceId ?? `event:${eventId}`;
-  const parentEventId = eventExists(db, trace?.parentEventId) ? trace!.parentEventId! : null;
+  const openEventId = dataEventId(data, ["openEventId", "open_event_id"]);
+  const escalationId = nonEmptyString(data.escalationId);
+  const escalationCreatedId =
+    escalationId && isEscalationFollowupEvent(eventType)
+      ? findPriorEscalationCreated(db, escalationId, eventId)
+      : undefined;
+  const inferredParentEventId = eventExists(db, openEventId)
+    ? openEventId
+    : eventExists(db, escalationCreatedId)
+      ? escalationCreatedId
+      : undefined;
+  const traceId =
+    trace?.traceId ??
+    (inferredParentEventId ? eventTraceId(db, inferredParentEventId) : `event:${eventId}`);
+  const parentEventId = eventExists(db, trace?.parentEventId)
+    ? trace!.parentEventId!
+    : inferredParentEventId ?? null;
   const visibility = eventVisibility(record);
 
   db.run(
@@ -102,6 +170,34 @@ export function persistEventTrace(
        (from_event_id, to_event_id, type, label, created_at)
        VALUES (?, ?, ?, ?, ?)`,
       [eventId, link.eventId, link.type ?? "reference", link.label ?? "", createdAt],
+    );
+  }
+
+  if (openEventId && eventExists(db, openEventId) && !hasDeclaredLink(trace, openEventId, "closure")) {
+    db.run(
+      `INSERT OR IGNORE INTO event_trace_links
+       (from_event_id, to_event_id, type, label, created_at)
+       VALUES (?, ?, 'closure', ?, ?)`,
+      [eventId, openEventId, eventType ?? "openEventId", createdAt],
+    );
+  }
+
+  if (
+    escalationCreatedId &&
+    eventExists(db, escalationCreatedId) &&
+    !hasDeclaredLink(trace, escalationCreatedId, isEscalationClosureEvent(eventType) ? "closure" : "reference")
+  ) {
+    db.run(
+      `INSERT OR IGNORE INTO event_trace_links
+       (from_event_id, to_event_id, type, label, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        eventId,
+        escalationCreatedId,
+        isEscalationClosureEvent(eventType) ? "closure" : "reference",
+        eventType ?? "escalation.followup",
+        createdAt,
+      ],
     );
   }
 }
@@ -126,6 +222,132 @@ function cleanupInvalidTraceRows(db: SqliteDb): number {
     (cleanupDanglingTraces.changes ?? 0) +
     (cleanupDanglingParents.changes ?? 0) +
     (cleanupDanglingLinks.changes ?? 0)
+  );
+}
+
+function backfillPayloadRelationTraces(db: SqliteDb, options: { limit: number; createdAt: number }): number {
+  const { limit, createdAt } = options;
+  db.exec("DROP TABLE IF EXISTS temp_event_payload_open_event_backfill");
+  db.exec(
+    `CREATE TEMP TABLE temp_event_payload_open_event_backfill AS
+     SELECT e.id as event_id,
+            e.event_type as event_type,
+            CAST(COALESCE(json_extract(e.data, '$.openEventId'), json_extract(e.data, '$.open_event_id')) AS INTEGER) as open_event_id
+     FROM (
+       SELECT id, event_type, data
+       FROM events
+       WHERE json_valid(data)
+     ) e
+     JOIN events opened ON opened.id = CAST(COALESCE(json_extract(e.data, '$.openEventId'), json_extract(e.data, '$.open_event_id')) AS INTEGER)
+     WHERE COALESCE(json_extract(e.data, '$.openEventId'), json_extract(e.data, '$.open_event_id')) IS NOT NULL
+       AND e.id != opened.id
+     ORDER BY e.id
+     LIMIT ${limit}`,
+  );
+  db.exec("CREATE INDEX IF NOT EXISTS idx_temp_payload_open_event ON temp_event_payload_open_event_backfill(event_id)");
+  const openTraceUpdate = db.run(
+    `UPDATE event_traces
+     SET trace_id = (
+           SELECT COALESCE(parent_trace.trace_id, 'event:' || p.open_event_id)
+           FROM temp_event_payload_open_event_backfill p
+           LEFT JOIN event_traces parent_trace ON parent_trace.event_id = p.open_event_id
+           WHERE p.event_id = event_traces.event_id
+         ),
+         parent_event_id = (
+           SELECT p.open_event_id
+           FROM temp_event_payload_open_event_backfill p
+           WHERE p.event_id = event_traces.event_id
+         )
+     WHERE parent_event_id IS NULL
+       AND trace_id = 'event:' || event_id
+       AND EXISTS (
+         SELECT 1
+         FROM temp_event_payload_open_event_backfill p
+         WHERE p.event_id = event_traces.event_id
+       )`,
+  );
+  const openLinkInsert = db.run(
+    `INSERT OR IGNORE INTO event_trace_links
+     (from_event_id, to_event_id, type, label, created_at)
+     SELECT event_id, open_event_id, 'closure', COALESCE(event_type, 'openEventId'), ?
+     FROM temp_event_payload_open_event_backfill`,
+    [createdAt],
+  );
+  db.exec("DROP TABLE IF EXISTS temp_event_payload_open_event_backfill");
+
+  db.exec("DROP TABLE IF EXISTS temp_event_payload_escalation_backfill");
+  db.exec(
+    `CREATE TEMP TABLE temp_event_payload_escalation_backfill AS
+     SELECT e.id as event_id,
+            e.event_type as event_type,
+            opened.id as escalation_event_id
+     FROM (
+       SELECT id, event_type, data
+       FROM events
+       WHERE json_valid(data)
+     ) e
+     JOIN (
+       SELECT json_extract(data, '$.escalationId') as escalation_id, MAX(id) as escalation_event_id
+       FROM events
+       WHERE event_type = 'escalation.created'
+         AND json_valid(data)
+         AND json_extract(data, '$.escalationId') IS NOT NULL
+       GROUP BY json_extract(data, '$.escalationId')
+     ) picked
+       ON picked.escalation_id = json_extract(e.data, '$.escalationId')
+     JOIN events opened ON opened.id = picked.escalation_event_id
+     WHERE e.event_type IN (
+         'escalation.resolved',
+         'escalation.dismissed',
+         'escalation.resume_attempted',
+         'escalation.resume_started',
+         'escalation.resume_failed'
+       )
+       AND json_extract(e.data, '$.escalationId') IS NOT NULL
+       AND e.id != opened.id
+     ORDER BY e.id
+     LIMIT ${limit}`,
+  );
+  db.exec("CREATE INDEX IF NOT EXISTS idx_temp_payload_escalation ON temp_event_payload_escalation_backfill(event_id)");
+  const escalationTraceUpdate = db.run(
+    `UPDATE event_traces
+     SET trace_id = (
+           SELECT COALESCE(parent_trace.trace_id, 'event:' || p.escalation_event_id)
+           FROM temp_event_payload_escalation_backfill p
+           LEFT JOIN event_traces parent_trace ON parent_trace.event_id = p.escalation_event_id
+           WHERE p.event_id = event_traces.event_id
+         ),
+         parent_event_id = (
+           SELECT p.escalation_event_id
+           FROM temp_event_payload_escalation_backfill p
+           WHERE p.event_id = event_traces.event_id
+         )
+     WHERE parent_event_id IS NULL
+       AND trace_id = 'event:' || event_id
+       AND EXISTS (
+         SELECT 1
+         FROM temp_event_payload_escalation_backfill p
+         WHERE p.event_id = event_traces.event_id
+       )`,
+  );
+  const escalationLinkInsert = db.run(
+    `INSERT OR IGNORE INTO event_trace_links
+     (from_event_id, to_event_id, type, label, created_at)
+     SELECT event_id,
+            escalation_event_id,
+            CASE WHEN event_type IN ('escalation.resolved', 'escalation.dismissed') THEN 'closure' ELSE 'reference' END,
+            COALESCE(event_type, 'escalation.followup'),
+            ?
+     FROM temp_event_payload_escalation_backfill`,
+    [createdAt],
+  );
+  db.exec("DROP TABLE IF EXISTS temp_event_payload_escalation_backfill");
+
+  return (
+    (openTraceUpdate.changes ?? 0) +
+    (openLinkInsert.changes ?? 0) +
+    (escalationTraceUpdate.changes ?? 0) +
+    (escalationLinkInsert.changes ?? 0)
   );
 }
 
@@ -196,12 +418,14 @@ export function backfillEventPairTraces(db: SqliteDb, options: { limit?: number;
     [createdAt],
   );
   db.exec("DROP TABLE IF EXISTS temp_event_pair_trace_backfill");
+  const payloadRelationBackfill = backfillPayloadRelationTraces(db, { limit, createdAt });
   return (
     cleaned +
     (baseline.changes ?? 0) +
     (closeTraceInsert.changes ?? 0) +
     (closeTraceUpdate.changes ?? 0) +
-    (linkInsert.changes ?? 0)
+    (linkInsert.changes ?? 0) +
+    payloadRelationBackfill
   );
 }
 
