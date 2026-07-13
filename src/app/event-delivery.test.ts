@@ -267,6 +267,131 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("infers trace parent and closure link from openEventId", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.created",
+        source: "test",
+        owner: "agent:owner",
+        data: { projectId: "sample", message: "open" },
+      });
+
+      const db = getDb(root);
+      const rootEvent = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.created'").get() as {
+        id: number;
+      };
+
+      bus.emit({
+        type: "project.feedback.reviewed",
+        source: "test",
+        owner: "agent:owner",
+        data: { openEventId: rootEvent.id, reviewedBy: "test" },
+      });
+
+      const closeEvent = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.reviewed'").get() as {
+        id: number;
+      };
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(closeEvent.id);
+      const link = db
+        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
+        .get(closeEvent.id, rootEvent.id);
+
+      expect(trace).toMatchObject({
+        event_id: closeEvent.id,
+        trace_id: `event:${rootEvent.id}`,
+        parent_event_id: rootEvent.id,
+      });
+      expect(link).toMatchObject({
+        from_event_id: closeEvent.id,
+        to_event_id: rootEvent.id,
+        type: "closure",
+        label: "project.feedback.reviewed",
+      });
+
+      const graph = buildEventGraph(db, rootEvent.id);
+      expect(graph.nodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
+      expect(graph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "parent" }),
+          expect.objectContaining({ source: closeEvent.id, target: rootEvent.id, type: "closure" }),
+        ]),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("infers escalation closure traces from legacy escalationId", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "escalation.created",
+        source: "test",
+        owner: "agent:may",
+        data: {
+          escalationId: "esc_trace_test",
+          reason: "needs human input",
+        },
+      } as any);
+
+      const db = getDb(root);
+      const created = db.prepare("SELECT id FROM events WHERE event_type = 'escalation.created'").get() as {
+        id: number;
+      };
+
+      bus.emit({
+        type: "escalation.resolved",
+        source: "test",
+        owner: "agent:may",
+        data: {
+          escalationId: "esc_trace_test",
+          outcome: "resolved",
+          summary: "human answered",
+        },
+      } as any);
+
+      const resolved = db.prepare("SELECT id FROM events WHERE event_type = 'escalation.resolved'").get() as {
+        id: number;
+      };
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(resolved.id);
+      const link = db
+        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
+        .get(resolved.id, created.id);
+
+      expect(trace).toMatchObject({
+        event_id: resolved.id,
+        trace_id: `event:${created.id}`,
+        parent_event_id: created.id,
+      });
+      expect(link).toMatchObject({
+        from_event_id: resolved.id,
+        to_event_id: created.id,
+        type: "closure",
+        label: "escalation.resolved",
+      });
+
+      const graph = buildEventGraph(db, created.id);
+      expect(graph.nodes.map((node) => node.id)).toEqual([created.id, resolved.id]);
+      expect(graph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: created.id, target: resolved.id, type: "parent" }),
+          expect.objectContaining({ source: resolved.id, target: created.id, type: "closure" }),
+        ]),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("ignores explicit trace links to missing events", () => {
     const root = tempRoot();
     try {
@@ -375,6 +500,94 @@ describe("event delivery metadata", () => {
           expect.objectContaining({ source: pair.close_event_id, target: pair.open_event_id, type: "closure" }),
         ]),
       );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("backfills payload relation traces from openEventId and escalationId", () => {
+    const root = tempRoot();
+    try {
+      const db = getDb(root);
+      const now = Date.now();
+      const open = db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        ["message.created", "test", "agent:owner", JSON.stringify({ content: "please review" }), now],
+      ) as { lastInsertRowid?: number | bigint };
+      const openEventId = Number(open.lastInsertRowid);
+      const close = db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          "message.reviewed",
+          "test",
+          "agent:owner",
+          JSON.stringify({ openEventId, reviewedBy: "test" }),
+          now + 1,
+        ],
+      ) as { lastInsertRowid?: number | bigint };
+      const closeEventId = Number(close.lastInsertRowid);
+      const created = db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          "escalation.created",
+          "test",
+          "agent:may",
+          JSON.stringify({ escalationId: "esc_backfill", reason: "need human" }),
+          now + 2,
+        ],
+      ) as { lastInsertRowid?: number | bigint };
+      const createdEventId = Number(created.lastInsertRowid);
+      const resolved = db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          "escalation.resolved",
+          "test",
+          "agent:may",
+          JSON.stringify({ escalationId: "esc_backfill", outcome: "resolved" }),
+          now + 3,
+        ],
+      ) as { lastInsertRowid?: number | bigint };
+      const resolvedEventId = Number(resolved.lastInsertRowid);
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        ["legacy.corrupt", "test", "agent:owner", "{not-json", now + 4],
+      );
+
+      expect(backfillEventPairTraces(db, { createdAt: 789 })).toBeGreaterThan(0);
+
+      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(closeEventId)).toMatchObject({
+        event_id: closeEventId,
+        trace_id: `event:${openEventId}`,
+        parent_event_id: openEventId,
+      });
+      expect(db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?").get(closeEventId, openEventId)).toMatchObject({
+        from_event_id: closeEventId,
+        to_event_id: openEventId,
+        type: "closure",
+        label: "message.reviewed",
+      });
+      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(resolvedEventId)).toMatchObject({
+        event_id: resolvedEventId,
+        trace_id: `event:${createdEventId}`,
+        parent_event_id: createdEventId,
+      });
+      expect(db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?").get(resolvedEventId, createdEventId)).toMatchObject({
+        from_event_id: resolvedEventId,
+        to_event_id: createdEventId,
+        type: "closure",
+        label: "escalation.resolved",
+      });
+
+      const messageGraph = buildEventGraph(db, openEventId);
+      expect(messageGraph.nodes.map((node) => node.id)).toEqual([openEventId, closeEventId]);
+      const escalationGraph = buildEventGraph(db, createdEventId);
+      expect(escalationGraph.nodes.map((node) => node.id)).toEqual([createdEventId, resolvedEventId]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
