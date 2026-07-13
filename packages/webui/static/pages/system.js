@@ -172,6 +172,67 @@ async function loadEventGraph(eventId, opts = {}) {
   }
 }
 
+function shortGraphLabel(value, max = 28) {
+  const text = String(value || '');
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function renderEventGraphMap(nodes, edges, focusEventId) {
+  if (!nodes.length) return '';
+  const nodeWidth = 190;
+  const nodeHeight = 58;
+  const gap = 48;
+  const margin = 24;
+  const width = Math.max(560, margin * 2 + nodes.length * nodeWidth + Math.max(0, nodes.length - 1) * gap);
+  const height = 190;
+  const positions = new Map();
+  nodes.forEach((node, index) => {
+    positions.set(Number(node.id), {
+      x: margin + index * (nodeWidth + gap),
+      y: 56 + (index % 2) * 42,
+    });
+  });
+
+  let svg = `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);margin-bottom:12px">`;
+  svg += `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="event graph" style="display:block;min-width:100%">`;
+  svg += `<defs><marker id="event-graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>`;
+  for (const edge of edges) {
+    const source = positions.get(Number(edge.source));
+    const target = positions.get(Number(edge.target));
+    if (!source || !target) continue;
+    const forward = target.x >= source.x;
+    const x1 = source.x + (forward ? nodeWidth : 0);
+    const y1 = source.y + nodeHeight / 2;
+    const x2 = target.x + (forward ? 0 : nodeWidth);
+    const y2 = target.y + nodeHeight / 2;
+    const bend = Math.max(44, Math.abs(x2 - x1) / 2);
+    const c1 = forward ? x1 + bend : x1 - bend;
+    const c2 = forward ? x2 - bend : x2 + bend;
+    const color = edge.type === 'closure' ? 'var(--green)' : edge.type === 'parent' ? 'var(--accent)' : 'var(--fg2)';
+    const dash = edge.type === 'reference' ? '4 4' : '';
+    svg += `<path d="M ${x1} ${y1} C ${c1} ${y1}, ${c2} ${y2}, ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="2" ${dash ? `stroke-dasharray="${dash}"` : ''} marker-end="url(#event-graph-arrow)" style="color:${color}"></path>`;
+    if (edge.label) {
+      svg += `<text x="${(x1 + x2) / 2}" y="${Math.min(y1, y2) - 8}" fill="var(--fg2)" font-size="10">${esc(shortGraphLabel(edge.label, 18))}</text>`;
+    }
+  }
+  for (const node of nodes) {
+    const pos = positions.get(Number(node.id));
+    if (!pos) continue;
+    const isFocus = Number(node.id) === Number(focusEventId);
+    const stroke = isFocus ? 'var(--accent)' : 'var(--border)';
+    const fill = isFocus ? 'rgba(80,150,255,.12)' : 'var(--bg2)';
+    svg += `<g onclick="loadEventGraph(${Number(node.id)})" style="cursor:pointer">`;
+    svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${isFocus ? 2 : 1}"></rect>`;
+    svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="${isFocus ? 'var(--accent)' : 'var(--fg)'}" font-size="12" font-family="monospace">${esc(shortGraphLabel(node.type, 25))}</text>`;
+    svg += `<text x="${pos.x + 10}" y="${pos.y + 39}" fill="var(--fg2)" font-size="11">#${esc(String(node.id))} · ${esc(node.owner || '—')}</text>`;
+    if (node.visibility === 'detail') svg += `<text x="${pos.x + nodeWidth - 42}" y="${pos.y + 21}" fill="var(--fg2)" font-size="10">detail</text>`;
+    svg += `</g>`;
+  }
+  svg += `</svg>`;
+  svg += `</div>`;
+  return svg;
+}
+
 function renderEventGraph(graph, opts = {}) {
   const nodes = graph.nodes || [];
   const edges = graph.edges || [];
@@ -215,6 +276,8 @@ function renderEventGraph(graph, opts = {}) {
     }
     html += `</div>`;
   }
+
+  html += renderEventGraphMap(nodes, edges, graph.focusEventId);
 
   html += `<div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr);gap:12px">`;
   html += `<div style="display:grid;gap:6px">`;
