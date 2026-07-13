@@ -25,20 +25,38 @@ Every event has the same two-layer shape:
 
 ```typescript
 type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknown>> = {
+  id?: number;         // assigned by event store after persistence
   type: string;        // canonical event name, e.g. "metric.breach"
   source?: string;     // emitter identity, e.g. "agent:may" or "web-ui"
+  target?: Record<string, unknown>; // direct target when one exists
   owner: string;       // responsible owner: "agent:<name>" or "human:<role>"
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
   timestamp?: number;  // assigned by infra when omitted
+  visibility?: "default" | "detail";
+  trace?: {
+    traceId: string;
+    parentEventId?: number;
+    links?: Array<{
+      eventId: number;
+      type?: "reference" | "closure";
+      label?: string;
+    }>;
+  };
   data: TData;         // event-specific facts for handlers/agents
 };
 ```
 
-The envelope is for infra: persistence, routing, TTL, urgency, and correlation.
-`data` is for the event-specific context the handler or owner needs. Do not put
-domain fields such as `sessionId`, `projectId`, `metricId`, `escalationId`,
+The envelope is for infra: persistence, routing, TTL, urgency, and trace
+metadata. `data` is for the event-specific context the handler or owner needs.
+Do not put domain fields such as `sessionId`, `projectId`, `metricId`,
 `reason`, or long evidence in the envelope.
+
+Trace metadata is generic. Use `trace.traceId` to group a chain,
+`trace.parentEventId` for the direct parent event, and `trace.links` for
+reference or closure links. Do not add escalation-specific relation fields when
+standard trace metadata expresses the relationship. See
+[event-graph.md](./event-graph.md).
 
 `owner` always means the responsible owner. It is never duplicated as
 `data.owner`. Human owners use the same field: `owner: "human:<role>"`. Runtime
@@ -55,7 +73,7 @@ no target consumer  -> follow the ownership chain
 ```
 
 The target is the specific thing the event is about. It can be a subscribed
-handler entry, a session id, a project id, a metric id, an escalation id, or a
+handler entry, a session id, a project id, a metric id, an event id, or a
 human/agent inbox target. The target lives in the canonical envelope and `data`;
 dispatch code must not invent a second event shape.
 
@@ -96,6 +114,8 @@ Persistent row mapping:
 | `urgency` | `urgency` | |
 | `ttl_ms` | `ttl_ms` | |
 | `timestamp` | `timestamp` | |
+| `visibility` | `event_traces.visibility` | `default` or `detail`; detail events are hidden until expanded. |
+| `trace` | `event_traces` / `event_trace_links` | Trace id, parent event, and non-parent links. |
 | `data` | `data` JSON | |
 | *(infra only)* | `delivery_status` | `pending`, `accepted`, or `unhandled`; delivery bookkeeping |
 | *(infra only)* | `accepted_by` | Responsible consumer that accepted delivery |
@@ -133,6 +153,28 @@ CREATE TABLE events (
   retry_count  INTEGER DEFAULT 0,
   ttl_ms       INTEGER,
   urgency      TEXT DEFAULT 'normal'
+);
+```
+
+Event trace metadata is stored separately so traces can be queried and
+visualized as a graph:
+
+```sql
+CREATE TABLE event_traces (
+  event_id         INTEGER PRIMARY KEY,
+  trace_id         TEXT NOT NULL,
+  parent_event_id  INTEGER,
+  visibility       TEXT DEFAULT 'default' -- default | detail
+);
+
+CREATE TABLE event_trace_links (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_event_id  INTEGER NOT NULL,
+  to_event_id    INTEGER NOT NULL,
+  type           TEXT, -- reference | closure
+  label          TEXT,
+  created_at     INTEGER NOT NULL,
+  UNIQUE(from_event_id, to_event_id, type, label)
 );
 ```
 
@@ -337,11 +379,16 @@ uses of that name should use the canonical envelope shown above.
 
 ### Escalation lifecycle
 
-Escalation events use the same event envelope as other events. Envelope fields
-are for common event transport: type, source, owner, urgency/TTL, and timestamp.
-`data` contains escalation-specific correlation, lifecycle state, and the
-agent-facing brief. Do not hide routing decisions inside agent prose, and do not
-put long investigation context into the envelope.
+Escalation events use the same event envelope and trace metadata as other events.
+Envelope fields are for common event transport: type, source, owner,
+urgency/TTL, timestamp, target, and trace metadata. `data` contains
+escalation-specific state and the agent-facing brief. Do not hide routing
+decisions inside agent prose, and do not put long investigation context into
+the envelope.
+
+The persisted `escalation.created` event id is the escalation identity when it
+is available. Older rows may still carry `data.escalationId`; treat that as a
+compatibility key, not a new lifecycle object.
 
 When a handler subscribes to an escalation event, it receives that canonical
 event envelope directly. Handlers use envelope fields for common routing and
@@ -354,8 +401,6 @@ read escalation-specific fields from the envelope's `data` object.
   owner: "agent:may",
   urgency: "high",
   data: {
-    escalationId: "esc_123",
-    parentEscalationId: "esc_parent",
     sourceAgent: "tech-lead",
     sourceSessionId: "s_123",
     projectId: "platform",
@@ -371,24 +416,32 @@ read escalation-specific fields from the envelope's `data` object.
 }
 
 {
-  type: "escalation.routed",
-  source: "escalation-router",
-  owner: "agent:may",
-  data: { escalationId: "esc_123", route: "agent:may", reason: "owner wake queued" }
+  type: "message.created",
+  source: "agent:may",
+  owner: "human:operator",
+  trace: { traceId: "event:100", parentEventId: 100 },
+  data: {
+    conversationId: "event:100",
+    originalIssue: { eventType: "escalation.created", eventId: 100 },
+    content: "Plain-language human ask."
+  }
 }
 
 {
   type: "escalation.resolved",
   source: "agent:may",
   owner: "agent:tech-lead",
+  trace: {
+    traceId: "event:100",
+    parentEventId: 102,
+    links: [{ eventId: 100, type: "closure" }]
+  },
   data: {
-    escalationId: "esc_123",
     resolverAgent: "may",
     outcome: "fixed",
     summary: "The event now includes session id.",
     evidence: {},
-    resumeInstruction: "Retry the blocked review.",
-    childEscalationId: "esc_child"
+    resumeInstruction: "Retry the blocked review."
   }
 }
 
@@ -396,28 +449,32 @@ read escalation-specific fields from the envelope's `data` object.
   type: "escalation.dismissed",
   source: "agent:may",
   owner: "agent:tech-lead",
-  data: { escalationId: "esc_123", dismissedBy: "may", reason: "Duplicate escalation." }
+  trace: { traceId: "event:100", links: [{ eventId: 100, type: "closure" }] },
+  data: { dismissedBy: "may", reason: "Duplicate escalation." }
 }
 
 {
   type: "escalation.resume_attempted",
   source: "escalation-lifecycle",
   owner: "agent:tech-lead",
-  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", resumeInstruction: "Continue." }
+  trace: { traceId: "event:100", parentEventId: 103 },
+  data: { sourceKind: "session", sourceRef: "s_123", resumeInstruction: "Continue." }
 }
 
 {
   type: "escalation.resume_started",
   source: "escalation-lifecycle",
   owner: "agent:tech-lead",
-  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", resumedSessionId: "s_123", summary: "Resume started." }
+  trace: { traceId: "event:100", parentEventId: 104 },
+  data: { sourceKind: "session", sourceRef: "s_123", resumedSessionId: "s_123", summary: "Resume started." }
 }
 
 {
   type: "escalation.resume_failed",
   source: "escalation-lifecycle",
   owner: "agent:tech-lead",
-  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", category: "resume_failed", recoverable: true, reason: "Checkpoint expired." }
+  trace: { traceId: "event:100", parentEventId: 104 },
+  data: { sourceKind: "session", sourceRef: "s_123", category: "resume_failed", recoverable: true, reason: "Checkpoint expired." }
 }
 ```
 
@@ -979,8 +1036,14 @@ event closes existing work   → pair tracker/cleanup/evaluator consumes it
 ### Done: Convention-Based Pair Tracking
 
 Some events open lifecycle work that should later close. The runtime should
-track these by convention first, not by requiring every project to configure
-event pairs.
+track these with trace closure links first. The older pair tracker may continue
+as a compatibility projection, but new lifecycle integrity should be visible as:
+
+```text
+closing event trace.links includes { eventId: openingEventId, type: "closure" }
+```
+
+Convention still helps decide which events normally expect a close edge.
 
 Default opening/closing conventions:
 
@@ -991,31 +1054,32 @@ Default opening/closing conventions:
 | `.created` | `.resolved`, `.dismissed`, `.closed` |
 | `.assigned` | `.completed`, `.blocked`, `.failed` |
 
-Default correlation-key conventions:
+Default compatibility key conventions when a direct event id or close edge is
+not available:
 
 | Event family | Correlation key |
 |--------------|-----------------|
 | `session.*` | `data.sessionId` |
 | `workflow.*` | `data.workflowRunId` |
 | `handler.*` | `data.handlerRunId` |
-| `escalation.*` | `data.escalationId` |
+| `escalation.*` | opening `escalation.created` event id; legacy fallback `data.escalationId` |
 | `project.task.*` | `data.taskId` + optional `data.attemptId` |
 | `*.requested` | `data.requestId` |
 
-If an opening event matches the naming convention and has a correlation key,
-the pair tracker creates an open pair record. If a matching closing event
-arrives with the same key, the pair closes. If the closing event does not arrive
-within the expected window, infra marks the pair `orphan` and surfaces it for
-investigation.
+If an opening event matches the naming convention, the trace checker expects a
+future closing event with a `closure` link back to that opening event. If the
+closure link does not arrive within the expected window, infra marks the
+lifecycle as orphan and surfaces it for investigation. During migration, the
+pair tracker may infer closure from compatibility keys.
 
 This is an audit signal, not proof of domain failure. An orphan can mean stuck
 work, a missing close event, a wrong key, a bad timeout, or an event naming
 design issue.
 
 ```
-opening event → record pair run (opened_at, expected_close_at)
-closing event → match by correlation key → mark complete
-sweep         → opened too long without close → orphan → surface
+opening event → expect closure link by expected_close_at
+closing event → persist closure link to opening event
+sweep         → opening too long without closure link → orphan → surface
 ```
 
 Suggested pair table:

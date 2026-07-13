@@ -275,8 +275,7 @@ interface TelegramConversationContext {
 
   originalIssue?: {
     eventType?: string;
-    eventId?: string;
-    escalationId?: string;
+    eventId?: number;
     sourceAgent?: string;
     sourceSessionId?: string;
     projectPath?: string;
@@ -327,7 +326,7 @@ Message sent while May brokers a project escalation:
   "conversationId": "tg_12345",
   "originalIssue": {
     "eventType": "escalation.created",
-    "escalationId": "esc_1",
+    "eventId": 100,
     "sourceAgent": "aks-explorer",
     "sourceSessionId": "s_blocked",
     "projectPath": "projects/aks-rp-e2e.app",
@@ -417,7 +416,7 @@ Current weak pattern:
 escalation.created
   -> May receives it
   -> May sends plain message to human:
-       "[escalation] esc_1 ... Reason: ..."
+       "[escalation] event #100 ... Reason: ..."
   -> human replies
   -> reply routes to May chat with only prose context
   -> original escalation may remain unresolved
@@ -443,7 +442,7 @@ May should receive a packet like:
   "conversationId": "tg_12345",
   "originalIssue": {
     "eventType": "escalation.created",
-    "escalationId": "esc_1",
+    "eventId": 100,
     "sourceAgent": "aks-explorer",
     "sourceSessionId": "s_blocked",
     "projectPath": "projects/aks-rp-e2e.app",
@@ -528,9 +527,10 @@ interface TelegramNotificationData {
 }
 ```
 
-New producers should prefer `conversationId` plus
-`conversation.originalIssue`. Telegram transport should not execute the domain
-decision itself.
+New producers should prefer trace metadata when the related event id is known.
+`conversationId` plus `conversation.originalIssue` remains useful
+transport context, but it should not become a second lifecycle identity.
+Telegram transport should not execute the domain decision itself.
 
 ## Routing Rules
 
@@ -538,7 +538,9 @@ Reply routing should stay deterministic:
 
 1. If the human message replies to a Telegram message with a stored
    `conversationId`, attach that id and its context to
-   `human.input.received.data.context.telegramReply`.
+   `human.input.received.data.context.telegramReply`. If the stored message has
+   a source event id, set the received input event's `trace.parentEventId` to
+   the message event id and preserve the same `trace.traceId`.
 2. Else if it replies to a stored notification without `conversationId`, attach
    the stored notification/session context as legacy fallback.
 3. Else if it replies to a Telegram quote with no DB row, build a quote fallback
@@ -551,7 +553,8 @@ Reply routing should stay deterministic:
    internal delivery message and target event.
 7. Project-specific events, escalation resolution, session resume, and task
    steering beyond the direct session target are agent/owner decisions after the
-   receiver sees the enriched delivery message.
+   receiver sees the enriched delivery message. Those decisions should emit
+   normal events linked back to the human input event.
 
 If the notification is stale, do not silently execute it. Send a short message:
 

@@ -362,10 +362,13 @@ This lets a domain UI feel native to its project while preserving the global
 system rule: everything important still flows through events, handlers, actions,
 and traceable state transitions.
 
-### Event Trace
+### Event Graph Trace
 
-The event trace is the most important debugging surface. It should be specified
-as a product/API contract, not just a button on an event table.
+The event graph trace is the most important debugging surface. It should be
+specified as a product/API contract, not just a button on an event table.
+Events are nodes; parent relationships and trace links are edges. The default
+view should show default events, with LLM turns and tool calls hidden behind a
+detail toggle.
 
 Route:
 
@@ -377,30 +380,27 @@ API:
 
 ```text
 GET /api/events/:eventId/trace
+GET /api/events/:eventId/graph?depth=3&detail=false
 ```
 
-The response should describe a chain:
+The response should describe a graph:
 
 ```text
-input event
-  -> matched app route or handler
-  -> workflow run and/or session spawned
-  -> tool calls / session progress / workflow steps
-  -> events emitted
-  -> state changed
-  -> follow-up handlers
+event nodes
+  + parent edges
+  + reference links
+  + closure links
+  + optional detail nodes for LLM/tool details
 ```
 
-The page should render the chain as linked steps:
+The page should render the graph as linked steps by default, with a graph view
+available for branches and loops:
 
 ```text
 project.task.completed
-  matched aks-rp-e2e.app:onEvent
-  emitted project.owner.requested
-  handled by aks-rp-e2e project owner workflow
-  session s_...
-  updated tasks/tree.json
-  emitted project.task.assigned
+  -> project.task.reviewed
+  -> project.planning.requested (decision=accept)
+  -> project.task.assigned
 ```
 
 Every step should link to the strongest available object:
@@ -408,14 +408,16 @@ Every step should link to the strongest available object:
 - event id -> `/events/:eventId`
 - workflow run -> workflow trace if available
 - session id -> `/sessions/:sessionId`
+- detail LLM/tool node -> transcript/tool-call side panel
 - project id -> `/projects/:projectId`
 - task id -> `/projects/:projectId/tasks?task=:taskId`
 - metric id -> `/metrics?metric=:metricId`
 
-If a chain is incomplete, the UI should say where evidence stops. A trace that
-shows "event persisted but no handler matched" is valuable: it exposes an
-orphan event. A trace that shows "handler matched but no follow-up event" is
-also valuable: it exposes a dead end.
+If a graph is incomplete, the UI should say where evidence stops. A trace that
+shows "event persisted but no accepted route" is valuable: it exposes routing
+failure. A trace that shows "event accepted but no child follow-up event" is
+also valuable: it exposes a dead end. A trace that shows "human reply received
+but no closure link" exposes an owner/reply-handling failure.
 
 ### Knowledge Search
 

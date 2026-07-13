@@ -9,13 +9,16 @@
 > and no lifecycle metrics.
 >
 > In practice, escalations can still accumulate if no owner emits
-> `escalation.resolved` or `escalation.dismissed`. The events.md delivery
-> proposal includes paired-event tracking for `escalation.created` →
-> `escalation.resolved/dismissed` which would detect orphan escalations
-> automatically.
+> `escalation.resolved` or `escalation.dismissed`. The event trace should link
+> `escalation.created` to the human/message/workflow path through
+> `parentEventId`, and the terminal event should link back to the opening event
+> with `trace.links[].type = "closure"`. Missing closure links are the primary
+> orphan signal.
 >
 > Immediate gap: 400+ escalations accumulated before anyone noticed. The system
-> has no way to answer "what escalations are open?" without querying raw events.
+> can query raw events today, but the durable graph should make "open
+> escalations" a direct graph query: `escalation.created` nodes without a
+> terminal closure link.
 
 **Status:** proposal refined against current docs and implementation
 **Date:** 2026-05-19
@@ -57,7 +60,7 @@ Escalation should not be a hidden human notification, an ad-hoc retry loop, or a
 | Part | Responsibility |
 |------|----------------|
 | Source agent | Decide it is blocked, explain the blocker, attach evidence, and pause/checkpoint its work. |
-| Runtime/infra | Persist events, route to the owner, wake/queue handlers, deduplicate noisy repeats, track correlation, and deliver the resolution back. |
+| Runtime/infra | Persist events, route to the owner, wake/queue handlers, deduplicate noisy repeats, track event links, and deliver the resolution back. |
 | Owner | Investigate, fix, answer, reject, or route to a human. |
 | Source agent after resolution | Resume with the resolution context and decide whether it is actually unblocked. |
 
@@ -71,13 +74,17 @@ When blocked work must be handled by another owner, the boundary emits
 `escalation.created` and pauses or records the source work with a durable resume
 reference.
 
+Escalation events use the same event identity and graph model as every other
+event. The persisted `escalation.created` event id is the escalation identity
+when available. A legacy or external `data.escalationId` may still exist for
+compatibility, but new runtime relationships should prefer trace metadata.
+
 Escalation events have two layers:
 
 - **Event envelope** follows the normal event schema: `type`, `source`, `owner`,
   `urgency`, `ttl_ms`, and timestamp.
 - **`data`** carries escalation-specific lifecycle fields and the agent-facing
-  brief: escalation id, blocker context, requested action, evidence, and resume
-  instructions.
+  brief: blocker context, requested action, evidence, and resume instructions.
 
 ```json
 {
@@ -86,7 +93,6 @@ Escalation events have two layers:
   "owner": "agent:may",
   "urgency": "high",
   "data": {
-    "escalationId": "esc_...",
     "sourceAgent": "tech-lead",
     "sourceSessionId": "s_...",
     "projectId": "platform",
@@ -110,11 +116,11 @@ Escalation events have two layers:
 }
 ```
 
-The event envelope routes the work. `event.data` carries escalation correlation
-and context. The framework must not lift domain fields such as `sessionId`,
-`projectId`, `metricId`, or `escalationId` onto subscriber-specific shortcut
-fields. Event-subscribed handlers receive the original event envelope and read
-escalation fields from `event.data`.
+The event envelope routes the work. `event.data` carries escalation context.
+The graph links carry event relationships. The framework must not lift domain
+fields such as `sessionId`, `projectId`, or `metricId` onto
+subscriber-specific shortcut fields. Event-subscribed handlers receive the
+original event envelope and read escalation fields from `event.data`.
 
 ### 2. Route And Wake
 
@@ -143,14 +149,17 @@ End-to-end path:
 ```text
 escalation.created(owner = human:operator)
   -> May emits message.created to human
-     data.conversationId = escalation:<id>
+     trace.parentEventId = escalation.created event id
      data.originalIssue.eventType = escalation.created
      data.expectedClosure = [escalation.resolved, escalation.dismissed]
   -> human replies in Telegram/Web/etc.
   -> transport emits human.input.received with the human text and restored context
+     trace.parentEventId = message.created event id
   -> command-router gives May one correlated reply-handling work item
   -> May agent decides what the reply means
   -> May emits escalation.resolved, escalation.dismissed, or a clear follow-up event
+     trace.parentEventId = human.input.received event id
+     trace.links includes closure link to escalation.created event id
   -> escalation-lifecycle resumes sourceSessionId/checkpointRef after terminal closure
 ```
 
@@ -204,8 +213,12 @@ The owner emits `escalation.resolved` when it has a disposition.
   "type": "escalation.resolved",
   "source": "agent:may",
   "owner": "agent:tech-lead",
+  "trace": {
+    "traceId": "event:100",
+    "parentEventId": 102,
+    "links": [{ "eventId": 100, "type": "closure" }]
+  },
   "data": {
-    "escalationId": "esc_...",
     "resolverAgent": "may",
     "outcome": "fixed",
     "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
@@ -241,7 +254,7 @@ target. `workflowRunId` and `projectId` are context for that resumed task, not
 separate things that the escalation lifecycle resumes.
 
 ```text
-resolution event -> lookup escalationId -> resume sourceSessionId/checkpointRef -> inject summary/evidence/resumeInstruction + workflow/project context
+resolution event -> follow closure link to escalation.created -> resume sourceSessionId/checkpointRef -> inject summary/evidence/resumeInstruction + workflow/project context
 ```
 
 Resume behavior must map to current work state:
@@ -258,9 +271,10 @@ Starting a new continuation session is only a fallback when true resume is unava
 - original session expired or crashed
 - model/runtime state is unavailable
 - policy says a fresh session is safer
-- the escalation did not include a recoverable source session
+- the opening event did not include a recoverable source session
 
-The fallback should still preserve the same `escalationId` and pass the original checkpoint and resolution context.
+The fallback should still link back to the same opening event and pass the
+original checkpoint and resolution context.
 
 ## State
 
@@ -275,7 +289,7 @@ Minimum derived state:
 created -> routed -> in_progress -> waiting_human -> resolved | dismissed | expired
 ```
 
-The first implementation can derive this from events:
+The graph implementation derives open escalations from events and close edges:
 
 ```sql
 -- open escalations
@@ -283,13 +297,12 @@ SELECT *
 FROM events c
 WHERE c.event_type = 'escalation.created'
   AND NOT EXISTS (
-    SELECT 1 FROM events r
-    WHERE r.event_type IN ('escalation.resolved', 'escalation.dismissed')
-      AND json_extract(r.data, '$.escalationId') = json_extract(c.data, '$.escalationId')
-      AND (
-        r.event_type = 'escalation.dismissed'
-        OR COALESCE(json_extract(r.data, '$.outcome'), '') != 'needs_human'
-      )
+    SELECT 1 FROM event_trace_links l
+    JOIN events r ON r.id = l.from_event_id
+    WHERE l.to_event_id = c.id
+      AND l.type = 'closure'
+      AND r.event_type IN ('escalation.resolved', 'escalation.dismissed')
+      AND COALESCE(json_extract(r.data, '$.outcome'), '') != 'needs_human'
   );
 ```
 
@@ -301,11 +314,13 @@ Escalation should be observable in three places:
 
 | Surface | What it shows |
 |---------|---------------|
-| Events/session trace | Raw `escalation.*` events with payload and correlation. |
+| Event graph/session trace | Raw `escalation.*` events, generic links, source session lines, resolution event, and resume attempt. |
 | Owner heartbeat/inbox | Actionable owner item with reason, requested action, evidence, and source. |
-| Source session/project | Blocked/waiting/pending-review state, escalation id, owner, and latest disposition. |
+| Source session/project | Blocked/waiting/pending-review state, opening event id, owner, and latest disposition. |
 
-The UI should make correlation explicit: click an escalation, see the source session lines, owner session, resolution event, child escalation chain, and resume attempt.
+The UI should make event links explicit: click an escalation event, see the
+source session lines, owner session, resolution event, child escalation chain,
+and resume attempt.
 
 ## Project Task Integration
 
@@ -320,9 +335,8 @@ Minimum task overlay:
   "state": "blocked",
   "blocker": "Needs owner approval.",
   "session_id": "s_task_live_run",
-  "escalation_id": "esc_aks_rp_e2e_live_run",
+  "escalation_event_id": 100,
   "escalation": {
-    "id": "esc_aks_rp_e2e_live_run",
     "state": "open",
     "owner": "human:project-owner",
     "severity": "P1",
@@ -389,9 +403,9 @@ if (!sessionId) {
 }
 ```
 
-The workflow author does not create escalation ids, write lifecycle rows, wake
-owners, or manage resume. `ctx.blocked(reason, context?)` does exactly one
-thing:
+The workflow author does not create separate escalation ids, write lifecycle
+rows, wake owners, or manage resume. `ctx.blocked(reason, context?)` does
+exactly one thing:
 
 1. Return `{ type: "blocked", reason, context }` to the synchronous workflow
    caller, so the current workflow stops cleanly.
@@ -412,7 +426,7 @@ runtime owns the canonical event defaults:
 |-------|---------------------------------|
 | `owner` | `context.owner` when supplied; otherwise `agent:may` |
 | `source` | current workflow agent, e.g. `agent:evaluator` |
-| `data.escalationId` | generated by runtime |
+| event id | assigned by event store; this is the escalation identity |
 | `data.sourceAgent` | current workflow agent |
 | `data.sourceSessionId` | parent session id when available |
 | `data.projectId` | workflow/project context when available |
@@ -454,7 +468,9 @@ escalation lifecycle.
 
 - Default `owner` to `agent:may`. This makes the simple path meaningful: "I am
   blocked; ask May to route or resolve it."
-- Generate `escalationId` if missing.
+- Persist `escalation.created` and use the resulting event id as the escalation
+  identity. Keep `data.escalationId` only as a legacy compatibility key for old
+  rows or external integrations that cannot reference event ids yet.
 - Reject the removed `sdk.escalate(target, reason)` shape. Callers pass routing
   through `opts.owner`; the only shorthand is `owner: "human"` mapping to
   `owner: "human:operator"`.
@@ -478,8 +494,14 @@ escalation lifecycle.
 
 - Add an owner handler/session convention for emitting `escalation.resolved`.
 - Include `outcome`, `summary`, `evidence`, and `resumeInstruction`.
-- For `needs_human`, create or link a child `escalation.created` with `parentEscalationId` and `owner: "human:<role>"`; do not resume the original source until the human child reaches a terminal disposition.
-- Add tests proving resolution is correlated by `escalationId`, not by fuzzy reason text. Current coverage includes terminal session resume, active-session send, and the `needs_human` child chain.
+- For `needs_human`, create or link a child `escalation.created` with a generic
+  `parentEventId` pointing to the parent escalation event and `owner:
+  "human:<role>"`; do not resume the original source until the human child
+  reaches a terminal disposition.
+- Add tests proving resolution closes the original event by event id / graph
+  link, not by fuzzy reason text. Current legacy coverage may still include
+  terminal session resume, active-session send, and the `needs_human` child
+  chain by compatibility id.
 
 ### Slice 4: Resume Delivery
 
@@ -490,7 +512,7 @@ escalation lifecycle.
 
 ### Slice 5: UI And Metrics
 
-- Show escalation lifecycle in session/project traces.
+- Show escalation lifecycle in event graph and session/project traces.
 - Add open escalation and resume-success metrics.
 - Show duplicate suppression and unowned escalations as operational hygiene signals.
 
