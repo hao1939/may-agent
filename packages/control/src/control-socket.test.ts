@@ -1,7 +1,11 @@
 import { Duplex } from "node:stream";
 import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
+  attachControlSocket,
   createControlSocketCore,
   type ControlEvent,
   type ControlSocket,
@@ -194,5 +198,24 @@ describe("control socket protocol", () => {
     await expect(sendSocketCommand(core.endpoint, { event: "missing-type" })).rejects.toThrow(
       "Missing or invalid event type: undefined",
     );
+  });
+
+  it("creates the socket parent directory before listening", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-control-socket-"));
+    try {
+      const socket = await attachControlSocket({
+        socketPath: join(root, "missing", "nested", "may.sock"),
+        getSessionId: () => "",
+        getStatus: () => [],
+        emitEvent: () => {},
+        subscribeEvents: () => () => {},
+        agentName: "may",
+        instance: "test",
+      });
+      sockets.push(socket);
+      expect(socket.clientCount()).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

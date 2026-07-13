@@ -207,6 +207,27 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
 
+CREATE TABLE IF NOT EXISTS event_traces (
+  event_id        INTEGER PRIMARY KEY,
+  trace_id        TEXT NOT NULL,
+  parent_event_id INTEGER,
+  visibility      TEXT NOT NULL DEFAULT 'default'
+);
+CREATE INDEX IF NOT EXISTS idx_event_traces_trace ON event_traces(trace_id, event_id);
+CREATE INDEX IF NOT EXISTS idx_event_traces_parent ON event_traces(parent_event_id);
+
+CREATE TABLE IF NOT EXISTS event_trace_links (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_event_id   INTEGER NOT NULL,
+  to_event_id     INTEGER NOT NULL,
+  type            TEXT NOT NULL DEFAULT 'reference',
+  label           TEXT NOT NULL DEFAULT '',
+  created_at      INTEGER NOT NULL,
+  UNIQUE(from_event_id, to_event_id, type, label)
+);
+CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type);
+CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type);
+
 CREATE TABLE IF NOT EXISTS runtime_migrations (
   key        TEXT PRIMARY KEY,
   applied_at INTEGER NOT NULL
@@ -480,6 +501,10 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
     db.exec("CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_event_traces_trace ON event_traces(trace_id, event_id)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_event_traces_parent ON event_traces(parent_event_id)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type)");
   } catch {
     /* already exists */
   }

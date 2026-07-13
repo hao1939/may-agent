@@ -1,4 +1,5 @@
 import type { SqliteDb } from "./db.js";
+import { persistEventTrace } from "./db/event-traces.js";
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -312,7 +313,21 @@ function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string):
       `reviewInboxEvents emitted ${type}`,
     ) as { lastInsertRowid?: number | bigint };
     const closeEventId = Number(info.lastInsertRowid);
-    if (Number.isFinite(closeEventId) && closeEventId > 0) closePair.run(closeEventId, now, row.id);
+    if (Number.isFinite(closeEventId) && closeEventId > 0) {
+      persistEventTrace(
+        db,
+        {
+          trace: {
+            traceId: `event:${row.id}`,
+            parentEventId: row.id,
+            links: [{ eventId: row.id, type: "closure", label: type }],
+          },
+        },
+        closeEventId,
+        now,
+      );
+      closePair.run(closeEventId, now, row.id);
+    }
   }
   return updated;
 }

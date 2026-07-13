@@ -26,6 +26,7 @@ import { createTerminalManager } from "@may-agent/terminal";
 import { ensureTaskTreeState, loadProjectReadModel } from "@may-agent/sdk";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
+import { buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -3228,6 +3229,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json(buildLoopTrace(_db(), target));
   }
 
+  function handleEventGraph(url: URL, eventIdText: string): Response {
+    const eventId = Number(eventIdText);
+    if (!Number.isFinite(eventId)) return json({ error: "event id must be numeric" }, 400);
+    const depth = url.searchParams.has("depth") ? Number(url.searchParams.get("depth")) : undefined;
+    const detail = url.searchParams.get("detail") === "true" || url.searchParams.get("detail") === "1";
+    return json(buildEventGraph(_db(), eventId, { depth, detail }));
+  }
+
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
@@ -3813,6 +3822,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
+      const eventGraphMatch = url.pathname.match(/^\/api\/events\/(\d+)\/graph$/);
+      if (eventGraphMatch) return handleEventGraph(url, eventGraphMatch[1]);
       const eventTraceMatch = url.pathname.match(/^\/api\/events\/(\d+)\/trace$/);
       if (eventTraceMatch) {
         const traceUrl = new URL(url);
