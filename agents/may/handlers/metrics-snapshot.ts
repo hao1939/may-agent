@@ -2633,6 +2633,22 @@ export const create: HandlerModule["create"] = (
           );
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
+        try {
+          db.run("DELETE FROM event_traces WHERE event_id NOT IN (SELECT id FROM events)");
+          db.run(
+            `UPDATE event_traces
+             SET parent_event_id = NULL
+             WHERE parent_event_id IS NOT NULL
+               AND parent_event_id NOT IN (SELECT id FROM events)`,
+          );
+          db.run(
+            `DELETE FROM event_trace_links
+             WHERE from_event_id NOT IN (SELECT id FROM events)
+                OR to_event_id NOT IN (SELECT id FROM events)`,
+          );
+        } catch (e) {
+          ctx.sdk.log("info", `[metrics-snapshot] Error cleaning event trace projection: ${e}`);
+        }
 
         // Sessions: 3-day retention
         do {

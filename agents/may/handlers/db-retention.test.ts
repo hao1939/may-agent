@@ -67,12 +67,12 @@ describe("db-retention handler", () => {
     const handler = create(ctx, {} as any);
     await handler();
 
-    // Events: 7 days
+    // Events: 5 days
     const eventDelete = runCalls.find(c =>
       c.sql.includes("DELETE FROM events") && c.sql.includes("timestamp"));
     expect(eventDelete).toBeTruthy();
     const eventCutoff = eventDelete!.params[0] as number;
-    expect(eventCutoff).toBe(now - 7 * 86_400_000);
+    expect(eventCutoff).toBe(now - 5 * 86_400_000);
 
     // Sessions: 14 days
     const sessionDelete = runCalls.find(c =>
@@ -224,7 +224,7 @@ describe("db-retention handler", () => {
 
     const handler = create(ctx, {} as any);
     // Should not throw — all db operations are wrapped in try/catch
-    await expect(handler()).resolves.not.toThrow();
+    await expect(handler()).resolves.toBeUndefined();
 
     // Should still emit completion event
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.completed", expect.objectContaining({

@@ -2,7 +2,7 @@
  * db-retention — Enforces data retention policy on the runtime SQLite DB.
  *
  * Retention windows:
- *   - events: 7 days
+ *   - events: 5 days
  *   - sessions: 14 days
  *   - session_digests: 14 days (session-linked)
  *   - workflow_runs: 14 days (session-linked)
@@ -44,6 +44,25 @@ const EVALUATION_RETENTION_DAYS = 30; // evaluations: analytical value, retain l
 const VACUUM_THRESHOLD = 500; // Run VACUUM if total deletions exceed this (lowered from 1000: hourly runs delete ~837 rows but VACUUM never fired at 1000 threshold → alert #2213 DB 2518MB)
 const OVERSIZED_ROW_BYTES = 1_048_576; // 1 MB — KE-1986: platform-owner-review context cascade
 
+function cleanupEventTraceProjection(db: { run: (sql: string, params?: unknown[]) => unknown }, log: (msg: string) => void): void {
+  try {
+    db.run("DELETE FROM event_traces WHERE event_id NOT IN (SELECT id FROM events)");
+    db.run(
+      `UPDATE event_traces
+       SET parent_event_id = NULL
+       WHERE parent_event_id IS NOT NULL
+         AND parent_event_id NOT IN (SELECT id FROM events)`,
+    );
+    db.run(
+      `DELETE FROM event_trace_links
+       WHERE from_event_id NOT IN (SELECT id FROM events)
+          OR to_event_id NOT IN (SELECT id FROM events)`,
+    );
+  } catch (e) {
+    log(`[db-retention] Error cleaning event trace projection: ${e}`);
+  }
+}
+
 export const create: HandlerModule["create"] = (
   ctx: HandlerContext,
   _entry: CronEntry,
@@ -66,6 +85,7 @@ export const create: HandlerModule["create"] = (
         "info",
         `[db-retention] Deleted ${deleted} events older than ${EVENT_RETENTION_DAYS}d`,
       );
+      cleanupEventTraceProjection(db, (msg) => ctx.sdk.log("info", msg));
     } catch (e) {
       ctx.sdk.log("info", `[db-retention] Error deleting old events: ${e}`);
     }
@@ -181,6 +201,7 @@ export const create: HandlerModule["create"] = (
           "info",
           `[db-retention] Deleted ${deleted} oversized events (data > 1MB)`,
         );
+        cleanupEventTraceProjection(db, (msg) => ctx.sdk.log("info", msg));
       }
     } catch (e) {
       ctx.sdk.log(
