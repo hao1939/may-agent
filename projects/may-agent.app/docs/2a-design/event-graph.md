@@ -377,6 +377,10 @@ The graph API should return nodes and edges directly:
 GET /api/events/:eventId/graph?depth=3&detail=false
 ```
 
+The API should prefer persisted trace rows and fall back to `event_pair_runs`
+when traces have not been backfilled yet. This keeps existing DB history useful
+immediately after deployment.
+
 Response shape:
 
 ```typescript
@@ -431,6 +435,20 @@ reports.
 8. Replace ad hoc trace UI with graph rendering and detail toggle.
 9. Update evaluation checks to look for broken trace chains rather than
    matching strings or escalation-specific fields.
+
+Implemented foundation:
+
+- `event_traces` and `event_trace_links` are additive side tables.
+- New event rows get a default `trace_id = event:<event_id>`.
+- Explicit envelope `trace` writes parent and link metadata.
+- Owner-inbox review follow-up events write closure links.
+- `backfillEventPairTraces(...)` can project existing `event_pair_runs` into
+  trace rows and closure links.
+- `GET /api/events/:eventId/graph?depth=3&detail=false` returns graph nodes,
+  edges, and diagnostics.
+- `bun run check:event-graph -- --state-dir /app/.state` checks trace storage
+  integrity. Add `--backfill` to create baseline trace rows for existing events
+  and project lifecycle pair records into closure links.
 
 ## Non-Goals
 

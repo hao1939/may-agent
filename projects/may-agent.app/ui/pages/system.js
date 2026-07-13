@@ -52,7 +52,10 @@ async function loadEvents() {
         `<td>${esc(e.owner || '—')}</td>` +
         `<td style="color:var(--fg2)">${esc(e.source || '—')}</td>` +
         `<td style="color:var(--fg2);font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(summary)}</td>` +
-        `<td style="text-align:right"><button onclick="loadLoopTrace(${Number(e.id)})" title="Show loop trace" style="font-size:11px;padding:3px 8px">trace</button></td>` +
+        `<td style="text-align:right;white-space:nowrap">` +
+        `<button onclick="loadEventGraph(${Number(e.id)})" title="Show event graph" style="font-size:11px;padding:3px 8px">graph</button> ` +
+        `<button onclick="loadLoopTrace(${Number(e.id)})" title="Show loop trace" style="font-size:11px;padding:3px 8px">trace</button>` +
+        `</td>` +
         `</tr>`;
     }
     html += `</table>`;
@@ -118,7 +121,7 @@ function renderEventDeliveryHealth(health) {
       const row = sample.row || {};
       const owner = row.owner || '—';
       const ts = row.timestamp || row.openedAt || row.expectedCloseAt;
-      const trace = sample.eventId ? `<button onclick="loadLoopTrace(${Number(sample.eventId)})" style="font-size:11px;padding:2px 7px">trace</button>` : '';
+      const trace = sample.eventId ? `<button onclick="loadEventGraph(${Number(sample.eventId)})" style="font-size:11px;padding:2px 7px">graph</button>` : '';
       html += `<div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--fg2);border-top:1px solid var(--border);padding-top:4px">`;
       html += `<span style="color:var(--fg);min-width:104px">${esc(sample.kind)}</span>`;
       html += `<span style="font-family:monospace;color:var(--accent);min-width:170px">${esc(sample.label || '—')}</span>`;
@@ -147,6 +150,121 @@ function loopTraceQuery(target) {
 function openLoopTrace(target) {
   routeTo('/events');
   setTimeout(() => loadLoopTrace(target), 80);
+}
+
+function openEventGraph(eventId) {
+  routeTo(`/events/${encodeURIComponent(eventId)}`);
+}
+
+async function loadEventGraph(eventId, opts = {}) {
+  const el = document.getElementById('event-graph-content');
+  if (!el) return;
+  const detail = opts.detail === true;
+  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 3;
+  el.innerHTML = '<div style="padding:10px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">Loading event graph…</div>';
+  try {
+    const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/graph?depth=${encodeURIComponent(depth)}&detail=${detail ? 'true' : 'false'}`);
+    const graph = await res.json();
+    if (!res.ok) throw new Error(graph.error || 'failed');
+    el.innerHTML = renderEventGraph(graph, { detail, depth });
+  } catch (e) {
+    el.innerHTML = `<div style="padding:10px;color:var(--red);border:1px solid var(--border);border-radius:6px">Failed to load event graph: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderEventGraph(graph, opts = {}) {
+  const nodes = graph.nodes || [];
+  const edges = graph.edges || [];
+  const diagnostics = graph.diagnostics || [];
+  const focus = nodes.find((node) => Number(node.id) === Number(graph.focusEventId));
+  const detail = opts.detail === true;
+  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 3;
+  const eventId = Number(graph.focusEventId);
+  const nodeIndex = new Map(nodes.map((node) => [Number(node.id), node]));
+  const edgeRows = edges.map((edge) => {
+    const source = nodeIndex.get(Number(edge.source));
+    const target = nodeIndex.get(Number(edge.target));
+    return {
+      ...edge,
+      sourceType: source?.type || edge.source,
+      targetType: target?.type || edge.target,
+    };
+  });
+
+  let html = `<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg2);padding:12px">`;
+  html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">`;
+  html += `<b>Event Graph</b>`;
+  html += `<span style="font-family:monospace;color:var(--accent)">#${esc(String(graph.focusEventId))}</span>`;
+  if (graph.traceId) html += `<span style="font-size:12px;color:var(--fg2)">trace ${esc(graph.traceId)}</span>`;
+  html += `<button onclick="loadEventGraph(${eventId}, {detail:${detail ? 'false' : 'true'}, depth:${depth}})" style="margin-left:auto;font-size:11px;padding:3px 8px">${detail ? 'Hide detail' : 'Show detail'}</button>`;
+  html += `<button onclick="loadLoopTrace(${eventId})" style="font-size:11px;padding:3px 8px">Loop trace</button>`;
+  html += `</div>`;
+
+  if (focus) {
+    html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">`;
+    html += `<span style="color:var(--fg);font-family:monospace">${esc(focus.type)}</span>`;
+    html += ` · owner ${esc(focus.owner || '—')} · source ${esc(focus.source || '—')} · ${timeAgo(focus.timestamp)}`;
+    if (focus.summary) html += `<div style="margin-top:4px;color:var(--fg)">${esc(focus.summary)}</div>`;
+    html += `</div>`;
+  }
+
+  if (diagnostics.length) {
+    html += `<div style="display:grid;gap:4px;margin-bottom:10px">`;
+    for (const d of diagnostics) {
+      html += `<div style="font-size:12px;color:var(--fg2);border-left:2px solid var(--yellow,#c69026);padding-left:8px">${esc(d)}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `<div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr);gap:12px">`;
+  html += `<div style="display:grid;gap:6px">`;
+  if (!nodes.length) {
+    html += `<div style="padding:12px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">No graph nodes.</div>`;
+  }
+  for (const node of nodes) {
+    const isFocus = Number(node.id) === Number(graph.focusEventId);
+    const border = isFocus ? 'var(--accent)' : 'var(--border)';
+    const bg = isFocus ? 'rgba(80,150,255,.08)' : 'var(--bg)';
+    html += `<div style="border:1px solid ${border};border-radius:6px;background:${bg};padding:8px;display:grid;gap:3px">`;
+    html += `<div style="display:flex;gap:8px;align-items:center">`;
+    html += `<span style="font-family:monospace;color:${isFocus ? 'var(--accent)' : 'var(--fg)'}">${esc(node.type)}</span>`;
+    html += `<span style="font-size:11px;color:var(--fg2)">#${esc(String(node.id))}</span>`;
+    if (node.visibility === 'detail') html += `<span style="font-size:10px;border:1px solid var(--border);border-radius:8px;padding:1px 6px;color:var(--fg2)">detail</span>`;
+    html += `<span style="margin-left:auto;font-size:11px;color:var(--fg2)">${timeAgo(node.timestamp)}</span>`;
+    html += `</div>`;
+    if (node.summary) html += `<div style="font-size:12px;color:var(--fg)">${esc(node.summary)}</div>`;
+    html += `<div style="font-size:11px;color:var(--fg2)">owner ${esc(node.owner || '—')} · source ${esc(node.source || '—')}</div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  html += `<div style="display:grid;gap:8px;align-content:start">`;
+  html += `<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:8px">`;
+  html += `<div style="font-size:12px;font-weight:600;margin-bottom:6px">Edges</div>`;
+  if (!edgeRows.length) {
+    html += `<div style="font-size:12px;color:var(--fg2)">No visible edges.</div>`;
+  } else {
+    html += `<div style="display:grid;gap:5px">`;
+    for (const edge of edgeRows.slice(0, 80)) {
+      const color = edge.type === 'closure' ? 'var(--green)' : edge.type === 'parent' ? 'var(--accent)' : 'var(--fg2)';
+      html += `<div style="font-size:12px;color:var(--fg2);border-left:2px solid ${color};padding-left:7px">`;
+      html += `<span style="color:${color}">${esc(edge.type)}</span> `;
+      html += `<span style="font-family:monospace">${esc(String(edge.sourceType))}</span>`;
+      html += ` → <span style="font-family:monospace">${esc(String(edge.targetType))}</span>`;
+      if (edge.label) html += ` · ${esc(edge.label)}`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  html += `<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:8px">`;
+  html += `<div style="font-size:12px;font-weight:600;margin-bottom:6px">Inspector</div>`;
+  html += `<pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;color:var(--fg2);margin:0">${esc(JSON.stringify(focus?.dataPreview || {}, null, 2))}</pre>`;
+  html += `</div>`;
+  html += `</div>`;
+  html += `</div>`;
+  html += `</div>`;
+  return html;
 }
 
 async function loadLoopTrace(target) {
