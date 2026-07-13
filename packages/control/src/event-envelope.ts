@@ -6,6 +6,8 @@ export interface CanonicalEventEnvelopeOptions {
   urgency?: unknown;
   ttl_ms?: unknown;
   timestamp?: unknown;
+  visibility?: unknown;
+  trace?: unknown;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -60,6 +62,8 @@ function hasOnlyEnvelopeFields(event: Record<string, unknown>): boolean {
       key === "urgency" ||
       key === "ttl_ms" ||
       key === "timestamp" ||
+      key === "visibility" ||
+      key === "trace" ||
       key === "data",
   );
 }
@@ -78,7 +82,7 @@ export function buildCanonicalEventEnvelope(
     };
   }
 
-  const { type: _inputType, source, owner, target, action, urgency, ttl_ms, timestamp, data, ...payload } = input;
+  const { type: _inputType, source, owner, target, action, urgency, ttl_ms, timestamp, visibility, trace, data, ...payload } = input;
 
   const eventData = isRecord(data) ? { ...data, ...payload } : payload;
   const envelopeTarget = isRecord(target) ? target : isRecord(defaults.target) ? defaults.target : undefined;
@@ -86,6 +90,8 @@ export function buildCanonicalEventEnvelope(
   const envelopeUrgency = nonEmptyString(urgency) ?? nonEmptyString(defaults.urgency);
   const envelopeTtl = typeof ttl_ms === "number" ? ttl_ms : defaults.ttl_ms;
   const envelopeTimestamp = typeof timestamp === "number" ? timestamp : defaults.timestamp;
+  const envelopeVisibility = nonEmptyString(visibility) ?? nonEmptyString(defaults.visibility);
+  const envelopeTrace = isRecord(trace) ? trace : isRecord(defaults.trace) ? defaults.trace : undefined;
 
   return {
     type,
@@ -96,6 +102,8 @@ export function buildCanonicalEventEnvelope(
     ...(envelopeUrgency ? { urgency: envelopeUrgency } : {}),
     ...(typeof envelopeTtl === "number" ? { ttl_ms: envelopeTtl } : {}),
     ...(typeof envelopeTimestamp === "number" ? { timestamp: envelopeTimestamp } : {}),
+    ...(envelopeVisibility ? { visibility: envelopeVisibility } : {}),
+    ...(envelopeTrace ? { trace: envelopeTrace } : {}),
     data: eventData,
   };
 }

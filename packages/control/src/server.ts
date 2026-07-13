@@ -1,5 +1,6 @@
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { connect, createServer, type Server } from "node:net";
+import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
 
@@ -243,6 +244,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
 export async function attachControlSocket(opts: AttachControlSocketOptions): Promise<ControlSocket> {
   const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onInfo, agentName, instance } = opts;
+  mkdirSync(dirname(socketPath), { recursive: true });
 
   if (existsSync(socketPath)) {
     const alive = await isSocketAlive(socketPath);

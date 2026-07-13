@@ -5,6 +5,8 @@ import { join } from "node:path";
 
 import { EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
+import { buildEventGraph } from "./http/read-model/event-graph.js";
+import { backfillEventPairTraces, checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createQueryService } from "../lib/query-service.js";
 
@@ -19,6 +21,39 @@ function attachPersistence(bus: EventBus, root: string): void {
 }
 
 describe("event delivery metadata", () => {
+  it("creates event trace side tables for graphable history", () => {
+    const root = tempRoot();
+    try {
+      const db = getDb(root);
+      const traceCols = db.prepare("PRAGMA table_info(event_traces)").all();
+      const linkCols = db.prepare("PRAGMA table_info(event_trace_links)").all();
+      const traceIndexes = db.prepare("PRAGMA index_list(event_traces)").all();
+      const linkIndexes = db.prepare("PRAGMA index_list(event_trace_links)").all();
+
+      expect(traceCols.map((row) => row.name)).toEqual([
+        "event_id",
+        "trace_id",
+        "parent_event_id",
+        "visibility",
+      ]);
+      expect(linkCols.map((row) => row.name)).toEqual([
+        "id",
+        "from_event_id",
+        "to_event_id",
+        "type",
+        "label",
+        "created_at",
+      ]);
+      expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_trace");
+      expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_parent");
+      expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_from");
+      expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_to");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("records direct subscriber acceptance on the original event row", () => {
     const root = tempRoot();
     try {
@@ -47,6 +82,345 @@ describe("event delivery metadata", () => {
         accepted_by: "test:handler",
         delivery_route: "direct",
       });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("persists default trace metadata for every new event row", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.created",
+        source: "test",
+        owner: "agent:owner",
+        data: { projectId: "sample", message: "review" },
+      });
+
+      const db = getDb(root);
+      const event = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.created'").get() as {
+        id: number;
+      };
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(event.id);
+
+      expect(trace).toMatchObject({
+        event_id: event.id,
+        trace_id: `event:${event.id}`,
+        parent_event_id: null,
+        visibility: "default",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reports event trace integrity gaps", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.created",
+        source: "test",
+        owner: "agent:owner",
+        data: { projectId: "sample", message: "review" },
+      });
+
+      const db = getDb(root);
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        eventCount: 1,
+        traceCount: 1,
+        missingTraceCount: 0,
+        danglingParentCount: 0,
+        danglingLinkCount: 0,
+        ok: true,
+      });
+
+      const event = db.prepare("SELECT id FROM events").get() as { id: number };
+      db.run("DELETE FROM event_traces WHERE event_id = ?", [event.id]);
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        eventCount: 1,
+        traceCount: 0,
+        missingTraceCount: 1,
+        ok: false,
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("persists explicit trace parent and closure links", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.created",
+        source: "test",
+        owner: "agent:owner",
+        data: { projectId: "sample", message: "open" },
+      });
+
+      const db = getDb(root);
+      const rootEvent = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.created'").get() as {
+        id: number;
+      };
+
+      bus.emit({
+        type: "project.feedback.reviewed",
+        source: "test",
+        owner: "agent:owner",
+        visibility: "detail",
+        trace: {
+          traceId: `event:${rootEvent.id}`,
+          parentEventId: rootEvent.id,
+          links: [{ eventId: rootEvent.id, type: "closure", label: "reviewed" }],
+        },
+        data: { openEventId: rootEvent.id, reviewedBy: "test" },
+      });
+
+      const closeEvent = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.reviewed'").get() as {
+        id: number;
+      };
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(closeEvent.id);
+      const link = db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ?").get(closeEvent.id);
+
+      expect(trace).toMatchObject({
+        event_id: closeEvent.id,
+        trace_id: `event:${rootEvent.id}`,
+        parent_event_id: rootEvent.id,
+        visibility: "detail",
+      });
+      expect(link).toMatchObject({
+        from_event_id: closeEvent.id,
+        to_event_id: rootEvent.id,
+        type: "closure",
+        label: "reviewed",
+      });
+
+      const defaultGraph = buildEventGraph(db, rootEvent.id);
+      expect(defaultGraph.nodes.map((node) => node.id)).toEqual([rootEvent.id]);
+      expect(defaultGraph.edges).toEqual([]);
+
+      const detailGraph = buildEventGraph(db, rootEvent.id, { detail: true });
+      expect(detailGraph.traceId).toBe(`event:${rootEvent.id}`);
+      expect(detailGraph.nodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
+      expect(detailGraph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "parent" }),
+          expect.objectContaining({ source: closeEvent.id, target: rootEvent.id, type: "closure" }),
+        ]),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores explicit trace links to missing events", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.feedback.reviewed",
+        source: "test",
+        owner: "agent:owner",
+        trace: {
+          traceId: "event:99999",
+          parentEventId: 99999,
+          links: [{ eventId: 99999, type: "closure", label: "missing" }],
+        },
+        data: { reviewedBy: "test" },
+      });
+
+      const db = getDb(root);
+      const event = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.reviewed'").get() as {
+        id: number;
+      };
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(event.id);
+      const links = db.prepare("SELECT COUNT(*) as c FROM event_trace_links").get() as { c: number };
+
+      expect(trace).toMatchObject({
+        event_id: event.id,
+        trace_id: "event:99999",
+        parent_event_id: null,
+      });
+      expect(links.c).toBe(0);
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        eventCount: 1,
+        traceCount: 1,
+        danglingTraceCount: 0,
+        danglingParentCount: 0,
+        danglingLinkCount: 0,
+        ok: true,
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("backfills event-pair lifecycle closures into trace links", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.task.assigned",
+        source: "test",
+        owner: "project:sample",
+        data: { taskId: "task-1", attemptId: "a1", sessionId: "s1" },
+      } as any);
+      bus.emit({
+        type: "project.task.completed",
+        source: "test",
+        owner: "project:sample",
+        data: { taskId: "task-1", attemptId: "a1", result: "done" },
+      } as any);
+
+      const db = getDb(root);
+      const pair = db.prepare(
+        `SELECT open_event_id, close_event_id
+         FROM event_pair_runs
+         WHERE pair_name = 'project.task'`,
+      ).get() as { open_event_id: number; close_event_id: number };
+
+      const fallbackGraph = buildEventGraph(db, pair.open_event_id);
+      expect(fallbackGraph.diagnostics).toContain("graph includes event_pair_runs fallback edges");
+      expect(fallbackGraph.nodes.map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
+      expect(fallbackGraph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
+        ]),
+      );
+
+      expect(backfillEventPairTraces(db, { createdAt: 123 })).toBeGreaterThan(0);
+
+      const closeTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(pair.close_event_id);
+      const closureLink = db
+        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
+        .get(pair.close_event_id, pair.open_event_id);
+
+      expect(closeTrace).toMatchObject({
+        event_id: pair.close_event_id,
+        trace_id: `event:${pair.open_event_id}`,
+        parent_event_id: pair.open_event_id,
+      });
+      expect(closureLink).toMatchObject({
+        from_event_id: pair.close_event_id,
+        to_event_id: pair.open_event_id,
+        type: "closure",
+        label: "project.task",
+        created_at: 123,
+      });
+
+      const graph = buildEventGraph(db, pair.open_event_id);
+      expect(graph.nodes.map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
+      expect(graph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "parent" }),
+          expect.objectContaining({ source: pair.close_event_id, target: pair.open_event_id, type: "closure" }),
+        ]),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores dangling event-pair rows when backfilling traces", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.task.assigned",
+        source: "test",
+        owner: "project:sample",
+        data: { taskId: "task-1", attemptId: "a1", sessionId: "s1" },
+      } as any);
+
+      const db = getDb(root);
+      const event = db.prepare("SELECT id FROM events WHERE event_type = 'project.task.assigned'").get() as {
+        id: number;
+      };
+      const missingOpenEventId = event.id + 1000;
+      const missingCloseEventId = event.id + 1001;
+
+      db.run(
+        `INSERT INTO event_pair_runs
+         (pair_name, correlation_key, open_event_id, close_event_id, owner, status, opened_at, expected_close_at, closed_at, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "project.task",
+          "dangling-open",
+          missingOpenEventId,
+          event.id,
+          "project:sample",
+          "closed",
+          1,
+          2,
+          3,
+          "old broken row",
+        ],
+      );
+      db.run(
+        `INSERT INTO event_pair_runs
+         (pair_name, correlation_key, open_event_id, close_event_id, owner, status, opened_at, expected_close_at, closed_at, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "project.task",
+          "dangling-close",
+          event.id,
+          missingCloseEventId,
+          "project:sample",
+          "closed",
+          1,
+          2,
+          3,
+          "old broken row",
+        ],
+      );
+      db.run(
+        `INSERT INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+         VALUES (?, ?, ?, ?)`,
+        [missingCloseEventId, `event:${event.id}`, event.id, "default"],
+      );
+      db.run("UPDATE event_traces SET parent_event_id = ? WHERE event_id = ?", [missingOpenEventId, event.id]);
+      db.run(
+        `INSERT INTO event_trace_links (from_event_id, to_event_id, type, label, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [missingCloseEventId, event.id, "closure", "broken", 123],
+      );
+
+      expect(checkEventTraceIntegrity(db).ok).toBe(false);
+      expect(backfillEventPairTraces(db, { createdAt: 456 })).toBeGreaterThan(0);
+      expect(checkEventTraceIntegrity(db)).toMatchObject({
+        eventCount: 1,
+        traceCount: 1,
+        danglingParentCount: 0,
+        danglingLinkCount: 0,
+        ok: true,
+      });
+
+      const danglingTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(missingCloseEventId);
+      const eventTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(event.id);
+      const links = db.prepare("SELECT COUNT(*) as c FROM event_trace_links").get() as { c: number };
+      expect(danglingTrace).toBeNull();
+      expect(eventTrace).toMatchObject({ event_id: event.id, parent_event_id: null });
+      expect(links.c).toBe(0);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -490,7 +864,7 @@ describe("event delivery metadata", () => {
       expect(query.reviewInboxEvents([id], "dev")).toBe(1);
 
       const followup = db.prepare(
-        `SELECT event_type, data, delivery_status, delivery_route
+        `SELECT id, event_type, data, delivery_status, delivery_route
          FROM events
          WHERE event_type = 'message.reviewed'`,
       ).get() as Record<string, unknown>;
@@ -503,6 +877,20 @@ describe("event delivery metadata", () => {
         openEventId: id,
         openEventType: "message.created",
         reviewedBy: "dev",
+      });
+
+      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(followup.id);
+      const link = db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ?").get(followup.id);
+      expect(trace).toMatchObject({
+        event_id: followup.id,
+        trace_id: `event:${id}`,
+        parent_event_id: id,
+      });
+      expect(link).toMatchObject({
+        from_event_id: followup.id,
+        to_event_id: id,
+        type: "closure",
+        label: "message.reviewed",
       });
 
       const pair = db.prepare(
