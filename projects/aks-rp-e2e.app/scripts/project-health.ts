@@ -557,6 +557,19 @@ function directFeatureCompactActivePipelineWaits(
       const feature = objectValue(raw);
       const runId = stringValue(feature.activeWorkflowRunId);
       if (!runId) return null;
+      const startedAt =
+        stringValue(feature.heartbeatAt) || stringValue(feature.updatedAt);
+      const startedAtMs = startedAt ? Date.parse(startedAt) : NaN;
+      const nextCheckAt =
+        stringValue(feature.nextCheckAt) ||
+        (Number.isFinite(startedAtMs)
+          ? new Date(startedAtMs + 10 * 60 * 1000).toISOString()
+          : "");
+      const fallbackAt =
+        stringValue(feature.fallbackAt) ||
+        (Number.isFinite(startedAtMs)
+          ? new Date(startedAtMs + 12 * 60 * 60 * 1000).toISOString()
+          : "");
       return {
         featureKey,
         runId,
@@ -568,12 +581,30 @@ function directFeatureCompactActivePipelineWaits(
           stringValue(feature.lastResultPath) ||
           ".state/feature-compact-loop/artifacts/<runId>/",
         owner: "feature-compact-loop-controller",
-        nextCheckAt: stringValue(feature.nextCheckAt),
-        fallbackAt: stringValue(feature.fallbackAt),
+        nextCheckAt,
+        fallbackAt,
       };
     })
     .filter((item): item is ActivePipelineWaitReport => Boolean(item))
     .sort((a, b) => a.featureKey.localeCompare(b.featureKey));
+}
+
+function mergePipelineWait(
+  previous: ActivePipelineWaitReport | undefined,
+  next: ActivePipelineWaitReport,
+): ActivePipelineWaitReport {
+  return {
+    ...(previous ?? {}),
+    ...next,
+    runUrl: next.runUrl || previous?.runUrl || null,
+    runStatus: next.runStatus || previous?.runStatus || null,
+    runTitle: next.runTitle || previous?.runTitle || null,
+    watchedCondition: next.watchedCondition || previous?.watchedCondition || "",
+    expectedArtifact: next.expectedArtifact || previous?.expectedArtifact || "",
+    owner: next.owner || previous?.owner || "feature-compact-loop-controller",
+    nextCheckAt: next.nextCheckAt || previous?.nextCheckAt || null,
+    fallbackAt: next.fallbackAt || previous?.fallbackAt || null,
+  };
 }
 
 function mergeActivePipelineWaits(
@@ -582,10 +613,8 @@ function mergeActivePipelineWaits(
 ): ActivePipelineWaitReport[] {
   const merged = new Map<string, ActivePipelineWaitReport>();
   for (const wait of [...left, ...right]) {
-    merged.set(`${wait.featureKey}:${wait.runId}`, {
-      ...(merged.get(`${wait.featureKey}:${wait.runId}`) ?? {}),
-      ...wait,
-    });
+    const key = `${wait.featureKey}:${wait.runId}`;
+    merged.set(key, mergePipelineWait(merged.get(key), wait));
   }
   return [...merged.values()].sort((a, b) =>
     a.featureKey === b.featureKey
@@ -640,6 +669,10 @@ function taskLastActivityMs(task: TaskNode): number | null {
   return latest;
 }
 
+function taskContext(task: TaskNode): JsonObject {
+  return objectValue(task.context);
+}
+
 function activeJournalActivityByTask(
   rows: JsonLine[],
   sinceMs: number,
@@ -658,6 +691,7 @@ function staleActiveTasks(input: {
   journalRows: JsonLine[];
   nowMs: number;
   staleActiveMs: number;
+  representedCompactPipelineFeatureKeys?: Set<string>;
 }): string[] {
   const recentTaskActivity = activeJournalActivityByTask(
     input.journalRows,
@@ -667,11 +701,36 @@ function staleActiveTasks(input: {
     .filter((task) => isLeafTask(task) && taskState(task) === "active")
     .filter((task) => {
       if (recentTaskActivity.has(task.id)) return false;
+      if (
+        task.workflow === "feature-compact-planner" &&
+        input.representedCompactPipelineFeatureKeys?.has(
+          stringValue(taskContext(task).featureKey),
+        )
+      ) {
+        return false;
+      }
       const last = taskLastActivityMs(task);
       return last == null || input.nowMs - last > input.staleActiveMs;
     })
     .map((task) => task.id)
     .sort((a, b) => a.localeCompare(b));
+}
+
+function representedCompactPipelineFeatureKeys(
+  loops: ProjectHealthBaseReport["loops"],
+  nowMs: number,
+): Set<string> {
+  const keys = new Set<string>();
+  const compactLoop = loops.find(
+    (loop) => loop.taskId === "aks-feature-compact-loop",
+  );
+  if (!compactLoop) return keys;
+  for (const wait of compactLoop.activePipelineWaits) {
+    const fallbackMs = wait.fallbackAt ? Date.parse(wait.fallbackAt) : NaN;
+    if (!Number.isFinite(fallbackMs) || fallbackMs < nowMs) continue;
+    keys.add(wait.featureKey);
+  }
+  return keys;
 }
 
 function loopStateCounts(
@@ -740,6 +799,7 @@ function buildLoopReports(appDir: string, tree: TaskTree) {
 function buildSignals(input: {
   report: ProjectHealthBaseReport;
   incompleteLoops: string[];
+  blockedStewardshipLoops: string[];
   recentMovementCount: number;
 }): ProjectHealthSignal[] {
   const signals: ProjectHealthSignal[] = [];
@@ -778,6 +838,19 @@ function buildSignals(input: {
       code: "frontier.waiting",
       message: `${frontier.counts.waiting} runnable-looking task(s) are waiting on dependency or capacity gates.`,
       taskIds: sample(frontier.waiting),
+    });
+  }
+
+  if (
+    frontier.counts.runnable > 0 &&
+    frontier.counts.active === 0 &&
+    input.report.assignments.queued === 0
+  ) {
+    signals.push({
+      severity: "warn",
+      code: "frontier.runnable-idle",
+      message: `${frontier.counts.runnable} runnable task(s) are ready, but no worker is active and no assignment is queued.`,
+      taskIds: sample(frontier.runnable),
     });
   }
 
@@ -839,6 +912,22 @@ function buildSignals(input: {
   }
 
   if (
+    frontier.counts.runnable === 0 &&
+    frontier.counts.active === 0 &&
+    frontier.counts.review === 0 &&
+    frontier.counts.waiting === 0 &&
+    input.incompleteLoops.length === 0 &&
+    input.blockedStewardshipLoops.length > 0
+  ) {
+    signals.push({
+      severity: "warn",
+      code: "loop.blocked-wait-stewardship",
+      message: `Incomplete durable loop(s) are parked on represented blocked waits: ${input.blockedStewardshipLoops.join(", ")}.`,
+      taskIds: input.blockedStewardshipLoops,
+    });
+  }
+
+  if (
     input.recentMovementCount === 0 &&
     (frontier.counts.active > 0 ||
       frontier.counts.review > 0 ||
@@ -869,6 +958,16 @@ function buildSignals(input: {
   }
 
   return signals;
+}
+
+function isBlockedWaitStewardshipLoop(
+  loop: ProjectHealthReport["loops"][number],
+): boolean {
+  if (loop.completionReady !== false) return false;
+  if (loop.unrepresentedNonTerminalCount !== 0) return false;
+  if (loop.activePipelineFeatureKeys.length > 0) return false;
+  if (loop.activePipelineWaits.length > 0) return false;
+  return loop.state === "blocked";
 }
 
 function chooseStatus(input: {
@@ -917,6 +1016,14 @@ function buildNextActions(report: Omit<ProjectHealthReport, "nextActions">) {
   if (rootCount) {
     actions.push(
       `Repair or intentionally archive the extra task-tree root(s): ${sample(rootCount.taskIds ?? [], 5).join(", ")}.`,
+    );
+  }
+  const runnableIdle = report.signals.find(
+    (signal) => signal.code === "frontier.runnable-idle",
+  );
+  if (runnableIdle) {
+    actions.push(
+      `Wake the planner or assign ready runnable work: ${sample(runnableIdle.taskIds ?? [], 5).join(", ")}.`,
     );
   }
   if (report.frontier.counts.review > 0) {
@@ -990,14 +1097,24 @@ export function buildProjectHealth(
   const dayJournal = rowsSince(journalRows, dayAgoMs);
   const dayReviewer = rowsSince(reviewerRows, dayAgoMs);
   const loops = buildLoopReports(appDir, tree);
-  const incompleteLoops = loops
-    .filter((loop) => loop.completionReady === false)
+  const incompleteLoopReports = loops.filter(
+    (loop) => loop.completionReady === false,
+  );
+  const blockedStewardshipLoops = incompleteLoopReports
+    .filter(isBlockedWaitStewardshipLoop)
+    .map((loop) => loop.taskId);
+  const incompleteLoops = incompleteLoopReports
+    .filter((loop) => !isBlockedWaitStewardshipLoop(loop))
     .map((loop) => loop.taskId);
   const staleActiveTaskIds = staleActiveTasks({
     tree,
     journalRows,
     nowMs,
     staleActiveMs: staleActiveMinutes * 60 * 1000,
+    representedCompactPipelineFeatureKeys: representedCompactPipelineFeatureKeys(
+      loops,
+      nowMs,
+    ),
   });
   const processGraph =
     appDir === defaultAppDir
@@ -1068,6 +1185,7 @@ export function buildProjectHealth(
   const signals = buildSignals({
     report: baseReport,
     incompleteLoops,
+    blockedStewardshipLoops,
     recentMovementCount,
   });
   const status = chooseStatus({

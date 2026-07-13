@@ -184,6 +184,120 @@ describe("spec-loop-controller", () => {
     });
   });
 
+  test("does not harvest terminal waits from prose-only run ids", async () => {
+    const projectDir = await makeProject();
+    const now = new Date().toISOString();
+    const state: SpecLoopState = {
+      loopTaskId: "aks-spec-verification-loop",
+      windowSize: 1,
+      cursor: 0,
+      prioritySpecIds: [],
+      specs: {
+        "spec.a": {
+          status: "pending",
+          taskId: "wait-spec-a-run",
+          attempts: 3,
+          lastRunId: null,
+          lastRunUrl: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: now,
+        },
+      },
+    };
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: now,
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-a-run"],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop is current"],
+              forbidden: [],
+              conflict_scope: ["spec-loop"],
+              depends_on: [],
+              context: {},
+            },
+            "wait-spec-a-run": {
+              id: "wait-spec-a-run",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              priority: "P1",
+              children: [],
+              goal: "Wait for spec.a workflow run 123456789 to finish.",
+              inputs: ["Historical note says run 123456789 was queued."],
+              outputs: [],
+              acceptance: ["Review terminal workflow result."],
+              forbidden: [],
+              conflict_scope: ["spec:spec.a"],
+              depends_on: [],
+              blocker: {
+                category: "external-wait",
+                condition:
+                  "Waiting for a pipeline run, but no structured run id was recorded.",
+                waiting_for: {
+                  type: "github.workflow_run.completed",
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = harvestTerminalGitHubWaits({
+      config: config(projectDir),
+      projectDir,
+      loopTaskId: "aks-spec-verification-loop",
+      state,
+      client: { kind: "gh" },
+      limit: 10,
+      getRun: () => {
+        throw new Error("prose-only run id should not be queried");
+      },
+    });
+
+    expect(result.harvestedTaskIds).toEqual([]);
+    expect(result.checkedRunIds).toEqual([]);
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["wait-spec-a-run"]).toMatchObject({
+      state: "blocked",
+      status: "blocked",
+    });
+    expect(state.specs["spec.a"].lastRunId).toBeNull();
+  });
+
   test("leaves GitHub wait children blocked while the referenced run is still active", async () => {
     const projectDir = await makeProject();
     const now = new Date().toISOString();
@@ -1334,6 +1448,20 @@ describe("spec-loop-controller", () => {
         ...selfRepresented,
         successorDisposition:
           "environment_setup_blocker_node_subnet_http409_before_product_assertion",
+      }),
+    ).toBe(true);
+    expect(
+      specStateSelfRepresentsExactFrontier({
+        ...selfRepresented,
+        successorDisposition:
+          "repo_local_witness_repair_landed_future_rerun_if_focus_reopens",
+        review: {
+          classification:
+            "repo_local_witness_repair_landed_future_rerun_if_focus_reopens",
+          lastAction:
+            "Keep pending under the active no-new-live focus. If live focus reopens, queue exactly one bounded same-spec rerun.",
+          reviewedAt: new Date().toISOString(),
+        },
       }),
     ).toBe(true);
     expect(
@@ -5091,8 +5219,6 @@ describe("spec-loop-controller", () => {
           lastResultPath: null,
           lastPrUrl: null,
           updatedAt: "2026-07-02T12:05:00.000Z",
-          normalizedFromStatus: "error",
-          normalizedAt: "2026-07-02T12:05:00.000Z",
           successorDisposition: "repaired-carrier-pending-rerun",
           successorEvidencePath: "/tmp/reconcile-spec-loop-error-alpha.md",
           resumeCondition: "wait for underlay kubeconfig",

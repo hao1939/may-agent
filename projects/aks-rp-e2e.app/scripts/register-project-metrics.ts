@@ -22,6 +22,8 @@ const dbPath = resolve(process.env.MAY_DB_PATH ?? `${rootDir}/.state/may.db`);
 const sampleCommand = (id: string) => {
   const jsonMetrics = new Set([
     "aks-rp-e2e.process.unowned-work-count",
+    "aks-rp-e2e.process.loop.unrepresented-record-count",
+    "aks-rp-e2e.process.task.review-not-applied-count",
     "aks-rp-e2e.task.blocked-actionable-count",
     "aks-rp-e2e.process.blocked.missing-waiting-for-count",
     "aks-rp-e2e.process.blocked.missing-observer-count",
@@ -77,12 +79,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked task count",
     type: "gauge",
     target: 0,
-    threshold: 130,
+    threshold: 999999,
     unit: "count",
     alertOp: ">",
     priority: "P3",
     description:
-      "Blocked-leaf inventory signal: counts every blocked leaf, including durable exact family holders that intentionally preserve a represented frontier. Use this as the raw plateau/dashboard view; route actionability from the companion aks-rp-e2e.task.blocked-actionable-count metric instead of paging repeatedly on the same represented wait frontier.",
+      "Dashboard-only blocked-leaf inventory signal: counts every blocked leaf, including durable exact family holders and future-window blocked waits that intentionally preserve a represented frontier before their review/fallback window opens. Keep this visible as raw inventory, but route interrupting actionability from aks-rp-e2e.task.blocked-actionable-count and blocked-overdue family metrics instead of paging repeatedly on scheduled represented waits.",
   },
   {
     id: "aks-rp-e2e.task.blocked-actionable-count",
@@ -162,6 +164,32 @@ const metrics: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
+    id: "aks-rp-e2e.process.assignment.not-consumed-count",
+    name: "AKS RP E2E queued assignments not consumed",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: project.task assignment rows are still queued after the worker-start grace window. The planner should re-emit task dispatch, clear a stale row, or repair worker dispatch so active work is actually consumed.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.task.review-not-applied-count",
+    name: "AKS RP E2E task reviews not applied",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: task-reviewer emitted a decision for the current attempt, but the task is still in review after the planner-application grace window. The planner should apply the decision, stale-noop it with proof, or create owned repair work.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
     id: "aks-rp-e2e.process.unpublished-change-count",
     name: "AKS RP E2E project repo changes not visible to pipeline",
     type: "gauge",
@@ -172,6 +200,19 @@ const metrics: MetricDef[] = [
     priority: "P0",
     description:
       "P0 process signal: the aks-rp-e2e project repo has dirty files or local commits that have not been pushed, so pipeline runs may be using stale test code, specs, plans, or artifacts. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.process.loop.unrepresented-record-count",
+    name: "AKS RP E2E loop records without live representation",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 process signal: a durable loop reports non-terminal ledger records that are not represented by child work, an exact blocked wait, an escalation, or an accepted terminal disposition. The loop controller and planner must make those records visible before the project can be considered closed.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {

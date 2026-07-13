@@ -251,18 +251,36 @@ function reviewedTrigger(data: Record<string, unknown>) {
   ].join("\n");
 }
 
+function planningTrigger(data: Record<string, unknown> = {}) {
+  return [
+    "## Trigger Event",
+    "```json",
+    JSON.stringify(
+      {
+        type: "project.planning.requested",
+        data: { project: "aks-rp-e2e", ...data },
+      },
+      null,
+      2,
+    ),
+    "```",
+  ].join("\n");
+}
+
 function plannerContext(input: {
   appDir: string;
   projectDir: string;
   trigger: string;
   prompts?: string[];
   dispatched?: Array<{ type: string; data: unknown }>;
+  extraTaskLines?: string[];
 }) {
   return {
     task: [
       `app: ${input.appDir}`,
       `project: ${input.projectDir}`,
       "agent: aks-explorer",
+      ...(input.extraTaskLines ?? []),
       "maxConcurrent: 1",
       input.trigger,
     ].join("\n"),
@@ -360,6 +378,83 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("routes app-ops owned backlog tasks to the ops worker even without ops prefix", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["apply-frontier-state"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "apply-frontier-state": {
+              id: "apply-frontier-state",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal: "Apply app-owned task-tree state.",
+              outputs: ["evidence/archive/apply-frontier-state.md"],
+              acceptance: ["done"],
+              conflict_scope: ["app-task-tree:feature-compact"],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
+      [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "worker: aks-explorer",
+        "opsWorker: app-ops",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, data: Record<string, unknown>) {
+        dispatched.push({ type, data });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toContainEqual({
+      type: "project.task.assigned",
+      data: expect.objectContaining({
+        taskId: "apply-frontier-state",
+        worker: "app-ops",
+      }),
+    });
+  });
+
   test("applies accepted task reviews without owner-agent planning", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir);
@@ -390,6 +485,34 @@ describe("project owner workflow", () => {
     expect(prompts).toHaveLength(0);
   });
 
+  test("does not apply accepted reviews with missing durable evidence validation note", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer accepted, but validation found missing evidence.",
+          findings: [
+            "validation-note:worker-cited-missing-durable-evidence",
+            "missing:evidence/archive/missing-review-evidence.md",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Did not apply accept review");
+    expect(tree.tasks["review-task"].state).toBe("review");
+  });
+
   test("accepted task review creates structured Azure DevOps wait for queued rerun", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -412,7 +535,19 @@ describe("project owner workflow", () => {
             "Worker evidence satisfies the repair and queued the verification run.",
           completion: {
             summary:
-              "Cross-checked ADO run 171501538 against current source, verified local gates, and queued bounded rerun 171529560 for spec.kms.v2plus-enable-pmk-from-v2-public.",
+              "Cross-checked prior evidence against current source, verified local gates, and queued bounded rerun.",
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "171529560",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171529560",
+                  specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
+                },
+              },
+            },
           },
         }),
       }),
@@ -436,6 +571,110 @@ describe("project owner workflow", () => {
         "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
     });
     expect(JSON.stringify(wait)).not.toContain("171501538");
+  });
+
+  test("accepted task review does not dedupe queued run from existing prose", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+      conflictScope: ["spec:kms.v2plus-enable-pmk-from-v2-public"],
+      extraTasks: {
+        "historical-prose-run-note": {
+          id: "historical-prose-run-note",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Historical text says Azure DevOps run 171529560 was queued.",
+          outputs: [],
+          acceptance: ["not a structured wait"],
+          conflict_scope: ["spec:kms.v2plus-enable-pmk-from-v2-public"],
+          blocker: {
+            condition:
+              "This prose mentions run 171529560 but has no structured waiting_for.runId.",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Worker queued the verification run.",
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "171529560",
+                  specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks[
+        "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result"
+      ],
+    ).toBeTruthy();
+  });
+
+  test("accepted task review does not infer queued Azure DevOps run from prose", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+      conflictScope: ["spec:kms.v2plus-enable-pmk-from-v2-public"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Worker evidence says it queued bounded rerun 171529560 for spec.kms.v2plus-enable-pmk-from-v2-public, but no structured queuedRun field is present.",
+          completion: {
+            summary:
+              "Queued bounded rerun 171529560 for spec.kms.v2plus-enable-pmk-from-v2-public.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Applied accept review for repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun.",
+    );
+    expect(
+      tree.tasks[
+        "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result"
+      ],
+    ).toBeUndefined();
   });
 
   test("accepted structured single-spec review marks spec-loop item passed", async () => {
@@ -595,6 +834,7 @@ describe("project owner workflow", () => {
       }),
     );
 
+    const tree = await readTaskTreeJson(appDir);
     const state = JSON.parse(
       await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
     );
@@ -610,6 +850,17 @@ describe("project owner workflow", () => {
     );
     expect(spec.diagnosis).toBe("0/3 claims passed.");
     expect(spec.review.acceptedStatus).toBe("fail");
+    const fixTask =
+      tree.tasks["fix-cluster-autoscaler-mincount-recovery-run-171349474"];
+    expect(fixTask).toBeTruthy();
+    expect(["backlog", "active"]).toContain(fixTask.state);
+    expect(fixTask.context.workflow).toBe("fix-forward");
+    expect(fixTask.context.sourceSpecResult).toMatchObject({
+      specId: "spec.cluster-autoscaler.mincount-recovery",
+      status: "fail",
+      runId: "171349474",
+      reason: "0/3 claims passed.",
+    });
   });
 
   test("accepted structured grouped spec review records each spec-loop result", async () => {
@@ -731,6 +982,26 @@ describe("project owner workflow", () => {
     );
     expect(cilium.diagnosis).toContain("hubble-ui");
     expect(retina.review.acceptedStatus).toBe("error");
+    const ciliumFix =
+      tree.tasks["fix-network-acns-cilium-observability-run-171342018"];
+    const retinaFix =
+      tree.tasks["fix-network-acns-retina-enterprise-run-171342018"];
+    expect(ciliumFix).toBeTruthy();
+    expect(retinaFix).toBeTruthy();
+    expect(["backlog", "active"]).toContain(ciliumFix.state);
+    expect(["backlog", "active"]).toContain(retinaFix.state);
+    expect(ciliumFix.context.workflow).toBe("fix-forward");
+    expect(retinaFix.context.workflow).toBe("fix-forward");
+    expect(ciliumFix.context.sourceSpecResult).toMatchObject({
+      specId: "spec.network-acns.cilium-observability",
+      status: "error",
+      runId: "171342018",
+    });
+    expect(retinaFix.context.sourceSpecResult).toMatchObject({
+      specId: "spec.network-acns.retina-enterprise",
+      status: "error",
+      runId: "171342018",
+    });
   });
 
   test("applies redo reviews by requeuing the reviewed task with a fresh attempt", async () => {
@@ -824,8 +1095,30 @@ describe("project owner workflow", () => {
         metricId: "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
         blockedOverdueAudit: true,
         selfExcludedBaselineRequired: true,
+        blockedTaskIds: ["hold-spec-loop-example-wait"],
       },
-      conflictScope: [],
+      conflictScope: ["ops:blocked-overdue:spec-loop"],
+      extraTasks: {
+        "hold-spec-loop-example-wait": {
+          id: "hold-spec-loop-example-wait",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Preserve exact spec-loop wait.",
+          outputs: [],
+          acceptance: ["wait represented"],
+          conflict_scope: ["spec:example"],
+          blocker: {
+            condition: "Example wait.",
+            waiting_for: { type: "product.recovery" },
+            fallback_at: "2026-07-10T12:00:00Z",
+          },
+        },
+      },
     });
 
     const result = await execute(
@@ -853,6 +1146,114 @@ describe("project owner workflow", () => {
       ];
     expect(result.status).toBe("done");
     expect(followup.conflict_scope).toContain("ops:blocked-overdue:spec-loop");
+  });
+
+  test("does not apply accepted overdue-wait audits when a named wait remains stale", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-maintain-overdue-network-acns-hubble-ui-exact-coverage",
+      context: {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        blockedOverdueAudit: true,
+        blockedTaskIds: [
+          "hold-spec-loop-pending-network-acns-hubble-ui-runtime-frontier",
+        ],
+      },
+      conflictScope: ["ops:blocked-overdue:spec-loop"],
+      extraTasks: {
+        "hold-spec-loop-pending-network-acns-hubble-ui-runtime-frontier": {
+          id: "hold-spec-loop-pending-network-acns-hubble-ui-runtime-frontier",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Preserve the exact Hubble UI runtime frontier until product recovery.",
+          outputs: ["evidence/archive/hubble.md"],
+          acceptance: ["wait is refreshed or replaced"],
+          conflict_scope: ["feature:network-acns"],
+          blocker: {
+            condition: "Hubble UI runtime frontier remains unresolved.",
+            category: "external-wait",
+            owner: "human",
+            waiting_for: { type: "product.recovery" },
+            observed_by: { workflow: "project-planner" },
+            observation_method:
+              "Planner/app-ops should refresh, replace, unblock, or escalate.",
+            next_check_at: "2026-07-09T12:00:00Z",
+            fallback_at: "2026-07-10T12:00:00Z",
+            fallback_action:
+              "Refresh this exact wait with fresh evidence or replace it.",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops-maintain-overdue-network-acns-hubble-ui-exact-coverage",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted evidence says hold-spec-loop-pending-network-acns-hubble-ui-runtime-frontier remains exact and covered.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup =
+      tree.tasks[
+        "ops-maintain-overdue-network-acns-hubble-ui-exact-coverage-followup"
+      ];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("Overdue-wait accept cannot close");
+    expect(
+      tree.tasks["ops-maintain-overdue-network-acns-hubble-ui-exact-coverage"]
+        .state,
+    ).toBe("review");
+    expect(followup).toBeUndefined();
+  });
+
+  test("accepted overdue-wait audits require structured blocked task ids", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-maintain-overdue-missing-structured-blocked-ids",
+      context: {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        blockedOverdueAudit: true,
+      },
+      conflictScope: ["ops:blocked-overdue:spec-loop"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops-maintain-overdue-missing-structured-blocked-ids",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted evidence mentions hold-spec-loop-pending-network-acns-hubble-ui-runtime-frontier, but the review task did not carry structured blockedTaskIds.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("missing-structured-blocked-task-ids");
+    expect(
+      tree.tasks["ops-maintain-overdue-missing-structured-blocked-ids"].state,
+    ).toBe("review");
   });
 
   test("applies blocked reviews by replacing the review leaf with an exact wait task", async () => {
@@ -928,6 +1329,493 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("turns blocked reviews with unpublished origin/dev repairs into runnable follow-up work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun",
+      context: {
+        featureKey: "bootstrap-profile",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+      conflictScope: ["feature-compact:bootstrap-profile"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "No truthful staging rerun was dispatched because commit 1fca94a3c is not on trusted origin/dev.",
+          findings: [
+            "git rev-list proves the repair commit is ahead of origin/dev and no remote branch contains it.",
+          ],
+          feedback: [
+            "No retry of the same verification is useful until the repair commit or equivalent descendant is published to the staging-visible origin/dev ref.",
+          ],
+          reviewAction: {
+            actionKind: "publish-domain-repair-and-rerun",
+          },
+          suggestedFollowups: [
+            "After origin/dev contains the API-version repair, run the required local policy checks and queue exactly one spec.bootstrap-profile-byo-acr.cache-direct-cache-switch rerun.",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup =
+      tree.tasks[
+        "verify-bootstrap-profile-cache-direct-api-version-rerun-blocked"
+      ];
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks["verify-bootstrap-profile-cache-direct-api-version-rerun"]
+        .state,
+    ).toBe("done");
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain(
+      "origin/dev contains the API-version repair",
+    );
+    expect(followup.acceptance).toContain(
+      "The project-side blocker is resolved with concrete evidence.",
+    );
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun",
+      attemptId: "attempt-1",
+      decision: "blocked",
+    });
+  });
+
+  test("turns blocked reviews that need app state repair into runnable app-ops work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710",
+      context: {
+        workflow: "fix-forward",
+        featureKey: "cluster-autoscaler",
+        loopTaskId: "aks-feature-compact-loop",
+      },
+      conflictScope: ["feature-compact:cluster-autoscaler"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "Run review is complete, but completion is blocked on planner/app-ops authority to restore a live task-tree holder for the compact-loop projection.",
+          findings: [
+            "The compact-loop projection points at frontierTaskIds, but the live task tree lacks the corresponding blocked holder.",
+          ],
+          feedback: [
+            "Domain worker must not edit the app task tree directly; app-ops should apply the app-owned task-tree or loop state repair.",
+          ],
+          reviewAction: {
+            actionKind: "app-state-repair",
+          },
+          suggestedFollowups: [
+            "Restore one live blocked holder for the exact VM-prerelease heptet and refresh the feature-compact loop state pointers with evidence.",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710" &&
+        task?.id !==
+          "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks[
+        "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710"
+      ].state,
+    ).toBe("done");
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.id).toContain("ops-apply-");
+    expect(followup.owner).toBe("app-ops");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain("Restore one live blocked holder");
+    expect(followup.outputs).toContain(
+      ".state/feature-compact-loop/state.json",
+    );
+    expect(followup.acceptance).toContain(
+      "The app-owned task-tree or loop-state repair is applied through supported app mechanisms.",
+    );
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId:
+        "domain/reconcile-compact-cluster-autoscaler-run-171747047-heptet-frontier-20260710",
+      attemptId: "attempt-1",
+      decision: "blocked",
+    });
+    expect(followup.context.workflow).toBeUndefined();
+  });
+
+  test("turns app state repair follow-up reviews into runnable app-ops work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2",
+      context: {
+        workflow: "fix-forward",
+      },
+      conflictScope: ["feature-compact:rp-cluster-lifecycle"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "The domain evidence is useful, but planner/app-ops metadata cleanup is still required.",
+          findings: [
+            "The live task-tree holder still has stale blocker text.",
+            ".state/feature-compact-loop/state.json already points to the exact holder.",
+          ],
+          feedback: [
+            "Use task-tree update-text through app-owned mechanisms instead of asking the domain worker to mutate app state.",
+          ],
+          reviewAction: {
+            actionKind: "app-state-repair",
+          },
+          suggestedFollowups: [
+            "Planner/app-ops metadata cleanup: refresh the live task-tree holder blocker text and verify the compact-loop projection remains exact.",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2" &&
+        task?.id !==
+          "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks[
+        "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2"
+      ].state,
+    ).toBe("done");
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.id).toContain("ops-apply-");
+    expect(followup.owner).toBe("app-ops");
+    expect(followup.parent_id).toBe("project");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain("Planner/app-ops metadata cleanup");
+    expect(followup.outputs).toContain("task tree");
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId:
+        "domain-review-compact-rp-cluster-lifecycle-run-171715936-residual-fronti-2",
+      attemptId: "attempt-1",
+      decision: "followup",
+    });
+    expect(followup.context.workflow).toBeUndefined();
+  });
+
+  test("turns accepted reviews with structured app-state repair actions into runnable app-ops work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops/classify-unpublished-repo-change-breach-20260713",
+      context: {
+        workflow: "app-ops",
+      },
+      conflictScope: ["repo:publication-visibility"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops/classify-unpublished-repo-change-breach-20260713",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "The worker produced a file-grouped evidence memo that satisfies classification and next-action criteria.",
+          findings: [
+            "The branch is ahead 1 and behind 1, so publication state must be reconciled before checkpointing.",
+          ],
+          reviewAction: {
+            actionKind: "app-state-repair",
+            goal:
+              "Create the recommended bounded publish-state reconciliation successor task for the ahead-1/behind-1 publication divergence before checkpointing or cleanup.",
+          },
+          suggestedFollowups: [
+            "Create a bounded publish-state reconciliation task to reconcile local dev with origin/dev, integrate upstream commit 363cda41f, and reassess the unpublished-change metric before any mixed checkpoint.",
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "ops/classify-unpublished-repo-change-breach-20260713" &&
+        task?.id !== "ops/classify-unpublished-repo-change-breach-20260713",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks["ops/classify-unpublished-repo-change-breach-20260713"].state,
+    ).toBe("done");
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.id).toContain("ops-apply-");
+    expect(followup.owner).toBe("app-ops");
+    expect(followup.parent_id).toBe("project");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain("bounded publish-state reconciliation");
+    expect(followup.context.workflow).toBeUndefined();
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId: "ops/classify-unpublished-repo-change-breach-20260713",
+      attemptId: "attempt-1",
+      decision: "accept",
+      reviewAction: {
+        actionKind: "app-state-repair",
+      },
+    });
+  });
+
+  test("preserves blocked app-state-repair successors that already refreshed into exact waits", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st",
+      status: "blocked",
+      context: {
+        reviewedTask: {
+          taskId: "ops/repair-azure-devops-guard-halt-secret-leak-lineage-20260712",
+          attemptId:
+            "a_ops_repair-azure-devops-guard-halt-secret-leak-lineage-20260712_20260712095559",
+          decision: "followup",
+          summary:
+            "The repair memo satisfies the diagnostic portion, but the live task tree was not left with an applied safe successor, sharper external wait, or explicit owner escalation state.",
+          reviewAction: {
+            actionKind: "app-state-repair",
+          },
+          suggestedFollowups: [
+            "Planner/app-ops should apply the truthful next state for the Azure DevOps auth publication lineage by restoring the exact external wait keyed to pathId shared-azure-devops-auth-capable-runtime-20260709.",
+          ],
+        },
+        repairedPublicationWait: {
+          repairedAt: "2026-07-12T10:02:10.172Z",
+          pathId: "shared-azure-devops-auth-capable-runtime-20260709",
+        },
+      },
+      conflictScope: ["auth-capability-family:azure-devops-auth-capable-runtime"],
+    });
+    const treeBefore = await readTaskTreeJson(appDir);
+    treeBefore.tasks[
+      "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
+    ].goal =
+      "Carry the exact returned owner/runtime wait for the 2026-07-12 Azure DevOps auth publication lineage.";
+    treeBefore.tasks[
+      "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
+    ].blocker = {
+      condition: "Blocked on returned owner/runtime decision for the exact publication/auth lineage.",
+      category: "external-wait",
+      owner: "human",
+      blocked_at: "2026-07-12T10:02:10.172Z",
+      waiting_for: {
+        type: "project.approval.submitted",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.approval.submitted",
+      },
+      observation_method: "Reconcile returned approval or reviewed publication proof into this exact wait.",
+      next_check_at: "2026-07-12T20:40:00Z",
+      resume_condition: "Resume when the approval return or reviewed publication proof lands.",
+      fallback_at: "2026-07-13T20:40:00Z",
+      fallback_action: "Refresh or escalate the same lineage instead of reactivating the wait as runnable work.",
+    };
+    treeBefore.tasks[
+      "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
+    ].trace = {
+      current_attempt_id:
+        "a_ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st_20260712095938",
+      blocked_wait_refreshed_at: "2026-07-12T10:02:10.172Z",
+      blocked_wait_refresh_summary:
+        "Restored the unpublished ahead-5 Azure DevOps publication blocker as its own exact approval-return wait on the 2026-07-12 send lineage.",
+    };
+    await writeFile(resolveTaskTreePath(appDir), `${JSON.stringify(treeBefore, null, 2)}\n`, "utf8");
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks[
+        "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
+      ];
+    expect(result.status).toBe("done");
+    expect(task.state).toBe("blocked");
+    expect(task.goal).toContain("exact returned owner/runtime wait");
+    expect(task.blocker?.waiting_for?.type).toBe("project.approval.submitted");
+    expect(task.trace.blocked_wait_refreshed_at).toBe("2026-07-12T10:02:10.172Z");
+    expect(task.trace.requeued_by).toBeUndefined();
+  });
+
+  test("requeues existing reviewed-blocked successors when the blocker is project-side publication work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun-blocked",
+      status: "blocked",
+      context: {
+        featureKey: "bootstrap-profile",
+        loopTaskId: "aks-feature-compact-loop",
+        reviewedTask: {
+          taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "No truthful staging rerun was dispatched because commit 1fca94a3c is not on trusted origin/dev.",
+          findings: [
+            "git rev-list proves the repair commit is ahead of origin/dev and no remote branch contains it.",
+          ],
+          feedback: [
+            "No retry of the same verification is useful until the repair commit or equivalent descendant is published to the staging-visible origin/dev ref.",
+          ],
+          reviewAction: {
+            actionKind: "publish-domain-repair-and-rerun",
+          },
+          suggestedFollowups: [
+            "After origin/dev contains the API-version repair, run the required local policy checks and queue exactly one spec.bootstrap-profile-byo-acr.cache-direct-cache-switch rerun.",
+          ],
+        },
+      },
+      conflictScope: ["feature-compact:bootstrap-profile"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks[
+        "verify-bootstrap-profile-cache-direct-api-version-rerun-blocked"
+      ];
+    expect(result.status).toBe("done");
+    expect(["backlog", "active"]).toContain(task.state);
+    expect(task.blocker).toBeUndefined();
+    expect(task.goal).toContain("origin/dev contains the API-version repair");
+    expect(task.trace.requeued_by).toBe("project-planner");
+  });
+
+  test("keeps future-window reviewed blocked successors blocked until their resume window", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops--2",
+      status: "blocked",
+      owner: "app-ops",
+      context: {
+        reviewedTask: {
+          taskId: "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops-",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "The worker correctly identified that the task was dispatched before the required review window.",
+          suggestedFollowups: [
+            "At or after 2026-07-12T12:30:00Z, rerun the CCP underlay VPA compact-placement owner review using current compact staging artifacts, accepted placement evidence, and compact eligibility policy.",
+          ],
+          reviewAction: {
+            actionKind: "schedule-domain-rerun",
+            goal: "At or after 2026-07-12T12:30:00Z, rerun the CCP underlay VPA compact-placement owner review using current compact staging artifacts, accepted placement evidence, and compact eligibility policy.",
+          },
+        },
+      },
+      conflictScope: ["ops:planner-time-gates"],
+    });
+    const treeBefore = await readTaskTreeJson(appDir);
+    treeBefore.tasks[
+      "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops--2"
+    ].blocker = {
+      condition:
+        "Do not accept this attempt as the required owner review because it occurred before the task's own at-or-after-2026-07-12T12:30:00Z gate.",
+      category: "external-wait",
+      owner: "external",
+      blocked_at: "2026-07-12T11:37:50.252Z",
+      waiting_for: {
+        type: "blocker.resolved",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.task.reviewed",
+      },
+      observation_method:
+        "Project planner created this reviewed blocked successor from the review result; on the next owner/planner pass, refresh it with concrete returned evidence, replace it with runnable work, or keep the wait with updated blocker proof.",
+      next_check_at: "2026-07-12T11:47:50.252Z",
+      resume_condition:
+        "At or after 2026-07-12T12:30:00Z, rerun the CCP underlay VPA compact-placement owner review using current compact staging artifacts, accepted placement evidence, and compact eligibility policy.",
+      fallback_at: "2026-07-13T11:37:50.252Z",
+      fallback_action:
+        "If the reviewed blocker is still unresolved at fallback time, create or reuse a concrete recovery/escalation task, or refresh this exact wait with current evidence.",
+      resume_at: "2026-07-12T12:30:00Z",
+    };
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(treeBefore, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks[
+        "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops--2"
+      ];
+    expect(result.status).toBe("done");
+    expect(task.state).toBe("blocked");
+    expect(task.blocker?.resume_at).toBe("2026-07-12T12:30:00Z");
+    expect(task.blocker?.next_check_at).toBe("2026-07-12T11:47:50.252Z");
+    expect(task.trace?.requeued_by).toBeUndefined();
+  });
+
   test("applies escalate reviews by replacing the review leaf with an owner-decision wait task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -980,7 +1868,180 @@ describe("project owner workflow", () => {
     });
   });
 
-  test("turns accepted spec-loop follow-up reviews into successor work when represented specs remain unowned", async () => {
+  test("turns blocked schedule-domain-rerun reviews into future-window blocked successors", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "review-window-followup",
+      context: {
+        featureKey: "node-http-proxy",
+      },
+      conflictScope: ["owner-return-fallback:2026-07-12"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-window-followup",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary: "The fallback review must wait until the named future window opens.",
+          feedback: [
+            "Do not start before the exact fallback window opens.",
+          ],
+          suggestedFollowups: [
+            "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          ],
+          reviewAction: {
+            actionKind: "schedule-domain-rerun",
+            goal: "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const successor = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId === "review-window-followup" &&
+        task?.id !== "review-window-followup",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(tree.tasks["review-window-followup"].state).toBe("done");
+    expect(tree.tasks["review-window-followup"].resolution).toBe("replaced");
+    expect(successor.state).toBe("blocked");
+    expect(successor.blocker.category).toBe("external-wait");
+    expect(successor.blocker.owner).toBe("human");
+    expect(successor.blocker.resume_at).toBe("2026-07-12T16:00:00Z");
+    expect(successor.blocker.next_check_at).toBe("2026-07-12T16:00:00Z");
+    expect(successor.blocker.resume_condition).toContain(
+      "2026-07-12T16:00:00Z",
+    );
+    expect(successor.blocker.condition).toContain(
+      "do not start before its named review window opens",
+    );
+    expect(successor.context.reviewedTask).toMatchObject({
+      taskId: "review-window-followup",
+      attemptId: "attempt-1",
+      decision: "blocked",
+    });
+  });
+
+  test("turns followup schedule-domain-rerun reviews with a future window into blocked successors", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "review-window-followup-followup",
+      context: {
+        featureKey: "node-http-proxy",
+      },
+      conflictScope: ["owner-return-fallback:2026-07-12"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-window-followup-followup",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary: "The reviewed work should continue only when the future fallback window opens.",
+          suggestedFollowups: [
+            "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          ],
+          reviewAction: {
+            actionKind: "schedule-domain-rerun",
+            goal: "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const successor = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "review-window-followup-followup" &&
+        task?.id !== "review-window-followup-followup",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(tree.tasks["review-window-followup-followup"].state).toBe("done");
+    expect(tree.tasks["review-window-followup-followup"].resolution).toBe(
+      "completed",
+    );
+    expect(successor.state).toBe("blocked");
+    expect(successor.blocker.category).toBe("external-wait");
+    expect(successor.blocker.owner).toBe("human");
+    expect(successor.blocker.resume_at).toBe("2026-07-12T16:00:00Z");
+    expect(successor.blocker.next_check_at).toBe("2026-07-12T16:00:00Z");
+    expect(successor.blocker.resume_condition).toContain(
+      "2026-07-12T16:00:00Z",
+    );
+    expect(successor.blocker.condition).toContain(
+      "do not start before its named review window opens",
+    );
+    expect(successor.context.reviewedTask).toMatchObject({
+      taskId: "review-window-followup-followup",
+      attemptId: "attempt-1",
+      decision: "followup",
+    });
+  });
+
+  test("routes ops-scoped schedule-domain-rerun reviewed successors to app-ops", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops/execute-owner-return-fallback-window",
+      owner: "aks-explorer",
+      context: {
+        featureKey: "node-http-proxy",
+      },
+      conflictScope: ["owner-return-fallback:2026-07-12"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops/execute-owner-return-fallback-window",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary: "The fallback review must wait until the named future window opens.",
+          suggestedFollowups: [
+            "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          ],
+          reviewAction: {
+            actionKind: "schedule-domain-rerun",
+            goal: "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const successor = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "ops/execute-owner-return-fallback-window" &&
+        task?.id !== "ops/execute-owner-return-fallback-window",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(successor.state).toBe("blocked");
+    expect(successor.owner).toBe("app-ops");
+    expect(successor.blocker.owner).toBe("app-ops");
+    expect(successor.blocker.resume_at).toBe("2026-07-12T16:00:00Z");
+    expect(successor.context.reviewedTask).toMatchObject({
+      taskId: "ops/execute-owner-return-fallback-window",
+      attemptId: "attempt-1",
+      decision: "blocked",
+    });
+  });
+
+  test("does not apply accepted spec-loop follow-up reviews when represented specs remain unowned", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
       context: {
@@ -1022,12 +2083,10 @@ describe("project owner workflow", () => {
 
     const tree = await readTaskTreeJson(appDir);
     expect(result.status).toBe("done");
-    expect(result.message).toContain("converted accept to followup");
-    expect(tree.tasks["review-task"].state).toBe("done");
-    expect(tree.tasks["review-task-followup"].state).toBe("active");
-    expect(tree.tasks["review-task-followup"].goal).toContain(
-      "Spec-loop accept cannot close",
-    );
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("Spec-loop accept cannot close");
+    expect(tree.tasks["review-task"].state).toBe("review");
+    expect(tree.tasks["review-task-followup"]).toBeUndefined();
   });
 
   test("allows accepted spec-loop follow-up reviews when represented specs have an open exact holder", async () => {
@@ -1682,6 +2741,9 @@ describe("project owner workflow", () => {
 
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain(
+      "the current trigger payload does not include reviewTasks",
+    );
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
       type: "project.task.assigned",
@@ -2669,9 +3731,10 @@ describe("project owner workflow", () => {
                 taskId: "blocked-a",
                 blocker:
                   "Blocked only on returned authoritative proof or the first owner follow-up on or after 2099-06-26.",
+                nextCheckAt: "2099-06-26T12:00:00.000Z",
                 resumeCondition:
                   "Resume when returned proof arrives or the follow-up window opens.",
-                fallbackAt: "2099-06-26T00:00:00.000Z",
+                fallbackAt: "2099-06-27T00:00:00.000Z",
                 fallbackAction:
                   "Recheck returned proof and escalate if it is still missing.",
               },
@@ -2688,6 +3751,8 @@ describe("project owner workflow", () => {
               },
             ],
             blockedCount: 2,
+            blockedOverdueCount: 0,
+            blockedMissingWatchCount: 0,
           },
         }),
         "```",
@@ -2711,7 +3776,7 @@ describe("project owner workflow", () => {
     );
     expect(result.message).toContain("blocked-a");
     expect(result.message).toContain("blocked-b");
-    expect(result.message).toContain("2099-06-26T00:00:00.000Z");
+    expect(result.message).toContain("2099-06-26T12:00:00.000Z");
     expect(prompts).toHaveLength(0);
 
     const plannerRuns = await readFile(
@@ -2722,6 +3787,276 @@ describe("project owner workflow", () => {
       '"steps":["blocked-frontier-future-wait-noop"]',
     );
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("short-circuits blocked-frontier review when watchdog samples a future-dated blocked subset", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-a", "blocked-b"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-a": {
+              id: "blocked-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked-a.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for returned proof.",
+                next_check_at: "2099-06-26T12:00:00.000Z",
+                fallback_at: "2099-06-27T00:00:00.000Z",
+              },
+            },
+            "blocked-b": {
+              id: "blocked-b",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for approval.",
+              outputs: ["evidence/archive/blocked-b.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for approval.",
+                resume_at: "2099-06-27T00:00:00.000Z",
+                fallback_at: "2099-06-28T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 3",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-a",
+                blocker: "Wait for returned proof.",
+                nextCheckAt: "2099-06-26T12:00:00.000Z",
+                fallbackAt: "2099-06-27T00:00:00.000Z",
+              },
+            ],
+            blockedCount: 2,
+            blockedFutureWatchCount: 2,
+            blockedMissingWatchCount: 0,
+            blockedOverdueCount: 0,
+            blockedFrontierSummary: {
+              totalCount: 2,
+              overdueCount: 0,
+              futureWatchCount: 2,
+              missingWatchCount: 0,
+              sampledTaskIds: ["blocked-a"],
+              sampledOverdueTaskIds: [],
+              parentGroups: [
+                { parentId: "project", count: 2, overdueCount: 0 },
+              ],
+              waitTypeGroups: [
+                { waitType: "<missing>", count: 2, overdueCount: 0 },
+              ],
+            },
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-frontier wake is already represented by structured future-dated external waits",
+    );
+    expect(result.message).toContain("blocked-a");
+    expect(result.message).not.toContain("blocked-b");
+    expect(result.message).toContain("2099-06-26T12:00:00.000Z");
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain(
+      '"steps":["blocked-frontier-future-wait-noop"]',
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("does not skip blocked-frontier owner review when frontier summary reports missing watch metadata", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-a", "blocked-b"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-a": {
+              id: "blocked-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked-a.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for returned proof.",
+                resume_at: "2099-06-26T12:00:00.000Z",
+                fallback_at: "2099-06-27T00:00:00.000Z",
+              },
+            },
+            "blocked-b": {
+              id: "blocked-b",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for undocumented approval path.",
+              outputs: ["evidence/archive/blocked-b.md"],
+              acceptance: ["done"],
+              blocker:
+                "Waiting for approval with no structured watch metadata.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 3",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-a",
+                blocker: "Wait for returned proof.",
+                resumeAt: "2099-06-26T12:00:00.000Z",
+                fallbackAt: "2099-06-27T00:00:00.000Z",
+              },
+            ],
+            blockedCount: 2,
+            blockedFutureWatchCount: 1,
+            blockedMissingWatchCount: 1,
+            blockedOverdueCount: 0,
+            blockedFrontierSummary: {
+              totalCount: 2,
+              overdueCount: 0,
+              futureWatchCount: 1,
+              missingWatchCount: 1,
+              sampledTaskIds: ["blocked-a"],
+              sampledOverdueTaskIds: [],
+              parentGroups: [
+                { parentId: "project", count: 2, overdueCount: 0 },
+              ],
+              waitTypeGroups: [
+                { waitType: "<missing>", count: 2, overdueCount: 0 },
+              ],
+            },
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return task.includes("Planner Event Review Step")
+          ? {
+              status: "success",
+              message: "EVENT_REVIEW: missing watch metadata",
+            }
+          : {
+              status: "success",
+              message: "planner reviewed missing watch metadata",
+            };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    expect(result.message).toContain("planner reviewed missing watch metadata");
   });
 
   test("does not skip blocked-frontier owner review from prose-only dates", async () => {
@@ -2789,6 +4124,9 @@ describe("project owner workflow", () => {
               },
             ],
             blockedCount: 1,
+            blockedFutureWatchCount: 1,
+            blockedMissingWatchCount: 0,
+            blockedOverdueCount: 0,
           },
         }),
         "```",
@@ -2811,6 +4149,113 @@ describe("project owner workflow", () => {
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(2);
     expect(result.message).toContain("planner reviewed blocker");
+  });
+
+  test("does not skip blocked-frontier owner review when watchdog reports overdue waits", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-a"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-a": {
+              id: "blocked-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked-a.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for returned proof.",
+                next_check_at: "2001-01-01T00:00:00.000Z",
+                resume_at: "2099-06-26T00:00:00.000Z",
+                fallback_at: "2099-06-27T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 3",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-a",
+                blocker: "Wait for returned proof.",
+                nextCheckAt: "2099-06-26T00:00:00.000Z",
+                resumeAt: "2099-06-26T12:00:00.000Z",
+                fallbackAt: "2099-06-27T00:00:00.000Z",
+              },
+            ],
+            blockedCount: 1,
+            blockedFutureWatchCount: 1,
+            blockedMissingWatchCount: 0,
+            blockedOverdueCount: 1,
+            overdueOwnerActions: [
+              {
+                taskId: "blocked-a",
+                watchAt: "2001-01-01T00:00:00.000Z",
+                recoveryRequired:
+                  "Next-check window passed without active/review recovery work.",
+              },
+            ],
+            overdueOwnerActionCount: 1,
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return task.includes("Planner Event Review Step")
+          ? { status: "success", message: "EVENT_REVIEW: overdue blocker" }
+          : { status: "success", message: "planner reviewed overdue blocker" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    expect(result.message).toContain("planner reviewed overdue blocker");
   });
 
   test("runs owner review instead of seeding model-gap tasks in workflow code", async () => {
@@ -3369,6 +4814,174 @@ describe("project owner workflow", () => {
       expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
       expect(plannerRuns).toContain(
         "currently running runtime session after live-tree revalidation",
+      );
+      expect(plannerRuns).toContain('"ran_agent":false');
+    } finally {
+      if (priorDb === undefined) delete process.env.MAY_DB_PATH;
+      else process.env.MAY_DB_PATH = priorDb;
+    }
+  });
+
+  test("skips owner session for no-work metric wake when the only frontier work is a running active task", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dbPath = join(appDir, ".state", "may.db");
+    await mkdir(join(appDir, ".state"), { recursive: true });
+    const db = new Database(dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        agent text not null,
+        task text not null,
+        status text not null,
+        kind text,
+        source text,
+        parentSessionId text,
+        requestId text,
+        workflowRunId text,
+        projectId text,
+        startedAt integer not null,
+        endedAt integer,
+        error text,
+        outcome text,
+        opCount integer default 0,
+        stepLabel text,
+        lastActivityAt integer
+      )
+    `);
+    db.query(
+      `insert into sessions (
+        sessionId, agent, task, status, kind, source, startedAt, outcome, opCount, stepLabel, lastActivityAt
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "s_task_active-task",
+      "aks-explorer",
+      "active task still running",
+      "running",
+      "call",
+      "workflow:task-worker",
+      Date.now() - 30_000,
+      "running",
+      4,
+      "aks-explorer",
+      Date.now() - 2_000,
+    );
+    db.close();
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "future-window-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "future-window-task": {
+              id: "future-window-task",
+              parent_id: "project",
+              state: "blocked",
+              kind: "ops_leaf",
+              priority: "P2",
+              owner: "human",
+              children: [],
+              blocker: {
+                condition: "Do not start before the future review window opens.",
+                category: "external-wait",
+                owner: "human",
+                resume_at: "2099-06-26T12:00:00.000Z",
+                next_check_at: "2099-06-26T12:00:00.000Z",
+                fallback_at: "2099-06-27T12:00:00.000Z",
+              },
+              goal: "Wait for the future review window.",
+              outputs: ["evidence/archive/future-window-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const priorDb = process.env.MAY_DB_PATH;
+    process.env.MAY_DB_PATH = dbPath;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          "## Trigger Event",
+          "```json",
+          JSON.stringify({
+            type: "metric.breach",
+            data: {
+              project: "aks-rp-e2e",
+              reason: "metric.breach",
+              metricId: "aks-rp-e2e.task.no-work-with-gaps",
+            },
+          }),
+          "```",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, task: string) => {
+          prompts.push(task);
+          return { status: "success", message: "should not run" };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("No-work metric wake is already covered by currently running active work");
+      expect(result.message).toContain("active-task");
+      expect(prompts).toHaveLength(0);
+      expect(dispatched).toHaveLength(0);
+
+      const plannerRuns = await readFile(
+        join(appDir, ".state", "planner-runs.jsonl"),
+        "utf8",
+      );
+      expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+      expect(plannerRuns).toContain(
+        "No-work metric wake is already covered by currently running active work",
       );
       expect(plannerRuns).toContain('"ran_agent":false');
     } finally {
@@ -4222,6 +5835,256 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
     expect(plannerRuns).toContain("Task-completed wake is already settled");
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for blocked-overdue metric wake when active ops repair already covers the frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-overdue-wait-shape",
+          active_task_ids: ["ops/repair-overdue-wait-shape"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["ops/repair-overdue-wait-shape"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-overdue-wait-shape": {
+              id: "ops/repair-overdue-wait-shape",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              session_id: "s_task_ops_repair_overdue_wait_shape",
+              children: [],
+              goal: "Repair the overdue blocked-wait shape.",
+              outputs: ["evidence/archive/ops-repair-overdue-wait-shape.md"],
+              acceptance: ["done"],
+              conflict_scope: ["ops:blocked-overdue:project"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "metric.breach",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "open-alert-updated",
+            metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(result.message).toContain("ops/repair-overdue-wait-shape");
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for blocked-frontier future-wait review when active ops repair already covers the frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+          active_task_ids: [
+            "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+                "blocked-a",
+                "blocked-b",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711": {
+              id: "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              session_id:
+                "s_task_ops_repair-all-blocked-frontier-planner-slow-wakes-20260711",
+              children: [],
+              goal: "Diagnose and reduce repeated planner slow wakes against an unchanged all-blocked frontier.",
+              outputs: [
+                "evidence/archive/ops-repair-all-blocked-frontier-planner-slow-wakes-20260711.md",
+              ],
+              acceptance: ["done"],
+              conflict_scope: ["ops:planner-slow-all-blocked-frontier-20260711"],
+            },
+            "blocked-a": {
+              id: "blocked-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked-a.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for returned proof.",
+                next_check_at: "2099-06-26T12:00:00.000Z",
+                fallback_at: "2099-06-27T00:00:00.000Z",
+              },
+            },
+            "blocked-b": {
+              id: "blocked-b",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for approval.",
+              outputs: ["evidence/archive/blocked-b.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Wait for approval.",
+                resume_at: "2099-06-27T00:00:00.000Z",
+                fallback_at: "2099-06-28T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-a",
+                blocker: "Wait for returned proof.",
+                nextCheckAt: "2099-06-26T12:00:00.000Z",
+                fallbackAt: "2099-06-27T00:00:00.000Z",
+              },
+              {
+                taskId: "blocked-b",
+                blocker: "Wait for approval.",
+                resumeAt: "2099-06-27T00:00:00.000Z",
+                fallbackAt: "2099-06-28T00:00:00.000Z",
+              },
+            ],
+            blockedCount: 2,
+            blockedOverdueCount: 0,
+            blockedMissingWatchCount: 0,
+            overdueOwnerActions: [],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-frontier future-wait review is already under active app-ops repair",
+    );
+    expect(result.message).toContain(
+      "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+    );
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Blocked-frontier future-wait review is already under active app-ops repair",
+    );
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 

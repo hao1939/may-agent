@@ -9,7 +9,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { TaskNode, WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
   appendToolJournal,
@@ -225,6 +225,20 @@ function plannerWorkerForTask(
   const task = readTask(config, taskId);
   const workflow = String(task?.workflow ?? "");
   const ancestry = taskAncestry(config, taskId);
+  const owner = String(task?.owner ?? "").trim();
+  const conflictScopes = Array.isArray(task?.conflict_scope)
+    ? task.conflict_scope
+        .map((scope) => (typeof scope === "string" ? scope.trim() : ""))
+        .filter(Boolean)
+    : [];
+  if (
+    owner === "app-ops" ||
+    conflictScopes.some(
+      (scope) => scope.startsWith("app-") || scope.startsWith("app-task-tree:"),
+    )
+  ) {
+    return input.opsWorker ?? input.worker;
+  }
   if (ancestry.some((id) => hasScopePrefix(id, "ops"))) {
     return input.opsWorker ?? input.worker;
   }
@@ -257,6 +271,33 @@ type StallReviewedApplyResult = {
 
 function truncateText(value: string, max = 280): string {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
+}
+
+function rejectAcceptOnInvariant(input: {
+  config: TaskTreeConfig;
+  taskId: string;
+  attemptId: string;
+  invariant: string;
+  summary: string;
+  details: Record<string, unknown>;
+}): ReviewedTaskApplyResult {
+  appendToolJournal(input.config, {
+    kind: "review_accept_invariant_failed",
+    task_id: input.taskId,
+    attempt_id: input.attemptId,
+    invariant: input.invariant,
+    summary: input.summary,
+    details: input.details,
+    reason:
+      "planner refused to apply an accept review because a hard app invariant was still false; reviewer/app-ops must decide the next move",
+  });
+  return {
+    handled: true,
+    applied: false,
+    decision: "accept",
+    taskId: input.taskId,
+    message: `Did not apply accept review for ${input.taskId}: ${input.summary}`,
+  };
 }
 
 function projectPushMode(appDir: string): string {
@@ -781,6 +822,14 @@ Core operating model:
   bounded progress is possible. Convert repeated environment blockers into one
   active setup/diagnosis/escalation family instead of many passive blocked
   leaves.
+- Treat trigger lineage as current-trigger-scoped, not as a generic recent-work
+  search. If the wake reason is blocked-frontier/capacity/runnable-backlog and
+  the current trigger payload does not include reviewTasks, do not invent
+  missing live review work from recently accepted worker-completion ids seen in
+  nearby planner history. If an older review id matters, first prove it is
+  still live in the current tree or current trigger; otherwise check recent
+  done-leaf archives and classify accepted archived lineage as settled history,
+  not a new missing-visibility repair.
 - For project.problem.* events, trust the solver summary as new evidence. If an
   escalated event summary says the local cause was fixed and verified, treat it
   as resolved-but-misclassified, record that in the affected branch, and create
@@ -1353,6 +1402,130 @@ function applyAcceptedSpecVerifierResults(input: {
   return acceptedSpecIds;
 }
 
+function openSpecResultFixForwardExists(input: {
+  config: TaskTreeConfig;
+  specId: string;
+  runId: string;
+}): boolean {
+  const tree = readTaskTree(input.config);
+  const openStates = new Set([
+    "active",
+    "backlog",
+    "blocked",
+    "review",
+    "waiting",
+  ]);
+  for (const task of Object.values(tree.tasks ?? {})) {
+    const state = taskState(task);
+    if (!openStates.has(state)) continue;
+    const context = taskContext(task);
+    const source = objectValue(context.sourceSpecResult);
+    if (
+      stringValue(source?.specId) === input.specId &&
+      stringValue(source?.runId) === input.runId
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function createAcceptedSpecResultFixForwardTasks(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  attemptId: string;
+  results: AcceptedSpecVerifierResult[];
+}): string[] {
+  if (!input.task.parent_id) return [];
+  const createdTaskIds: string[] = [];
+  const sourceContext = taskContext(input.task);
+  for (const result of input.results) {
+    if (result.loopStatus === "pass") continue;
+    if (
+      openSpecResultFixForwardExists({
+        config: input.config,
+        specId: result.specId,
+        runId: result.runId,
+      })
+    ) {
+      continue;
+    }
+    const id = uniqueTaskId(
+      input.config,
+      `fix-${slugForTaskId(result.specId)}-run-${result.runId}`,
+    );
+    createTask(input.config, {
+      id,
+      parentId: input.task.parent_id,
+      state: "backlog",
+      kind: "domain_leaf",
+      priority: taskPriority(input.task),
+      owner: input.task.owner,
+      workflow:
+        typeof input.task.workflow === "string" && input.task.workflow.trim()
+          ? input.task.workflow
+          : "default-task-worker",
+      goal: `Diagnose and fix the reviewed non-pass result for ${result.specId} from run ${result.runId}. Work only this spec slice unless current facts prove a shared helper/root cause, then record that exact shared scope in the result.`,
+      inputs: [
+        `Reviewed task: ${input.task.id}`,
+        `Attempt: ${input.attemptId}`,
+        `Spec: ${result.specId}`,
+        `Run: ${result.runId}`,
+        `Result path: ${result.resultPath}`,
+        `Observed status: ${result.loopStatus}`,
+        `Observed reason: ${result.reason}`,
+      ],
+      outputs: [
+        `evidence/archive/fix-${slugForTaskId(result.specId)}-run-${result.runId}.md`,
+      ],
+      acceptance: [
+        "Read the exact result artifact plus current spec/test/runner files before deciding.",
+        "Classify the failure from current facts and preserve the raw failure packet.",
+        "Apply the smallest bounded domain fix when safe, or return an exact wait/escalation with proof.",
+        "Run the smallest truthful verification or queue a structured ADO rerun after local gates pass.",
+        "Finish with a complete FIX_FORWARD_RESULT block.",
+      ],
+      forbidden: [
+        "Do not rerun the same input after the same error without a changed input, changed diagnosis, or new external fact.",
+        "Do not mark product behavior from this result without checking official/API/design/source evidence when needed.",
+      ],
+      conflict_scope: [
+        ...new Set([
+          ...taskStringList(input.task, "conflict_scope"),
+          `spec:${result.specId}`,
+          `ado-run:${result.runId}`,
+          `fix-forward:${result.specId}:${result.runId}`,
+        ]),
+      ],
+      context: {
+        ...sourceContext,
+        workflow: "fix-forward",
+        specId: result.specId,
+        representedSpecIds: [result.specId],
+        sourceSpecResult: {
+          sourceTaskId: input.task.id,
+          sourceAttemptId: input.attemptId,
+          specId: result.specId,
+          status: result.loopStatus,
+          runId: result.runId,
+          runUrl: result.runUrl,
+          resultPath: result.resultPath,
+          reason: result.reason,
+        },
+      },
+    });
+    createdTaskIds.push(id);
+  }
+  if (createdTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "accepted_spec_result_fix_forward_tasks_created",
+      source_task_id: input.task.id,
+      task_ids: createdTaskIds,
+    });
+  }
+  return createdTaskIds;
+}
+
 function textFromValues(...values: unknown[]): string {
   return values
     .map((value) => {
@@ -1364,26 +1537,20 @@ function textFromValues(...values: unknown[]): string {
     .join("\n");
 }
 
-function queuedRunIdFromText(text: string): string {
-  const patterns = [
-    /\bqueued\b[^.\n]{0,180}?\b(?:ado\s+)?(?:pipeline\s+)?(?:rerun|run)?\s*[`"']?(\d{6,})\b/i,
-    /\b(?:queued|triggered|started)\b[^.\n]{0,180}?\b(?:buildId=|runId["':\s]+)(\d{6,})\b/i,
-    /\b(?:rerun|run)\s*[`"']?(\d{6,})\b[^.\n]{0,80}?\bqueued\b/i,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match?.[1]) return match[1];
-  }
-  return "";
-}
-
-function specIdsFromQueuedRunText(
-  text: string,
+function specIdsFromStructuredQueuedRun(
+  queuedRun: Record<string, unknown> | null,
   task: NonNullable<ReturnType<typeof readTask>>,
 ): string[] {
   const ids = new Set<string>();
-  for (const match of text.matchAll(/\bspec\.[A-Za-z0-9_.-]+/g)) {
-    ids.add(match[0].replace(/[),.;:]+$/, ""));
+  const structuredSpecIds = Array.isArray(queuedRun?.specIds)
+    ? queuedRun.specIds
+    : Array.isArray(queuedRun?.spec_ids)
+      ? queuedRun.spec_ids
+      : [];
+  for (const value of structuredSpecIds) {
+    if (typeof value !== "string") continue;
+    const specId = value.trim();
+    if (specId) ids.add(specId.startsWith("spec.") ? specId : `spec.${specId}`);
   }
   for (const scope of taskStringList(task, "conflict_scope")) {
     if (!scope.startsWith("spec:")) continue;
@@ -1398,34 +1565,21 @@ function queuedPipelineRunFromAcceptedReview(input: {
   trigger: ReturnType<typeof parseTriggerEvent>;
   task: NonNullable<ReturnType<typeof readTask>>;
 }): QueuedPipelineRun | null {
-  const completion = reviewedCompletion(input.trigger);
   const workflowResult = reviewedCompletionWorkflowResult(input.trigger);
   const details = objectValue(workflowResult?.details);
-  const fixForward = objectValue(details?.fixForward);
-  const verification = objectValue(fixForward?.verification);
-  const verificationRunId = stringValue(verification?.runId);
-  const verificationStatus = stringValue(verification?.status).toLowerCase();
   const structuredQueued =
-    verificationRunId &&
-    (verificationStatus === "" ||
-      verificationStatus === "not-run" ||
-      verificationStatus === "queued" ||
-      verificationStatus === "running" ||
-      verificationStatus === "pending");
+    objectValue(details?.queuedRun) ??
+    objectValue(details?.queuedPipelineRun) ??
+    objectValue(details?.acceptedQueuedPipelineRun);
 
-  const text = textFromValues(
-    completion?.summary,
-    completion?.result,
-    workflowResult?.summary,
-    details,
-  );
-  const runId = structuredQueued
-    ? verificationRunId
-    : queuedRunIdFromText(text);
+  const runId =
+    stringValue(structuredQueued?.runId) ||
+    stringValue(structuredQueued?.run_id);
   if (!runId) return null;
-  const specIds = specIdsFromQueuedRunText(text, input.task);
+  const specIds = specIdsFromStructuredQueuedRun(structuredQueued, input.task);
   const runUrl =
-    stringValue(verification?.runUrl) ||
+    stringValue(structuredQueued?.runUrl) ||
+    stringValue(structuredQueued?.run_url) ||
     stringValue(details?.runUrl) ||
     `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`;
   return { runId, specIds, runUrl };
@@ -1456,15 +1610,23 @@ function openPipelineWaitExists(
   for (const task of Object.values(tree.tasks ?? {})) {
     const state = taskState(task);
     if (!openStates.has(state)) continue;
-    const haystack = JSON.stringify({
-      id: task.id,
-      goal: task.goal,
-      context: task.context,
-      blocker: task.blocker,
-      trace: task.trace,
-      result: task.result,
-    });
-    if (haystack.includes(runId)) return true;
+    const context = taskContext(task);
+    const blocker = objectValue(task.blocker);
+    const waitingFor = objectValue(blocker?.waiting_for);
+    const trace = objectValue(task.trace);
+    const structuredRunIds = [
+      stringValue(context.runId),
+      stringValue(context.workflowRunId),
+      stringValue(context.activeWorkflowRunId),
+      stringValue(context.lastRunId),
+      stringValue(context.acceptedQueuedPipelineRunId),
+      stringValue(context.accepted_queued_pipeline_run_id),
+      stringValue(waitingFor?.runId),
+      stringValue(waitingFor?.run_id),
+      stringValue(trace?.runId),
+      stringValue(trace?.workflowRunId),
+    ].filter(Boolean);
+    if (structuredRunIds.includes(runId)) return true;
   }
   return false;
 }
@@ -1635,6 +1797,14 @@ function taskContext(
     !Array.isArray(task.context)
     ? (task.context as Record<string, unknown>)
     : {};
+}
+
+function taskConflictScopes(task: TaskNode): string[] {
+  return Array.isArray(task.conflict_scope)
+    ? task.conflict_scope.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
+    : [];
 }
 
 function readJsonFile<T>(path: string, fallback: T): T {
@@ -1927,6 +2097,162 @@ function specLoopAcceptStructuralGaps(input: {
   return unowned;
 }
 
+function isBlockedOverdueAuditTask(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): boolean {
+  const context = taskContext(task);
+  const metricId = stringValue(context.metricId);
+  return (
+    context.blockedOverdueAudit === true ||
+    metricId === "aks-rp-e2e.process.blocked.overdue-unworked-count" ||
+    metricId === "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count"
+  );
+}
+
+function blockedOverdueScope(parentId: unknown): string {
+  if (parentId === "aks-spec-verification-loop") return "spec-loop";
+  if (parentId === "aks-feature-compact-loop") return "compact-loop";
+  if (parentId === "project") return "project";
+  return "";
+}
+
+function blockedOverdueScopeAliases(scope: string): string[] {
+  const aliases = new Set([scope]);
+  if (scope.endsWith("-loop")) {
+    aliases.add(scope.slice(0, -"-loop".length));
+  }
+  if (scope === "spec-loop") aliases.add("spec-verification");
+  if (scope === "compact-loop") aliases.add("feature-compact");
+  if (scope === "project") aliases.add("project-root");
+  return [...aliases];
+}
+
+function blockedWaitOverdueAt(task: TaskNode): number | null {
+  const blocker = objectValue(task.blocker);
+  const fallbackAt = Date.parse(stringValue(blocker?.fallback_at));
+  const resumeAt = Date.parse(stringValue(blocker?.resume_at));
+  const overdueAt = Number.isFinite(fallbackAt)
+    ? fallbackAt
+    : Number.isFinite(resumeAt)
+      ? resumeAt
+      : Number.NaN;
+  return Number.isFinite(overdueAt) ? overdueAt : null;
+}
+
+function taskCoversBlockedOverdueWait(
+  candidate: TaskNode,
+  blockedTask: TaskNode,
+  sourceTaskId: string,
+): boolean {
+  if (candidate.id === sourceTaskId) return false;
+  if (candidate.id === blockedTask.id) return false;
+  if (
+    typeof candidate.id === "string" &&
+    typeof blockedTask.parent_id === "string" &&
+    candidate.id === blockedTask.parent_id
+  ) {
+    return false;
+  }
+  const blockedTaskId =
+    typeof blockedTask.id === "string" ? blockedTask.id.trim() : "";
+  if (
+    blockedTaskId &&
+    structuredBlockedTaskIds(candidate).includes(blockedTaskId)
+  ) {
+    return true;
+  }
+
+  const scope = blockedOverdueScope(blockedTask.parent_id);
+  if (!scope) return false;
+  const aliases = blockedOverdueScopeAliases(scope);
+  return taskConflictScopes(candidate).some((conflictScope) => {
+    if (
+      conflictScope === `ops:blocked-overdue:${scope}` ||
+      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`)
+    ) {
+      return true;
+    }
+    return aliases.some(
+      (alias) =>
+        conflictScope === `ops:${alias}-overdue-blocked-frontier` ||
+        conflictScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
+        conflictScope === `ops:${alias}-overdue-frontier` ||
+        conflictScope.startsWith(`ops:${alias}-overdue-frontier-`),
+    );
+  });
+}
+
+function acceptedOverdueBlockedWaitGaps(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  summary: string;
+  findings: string[];
+  feedback: string[];
+  suggestedFollowups: string[];
+}): string[] {
+  if (!isBlockedOverdueAuditTask(input.task)) return [];
+
+  const tree = readTaskTree(input.config);
+  const auditedBlockedTaskIds = structuredBlockedTaskIds(input.task);
+  if (auditedBlockedTaskIds.length === 0) {
+    return ["missing-structured-blocked-task-ids"];
+  }
+  const audited = new Set(auditedBlockedTaskIds);
+  const tasks = Object.values(tree.tasks) as TaskNode[];
+  const activeOrReview = tasks.filter((task) =>
+    ["active", "review"].includes(taskState(task)),
+  );
+  const now = Date.now();
+
+  return tasks
+    .filter((task) => {
+      if (taskState(task) !== "blocked") return false;
+      if ((task.children ?? []).length > 0) return false;
+      const id = typeof task.id === "string" ? task.id : "";
+      return id && audited.has(id);
+    })
+    .flatMap((blockedTask) => {
+      const overdueAt = blockedWaitOverdueAt(blockedTask);
+      if (overdueAt === null || overdueAt > now) return [];
+      const covered = activeOrReview.some((candidate) =>
+        taskCoversBlockedOverdueWait(candidate, blockedTask, input.task.id),
+      );
+      return covered && blockedTask.id ? [] : [blockedTask.id ?? "unknown"];
+    });
+}
+
+function structuredBlockedTaskIds(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): string[] {
+  const ids = new Set<string>();
+  const context = taskContext(task);
+  const collect = (value: unknown) => {
+    if (typeof value === "string" && value.trim()) {
+      ids.add(value.trim());
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    const id = stringValue(record.taskId ?? record.task_id ?? record.id);
+    if (id) ids.add(id);
+  };
+  const collectArray = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    for (const entry of value) collect(entry);
+  };
+
+  collectArray(context.blockedTaskIds);
+  collectArray(context.blocked_task_ids);
+  collectArray(context.blockedTasks);
+  collectArray(context.blocked_tasks);
+  collectArray(context.auditedBlockedTaskIds);
+  collectArray(context.audited_blocked_task_ids);
+  collectArray(context.auditedBlockedTasks);
+  collectArray(context.audited_blocked_tasks);
+
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
 function uniqueTaskId(config: TaskTreeConfig, base: string): string {
   const normalized =
     base
@@ -1943,13 +2269,18 @@ function uniqueTaskId(config: TaskTreeConfig, base: string): string {
 }
 
 function reviewedSuccessorConflictScopes(input: {
+  config: TaskTreeConfig;
   task: NonNullable<ReturnType<typeof readTask>>;
   summary: string;
   findings: string[];
   feedback: string[];
   suggestedFollowups: string[];
+  reviewAction?: ReviewAction | null;
 }): string[] {
   const scopes = new Set(taskStringList(input.task, "conflict_scope"));
+  for (const scope of input.reviewAction?.conflictScopes ?? []) {
+    scopes.add(scope);
+  }
   const context = taskContext(input.task);
   const metricId = typeof context.metricId === "string" ? context.metricId : "";
   const isBlockedOverdueAudit =
@@ -1958,29 +2289,213 @@ function reviewedSuccessorConflictScopes(input: {
     metricId === "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count";
   if (!isBlockedOverdueAudit) return [...scopes];
 
-  const haystack = JSON.stringify({
-    id: input.task.id,
-    goal: input.task.goal,
-    context,
-    summary: input.summary,
-    findings: input.findings,
-    feedback: input.feedback,
-    suggestedFollowups: input.suggestedFollowups,
-  }).toLowerCase();
+  const structuredScopes = new Set(
+    structuredBlockedTaskIds(input.task)
+      .map((taskId) =>
+        blockedOverdueScope(readTask(input.config, taskId)?.parent_id),
+      )
+      .filter(Boolean),
+  );
   if (
-    haystack.includes("compact-loop") ||
-    haystack.includes("feature-compact")
+    structuredScopes.has("compact-loop") ||
+    taskStringList(input.task, "conflict_scope").some((scope) =>
+      scope.includes("compact-loop"),
+    )
   ) {
     scopes.add("ops:blocked-overdue:compact-loop");
   } else if (
-    haystack.includes("spec-loop") ||
-    haystack.includes("spec verification")
+    structuredScopes.has("spec-loop") ||
+    taskStringList(input.task, "conflict_scope").some((scope) =>
+      scope.includes("spec-loop"),
+    )
   ) {
     scopes.add("ops:blocked-overdue:spec-loop");
   } else {
     scopes.add("ops:blocked-overdue:project");
   }
   return [...scopes];
+}
+
+type ReviewedBlockedProjectAction = {
+  goal: string;
+  owner?: string;
+  parentId?: string;
+  idBase?: string;
+  kind?: string;
+  outputs?: string[];
+  acceptance: string[];
+  state?: "backlog" | "blocked";
+  blockerOwner?: string;
+  blockerCategory?: string;
+  resumeAt?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
+  resumeCondition?: string;
+  blockerCondition?: string;
+};
+
+type ReviewAction = {
+  actionKind: string;
+  goal?: string;
+  owner?: string;
+  parentId?: string;
+  idBase?: string;
+  kind?: string;
+  outputs?: string[];
+  acceptance?: string[];
+  conflictScopes?: string[];
+};
+
+function taskIdLeaf(id: string): string {
+  return id.split("/").filter(Boolean).pop() || id;
+}
+
+function reviewActionFromValue(value: unknown): ReviewAction | null {
+  const action = objectValue(value);
+  const actionKind = stringValue(
+    action?.actionKind ?? action?.action_kind ?? action?.kind,
+  );
+  if (!actionKind) return null;
+  return {
+    actionKind,
+    goal: stringValue(action?.goal),
+    owner: stringValue(action?.owner),
+    parentId: stringValue(action?.parentId ?? action?.parent_id),
+    idBase: stringValue(action?.idBase ?? action?.id_base),
+    kind: stringValue(action?.taskKind ?? action?.task_kind),
+    outputs: stringList(action?.outputs),
+    acceptance: stringList(action?.acceptance),
+    conflictScopes: stringList(
+      action?.conflictScopes ?? action?.conflict_scope,
+    ),
+  };
+}
+
+function reviewedBlockedProjectAction(input: {
+  task?: TaskNode;
+  decision: ReviewDecision;
+  action: ReviewAction | null;
+  suggestedFollowups: string[];
+}): ReviewedBlockedProjectAction | null {
+  if (!input.action) return null;
+
+  if (input.action.actionKind === "app-state-repair") {
+    const sourceId = input.task?.id ? taskIdLeaf(input.task.id) : "review";
+    return {
+      goal:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        `Apply the app-owned task-tree or loop-state repair required by reviewed task ${input.task?.id ?? "unknown"}.`,
+      owner: input.action.owner || "app-ops",
+      parentId: input.action.parentId || "project",
+      idBase: input.action.idBase || `ops/apply-${sourceId}-state-repair`,
+      kind: input.action.kind || "domain_leaf",
+      outputs: input.action.outputs?.length
+        ? input.action.outputs
+        : [
+            "task tree",
+            ".state/feature-compact-loop/state.json",
+            ".state/spec-loop/state.json",
+            "evidence/archive/",
+          ],
+      acceptance: input.action.acceptance?.length
+        ? input.action.acceptance
+        : [
+            "The app-owned task-tree or loop-state repair is applied through supported app mechanisms.",
+            "The affected branch records the exact restored holder, state pointer, or refreshed wait with evidence.",
+          ],
+      state: "backlog",
+    };
+  }
+
+  if (
+    input.action.actionKind === "publish-domain-repair-and-rerun" &&
+    input.decision === "blocked"
+  ) {
+    return {
+      goal:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        "Publish the repair commit or equivalent descendant to origin/dev, then run the required local checks and queue the bounded Azure DevOps rerun described by the review.",
+      owner: input.action.owner,
+      parentId: input.action.parentId,
+      idBase: input.action.idBase,
+      kind: input.action.kind,
+      outputs: input.action.outputs,
+      acceptance: input.action.acceptance?.length
+        ? input.action.acceptance
+        : [
+            "The project-side blocker is resolved with concrete evidence.",
+            "The affected task branch records the publication, rerun, and next verification result.",
+          ],
+      state: "backlog",
+    };
+  }
+
+  if (input.action.actionKind === "schedule-domain-rerun") {
+    const sourceId = input.task?.id ? taskIdLeaf(input.task.id) : "review";
+    const resumeSignal = firstText(input.suggestedFollowups);
+    const extractedIso =
+      (resumeSignal.match(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\b/) ||
+        [])[0] || "";
+    const resumeAt = extractedIso || undefined;
+    const state =
+      input.decision === "blocked" || resumeAt ? "blocked" : "backlog";
+    const nextCheckAt = resumeAt;
+    const fallbackAt = resumeAt
+      ? new Date(Date.parse(resumeAt) + 6 * 60 * 60 * 1000).toISOString()
+      : undefined;
+    const taskId = input.task?.id ?? "";
+    const taskParentId = input.task?.parent_id ?? "";
+    const opsScoped =
+      taskId === "ops" ||
+      taskId.startsWith("ops/") ||
+      taskId.startsWith("ops-") ||
+      taskParentId === "ops" ||
+      taskParentId.startsWith("ops/") ||
+      taskParentId.startsWith("ops-");
+    const owner = input.action.owner || (opsScoped ? "app-ops" : input.task?.owner);
+    return {
+      goal:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        `Resume the reviewed domain rerun or wait-window check for ${input.task?.id ?? "unknown"} at the named window and carry the exact same-lineage action forward.`,
+      owner,
+      parentId: input.action.parentId || input.task?.parent_id,
+      idBase: input.action.idBase || sourceId,
+      kind: input.action.kind || input.task?.kind || "domain_leaf",
+      outputs: input.action.outputs,
+      acceptance: input.action.acceptance?.length
+        ? input.action.acceptance
+        : [
+            "The worker resumes at or after the named review/fallback window and records the current lineage result with concrete evidence.",
+            "The affected task branch records the resulting refresh, rerun, wait replacement, or next verification step without duplicating passive waits.",
+          ],
+      state,
+      blockerOwner: opsScoped ? "app-ops" : "human",
+      blockerCategory: "external-wait",
+      resumeAt,
+      nextCheckAt,
+      fallbackAt,
+      fallbackAction:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        "If the same review window opens unanswered, refresh or reassign this exact successor rather than creating a duplicate passive wait.",
+      resumeCondition:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        `Resume the reviewed domain rerun or fallback check for ${input.task?.id ?? "unknown"} at the named window.`,
+      blockerCondition:
+        `Future-window successor created from reviewed task ${input.task?.id ?? "unknown"}; do not start before its named review window opens. ${
+          firstText(input.suggestedFollowups) ||
+          input.action.goal ||
+          ""
+        }`.trim(),
+    };
+  }
+
+  return null;
 }
 
 function createReviewedSuccessor(input: {
@@ -1992,6 +2507,7 @@ function createReviewedSuccessor(input: {
   findings: string[];
   feedback: string[];
   suggestedFollowups: string[];
+  reviewAction: ReviewAction | null;
 }): string {
   if (!input.task.parent_id) {
     throw new Error(
@@ -2001,12 +2517,24 @@ function createReviewedSuccessor(input: {
   const followupText =
     firstText(input.suggestedFollowups, input.feedback, input.findings) ||
     `Resolve reviewed ${input.decision} result for ${input.task.id}.`;
+  const projectAction = reviewedBlockedProjectAction({
+    task: input.task,
+    decision: input.decision,
+    action: input.reviewAction,
+    suggestedFollowups: input.suggestedFollowups,
+  });
   const id = uniqueTaskId(
     input.config,
-    `${input.task.id}-${input.decision === "followup" ? "followup" : input.decision}`,
+    projectAction?.idBase ||
+      `${input.task.id}-${input.decision === "followup" ? "followup" : input.decision}`,
   );
   const isBlocked =
     input.decision === "blocked" || input.decision === "escalate";
+  const createsRunnableProjectAction =
+    !!projectAction && projectAction.state !== "blocked";
+  const shouldBlockSuccessor =
+    projectAction?.state === "blocked" ||
+    (isBlocked && !createsRunnableProjectAction);
   const blocker =
     firstText(input.feedback, input.findings, [input.summary]) ||
     `Reviewed task ${input.task.id} needs ${input.decision} handling.`;
@@ -2014,69 +2542,103 @@ function createReviewedSuccessor(input: {
   const resumeCondition =
     firstText(input.suggestedFollowups) ||
     `Resume when ${input.decision} condition for ${input.task.id} is resolved.`;
+  const successorContext: Record<string, unknown> = {
+    ...taskContext(input.task),
+    reviewedTask: {
+      taskId: input.task.id,
+      attemptId: input.attemptId,
+      decision: input.decision,
+      summary: input.summary,
+      findings: input.findings,
+      feedback: input.feedback,
+      suggestedFollowups: input.suggestedFollowups,
+      ...(input.reviewAction ? { reviewAction: input.reviewAction } : {}),
+    },
+  };
+  if (projectAction?.owner === "app-ops") {
+    delete successorContext.workflow;
+  }
   createTask(input.config, {
     id,
-    parentId: input.task.parent_id,
-    state: isBlocked ? "blocked" : "backlog",
-    kind: input.task.kind ?? "domain_leaf",
+    parentId: projectAction?.parentId || input.task.parent_id,
+    state:
+      projectAction?.state || (shouldBlockSuccessor ? "blocked" : "backlog"),
+    kind: projectAction?.kind || input.task.kind || "domain_leaf",
     priority: taskPriority(input.task),
-    owner: input.task.owner,
+    owner: projectAction?.owner || input.task.owner,
     workflow: input.task.workflow,
-    goal: isBlocked
-      ? `Resolve ${input.decision} review for ${input.task.id}: ${blocker}`
-      : followupText,
+    goal: createsRunnableProjectAction
+      ? projectAction.goal
+      : shouldBlockSuccessor
+        ? `Resolve ${input.decision} review for ${input.task.id}: ${blocker}`
+        : followupText,
     inputs: [`Reviewed task: ${input.task.id}`, `Attempt: ${input.attemptId}`],
-    outputs: taskStringList(input.task, "outputs").length
-      ? taskStringList(input.task, "outputs")
-      : ["task tree"],
-    acceptance: isBlocked
-      ? [
-          "The external wait or escalation has a concrete result, or a replacement runnable task is created.",
-          "The affected task branch records the result and next verification step.",
-        ]
-      : [
-          "The review follow-up is resolved with concrete evidence.",
-          "The affected task branch records the result and next verification step.",
-        ],
+    outputs: projectAction?.outputs?.length
+      ? projectAction.outputs
+      : taskStringList(input.task, "outputs").length
+        ? taskStringList(input.task, "outputs")
+        : ["task tree"],
+    acceptance: createsRunnableProjectAction
+      ? projectAction.acceptance
+      : shouldBlockSuccessor
+        ? [
+            "The external wait or escalation has a concrete result, or a replacement runnable task is created.",
+            "The affected task branch records the result and next verification step.",
+          ]
+        : [
+            "The review follow-up is resolved with concrete evidence.",
+            "The affected task branch records the result and next verification step.",
+          ],
     conflict_scope: reviewedSuccessorConflictScopes(input),
-    context: {
-      ...taskContext(input.task),
-      reviewedTask: {
-        taskId: input.task.id,
-        attemptId: input.attemptId,
-        decision: input.decision,
-        summary: input.summary,
-        findings: input.findings,
-        feedback: input.feedback,
-        suggestedFollowups: input.suggestedFollowups,
-      },
-    },
-    ...(isBlocked
+    context: successorContext,
+    ...(shouldBlockSuccessor
       ? {
-          blocker,
-          blockerCategory: "external-wait",
-          blockerOwner,
-          resumeCondition,
+          blocker: projectAction?.blockerCondition || blocker,
+          blockerCategory: projectAction?.blockerCategory || "external-wait",
+          blockerOwner: projectAction?.blockerOwner || blockerOwner,
+          resumeCondition: projectAction?.resumeCondition || resumeCondition,
+          ...(projectAction?.resumeAt ? { resumeAt: projectAction.resumeAt } : {}),
+          ...(projectAction?.nextCheckAt
+            ? { nextCheckAt: projectAction.nextCheckAt }
+            : {}),
+          ...(projectAction?.fallbackAt
+            ? { fallbackAt: projectAction.fallbackAt }
+            : {}),
+          ...(projectAction?.fallbackAction
+            ? { fallbackAction: projectAction.fallbackAction }
+            : {}),
         }
       : {}),
   });
-  if (!isBlocked) return id;
+  if (projectAction) {
+    withTreeLock(input.config, () => {
+      const tree = readTaskTree(input.config);
+      const task = tree.tasks[id];
+      if (!task) return;
+      if (projectAction.owner) task.owner = projectAction.owner;
+      if (projectAction.kind) task.kind = projectAction.kind;
+      if (projectAction.outputs?.length) task.outputs = projectAction.outputs;
+      task.acceptance = projectAction.acceptance;
+      saveTaskTreeWithKanbanSnapshot(input.config, tree);
+    });
+  }
+  if (!shouldBlockSuccessor) return id;
 
   withTreeLock(input.config, () => {
     const tree = readTaskTree(input.config);
     const task = tree.tasks[id];
     if (!task) return;
     const blockedAt = new Date().toISOString();
-    const nextCheckAt = new Date(
-      Date.parse(blockedAt) + 10 * 60 * 1000,
-    ).toISOString();
-    const fallbackAt = new Date(
-      Date.parse(blockedAt) + 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const nextCheckAt =
+      projectAction?.nextCheckAt ||
+      new Date(Date.parse(blockedAt) + 10 * 60 * 1000).toISOString();
+    const fallbackAt =
+      projectAction?.fallbackAt ||
+      new Date(Date.parse(blockedAt) + 24 * 60 * 60 * 1000).toISOString();
     task.blocker = {
-      condition: blocker,
-      category: "external-wait",
-      owner: blockerOwner,
+      condition: projectAction?.blockerCondition || blocker,
+      category: projectAction?.blockerCategory || "external-wait",
+      owner: projectAction?.blockerOwner || blockerOwner,
       blocked_at: blockedAt,
       waiting_for: {
         type:
@@ -2092,10 +2654,12 @@ function createReviewedSuccessor(input: {
       },
       observation_method:
         "Project planner created this reviewed blocked successor from the review result; on the next owner/planner pass, refresh it with concrete returned evidence, replace it with runnable work, or keep the wait with updated blocker proof.",
+      ...(projectAction?.resumeAt ? { resume_at: projectAction.resumeAt } : {}),
       next_check_at: nextCheckAt,
-      resume_condition: resumeCondition,
+      resume_condition: projectAction?.resumeCondition || resumeCondition,
       fallback_at: fallbackAt,
       fallback_action:
+        projectAction?.fallbackAction ||
         "If the reviewed blocker is still unresolved at fallback time, create or reuse a concrete recovery/escalation task, or refresh this exact wait with current evidence.",
     };
     task.trace = {
@@ -2108,6 +2672,85 @@ function createReviewedSuccessor(input: {
     saveTaskTreeWithKanbanSnapshot(input.config, tree);
   });
   return id;
+}
+
+function requeueReviewedBlockedProjectActions(
+  config: TaskTreeConfig,
+): string[] {
+  const requeuedTaskIds: string[] = [];
+  const now = new Date().toISOString();
+
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    for (const task of Object.values(tree.tasks) as TaskNode[]) {
+      const state = String(task.status ?? task.state ?? "");
+      if (state !== "blocked") continue;
+      const context =
+        task.context &&
+        typeof task.context === "object" &&
+        !Array.isArray(task.context)
+          ? (task.context as Record<string, unknown>)
+          : {};
+      const reviewedTask =
+        context.reviewedTask &&
+        typeof context.reviewedTask === "object" &&
+        !Array.isArray(context.reviewedTask)
+          ? (context.reviewedTask as Record<string, unknown>)
+          : null;
+      if (!reviewedTask) continue;
+
+      const decision = normalizeReviewDecision(reviewedTask.decision);
+      const reviewAction = reviewActionFromValue(reviewedTask.reviewAction);
+      const action = reviewedBlockedProjectAction({
+        task,
+        decision: decision ?? "blocked",
+        action: reviewAction,
+        suggestedFollowups: stringList(reviewedTask.suggestedFollowups),
+      });
+      if (!action) continue;
+      if (reviewAction?.actionKind === "app-state-repair") {
+        continue;
+      }
+      if (action.state === "blocked") {
+        continue;
+      }
+
+      task.state = "backlog";
+      task.status = "backlog";
+      task.blocker = undefined;
+      task.goal = action.goal;
+      task.owner = action.owner || task.owner;
+      task.kind = action.kind || task.kind;
+      if (action.outputs?.length) task.outputs = action.outputs;
+      task.acceptance = action.acceptance;
+      task.trace = {
+        ...(task.trace ?? {}),
+        requeued_at: now,
+        requeued_by: "project-planner",
+        requeue_reason:
+          "reviewed blocked successor contains actionable project-side origin/dev publication and rerun work",
+        previous_nonterminal_status: state,
+      };
+      if (typeof task.id === "string") {
+        requeuedTaskIds.push(task.id);
+      }
+    }
+
+    if (requeuedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+    }
+  });
+
+  if (requeuedTaskIds.length > 0) {
+    appendToolJournal(config, {
+      kind: "reviewed_blocked_project_actions_requeued",
+      task_ids: requeuedTaskIds,
+      reason:
+        "reviewed blocked successors described project-side origin/dev publication/rerun work",
+    });
+  }
+
+  return requeuedTaskIds;
 }
 
 function applyReviewedTaskEvent(
@@ -2176,48 +2819,98 @@ function applyReviewedTaskEvent(
     ...reviewStringList(trigger, "suggestedFollowups"),
     ...reviewStringList(trigger, "suggested_followups"),
   ];
+  const reviewAction =
+    reviewActionFromValue(reviewValue(trigger, "reviewAction")) ??
+    reviewActionFromValue(reviewValue(trigger, "review_action"));
 
   if (decision === "accept") {
+    if (
+      findings.some(
+        (finding) =>
+          finding === "validation-note:worker-cited-missing-durable-evidence",
+      )
+    ) {
+      return rejectAcceptOnInvariant({
+        config,
+        taskId,
+        attemptId,
+        invariant: "task.accept.requires-existing-durable-evidence",
+        summary: `Accept cannot close ${taskId}: worker cited durable evidence that is missing from the app/domain repo.`,
+        details: {
+          reviewerDecision: decision,
+          findings,
+          feedback,
+          suggestedFollowups,
+        },
+      });
+    }
     const unownedSpecIds = specLoopAcceptStructuralGaps({ config, task });
     if (unownedSpecIds.length > 0) {
-      const followupSummary = `Spec-loop accept cannot close ${taskId}: ${unownedSpecIds.length} represented retry-drained spec(s) still lack an open structural owner: ${unownedSpecIds
+      const invariantSummary = `Spec-loop accept cannot close ${taskId}: ${unownedSpecIds.length} represented retry-drained spec(s) still lack an open structural owner: ${unownedSpecIds
         .slice(0, 8)
         .join(", ")}.`;
-      const successorTaskId = createReviewedSuccessor({
+      return rejectAcceptOnInvariant({
         config,
-        task,
-        decision: "followup",
+        taskId,
         attemptId,
-        summary: followupSummary,
-        findings: [
-          ...findings,
-          `Unowned represented specs: ${unownedSpecIds.join(", ")}`,
-        ],
-        feedback: [
-          ...feedback,
-          "Create or link an exact open holder task for every represented retry-drained spec before accepting this follow-up.",
-        ],
-        suggestedFollowups: [followupSummary, ...suggestedFollowups],
+        invariant: "spec-loop.accept.requires-structural-owner",
+        summary: invariantSummary,
+        details: {
+          unownedSpecIds,
+          reviewerDecision: decision,
+          findings,
+          feedback,
+          suggestedFollowups,
+        },
       });
-      markTaskDone(config, {
-        taskId,
-        resolution: "completed",
-        summary: `Reviewer decision accept converted to followup; successor ${successorTaskId}: ${followupSummary}`,
-      });
-      return {
-        handled: true,
-        applied: true,
-        decision: "followup",
-        taskId,
-        successorTaskId,
-        message: `Applied review for ${taskId}; converted accept to followup ${successorTaskId}.`,
-      };
     }
+    const overdueWaitGaps = acceptedOverdueBlockedWaitGaps({
+      config,
+      task,
+      summary,
+      findings,
+      feedback,
+      suggestedFollowups,
+    });
+    if (overdueWaitGaps.length > 0) {
+      const invariantSummary = `Overdue-wait accept cannot close ${taskId}: ${overdueWaitGaps.length} named blocked wait(s) would remain overdue without active/review recovery or refreshed future fallback: ${overdueWaitGaps
+        .slice(0, 8)
+        .join(", ")}.`;
+      return rejectAcceptOnInvariant({
+        config,
+        taskId,
+        attemptId,
+        invariant: "blocked-overdue.accept.requires-covered-fresh-waits",
+        summary: invariantSummary,
+        details: {
+          overdueWaitGaps,
+          reviewerDecision: decision,
+          findings,
+          feedback,
+          suggestedFollowups,
+        },
+      });
+    }
+    const workflowResult = reviewedCompletionWorkflowResult(trigger);
+    const acceptedResults = workflowResult
+      ? acceptedSpecVerifierResults(workflowResult)
+      : [];
     const acceptedSpecIds = applyAcceptedSpecVerifierResults({
       config,
       taskId,
       trigger,
     });
+    const acceptedSpecIdSet = new Set(acceptedSpecIds);
+    const fixForwardTaskIds = acceptedSpecIds.length
+      ? createAcceptedSpecResultFixForwardTasks({
+          config,
+          task,
+          attemptId,
+          results: acceptedResults.filter((result) =>
+            acceptedSpecIdSet.has(result.specId),
+          ),
+        })
+      : [];
     const queuedRun = acceptedSpecIds.length
       ? null
       : queuedPipelineRunFromAcceptedReview({ trigger, task });
@@ -2230,17 +2923,49 @@ function applyReviewedTaskEvent(
           queuedRun,
         })
       : null;
-    markTaskDone(config, { taskId, summary });
+    const acceptedReviewAction = reviewAction
+      ? reviewedBlockedProjectAction({
+          task,
+          decision,
+          action: reviewAction,
+          suggestedFollowups,
+        })
+      : null;
+    const acceptedReviewActionTaskId =
+      acceptedReviewAction && !queuedWaitTaskId && fixForwardTaskIds.length === 0
+        ? createReviewedSuccessor({
+            config,
+            task,
+            decision,
+            attemptId,
+            summary,
+            findings,
+            feedback,
+            suggestedFollowups,
+            reviewAction,
+          })
+        : null;
+    markTaskDone(config, { taskId, summary, reviewDecision: decision });
     return {
       handled: true,
       applied: true,
       decision,
       taskId,
-      successorTaskId: queuedWaitTaskId ?? undefined,
+      successorTaskId:
+        acceptedReviewActionTaskId ??
+        queuedWaitTaskId ??
+        fixForwardTaskIds[0] ??
+        undefined,
       message: acceptedSpecIds.length
-        ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}.`
+        ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}${
+            fixForwardTaskIds.length
+              ? ` and created ${fixForwardTaskIds.length} fix-forward task(s): ${fixForwardTaskIds.join(", ")}`
+              : ""
+          }.`
         : queuedWaitTaskId
           ? `Applied accept review for ${taskId}; created pipeline wait ${queuedWaitTaskId}.`
+          : acceptedReviewActionTaskId
+            ? `Applied accept review for ${taskId}; created ${acceptedReviewActionTaskId}.`
           : `Applied accept review for ${taskId}.`,
     };
   }
@@ -2269,11 +2994,13 @@ function applyReviewedTaskEvent(
     findings,
     feedback,
     suggestedFollowups,
+    reviewAction,
   });
   markTaskDone(config, {
     taskId,
     resolution: decision === "followup" ? "completed" : "replaced",
     summary: `Reviewer decision ${decision}; successor ${successorTaskId}: ${summary}`,
+    reviewDecision: decision,
   });
   return {
     handled: true,
@@ -2450,7 +3177,9 @@ function settledActiveNoopResult(input: {
   quickAssignments: TaskAssignment[];
   quickControllerPulses: LoopControllerPulse[];
 }): string | null {
-  const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
+  const trigger = parseTriggerEvent(input.rawTask);
+  const reason = triggerValue(trigger, "reason");
+  const metricId = triggerValue(trigger, "metricId");
   const noHumanSteering = input.humanSteering.length === 0;
   const noRunnableOrReviewFrontier =
     input.packet.frontier.runnable.length === 0 &&
@@ -2489,6 +3218,56 @@ function settledActiveNoopResult(input: {
     input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
     hasOnlyActiveFrontier;
+  const activeOpsTaskIds = [...liveActiveIds].filter(
+    (taskId) => taskId === "ops" || taskId.startsWith("ops/"),
+  );
+  const blockedOverdueMetricCoveredByActiveOps =
+    [
+      "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
+    ].includes(typeof metricId === "string" ? metricId : "") &&
+    input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
+    noHumanSteering &&
+    hasOnlyActiveFrontier &&
+    activeOpsTaskIds.length > 0;
+  const blockedFrontierFutureWaitCoveredByActiveOps =
+    reason === "watchdog-blocked-frontier-review" &&
+    input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
+    noHumanSteering &&
+    noRunnableOrReviewFrontier &&
+    input.packet.frontier.blocked.length > 0 &&
+    activeOpsTaskIds.length === liveActiveIds.size &&
+    activeOpsTaskIds.length > 0 &&
+    (triggerNumber(input.rawTask, "blockedOverdueCount") ?? 0) === 0 &&
+    (triggerNumber(input.rawTask, "blockedMissingWatchCount") ?? 0) === 0 &&
+    triggerOverdueOwnerActions(input.rawTask).length === 0 &&
+    (() => {
+      const blockedTasks = triggerBlockedTasks(input.rawTask);
+      if (blockedTasks.length === 0) return false;
+      return blockedTasks.every(
+        (task) => futureBlockedWatchAt(task) !== null,
+      );
+    })();
+  const noWorkMetricFalsePositiveCoveredByRunningActive =
+    [
+      "aks-rp-e2e.task.no-work-with-gaps",
+      "aks-rp-e2e.task.ready-starvation-with-gaps",
+    ].includes(typeof metricId === "string" ? metricId : "") &&
+    input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
+    noHumanSteering &&
+    hasOnlyActiveFrontier &&
+    [...liveActiveIds].length > 0 &&
+    [...liveActiveIds].every((taskId) => {
+      const task = readTask(input.config, taskId);
+      const sessionId =
+        typeof task?.session_id === "string" ? task.session_id : "";
+      return (
+        !!sessionId && runtimeSessionIsRunning(input.config.appDir, sessionId)
+      );
+    });
   if (
     reason === "watchdog-stale-active-review" &&
     citedStaleActiveIds.length > 0 &&
@@ -2519,6 +3298,15 @@ function settledActiveNoopResult(input: {
   }
   if (routineLearningTickCoveredByActiveWork) {
     return "Regular-learning tick is already covered by active work: no runnable/review frontier needs owner planning, and the current frontier is active-only plus any already-truthful blocked waits.";
+  }
+  if (blockedOverdueMetricCoveredByActiveOps) {
+    return `Blocked-overdue metric wake is already under active app-ops repair: active frontier is ops-only (${activeOpsTaskIds.join(", ")}), no runnable/review frontier remains, and the planner should wait for the in-flight repair task rather than spend a full owner planning session re-triaging the same overdue-wait signal.`;
+  }
+  if (blockedFrontierFutureWaitCoveredByActiveOps) {
+    return `Blocked-frontier future-wait review is already under active app-ops repair: active frontier is ops-only (${activeOpsTaskIds.join(", ")}), sampled blocked waits remain future-dated, and the planner should wait for the in-flight repair task rather than spend a full owner planning session re-reviewing the same all-blocked frontier.`;
+  }
+  if (noWorkMetricFalsePositiveCoveredByRunningActive) {
+    return `No-work metric wake is already covered by currently running active work: active frontier remains ${[...liveActiveIds].join(", ")}, no runnable/review frontier exists, and the planner should wait for the in-flight assignment rather than invent duplicate refill from future-window waits.`;
   }
   if (!settledWithActiveWork) return null;
   if (reason === "task-completed") {
@@ -2703,6 +3491,7 @@ function staleReviewPendingNoopResult(input: {
 type TriggerBlockedTask = {
   taskId: string;
   blocker: string;
+  nextCheckAt?: string;
   resumeAt?: string;
   resumeCondition?: string;
   fallbackAt?: string;
@@ -2715,6 +3504,16 @@ type TriggerOverdueOwnerAction = {
   watchAt?: string;
   recoveryRequired?: string;
 };
+
+function triggerNumber(rawTask: string, key: string): number | null {
+  const value = triggerValue(parseTriggerEvent(rawTask), key);
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
 
 function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
   const trigger = parseTriggerEvent(rawTask);
@@ -2731,6 +3530,13 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
         typeof (entry as { blocker?: unknown }).blocker === "string"
           ? ((entry as { blocker?: string }).blocker ?? "")
           : "";
+      const nextCheckAt =
+        typeof (entry as { nextCheckAt?: unknown }).nextCheckAt === "string"
+          ? ((entry as { nextCheckAt?: string }).nextCheckAt ?? "")
+          : typeof (entry as { next_check_at?: unknown }).next_check_at ===
+              "string"
+            ? ((entry as { next_check_at?: string }).next_check_at ?? "")
+            : "";
       const resumeAt =
         typeof (entry as { resumeAt?: unknown }).resumeAt === "string"
           ? ((entry as { resumeAt?: string }).resumeAt ?? "")
@@ -2762,6 +3568,7 @@ function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
       return {
         taskId,
         blocker,
+        ...(nextCheckAt.trim() ? { nextCheckAt: nextCheckAt.trim() } : {}),
         ...(resumeAt.trim() ? { resumeAt: resumeAt.trim() } : {}),
         ...(resumeCondition.trim()
           ? { resumeCondition: resumeCondition.trim() }
@@ -2829,6 +3636,7 @@ function futureTimestamp(value: string | undefined): number | null {
 
 function futureBlockedWatchAt(task: TriggerBlockedTask): number | null {
   const candidates = [
+    futureTimestamp(task.nextCheckAt),
     futureTimestamp(task.resumeAt),
     futureTimestamp(task.fallbackAt),
   ].filter((ts): ts is number => typeof ts === "number");
@@ -2852,6 +3660,26 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (input.packet.frontier.runnable.length > 0) return null;
   if (input.packet.frontier.review.length > 0) return null;
   if ((input.packet.frontier.waiting ?? []).length > 0) return null;
+
+  const blockedCount = triggerNumber(input.rawTask, "blockedCount");
+  const blockedOverdueCount = triggerNumber(
+    input.rawTask,
+    "blockedOverdueCount",
+  );
+  const blockedMissingWatchCount = triggerNumber(
+    input.rawTask,
+    "blockedMissingWatchCount",
+  );
+  if (
+    blockedCount !== null &&
+    blockedCount !== input.packet.frontier.blocked.length
+  ) {
+    return null;
+  }
+  if (blockedOverdueCount !== null && blockedOverdueCount > 0) return null;
+  if (blockedMissingWatchCount !== null && blockedMissingWatchCount > 0) {
+    return null;
+  }
   if (triggerOverdueOwnerActions(input.rawTask).length > 0) return null;
 
   const blockedTasks = triggerBlockedTasks(input.rawTask);
@@ -2859,7 +3687,6 @@ function blockedFrontierFutureWaitNoopResult(input: {
 
   const liveBlocked = new Set(input.packet.frontier.blocked);
   const triggerIds = blockedTasks.map((task) => task.taskId);
-  if (triggerIds.length !== input.packet.frontier.blocked.length) return null;
   if (triggerIds.some((taskId) => !liveBlocked.has(taskId))) return null;
 
   const futureWatchDates = blockedTasks
@@ -2980,6 +3807,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     limit: 50,
     reason: "planner task-tree maintenance",
   });
+  requeueReviewedBlockedProjectActions(config);
   syncPlannerProjectReadout(config);
   const trigger = parseTriggerEvent(ctx.task);
   const overdueOwnerActionCount = triggerOverdueOwnerActions(ctx.task).length;

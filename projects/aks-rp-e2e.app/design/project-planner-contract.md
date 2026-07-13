@@ -67,6 +67,13 @@ Task completion review is split from general planning:
 5. Only after pending reviewed decisions are applied should the planner refill
    or widen work.
 
+For overdue blocked-wait audits, accepted evidence is not enough by itself if
+the live wait remains stale. Before accepting the reviewed task as done, the
+planner must verify that every named overdue wait was refreshed with current
+evidence and future `next_check_at`/`fallback_at`, replaced by a narrower exact
+wait, unblocked, escalated, or still covered by a separate active/review
+handoff. Otherwise the accept becomes follow-up work.
+
 The watchdog remains a fallback for review leaves where `project.task.reviewed`
 was lost, never emitted, or was never the right source. Some workflows can move
 work directly to `review` after collecting an objective signal, such as a
@@ -281,6 +288,13 @@ Allowed outcomes for an overdue blocked wait:
 - `terminal`: mark done only when accepted evidence proves no further
   meaningful project action remains.
 
+A reviewed `blocked` task is not always a passive external wait. If the review
+says the remaining blocker is app-owned task-tree or loop-state repair, the
+planner should create runnable `ops/*` work for `app-ops` instead of another
+domain retry or a blocked successor. Domain workers may identify that the live
+holder, `frontierTaskIds`, or loop-state projection is wrong, but app-ops owns
+app-state mutation through supported task-tree/app helpers.
+
 Disallowed outcomes:
 
 - leave the blocked leaf unchanged after fallback;
@@ -492,6 +506,28 @@ owner cannot name what is being waited for, who observes it, how it is checked,
 the responsible owner, and the fallback, the item should stay `error`, become a
 repair/follow-up task, or become an escalation.
 
+The task-tree CLI follows the same rule. `--blocker "..."` is just human text
+plus generic blocked-wait scaffolding; it does not infer ADO/GitHub/capacity or
+other wait targets from prose. When the wait target is known, callers must pass
+it as structured `--blocker-json` or explicit structured task context.
+
+The same boundary applies to failure classification. Runner/verifier code may
+record raw status, result path, run id, and reason text, but it must not derive
+product/test/process classes from the reason sentence. A `failureClass` is only
+authoritative when it comes from a structured category or an agent review.
+
+Feature-compact projection follows the same rule. Code may bind compact state
+to tasks by `context.featureKey`, `conflict_scope`, `frontierTaskIds`,
+`replacementTaskIds`, and structured `blocker.waiting_for`; it must not decide
+owner-decision, shared-wait, capacity, carrier, or replacement semantics by
+scanning task goals, summaries, blocker prose, or review prose.
+
+Feature-compact progress should expose the raw offender keys behind any
+unrepresented counters. If `unrepresentedNonTerminalCount` is non-zero, include
+lists such as `unrepresentedNonTerminalFeatureKeys`,
+`unrepresentedBlockedFeatureKeys`, and `unrepresentedErrorFeatureKeys`. Metrics
+and UI then show facts directly; the agent decides the next move.
+
 For Azure DevOps pipeline-result waits, the exact pipeline run id is required. A
 blocked item may say it waits for `ado.pipeline_run.completed` only when it
 includes the run id and enough identity to avoid polling the wrong run:
@@ -537,10 +573,13 @@ must re-evaluate it. Possible outcomes are:
 - mark done only if a terminal disposition or live proof exists;
 - escalate if fallback failed.
 
-If `fallbackAt` has passed and `owner` is not `human`, re-evaluation must not
-end as a passive wait unless a newer `lastCheckedAt`, `nextCheckAt`, and
-`fallbackAt` are written with evidence explaining why no active recovery is
-possible. Otherwise create active recovery/handoff work.
+If `nextCheckAt` has passed, the watchdog/planner must treat the blocked item
+as due for recheck. The result must be visible: unblock it, create recovery or
+handoff work, refresh `lastCheckedAt`/`nextCheckAt`/`fallbackAt` with current
+evidence, or escalate. If `fallbackAt` has passed and `owner` is not `human`,
+re-evaluation must not end as a passive wait unless a newer `lastCheckedAt`,
+`nextCheckAt`, and `fallbackAt` are written with evidence explaining why no
+active recovery is possible. Otherwise create active recovery/handoff work.
 
 ## Structured Inputs
 
@@ -554,6 +593,15 @@ Examples:
 - Use `project.task.reviewed.data.feedback` when rejecting/retrying work.
 - Use `project.task.reviewed.data.suggestedFollowups` as proposals, not direct
   task-tree mutations.
+- If a blocked/follow-up review says the next step is project-side work, the
+  reviewer must use `project.task.reviewed.data.reviewAction`. The planner uses
+  `reviewAction.actionKind`, not prose, to route that work.
+- Supported `reviewAction.actionKind` values:
+  `app-state-repair` and `publish-domain-repair-and-rerun`. Add a new action
+  kind only when the planner can validate and apply it as a bounded task-tree
+  operation.
+- `summary`, `findings`, `feedback`, and `suggestedFollowups` explain the
+  judgment and proposed work. They are not a routing protocol.
 - Use `blockedTasks[].resumeAt` for future-dated external waits.
 - Use `blockedTasks[].resumeCondition` for human-readable resume details.
 - Use `blockedTasks[].fallbackAt` and `blockedTasks[].fallbackAction` for
@@ -563,6 +611,23 @@ Examples:
   distinguish the real wait from the mechanism that checks it.
 - Use `blockedTasks[].fingerprint` to detect stale waits after source, plan,
   spec, target, or artifact inputs change.
+- Overdue-wait audit tasks must carry the blocked task ids they are auditing in
+  structured context, such as `blockedTaskIds` or `blockedTasks[].taskId`. An
+  accepted overdue audit without those ids cannot be applied, because the
+  planner would have to guess from prose.
+- Active/review recovery work suppresses blocked-overdue metrics only through
+  structured wait identity (`context.blockedTaskIds`, `blockedTasks[].taskId`,
+  `overdueOwnerActions[].taskId`) or an explicit ops conflict scope such as
+  `ops:blocked-overdue:spec-loop`. A blocked task id mentioned only in a goal,
+  summary, memo, or blocker sentence is evidence for the agent, not process
+  closure.
+- App-ops state repair authority is granted only by structured task shape:
+  app-ops ownership plus app-owned `.state/...` outputs, explicit context such
+  as `appStateRepair: true`, or an app-state repair conflict scope. Words like
+  "repair task tree" in a goal or memo do not grant mutation authority.
+- Use structured run ids in `waiting_for`, task context, or trace to deduplicate
+  Azure DevOps pipeline waits. A run id mentioned only in prose is evidence for
+  the agent to inspect, not a dedupe key.
 - Use worker completion fields such as `result`, `evidenceRefs`, `review`, and
   `problem` to decide what the owner should inspect.
 
@@ -585,7 +650,7 @@ settled by current structured state. Examples:
 - a routine refill already dispatched runnable backlog and there is no review or
   human-steering frontier;
 - a blocked-frontier wake contains only exact external waits with future
-  structured `resumeAt` timestamps.
+  structured `nextCheckAt`/`resumeAt`/`fallbackAt` timestamps.
 
 If a blocker has only prose text, the planner should run owner review. Prose may
 explain the blocker, but it is not a reliable scheduling field.

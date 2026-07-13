@@ -68,7 +68,8 @@ App code should treat paths intentionally:
   and inspection tools.
 - `tsconfig.json` - TypeScript check boundary for the app.
 - `project.json` - readable May-agent operating state for this app.
-- `tasks/tree.json` - current project execution decomposition.
+- `.state/tasks/tree.json` - current runtime task-tree authority for project execution decomposition.
+- `tasks/tree.json` - legacy bootstrap snapshot path; not the live task-tree authority once `.state/tasks/tree.json` exists.
 - `agents/` - app-local agent definitions and triggers.
 - `workflows/` - project-specific workflow implementation.
 - `scripts/` - app package tooling only, such as integrity checks and task-tree

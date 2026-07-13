@@ -99,6 +99,22 @@ Use the phrase "task tree" for the logical object. Avoid teaching humans and
 agents to depend on a physical path like `tasks/tree.json`; the path is an SDK
 detail.
 
+Reviewer and worker prompts must follow the same rule. A reviewer must not
+reject a worker because the checked-in `tasks/tree.json` looks stale. The
+reviewer should inspect the task record supplied by the workflow or use
+supported helpers such as `bun run task-tree show <task-id>`, which resolve the
+live runtime tree. Evidence may mention `.state/tasks/tree.json` as the runtime
+backing store, but normal agent instructions should point to the helper, not to
+manual file reads.
+
+The same rule applies to loop runtime files under `.state/`, such as
+`.state/feature-compact-loop/state.json` and `.state/spec-loop/state.json`.
+They are authoritative only at the time they are read. If a reviewer reports
+stale loop-state text, the app should verify the live record again before
+creating another retry. Acceptance metadata on a task is only a note; the task
+is not closed until the normal reviewed-event path or `mark-done` transition
+sets the task state to `done`.
+
 Generated agent session readouts are also runtime state. The current agent
 runtime still writes them beside the agent for compatibility:
 

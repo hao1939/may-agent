@@ -247,6 +247,7 @@ async function metricValue(
         PROJECT_DIR: fixture.projectDir,
         MAY_DB_PATH: fixture.dbPath,
         AKS_RP_E2E_STALE_ACTIVE_MS: "1000",
+        AKS_RP_E2E_REVIEW_APPLY_GRACE_MS: "1000",
       })
       .quiet()
       .text()
@@ -503,6 +504,28 @@ describe("project metrics", () => {
       ),
     ).toBe("1");
 
+    const proseOnlyRecovery = await makeFixture();
+    await writeTree(
+      proseOnlyRecovery.appDir,
+      { goal: "Recover blocked-agent-wait by checking the workflow result." },
+      {
+        "blocked-agent-wait": {
+          id: "blocked-agent-wait",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for workflow result.",
+          blocker: overdueBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        proseOnlyRecovery,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      ),
+    ).toBe("1");
+
     const humanOwned = await makeFixture();
     await writeTree(
       humanOwned.appDir,
@@ -534,7 +557,10 @@ describe("project metrics", () => {
     const represented = await makeFixture();
     await writeTree(
       represented.appDir,
-      { goal: "Recover blocked-agent-wait by checking the workflow result." },
+      {
+        goal: "Recover blocked-agent-wait by checking the workflow result.",
+        context: { blockedTaskIds: ["blocked-agent-wait"] },
+      },
       {
         "blocked-agent-wait": {
           id: "blocked-agent-wait",
@@ -632,9 +658,124 @@ describe("project metrics", () => {
       ),
     ).toBe("0");
 
-    const notYetOverdue = await makeFixture();
+    const legacyScopedAudit = await makeFixture();
     await writeTree(
-      notYetOverdue.appDir,
+      legacyScopedAudit.appDir,
+      {
+        goal: "Audit overdue blocked waits under the spec loop.",
+        conflict_scope: ["ops:spec-loop-overdue-blocked-frontier-batch"],
+      },
+      {
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "active",
+          children: ["blocked-spec-wait"],
+          goal: "Spec loop.",
+        },
+        "blocked-spec-wait": {
+          id: "blocked-spec-wait",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          children: [],
+          goal: "Wait for stale external proof.",
+          blocker: overdueBlocker,
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "active",
+          children: ["blocked-compact-wait"],
+          goal: "Compact loop.",
+        },
+        "blocked-compact-wait": {
+          id: "blocked-compact-wait",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          children: [],
+          goal: "Wait for stale compact proof.",
+          blocker: overdueBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        legacyScopedAudit,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        "--json",
+      ).then((raw) => JSON.parse(raw)),
+    ).toMatchObject({
+      value: 1,
+      sampleSize: 1,
+    });
+
+    const legacySpecVerificationAudit = await makeFixture();
+    await writeTree(
+      legacySpecVerificationAudit.appDir,
+      {
+        goal: "Audit overdue blocked waits under the spec loop.",
+        conflict_scope: ["ops:spec-verification-overdue-frontier-batch"],
+      },
+      {
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "active",
+          children: ["blocked-spec-wait"],
+          goal: "Spec loop.",
+        },
+        "blocked-spec-wait": {
+          id: "blocked-spec-wait",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          children: [],
+          goal: "Wait for stale external proof.",
+          blocker: overdueBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        legacySpecVerificationAudit,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      ),
+    ).toBe("0");
+
+    const legacyCompactScopedAudit = await makeFixture();
+    await writeTree(
+      legacyCompactScopedAudit.appDir,
+      {
+        goal: "Audit overdue blocked waits under the compact loop.",
+        conflict_scope: ["ops:compact-overdue-blocked-frontier-batch"],
+      },
+      {
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "active",
+          children: ["blocked-compact-wait"],
+          goal: "Compact loop.",
+        },
+        "blocked-compact-wait": {
+          id: "blocked-compact-wait",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          children: [],
+          goal: "Wait for stale compact proof.",
+          blocker: overdueBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        legacyCompactScopedAudit,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      ),
+    ).toBe("0");
+
+    const dueResumeWithFutureFallback = await makeFixture();
+    await writeTree(
+      dueResumeWithFutureFallback.appDir,
       { goal: "Unrelated active work." },
       {
         "blocked-agent-wait": {
@@ -649,16 +790,56 @@ describe("project metrics", () => {
     );
     expect(
       await metricValue(
-        notYetOverdue,
+        dueResumeWithFutureFallback,
         "aks-rp-e2e.process.blocked.overdue-unworked-count",
       ),
-    ).toBe("0");
+    ).toBe("1");
     expect(
       await metricValue(
-        notYetOverdue,
+        dueResumeWithFutureFallback,
         "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
       ),
-    ).toBe("0");
+    ).toBe("1");
+  });
+
+  test("counts review decisions that were emitted but not applied to the live review task", async () => {
+    const fixture = await makeFixture();
+    const reviewedAt = new Date(Date.now() - 10_000).toISOString();
+    await writeTree(fixture.appDir, {
+      state: "review",
+      trace: {
+        current_attempt_id: "a_review_task_1",
+      },
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: reviewedAt,
+        workflow: "task-reviewer",
+        result: "project.task.reviewed",
+        task_id: "active-task",
+        attempt_id: "a_review_task_1",
+        decision: "redo",
+      })}\n`,
+    );
+
+    const raw = await metricValue(
+      fixture,
+      "aks-rp-e2e.process.task.review-not-applied-count",
+      "--json",
+    );
+    const sample = JSON.parse(raw);
+    const note = JSON.parse(sample.note);
+
+    expect(sample.value).toBe(1);
+    expect(note.reviews).toEqual([
+      {
+        taskId: "active-task",
+        attemptId: "a_review_task_1",
+        decision: "redo",
+        reviewedAt,
+      },
+    ]);
   });
 
   test("flags running active task with stale activity even after prior ops", async () => {
@@ -717,6 +898,74 @@ describe("project metrics", () => {
     expect(
       await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
     ).toBe("0");
+  });
+
+  test("ignores superseded retry worker session rows from the same task lineage when current task session and attempt moved on", async () => {
+    const fixture = await makeFixture();
+    const currentAttemptId =
+      "a_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_20260713013312";
+    await writeTree(fixture.appDir, {
+      session_id:
+        "s_task_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_retry_20260713013312",
+      trace: {
+        current_attempt_id: currentAttemptId,
+        previous_attempt_id:
+          "a_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_20260713011607",
+        stale_active_fresh_session: true,
+        stale_active_requeued_at: "2026-07-13T01:32:22.616Z",
+      },
+    });
+    const db = new Database(fixture.dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer,
+        source text,
+        task text
+      )
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_task_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_retry_20260713011607",
+      "running",
+      null,
+      1,
+      Date.now() - 20_000,
+      Date.now() - 20_000,
+      "workflow:task-worker",
+      [
+        "Task Worker Mode",
+        "taskId: active-task",
+        "attemptId: a_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_20260713011607",
+        "sessionId: s_task_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_retry_20260713011607",
+      ].join("\n"),
+    );
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_task_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_retry_20260713013312",
+      "done",
+      "done",
+      2,
+      Date.now() - 10_000,
+      Date.now() - 5_000,
+      "workflow:task-worker",
+      [
+        "Task Worker Mode",
+        "taskId: active-task",
+        `attemptId: ${currentAttemptId}`,
+        "sessionId: s_task_domain_prepare-rp-operation-status-polling-same-lineage-proof-recipe-20260713_retry_20260713013312",
+      ].join("\n"),
+    );
+    db.close();
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("1");
   });
 
   test("treats synthetic s_task session ids as healthy when a matching feature-reference collector session is running", async () => {
@@ -1296,30 +1545,31 @@ describe("project metrics", () => {
           goal: "Keep spec verification moving.",
           context: { maxDirectAttemptsPerSpec: 3 },
         },
-        "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704": {
-          id: "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704",
-          parent_id: "aks-spec-verification-loop",
-          state: "blocked",
-          children: [],
-          goal: "Hold the bootstrap-profile-byo-acr family on the surviving contradiction-to-timeout frontier.",
-          conflict_scope: [
-            "spec-loop-followup:pending:bootstrap-profile-byo-acr",
-            "feature:bootstrap-profile-byo-acr",
-          ],
-          blocker: {
-            category: "external-wait",
-            condition:
-              "Blocked on the contradiction-to-timeout family for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
-            waiting_for: {
-              type: "github.workflow_run.completed",
-              runId: "28666029233",
-              taskId:
-                "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704",
+        "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704":
+          {
+            id: "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704",
+            parent_id: "aks-spec-verification-loop",
+            state: "blocked",
+            children: [],
+            goal: "Hold the bootstrap-profile-byo-acr family on the surviving contradiction-to-timeout frontier.",
+            conflict_scope: [
+              "spec-loop-followup:pending:bootstrap-profile-byo-acr",
+              "feature:bootstrap-profile-byo-acr",
+            ],
+            blocker: {
+              category: "external-wait",
+              condition:
+                "Blocked on the contradiction-to-timeout family for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+              waiting_for: {
+                type: "github.workflow_run.completed",
+                runId: "28666029233",
+                taskId:
+                  "hold-spec-loop-pending-bootstrap-profile-byo-acr-contradiction-20260704",
+              },
+              resume_condition:
+                "Resume only when same-family evidence changes the contradiction-to-timeout frontier.",
             },
-            resume_condition:
-              "Resume only when same-family evidence changes the contradiction-to-timeout frontier.",
           },
-        },
       },
     );
     writeSession(fixture.dbPath, {
@@ -1529,6 +1779,45 @@ describe("project metrics", () => {
 
   test("does not count freshly queued active assignments as unowned stale-active work", async () => {
     const fixture = await makeFixture();
+    const assignedAt = new Date().toISOString();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_active-task",
+      trace: {
+        current_attempt_id: "a_active-task_1",
+        assigned_at: assignedAt,
+      },
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "task-assignments.jsonl"),
+      `${JSON.stringify({
+        taskId: "active-task",
+        task_id: "active-task",
+        attemptId: "a_active-task_1",
+        attempt_id: "a_active-task_1",
+        sessionId: "s_task_active-task",
+        session_id: "s_task_active-task",
+        worker: "app-ops",
+        assignedAt,
+        assigned_at: assignedAt,
+      })}\n`,
+    );
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment.not-consumed-count",
+      ),
+    ).toBe("0");
+  });
+
+  test("counts queued assignments that were not consumed after start grace", async () => {
+    const fixture = await makeFixture();
     await writeTree(fixture.appDir, {
       session_id: "s_task_active-task",
       trace: {
@@ -1551,12 +1840,28 @@ describe("project metrics", () => {
       })}\n`,
     );
 
-    expect(await metricValue(fixture, "aks-rp-e2e.task.stale-active-count")).toBe(
-      "0",
-    );
     expect(
-      await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
-    ).toBe("0");
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment.not-consumed-count",
+      ),
+    ).toBe("1");
+
+    const parsed = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment.not-consumed-count",
+        "--json",
+      ),
+    );
+    const note = JSON.parse(parsed.note);
+    expect(note.assignments).toContainEqual(
+      expect.objectContaining({
+        taskId: "active-task",
+        attemptId: "a_active-task_1",
+        taskState: "active",
+      }),
+    );
   });
 
   test("emits contributor details for unowned-work-count in json mode and metrics-snapshot records them", async () => {
@@ -2030,8 +2335,7 @@ describe("project metrics", () => {
           parent_id: "project",
           state: "blocked",
           children: [],
-          goal:
-            "Preserve one split-frontier holder represented by exact downstream carriers until one represented blocker materially changes.",
+          goal: "Preserve one split-frontier holder represented by exact downstream carriers until one represented blocker materially changes.",
           kind: "domain_leaf",
           blocker:
             "This holder is represented by exact carriers and remains blocked only while the represented frontier is unchanged.",
@@ -2041,8 +2345,7 @@ describe("project metrics", () => {
           parent_id: "project",
           state: "blocked",
           children: [],
-          goal:
-            "Wait for owner/operator reply on the exact source-holder response while no durable proof-of-send exists yet.",
+          goal: "Wait for owner/operator reply on the exact source-holder response while no durable proof-of-send exists yet.",
           kind: "domain_leaf",
           blocker:
             "Blocked pending owner/operator reply with no durable proof-of-send/handoff yet.",
@@ -2081,7 +2384,10 @@ describe("project metrics", () => {
         {
           parentId: "project",
           blockedLeafCount: 2,
-          sampleBlockedLeafIds: ["represented-frontier", "response-await-no-send"],
+          sampleBlockedLeafIds: [
+            "represented-frontier",
+            "response-await-no-send",
+          ],
         },
       ],
     });
@@ -2232,8 +2538,7 @@ describe("project metrics", () => {
           parent_id: "project",
           state: "blocked",
           children: [],
-          goal:
-            "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
+          goal: "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
           kind: "domain_leaf",
           blocker: {
             condition:

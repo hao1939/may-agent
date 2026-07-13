@@ -1589,7 +1589,12 @@ status: draft
       recursive: true,
     });
     await writeFile(
-      join(projectDir, "evidence", "archive", "feature-reference-alpha-20260709.md"),
+      join(
+        projectDir,
+        "evidence",
+        "archive",
+        "feature-reference-alpha-20260709.md",
+      ),
       `# Alpha\n\n## Official API References\n- https://github.com/Azure/azure-rest-api-specs/blob/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2024-05-01/managedClusters.json\n\n## Official Documentation References\n- https://learn.microsoft.com/azure/aks/learn/alpha\n`,
       "utf8",
     );
@@ -1611,7 +1616,8 @@ status: draft
               status: "done",
               taskId: null,
               attempts: 1,
-              lastOutputPath: "evidence/archive/feature-reference-alpha-20260709.md",
+              lastOutputPath:
+                "evidence/archive/feature-reference-alpha-20260709.md",
               lastSummary: "Collected official feature references for alpha.",
               collectorContractVersion:
                 featureReferenceCollectorContractVersion,
@@ -1850,6 +1856,10 @@ status: draft
       lastOutputPath: "evidence/archive/feature-reference-aad-rbac-20260627.md",
       lastSummary:
         "Archived accepted collector evidence already exists for aad-rbac; owner closed the retry as duplicate churn cleanup.",
+      suppression: {
+        kind: "duplicate-churn",
+        note: "Owner marked this accepted retry as duplicate churn.",
+      },
     });
     updateFeatureReferenceItem(state, "ccp-metricsserver", {
       status: "done",
@@ -1859,6 +1869,10 @@ status: draft
         "evidence/archive/feature-reference-ccp-metricsserver-20260627.md",
       lastSummary:
         "Accepted supporting-context packet already links the durable public authority for ccp-metricsserver.",
+      suppression: {
+        kind: "supporting-context",
+        note: "Owner marked this as supporting context.",
+      },
     });
     updateFeatureReferenceItem(state, "airlock", {
       status: "done",
@@ -1866,6 +1880,10 @@ status: draft
       lastOutputPath: "evidence/archive/feature-reference-airlock-20260630.md",
       lastSummary:
         "AAD/app repair wave confirmed airlock remains an exact checked-location public ceiling: adjacent system-pool, Run Command, and securityProfile surfaces are public, but no dedicated public Learn or AKS REST/spec Airlock/VMAgent contract was found.",
+      suppression: {
+        kind: "public-ceiling",
+        note: "Owner marked this as a public ceiling.",
+      },
     });
     saveFeatureReferenceLoopState(statePath, state);
 

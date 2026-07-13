@@ -431,7 +431,7 @@ used for workflow control:
 \`\`\`json
 {
   "stallReview": {
-    "judgment": "repaired | needs-work | exact-external-wait | escalate | inconclusive",
+    "judgment": "repaired | needs-work | exact-external-wait | active-external-run-wait | escalate | inconclusive",
     "rootCause": "short cause",
     "nextProjectMove": "planner-owned next action",
     "whyNotMoving": "why the project is not making expected progress",
@@ -643,12 +643,12 @@ function fallbackDecisionFromSnapshot(
   );
   if (attentionLoops.length > 0) {
     return {
-      judgment: "needs-work",
+      judgment: "inconclusive",
       rootCause: "durable loop ledger has unrepresented non-terminal records",
       nextProjectMove:
-        "planner should assign the loop controller or create grouped repair/rerun work for unrepresented residue",
+        "planner should inspect the collected loop facts and decide whether to assign the loop controller or create grouped repair/rerun work",
       whyNotMoving:
-        "task-tree frontier is not representing all pending/error loop records",
+        "diagnostic fallback found task-tree frontier may not represent all pending/error loop records",
       evidence: attentionLoops.map(
         (loop) =>
           `${loop.name}: ${loop.unrepresentedNonTerminalCount}/${loop.nonTerminalCount} non-terminal record(s) unrepresented`,
@@ -668,11 +668,12 @@ function fallbackDecisionFromSnapshot(
     snapshot.reviewTaskIds.length === 0
   ) {
     return {
-      judgment: "exact-external-wait",
+      judgment: "inconclusive",
       rootCause: "all non-terminal loop residue is represented by exact waits",
       nextProjectMove:
-        "preserve exact waits until one named resume condition lands",
-      whyNotMoving: "project frontier is blocked-only by represented waits",
+        "planner should inspect the collected exact-wait facts and decide whether preserving the waits is still correct",
+      whyNotMoving:
+        "diagnostic fallback found a blocked-only frontier represented by waits",
       evidence: exactWaitLoops.map(
         (loop) =>
           `${loop.name}: ${loop.nonTerminalCount} represented wait record(s)`,
@@ -692,13 +693,13 @@ function fallbackDecisionFromSnapshot(
     snapshot.reviewTaskIds.length === 0
   ) {
     return {
-      judgment: "active-external-run-wait",
+      judgment: "inconclusive",
       rootCause:
         "all non-terminal loop residue is represented by active external pipeline runs",
       nextProjectMove:
-        "preserve the exact run wait and let the loop controller reconcile when the run becomes terminal",
+        "planner should inspect the collected active-run facts and decide whether the run waits remain valid",
       whyNotMoving:
-        "project frontier is waiting for active Azure DevOps pipeline run results",
+        "diagnostic fallback found the frontier may be waiting for active Azure DevOps pipeline run results",
       evidence: activeRunWaitLoops.map(
         (loop) =>
           `${loop.name}: ${loop.nonTerminalCount} record(s) represented by active external run wait`,

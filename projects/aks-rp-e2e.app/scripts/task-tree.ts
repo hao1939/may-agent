@@ -15,6 +15,7 @@ import {
   pruneMissingChildren,
   readTask,
   rejectTaskReview,
+  refreshBlockedWait,
   requeueStaleActiveTasks,
   repairTaskTreeRollups,
   rollupParent,
@@ -50,7 +51,7 @@ function usage(): never {
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
   bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-json '{"condition":"..."}'] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
-  bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal]
+  bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal] [--review-decision accept|followup|blocked|escalate]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
   bun run task-tree drain-assignments
@@ -60,6 +61,7 @@ function usage(): never {
   bun run task-tree set-archived-outputs <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --output <path> [--output <path> ...]
   bun run task-tree set-archived-evidence <task-id> [--archive-file tasks/archive/done-leaves-<timestamp>.json] --evidence <path> [--evidence <path> ...]
   bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--blocker-json '{"condition":"..."}'] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."] [--clear-blocker]
+  bun run task-tree refresh-blocked-wait <task-id> --blocker "..." --resume-condition "..." --summary "..." [--blocker-category external-wait] [--blocker-owner owner] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
   bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
   bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
@@ -134,6 +136,31 @@ function stateOption(): "backlog" | "blocked" {
   if (raw === "backlog" || raw === "ready" || raw === "proposed")
     return "backlog";
   throw new Error(`Invalid --state ${raw}; expected backlog or blocked`);
+}
+
+function defaultTaskOwner(input: {
+  taskId?: string;
+  parentId?: string;
+  explicitOwner?: string;
+  fallbackOwner?: string;
+}): string {
+  const explicitOwner = input.explicitOwner?.trim();
+  if (explicitOwner) return explicitOwner;
+
+  const taskId = input.taskId?.trim() ?? "";
+  const parentId = input.parentId?.trim() ?? "";
+  if (
+    taskId === "ops" ||
+    taskId.startsWith("ops/") ||
+    taskId.startsWith("ops-") ||
+    parentId === "ops" ||
+    parentId.startsWith("ops/") ||
+    parentId.startsWith("ops-")
+  ) {
+    return "app-ops";
+  }
+
+  return input.fallbackOwner?.trim() || "aks-explorer";
 }
 
 function priorityOption(): "P0" | "P1" | "P2" | "P3" {
@@ -249,213 +276,9 @@ function resumeCondition(
   return "Resume when the stated blocker condition is no longer true and the owner records the concrete evidence.";
 }
 
-function inferBlockedCategory(text: string): string {
-  const lower = text.toLowerCase();
-  if (
-    lower.includes("azure devops") ||
-    lower.includes("ado") ||
-    lower.includes("github") ||
-    lower.includes("workflow") ||
-    lower.includes("artifact") ||
-    lower.includes("log")
-  ) {
-    return "external-wait";
-  }
-  if (
-    lower.includes("product") ||
-    lower.includes("source") ||
-    lower.includes("environment") ||
-    lower.includes("capacity") ||
-    lower.includes("quota") ||
-    lower.includes("operator") ||
-    lower.includes("human")
-  ) {
-    return "external-wait";
-  }
-  return "blocked-wait";
-}
-
-function textNamesAdo(text: string): boolean {
-  return /\b(?:azure\s+devops|ado)\b/i.test(text);
-}
-
-function textWaitsForAdoRun(text: string): boolean {
-  return /\b(?:blocked\s+until|wait(?:ing)?\s+(?:for|on|until)|still\s+(?:executing|running|in\s+progress)|not\s+yet\s+terminal|pending|resume\s+when)\b/i.test(
-    text,
-  );
-}
-
-function textNamesGithub(text: string): boolean {
-  return /\b(?:github|gh|workflow\s+run)\b/i.test(text);
-}
-
-function adoPipelineId(): string {
-  return (
-    process.env.AKS_RP_E2E_ADO_PIPELINE_ID ||
-    process.env.MAY_ADO_PIPELINE_ID ||
-    "467665"
-  ).trim();
-}
-
-function adoOrganization(): string {
-  return (
-    process.env.AKS_RP_E2E_ADO_ORGANIZATION ||
-    process.env.MAY_ADO_ORGANIZATION ||
-    "https://dev.azure.com/msazure"
-  ).replace(/\/+$/g, "");
-}
-
-function adoProject(): string {
-  return (
-    process.env.AKS_RP_E2E_ADO_PROJECT ||
-    process.env.MAY_ADO_PROJECT ||
-    "CloudNativeCompute"
-  ).trim();
-}
-
-function adoRunUrl(runId: string): string {
-  return `${adoOrganization()}/${encodeURIComponent(adoProject())}/_build/results?buildId=${runId}`;
-}
-
-function inferWaitingFor(
-  taskId: string,
-  text: string,
-): Record<string, unknown> {
-  const lower = text.toLowerCase();
-  const runId = text.match(/\b(?:run|workflow run)\s+(\d{6,})\b/i)?.[1];
-  if (runId) {
-    if (textNamesAdo(text) && textWaitsForAdoRun(text)) {
-      return {
-        type: "ado.pipeline_run.completed",
-        runId,
-        runUrl: adoRunUrl(runId),
-        pipeline: adoPipelineId(),
-        branch: "dev",
-        successCriteria:
-          "Run completed and uploaded artifacts that prove real live test execution and cleanup.",
-        taskId,
-      };
-    }
-    if (textNamesGithub(text)) {
-      return {
-        type: "github.workflow_run.completed",
-        runId,
-        taskId,
-      };
-    }
-  }
-  if (
-    lower.includes("capacity") ||
-    lower.includes("quota") ||
-    lower.includes("headroom")
-  ) {
-    return {
-      type: "azure.capacity.available",
-      taskId,
-      sourceRunId: runId,
-    };
-  }
-  if (
-    lower.includes("environment") ||
-    lower.includes("dns") ||
-    lower.includes("auth") ||
-    lower.includes("identity") ||
-    lower.includes("kubeconfig") ||
-    lower.includes("runtime") ||
-    lower.includes("platform") ||
-    lower.includes("recovery")
-  ) {
-    return {
-      type: "environment.available",
-      taskId,
-      sourceRunId: runId,
-    };
-  }
-  if (
-    lower.includes("product fix") ||
-    lower.includes("product/source fix") ||
-    lower.includes("successful repro") ||
-    lower.includes("fresh success")
-  ) {
-    return {
-      type: "product_or_source_fix.available",
-      taskId,
-      sourceRunId: runId,
-    };
-  }
-  if (
-    lower.includes("source") ||
-    lower.includes("evidence") ||
-    lower.includes("proof") ||
-    lower.includes("artifact") ||
-    lower.includes("log") ||
-    lower.includes("api spec") ||
-    lower.includes("doc")
-  ) {
-    return {
-      type: "evidence.available",
-      taskId,
-      sourceRunId: runId,
-    };
-  }
-  if (runId) {
-    return {
-      type: "evidence.available",
-      taskId,
-      sourceRunId: runId,
-    };
-  }
+function defaultWaitingFor(taskId: string): Record<string, unknown> {
   return {
     type: "blocker.resolved",
-    taskId,
-  };
-}
-
-function correctedNonGithubWaitingFor(
-  taskId: string,
-  text: string,
-  existing: Record<string, unknown> | null,
-): Record<string, unknown> | null {
-  if (stringField(existing, ["type"]) !== "github.workflow_run.completed") {
-    return null;
-  }
-  if (textNamesGithub(text) || textNamesAdo(text)) return null;
-  const inferred = inferWaitingFor(taskId, text);
-  return stringField(inferred, ["type"]) === "github.workflow_run.completed"
-    ? null
-    : inferred;
-}
-
-function correctedWaitingFor(
-  taskId: string,
-  text: string,
-  existing: Record<string, unknown> | null,
-): Record<string, unknown> | null {
-  const existingType = stringField(existing, ["type"]);
-  const runId =
-    stringField(existing, ["runId", "run_id"]) ||
-    text.match(/\b(?:run|pipeline run|workflow run)\s+(\d{6,})\b/i)?.[1] ||
-    "";
-  if (!runId || !textNamesAdo(text)) return null;
-  if (!textWaitsForAdoRun(text)) {
-    const inferred = inferWaitingFor(taskId, text);
-    return stringField(inferred, ["type"]) === "ado.pipeline_run.completed"
-      ? null
-      : inferred;
-  }
-  if (existingType && existingType !== "github.workflow_run.completed") {
-    return null;
-  }
-  return {
-    ...(existing ?? {}),
-    type: "ado.pipeline_run.completed",
-    runId,
-    runUrl: stringField(existing, ["runUrl", "run_url"]) || adoRunUrl(runId),
-    pipeline: stringField(existing, ["pipeline"]) || adoPipelineId(),
-    branch: stringField(existing, ["branch"]) || "dev",
-    successCriteria:
-      stringField(existing, ["successCriteria", "success_criteria"]) ||
-      "Run completed and uploaded artifacts that prove real live test execution and cleanup.",
     taskId,
   };
 }
@@ -479,54 +302,15 @@ function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
 
   const condition = stringField(blocker, ["condition"]) || conditionText(text);
   const existingWaitingFor = objectField(blocker, ["waiting_for", "waitingFor"]);
-  const waitCorrection = correctedWaitingFor(
-    taskId,
-    [condition, text].filter(Boolean).join(" "),
-    existingWaitingFor,
-  );
-  const nonGithubWaitCorrection = correctedNonGithubWaitingFor(
-    taskId,
-    [condition, text].filter(Boolean).join(" "),
-    existingWaitingFor,
-  );
   const existingOwner = stringField(blocker, ["owner"]);
   const shouldUseAdoOwner =
-    textNamesAdo([condition, text].filter(Boolean).join(" ")) &&
     stringField(existingWaitingFor, ["type"]) ===
       "ado.pipeline_run.completed" &&
     (existingOwner.toLowerCase() === "human" || !existingOwner);
 
   let normalizedBlocker = blocker ? { ...blocker } : null;
   let normalizedChanged = false;
-  if (waitCorrection && normalizedBlocker) {
-    const correctedType = stringField(waitCorrection, ["type"]);
-    const fallbackOwner =
-      typeof task.owner === "string" && task.owner.trim()
-        ? task.owner.trim()
-        : "aks-explorer";
-    const correctedOwner =
-      correctedType === "ado.pipeline_run.completed"
-        ? existingOwner.toLowerCase() === "human" || !existingOwner
-          ? "ado"
-          : existingOwner
-        : existingOwner.toLowerCase() === "ado"
-          ? fallbackOwner
-          : existingOwner || fallbackOwner;
-    normalizedBlocker = {
-      ...normalizedBlocker,
-      owner: correctedOwner,
-      waiting_for: waitCorrection,
-      waitingFor: undefined,
-    };
-    normalizedChanged = true;
-  } else if (nonGithubWaitCorrection && normalizedBlocker) {
-    normalizedBlocker = {
-      ...normalizedBlocker,
-      waiting_for: nonGithubWaitCorrection,
-      waitingFor: undefined,
-    };
-    normalizedChanged = true;
-  } else if (shouldUseAdoOwner && normalizedBlocker) {
+  if (shouldUseAdoOwner && normalizedBlocker) {
     normalizedBlocker = {
       ...normalizedBlocker,
       owner: "ado",
@@ -572,12 +356,12 @@ function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
     condition,
     category:
       stringField(blockerForContract, ["category"]) ||
-      inferBlockedCategory(text),
+      "external-wait",
     owner,
     blocked_at: blockedAt,
     waiting_for:
       objectField(blockerForContract, ["waiting_for", "waitingFor"]) ??
-      inferWaitingFor(taskId, [condition, text].filter(Boolean).join(" ")),
+      defaultWaitingFor(taskId),
     observed_by: objectField(blockerForContract, [
       "observed_by",
       "observedBy",
@@ -784,7 +568,12 @@ if (command === "summary") {
     state: stateOption(),
     kind: option("--kind") ?? "domain_leaf",
     priority: priorityOption(),
-    owner: option("--owner") ?? process.env.WORKER ?? "aks-explorer",
+    owner: defaultTaskOwner({
+      taskId,
+      parentId,
+      explicitOwner: option("--owner"),
+      fallbackOwner: process.env.WORKER ?? "aks-explorer",
+    }),
     workflow: option("--workflow"),
     goal,
     inputs: repeatedStringOption("--input"),
@@ -817,6 +606,7 @@ if (command === "summary") {
         taskId,
         summary,
         resolution: option("--resolution"),
+        reviewDecision: option("--review-decision"),
       }),
       null,
       2,
@@ -946,6 +736,29 @@ if (command === "summary") {
         acceptance: acceptance.length ? acceptance : undefined,
         ...blocker,
         clearBlocker,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "refresh-blocked-wait") {
+  const taskId = process.argv[3];
+  const condition = option("--blocker");
+  const resumeCondition = option("--resume-condition");
+  const summary = option("--summary");
+  if (!taskId || !condition || !resumeCondition || !summary) usage();
+  console.log(
+    JSON.stringify(
+      refreshBlockedWait(config, {
+        taskId,
+        condition,
+        resumeCondition,
+        summary,
+        category: option("--blocker-category"),
+        owner: option("--blocker-owner"),
+        nextCheckAt: option("--next-check-at"),
+        fallbackAt: option("--fallback-at"),
+        fallbackAction: option("--fallback-action"),
       }),
       null,
       2,

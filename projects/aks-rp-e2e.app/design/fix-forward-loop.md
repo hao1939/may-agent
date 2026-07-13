@@ -193,6 +193,35 @@ The task may be one leaf when the fix is small. If diagnosis shows the repair is
 larger, the leaf should complete with a concrete follow-up task proposal rather
 than becoming an unbounded long-running session.
 
+## Failed Pipeline Fan-Out
+
+A failed pipeline run should not become one big serial blocker when the result
+contains separable failures.
+
+After a terminal run review is accepted, the app records every structured
+`specResults[]` entry into loop state. For each non-pass spec result, the
+planner should create a separate runnable fix-forward leaf keyed by the exact
+`specId` and `runId`, unless an open task already covers that same slice.
+
+This lets the project work in parallel:
+
+```text
+one failed run
+  -> review artifacts once
+  -> record pass/fail/error per spec
+  -> create independent fix-forward leaves for non-pass specs
+  -> fix independent issues concurrently
+```
+
+The fan-out task is not a judgment by code. Code only carries raw facts from
+the reviewed result: spec id, run id, result path, status, and reason. The
+assigned agent still decides the failure class, whether a shared root cause
+exists, whether a bounded fix is safe, and whether to rerun, wait, or escalate.
+
+If several specs clearly share one root cause, the agents can converge by
+recording the shared scope in their structured result. The first step stays
+simple and parallel: do not block all diagnosis behind one failed run.
+
 For compact work, prefer one feature or one exact branch over a broad family.
 A family task is acceptable only when the members share the same current
 repairable cause. If the family contains many already-known waits, the compact

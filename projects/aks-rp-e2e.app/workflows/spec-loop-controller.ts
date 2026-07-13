@@ -98,22 +98,6 @@ function taskContext(task: TaskNode): Record<string, unknown> {
     : {};
 }
 
-function taskText(task: TaskNode): string {
-  const trace =
-    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
-      ? (task.trace as Record<string, unknown>)
-      : {};
-  return [
-    task.result,
-    taskContext(task).acceptance_note,
-    trace.last_worker_summary,
-    trace.review_summary,
-  ]
-    .map((value) => (typeof value === "string" ? value : ""))
-    .filter(Boolean)
-    .join("\n");
-}
-
 function taskConflictScopes(task: TaskNode): string[] {
   return Array.isArray((task as { conflict_scope?: unknown }).conflict_scope)
     ? (task as { conflict_scope: unknown[] }).conflict_scope.filter(
@@ -123,22 +107,22 @@ function taskConflictScopes(task: TaskNode): string[] {
 }
 
 function staleNonDirectLiveErrorNeedsLiveRun(task: TaskNode): boolean {
-  const text = taskText(task).toLowerCase();
+  const context = taskContext(task);
   return (
-    text.includes("source/check-only") ||
-    text.includes("not directly live-executable") ||
-    text.includes("requires an existing-cluster carrier") ||
-    text.includes("requires a shared-cluster carrier")
+    context.specLoopNonDirectLiveErrorNeedsLiveRun === true ||
+    context.specLoopRouteChangeReason === "non-direct-live-error"
   );
 }
 
 function dispatchFailedBeforeWorkflowRun(task: TaskNode): boolean {
-  const text = taskText(task).toLowerCase();
+  const context = taskContext(task);
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
   return (
-    text.includes("github workflow dispatch failed") ||
-    text.includes("gh auth login") ||
-    text.includes("populate the gh_token") ||
-    text.includes("workflow dispatch failed")
+    context.dispatchFailedBeforeWorkflowRun === true ||
+    trace.dispatch_failed_before_workflow_run === true
   );
 }
 
@@ -191,6 +175,25 @@ function reconcileArchivedNonLiveErrors(input: {
     reconciled += 1;
   }
   return reconciled;
+}
+
+function normalizeStructuredSuccessorRows(state: SpecLoopState): number {
+  let normalized = 0;
+  for (const [specId, spec] of Object.entries(state.specs)) {
+    if (spec.status !== "error" && spec.status !== "fail") continue;
+    if (!specLoopSpecHasStructuredSuccessor(spec)) continue;
+    const record = spec as Record<string, unknown>;
+    updateSpecLoopSpec(state, specId, {
+      status: "pending",
+      normalizedFromStatus: spec.status,
+      normalizedAt:
+        typeof record.normalizedAt === "string" && record.normalizedAt.trim()
+          ? record.normalizedAt
+          : new Date().toISOString(),
+    } as Partial<SpecLoopState["specs"][string]>);
+    normalized += 1;
+  }
+  return normalized;
 }
 
 function numberContext(task: TaskNode, key: string, fallback: number): number {
@@ -791,17 +794,7 @@ function runIdFromWaitTask(task: TaskNode): string {
       return value.trim();
     }
   }
-  const haystack = JSON.stringify({
-    goal: task.goal,
-    inputs: task.inputs,
-    context: task.context,
-    blocker: task.blocker,
-    trace: task.trace,
-  });
-  const match = haystack.match(
-    /\b(?:workflow run|run|runId)["':\s]+(\d{6,})\b/i,
-  );
-  return match?.[1] ?? "";
+  return "";
 }
 
 function terminalGitHubWaitCandidates(input: {
@@ -2271,6 +2264,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: refreshedTree.tasks,
     state,
   });
+  const normalizedStructuredSuccessorRows =
+    normalizeStructuredSuccessorRows(state);
   const releasedStaleRunning = releaseStaleRunningSpecs({
     state,
     activeOrBacklog: activeOrBacklogSpecIds(
@@ -2592,6 +2587,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     importedMirror.imported
       ? `Imported ${importedMirror.imported} newer domain mirror row(s): ${importedMirror.specIds.slice(0, 5).join(", ")}.`
       : "",
+    normalizedStructuredSuccessorRows
+      ? `Normalized ${normalizedStructuredSuccessorRows} structured successor row(s) from raw fail/error to pending wait.`
+      : "",
     backendBlocker ? `Backend blocked: ${backendBlocker}` : "",
     dispatchHold ? `Dispatch held: ${dispatchHold}` : "",
     `Target running spec workflows: ${targetRunning}.`,
@@ -2624,6 +2622,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     terminal_github_wait_lookup_miss_run_ids:
       terminalGitHubWaitHarvest.lookupMissRunIds,
     imported_mirror_spec_ids: importedMirror.specIds,
+    normalized_structured_successor_rows: normalizedStructuredSuccessorRows,
     accepted_review_task_ids: acceptedReviewChildren,
     state_path: statePath,
   });

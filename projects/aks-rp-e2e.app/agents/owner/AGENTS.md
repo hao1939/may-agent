@@ -8,7 +8,7 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 
 - Treat `/app/projects/aks-rp-e2e` as the domain working root.
 - Primary durable May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
-  `project.json` and `tasks/tree.json`.
+  `project.json` and `.state/tasks/tree.json` (runtime task-tree authority; `tasks/tree.json` is legacy/bootstrap only).
 - App runtime exchange/traces such as `.state/discussion.jsonl`,
   `.state/journal.jsonl`, and
   `.state/planner-runs.jsonl` are useful for debugging recent attempts, but do

@@ -13,6 +13,7 @@ import {
   loadSpecs,
   saveSpecLoopState,
   updateSpecLoopSpec,
+  type SpecLoopSpecState,
   type SpecLoopState,
 } from "../workflows/lib/spec-loop-store.ts";
 
@@ -23,6 +24,7 @@ function usage(): never {
   bun run spec-loop status
   bun run spec-loop seed
   bun run spec-loop bind-task <spec-id> --task-id <task-id> [--state-path <path>] [--allow-missing-task]
+  bun run spec-loop update-successor <spec-id> [--state-path <path>] [--task-id <task-id>] [--status <pending|running|pass|fail|error|pr_open|done>] [--attempts <n>] [--last-run-id <id>] [--last-run-url <url>] [--last-result-path <path>] [--last-pr-url <url>] [--successor-disposition <value>] [--successor-evidence-path <path>] [--successor-state-reason <text>] [--resume-condition <text>] [--review-classification <value>] [--review-last-root-cause <text>] [--review-last-action <text>] [--review-reviewed-at <iso>] [--clear-review] [--clear-successor-disposition] [--clear-successor-evidence-path] [--clear-successor-state-reason] [--clear-resume-condition]
 
 Environment:
   APP_DIR=/app/projects/aks-rp-e2e.app
@@ -42,6 +44,17 @@ function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
   if (index < 0) return undefined;
   return process.argv[index + 1];
+}
+
+function repeatedStringOption(name: string): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < process.argv.length; index++) {
+    if (process.argv[index] === name && process.argv[index + 1]) {
+      values.push(process.argv[index + 1]);
+      index++;
+    }
+  }
+  return values.map((value) => value.trim()).filter(Boolean);
 }
 
 function hasFlag(name: string): boolean {
@@ -201,6 +214,118 @@ if (command === "seed") {
         beforeTaskId,
         afterTaskId: after?.taskId ?? null,
         taskExists: existence,
+      },
+      null,
+      2,
+    ),
+  );
+} else if (command === "update-successor") {
+  const specId = process.argv[3];
+  if (!specId) usage();
+
+  const statePath = resolve(option("--state-path") ?? defaultSpecLoopStatePath(appDir));
+  const state = readJson<SpecLoopState>(statePath);
+  if (!state?.specs || !state.specs[specId]) {
+    throw new Error(`Spec ${specId} not found in spec loop state: ${statePath}`);
+  }
+
+  const before = state.specs[specId];
+  const patch: Partial<SpecLoopSpecState> = {};
+
+  const taskId = option("--task-id");
+  if (taskId) {
+    const existence = taskExists(taskId);
+    if (!hasFlag("--allow-missing-task") && !existence.durable && !existence.runtime) {
+      throw new Error(
+        `Task ${taskId} does not exist in durable or runtime task trees; create/publish the successor before rebinding ${specId}`,
+      );
+    }
+    patch.taskId = taskId;
+  }
+
+  const status = option("--status");
+  if (status) {
+    if (
+      status !== "pending" &&
+      status !== "running" &&
+      status !== "pass" &&
+      status !== "fail" &&
+      status !== "error" &&
+      status !== "pr_open" &&
+      status !== "done"
+    ) {
+      throw new Error(`Invalid --status ${status}`);
+    }
+    patch.status = status;
+  }
+
+  const attempts = option("--attempts");
+  if (attempts) {
+    const parsed = Number.parseInt(attempts, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new Error(`Invalid --attempts ${attempts}`);
+    }
+    patch.attempts = parsed;
+  }
+
+  const stringFields: Array<[keyof SpecLoopSpecState, string]> = [
+    ["lastRunId", "--last-run-id"],
+    ["lastRunUrl", "--last-run-url"],
+    ["lastResultPath", "--last-result-path"],
+    ["lastPrUrl", "--last-pr-url"],
+    ["successorDisposition", "--successor-disposition"],
+    ["successorEvidencePath", "--successor-evidence-path"],
+    ["successorStateReason", "--successor-state-reason"],
+    ["resumeCondition", "--resume-condition"],
+  ];
+  for (const [key, flag] of stringFields) {
+    const value = option(flag);
+    if (value !== undefined) {
+      (patch as Record<string, unknown>)[key] = value;
+    }
+  }
+
+  if (hasFlag("--clear-successor-disposition")) patch.successorDisposition = undefined;
+  if (hasFlag("--clear-successor-evidence-path")) patch.successorEvidencePath = undefined;
+  if (hasFlag("--clear-successor-state-reason")) patch.successorStateReason = undefined;
+  if (hasFlag("--clear-resume-condition")) patch.resumeCondition = undefined;
+
+  const review =
+    before.review && typeof before.review === "object" && !Array.isArray(before.review)
+      ? { ...before.review }
+      : {};
+  let reviewTouched = false;
+  if (hasFlag("--clear-review")) {
+    patch.review = undefined;
+    reviewTouched = true;
+  } else {
+    const reviewFieldMap: Array<[string, string]> = [
+      ["classification", "--review-classification"],
+      ["lastRootCause", "--review-last-root-cause"],
+      ["lastAction", "--review-last-action"],
+      ["reviewedAt", "--review-reviewed-at"],
+    ];
+    for (const [key, flag] of reviewFieldMap) {
+      const values = repeatedStringOption(flag);
+      if (values.length === 0) continue;
+      review[key] = values[values.length - 1];
+      reviewTouched = true;
+    }
+    if (reviewTouched) patch.review = review;
+  }
+
+  updateSpecLoopSpec(state, specId, patch);
+  saveSpecLoopState(statePath, state);
+  const after = readJson<SpecLoopState>(statePath)?.specs?.[specId];
+
+  console.log(
+    JSON.stringify(
+      {
+        command: "update-successor",
+        specId,
+        statePath,
+        before,
+        after,
       },
       null,
       2,

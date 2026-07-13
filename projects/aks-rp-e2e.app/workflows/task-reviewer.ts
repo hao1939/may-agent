@@ -7,8 +7,9 @@
  * must not mutate the task tree.
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { isAbsolute, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { readTaskTree, type TaskNode } from "./lib/task-tree-store.ts";
 import { taskTreeConfig } from "./lib/task-tree-tools.ts";
@@ -42,6 +43,13 @@ type StructuredReview = {
   decision: ReviewDecision;
   confidence: ReviewConfidence;
   summary: string;
+  findings: string[];
+  feedback: string[];
+  suggestedFollowups: string[];
+  reviewAction?: Record<string, unknown>;
+};
+
+type ReviewValidationNotes = {
   findings: string[];
   feedback: string[];
   suggestedFollowups: string[];
@@ -211,6 +219,72 @@ function structuredReviewFromText(text: string): StructuredReview {
     findings: stringList(parsed.findings),
     feedback: stringList(parsed.feedback),
     suggestedFollowups: stringList(parsed.suggestedFollowups),
+    reviewAction:
+      recordValue(parsed.reviewAction) ??
+      recordValue(parsed.review_action) ??
+      (textValue(parsed.actionKind)
+        ? { actionKind: parsed.actionKind }
+        : undefined),
+  };
+}
+
+function emptyValidationNotes(): ReviewValidationNotes {
+  return { findings: [], feedback: [], suggestedFollowups: [] };
+}
+
+function mergeValidationNotes(
+  base: ReviewValidationNotes,
+  patch: Partial<ReviewValidationNotes>,
+): ReviewValidationNotes {
+  return {
+    findings: [...base.findings, ...(patch.findings ?? [])],
+    feedback: [...base.feedback, ...(patch.feedback ?? [])],
+    suggestedFollowups: [
+      ...base.suggestedFollowups,
+      ...(patch.suggestedFollowups ?? []),
+    ],
+  };
+}
+
+function appendValidationNotesToReview(
+  review: StructuredReview,
+  notes: ReviewValidationNotes,
+): StructuredReview {
+  if (
+    notes.findings.length === 0 &&
+    notes.feedback.length === 0 &&
+    notes.suggestedFollowups.length === 0
+  ) {
+    return review;
+  }
+  return {
+    ...review,
+    findings: [...review.findings, ...notes.findings],
+    feedback: [...review.feedback, ...notes.feedback],
+    suggestedFollowups: [
+      ...review.suggestedFollowups,
+      ...notes.suggestedFollowups,
+    ],
+  };
+}
+
+function missingEvidenceValidationNotes(input: {
+  appDir: string;
+  projectDir: string;
+  completion: Record<string, unknown>;
+}): ReviewValidationNotes {
+  const missing = missingDurableEvidenceMemos(input);
+  if (missing.length === 0) return emptyValidationNotes();
+
+  return {
+    findings: [
+      "validation-note:worker-cited-missing-durable-evidence",
+      ...missing.map((ref) => `missing:${ref}`),
+    ],
+    feedback: [
+      "Worker completion cited durable evidence memo(s) that do not exist in the app or domain repo. The reviewer should account for this before accepting the task as done.",
+    ],
+    suggestedFollowups: [],
   };
 }
 
@@ -222,16 +296,45 @@ function completionSummary(completion: Record<string, unknown>): string {
   return "";
 }
 
-function evidenceRefs(completion: Record<string, unknown>): string[] {
-  return stringList(completion.evidenceRefs).concat(
-    stringList(completion.evidence_refs),
-  );
-}
-
 function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function evidenceRefs(completion: Record<string, unknown>): string[] {
+  const workflowResult =
+    recordValue(completion.workflowResult) ??
+    recordValue(completion.workflow_result);
+  return stringList(completion.evidenceRefs).concat(
+    stringList(completion.evidence_refs),
+    stringList(workflowResult?.artifacts),
+  );
+}
+
+function isDurableEvidenceMemo(ref: string): boolean {
+  return /(?:^|\/)evidence\/archive\/[^/\s]+\.md$/i.test(ref);
+}
+
+function localEvidenceExists(
+  ref: string,
+  input: { appDir: string; projectDir: string },
+): boolean {
+  if (isAbsolute(ref)) return existsSync(ref);
+  return (
+    existsSync(join(input.appDir, ref)) ||
+    existsSync(join(input.projectDir, ref))
+  );
+}
+
+function missingDurableEvidenceMemos(input: {
+  appDir: string;
+  projectDir: string;
+  completion: Record<string, unknown>;
+}): string[] {
+  return [...new Set(evidenceRefs(input.completion))]
+    .filter(isDurableEvidenceMemo)
+    .filter((ref) => !localEvidenceExists(ref, input));
 }
 
 function workflowResultDetails(
@@ -320,16 +423,15 @@ function fixForwardCompactFreshnessFindings(input: {
   const hasCurrentDatePath =
     Boolean(attemptDate) && paths.some((path) => path.includes(attemptDate));
   const explanation = [
-    textValue(fixForward.diagnosis),
-    textValue(fixForward.nextActionReason),
+    textValue(fixForward.evidenceFreshness),
+    textValue(verification?.evidenceFreshness),
+    textValue(minimumDiagnosisPacket?.evidenceFreshness),
   ]
     .join(" ")
     .toLowerCase();
-  const explicitlyReusesExactEvidence =
-    /existing|prior|previous|older|reused|reusing/.test(explanation) &&
-    /exact|authoritative|still valid|still truthful|remains truthful|remains exact/.test(
-      explanation,
-    );
+  const explicitlyReusesExactEvidence = explanation
+    .split(/\s+/)
+    .includes("reused-exact");
 
   if (
     hasCurrentAttemptPath ||
@@ -342,6 +444,45 @@ function fixForwardCompactFreshnessFindings(input: {
     "compact-fix-forward-evidence-not-fresh",
     `attempt:${attemptId || "missing"}`,
     `paths:${paths.join(", ") || "none"}`,
+  ];
+}
+
+function fixForwardBackendMismatchFindings(input: {
+  task: TaskNode;
+  completion: Record<string, unknown>;
+}): string[] {
+  if (!isFixForwardTask(input.task)) return [];
+  const context = taskContext(input.task);
+  if (textValue(context.currentBackend).toLowerCase() !== "ado") return [];
+
+  const fixForward = fixForwardDetails(input.completion);
+  if (!fixForward) return [];
+
+  const verification = recordValue(fixForward.verification);
+  const minimumDiagnosisPacket = recordValue(fixForward.minimumDiagnosisPacket);
+  const currentRunBackends = [
+    textValue(fixForward.currentRunBackend),
+    textValue(fixForward.executionBackend),
+    textValue(verification?.backend),
+    textValue(verification?.executionBackend),
+    textValue(minimumDiagnosisPacket?.backend),
+    textValue(minimumDiagnosisPacket?.executionBackend),
+  ]
+    .map((value) => value.toLowerCase())
+    .filter(Boolean);
+  const usesGitHubAsCurrentBackend = currentRunBackends.some(
+    (backend) =>
+      backend === "github" ||
+      backend === "github-actions" ||
+      backend === "github workflow",
+  );
+  if (!usesGitHubAsCurrentBackend) return [];
+
+  return [
+    "fix-forward-current-backend-ado-but-structured-result-names-github-backend",
+    `nextAction:${textValue(fixForward.nextAction) || "missing"}`,
+    `currentRunBackends:${currentRunBackends.join(",") || "missing"}`,
+    `verificationRunId:${textValue(verification?.runId) || "missing"}`,
   ];
 }
 
@@ -427,15 +568,15 @@ function completedSpecVerificationResults(
     });
 }
 
-function deterministicReviewForCompletion(
+function validationNotesForCompletion(
   task: TaskNode,
   completion: Record<string, unknown>,
-): StructuredReview | null {
+): ReviewValidationNotes {
+  let notes = emptyValidationNotes();
   const summary = completionSummary(completion);
   const evidence = evidenceRefs(completion);
   const specVerificationResults = completedSpecVerificationResults(completion);
   if (specVerificationResults.length) {
-    const terminalWaitReview = hasTerminalPipelineWaitReview(task);
     const validResults = specVerificationResults.filter((result) => {
       const specStatus = textValue(result.specStatus);
       const liveVerified = result.liveVerified === true;
@@ -452,33 +593,19 @@ function deterministicReviewForCompletion(
       const statuses = validResults.map((result) =>
         textValue(result.specStatus),
       );
-      const allPassed = statuses.every((status) => status === "pass");
-      const grouped = validResults.length > 1;
       const runIds = [
         ...new Set(validResults.map((result) => textValue(result.runId))),
       ];
       const resultPaths = validResults.map((result) =>
         textValue(result.resultPath),
       );
-      return {
-        decision: "accept",
-        confidence: "high",
-        summary: allPassed
-          ? terminalWaitReview
-            ? "Terminal pipeline wait review consumed the returned artifact and proved a same-spec live AKS pass."
-            : "Structured artifact review consumed the returned artifact and proved a same-spec live AKS pass."
-          : grouped
-            ? terminalWaitReview
-              ? "Terminal pipeline wait review consumed the returned artifact and recorded same-spec non-passing result(s)."
-              : "Structured artifact review consumed the returned artifact and recorded same-spec non-passing result(s)."
-            : terminalWaitReview
-              ? "Terminal pipeline wait review consumed the returned artifact and recorded a same-spec non-passing result."
-              : "Structured artifact review consumed the returned artifact and recorded a same-spec non-passing result.",
+      notes = mergeValidationNotes(notes, {
         findings: [
+          "validation-note:structured-spec-verification-result-present",
           ...runIds.map((runId) => `run:${runId}`),
           ...resultPaths.map((resultPath) => `result:${resultPath}`),
           ...[...new Set(statuses)].map((status) => `status:${status}`),
-          ...(grouped
+          ...(validResults.length > 1
             ? validResults.map(
                 (result) =>
                   `spec:${textValue(result.specId) || textValue(result.id) || "unknown"}:${textValue(result.specStatus)}`,
@@ -495,75 +622,48 @@ function deterministicReviewForCompletion(
             .map((result) => `clusterName:${textValue(result.clusterName)}`)
             .filter((item) => !item.endsWith(":")),
         ],
-        feedback: [],
-        suggestedFollowups: [],
-      };
+      });
+      return notes;
     }
     const firstResult = specVerificationResults[0] ?? {};
-    return {
-      decision: "redo",
-      confidence: "high",
-      summary:
-        "Terminal pipeline wait review returned structured spec data, but it did not prove a same-spec live AKS verdict.",
+    return mergeValidationNotes(notes, {
       findings: [
+        "validation-note:structured-spec-verification-result-incomplete",
         `run:${textValue(firstResult.runId) || "missing"}`,
         `result:${textValue(firstResult.resultPath) || "missing"}`,
         `status:${textValue(firstResult.specStatus) || "missing"}`,
         `liveVerified:${String(firstResult.liveVerified === true)}`,
       ],
       feedback: [
-        "Redo the domain review from the exact run artifact. Accept only when each returned spec has a result path, run id, same-spec status, and live proof for any pass verdict.",
+        "Structured spec data did not prove a same-spec live AKS verdict. Review the exact run artifact and require a result path, run id, same-spec status, and live proof for any pass verdict.",
       ],
       suggestedFollowups: [],
-    };
+    });
   }
   if (summary === EMPTY_ASSISTANT_TURN && evidence.length === 0) {
-    return {
-      decision: "redo",
-      confidence: "high",
-      summary:
-        "Worker attempt produced an empty assistant turn and no evidence, so the task must be retried instead of accepted or treated as a real blocked wait.",
+    notes = mergeValidationNotes(notes, {
       findings: ["worker-empty-assistant-turn", "worker-no-evidence"],
       feedback: [
-        "Retry the same task with a fresh session and require a concrete result: evidence, a repo-local change, or an exact external wait with owner and resume condition.",
+        "Worker attempt produced an empty assistant turn and no evidence. The reviewer should not accept this without concrete evidence, a repo-local change, or an exact external wait with owner and resume condition.",
       ],
-      suggestedFollowups: [],
-    };
+    });
   }
-  if (
-    hasTerminalPipelineWaitReview(task) &&
-    /\b(?:azure devops pipeline|github workflow|workflow|pipeline) run \d{6,} is terminal\b/i.test(
-      summary,
-    ) &&
-    /\breview (?:the )?(?:run |compact run )?artifact\/result\b/i.test(
-      summary,
-    ) &&
-    evidence.length === 0
-  ) {
-    return {
-      decision: "redo",
-      confidence: "high",
-      summary:
-        "Terminal pipeline wait review did not consume the returned run artifacts; it only repeated that the run is terminal.",
+  if (hasTerminalPipelineWaitReview(task)) {
+    notes = mergeValidationNotes(notes, {
       findings: [
-        "terminal-pipeline-wait-not-reviewed",
-        "worker-returned-review-request-instead-of-result",
+        "terminal-pipeline-wait-structured-result-missing",
+        `evidenceRefs:${evidence.length}`,
       ],
       feedback: [
-        "Redo the same domain review from the run id/spec ids. Download or locate the artifact bundle, inspect the exact result.json/spec-runner result, and return a concrete pass/fail/error classification with evidence path. Do not mutate task tree or app loop state.",
+        "Terminal pipeline wait review needs structured same-spec live result data. The reviewer should require workflowResult.details with run id, result path, pass/fail/error status, and live proof for pass verdicts.",
       ],
-      suggestedFollowups: [],
-    };
+    });
   }
   if (isFixForwardTask(task)) {
     const missing = fixForwardMissingFields(completion);
     if (missing.length > 0) {
       if (repeatedFixForwardStructuredResultMiss(task)) {
-        return {
-          decision: "escalate",
-          confidence: "high",
-          summary:
-            "Fix-forward output is repeatedly missing the required structured result, so this is now a workflow/process problem rather than another domain retry.",
+        return mergeValidationNotes(notes, {
           findings: [
             "fix-forward-structured-result-missing-repeated",
             ...missing.map((field) => `missing:${field}`),
@@ -574,13 +674,9 @@ function deterministicReviewForCompletion(
           suggestedFollowups: [
             "Create an ops repair for the fix-forward worker structured-result contract.",
           ],
-        };
+        });
       }
-      return {
-        decision: "redo",
-        confidence: "high",
-        summary:
-          "Fix-forward completion is missing required structured diagnosis fields, so the planner should not accept it as a real fix, wait, or terminal finding.",
+      return mergeValidationNotes(notes, {
         findings: [
           "fix-forward-structured-result-missing",
           ...missing.map((field) => `missing:${field}`),
@@ -589,33 +685,46 @@ function deterministicReviewForCompletion(
           "Redo the task and finish with FIX_FORWARD_RESULT containing subject, classification, diagnosis, minimumDiagnosisPacket, verification, nextAction, and nextActionReason.",
         ],
         suggestedFollowups: [],
-      };
+      });
     }
     const staleEvidenceFindings = fixForwardCompactFreshnessFindings({
       task,
       completion,
     });
     if (staleEvidenceFindings.length > 0) {
-      return {
-        decision: "redo",
-        confidence: "high",
-        summary:
-          "Compact fix-forward completion does not prove that its evidence belongs to this attempt or that reused evidence remains exact.",
+      return mergeValidationNotes(notes, {
         findings: staleEvidenceFindings,
         feedback: [
-          "Redo the task with a fresh attempt evidence path, or explicitly state in FIX_FORWARD_RESULT.diagnosis and verification.resultPath that the prior evidence remains exact and why no new evidence file or rerun is needed.",
+          "Redo the task with a fresh attempt evidence path, or set FIX_FORWARD_RESULT.evidenceFreshness/verification.evidenceFreshness/minimumDiagnosisPacket.evidenceFreshness to reused-exact when prior evidence is intentionally reused.",
         ],
         suggestedFollowups: [],
-      };
+      });
+    }
+    const backendMismatchFindings = fixForwardBackendMismatchFindings({
+      task,
+      completion,
+    });
+    if (backendMismatchFindings.length > 0) {
+      return mergeValidationNotes(notes, {
+        findings: backendMismatchFindings,
+        feedback: [
+          "Redo the task against current backend facts. For ADO work, structured current backend fields must not name GitHub as the current execution backend.",
+        ],
+        suggestedFollowups: [],
+      });
     }
   }
-  return null;
+  return notes;
 }
 
 function reviewerSessionId(taskId: string, attemptId: string): string {
-  const safeTask = taskId.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 80);
-  const safeAttempt = attemptId.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 80);
-  return `s_task_review_${safeTask}_${safeAttempt}`;
+  const safeTask = taskId.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 48);
+  const safeAttempt = attemptId.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 40);
+  const digest = createHash("sha1")
+    .update(`${taskId}::${attemptId}`)
+    .digest("hex")
+    .slice(0, 12);
+  return `s_task_review_${safeTask}_${safeAttempt}_${digest}`;
 }
 
 function buildReviewPrompt(input: {
@@ -623,6 +732,7 @@ function buildReviewPrompt(input: {
   projectDir: string;
   task: TaskNode;
   completion: Record<string, unknown>;
+  validationNotes: ReviewValidationNotes;
   trigger: string;
 }): string {
   return `Task Review Mode
@@ -637,6 +747,11 @@ Boundaries:
 - Review only this completed task, its acceptance criteria, worker result,
   evidence refs, and immediately relevant artifacts/files.
 - The planner is the only workflow that applies your judgment to the task tree.
+- The live task tree is runtime state. Use the task record in this prompt or
+  supported app commands such as \`bun run task-tree show <task-id>\` to inspect
+  it. Do not treat checked-in \`tasks/tree.json\` as the live task tree; it can
+  be a stale legacy/bootstrap snapshot. Current runtime task state lives under
+  \`.state/tasks/tree.json\` behind the task-tree helpers.
 
 Decision meanings:
 - accept: evidence satisfies the task acceptance criteria.
@@ -645,11 +760,28 @@ Decision meanings:
 - blocked: a real external/environment/product wait remains.
 - escalate: owner/human judgment is required before deciding.
 
+Code-collected validation notes:
+\`\`\`json
+${JSON.stringify(input.validationNotes, null, 2)}
+\`\`\`
+
+Use these notes as facts and guardrails, not as a pre-made decision. If a note
+names a hard missing structured field or missing evidence path, account for it
+in your decision and feedback. Do not ignore validation notes, but you remain
+responsible for the final review judgment.
+
 For metric, watchdog, blocked-frontier, and overdue-wait audit tasks, verify
 that the worker measured the baseline as if the audited task itself did not
 exist. Do not accept an audit that concludes "few/no contributors remain" only
 because the audit task's own goal text, conflict scope, active state, or review
 state references and suppresses the blocked waits under inspection.
+
+For overdue-wait audit tasks that name a blocked wait, do not accept a memo by
+itself. Accept only when the completion proves the named wait was refreshed with
+current evidence and future next/fallback times, replaced by a narrower exact
+wait, unblocked/closed, escalated, or covered by a still-open active/review
+handoff. If the worker only says "the planner should refresh it", choose
+followup or redo.
 
 For fix-forward tasks, do not infer success from prose. Accept only when the
 completion includes structured fix-forward details with subject,
@@ -666,6 +798,12 @@ completion that merely says the pipeline is terminal and should be reviewed.
 The domain worker must not mutate the task tree or app loop state; it returns
 evidence/results for the app to consume.
 
+If the task acceptance asks the worker to recommend an exact task-tree mutation
+and the worker satisfies that by returning a recommendation instead of applying
+it, choose followup unless the planner/app-ops successor already exists. The
+domain worker's recommendation is useful evidence, but the project is not closed
+until a concrete owner applies or explicitly rejects that mutation.
+
 Finish with exactly one structured block:
 
 TASK_REVIEW_JSON:
@@ -676,7 +814,11 @@ TASK_REVIEW_JSON:
   "summary": "one concise review summary",
   "findings": ["specific evidence-backed findings"],
   "feedback": ["actionable retry/rework feedback when not accepting"],
-  "suggestedFollowups": ["optional concrete follow-up task ideas"]
+  "suggestedFollowups": ["optional concrete follow-up task ideas"],
+  "reviewAction": {
+    "actionKind": "optional structured planner action such as app-state-repair or publish-domain-repair-and-rerun",
+    "goal": "optional exact successor goal"
+  }
 }
 \`\`\`
 
@@ -746,6 +888,12 @@ function emitTaskReviewed(
     feedback: input.review.feedback,
     suggestedFollowups: input.review.suggestedFollowups,
     suggested_followups: input.review.suggestedFollowups,
+    ...(input.review.reviewAction
+      ? {
+          reviewAction: input.review.reviewAction,
+          review_action: input.review.reviewAction,
+        }
+      : {}),
     completion: input.completion,
     review: input.review,
     reason: "task-review-completed",
@@ -785,7 +933,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     worker: agent,
     maxConcurrent: 1,
   });
-  const task = readTaskTree(config).tasks[taskId];
+  const tree = readTaskTree(config);
+  const task = tree.tasks[taskId];
   if (!task) {
     appendReviewRun(appDir, {
       result: "ignored",
@@ -840,32 +989,41 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence_refs: triggerValue(trigger, "evidence_refs"),
         };
 
-  let review = deterministicReviewForCompletion(task, completion);
-  if (!review) {
-    let reviewerResult: unknown;
-    try {
-      reviewerResult = await runReviewer({
-        ctx,
-        agent,
-        sessionId: reviewerSessionId(taskId, attemptId),
-        prompt: buildReviewPrompt({
-          appDir,
-          projectDir,
-          task,
-          completion,
-          trigger: triggerBlock(ctx.task),
-        }),
-      });
-    } catch (error) {
-      reviewerResult = {
-        status: "error",
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
-
-    const reviewText = resultText(reviewerResult);
-    review = structuredReviewFromText(reviewText);
+  let validationNotes = validationNotesForCompletion(task, completion);
+  validationNotes = mergeValidationNotes(
+    validationNotes,
+    missingEvidenceValidationNotes({
+      appDir,
+      projectDir,
+      completion,
+    }),
+  );
+  let reviewerResult: unknown;
+  try {
+    reviewerResult = await runReviewer({
+      ctx,
+      agent,
+      sessionId: reviewerSessionId(taskId, attemptId),
+      prompt: buildReviewPrompt({
+        appDir,
+        projectDir,
+        task,
+        completion,
+        validationNotes,
+        trigger: triggerBlock(ctx.task),
+      }),
+    });
+  } catch (error) {
+    reviewerResult = {
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+    };
   }
+  const reviewText = resultText(reviewerResult);
+  let review = appendValidationNotesToReview(
+    structuredReviewFromText(reviewText),
+    validationNotes,
+  );
   try {
     emitTaskReviewed(ctx, { task, attemptId, completion, review });
   } catch {
@@ -886,6 +1044,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     attempt_id: attemptId,
     decision: review.decision,
     confidence: review.confidence,
+    summary: review.summary,
+    findings: review.findings,
+    feedback: review.feedback,
+    suggestedFollowups: review.suggestedFollowups,
+    ...(review.reviewAction ? { reviewAction: review.reviewAction } : {}),
   });
   return ctx.done(
     `Task reviewer emitted ${review.decision} review for ${taskId} attempt ${attemptId}.`,

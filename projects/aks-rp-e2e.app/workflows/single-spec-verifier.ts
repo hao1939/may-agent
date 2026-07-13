@@ -655,7 +655,6 @@ function classifyProjectResult(
   const category = String(spec?.category ?? "")
     .trim()
     .toLowerCase();
-  const compactReason = reason.toLowerCase();
   const targetSurface = String(result.target?.surface ?? "")
     .trim()
     .toLowerCase();
@@ -679,27 +678,14 @@ function classifyProjectResult(
     };
   }
   if (
-    category === "environment_blocker" &&
-    (compactReason.includes("akscapacityheavyusage") ||
-      compactReason.includes("skunotavailable") ||
-      compactReason.includes("capacity restrictions"))
+    category === "environment_blocker"
   ) {
     return {
       loopStatus: "error",
       claim: "partial",
-      reason: `Fixed-target staging capacity unavailable; keep visible for retry or test repair. ${reason}`,
-    };
-  }
-  if (
-    category === "environment_blocker" &&
-    (compactReason.includes("requires an existing-cluster carrier") ||
-      compactReason.includes("requires a shared-cluster carrier") ||
-      compactReason.includes("not directly live-executable"))
-  ) {
-    return {
-      loopStatus: "error",
-      claim: "partial",
-      reason: `Direct single-spec staging run needs a carrier; keep visible until a runnable carrier or compact test exists. ${reason}`,
+      reason:
+        reason ||
+        "Spec hit a structured environment blocker; keep visible for agent diagnosis, retry, or test repair.",
     };
   }
 

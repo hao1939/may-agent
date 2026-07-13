@@ -838,6 +838,9 @@ exit 0
       expect(
         state.specs["spec.net-integration.authorized-ip-ranges"].status,
       ).toBe("error");
+      expect(
+        state.specs["spec.net-integration.authorized-ip-ranges"].failureClass,
+      ).toBe("needs-diagnosis");
     } finally {
       process.env.PATH = originalPath;
       delete process.env.TEST_PIPELINE_LOG;
@@ -857,7 +860,7 @@ exit 0
     }
   });
 
-  test("keeps fixed-target capacity exhaustion visible as error", async () => {
+  test("keeps structured environment blockers visible as error without prose subtype inference", async () => {
     const { appDir, projectDir, binDir } = await makeProject();
     const config = taskTreeConfig({
       appDir,
@@ -911,9 +914,7 @@ exit 0
 
       expect(result.status).toBe("done");
       expect(result.message).toContain("classified as error");
-      expect(result.message).toContain(
-        "Fixed-target staging capacity unavailable; keep visible",
-      );
+      expect(result.message).toContain("AKSCapacityHeavyUsage");
 
       const tree = JSON.parse(
         await readFile(resolveTaskTreePath(appDir), "utf8"),

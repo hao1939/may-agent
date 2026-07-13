@@ -128,7 +128,7 @@ describe("problem solver", () => {
     });
   });
 
-  test("treats clear fixed-and-verified solver summary as resolved even without marker", async () => {
+  test("does not infer resolved problem result from fixed-and-verified prose", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const dispatched: Array<{
       type: string;
@@ -166,7 +166,7 @@ describe("problem solver", () => {
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
-      type: "project.problem.resolved",
+      type: "project.problem.inconclusive",
       payload: {
         project: "aks-rp-e2e",
         problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",

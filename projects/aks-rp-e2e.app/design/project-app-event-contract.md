@@ -201,7 +201,11 @@ writer.
     "summary": "Evidence satisfies the task acceptance criteria.",
     "findings": [],
     "feedback": [],
-    "suggestedFollowups": []
+    "suggestedFollowups": [],
+    "reviewAction": {
+      "actionKind": "app-state-repair",
+      "goal": "Optional exact planner/app-ops successor goal"
+    }
   }
 }
 ```
@@ -222,6 +226,9 @@ Required review rules:
   worker result, evidence refs, and relevant dirty files/artifacts.
 - The reviewer must emit structured fields; prose is explanation, not control
   flow.
+- When the review needs planner-owned follow-up routing, it must use
+  `reviewAction.actionKind`; summaries/findings/feedback are not routing
+  protocol.
 - The planner must validate the review event against live task state before
   applying it because event delivery is at least once.
 - If the reviewer cannot emit valid structured output, it must emit

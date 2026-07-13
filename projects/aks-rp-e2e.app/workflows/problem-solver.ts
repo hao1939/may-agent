@@ -141,15 +141,6 @@ function problemResultType(
   if (/PROBLEM_RESULT:\s*inconclusive/i.test(text))
     return "project.problem.inconclusive";
 
-  // Backward-compatibility fallback for older solver sessions that returned a
-  // concrete fixed/verified summary without the explicit marker line.
-  if (
-    /(fixed|resolved|repaired)/i.test(text) &&
-    /(verified|verification|check passed|tests passed|retry)/i.test(text)
-  ) {
-    return "project.problem.resolved";
-  }
-
   // Agent didn't declare a result — don't guess from unrelated free text.
   // The planner will see "inconclusive" and decide.
   return "project.problem.inconclusive";

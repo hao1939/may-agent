@@ -69,6 +69,39 @@ type FixForwardResult = {
   nextActionReason?: unknown;
 };
 
+type SpecResultReview = {
+  workflow: "spec-result-review";
+  specId?: unknown;
+  runId?: unknown;
+  runUrl?: unknown;
+  resultPath?: unknown;
+  specStatus?: unknown;
+  status?: unknown;
+  reason?: unknown;
+  liveVerified?: unknown;
+  liveClusterObserved?: unknown;
+  resourceGroup?: unknown;
+  clusterName?: unknown;
+  artifactRefs?: unknown;
+  specResults?: unknown;
+};
+
+type QueuedPipelineRunResult = {
+  backend?: unknown;
+  runId?: unknown;
+  run_id?: unknown;
+  runUrl?: unknown;
+  run_url?: unknown;
+  specIds?: unknown;
+  spec_ids?: unknown;
+  target?: unknown;
+  branch?: unknown;
+  sourceVersion?: unknown;
+  source_version?: unknown;
+  metadataPath?: unknown;
+  metadata_path?: unknown;
+};
+
 type SessionWorkflowContext = WorkflowContext & {
   runAgentSession?: (
     agent: string,
@@ -89,9 +122,7 @@ function normalizedFinishDeliverablePaths(result: unknown): string[] {
   return [
     ...new Set(
       deliverables
-        .map((item) =>
-          typeof item?.path === "string" ? item.path.trim() : "",
-        )
+        .map((item) => (typeof item?.path === "string" ? item.path.trim() : ""))
         .filter(Boolean),
     ),
   ];
@@ -166,6 +197,19 @@ function fixForwardResultFromSessionResult(
   return null;
 }
 
+function specResultReviewFromSessionResult(
+  result: unknown,
+): SpecResultReview | null {
+  for (const candidate of [
+    ...resultTextCandidates(result),
+    ...resolveDeliverableTexts(result),
+  ]) {
+    const parsed = parseSpecResultReview(candidate);
+    if (parsed) return parsed;
+  }
+  return null;
+}
+
 function resultEvidence(result: unknown): string[] {
   return normalizedFinishDeliverablePaths(result);
 }
@@ -178,6 +222,24 @@ function taskContext(task: TaskNode): Record<string, unknown> {
     : {};
 }
 
+function taskTrace(task: TaskNode): Record<string, unknown> {
+  return task.trace &&
+    typeof task.trace === "object" &&
+    !Array.isArray(task.trace)
+    ? (task.trace as Record<string, unknown>)
+    : {};
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function textValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
 function taskContextString(task: TaskNode, key: string): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : "";
@@ -185,6 +247,17 @@ function taskContextString(task: TaskNode, key: string): string {
 
 function isFixForwardTask(task: TaskNode): boolean {
   return taskContextString(task, "workflow") === "fix-forward";
+}
+
+function hasTerminalPipelineWaitReview(task: TaskNode): boolean {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  return Boolean(
+    recordValue(context.terminalPipelineWaitReview) ||
+    recordValue(context.terminalGitHubWaitReview) ||
+    textValue(trace.terminal_pipeline_wait_run_id) ||
+    textValue(trace.terminal_github_wait_run_id),
+  );
 }
 
 function isCompactFixForwardTask(task: TaskNode): boolean {
@@ -195,6 +268,138 @@ function isCompactFixForwardTask(task: TaskNode): boolean {
     (context.featureCompactFollowup === true ||
       context.featureCompactFocusedDiagnostic === true ||
       subjectKind.includes("compact"))
+  );
+}
+
+function taskStringList(task: TaskNode, key: keyof TaskNode): string[] {
+  const value = task[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function isAppOpsStateRepairTask(task: TaskNode): boolean {
+  const owner = typeof task.owner === "string" ? task.owner : "";
+  const id = typeof task.id === "string" ? task.id : "";
+  if (owner !== "app-ops" && !id.startsWith("ops/")) return false;
+  const context = taskContext(task);
+  const outputs = taskStringList(task, "outputs");
+  const scopes = taskStringList(task, "conflict_scope");
+  return Boolean(
+    context.appStateRepair === true ||
+    context.app_state_repair === true ||
+    scopes.some(
+      (scope) =>
+        scope === "ops:app-state-repair" ||
+        scope === "ops:frontier-state" ||
+        scope.startsWith("ops:app-state-repair:"),
+    ) ||
+    outputs.some(
+      (output) =>
+        output === ".state/tasks/tree.json" ||
+        output.startsWith(".state/tasks/") ||
+        output === ".state/feature-compact-loop/state.json" ||
+        output.startsWith(".state/feature-compact-loop/") ||
+        output === ".state/spec-loop/state.json" ||
+        output.startsWith(".state/spec-loop/"),
+    ),
+  );
+}
+
+function isOpsOwnedTask(task: TaskNode): boolean {
+  const owner = typeof task.owner === "string" ? task.owner : "";
+  const id = typeof task.id === "string" ? task.id : "";
+  return owner === "app-ops" || id.startsWith("ops/");
+}
+
+function shouldIncludeLivePipelineDispatchInstructions(task: TaskNode): boolean {
+  if (hasTerminalPipelineWaitReview(task)) return false;
+  if (isOpsOwnedTask(task) && !isFixForwardTask(task)) return false;
+  return true;
+}
+
+function shouldIncludeTerminalPipelineReviewInstructions(
+  task: TaskNode,
+): boolean {
+  if (hasTerminalPipelineWaitReview(task)) return true;
+  if (typeof task.workflow === "string" && task.workflow.trim() === "spec-runner")
+    return true;
+  const text = [
+    task.id,
+    task.goal,
+    ...(Array.isArray(task.inputs) ? task.inputs : []),
+    ...(Array.isArray(task.acceptance) ? task.acceptance : []),
+  ]
+    .filter((item): item is string => typeof item === "string")
+    .join("\n")
+    .toLowerCase();
+  return /\b(spec[_ -]?result[_ -]?review|terminal .*pipeline|returned .*artifact|ado .*artifact)\b/.test(
+    text,
+  );
+}
+
+function compactPromptValue(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") {
+    if (value.length <= 4000) return value;
+    return `${value.slice(0, 4000)}\n...[truncated ${value.length - 4000} chars; inspect task-tree state/evidence for full text]`;
+  }
+  if (value == null || typeof value !== "object") return value;
+  if (depth >= 8) return "[truncated nested object; inspect task-tree state/evidence for full details]";
+
+  if (Array.isArray(value)) {
+    if (value.length <= 40) {
+      return value.map((item) => compactPromptValue(item, depth + 1));
+    }
+    return [
+      ...value.slice(0, 20).map((item) => compactPromptValue(item, depth + 1)),
+      `[truncated ${value.length - 30} middle item(s)]`,
+      ...value.slice(-10).map((item) => compactPromptValue(item, depth + 1)),
+    ];
+  }
+
+  const record = value as Record<string, unknown>;
+  const output: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(record)) {
+    if (
+      [
+        "rollup_archives",
+        "prioritySpecIds",
+        "compact_synced_pass_spec_ids",
+        "representedFeatureKeys",
+        "representedFollowupGroups",
+        "childTaskIds",
+      ].includes(key) &&
+      Array.isArray(nested) &&
+      nested.length > 25
+    ) {
+      output[key] = [
+        ...nested.slice(0, 15).map((item) => compactPromptValue(item, depth + 1)),
+        `[truncated ${nested.length - 20} middle item(s)]`,
+        ...nested.slice(-5).map((item) => compactPromptValue(item, depth + 1)),
+      ];
+      continue;
+    }
+    output[key] = compactPromptValue(nested, depth + 1);
+  }
+  return output;
+}
+
+function taskJsonForPrompt(task: TaskNode): string {
+  const full = JSON.stringify(task, null, 2);
+  if (full.length <= 20000) return full;
+  const compacted = compactPromptValue(task);
+  const compactedRecord =
+    compacted && typeof compacted === "object" && !Array.isArray(compacted)
+      ? (compacted as Record<string, unknown>)
+      : {};
+  return JSON.stringify(
+    {
+      _prompt_note:
+        "Long task payload was summarized to stay within the worker model context. The worker should inspect task-tree show/evidence files for any omitted raw facts before deciding.",
+      ...compactedRecord,
+    },
+    null,
+    2,
   );
 }
 
@@ -252,6 +457,78 @@ function parseFixForwardResult(text: string): FixForwardResult | null {
     } catch {
       // Try the next candidate.
     }
+  }
+  return null;
+}
+
+function parseSpecResultReview(text: string): SpecResultReview | null {
+  const marker = text.search(/SPEC_RESULT_REVIEW/i);
+  if (marker < 0) return null;
+  const scoped = text.slice(marker);
+  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidates: string[] = [];
+  if (fenced) candidates.push(fenced[1]);
+  const firstBrace = scoped.indexOf("{");
+  if (firstBrace >= 0) {
+    const objectText = matchingJsonObject(scoped, firstBrace);
+    if (objectText) candidates.push(objectText);
+  }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        (parsed as { workflow?: unknown }).workflow === "spec-result-review"
+      ) {
+        return parsed as SpecResultReview;
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
+}
+
+function parseQueuedPipelineRun(text: string): QueuedPipelineRunResult | null {
+  const marker = text.search(/QUEUED_PIPELINE_RUN/i);
+  if (marker < 0) return null;
+  const scoped = text.slice(marker);
+  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidates: string[] = [];
+  if (fenced) candidates.push(fenced[1]);
+  const firstBrace = scoped.indexOf("{");
+  if (firstBrace >= 0) {
+    const objectText = matchingJsonObject(scoped, firstBrace);
+    if (objectText) candidates.push(objectText);
+  }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        continue;
+      }
+      const record = parsed as Record<string, unknown>;
+      if (textValue(record.runId) || textValue(record.run_id)) {
+        return record as QueuedPipelineRunResult;
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
+}
+
+function queuedPipelineRunFromSessionResult(
+  result: unknown,
+): QueuedPipelineRunResult | null {
+  for (const candidate of [
+    ...resultTextCandidates(result),
+    ...resolveDeliverableTexts(result),
+  ]) {
+    const parsed = parseQueuedPipelineRun(candidate);
+    if (parsed) return parsed;
   }
   return null;
 }
@@ -328,7 +605,16 @@ export function buildTaskTreeConfig(
     triggerString(trigger, "taskId").trim() ||
     triggerString(trigger, "task_id").trim();
   const assignedTaskOwner = taskId
-    ? String(readTaskTree(taskTreeConfig({ appDir, projectDir, worker: "", maxConcurrent: configuredMaxConcurrent })).tasks[taskId]?.owner ?? "").trim()
+    ? String(
+        readTaskTree(
+          taskTreeConfig({
+            appDir,
+            projectDir,
+            worker: "",
+            maxConcurrent: configuredMaxConcurrent,
+          }),
+        ).tasks[taskId]?.owner ?? "",
+      ).trim()
     : "";
   const taskWorker = (field(ctx.task, "worker") ?? "").trim();
   const taskAgent = (field(ctx.task, "agent") ?? "").trim();
@@ -359,6 +645,102 @@ function buildWorkerPrompt(input: {
   attemptId: string;
 }): string {
   const task = input.task as TaskNode;
+  const livePipelineDispatchInstructions =
+    shouldIncludeLivePipelineDispatchInstructions(task)
+      ? `
+Before any worker-initiated live Azure DevOps pipeline dispatch for single specs or compact
+feature reruns, run the local live dependency and admission policies against
+the exact spec set from ${input.projectDir}. Use both commands:
+
+  bun runner/check-private-source-policy.ts --specs <comma-separated-spec-ids>
+  bun runner/check-live-admission.ts --specs <comma-separated-spec-ids>
+
+If either policy fails, do not dispatch the pipeline. Repair the selected
+scenario tests so they are self-contained and live-admissible, or finish
+partial/blocked with the exact policy output and resume condition. An Azure DevOps pipeline run
+that fails only because either local policy would have failed is not acceptable
+completion evidence.
+
+If you queue a live Azure DevOps pipeline run, include the complete structured
+block below in the same evidence memo and in your final worker response. The
+app uses this exact data to create the concrete pipeline wait; prose like
+"queued run 123" is not enough.
+
+QUEUED_PIPELINE_RUN:
+\`\`\`json
+{
+  "backend": "ado",
+  "runId": "Azure DevOps run id",
+  "runUrl": "Azure DevOps run URL",
+  "specIds": ["exact spec ids covered by this run"],
+  "target": "target profile",
+  "branch": "branch or ref used",
+  "sourceVersion": "commit sha when known",
+  "metadataPath": "local dispatch metadata path when available"
+}
+\`\`\`
+`
+      : "";
+  const terminalPipelineReviewInstructions =
+    shouldIncludeTerminalPipelineReviewInstructions(task)
+      ? `
+If the assigned task is reviewing a terminal Azure DevOps pipeline wait, treat
+that as domain result review with explicit inputs. Do not touch the task tree,
+do not edit app loop state, and do not finish by saying only that the pipeline
+is terminal or that someone should review the artifacts. If you cite a durable
+evidence memo or other file in deliverables, include the complete
+SPEC_RESULT_REVIEW block in that same file as well as in your final worker
+response. The worker may need to recover the structured result from the cited
+deliverable when the runtime/session summary omits it.
+
+Use the run id and spec ids from task.context.terminalPipelineWaitReview,
+task.context.terminalGitHubWaitReview, task.trace.terminal_pipeline_wait_run_id,
+or task.trace.terminal_github_wait_run_id. Then:
+
+1. Look for already downloaded artifacts under ${input.projectDir}/workspace,
+   ${input.projectDir}/evidence/archive, and app .state artifact paths named by
+   the task.
+2. If artifacts are missing and Azure DevOps access is available, download them
+   with the existing Azure DevOps artifact flow or equivalent az pipelines
+   artifact commands into a task-specific workspace directory.
+3. Inspect the exact result.json/spec-runner result for each named spec. A
+   successful pipeline conclusion is not enough by itself.
+4. Record the concrete result: same spec id, target, run id, result path, real
+   cluster/resource group when required, failed verdict assertions, cleanup, and
+   next action.
+5. If the artifact cannot be obtained, finish partial/blocked with the exact
+   artifact recovery step. If the artifact is present, classify pass/fail/error
+   from the artifact and write the durable domain evidence or structured result
+   requested by the task. The app-side planner/controller consumes that result
+   later and owns task-tree or loop-state updates.
+
+Finish terminal pipeline wait reviews with this structured block:
+
+SPEC_RESULT_REVIEW:
+\`\`\`json
+{
+  "workflow": "spec-result-review",
+  "specId": "exact spec id, or empty when specResults is used",
+  "runId": "Azure DevOps run id",
+  "runUrl": "Azure DevOps run URL, if known",
+  "resultPath": "exact result.json path or aggregate result path",
+  "specStatus": "pass | fail | error",
+  "reason": "short artifact-backed verdict",
+  "liveVerified": true,
+  "liveClusterObserved": true,
+  "resourceGroup": "resource group observed in the artifact, if applicable",
+  "clusterName": "cluster name observed in the artifact, if applicable",
+  "artifactRefs": ["exact artifact/result/evidence refs"],
+  "specResults": []
+}
+\`\`\`
+
+For a passing spec, liveVerified must be true and must come from the exact
+artifact/result. For a non-passing spec, still include runId, resultPath,
+specStatus, reason, and artifactRefs. For grouped review, put per-spec entries
+in specResults with the same field names.
+`
+      : "";
   const fixForwardInstructions = isFixForwardTask(task)
     ? `
 This task is a fix-forward task. Handle failures as a decision problem, not a
@@ -448,6 +830,35 @@ Compact fix-forward training:
   the exact feature/spec.
 `
     : "";
+  const appOpsStateRepairInstructions = isAppOpsStateRepairTask(task)
+    ? `
+App-ops state repair authority:
+- This assigned task is explicitly scoped as app-ops repair work for app-owned
+  task-tree or loop-state drift. You may perform the precise repair named by
+  the task using supported app mechanisms.
+- Use task-tree CLI commands for task-tree changes. Never edit
+  .state/tasks/tree.json directly.
+- For app-owned loop state named by the task, prefer existing app store,
+  controller, or projection helpers. If no helper exists, use the smallest
+  app-local script that imports the existing store/helper modules and records
+  exactly what changed; do not hand-edit raw JSON with ad hoc text changes.
+- Do not create unrelated branches, dispatch unrelated work, accept/reject
+  review tasks, or roll up parents. If the exact repair cannot be applied with
+  a supported mechanism, finish blocked with the missing command/helper named
+  plainly.
+- If this is a retry or verification of an app-owned repair, update the
+  evidence memo so it names the current Attempt value from this prompt. Do not
+  leave an old attempt id as the only attempt header.
+- When claiming the repair is already applied, cite the exact supported read
+  command you used, the target task id or loop-state record inspected, and the
+  live fields that prove the current state satisfies the task acceptance. A
+  stale memo that only says an earlier attempt applied the repair is not enough.
+- For task-tree verification, cite \`bun run task-tree show <task-id>\` or the
+  SDK-backed task-tree helper result. Do not cite checked-in \`tasks/tree.json\`
+  as live state; runtime task state is resolved through the app helpers and
+  stored under \`.state/tasks/tree.json\`.
+`
+    : "";
   return `Task Worker Mode
 
 You are executing exactly one aks-rp-e2e task dispatched by the planner.
@@ -497,20 +908,12 @@ ${input.appDir}. The domain workspace may contain mirrored snapshots for
 human/domain review, but controller-visible loop state must be updated through
 the app path unless the task explicitly says otherwise. Domain feature/spec
 files, compact packages, test code, run artifacts, and evidence notes stay
-rooted at ${input.projectDir}.
+rooted at ${input.projectDir}. App-ops task outputs and app audit evidence
+paths listed in the assigned task, such as \`evidence/archive/ops/*.md\`, are
+rooted at ${input.appDir} unless the task explicitly gives an absolute path or
+names the domain workspace.
 
-Before any worker-initiated live Azure DevOps pipeline dispatch for single specs or compact
-feature reruns, run the local live dependency and admission policies against
-the exact spec set from ${input.projectDir}. Use both commands:
-
-  bun runner/check-private-source-policy.ts --specs <comma-separated-spec-ids>
-  bun runner/check-live-admission.ts --specs <comma-separated-spec-ids>
-
-If either policy fails, do not dispatch the pipeline. Repair the selected
-scenario tests so they are self-contained and live-admissible, or finish
-partial/blocked with the exact policy output and resume condition. An Azure DevOps pipeline run
-that fails only because either local policy would have failed is not acceptable
-completion evidence.
+${livePipelineDispatchInstructions}
 
 For spec-loop or compact-loop repair tasks, the app is only the organizer. If
 the root cause is test code, generated tests, runner behavior, compact planner,
@@ -521,43 +924,20 @@ compact plan. App-only notes, memos, or task-state updates do not fix those
 failures and are not enough to claim success. Update app evidence only as an
 audit trail after the domain fix is pushed and verified.
 
-If the assigned task is reviewing a terminal Azure DevOps pipeline wait, treat
-that as domain result review with explicit inputs. Do not touch the task tree,
-do not edit app loop state, and do not finish by saying only that the pipeline
-is terminal or that someone should review the artifacts.
-
-Use the run id and spec ids from task.context.terminalPipelineWaitReview,
-task.context.terminalGitHubWaitReview, task.trace.terminal_pipeline_wait_run_id,
-or task.trace.terminal_github_wait_run_id. Then:
-
-1. Look for already downloaded artifacts under ${input.projectDir}/workspace,
-   ${input.projectDir}/evidence/archive, and app .state artifact paths named by
-   the task.
-2. If artifacts are missing and Azure DevOps access is available, download them
-   with the existing Azure DevOps artifact flow or equivalent az pipelines
-   artifact commands into a task-specific workspace directory.
-3. Inspect the exact result.json/spec-runner result for each named spec. A
-   successful pipeline conclusion is not enough by itself.
-4. Record the concrete result: same spec id, target, run id, result path, real
-   cluster/resource group when required, failed verdict assertions, cleanup, and
-   next action.
-5. If the artifact cannot be obtained, finish partial/blocked with the exact
-   artifact recovery step. If the artifact is present, classify pass/fail/error
-   from the artifact and write the durable domain evidence or structured result
-   requested by the task. The app-side planner/controller consumes that result
-   later and owns task-tree or loop-state updates.
+${terminalPipelineReviewInstructions}
 
 For metric, watchdog, blocked-frontier, and overdue-wait audit tasks, compute
 the baseline as if the current audit/recovery task did not exist. Do not let the
 assigned task's own id, goal text, conflict scope, or review state suppress the
 blocked waits it is supposed to inspect. Report both the pre-audit contributor
 set and the post-action represented set when they differ.
+${appOpsStateRepairInstructions}
 ${fixForwardInstructions}
 ${compactFixForwardInstructions}
 
 Assigned task:
 \`\`\`json
-${JSON.stringify(input.task, null, 2)}
+${taskJsonForPrompt(task)}
 \`\`\``.trim();
 }
 
@@ -625,9 +1005,9 @@ function workerResultFromSession(
 
   // Structured finish() status is the worker's deliberate completion claim.
   if (finishStatus === "success") return "done";
-  if (finishStatus === "partial") return "partial";
-  if (finishStatus === "blocked" || finishStatus === "failure")
-    return "blocked";
+  if (finishStatus === "partial" || finishStatus === "failure")
+    return "partial";
+  if (finishStatus === "blocked") return "blocked";
 
   // Generic session success without structured finish is ambiguous. Treat it
   // conservatively as partial so owner/review can judge the work.
@@ -653,6 +1033,7 @@ function completionWorkflowResult(
     evidence: string[];
     problem: TaskProblemRoute;
     details?: Record<string, unknown>;
+    workflow?: string;
   },
 ): StructuredWorkflowResult {
   const problem =
@@ -664,8 +1045,9 @@ function completionWorkflowResult(
         }
       : null;
   return workflowResult({
-    workflow:
-      typeof task.workflow === "string" && task.workflow.trim()
+    workflow: input.workflow
+      ? input.workflow
+      : typeof task.workflow === "string" && task.workflow.trim()
         ? task.workflow.trim()
         : "default-task-worker",
     subject: {
@@ -1063,18 +1445,52 @@ async function runAssignedMode(
   const fixForwardResult = isFixForwardTask(task)
     ? fixForwardResultFromSessionResult(result)
     : null;
+  const terminalPipelineWaitReview = hasTerminalPipelineWaitReview(task);
+  const specResultReview = specResultReviewFromSessionResult(result);
+  const queuedPipelineRun = queuedPipelineRunFromSessionResult(result);
   const fixForwardDetails = isFixForwardTask(task)
     ? {
         fixForward: fixForwardResult,
         fixForwardStructuredResultPresent: Boolean(fixForwardResult),
       }
     : undefined;
+  const specResultReviewDetails =
+    terminalPipelineWaitReview || specResultReview
+      ? {
+          ...(specResultReview ?? {}),
+          specResultReviewStructuredResultPresent: Boolean(specResultReview),
+        }
+      : undefined;
+  const queuedPipelineRunDetails = queuedPipelineRun
+    ? {
+        queuedRun: queuedPipelineRun,
+        queuedRunStructuredResultPresent: true,
+      }
+    : undefined;
+  const summary =
+    message || "Worker session returned without a completion summary.";
+  const structuredResult = completionWorkflowResult(task, {
+    result: claim,
+    summary,
+    evidence,
+    problem: { action: "none" },
+    details: {
+      ...(fixForwardDetails ?? {}),
+      ...(specResultReviewDetails ?? {}),
+      ...(queuedPipelineRunDetails ?? {}),
+    },
+    workflow:
+      terminalPipelineWaitReview || specResultReview
+        ? "spec-result-review"
+        : undefined,
+  });
   const completion = completeStartedAttempt(config, {
     taskId: task.id,
     attemptId,
     claim,
-    summary: message || "Worker session returned without a completion summary.",
+    summary,
     evidence,
+    workflowResult: structuredResult,
   });
   if (completion.ok === false) {
     return ctx.done(
@@ -1091,9 +1507,9 @@ async function runAssignedMode(
   emitTaskCompleted(ctx, completedTask, {
     attemptId,
     result: claim,
-    summary: message || "Worker session returned without a completion summary.",
+    summary,
     evidence,
-    details: fixForwardDetails,
+    workflowResult: structuredResult,
   });
   return ctx.done(
     `Task worker handled ${task.id} attempt ${attemptId}; result is ${claim}. Agent result: ${message}`,

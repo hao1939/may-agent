@@ -288,51 +288,6 @@ function safeKey(value: string): string {
   );
 }
 
-function suppressionFromState(input: {
-  lastSummary: string | null | undefined;
-  outputPath: string | null | undefined;
-}): FeatureReferenceSuppression | null {
-  const summary = input.lastSummary?.toLowerCase() ?? "";
-  const output = input.outputPath?.toLowerCase() ?? "";
-  if (
-    summary.includes("duplicate churn") ||
-    summary.includes("duplicate refill") ||
-    summary.includes("obsolete false refill")
-  ) {
-    return {
-      kind: "duplicate-churn",
-      note: input.lastSummary ?? null,
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  if (
-    summary.includes("supporting-context") ||
-    summary.includes("supporting context")
-  ) {
-    return {
-      kind: "supporting-context",
-      note: input.lastSummary ?? null,
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  if (
-    summary.includes("public ceiling") ||
-    summary.includes("checked-location public ceiling") ||
-    summary.includes("no-public-surface ceiling") ||
-    summary.includes("non-public ceiling") ||
-    summary.includes("source-backed/reference-ceiling") ||
-    output.includes("public-official") ||
-    output.includes("public-authority")
-  ) {
-    return {
-      kind: "public-ceiling",
-      note: input.lastSummary ?? null,
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  return null;
-}
-
 function readPacketRecord(input: {
   projectDir: string;
   absolutePath: string;
@@ -502,12 +457,7 @@ export function loadFeatureReferenceLoopState(input: {
     for (const record of loadFeatureReferencePackets(input.projectDir)) {
       const existing = previousFeatureState(previous, record);
       const existingTaskId = existing?.taskId ?? null;
-      const suppression =
-        existing?.suppression ??
-        suppressionFromState({
-          lastSummary: existing?.lastSummary,
-          outputPath: existing?.lastOutputPath,
-        });
+      const suppression = existing?.suppression ?? null;
       const existingStatus = suppression
         ? "done"
         : existing?.status === "running" && !existingTaskId

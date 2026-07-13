@@ -422,6 +422,18 @@ function specIdsNamedByTask(
   return [...named].sort((a, b) => a.localeCompare(b));
 }
 
+function isFeatureCompactExactWaitHolder(task: TaskNode | undefined): boolean {
+  if (!task) return false;
+  if (taskContext(task).featureCompactExactWait === true) return true;
+  const scopes = taskConflictScopes(task);
+  if (scopes.some((scope) => scope.startsWith("feature-compact-wait:"))) {
+    return true;
+  }
+  return /^Hold compact feature .+ on exact .+ wait until the named condition changes\.?$/i.test(
+    typeof task.goal === "string" ? task.goal.trim() : "",
+  );
+}
+
 function closeStalePassedSpecBlockedWaitChildren(
   config: ReturnType<typeof buildTaskTreeConfig>,
   input: {
@@ -440,7 +452,7 @@ function closeStalePassedSpecBlockedWaitChildren(
     for (const childId of loopTask.children ?? []) {
       const child = tree.tasks[childId];
       if (!child || taskStatus(child) !== "blocked") continue;
-      if (taskContext(child).featureCompactExactWait === true) continue;
+      if (isFeatureCompactExactWaitHolder(child)) continue;
       const namedSpecIds = specIdsNamedByTask(child, specStatuses.keys());
       if (namedSpecIds.length === 0) continue;
       if (
@@ -526,18 +538,7 @@ function runIdFromCompactWaitTask(task: TaskNode): string {
       return value.trim();
     }
   }
-
-  const haystack = JSON.stringify({
-    goal: task.goal,
-    inputs: task.inputs,
-    context: task.context,
-    blocker: task.blocker,
-    trace: task.trace,
-  });
-  const match = haystack.match(
-    /\b(?:github\s+)?(?:workflow\s+)?run(?:\s+id|Id)?["':\s-]+(\d{6,})\b/i,
-  );
-  return match?.[1] ?? "";
+  return "";
 }
 
 function terminalCompactGitHubWaitCandidates(input: {
@@ -850,60 +851,6 @@ function compactErrorClass(item: FeatureCompactItemState): string {
   const durableErrorClass =
     typeof item.errorClass === "string" ? item.errorClass.trim() : "";
   if (durableErrorClass) return durableErrorClass;
-
-  const retryReason = (item.retryReason ?? "").toLowerCase();
-  const summary = (item.lastSummary ?? "").toLowerCase();
-  const text = `${retryReason}\n${summary}`;
-
-  if (
-    summary.includes("shared-fixture carrier") ||
-    summary.includes("shared fixture carrier") ||
-    summary.includes("carrier gap")
-  ) {
-    return "shared-fixture-carrier-gap";
-  }
-  if (summary.includes("partial") || summary.includes("not ready")) {
-    return "package-partial";
-  }
-  if (summary.includes("coverage") || summary.includes("selected")) {
-    return "coverage-gap";
-  }
-  if (summary.includes("check-mode") || summary.includes("check result")) {
-    return "check-failure";
-  }
-  if (
-    /\breviewed-exception\b/.test(text) ||
-    /\bpipeline\b/.test(text) ||
-    /\barm64\b/.test(text) ||
-    /\bk8s?>?=?.*1\.34\b/.test(text) ||
-    /\bkubernetes>?=?.*1\.34\b/.test(text)
-  ) {
-    return "reviewed-exception";
-  }
-  if (
-    /\bruntime\/product\b/.test(text) ||
-    /\bowner-review lineage\b/.test(text) ||
-    /\bnonpass lineage\b/.test(text) ||
-    /\bmeaningful remediator runtime\/product change\b/.test(text)
-  ) {
-    return "runtime-product-lineage";
-  }
-  if (
-    summary.includes("capacity") ||
-    summary.includes("quota") ||
-    summary.includes("managed clusters")
-  ) {
-    return "staging-capacity";
-  }
-  if (
-    summary.includes("github") ||
-    summary.includes("workflow") ||
-    summary.includes("dispatch") ||
-    summary.includes("run id")
-  ) {
-    return "live-workflow";
-  }
-  if (summary.includes("cleanup")) return "cleanup";
   return "compact-error";
 }
 
@@ -1139,100 +1086,10 @@ function compactRetryResetDirectives(
   ];
 }
 
-function taskTextValues(value: unknown): string[] {
-  if (typeof value === "string" && value.trim()) return [value.trim()];
-  if (Array.isArray(value)) {
-    return value
-      .filter((entry): entry is string => typeof entry === "string")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-  }
-  return [];
-}
-
-function inferredCompactRetryResetDirective(
-  task: TaskNode,
-): CompactRetryResetDirective | null {
-  const context = taskContext(task);
-  const trace = taskTrace(task);
-  const reviewedTask = recordValue(context.reviewedTask);
-  const featureKeys = new Set<string>();
-
-  if (context.featureCompactFocusedDiagnostic === true) {
-    return null;
-  }
-
-  const directFeatureKey = context.featureKey;
-  if (typeof directFeatureKey === "string" && directFeatureKey.trim()) {
-    featureKeys.add(directFeatureKey.trim());
-  }
-  for (const scope of taskConflictScopes(task)) {
-    const trimmed = scope.trim();
-    if (!trimmed.startsWith("feature-compact:")) continue;
-    const featureKey = trimmed.slice("feature-compact:".length).trim();
-    if (featureKey) featureKeys.add(featureKey);
-  }
-
-  // Grouped family tasks must opt in with structured compactRetryReset. Their
-  // text often says "classified" or "no rerun"; inferring a family-wide retry
-  // would create noisy live work.
-  if (
-    context.featureCompactFollowup === true &&
-    typeof context.errorClass === "string" &&
-    featureKeys.size === 0
-  ) {
-    return null;
-  }
-  if (featureKeys.size === 0) return null;
-
-  const text = [
-    task.result,
-    context.acceptance_note,
-    trace.last_worker_summary,
-    trace.review_summary,
-    reviewedTask?.summary,
-    ...taskTextValues(reviewedTask?.findings),
-    ...taskTextValues(reviewedTask?.feedback),
-    ...taskTextValues(reviewedTask?.suggestedFollowups),
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join("\n")
-    .toLowerCase();
-
-  const hasRetryIntent =
-    /\b(requeue|requeued|rerun|retry|retrying)\b/.test(text) ||
-    /\b(live[- ]dispatchable|live dispatch ready|live proof|live verification)\b/.test(
-      text,
-    ) ||
-    /\b(package is ready|ready package|package.*ready|fixed|repaired|resolved)\b/.test(
-      text,
-    );
-  const hasNoRetryIntent =
-    /\b(no|not|without)\b[^.\n]{0,80}\b(rerun|requeue|dispatch|live run|live proof|live verification)\b/.test(
-      text,
-    ) ||
-    /\b(do not|don't)\b[^.\n]{0,80}\b(rerun|requeue|dispatch|live run|live proof|live verification)\b/.test(
-      text,
-    ) ||
-    /\b(no-rerun|no broad .*rerun|not truthful.*rerun)\b/.test(text);
-
-  if (!hasRetryIntent || hasNoRetryIntent) return null;
-
-  return {
-    featureKeys: [...featureKeys],
-    reason:
-      "accepted compact repair indicates the exact feature is ready for another live proof attempt",
-    resetAttemptsTo: 0,
-    includeBlockedWaits: false,
-  };
-}
-
 function allCompactRetryResetDirectives(
   task: TaskNode,
 ): CompactRetryResetDirective[] {
-  const explicit = compactRetryResetDirectives(task);
-  const inferred = inferredCompactRetryResetDirective(task);
-  return inferred ? [...explicit, inferred] : explicit;
+  return compactRetryResetDirectives(task);
 }
 
 function compactRetryResetMatches(
@@ -1907,21 +1764,6 @@ function materializeFeatureCompactFollowups(
   return createdTaskIds;
 }
 
-function textHasCompactExactWaitSignal(text: string): boolean {
-  const normalized = text.toLowerCase();
-  return (
-    /\bdo not (?:broad-)?rerun unchanged\b/.test(normalized) ||
-    /\bdo not (?:dispatch|queue|regenerate|reopen).*unchanged\b/.test(
-      normalized,
-    ) ||
-    /\bresume only (?:after|when|if)\b/.test(normalized) ||
-    /\bexact surviving holder\b/.test(normalized) ||
-    /\bpreserve (?:the )?(?:exact|reviewed|accepted)\b/.test(normalized) ||
-    /\bwait(?:ing)? (?:for|on)\b/.test(normalized) ||
-    /\bblocked on\b/.test(normalized)
-  );
-}
-
 function compactExactWaitReason(
   item: FeatureCompactItemState,
   errorClass: string,
@@ -1938,10 +1780,23 @@ function compactExactWaitReason(
     .filter((value): value is string => typeof value === "string")
     .join("\n")
     .trim();
-  if (!text) return null;
-  if (errorClass === "staging-capacity") return text;
-  if (!textHasCompactExactWaitSignal(text)) return null;
-  return text;
+  if (
+    (errorClass === "staging-capacity" ||
+      errorClass === "runtime-product-lineage") &&
+    text
+  ) {
+    return text;
+  }
+  if (recordValue(item.waitingFor)) {
+    return (
+      item.waitingCondition ||
+      item.resumeCondition ||
+      item.retryReason ||
+      item.lastSummary ||
+      `Feature compact ${compactErrorClass(item)} wait is represented by structured waitingFor.`
+    );
+  }
+  return null;
 }
 
 function compactWaitingFor(
@@ -1950,45 +1805,21 @@ function compactWaitingFor(
   errorClass: string,
   reason: string,
 ): Record<string, unknown> {
-  const text = reason.toLowerCase();
   const base = {
     featureKey,
     target,
     errorClass,
     scope: "feature-compact",
   };
-  if (text.includes("kubeconfig") || text.includes("underlay")) {
-    return { ...base, type: "environment.prerequisite.ready" };
-  }
-  if (text.includes("pipeline") || text.includes("artifact")) {
-    return { ...base, type: "pipeline.result.or.artifact.available" };
-  }
-  if (
-    errorClass === "runtime-product-lineage" ||
-    text.includes("owner") ||
-    text.includes("runtime/product") ||
-    text.includes("runtime-product") ||
-    text.includes("runtime product") ||
-    text.includes("product") ||
-    text.includes("source") ||
-    text.includes("reclassification") ||
-    text.includes("promotion")
-  ) {
+  if (errorClass === "runtime-product-lineage") {
     return { ...base, type: "owner.decision" };
   }
-  if (text.includes("capacity") || text.includes("quota")) {
+  if (errorClass === "staging-capacity") {
     return {
       ...base,
       type: "azure.capacity.available",
       resource: "managedClusters",
     };
-  }
-  if (
-    text.includes("auth") ||
-    text.includes("credential") ||
-    text.includes("publish")
-  ) {
-    return { ...base, type: "publish.auth.ready" };
   }
   return { ...base, type: "compact.frontier.changed" };
 }
@@ -2069,7 +1900,6 @@ function materializeExactFeatureCompactWaits(
     const fallbackAt = new Date(
       Date.parse(blockedAt) + 24 * 60 * 60 * 1000,
     ).toISOString();
-    const owner = compactWaitOwner(reason);
     const waitingCondition =
       item.resumeCondition ||
       item.waitingCondition ||
@@ -2080,6 +1910,7 @@ function materializeExactFeatureCompactWaits(
       errorClass,
       reason,
     );
+    const owner = compactWaitOwner({ waitingFor });
     const observedBy = {
       workflow: "feature-compact-loop-controller",
       trigger: "project.task.tick",
@@ -2356,6 +2187,217 @@ function projectedBlockedFeatureKeys(input: {
   return keys;
 }
 
+function findBlockedFeatureRepresentation(input: {
+  loopTask: TaskNode | undefined;
+  featureKey: string;
+  item: FeatureCompactItemState;
+  tasks: Record<string, TaskNode>;
+}): TaskNode | null {
+  const projectedTaskIds: string[] = [];
+  if (typeof input.item.taskId === "string" && input.item.taskId.trim()) {
+    projectedTaskIds.push(input.item.taskId.trim());
+  }
+  if (Array.isArray(input.item.frontierTaskIds)) {
+    for (const taskId of input.item.frontierTaskIds) {
+      if (typeof taskId === "string" && taskId.trim()) {
+        projectedTaskIds.push(taskId.trim());
+      }
+    }
+  }
+  for (const taskId of projectedTaskIds) {
+    const task = input.tasks[taskId];
+    if (!task) continue;
+    const status = taskStatus(task);
+    if (status !== "blocked" && status !== "waiting") continue;
+    if (
+      featureKeysRepresentedByTask({
+        task,
+        knownFeatureKeys: [input.featureKey],
+      }).has(input.featureKey)
+    ) {
+      return task;
+    }
+  }
+
+  for (const childId of input.loopTask?.children ?? []) {
+    const task = input.tasks[childId];
+    if (!task) continue;
+    const status = taskStatus(task);
+    if (status !== "blocked" && status !== "waiting") continue;
+    if (
+      featureKeysRepresentedByTask({
+        task,
+        knownFeatureKeys: [input.featureKey],
+      }).has(input.featureKey)
+    ) {
+      return task;
+    }
+  }
+
+  return null;
+}
+
+function normalizeLegacyBlockedFeatureCompactRecords(input: {
+  loopTask: TaskNode | undefined;
+  tasks: Record<string, TaskNode>;
+  state: FeatureCompactLoopState;
+  target: string;
+  branch: string;
+}): { featureKeys: string[]; repairedTaskIds: string[] } {
+  const normalized: string[] = [];
+  const repairedTaskIds: string[] = [];
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (item.status !== "pending" && item.status !== "error") continue;
+    const task = findBlockedFeatureRepresentation({
+      loopTask: input.loopTask,
+      featureKey,
+      item,
+      tasks: input.tasks,
+    });
+    if (!task) continue;
+
+    const rawBlockerText =
+      typeof task.blocker === "string" && task.blocker.trim()
+        ? task.blocker.trim()
+        : "";
+    const existingBlocker = recordValue(task.blocker);
+    const legacyExactWait =
+      rawBlockerText && taskContext(task).featureCompactExactWait === true;
+    if (!existingBlocker && !legacyExactWait) continue;
+    const blocker = existingBlocker ?? {};
+    const trace = recordValue(task.trace);
+    const context = taskContext(task);
+    const errorClass =
+      (typeof context.errorClass === "string" && context.errorClass.trim()) ||
+      item.errorClass ||
+      compactErrorClass(item);
+    const blockedAt =
+      stringField(blocker, "blocked_at") ||
+      stringField(blocker, "blockedAt") ||
+      stringField(trace, "blocked_at") ||
+      stringField(trace, "created_at") ||
+      new Date().toISOString();
+    const condition =
+      stringField(blocker, "condition") ||
+      rawBlockerText ||
+      item.retryReason ||
+      item.resumeCondition ||
+      task.goal ||
+      `Feature compact ${featureKey} is represented by blocked holder ${task.id}.`;
+    const waitingCondition =
+      stringField(blocker, "resume_condition") ||
+      stringField(blocker, "resumeCondition") ||
+      item.resumeCondition ||
+      condition;
+    const waitingFor = recordValue(blocker.waiting_for) ??
+      recordValue(blocker.waitingFor) ?? {
+        featureKey,
+        target: input.target,
+        errorClass,
+        scope: "feature-compact",
+        taskId: task.id,
+        type: "owner.decision",
+      };
+    const observedBy = recordValue(blocker.observed_by) ??
+      recordValue(blocker.observedBy) ?? {
+        workflow: "feature-compact-loop-controller",
+        trigger: "project.task.tick",
+      };
+    const observationMethod =
+      stringField(blocker, "observation_method") ||
+      stringField(blocker, "observationMethod") ||
+      "On each compact-loop tick, verify the linked blocked holder still represents this feature.";
+    const nextCheckAt =
+      stringField(blocker, "next_check_at") ||
+      stringField(blocker, "nextCheckAt") ||
+      (legacyExactWait
+        ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
+        : null);
+    const fallbackAt =
+      stringField(blocker, "fallback_at") ||
+      stringField(blocker, "fallbackAt") ||
+      (legacyExactWait
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        : null);
+    const fallbackAction =
+      stringField(blocker, "fallback_action") ||
+      stringField(blocker, "fallbackAction") ||
+      "If the same wait remains true, refresh evidence or replace the holder with a narrower exact wait.";
+    const resumeAction =
+      stringField(blocker, "resume_action") ||
+      stringField(blocker, "resumeAction") ||
+      "Reset this feature compact record to pending only after the named wait condition changes.";
+    const evidencePaths = [
+      ...stringArrayValue(blocker.evidence),
+      item.reviewEvidencePath,
+      item.lastResultPath,
+      item.lastDiagnosticsPath,
+      item.lastSummaryPath,
+    ].filter((value): value is string => typeof value === "string" && !!value);
+    const owner =
+      stringField(blocker, "owner") ||
+      (typeof task.owner === "string" ? task.owner : null);
+
+    if (legacyExactWait) {
+      task.blocker = {
+        condition,
+        category: "external-wait",
+        owner,
+        blocked_at: blockedAt,
+        waiting_for: waitingFor,
+        observed_by: observedBy,
+        observation_method: observationMethod,
+        next_check_at: nextCheckAt,
+        resume_condition: waitingCondition,
+        fallback_at: fallbackAt,
+        fallback_action: fallbackAction,
+      };
+      task.trace = {
+        ...(task.trace ?? {}),
+        blocked_contract_repaired_at: new Date().toISOString(),
+        blocked_contract_repaired_by: "feature-compact-loop-controller",
+      };
+      repairedTaskIds.push(task.id);
+    }
+
+    updateFeatureCompactItem(input.state, featureKey, {
+      status: "blocked",
+      errorClass,
+      retryable: false,
+      retryReason: waitingCondition,
+      taskId: task.id,
+      blockedAt,
+      blockedReason: condition,
+      waitingFor,
+      waitingCondition,
+      observedBy,
+      observationMethod,
+      nextCheckAt,
+      blockerOwner: owner,
+      fallbackAt,
+      fallbackAction,
+      resumeAction,
+      blockedScope: {
+        kind: "feature",
+        ids: [featureKey],
+      },
+      blockedFingerprint: {
+        errorClass,
+        target: input.target,
+        branch: input.branch,
+        featureKey,
+      },
+      lastCheckedAt:
+        stringField(blocker, "last_checked_at") ||
+        stringField(blocker, "lastCheckedAt") ||
+        blockedAt,
+      evidencePaths,
+    });
+    normalized.push(featureKey);
+  }
+  return { featureKeys: normalized, repairedTaskIds };
+}
+
 function hasCurrentLiveProof(
   item:
     | {
@@ -2554,27 +2596,7 @@ function shouldBackfillCompletedErrorRun(
     item.retryable === false
   )
     return false;
-
-  const summary = (item.lastSummary ?? "").toLowerCase();
-  if (
-    summary.includes("backfilled completed compact github run") ||
-    summary.includes("reconciled completed compact github run") ||
-    summary.includes(
-      "backfilled completed compact azure devops pipeline run",
-    ) ||
-    summary.includes("reconciled completed compact azure devops pipeline run")
-  ) {
-    return false;
-  }
-  return (
-    compactErrorClass(item) === "live-workflow" ||
-    summary.includes("did not pass") ||
-    summary.includes("did not prove a live azure pass") ||
-    summary.includes("live proof is still failing") ||
-    summary.includes("workflow run did not complete successfully") ||
-    summary.includes("github artifact download failed") ||
-    summary.includes("no top-level result.json")
-  );
+  return compactErrorClass(item) === "live-workflow";
 }
 
 function applyCompletedWorkflowRunProof(input: {
@@ -2956,13 +2978,28 @@ function compactLoopWorkflowProgress(input: {
       feature.status === "running" &&
       input.activePipelineFeatureKeys?.has(featureKey),
   ).length;
-  const activePipelineErrorCount = Object.entries(
-    input.state.features,
-  ).filter(
+  const activePipelineErrorCount = Object.entries(input.state.features).filter(
     ([featureKey, feature]) =>
       feature.status === "error" &&
       input.activePipelineFeatureKeys?.has(featureKey),
   ).length;
+  const unrepresentedErrorFeatureKeys = Object.entries(input.state.features)
+    .filter(([featureKey, feature]) => {
+      if (feature.status !== "error") return false;
+      if (input.blockedWaitFeatureKeys?.has(featureKey)) return false;
+      if (input.representedFeatureKeys?.has(featureKey)) return false;
+      if (
+        input.representedSupportErrorClasses?.has(
+          compactErrorClass(feature as FeatureCompactItemState),
+        )
+      ) {
+        return false;
+      }
+      if (input.activePipelineFeatureKeys?.has(featureKey)) return false;
+      return true;
+    })
+    .map(([featureKey]) => featureKey)
+    .sort((a, b) => a.localeCompare(b));
   const unrepresentedErrorCount = Math.max(
     0,
     error -
@@ -2977,12 +3014,39 @@ function compactLoopWorkflowProgress(input: {
   ]);
   const representedBlockedCount = Object.entries(input.state.features).filter(
     ([featureKey, feature]) =>
-      feature.status === "blocked" && representedBlockedFeatureKeys.has(featureKey),
+      feature.status === "blocked" &&
+      representedBlockedFeatureKeys.has(featureKey),
   ).length;
   const unrepresentedBlockedCount = Math.max(
     0,
     blocked - representedBlockedCount,
   );
+  const unrepresentedBlockedFeatureKeys = Object.entries(input.state.features)
+    .filter(
+      ([featureKey, feature]) =>
+        feature.status === "blocked" &&
+        !representedBlockedFeatureKeys.has(featureKey),
+    )
+    .map(([featureKey]) => featureKey)
+    .sort((a, b) => a.localeCompare(b));
+  const unrepresentedRunningFeatureKeys = Object.entries(input.state.features)
+    .filter(
+      ([featureKey, feature]) =>
+        feature.status === "running" &&
+        !input.activePipelineFeatureKeys?.has(featureKey),
+    )
+    .map(([featureKey]) => featureKey)
+    .sort((a, b) => a.localeCompare(b));
+  const unrepresentedPendingFeatureKeys = Object.entries(input.state.features)
+    .filter(([, feature]) => (feature.status || "pending") === "pending")
+    .map(([featureKey]) => featureKey)
+    .sort((a, b) => a.localeCompare(b));
+  const unrepresentedNonTerminalFeatureKeys = [
+    ...unrepresentedPendingFeatureKeys,
+    ...unrepresentedRunningFeatureKeys,
+    ...unrepresentedErrorFeatureKeys,
+    ...unrepresentedBlockedFeatureKeys,
+  ].sort((a, b) => a.localeCompare(b));
   const unrepresentedNonTerminalCount =
     pending +
     Math.max(0, running - activePipelineRunningCount) +
@@ -3022,6 +3086,11 @@ function compactLoopWorkflowProgress(input: {
     unrepresentedBlockedCount,
     unrepresentedErrorCount,
     unrepresentedNonTerminalCount,
+    unrepresentedBlockedFeatureKeys,
+    unrepresentedErrorFeatureKeys,
+    unrepresentedRunningFeatureKeys,
+    unrepresentedPendingFeatureKeys,
+    unrepresentedNonTerminalFeatureKeys,
     activeGithubRuns: input.activeGithubRuns,
     githubActiveRunLimit: input.githubActiveRunLimit,
     openChildren: input.openChildren,
@@ -3066,6 +3135,11 @@ function activePipelineWaits(input: {
     const run = activeRunsById.get(String(runId));
     const startedAt = item.heartbeatAt || item.updatedAt || null;
     const startedAtMs = startedAt ? Date.parse(startedAt) : NaN;
+    const nextCheckAt =
+      item.nextCheckAt ||
+      (Number.isFinite(startedAtMs)
+        ? new Date(startedAtMs + 10 * 60 * 1000).toISOString()
+        : null);
     const fallbackAt =
       item.fallbackAt ||
       (Number.isFinite(startedAtMs)
@@ -3083,11 +3157,66 @@ function activePipelineWaits(input: {
       expectedArtifact:
         item.lastResultPath || ".state/feature-compact-loop/artifacts/<runId>/",
       owner: "feature-compact-loop-controller",
-      nextCheckAt: item.nextCheckAt ?? null,
+      nextCheckAt,
       fallbackAt,
     });
   }
   return waits;
+}
+
+function normalizeActivePipelineWaitSchedules(input: {
+  state: FeatureCompactLoopState;
+  waitTimeoutMinutes: number;
+}): number {
+  let repaired = 0;
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    const runId =
+      item.activeWorkflowRunId ||
+      (item.status === "running" ? item.lastWorkflowRunId : null);
+    if (!runId) continue;
+    const startedAt = item.heartbeatAt || item.updatedAt || null;
+    const startedAtMs = startedAt ? Date.parse(startedAt) : NaN;
+    const nextCheckAt =
+      item.nextCheckAt || new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const fallbackAt =
+      item.fallbackAt ||
+      new Date(
+        (Number.isFinite(startedAtMs) ? startedAtMs : Date.now()) +
+          input.waitTimeoutMinutes * 60 * 1000,
+      ).toISOString();
+    if (item.nextCheckAt && item.fallbackAt) continue;
+    updateFeatureCompactItem(input.state, featureKey, {
+      waitingFor: item.waitingFor ?? {
+        type: "ado.pipeline_run.completed",
+        runId: String(runId),
+        runUrl: item.lastWorkflowRunUrl,
+        successCriteria:
+          "Run completed and uploaded a passing live compact result artifact.",
+      },
+      waitingCondition:
+        item.waitingCondition ??
+        `Azure DevOps pipeline run ${runId} completes and uploads a live compact result artifact.`,
+      observedBy: item.observedBy ?? {
+        workflow: "feature-compact-loop-controller",
+        trigger: "project.task.tick",
+      },
+      observationMethod:
+        item.observationMethod ??
+        "Poll Azure DevOps pipeline run status and inspect compact result artifacts.",
+      nextCheckAt,
+      blockerOwner: item.blockerOwner ?? "feature-compact-loop-controller",
+      fallbackAt,
+      fallbackAction:
+        item.fallbackAction ??
+        "If the run is still unavailable, still running, or missing artifacts, create compact pipeline diagnosis or escalation work.",
+      resumeAction:
+        item.resumeAction ??
+        "When the run is terminal, inspect result artifacts and update the compact feature to pass, repair, exact wait, or error.",
+      lastCheckedAt: new Date().toISOString(),
+    });
+    repaired += 1;
+  }
+  return repaired;
 }
 
 function acceptRecordedCompactReviewChildren(
@@ -3672,6 +3801,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     tasks: latestTree.tasks,
     state,
   });
+  const normalizedBlockedFeatures = normalizeLegacyBlockedFeatureCompactRecords(
+    {
+      loopTask: latestLoopTask,
+      tasks: latestTree.tasks,
+      state,
+      target,
+      branch,
+    },
+  );
+  if (normalizedBlockedFeatures.repairedTaskIds.length > 0) {
+    saveTaskTreeWithKanbanSnapshot(config, latestTree);
+  }
   const latestRepresentedFeatureKeys = openFeatureScopedChildKeys(
     latestLoopTask,
     latestTree.tasks,
@@ -3685,6 +3826,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ? representedSupportErrorClasses(latestLoopTask, latestTree.tasks)
       : new Set<string>()),
   ]);
+  normalizeActivePipelineWaitSchedules({
+    state,
+    waitTimeoutMinutes: githubWaitTimeoutMinutes,
+  });
   const latestActivePipelineWaits = activePipelineWaits({
     state,
     activeWorkflowRuns: activeGithubRunList,
@@ -3806,6 +3951,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     closedStaleBlockedWaitTaskIds.length
       ? `Closed ${closedStaleBlockedWaitTaskIds.length} stale compact blocked wait child task(s) whose named specs already passed.`
       : "",
+    normalizedBlockedFeatures.featureKeys.length
+      ? `Normalized ${normalizedBlockedFeatures.featureKeys.length} legacy compact ledger row(s) to their existing blocked holder(s).`
+      : "",
+    normalizedBlockedFeatures.repairedTaskIds.length
+      ? `Repaired ${normalizedBlockedFeatures.repairedTaskIds.length} legacy compact blocked holder contract(s).`
+      : "",
     terminalGitHubWaitHarvest.harvestedTaskIds.length
       ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal pipeline wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
       : "",
@@ -3842,6 +3993,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     backfilled_completed_error_workflow_feature_keys:
       completedErrorRunBackfill.backfilled,
     compact_synced_pass_spec_ids: compactSyncedPassSpecIds,
+    normalized_blocked_feature_keys: normalizedBlockedFeatures.featureKeys,
+    normalized_blocked_holder_task_ids:
+      normalizedBlockedFeatures.repairedTaskIds,
     protected_workflow_run_ids: completedWorkflowRunReconcile.protectedRunIds,
     protected_error_backfill_workflow_run_ids:
       completedErrorRunBackfill.protectedRunIds,

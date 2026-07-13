@@ -314,10 +314,12 @@ Recommended fields:
 - `lastCheckedAt`: last time the wait was reviewed without becoming runnable.
 
 If the fingerprint changes, the blocked record may be stale and should be
-rechecked. If `fallbackAt` passes, the project should run the fallback action:
-recheck, escalate, reclassify, or create repair work. If `waitingFor`, owner,
-observer, or fallback is missing, the item is not truly blocked; it is unowned
-work.
+rechecked. If `nextCheckAt` passes, the project should visibly recheck the
+condition and either unblock, create recovery work, refresh the wait with
+current evidence, or escalate. If `fallbackAt` passes, the project should run
+the stronger fallback action: recheck, escalate, reclassify, or create repair
+work. If `waitingFor`, owner, observer, or fallback is missing, the item is not
+truly blocked; it is unowned work.
 
 The blocked `owner` is accountability, not execution. A blocked leaf with
 `owner=aks-explorer`, `owner=app-ops`, `owner=operator`, or
@@ -328,16 +330,17 @@ runnable task and emits `project.task.assigned`.
 That means an overdue blocked wait has a hard closure rule:
 
 ```text
-fallbackAt passed
+nextCheckAt or fallbackAt passed
   -> watcher signal or metric breach
   -> planner/app-ops rechecks the wait
   -> one of: unblock, create recovery task, refresh exact wait, escalate,
              or accept terminal/no-op with evidence
 ```
 
-Silent waiting after `fallbackAt` is a process bug. The project must not leave
-an overdue blocked leaf as a passive final state just because it has an owner
-label. If the owner can act inside the app, create an active recovery task. If
+Silent waiting after `nextCheckAt` or `fallbackAt` is a process bug. The project
+must not leave an overdue blocked leaf as a passive final state just because it
+has an owner label. If the owner can act inside the app, create an active
+recovery task. If
 the owner is outside the app, create or verify a handoff/escalation task and
 keep the blocked wait linked to that proof. `owner=human` is valid only when
 there is visible handoff/escalation proof or the wait is refreshed with fresh
@@ -1105,6 +1108,15 @@ Metric breach does not mutate the task tree. It emits `metric.breach`, which
 routes to planner or stall review. Code reports facts; owner/planner decides
 the repair. The consumer should read both the metric sample history and the
 latest health check/context packet before deciding.
+
+For app metrics measured through `metrics-snapshot` `source_command` sampling,
+persisted `metrics.current`, `metric_snapshots`, and open alert rows are only as
+fresh as the next snapshot cycle. In this app the snapshot cadence is 5
+minutes, so a blocked-task repair can truthfully fix the live task tree before
+the persisted metric/alert surfaces recover. During that window, validate the
+current state with a fresh `source_command` recompute against the live task
+state and treat the DB row as lagging evidence until the next snapshot either
+confirms recovery or samples a new offender.
 
 Evaluator feedback follows the same closure rule. `learning.feedback` is not
 durable task state by itself. When its payload names project `aks-rp-e2e`, it

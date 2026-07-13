@@ -175,6 +175,88 @@ describe("project health", () => {
     expect(report.loops[0].stateCounts).toMatchObject({ error: 1 });
   });
 
+  test("treats represented blocked-wait durable loop as attention, not critical stall", async () => {
+    const fixture = await makeFixture();
+    await mkdir(join(fixture.appDir, ".state", "spec-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "spec-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          specs: {
+            "spec.example": {
+              status: "pending",
+              taskId: "hold-spec-example-exact-wait",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeTree(
+      fixture.appDir,
+      {
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          workflow: "spec-loop-controller",
+          children: ["hold-spec-example-exact-wait"],
+          goal: "Verify every spec.",
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason:
+                "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
+              pending: 1,
+              running: 0,
+              done: 0,
+              error: 0,
+              unrepresentedNonTerminalCount: 0,
+              activePipelineFeatureKeys: [],
+              activePipelineWaits: [],
+              updatedAt: "2026-07-03T11:00:00.000Z",
+            },
+          },
+        },
+        "hold-spec-example-exact-wait": {
+          id: "hold-spec-example-exact-wait",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          children: [],
+          goal: "Wait for exact owner-return result.",
+          outputs: ["evidence/archive/wait.md"],
+          acceptance: ["exact wait is resolved or refreshed"],
+          blocker: {
+            condition: "owner return is pending",
+            owner: "human",
+            resume_condition: "resume when owner returns",
+            next_check_at: "2026-07-12T00:00:00.000Z",
+            fallback_at: "2026-07-13T00:00:00.000Z",
+          },
+        },
+      },
+      ["aks-spec-verification-loop"],
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    const codes = report.signals.map((signal) => signal.code);
+    expect(report.status).toBe("attention");
+    expect(codes).toContain("loop.blocked-wait-stewardship");
+    expect(codes).not.toContain("loop.incomplete-without-frontier");
+  });
+
   test("shows active compact pipeline feature keys in loop health", async () => {
     const fixture = await makeFixture();
     await mkdir(join(fixture.appDir, ".state", "feature-compact-loop"), {
@@ -274,6 +356,105 @@ describe("project health", () => {
     });
   });
 
+  test("does not flag compact planner child as stale while its pipeline wait is represented", async () => {
+    const fixture = await makeFixture();
+    await mkdir(join(fixture.appDir, ".state", "feature-compact-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "feature-compact-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          features: {
+            windows: {
+              status: "running",
+              activeWorkflowRunId: "123",
+              lastWorkflowRunId: "123",
+              lastWorkflowRunUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+              heartbeatAt: "2026-07-03T11:00:00.000Z",
+              fallbackAt: "2026-07-03T23:00:00.000Z",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeTree(
+      fixture.appDir,
+      {
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          workflow: "feature-compact-loop-controller",
+          children: ["compact-feature-windows"],
+          goal: "Compact features.",
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              reason: "waiting on active Azure DevOps compact run",
+              pending: 0,
+              running: 1,
+              done: 0,
+              error: 0,
+              unrepresentedNonTerminalCount: 0,
+              activePipelineFeatureKeys: ["windows"],
+              activePipelineWaits: [
+                {
+                  featureKey: "windows",
+                  runId: "123",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
+                  watchedCondition:
+                    "Azure DevOps run 123 reaches completed status",
+                  expectedArtifact:
+                    ".state/feature-compact-loop/artifacts/<runId>/",
+                  owner: "feature-compact-loop-controller",
+                  nextCheckAt: "2026-07-03T12:10:00.000Z",
+                  fallbackAt: "2026-07-03T23:00:00.000Z",
+                },
+              ],
+              updatedAt: "2026-07-03T11:00:00.000Z",
+            },
+          },
+        },
+        "compact-feature-windows": {
+          id: "compact-feature-windows",
+          parent_id: "aks-feature-compact-loop",
+          state: "active",
+          status: "active",
+          workflow: "feature-compact-planner",
+          children: [],
+          goal: "Run compact feature windows.",
+          context: {
+            featureKey: "windows",
+          },
+          trace: {
+            assigned_at: "2026-07-03T10:00:00.000Z",
+            worker_started_at: "2026-07-03T10:00:00.000Z",
+          },
+        },
+      },
+      ["aks-feature-compact-loop"],
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    expect(report.staleActiveTaskIds).toEqual([]);
+    expect(report.signals.map((signal) => signal.code)).not.toContain(
+      "frontier.stale-active",
+    );
+  });
+
   test("merges exact active compact pipeline waits from loop state", async () => {
     const fixture = await makeFixture();
     await mkdir(join(fixture.appDir, ".state", "feature-compact-loop"), {
@@ -312,7 +493,8 @@ describe("project health", () => {
           context: {
             workflowProgress: {
               completionReady: false,
-              reason: "feature-compact loop state still has non-terminal features",
+              reason:
+                "feature-compact loop state still has non-terminal features",
               pending: 0,
               running: 0,
               done: 33,
@@ -404,6 +586,44 @@ describe("project health", () => {
     expect(report.assignments.queued).toBe(1);
     expect(report.signals.map((signal) => signal.code)).toContain(
       "assignment.queue-not-empty",
+    );
+  });
+
+  test("surfaces runnable work that has no active worker or queued assignment", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      {
+        "ready-task": {
+          id: "ready-task",
+          parent_id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: [],
+          goal: "Ready work.",
+          outputs: ["evidence/ready-task.md"],
+          acceptance: ["ready task completes"],
+          depends_on: [],
+        },
+      },
+      ["ready-task"],
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    expect(report.status).toBe("attention");
+    expect(report.frontier.runnable).toEqual(["ready-task"]);
+    expect(report.signals.map((signal) => signal.code)).toContain(
+      "frontier.runnable-idle",
+    );
+    expect(report.nextActions[0]).toContain(
+      "Wake the planner or assign ready runnable work",
     );
   });
 

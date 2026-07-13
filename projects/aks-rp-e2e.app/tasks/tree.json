@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-07-10T16:54:06Z",
+  "updated_at": "2026-07-11T17:23:55.855Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "compact-feature-cluster-autoscaler",
@@ -12,6 +12,7 @@
         "aks-spec-verification-loop",
         "aks-feature-reference-loop",
         "aks-feature-compact-loop",
+        "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
         "focus-bounded-compact-publication-and-blocker-truth-20260710",
         "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
         "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
@@ -52,7 +53,7 @@
         "Do not run cloud mutation unless a task has an explicit gate and that gate passes."
       ],
       "kind": "project",
-      "updated_at": "2026-07-10T14:59:30Z",
+      "updated_at": "2026-07-11T17:23:55.855Z",
       "strategy_context": "Planner update (2026-06-14T11:10): 324 features, 328 paths, 297 pass (91.5%). 26 staging features promoted to pass (accepted). Remaining: 12 fail features being classified (active), then final checkpoint. Project in wind-down. Expansion complete (batches 3-8 FINAL).",
       "progress": {
         "accepted": 8,
@@ -255,10 +256,10 @@
         "acceptance_note": "Project accepted by watchdog-reconcile: 353/353 tasks done, 324 features, 328 paths, 301 pass (91.8%), 27 terminal-classified. All non-passing paths have documented external blockers or durable exceptions.",
         "rollup_summary": "Compact accepted done leaves; preserve durable loop controllers even when their current frontier is complete or held.",
         "current_focus_proposal": {
-          "id": "focus-bounded-compact-publication-and-blocker-truth-20260710",
+          "id": "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
           "status": "needs_approval",
-          "reviewed_at": "2026-07-10T17:27:00Z",
-          "reason": "Regular focus review found the current focus proposal materially stale relative to the latest packet. The exact frontier is now five active leaves and one review leaf: three compact publication leaves, one aks-explorer secops-fips request-shape repair leaf, one app-ops overdue egress-lockdown coverage repair leaf, and one traffic-applink overdue-coverage review leaf, while runnable remains empty and 24h live execution remains at zero starts and zero successes. The next 12-24h mission should therefore narrow to bounded compact publication, exact blocked-family coverage repair, and review closure rather than broad repo-local repair waves or renewed live execution." 
+          "reviewed_at": "2026-07-11T17:23:55.855Z",
+          "reason": "Regular focus review found the prior focus completed while the live frontier collapsed to one active shared-auth artifact-recovery leaf plus exact blocked waits. Proposed next 12-24h mission: keep the no-live envelope, preserve exact waits, and refill work with RP lifecycle source/spec/replay/model maturation pending approval."
         }
       },
       "trace": {
@@ -377,6 +378,7 @@
         "domain/wait-runners-feature-set-ado-run171599421-artifact-return-20260709",
         "hold-spec-private-cluster-private-endpoint-connections-lifecycle-westus2-capacity-frontier-20260707",
         "verify-spec-private-cluster-vnet-integration-update-private",
+        "wait-localdns-hosts-plugin-create-http400-body-or-surface-change-20260703",
         "ops/apply-private-cluster-holder-convergence-20260709m",
         "ops/re-audit-overdue-artifact-and-input-return-family-20260709m",
         "domain/publish-node-confidential-reviewed-exception-slice-20260709n"
@@ -973,7 +975,8 @@
         "hold-compact-fleet-reviewed-exception-split-frontier-20260709",
         "compact-feature-cluster-autoscaler",
         "compact-feature-egress-lockdown",
-        "ops/apply-compact-package-partial-holder-batch-20260709n"
+        "ops/apply-compact-package-partial-holder-batch-20260709n",
+        "hold-compact-bootstrap-profile-byo-acr-reviewed-create-cache-acr0-frontier-20260711"
       ],
       "goal": "Generate feature-owned compact plans that cover every spec in each feature and prove each compacted test package with a passing live GitHub plan-execute workflow.",
       "inputs": [
@@ -9411,7 +9414,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Preserve one exact shared wait for Azure DevOps auth-capable runtime/provider response needed to publish authoritative origin/dev slices and recover Azure DevOps artifacts, including unpublished commit 64eb19b43 and existing publish-after-auth compact/spec successors.",
+      "goal": "Preserve one exact shared wait for Azure DevOps auth-capable runtime/provider response needed to publish authoritative origin/dev slices and recover Azure DevOps artifacts, including the current ahead-1/behind-1 unpublished repo slice and existing publish-after-auth compact/spec successors.",
       "inputs": [],
       "outputs": [
         "../aks-rp-e2e/evidence/archive/ops-resolve-unpublished-commit-64eb19b43-visibility-path-20260709c.md"
@@ -9426,14 +9429,14 @@
       ],
       "depends_on": [],
       "blocker": {
-        "condition": "Blocked on shared Azure DevOps auth-capable runtime/provider response: current worker evidence proves origin/dev publication and auth-gated artifact recovery are unavailable here because /app/.state/.local/bin/git-credential-azdevops requires az and this runtime returns 'az: command not found'. Keep one family-level wait for the ahead-commit 64eb19b43 publication slice plus existing publish-after-auth and artifact-recovery successors instead of duplicating per-branch passive waits.",
+        "condition": "Blocked on shared Azure DevOps auth-capable runtime/provider response: current worker evidence proves origin/dev publication and auth-gated artifact recovery are unavailable here because /app/.state/.local/bin/git-credential-azdevops requires az and this runtime returns 'az: command not found'. Current repo state is dev ahead 1 and behind 1 with dirty compact plan/diagnostics files plus runner/plan-run.ts and ci/feature-sets/master-validation.txt, so ADO cannot yet see the local publication slice. Keep one family-level wait for this unpublished ahead-1/behind-1 repo slice plus existing publish-after-auth and artifact-recovery successors instead of duplicating per-branch passive waits.",
         "category": "external-wait",
         "owner": "human",
         "resume_condition": "Resume when an approved runtime/provider response materially changes the exact auth surface: git ls-remote --heads origin dev succeeds, git push --dry-run origin HEAD:dev can authenticate, or equivalent auth-gated Azure DevOps artifact recovery succeeds for the affected bounded successors.",
         "resume_at": "2026-07-10T20:00:00Z",
         "next_check_at": "2026-07-10T20:00:00Z",
         "fallback_at": "2026-07-11T20:00:00Z",
-        "fallback_action": "If still blocked, refresh the exact auth-capability evidence with current credential-helper/az proof and escalate the runtime-owner ask again; for the unpublished commit slice, keep GitHub checkpoint visibility as a separate fallback but do not pretend origin/dev publication is available.",
+        "fallback_action": "If still blocked, refresh the exact auth-capability evidence with current credential-helper/az proof and escalate the runtime-owner ask again; for the unpublished ahead-1/behind-1 repo slice, keep GitHub checkpoint visibility as a separate fallback but do not pretend origin/dev publication is available.",
         "blocked_at": "2026-07-09T14:29:20.709Z",
         "waiting_for": {
           "type": "environment.available",
@@ -10204,54 +10207,56 @@
       "kind": "focus_plan",
       "priority": "P1",
       "owner": "aks-explorer",
-      "goal": "Proposed next 12-24h focus: keep the project on bounded repo-local compact publication, exact blocked-family coverage repair, and one remaining review closure instead of broad repair waves or live execution. Drive the three active compact publication leaves (cluster-autoscaler, net-integration, rp-nodepool-lifecycle), the active aks-explorer secops-fips shared-cluster request-shape repair, the active app-ops overdue egress-lockdown FIPS UDR coverage repair, and the single traffic-applink overdue-coverage review leaf to exact evidence/state outcomes.",
+      "goal": "Current 12-24h focus: keep the project on bounded no-live frontier repair by recovering returned ADO artifacts for secops-fips and rp-cluster-lifecycle, reconciling the compact rp-cluster-lifecycle frontier from run-171715936, and only then classifying any execute-ready octet/environment split. Do not reopen broad repair waves or live execution from focus maintenance alone.",
       "acceptance": [
-        "The focus branch remains the single readable 12-24h mission and now matches the current frontier: five active leaves and one review leaf, with runnable and waiting both empty.",
-        "cluster-autoscaler, net-integration, and rp-nodepool-lifecycle compact work each ends in one truthful outcome: publishable repo-local slice, exact unchanged-rerun hold, or bounded repair successor with cited evidence.",
-        "The secops-fips shared-cluster request-shape repair and overdue egress-lockdown FIPS UDR coverage repair each end in exact evidence and aligned state surfaces without reopening blind live reruns from focus maintenance alone.",
-        "The traffic-applink overdue-coverage review leaf moves to exact closure or truthful bounded follow-up, while live-started-24h and live-succeeded-24h remain 0 unless a separately approved gate opens."
+        "The focus branch remains the single readable 12-24h mission and matches the current frontier: two concrete active recovery/reconcile leaves, one waiting classifier leaf, three review holders, and no runnable queue.",
+        "The secops-fips returned-run recovery and the rp-cluster-lifecycle run-171715936 frontier reconciliation each end in one truthful outcome: returned artifacts relinked with enough evidence to classify the exact remaining compact/spec frontier, or one exact unrecoverable owner handoff with resume condition.",
+        "The waiting rp-cluster-lifecycle execute-ready-octet/environment classifier is advanced only if the recovered same-run evidence really supports that split; do not restore the older speculative execute-ready story without returned proof.",
+        "Live-started-24h and live-succeeded-24h remain 0 unless a separately approved gate opens, and any owner-loop refill stays repo-local and evidence-backed."
       ],
       "context": {
-        "horizon": "12-24h from 2026-07-10T17:27:00Z",
+        "horizon": "12-24h from 2026-07-10T23:34:31Z",
         "success_criteria": [
-          "The three active compact features either land as coherent publishable repo-local slices or resolve to one exact holder/escalation each; no broad compact rerun wave is reopened just to keep workers busy.",
-          "The secops-fips repair leaf, overdue egress-lockdown coverage leaf, and traffic-applink review leaf each produce precise blocker/evidence/state updates rather than blind reruns, keeping the spec-verification and blocker-truth surfaces current.",
-          "Task-tree durable focus, project context, and runtime readout all agree that the next owner loop is bounded compact/spec/model convergence plus blocked-family coverage repair, not live execution expansion."
+          "Returned-run artifact recovery for secops-fips runs 171478411/171755307 and rp-cluster-lifecycle run 171715936 resolves to imported evidence or exact handoff, so blocked/review holders can be narrowed truthfully.",
+          "The compact rp-cluster-lifecycle frontier is reconciled from same-run evidence before any execute-ready octet vs environment-family classification is accepted.",
+          "Task-tree durable focus and current runtime readout agree that the next owner loop is artifact recovery plus frontier reconciliation inside existing compact/spec lanes, not live execution expansion."
         ],
         "progress_review": {
-          "last_reviewed_at": "2026-07-10T17:27:00Z",
-          "status": "needs_approval",
-          "summary": "The current focus branch needed a material truth refresh. The latest task-tree summary shows only five active leaves and one review leaf, with no runnable leaves and 24h live execution still at zero starts and zero successes. The truthful next 12-24h mission is therefore narrower: bounded compact publication, exact blocked-family coverage repair, and review closure rather than broad repo-local repair waves or live execution recovery.",
+          "last_reviewed_at": "2026-07-10T23:34:31Z",
+          "status": "updated",
+          "summary": "The previous focus was stale and has been corrected again to match the latest live readout. The current no-live mission is exact returned-run recovery and frontier reconciliation: secops-fips artifact recovery, rp-cluster-lifecycle frontier reconciliation after run 171715936, and a waiting classifier leaf that should only run after those evidence surfaces move.",
           "evidence": [
-            "2026-07-10 bun run task-tree summary showed active_task_ids = compact-feature-cluster-autoscaler, compact-feature-net-integration, compact-feature-rp-nodepool-lifecycle, domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710, and ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710.",
-            "2026-07-10 bun run task-tree frontier showed runnable=[], waiting=[], active=[aks-feature-compact-loop, aks-spec-verification-loop, compact-feature-cluster-autoscaler, compact-feature-net-integration, compact-feature-rp-nodepool-lifecycle, domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710, ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710], review=[ops/restore-overdue-traffic-applink-superseded-lineage-coverage-20260710].",
-            "2026-07-10 task-tree summary counts showed active=8 including controller roots, review=1, blocked=137, needs_approval=1, done=3, while runnable remained empty, so the meaningful owner loop is exact active/review closure rather than dispatching fresh execution leaves.",
-            "2026-07-10 metrics sampling showed task.completed-24h=373, live-started-24h=0, live-succeeded-24h=0, spec.unverified-count=0, spec.failed-count=0, and model.unknown-path-count=70, so recent motion is repo-local convergence and blocker maintenance rather than live verification.",
-            "2026-07-10 bun run status -- --json reported zero structural coverage gaps (pathsWithoutSpec=0, pathsWithoutEvidence=0, featuresWithoutPaths=0), and git status --short remained concentrated in compact artifacts, selected spec/test/replay files, and knowledge-map views, supporting a publishable-slice/hygiene focus rather than a new live-execution envelope."
+            "2026-07-10T23:34Z task-tree summary/frontier showed active_task_ids ops/recover-secops-fips-ado-runs-171478411-171755307-artifacts-20260710 and reconcile-compact-rp-cluster-lifecycle-frontier-after-run-171715936-recovery-20260710, plus waiting leaf classify-rp-cluster-lifecycle-execute-ready-octet-environment-family-20260710.",
+            "2026-07-10T23:34Z task-tree frontier showed the remaining review set is hold-compact-rp-cluster-lifecycle-run-171715936-artifact-recovery-frontier-20260710, hold-compact-secops-package-partial-frontier, and wait-secops-fips-rerun-trio-return-20260710, with no runnable queue.",
+            "2026-07-10 metrics sample showed aks-rp-e2e.task.completed-24h=388 while aks-rp-e2e.run.live-started-24h=0 and aks-rp-e2e.run.live-succeeded-24h=0, confirming recent progress came from repo-local reconciliation and state updates rather than live runs.",
+            "2026-07-10 evidence/archive/ops-reconcile-unpublished-compact-staging-changes-20260710.md proved the six compact staging modifications were timestamp-only residue and were cleaned back to HEAD, removing that older publication item from the true focus frontier.",
+            "2026-07-10 git status --short returned no output, so the repo is clean and there is no unpublished local work justifying a publication-heavy focus."
           ]
         },
-        "allowed_risk": "Allow only exact task-tree/frontier reconciliation, blocker sharpening, repo-local compact/spec/model publication work, and owner-loop routing inside existing approved execution gates. Do not run live tests or reopen broad rerun waves from focus maintenance alone.",
-        "needs_approval": true,
+        "allowed_risk": "Allow only exact task-tree/frontier reconciliation, returned-run artifact recovery, blocker sharpening, repo-local compact/spec/model publication work, and owner-loop routing inside existing approved execution gates. Do not run live tests or reopen broad rerun waves from focus maintenance alone.",
+        "needs_approval": false,
         "observations": {
-          "focus_reason": "The visible focus branch still points at the right class of work, but its frontier description had become materially stale. The current packet is a smaller bounded queue: three compact publications, one aks-explorer secops-fips repair, one app-ops overdue-coverage repair, and one review leaf.",
-          "what_changed_since_last_review": "The earlier proposal overstated the frontier with five review leaves and several repair tracks that are no longer current. The latest packet narrows the owner loop to three compact publications, one secops-fips request-shape repair, one overdue egress-lockdown coverage repair, and one traffic-applink review closure.",
-          "live_execution_value": "Still low at focus-review time. The sampled 24h window shows zero live starts and zero live successes, and this session is explicitly non-executional, so the focus should optimize publishability, exact blocker truth, and review-state accuracy rather than force cloud runs.",
-          "blocker_shape": "Immediate blockers are now mostly repo-local publication coherence plus blocked-family coverage truth, with shared external execution-surface waits already represented elsewhere in the tree. The highest-value work is closure of the current compact, repair, and review leaves rather than new cloud dispatch.",
-          "parallel_work_filled": "Yes: five active leaves and one review leaf provide a concrete bounded frontier for the normal owner loop without introducing new execution risk.",
-          "frontier_active_leaf_count": 5,
-          "frontier_review_leaf_count": 1,
-          "frontier_waiting_leaf_count": 0,
+          "focus_reason": "The bounded no-live risk envelope is still correct, and the concrete mission is now the narrower returned-run recovery plus rp-cluster-lifecycle frontier reconciliation shown by the latest readout.",
+          "what_changed_since_last_review": "The readout moved again after the initial stale-focus correction: unpublished-staging cleanup dropped out, while secops-fips artifact recovery and rp-cluster-lifecycle frontier reconciliation became the concrete active leaves and the execute-ready octet classifier moved to waiting.",
+          "live_execution_value": "Low. No live runs started or succeeded in the last 24h, and the current highest-value gaps are same-run artifact recovery and truthful frontier classification, not new mutation dispatch.",
+          "blocker_shape": "Immediate blockers are exact returned-run artifact gaps and review-holder truth maintenance. External environment/product waits remain represented in blocked leaves; the local decomposition gap is that only one waiting follow-up is ready behind current recovery work.",
+          "parallel_work_filled": "Partially: there are two concrete active leaves and one waiting follow-up, but still no runnable queue beyond those recovery/reconcile surfaces.",
+          "frontier_active_leaf_count": 2,
+          "frontier_review_leaf_count": 3,
+          "frontier_waiting_leaf_count": 1,
           "frontier_runnable_leaf_count": 0,
-          "frontier_blocked_leaf_count": 137,
+          "frontier_blocked_leaf_count": 133,
           "linked_active_task_ids": [
-            "compact-feature-cluster-autoscaler",
-            "compact-feature-net-integration",
-            "compact-feature-rp-nodepool-lifecycle",
-            "domain/repair-secops-fips-shared-cluster-istio-request-shape-20260710",
-            "ops/restore-overdue-egress-lockdown-fips-udr-prereq-coverage-20260710"
+            "ops/recover-secops-fips-ado-runs-171478411-171755307-artifacts-20260710",
+            "reconcile-compact-rp-cluster-lifecycle-frontier-after-run-171715936-recovery-20260710"
+          ],
+          "linked_waiting_task_ids": [
+            "classify-rp-cluster-lifecycle-execute-ready-octet-environment-family-20260710"
           ],
           "linked_review_task_ids": [
-            "ops/restore-overdue-traffic-applink-superseded-lineage-coverage-20260710"
+            "hold-compact-rp-cluster-lifecycle-run-171715936-artifact-recovery-frontier-20260710",
+            "hold-compact-secops-package-partial-frontier",
+            "wait-secops-fips-rerun-trio-return-20260710"
           ],
           "linked_runnable_task_ids": [],
           "linked_controller_root_ids": [
@@ -10259,23 +10264,211 @@
             "aks-spec-verification-loop",
             "project"
           ],
-          "structural_status": "Current status output still reports zero structural coverage gaps; the mid-term focus should therefore stay on bounded compact/spec/model closure and blocked-family coverage truthfulness rather than source/spec scaffolding expansion."
+          "structural_status": "The focus branch now matches the latest runtime readout: two active recovery/reconcile leaves, one waiting classifier, three review holders, and no runnable queue."
         },
-        "rollup_summary": "2026-07-10 focus review refresh keeps one visible proposed branch and tightens it to the current exact frontier: five active leaves, one review leaf, no runnable queue, and live execution held idle unless a separately approved gate changes that truth."
+        "rollup_summary": "2026-07-10 progress review updated the visible focus to the latest no-live frontier: recover secops-fips returned-run artifacts, reconcile rp-cluster-lifecycle after run 171715936, then classify the execute-ready octet/environment split only if same-run evidence supports it."
       },
-      "state": "needs_approval",
+      "state": "active",
       "children": []
+    },
+    "wait-localdns-hosts-plugin-create-http400-body-or-surface-change-20260703": {
+      "id": "wait-localdns-hosts-plugin-create-http400-body-or-surface-change-20260703",
+      "parent_id": "aks-spec-verification-loop",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Preserve the exact LocalDNS hosts-plugin create-time HTTP400 branch after auth preflight passed but cluster create still failed, so future review reopens only a materially changed same-surface carrier instead of reviving a broad LocalDNS pending-family rerun.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/verify-spec-localdns-hosts-plugin-post-runtime-default-repair-20260702.md"
+      ],
+      "acceptance": [
+        "One blocked holder records that spec.localdns.hosts-plugin already passed auth preflight on the repaired carrier and then failed only at the exact create-time HTTP400 surface before feature assertions.",
+        "Resume only when the returned HTTP400 body or the same bounded create surface materially changes, or when reviewed source/product evidence reclassifies this exact hosts-plugin branch; do not queue an unchanged LocalDNS family rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:spec.localdns.hosts-plugin"
+      ],
+      "depends_on": [],
+      "blocker": {
+        "condition": "Blocked on the exact LocalDNS hosts-plugin create-time HTTP400 branch from run 28565312807: auth preflight passed on the repaired carrier, but cluster create still returned HTTP 400 before any hosts-plugin assertions. The truthful next step is to preserve this exact same-surface wait until the returned HTTP400 body or carrier meaning materially changes, not to reopen the broad LocalDNS pending family unchanged.",
+        "category": "external-wait",
+        "owner": "human",
+        "resume_condition": "Resume only when reviewed evidence shows a materially changed create-time HTTP400 body/surface for spec.localdns.hosts-plugin, or authoritative product/source evidence proves a narrower reclassification for this exact branch.",
+        "resume_at": "2026-07-11T18:00:00Z",
+        "next_check_at": "2026-07-11T18:00:00Z",
+        "fallback_at": "2026-07-12T18:00:00Z",
+        "fallback_action": "If this exact hosts-plugin create-time HTTP400 branch still governs the spec at fallback, refresh this one holder with current same-surface evidence or replace it only with a narrower exact successor; do not recreate the old LocalDNS pending-family umbrella.",
+        "blocked_at": "2026-07-09T22:48:39.771Z",
+        "waiting_for": {
+          "type": "environment.available",
+          "taskId": "wait-localdns-hosts-plugin-create-http400-body-or-surface-change-20260703",
+          "sourceRunId": "28565312807"
+        },
+        "observed_by": {
+          "workflow": "project-planner",
+          "schedule": "blocked-frontier-app-ops-review",
+          "trigger": "project.planning.requested"
+        },
+        "observation_method": "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence."
+      },
+      "trace": {
+        "created_at": "2026-07-09T22:48:39.771Z",
+        "created_by": "task-tree-tool",
+        "blocked_contract_repaired_at": "2026-07-09T22:48:39.800Z"
+      }
+    },
+    "hold-compact-bootstrap-profile-byo-acr-reviewed-create-cache-acr0-frontier-20260711": {
+      "id": "hold-compact-bootstrap-profile-byo-acr-reviewed-create-cache-acr0-frontier-20260711",
+      "parent_id": "aks-feature-compact-loop",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "product-owner",
+      "children": [],
+      "goal": "Preserve one visible compact-facing bootstrap-profile BYO ACR frontier for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch by carrying the accepted run-171800822 create-cache-acr0 runtime result after both prior compact/spec anchors were archived, without reopening an unchanged rerun.",
+      "inputs": [
+        "feature:bootstrap-profile",
+        "spec:spec.bootstrap-profile-byo-acr.cache-direct-cache-switch",
+        "target:staging",
+        "state:.state/feature-compact-loop/state.json"
+      ],
+      "outputs": [
+        ".state/feature-compact-loop/state.json",
+        "../aks-rp-e2e/evidence/archive/ops-repair-bootstrap-profile-byo-acr-compact-binding-visibility-20260711.md"
+      ],
+      "acceptance": [
+        "This holder remains visible only while the exact accepted bootstrap-profile BYO ACR frontier from Azure DevOps run 171800822 is still the truthful compact-facing family state for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+        "This holder records the exact reviewed surface: create-cache-acr0 timed out at 4500000ms with CreatingAgentPools: 0/1 nodes completed under runtime API 2026-04-02-preview, and it does not imply that the archived spec-holder id or archived compact-holder id are still live truth.",
+        "Resume only when a materially changed same-spec signal, narrower successor holder, or resolved reviewed result replaces this frontier; do not reopen an unchanged compact/spec rerun from this holder alone."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-compact:bootstrap-profile",
+        "feature:bootstrap-profile",
+        "blocked-frontier:bootstrap-profile-byo-acr-compact-binding-family"
+      ],
+      "depends_on": [],
+      "blocker": {
+        "condition": "Reviewed run 171800822 still leaves one exact bootstrap-profile BYO ACR compact-facing runtime frontier: create-cache-acr0 timed out at 4500000ms with CreatingAgentPools: 0/1 nodes completed under runtime API 2026-04-02-preview. Both earlier visible anchors were archived, so this replacement holder preserves the accepted reviewed outcome without claiming the archived holder ids remain live and without reopening an unchanged rerun.",
+        "owner": "product-owner",
+        "category": "external-wait",
+        "resume_condition": "Resume only when a materially changed same-spec runtime/carrier signal, a narrower reviewed successor holder, or a resolved accepted result replaces the current create-cache-acr0 frontier for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+        "next_check_at": "2026-07-12T18:00:00Z",
+        "fallback_at": "2026-07-13T18:00:00Z",
+        "fallback_action": "If the same bootstrap-profile create-cache-acr0 reviewed frontier still holds at fallback, refresh this represented holder from current compact/spec evidence instead of reopening an unchanged rerun."
+      },
+      "trace": {
+        "created_at": "2026-07-11T03:02:05.389Z",
+        "created_by": "compact-organizer"
+      }
+    },
+    "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711": {
+      "id": "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+      "parent_id": "project",
+      "kind": "focus_plan",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Proposed 12-24h focus: stay no-live and shift the owner loop from stale review-recovery work to RP lifecycle source/spec/replay/model maturation plus exact wait stewardship, anchored on shared authenticated artifact recovery for stop-start classification and bounded repo-local follow-through rather than new mutation dispatch.",
+      "acceptance": [
+        "One visible focus branch represents the proposed 12-24h mission and truthfully matches the current live frontier: shared auth/runtime artifact recovery remains the only active leaf, rp-cluster-lifecycle stop-start stays on one exact artifact-classification wait, and no blind live rerun is reopened from focus bookkeeping alone.",
+        "If approved, normal owner work stays inside existing lanes: exact wait stewardship plus repo-local RP lifecycle source/spec/replay/model maturation for still-draft or still-unknown branches before any new live execution is considered.",
+        "The focus is considered successful only when the shared auth/runtime artifact family either yields authenticated result recovery or lands one exact unrecoverable handoff, and the returned evidence narrows the RP lifecycle frontier or confirms the next bounded repo-local authoring work."
+      ],
+      "context": {
+        "horizon": "12-24h from 2026-07-11T17:23:55.855Z",
+        "success_criteria": [
+          "Shared auth/runtime artifact recovery advances to imported authenticated ADO result evidence or one exact unrecoverable owner/runtime handoff, so spec.rp-cluster-lifecycle.stop-start can be classified beyond terminal pipeline success alone.",
+          "RP lifecycle source/spec/replay/model maturation is pulled as the preferred no-live lane for the next 12-24h wherever lifecycle paths remain draft or unknown, instead of reopening broad blocked-frontier churn or blind reruns.",
+          "Task-tree focus state and runtime readout agree that live execution is currently low-value: active work is exact artifact recovery plus exact waits, while the owner loop should mine repo-local lifecycle authoring/model work before asking for new cloud risk."
+        ],
+        "progress_review": {
+          "last_reviewed_at": "2026-07-11T17:23:55.855Z",
+          "status": "blocked",
+          "summary": "The prior bounded review-recovery focus is no longer the truthful mission. Latest readout shows only one active owner leaf for shared authenticated artifact recovery, zero live starts/succeeds in the last 24h, zero failed/unverified specs, and 70 unknown paths. That makes a new no-live RP lifecycle authoring + exact wait stewardship direction the right 12-24h mission, but it is a material direction change and needs human approval.",
+          "evidence": [
+            "2026-07-11T11:58:48Z bun run task-tree summary showed 1 active leaf (ops/reconcile-shared-auth-runtime-artifact-recovery-family-20260711), 0 runnable, 0 waiting, 0 review, and 134 blocked leaves.",
+            "The same 2026-07-11T11:58:48Z summary still carried domain/wait-rp-cluster-lifecycle-stop-start-ado171798563-authenticated-artifact-classification-shared-ado-auth-return-20260711 on the blocked frontier, proving RP lifecycle stop-start remains gated on authenticated artifact recovery rather than verdict evidence.",
+            "2026-07-11 metrics sample reported aks-rp-e2e.task.completed-24h=466, aks-rp-e2e.run.live-started-24h=0, aks-rp-e2e.run.live-succeeded-24h=0, aks-rp-e2e.spec.unverified-count=0, aks-rp-e2e.spec.failed-count=0, and aks-rp-e2e.model.unknown-path-count=70.",
+            "2026-07-11 bun run status -- --json reported 724 paths with 70 unknown and 99 draft, confirming that repo-local model/spec/replay maturation still has meaningful room even while live execution is currently stalled.",
+            "2026-07-11 git status --short showed unpublished repo-local edits in aad-rbac compact/spec/model files, so the owner loop already has repo-local publication/model stewardship surfaces available without launching new live work."
+          ]
+        },
+        "allowed_risk": "Allow only exact wait stewardship, authenticated artifact recovery, repo-local RP lifecycle source/spec/replay/model authoring, and bounded publication of already-produced evidence. Do not run live tests or reopen broad rerun waves from focus maintenance alone.",
+        "needs_approval": true,
+        "observations": {
+          "focus_reason": "The frontier is no longer a review-packet mission; it is blocked-wait stewardship with one active auth/artifact recovery leaf and a large remaining unknown/draft lifecycle surface that can be improved locally.",
+          "what_changed_since_last_review": "The prior focus completed and dropped out of the live runtime tree. Shared auth/runtime artifact recovery became the only active leaf, while RP lifecycle stop-start remains exactly blocked on authenticated result recovery and live-run throughput dropped to zero.",
+          "live_execution_value": "Low. No live runs started or succeeded in the last 24h, and the current highest-value uncertainty is classification and lifecycle authoring, not another cloud mutation attempt.",
+          "blocker_shape": "Immediate blockers are a mix of external authenticated artifact access and exact environment/product waits; the local decomposition gap is that the task tree currently exposes almost no executable repo-local leaves despite 70 unknown paths and 99 drafts still in the model.",
+          "parallel_work_filled": "No. The live frontier currently has one active ops leaf and otherwise blocked waits, so the next approved focus should intentionally refill parallelism through bounded repo-local lifecycle authoring/model work under existing lanes.",
+          "frontier_active_leaf_count": 1,
+          "frontier_review_leaf_count": 0,
+          "frontier_waiting_leaf_count": 0,
+          "frontier_runnable_leaf_count": 0,
+          "frontier_blocked_leaf_count": 134,
+          "linked_active_task_ids": [
+            "ops/reconcile-shared-auth-runtime-artifact-recovery-family-20260711"
+          ],
+          "linked_blocked_task_ids": [
+            "domain/wait-rp-cluster-lifecycle-stop-start-ado171798563-authenticated-artifact-classification-shared-ado-auth-return-20260711",
+            "aks-spec-verification-loop",
+            "aks-feature-compact-loop"
+          ],
+          "linked_controller_root_ids": [
+            "aks-feature-compact-loop",
+            "aks-spec-verification-loop",
+            "project"
+          ],
+          "structural_status": "The next useful 12-24h mission is a material direction change: refill bounded repo-local lifecycle work while preserving exact waits and the no-live risk envelope."
+        },
+        "rollup_summary": "2026-07-11 focus review proposes a new visible no-live branch: keep the shared auth/runtime artifact recovery leaf moving, preserve the exact RP stop-start wait, and redirect the next owner loop toward RP lifecycle source/spec/replay/model maturation instead of more blocked-frontier churn.",
+        "needs_approval_reason": "Material 12-24h direction change from completed review-recovery focus to RP lifecycle no-live authoring plus exact wait stewardship."
+      },
+      "state": "blocked",
+      "blocker": {
+        "condition": "Focus plan is waiting for human approval of the proposed RP lifecycle no-live direction and risk envelope.",
+        "category": "human-approval",
+        "owner": "human",
+        "blocked_at": "2026-07-11T17:23:55.855Z",
+        "waiting_for": {
+          "type": "project.approval.submitted",
+          "approvalKind": "focus-plan",
+          "taskId": "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+          "decision": "approve | adjust | hold"
+        },
+        "observed_by": {
+          "workflow": "project-planner",
+          "trigger": "project.approval.submitted"
+        },
+        "observation_method": "Planner handles the returned project.approval.submitted event and reconciles this focus wait.",
+        "next_check_at": "2026-07-12T17:23:55.855Z",
+        "resume_condition": "Resume when the human owner submits approve, adjust, or hold for this focus plan.",
+        "resume_at": "2026-07-12T17:23:55.855Z",
+        "fallback_at": "2026-07-13T17:23:55.855Z",
+        "fallback_action": "If no approval arrives, refresh or resend the focus approval request, or replace this proposal with a safer bounded plan that matches the live frontier."
+      },
+      "trace": {
+        "created_at": "2026-07-11T17:23:55.855Z",
+        "created_by": "focus-progress-review",
+        "reviewed_at": "2026-07-11T17:23:55.855Z",
+        "reviewed_by": "aks-explorer",
+        "review_summary": "Created a new proposed focus branch because the prior focus completed and the next 12-24h mission materially changes toward RP lifecycle no-live authoring plus exact wait stewardship."
+      },
+      "updated_at": "2026-07-11T17:23:55.855Z"
     }
   },
   "active_task_ids": [
     "compact-feature-cluster-autoscaler",
-    "compact-feature-net-integration",
-    "compact-feature-rp-nodepool-lifecycle",
-    "domain-reconcile-net-integration-natgw-v2-byoip-prefix-state-alignment-20260710",
-    "ops-relink-cluster-autoscaler-compact-post-portability-successors-202607",
-    "ops-restore-windows-authoritative-holder-tree-state-20260710-followup",
-    "ops/escalate-egress-lockdown-fips-udr-prereq-proof-owner-ask-20260710",
-    "ops/repair-ado-sp-credential-env-contract-pipeline-467665-20260710"
+    "compact-feature-egress-lockdown",
+    "domain/publish-node-confidential-reviewed-exception-slice-20260709n",
+    "ops/apply-compact-package-partial-holder-batch-20260709n",
+    "ops/apply-private-cluster-holder-convergence-20260709m",
+    "ops/re-audit-overdue-artifact-and-input-return-family-20260709m"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {

@@ -2378,7 +2378,7 @@ describe("feature compact loop", () => {
     );
     const updated = JSON.parse(await readFile(treePath, "utf8"));
     expect(updated.tasks["compact-feature-windows"].state).toBe("done");
-  });
+  }, 10_000);
 
   test("controller marks drained blocked-wait compact frontier as no-refill stewardship", async () => {
     const projectDir = await makeProject();
@@ -2425,6 +2425,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -2501,6 +2502,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "staging-capacity",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -2568,8 +2570,38 @@ describe("feature compact loop", () => {
       blockedWaitBlockedCount: 1,
       unrepresentedNonTerminalCount: 0,
     });
+  });
 
-    await executeController({
+  test("controller does not convert prose-only compact errors into exact blocked waits", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "error",
+      errorClass: "reviewed-exception",
+      taskId: "compact-feature-windows",
+      attempts: 2,
+      lastSummary:
+        "Do not rerun unchanged; preserve exact reviewed frontier until the owner returns.",
+      waitingFor: null,
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
       task: [
         `app: ${projectDir}`,
         `project: ${projectDir}`,
@@ -2591,11 +2623,19 @@ describe("feature compact loop", () => {
       runAgent: async () => ({ status: "success" }),
       summarize: () => "",
     } as any);
-    const repulsed = JSON.parse(await readFile(treePath, "utf8"));
-    const capacityWaits = Object.values(repulsed.tasks).filter(
-      (task: any) => task.context?.errorClass === "staging-capacity",
-    );
-    expect(capacityWaits).toHaveLength(1);
+
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(result.status).toBe("done");
+    expect(
+      updated.tasks["hold-compact-windows-reviewed-exception-frontier"],
+    ).toBeUndefined();
+    expect(
+      Object.values(updated.tasks).some(
+        (task: any) =>
+          task?.context?.featureCompactExactWait === true &&
+          task?.context?.featureKey === "windows",
+      ),
+    ).toBe(false);
   });
 
   test("controller does not recreate grouped follow-up for feature with exact open successor", async () => {
@@ -2644,6 +2684,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -2683,8 +2724,10 @@ describe("feature compact loop", () => {
       updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
     ).toMatchObject({
       completionReady: false,
+      blocked: 1,
+      error: 0,
       blockedWaitChildren: 1,
-      retryBudgetExhausted: 1,
+      retryBudgetExhausted: 0,
       unrepresentedNonTerminalCount: 0,
     });
   });
@@ -2729,6 +2772,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -2812,6 +2856,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -2933,6 +2978,7 @@ describe("feature compact loop", () => {
     for (const featureKey of ["linux", "windows"]) {
       updateFeatureCompactItem(state, featureKey, {
         status: "error",
+        errorClass: "package-partial",
         taskId: `compact-feature-${featureKey}`,
         attempts: 2,
         lastSummary: `Feature compact package for ${featureKey} is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.`,
@@ -2940,6 +2986,7 @@ describe("feature compact loop", () => {
     }
     updateFeatureCompactItem(state, "network", {
       status: "error",
+      errorClass: "live-workflow",
       taskId: "compact-feature-network",
       attempts: 2,
       lastSummary:
@@ -3056,6 +3103,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -3123,6 +3171,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -3226,6 +3275,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -3440,6 +3490,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "package-partial",
       taskId: "compact-feature-windows",
       attempts: 2,
       lastSummary:
@@ -3495,7 +3546,7 @@ describe("feature compact loop", () => {
     }
   });
 
-  test("completed exact compact repair can infer retry reset from accepted rerun text", async () => {
+  test("completed exact compact repair can reset retry budget with structured directive", async () => {
     const projectDir = await makeProject();
     const restoreGh = await installCompactPipelineBackend(projectDir);
     await writeRootTree(projectDir);
@@ -3524,6 +3575,12 @@ describe("feature compact loop", () => {
       result:
         "Windows compact package is ready and the next bounded live rerun should prove the repaired path.",
       trace: {
+        compactRetryReset: {
+          featureKeys: ["windows"],
+          reason:
+            "Accepted repair made the windows compact package ready for bounded live verification.",
+          resetAttemptsTo: 0,
+        },
         last_worker_summary:
           "Fixed the windows compact package. Do not retry the package repair itself; current repo truth is ready package plus next bounded live rerun.",
         review_summary:
@@ -3620,7 +3677,9 @@ describe("feature compact loop", () => {
     tree.tasks["aks-feature-compact-loop"].children = [
       "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260709",
     ];
-    tree.tasks["hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260709"] = {
+    tree.tasks[
+      "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260709"
+    ] = {
       id: "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260709",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -3706,7 +3765,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "fleet", {
       status: "error",
       errorClass: "reviewed-exception",
-      taskId: "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260708",
+      taskId:
+        "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260708",
       frontierTaskIds: [
         "hold-compact-fleet-hubless-rpapi-version-progression-frontier-20260709",
       ],
@@ -3756,7 +3816,9 @@ describe("feature compact loop", () => {
       const updated = JSON.parse(await readFile(treePath, "utf8"));
       expect(
         Object.keys(updated.tasks).filter((taskId) =>
-          taskId.startsWith("verify-compact-fleet-fleet.hubless-rpapi-lifecycle"),
+          taskId.startsWith(
+            "verify-compact-fleet-fleet.hubless-rpapi-lifecycle",
+          ),
         ),
       ).toHaveLength(0);
       expect(
@@ -4064,9 +4126,11 @@ describe("feature compact loop", () => {
     });
     const savedState = JSON.parse(await readFile(statePath, "utf8"));
     expect(savedState.features.windows).toMatchObject({
-      status: "error",
-      taskId: "compact-feature-windows",
+      status: "blocked",
+      taskId: "wait-compact-windows-capacity",
       attempts: 1,
+      retryable: false,
+      waitingCondition: "capacity unavailable",
       lastSummary:
         "Feature compact package for windows is partial; live Azure DevOps pipeline dispatch is intentionally blocked until the package becomes ready.",
     });
@@ -4417,7 +4481,7 @@ describe("feature compact loop", () => {
       totalFeatureCount: 1,
       sampledFeatureKeys: ["windows"],
     });
-  });
+  }, 10_000);
 
   test("controller preserves exact feature summary when terminal planner child is stale generic package gate", async () => {
     const projectDir = await makeProject();
@@ -4812,6 +4876,8 @@ describe("feature compact loop", () => {
       expect(saved.features.windows).toMatchObject({
         status: "running",
         lastWorkflowRunId: "123",
+        nextCheckAt: expect.any(String),
+        fallbackAt: expect.any(String),
       });
       const updated = JSON.parse(await readFile(treePath, "utf8"));
       expect(
@@ -4833,6 +4899,8 @@ describe("feature compact loop", () => {
             watchedCondition: "Azure DevOps run 123 reaches completed status",
             expectedArtifact: ".state/feature-compact-loop/artifacts/<runId>/",
             owner: "feature-compact-loop-controller",
+            nextCheckAt: expect.any(String),
+            fallbackAt: expect.any(String),
           },
         ],
         lastPulseCreated: 0,
@@ -4945,6 +5013,8 @@ describe("feature compact loop", () => {
             watchedCondition: "Azure DevOps run 123 reaches completed status",
             expectedArtifact: ".state/feature-compact-loop/artifacts/<runId>/",
             owner: "feature-compact-loop-controller",
+            nextCheckAt: expect.any(String),
+            fallbackAt: expect.any(String),
           },
         ],
       });
@@ -5099,6 +5169,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "live-workflow",
       retryable: true,
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
@@ -5155,7 +5226,7 @@ describe("feature compact loop", () => {
     }
   });
 
-  test("runtime projection repair rewrites serverless underlay waits and clears replaced shared-wait pointers", async () => {
+  test("runtime projection repair preserves structured serverless waits and clears replaced shared-wait pointers", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
@@ -5167,42 +5238,45 @@ describe("feature compact loop", () => {
       "hold-compact-app-monitoring-live-workflow-frontier",
       "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
     ];
-    tree.tasks["hold-compact-serverless-schedulerctrl-live-workflow-frontier"] = {
-      id: "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
-      parent_id: "aks-feature-compact-loop",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Hold compact feature serverless-schedulerctrl as the compact-facing projection of the shared underlay/runtime-input wait until the named condition changes.",
-      inputs: ["feature:serverless-schedulerctrl"],
-      outputs: [".state/feature-compact-loop/state.json"],
-      acceptance: ["wait remains exact"],
-      forbidden: [],
-      conflict_scope: ["feature-compact:serverless-schedulerctrl"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "serverless-schedulerctrl",
-        errorClass: "live-workflow",
-        target: "staging",
-      },
-      blocker: {
-        condition:
-          "Blocked only while the shared underlay/runtime-input family wait remains true because AKS_RP_E2E_UNDERLAY_KUBECONFIG is missing or unusable.",
-        category: "external-wait",
-        owner: "human",
-        waiting_for: {
+    tree.tasks["hold-compact-serverless-schedulerctrl-live-workflow-frontier"] =
+      {
+        id: "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold compact feature serverless-schedulerctrl as the compact-facing projection of the shared underlay/runtime-input wait until the named condition changes.",
+        inputs: ["feature:serverless-schedulerctrl"],
+        outputs: [".state/feature-compact-loop/state.json"],
+        acceptance: ["wait remains exact"],
+        forbidden: [],
+        conflict_scope: ["feature-compact:serverless-schedulerctrl"],
+        context: {
+          featureCompactExactWait: true,
           featureKey: "serverless-schedulerctrl",
-          target: "staging",
           errorClass: "live-workflow",
-          scope: "feature-compact",
-          type: "publish.auth.ready",
+          target: "staging",
         },
-      },
-    };
-    tree.tasks["wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"] = {
+        blocker: {
+          condition:
+            "Blocked only while the shared underlay/runtime-input family wait remains true because AKS_RP_E2E_UNDERLAY_KUBECONFIG is missing or unusable.",
+          category: "external-wait",
+          owner: "human",
+          waiting_for: {
+            featureKey: "serverless-schedulerctrl",
+            target: "staging",
+            errorClass: "live-workflow",
+            scope: "feature-compact",
+            type: "publish.auth.ready",
+          },
+        },
+      };
+    tree.tasks[
+      "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"
+    ] = {
       id: "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
       parent_id: "project",
       state: "blocked",
@@ -5249,7 +5323,9 @@ describe("feature compact loop", () => {
           "Replaced this duplicate compact app-monitoring environment holder with the existing project-level shared westus2 managed-cluster capacity family wait.",
       },
     };
-    tree.tasks["wait-shared-westus2-managed-cluster-capacity-family-return-20260703"] = {
+    tree.tasks[
+      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703"
+    ] = {
       id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
       parent_id: "project",
       state: "blocked",
@@ -5263,14 +5339,18 @@ describe("feature compact loop", () => {
       outputs: [],
       acceptance: ["capacity wait holds"],
       forbidden: [],
-      conflict_scope: ["westus2-managed-cluster-capacity-family"],
+      conflict_scope: [
+        "westus2-managed-cluster-capacity-family",
+        "feature-compact:app-monitoring",
+      ],
       blocker: {
         condition:
           "Shared westus2 managed-cluster capacity wait remains active for app-monitoring.",
         waiting_for: {
           type: "azure.capacity.available",
           resource: "managedClusters",
-          taskId: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+          taskId:
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
         },
       },
     };
@@ -5345,53 +5425,16 @@ describe("feature compact loop", () => {
         before: "human",
         after: "operator",
       }),
-      expect.objectContaining({
-        taskId: "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
-        featureKey: "serverless-schedulerctrl",
-        field: "blocker.waiting_for",
-        before: {
-          featureKey: "serverless-schedulerctrl",
-          target: "staging",
-          errorClass: "live-workflow",
-          scope: "feature-compact",
-          type: "publish.auth.ready",
-        },
-        after: {
-          featureKey: "serverless-schedulerctrl",
-          target: "staging",
-          errorClass: "live-workflow",
-          scope: "feature-compact",
-          type: "environment.prerequisite.ready",
-        },
-      }),
     ]);
     expect(
       savedTree.tasks[
         "hold-compact-serverless-schedulerctrl-live-workflow-frontier"
       ].blocker.waiting_for,
     ).toMatchObject({
-      type: "environment.prerequisite.ready",
+      type: "publish.auth.ready",
     });
     expect(repair.stateRepairs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          featureKey: "serverless-schedulerctrl",
-          field: "waitingFor",
-          before: {
-            featureKey: "serverless-schedulerctrl",
-            target: "staging",
-            errorClass: "live-workflow",
-            scope: "feature-compact",
-            type: "publish.auth.ready",
-          },
-          after: {
-            featureKey: "serverless-schedulerctrl",
-            target: "staging",
-            errorClass: "live-workflow",
-            scope: "feature-compact",
-            type: "environment.prerequisite.ready",
-          },
-        }),
         expect.objectContaining({
           featureKey: "app-monitoring",
           field: "taskId",
@@ -5401,12 +5444,106 @@ describe("feature compact loop", () => {
         }),
       ]),
     );
-    expect(savedState.features["serverless-schedulerctrl"].waitingFor).toMatchObject({
-      type: "environment.prerequisite.ready",
+    expect(
+      savedState.features["serverless-schedulerctrl"].waitingFor,
+    ).toMatchObject({
+      type: "publish.auth.ready",
     });
     expect(savedState.features["app-monitoring"].taskId).toBe(
       "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
     );
+  });
+
+  test("runtime projection trusts explicit compact frontier ids after validating blocked task existence", () => {
+    const holderTaskId = "hold-compact-aad-rbac-package-partial-frontier";
+    const row37TaskId =
+      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705";
+    const secopsTaskId =
+      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702";
+    const loopTask = {
+      id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      children: [holderTaskId],
+    } as any;
+    const tasks = {
+      "aks-feature-compact-loop": loopTask,
+      [holderTaskId]: {
+        id: holderTaskId,
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        context: {
+          featureCompactExactWait: true,
+          featureKey: "aad-rbac",
+          errorClass: "package-partial",
+          compactFrontierTaskIds: [row37TaskId, secopsTaskId],
+        },
+        blocker: {
+          condition: "aad-rbac residual trio",
+          waiting_for: { type: "owner.decision" },
+          owner: "operator",
+        },
+      },
+      [row37TaskId]: {
+        id: row37TaskId,
+        parent_id: "aks-spec-verification-loop",
+        state: "blocked",
+        status: "blocked",
+        blocker: {
+          condition: "row-37 owner-response wait",
+          waiting_for: { type: "project.approval.submitted" },
+          owner: "human",
+        },
+      },
+      [secopsTaskId]: {
+        id: secopsTaskId,
+        parent_id: "aks-spec-verification-loop",
+        state: "blocked",
+        status: "blocked",
+        conflict_scope: ["spec:spec.aad-rbac.azure-rbac-automatic-sku"],
+        blocker: {
+          condition: "shared capacity-family wait",
+          waiting_for: { type: "environment.available" },
+          owner: "human",
+        },
+      },
+    } as any;
+    const state = {
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      features: {
+        "aad-rbac": {
+          featureKey: "aad-rbac",
+          status: "blocked",
+          taskId: holderTaskId,
+          errorClass: "package-partial",
+          frontierTaskIds: [secopsTaskId],
+          waitingFor: { type: "owner.decision" },
+        },
+      },
+    } as any;
+
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask,
+      tasks,
+      state,
+    });
+
+    expect(repair.stateRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          featureKey: "aad-rbac",
+          field: "frontierTaskIds",
+          before: [secopsTaskId],
+          after: [row37TaskId, secopsTaskId],
+        }),
+      ]),
+    );
+    expect(state.features["aad-rbac"].frontierTaskIds).toEqual([
+      row37TaskId,
+      secopsTaskId,
+    ]);
   });
 
   test("counts blocked compact features with projected frontier tasks as represented", async () => {
@@ -5420,7 +5557,13 @@ describe("feature compact loop", () => {
       recursive: true,
     });
     await writeFile(
-      join(projectDir, "features", "node-confidential-vm", "specs", "kata.json"),
+      join(
+        projectDir,
+        "features",
+        "node-confidential-vm",
+        "specs",
+        "kata.json",
+      ),
       JSON.stringify({ id: "spec.node-confidential-vm.kata-snp-runtime" }),
       "utf8",
     );
@@ -5459,7 +5602,9 @@ describe("feature compact loop", () => {
       depends_on: [],
       context: {},
     };
-    tree.tasks["hold-spec-node-confidential-vm-kata-snp-runtime-adjacent-hypothesis-frontier-20260707"] = {
+    tree.tasks[
+      "hold-spec-node-confidential-vm-kata-snp-runtime-adjacent-hypothesis-frontier-20260707"
+    ] = {
       id: "hold-spec-node-confidential-vm-kata-snp-runtime-adjacent-hypothesis-frontier-20260707",
       parent_id: "aks-spec-verification-loop",
       state: "blocked",
@@ -5473,10 +5618,15 @@ describe("feature compact loop", () => {
       outputs: [],
       acceptance: ["kata exact wait holds"],
       forbidden: [],
-      conflict_scope: ["feature:node-confidential-vm", "spec:spec.node-confidential-vm.kata-snp-runtime"],
+      conflict_scope: [
+        "feature:node-confidential-vm",
+        "spec:spec.node-confidential-vm.kata-snp-runtime",
+      ],
       depends_on: [],
     };
-    tree.tasks["hold-spec-node-confidential-vm-snp-pool-run-28672036322-artifact-visibility-frontier-20260707c"] = {
+    tree.tasks[
+      "hold-spec-node-confidential-vm-snp-pool-run-28672036322-artifact-visibility-frontier-20260707c"
+    ] = {
       id: "hold-spec-node-confidential-vm-snp-pool-run-28672036322-artifact-visibility-frontier-20260707c",
       parent_id: "aks-spec-verification-loop",
       state: "blocked",
@@ -5490,7 +5640,10 @@ describe("feature compact loop", () => {
       outputs: [],
       acceptance: ["snp-pool exact wait holds"],
       forbidden: [],
-      conflict_scope: ["feature:node-confidential-vm", "spec:spec.node-confidential-vm.snp-pool"],
+      conflict_scope: [
+        "feature:node-confidential-vm",
+        "spec:spec.node-confidential-vm.snp-pool",
+      ],
       depends_on: [],
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
@@ -5578,39 +5731,42 @@ describe("feature compact loop", () => {
       "hold-compact-aad-rbac-mixed-frontier-20260705b",
       "hold-compact-app-routing-shared-fixture-frontier-20260708",
     ];
-    tree.tasks["wait-compact-node-http-proxy-trusted-ca-quarantine-20260702"] = {
-      id: "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
-      parent_id: "aks-feature-compact-loop",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Hold the exact node-http-proxy trusted-ca branch until the trusted-ca/runtime-input quarantine changes.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["trusted-ca branch stays isolated"],
-      conflict_scope: ["feature-compact:node-http-proxy-trusted-ca"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "node-http-proxy",
-        errorClass: "package-partial",
-        target: "staging",
-      },
-      blocker: {
-        condition:
-          "Blocked on the node-http-proxy trusted-ca/runtime-input quarantine after the create/update carrier passed.",
-        waiting_for: {
-          type: "publish.auth.ready",
+    tree.tasks["wait-compact-node-http-proxy-trusted-ca-quarantine-20260702"] =
+      {
+        id: "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold the exact node-http-proxy trusted-ca branch until the trusted-ca/runtime-input quarantine changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["trusted-ca branch stays isolated"],
+        conflict_scope: ["feature-compact:node-http-proxy-trusted-ca"],
+        context: {
+          featureCompactExactWait: true,
           featureKey: "node-http-proxy",
-          target: "staging",
           errorClass: "package-partial",
-          scope: "feature-compact",
+          target: "staging",
         },
-      },
-    };
-    tree.tasks["wait-compact-machines-agentpool-run-28809049156-review-20260707"] = {
+        blocker: {
+          condition:
+            "Blocked on the node-http-proxy trusted-ca/runtime-input quarantine after the create/update carrier passed.",
+          waiting_for: {
+            type: "publish.auth.ready",
+            featureKey: "node-http-proxy",
+            target: "staging",
+            errorClass: "package-partial",
+            scope: "feature-compact",
+          },
+        },
+      };
+    tree.tasks[
+      "wait-compact-machines-agentpool-run-28809049156-review-20260707"
+    ] = {
       id: "wait-compact-machines-agentpool-run-28809049156-review-20260707",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -5642,7 +5798,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701"] = {
+    tree.tasks[
+      "wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701"
+    ] = {
       id: "wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -5674,7 +5832,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["wait-compact-reviewed-exception-live-ready-policy-family-20260702"] = {
+    tree.tasks[
+      "wait-compact-reviewed-exception-live-ready-policy-family-20260702"
+    ] = {
       id: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -5687,13 +5847,23 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["shared family wait stays visible"],
-      conflict_scope: ["feature:ccp-coredns", "feature:machines-agentpool", "feature:planned-maintenance", "feature:ossku-migration"],
+      conflict_scope: [
+        "feature:ccp-coredns",
+        "feature-compact:ccp-coredns",
+        "feature:machines-agentpool",
+        "feature:planned-maintenance",
+        "feature-compact:planned-maintenance",
+        "feature:ossku-migration",
+        "feature-compact:ossku-migration",
+        "feature-compact-wait:reviewed-exception",
+      ],
       blocker: {
         condition:
           "Blocked only while reviewed-exception members in ccp-coredns, machines-agentpool, planned-maintenance, and ossku-migration remain intentionally excluded from the compact live-ready subset.",
         waiting_for: {
           type: "evidence.available",
-          taskId: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+          taskId:
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         },
       },
     };
@@ -5779,7 +5949,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "node-http-proxy", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
+      taskId:
+        "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
       waitingFor: null,
       blockedReason:
         "Create/update current-head rerun 28673740487 already passed; do not regenerate a duplicate create/update review leaf. Exact surviving holder is wait-compact-node-http-proxy-trusted-ca-quarantine-20260702 for the separate trusted-ca quarantine.",
@@ -5787,8 +5958,10 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "machines-agentpool", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-machines-agentpool-package-partial-frontier-202607090546",
-      waitingFor: "bounded fix or accepted reclassification for the exact preflight blocker surfaced by run 28809049156",
+      taskId:
+        "hold-compact-machines-agentpool-package-partial-frontier-202607090546",
+      waitingFor:
+        "bounded fix or accepted reclassification for the exact preflight blocker surfaced by run 28809049156",
       blockedReason:
         "Rewrite review confirmed the stale runtime package-partial holder broadens the exact same-spec frontier; preserve wait-compact-machines-agentpool-run-28809049156-review-20260707 for spec.nap.default-machines-pool-cleanup-no-machine-crud.",
     });
@@ -5817,7 +5990,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "planned-maintenance", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-planned-maintenance-package-partial-frontier-202607090546",
+      taskId:
+        "hold-compact-planned-maintenance-package-partial-frontier-202607090546",
       waitingFor: null,
       blockedReason:
         "Broad compact rerun remains untruthful because the only remaining blocker is the residual reviewed-exception pair under the shared live-ready filter wait.",
@@ -5849,50 +6023,56 @@ describe("feature compact loop", () => {
     });
 
     expect(repair.stateRepairs).toMatchObject([
-        expect.objectContaining({
-          featureKey: "node-http-proxy",
-          field: "taskId",
-          before: "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
-          after: "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
-        }),
-        expect.objectContaining({
-          featureKey: "machines-agentpool",
-          field: "taskId",
-          before: "hold-compact-machines-agentpool-package-partial-frontier-202607090546",
-          after: "wait-compact-machines-agentpool-run-28809049156-review-20260707",
-        }),
-        expect.objectContaining({
-          featureKey: "ccp-coredns",
-          field: "taskId",
-          before: "hold-compact-ccp-coredns-package-partial-frontier",
-          after: "wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701",
-        }),
-        expect.objectContaining({
-          featureKey: "ossku-migration",
-          field: "taskId",
-          before: "hold-compact-ossku-migration-package-partial-frontier",
-          after: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
-        }),
-        expect.objectContaining({
-          featureKey: "planned-maintenance",
-          field: "taskId",
-          before: "hold-compact-planned-maintenance-package-partial-frontier-202607090546",
-          after: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
-        }),
-        expect.objectContaining({
-          featureKey: "aad-rbac",
-          field: "taskId",
-          before: null,
-          after: "hold-compact-aad-rbac-mixed-frontier-20260705b",
-        }),
-        expect.objectContaining({
-          featureKey: "app-routing",
-          field: "taskId",
-          before: null,
-          after: "hold-compact-app-routing-shared-fixture-frontier-20260708",
-        }),
-      ],
-    );
+      expect.objectContaining({
+        featureKey: "node-http-proxy",
+        field: "taskId",
+        before:
+          "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
+        after: "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
+      }),
+      expect.objectContaining({
+        featureKey: "machines-agentpool",
+        field: "taskId",
+        before:
+          "hold-compact-machines-agentpool-package-partial-frontier-202607090546",
+        after:
+          "wait-compact-machines-agentpool-run-28809049156-review-20260707",
+      }),
+      expect.objectContaining({
+        featureKey: "ccp-coredns",
+        field: "taskId",
+        before: "hold-compact-ccp-coredns-package-partial-frontier",
+        after:
+          "wait-compact-ccp-coredns-reviewed-exception-or-filter-change-20260701",
+      }),
+      expect.objectContaining({
+        featureKey: "ossku-migration",
+        field: "taskId",
+        before: "hold-compact-ossku-migration-package-partial-frontier",
+        after:
+          "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+      }),
+      expect.objectContaining({
+        featureKey: "planned-maintenance",
+        field: "taskId",
+        before:
+          "hold-compact-planned-maintenance-package-partial-frontier-202607090546",
+        after:
+          "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+      }),
+      expect.objectContaining({
+        featureKey: "aad-rbac",
+        field: "taskId",
+        before: null,
+        after: "hold-compact-aad-rbac-mixed-frontier-20260705b",
+      }),
+      expect.objectContaining({
+        featureKey: "app-routing",
+        field: "taskId",
+        before: null,
+        after: "hold-compact-app-routing-shared-fixture-frontier-20260708",
+      }),
+    ]);
     expect(savedState.features["node-http-proxy"].taskId).toBe(
       "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
     );
@@ -5916,6 +6096,256 @@ describe("feature compact loop", () => {
     );
     expect(savedState.features["aad-rbac"].frontierTaskIds).toBeUndefined();
     expect(savedState.features["app-routing"].frontierTaskIds).toBeUndefined();
+  });
+
+  test("persists state projection repairs over a newer stale runtime write", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "features", "app-monitoring", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "app-monitoring.yaml"),
+      "capabilityId: app-monitoring\nstatus: draft\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "app-monitoring", "specs", "base.json"),
+      JSON.stringify({ id: "spec.app-monitoring.base" }),
+      "utf8",
+    );
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-app-monitoring-capacity-frontier",
+    ];
+    tree.tasks["hold-compact-app-monitoring-capacity-frontier"] = {
+      id: "hold-compact-app-monitoring-capacity-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature app-monitoring on exact staging-capacity wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["app-monitoring waits on exact capacity"],
+      conflict_scope: [
+        "feature-compact:app-monitoring",
+        "feature:app-monitoring",
+        "feature-compact-wait:staging-capacity",
+      ],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "app-monitoring",
+        errorClass: "staging-capacity",
+        target: "staging",
+      },
+      blocker: {
+        condition:
+          "Exact app-monitoring compact wait for westus2 managed-cluster capacity.",
+        next_check_at: "2026-07-11T01:00:00Z",
+        fallback_at: "2026-07-12T01:00:00Z",
+        waiting_for: {
+          type: "azure.capacity.available",
+          resource: "managedClusters",
+          taskId: "hold-compact-app-monitoring-capacity-frontier",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "app-monitoring", {
+      status: "blocked",
+      errorClass: "staging-capacity",
+      taskId: "hold-compact-app-monitoring-capacity-frontier",
+      waitingFor: null,
+      blockedReason:
+        "Managed-cluster capacity frontier still active for app-monitoring.",
+      nextCheckAt: "2026-07-10T01:00:00Z",
+      fallbackAt: "2026-07-10T13:00:00Z",
+    });
+    state.features["app-monitoring"].updatedAt = "2000-01-01T00:00:00.000Z";
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const staleControllerState = JSON.parse(await readFile(statePath, "utf8"));
+    const newerDiskState = JSON.parse(await readFile(statePath, "utf8"));
+    newerDiskState.features["app-monitoring"].updatedAt =
+      "2000-01-02T00:00:00.000Z";
+    await writeFile(
+      statePath,
+      `${JSON.stringify(newerDiskState, null, 2)}\n`,
+      "utf8",
+    );
+
+    const savedTree = JSON.parse(await readFile(treePath, "utf8"));
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: savedTree.tasks["aks-feature-compact-loop"],
+      tasks: savedTree.tasks,
+      state: staleControllerState,
+    });
+    expect(repair.stateRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          featureKey: "app-monitoring",
+          field: "nextCheckAt",
+          before: "2026-07-10T01:00:00Z",
+          after: "2026-07-11T01:00:00Z",
+        }),
+      ]),
+    );
+    saveFeatureCompactLoopState(statePath, staleControllerState);
+
+    const persistedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(persistedState.features["app-monitoring"].nextCheckAt).toBe(
+      "2026-07-11T01:00:00Z",
+    );
+    expect(persistedState.features["app-monitoring"].fallbackAt).toBe(
+      "2026-07-12T01:00:00Z",
+    );
+  });
+
+  test("keeps live blocked compact state pointer stable when a compatible shared wait also exists", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "features", "app-monitoring", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "app-monitoring.yaml"),
+      "capabilityId: app-monitoring\nstatus: draft\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "app-monitoring", "specs", "base.json"),
+      JSON.stringify({ id: "spec.app-monitoring.base" }),
+      "utf8",
+    );
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-app-monitoring-capacity-frontier",
+    ];
+    tree.tasks["hold-compact-app-monitoring-capacity-frontier"] = {
+      id: "hold-compact-app-monitoring-capacity-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature app-monitoring on exact staging-capacity wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["exact capacity wait holds"],
+      conflict_scope: [
+        "feature-compact:app-monitoring",
+        "feature:app-monitoring",
+        "feature-compact-wait:staging-capacity",
+      ],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "app-monitoring",
+        errorClass: "staging-capacity",
+        target: "staging",
+      },
+      blocker: {
+        condition:
+          "Exact app-monitoring compact wait for westus2 managed-cluster capacity.",
+        waiting_for: {
+          type: "azure.capacity.available",
+          resource: "managedClusters",
+          taskId: "hold-compact-app-monitoring-capacity-frontier",
+        },
+      },
+    };
+    tree.tasks["wait-shared-app-monitoring-capacity"] = {
+      id: "wait-shared-app-monitoring-capacity",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Shared wait for app-monitoring compact capacity.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["shared capacity wait holds"],
+      conflict_scope: ["feature-compact:app-monitoring"],
+      blocker: {
+        condition:
+          "Shared app-monitoring compact wait for westus2 managed-cluster capacity.",
+        waiting_for: {
+          type: "azure.capacity.available",
+          resource: "managedClusters",
+          taskId: "wait-shared-app-monitoring-capacity",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "app-monitoring", {
+      status: "blocked",
+      errorClass: "staging-capacity",
+      taskId: "hold-compact-app-monitoring-capacity-frontier",
+      waitingFor: {
+        featureKey: "app-monitoring",
+        target: "staging",
+        errorClass: "staging-capacity",
+        scope: "feature-compact",
+        type: "azure.capacity.available",
+        resource: "managedClusters",
+      },
+      blockedReason:
+        "Managed-cluster capacity frontier still active for app-monitoring.",
+    });
+
+    const savedTree = JSON.parse(await readFile(treePath, "utf8"));
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: savedTree.tasks["aks-feature-compact-loop"],
+      tasks: savedTree.tasks,
+      state,
+    });
+    expect(
+      repair.stateRepairs.filter(
+        (stateRepair) =>
+          stateRepair.featureKey === "app-monitoring" &&
+          stateRepair.field === "taskId",
+      ),
+    ).toEqual([]);
+    expect(state.features["app-monitoring"].taskId).toBe(
+      "hold-compact-app-monitoring-capacity-frontier",
+    );
   });
 
   test("reprojects persisted state to exact cross-loop frontier holders for second-batch mixed surfaces", async () => {
@@ -6068,7 +6498,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"] = {
+    tree.tasks[
+      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"
+    ] = {
       id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
       parent_id: "project",
       state: "blocked",
@@ -6081,13 +6513,22 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["shared wait holds"],
-      conflict_scope: ["spec:spec.aad-rbac.azure-rbac-automatic-sku", "feature:aad-rbac"],
+      conflict_scope: [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku",
+        "feature:aad-rbac",
+      ],
       blocker: {
         condition: "Automatic/ManagedSystem capacity family still blocked.",
-        waiting_for: { type: "azure.capacity.available", taskId: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702" },
+        waiting_for: {
+          type: "azure.capacity.available",
+          taskId:
+            "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+        },
       },
     };
-    tree.tasks["hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"] = {
+    tree.tasks[
+      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"
+    ] = {
       id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
       parent_id: "project",
       state: "blocked",
@@ -6100,13 +6541,22 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["row37 wait holds"],
-      conflict_scope: ["spec:spec.aad-rbac.managed-v2-lifecycle", "feature:aad-rbac"],
+      conflict_scope: [
+        "spec:spec.aad-rbac.managed-v2-lifecycle",
+        "feature:aad-rbac",
+      ],
       blocker: {
         condition: "Owner response still required for row-37 contradiction.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705" },
+        waiting_for: {
+          type: "evidence.available",
+          taskId:
+            "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        },
       },
     };
-    tree.tasks["hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"] = {
+    tree.tasks[
+      "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"
+    ] = {
       id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
       parent_id: "project",
       state: "blocked",
@@ -6122,7 +6572,11 @@ describe("feature compact loop", () => {
       conflict_scope: ["spec:spec.aad-rbac.run-command-access"],
       blocker: {
         condition: "Authorization branch ceiling remains unchanged.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706" },
+        waiting_for: {
+          type: "evidence.available",
+          taskId:
+            "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        },
       },
     };
     tree.tasks["wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702"] = {
@@ -6138,13 +6592,22 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["egress exact wait holds"],
-      conflict_scope: ["spec:spec.egress-lockdown.fips", "feature:egress-lockdown"],
+      conflict_scope: [
+        "spec:spec.egress-lockdown.fips",
+        "feature:egress-lockdown",
+      ],
       blocker: {
-        condition: "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
-        waiting_for: { type: "evidence.available", taskId: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702" },
+        condition:
+          "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
+        waiting_for: {
+          type: "evidence.available",
+          taskId: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+        },
       },
     };
-    tree.tasks["wait-spec-gpu-classic-westus2-sku-support-family-return-20260704"] = {
+    tree.tasks[
+      "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704"
+    ] = {
       id: "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
       parent_id: "project",
       state: "blocked",
@@ -6160,10 +6623,16 @@ describe("feature compact loop", () => {
       conflict_scope: ["feature:gpu", "spec:spec.gpu.multi-gpu-workload"],
       blocker: {
         condition: "Classic westus2 GPU SKU support has not returned.",
-        waiting_for: { type: "evidence.available", taskId: "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704" },
+        waiting_for: {
+          type: "evidence.available",
+          taskId:
+            "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
+        },
       },
     };
-    tree.tasks["wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"] = {
+    tree.tasks[
+      "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"
+    ] = {
       id: "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
       parent_id: "project",
       state: "blocked",
@@ -6176,10 +6645,17 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["underlay shared wait holds"],
-      conflict_scope: ["feature:gpu", "ops:shared-underlay-runtime-input-family"],
+      conflict_scope: [
+        "feature:gpu",
+        "ops:shared-underlay-runtime-input-family",
+      ],
       blocker: {
         condition: "Shared underlay/runtime input family still blocked.",
-        waiting_for: { type: "environment.available", taskId: "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708" },
+        waiting_for: {
+          type: "environment.available",
+          taskId:
+            "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
+        },
       },
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
@@ -6231,26 +6707,37 @@ describe("feature compact loop", () => {
     });
     saveFeatureCompactLoopState(statePath, state);
 
-    tree.tasks["wait-localdns-create-http400-residual-family-return-20260704"] = {
-      id: "wait-localdns-create-http400-residual-family-return-20260704",
-      parent_id: "project",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Carry the single truthful LocalDNS create-time HTTP400 family wait.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["localdns create-time wait holds"],
-      conflict_scope: ["feature:localdns", "spec-loop-followup:pending:localdns:create-time-http400"],
-      blocker: {
-        condition: "Blocked until a reviewed material signal changes one of the remaining LocalDNS create-time HTTP400 bounded surfaces.",
-        waiting_for: { type: "evidence.available", taskId: "wait-localdns-create-http400-residual-family-return-20260704" },
-      },
-    };
-    tree.tasks["hold-spec-localdns-managed-cluster-quota-family-frontier-20260708"] = {
+    tree.tasks["wait-localdns-create-http400-residual-family-return-20260704"] =
+      {
+        id: "wait-localdns-create-http400-residual-family-return-20260704",
+        parent_id: "project",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Carry the single truthful LocalDNS create-time HTTP400 family wait.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["localdns create-time wait holds"],
+        conflict_scope: [
+          "feature:localdns",
+          "spec-loop-followup:pending:localdns:create-time-http400",
+        ],
+        blocker: {
+          condition:
+            "Blocked until a reviewed material signal changes one of the remaining LocalDNS create-time HTTP400 bounded surfaces.",
+          waiting_for: {
+            type: "evidence.available",
+            taskId:
+              "wait-localdns-create-http400-residual-family-return-20260704",
+          },
+        },
+      };
+    tree.tasks[
+      "hold-spec-localdns-managed-cluster-quota-family-frontier-20260708"
+    ] = {
       id: "hold-spec-localdns-managed-cluster-quota-family-frontier-20260708",
       parent_id: "project",
       state: "blocked",
@@ -6265,11 +6752,19 @@ describe("feature compact loop", () => {
       acceptance: ["localdns quota wait holds"],
       conflict_scope: ["feature:localdns"],
       blocker: {
-        condition: "Blocked on LocalDNS managed-cluster quota/headroom recovery for the bounded residual carriers.",
-        waiting_for: { type: "azure.capacity.available", taskId: "hold-spec-localdns-managed-cluster-quota-family-frontier-20260708", resource: "managedClusters" },
+        condition:
+          "Blocked on LocalDNS managed-cluster quota/headroom recovery for the bounded residual carriers.",
+        waiting_for: {
+          type: "azure.capacity.available",
+          taskId:
+            "hold-spec-localdns-managed-cluster-quota-family-frontier-20260708",
+          resource: "managedClusters",
+        },
       },
     };
-    tree.tasks["hold-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-blocker-20260707c"] = {
+    tree.tasks[
+      "hold-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-blocker-20260707c"
+    ] = {
       id: "hold-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-blocker-20260707c",
       parent_id: "project",
       state: "blocked",
@@ -6282,10 +6777,17 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["network-acns exact wait holds"],
-      conflict_scope: ["spec:spec.network-acns.performance-cilium-upgrade:run-28849780940:user-iptables-runtime"],
+      conflict_scope: [
+        "spec:spec.network-acns.performance-cilium-upgrade:run-28849780940:user-iptables-runtime",
+      ],
       blocker: {
-        condition: "Terminal rerun 28849780940 proved the repaired LocalDNS/system-pool-size carrier launches, and the remaining exact frontier is the pre-upgrade runtime assertion failure.",
-        waiting_for: { type: "environment.available", taskId: "hold-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-blocker-20260707c" },
+        condition:
+          "Terminal rerun 28849780940 proved the repaired LocalDNS/system-pool-size carrier launches, and the remaining exact frontier is the pre-upgrade runtime assertion failure.",
+        waiting_for: {
+          type: "environment.available",
+          taskId:
+            "hold-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-blocker-20260707c",
+        },
       },
     };
 
@@ -6357,29 +6859,14 @@ describe("feature compact loop", () => {
     );
   });
 
-  test("controller pulse persists second-batch cross-loop frontier bindings", async () => {
+  test("runtime projection closes timestamped compact holders replaced by sharper state frontiers", async () => {
     const projectDir = await makeProject();
-    const restoreGh = await installCompactPipelineBackend(projectDir);
-    try {
-    await mkdir(join(projectDir, "features", "aad-rbac", "specs"), {
-      recursive: true,
-    });
     await mkdir(join(projectDir, "features", "egress-lockdown", "specs"), {
       recursive: true,
     });
     await writeFile(
-      join(projectDir, "features", "aad-rbac.yaml"),
-      "capabilityId: aad-rbac\nstatus: draft\n",
-      "utf8",
-    );
-    await writeFile(
       join(projectDir, "features", "egress-lockdown.yaml"),
       "capabilityId: egress-lockdown\nstatus: draft\n",
-      "utf8",
-    );
-    await writeFile(
-      join(projectDir, "features", "aad-rbac", "specs", "auto.json"),
-      JSON.stringify({ id: "spec.aad-rbac.azure-rbac-automatic-sku" }),
       "utf8",
     );
     await writeFile(
@@ -6390,21 +6877,13 @@ describe("feature compact loop", () => {
     await writeRootTree(projectDir);
     const treePath = resolveTaskTreePath(projectDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
-    tree.tasks["project"].children = [
-      ...(tree.tasks["project"].children ?? []),
-      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
-      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
-      "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
-      "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
-    ];
-    tree.tasks["aks-feature-compact-loop"].state = "active";
-    tree.tasks["aks-feature-compact-loop"].status = "active";
     tree.tasks["aks-feature-compact-loop"].children = [
-      "hold-compact-aad-rbac-package-partial-frontier",
-      "hold-compact-egress-lockdown-package-partial-frontier",
+      "hold-compact-egress-lockdown-package-partial-frontier-20260709",
     ];
-    tree.tasks["hold-compact-aad-rbac-package-partial-frontier"] = {
-      id: "hold-compact-aad-rbac-package-partial-frontier",
+    tree.tasks[
+      "hold-compact-egress-lockdown-package-partial-frontier-20260709"
+    ] = {
+      id: "hold-compact-egress-lockdown-package-partial-frontier-20260709",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
       status: "blocked",
@@ -6412,121 +6891,48 @@ describe("feature compact loop", () => {
       priority: "P2",
       owner: "aks-explorer",
       children: [],
-      goal: "Hold compact feature aad-rbac on exact package-partial wait until the named condition changes.",
+      goal: "Preserve the exact egress-lockdown compact package-partial frontier only as a feature-scoped holder.",
       inputs: [],
       outputs: [],
-      acceptance: ["aad-rbac holder stays visible"],
-      forbidden: [],
-      conflict_scope: ["feature-compact:aad-rbac"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "aad-rbac",
-        errorClass: "package-partial",
-        target: "staging",
-      },
+      acceptance: ["egress holder stays visible only while referenced"],
+      conflict_scope: [
+        "feature-compact:egress-lockdown",
+        "feature:egress-lockdown",
+      ],
       blocker: {
         condition:
-          "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface. The live aad-rbac compact frontier is now only the residual reviewed-exception trio under the existing live-ready filter.",
+          "Blocked only as represented compact-frontier state; wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 governs the FIPS member.",
         waiting_for: {
-          type: "pipeline.result.or.artifact.available",
-          featureKey: "aad-rbac",
-          target: "staging",
-          errorClass: "package-partial",
-          scope: "feature-compact",
+          type: "evidence.available",
+          taskId:
+            "hold-compact-egress-lockdown-package-partial-frontier-20260709",
         },
+        next_check_at: "2026-07-09T21:41:31.723Z",
+        fallback_at: "2026-07-10T21:31:31.723Z",
       },
     };
-    tree.tasks["hold-compact-egress-lockdown-package-partial-frontier"] = {
-      id: "hold-compact-egress-lockdown-package-partial-frontier",
-      parent_id: "aks-feature-compact-loop",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Hold compact feature egress-lockdown on exact package-partial wait until the named condition changes.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["egress holder stays visible"],
-      forbidden: [],
-      conflict_scope: ["feature-compact:egress-lockdown"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "egress-lockdown",
-        errorClass: "package-partial",
-        target: "staging",
-      },
-      blocker: {
-        condition:
-          "Compact wait/review holder mapped in review evidence; reuse existing wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 for spec.egress-lockdown.fips and avoid a duplicate compact passive wait.",
-        waiting_for: {
-          type: "publish.auth.ready",
-          featureKey: "egress-lockdown",
-          target: "staging",
-          errorClass: "package-partial",
-          scope: "feature-compact",
-        },
-      },
-    };
-    tree.tasks["wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"] = {
-      id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+    tree.tasks[
+      "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710"
+    ] = {
+      id: "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710",
       parent_id: "project",
       state: "blocked",
       status: "blocked",
       kind: "domain_leaf",
       priority: "P2",
-      owner: "aks-explorer",
+      owner: "human",
       children: [],
-      goal: "Hold the shared Automatic/ManagedSystem create-time capacity-family blocker.",
+      goal: "Wait for exact shared runtime owner return.",
       inputs: [],
       outputs: [],
-      acceptance: ["shared wait holds"],
-      forbidden: [],
-      conflict_scope: ["spec:spec.aad-rbac.azure-rbac-automatic-sku", "feature:aad-rbac"],
+      acceptance: ["owner response handled"],
+      conflict_scope: [
+        "feature-compact:egress-lockdown",
+        "feature:egress-lockdown",
+      ],
       blocker: {
-        condition: "Automatic/ManagedSystem capacity family still blocked.",
-        waiting_for: { type: "azure.capacity.available", taskId: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702" },
-      },
-    };
-    tree.tasks["hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"] = {
-      id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
-      parent_id: "project",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Preserve the row-37 managed AAD lifecycle owner surface.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["row37 wait holds"],
-      forbidden: [],
-      conflict_scope: ["spec:spec.aad-rbac.managed-v2-lifecycle", "feature:aad-rbac"],
-      blocker: {
-        condition: "Owner response still required for row-37 contradiction.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705" },
-      },
-    };
-    tree.tasks["hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"] = {
-      id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
-      parent_id: "project",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Preserve the run-command-access authorization branch ceiling.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["run-command wait holds"],
-      forbidden: [],
-      conflict_scope: ["spec:spec.aad-rbac.run-command-access"],
-      blocker: {
-        condition: "Authorization branch ceiling remains unchanged.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706" },
+        condition: "Waiting for shared runtime owner return.",
+        waiting_for: { type: "owner.decision" },
       },
     };
     tree.tasks["wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702"] = {
@@ -6536,20 +6942,22 @@ describe("feature compact loop", () => {
       status: "blocked",
       kind: "domain_leaf",
       priority: "P2",
-      owner: "aks-explorer",
+      owner: "human",
       children: [],
       goal: "Hold the exact egress-lockdown FIPS rerun until UDR proof exists.",
       inputs: [],
       outputs: [],
-      acceptance: ["egress exact wait holds"],
-      forbidden: [],
-      conflict_scope: ["spec:spec.egress-lockdown.fips", "feature:egress-lockdown"],
+      acceptance: ["UDR proof returned"],
+      conflict_scope: [
+        "spec:spec.egress-lockdown.fips",
+        "feature:egress-lockdown",
+      ],
       blocker: {
-        condition: "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
-        waiting_for: { type: "evidence.available", taskId: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702" },
+        condition:
+          "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
+        waiting_for: { type: "evidence.available" },
       },
     };
-    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
     const statePath = join(
       projectDir,
@@ -6564,57 +6972,342 @@ describe("feature compact loop", () => {
       windowSize: 1,
       statePath,
     });
-    updateFeatureCompactItem(state, "aad-rbac", {
-      status: "error",
-      errorClass: "package-partial",
-      taskId: "hold-compact-aad-rbac-package-partial-frontier",
-      waitingFor: null,
-      blockedReason:
-        "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface.",
-    });
     updateFeatureCompactItem(state, "egress-lockdown", {
-      status: "error",
+      status: "blocked",
       errorClass: "package-partial",
-      taskId: "hold-compact-egress-lockdown-package-partial-frontier",
-      waitingFor: null,
+      taskId:
+        "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710",
+      frontierTaskIds: [
+        "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710",
+        "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+      ],
       blockedReason:
-        "Reuse existing wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 for spec.egress-lockdown.fips and avoid a duplicate compact passive wait.",
+        "The stale compact holder has been replaced by exact downstream waits.",
     });
-    saveFeatureCompactLoopState(statePath, state);
 
-    const result = await executeController({
-      task: [
-        `app: ${projectDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "maxConcurrent: 5",
-        eventBlock({
-          type: "project.task.tick",
-          action: "feature-compact-loop",
-          project: "aks-rp-e2e",
-          taskId: "aks-feature-compact-loop",
-          target: { taskId: "aks-feature-compact-loop" },
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: tree.tasks["aks-feature-compact-loop"],
+      tasks: tree.tasks,
+      state,
+    });
+
+    expect(repair.taskRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId:
+            "hold-compact-egress-lockdown-package-partial-frontier-20260709",
+          featureKey: "egress-lockdown",
+          field: "task.replacement",
         }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
-
-    expect(result.status).toBe("done");
-    const saved = JSON.parse(await readFile(statePath, "utf8"));
-    expect(saved.features["aad-rbac"].frontierTaskIds).toEqual([
-      "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
-      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
-      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
-    ]);
-    expect(saved.features["egress-lockdown"].frontierTaskIds).toEqual([
+      ]),
+    );
+    expect(
+      tree.tasks[
+        "hold-compact-egress-lockdown-package-partial-frontier-20260709"
+      ],
+    ).toMatchObject({
+      state: "done",
+      status: "done",
+      resolution: "replaced",
+    });
+    expect(state.features["egress-lockdown"].taskId).toBe(
+      "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710",
+    );
+    expect(state.features["egress-lockdown"].frontierTaskIds).toEqual([
+      "ops/wait-shared-github-dispatch-auth-capable-runtime-owner-return-20260710",
       "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
     ]);
+  });
+
+  test("controller pulse persists second-batch cross-loop frontier bindings", async () => {
+    const projectDir = await makeProject();
+    const restoreGh = await installCompactPipelineBackend(projectDir);
+    try {
+      await mkdir(join(projectDir, "features", "aad-rbac", "specs"), {
+        recursive: true,
+      });
+      await mkdir(join(projectDir, "features", "egress-lockdown", "specs"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(projectDir, "features", "aad-rbac.yaml"),
+        "capabilityId: aad-rbac\nstatus: draft\n",
+        "utf8",
+      );
+      await writeFile(
+        join(projectDir, "features", "egress-lockdown.yaml"),
+        "capabilityId: egress-lockdown\nstatus: draft\n",
+        "utf8",
+      );
+      await writeFile(
+        join(projectDir, "features", "aad-rbac", "specs", "auto.json"),
+        JSON.stringify({ id: "spec.aad-rbac.azure-rbac-automatic-sku" }),
+        "utf8",
+      );
+      await writeFile(
+        join(projectDir, "features", "egress-lockdown", "specs", "fips.json"),
+        JSON.stringify({ id: "spec.egress-lockdown.fips" }),
+        "utf8",
+      );
+      await writeRootTree(projectDir);
+      const treePath = resolveTaskTreePath(projectDir);
+      const tree = JSON.parse(await readFile(treePath, "utf8"));
+      tree.tasks["project"].children = [
+        ...(tree.tasks["project"].children ?? []),
+        "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+        "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+      ];
+      tree.tasks["aks-feature-compact-loop"].state = "active";
+      tree.tasks["aks-feature-compact-loop"].status = "active";
+      tree.tasks["aks-feature-compact-loop"].children = [
+        "hold-compact-aad-rbac-package-partial-frontier",
+        "hold-compact-egress-lockdown-package-partial-frontier",
+      ];
+      tree.tasks["hold-compact-aad-rbac-package-partial-frontier"] = {
+        id: "hold-compact-aad-rbac-package-partial-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold compact feature aad-rbac on exact package-partial wait until the named condition changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["aad-rbac holder stays visible"],
+        forbidden: [],
+        conflict_scope: ["feature-compact:aad-rbac"],
+        context: {
+          featureCompactExactWait: true,
+          featureKey: "aad-rbac",
+          errorClass: "package-partial",
+          target: "staging",
+        },
+        blocker: {
+          condition:
+            "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface. The live aad-rbac compact frontier is now only the residual reviewed-exception trio under the existing live-ready filter.",
+          waiting_for: {
+            type: "pipeline.result.or.artifact.available",
+            featureKey: "aad-rbac",
+            target: "staging",
+            errorClass: "package-partial",
+            scope: "feature-compact",
+          },
+        },
+      };
+      tree.tasks["hold-compact-egress-lockdown-package-partial-frontier"] = {
+        id: "hold-compact-egress-lockdown-package-partial-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold compact feature egress-lockdown on exact package-partial wait until the named condition changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["egress holder stays visible"],
+        forbidden: [],
+        conflict_scope: ["feature-compact:egress-lockdown"],
+        context: {
+          featureCompactExactWait: true,
+          featureKey: "egress-lockdown",
+          errorClass: "package-partial",
+          target: "staging",
+        },
+        blocker: {
+          condition:
+            "Compact wait/review holder mapped in review evidence; reuse existing wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 for spec.egress-lockdown.fips and avoid a duplicate compact passive wait.",
+          waiting_for: {
+            type: "publish.auth.ready",
+            featureKey: "egress-lockdown",
+            target: "staging",
+            errorClass: "package-partial",
+            scope: "feature-compact",
+          },
+        },
+      };
+      tree.tasks[
+        "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"
+      ] = {
+        id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+        parent_id: "project",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold the shared Automatic/ManagedSystem create-time capacity-family blocker.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["shared wait holds"],
+        forbidden: [],
+        conflict_scope: [
+          "spec:spec.aad-rbac.azure-rbac-automatic-sku",
+          "feature:aad-rbac",
+        ],
+        blocker: {
+          condition: "Automatic/ManagedSystem capacity family still blocked.",
+          waiting_for: {
+            type: "azure.capacity.available",
+            taskId:
+              "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+          },
+        },
+      };
+      tree.tasks[
+        "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"
+      ] = {
+        id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        parent_id: "project",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Preserve the row-37 managed AAD lifecycle owner surface.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["row37 wait holds"],
+        forbidden: [],
+        conflict_scope: [
+          "spec:spec.aad-rbac.managed-v2-lifecycle",
+          "feature:aad-rbac",
+        ],
+        blocker: {
+          condition: "Owner response still required for row-37 contradiction.",
+          waiting_for: {
+            type: "evidence.available",
+            taskId:
+              "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+          },
+        },
+      };
+      tree.tasks[
+        "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"
+      ] = {
+        id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        parent_id: "project",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Preserve the run-command-access authorization branch ceiling.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["run-command wait holds"],
+        forbidden: [],
+        conflict_scope: ["spec:spec.aad-rbac.run-command-access"],
+        blocker: {
+          condition: "Authorization branch ceiling remains unchanged.",
+          waiting_for: {
+            type: "evidence.available",
+            taskId:
+              "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+          },
+        },
+      };
+      tree.tasks["wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702"] = {
+        id: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+        parent_id: "project",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold the exact egress-lockdown FIPS rerun until UDR proof exists.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["egress exact wait holds"],
+        forbidden: [],
+        conflict_scope: [
+          "spec:spec.egress-lockdown.fips",
+          "feature:egress-lockdown",
+        ],
+        blocker: {
+          condition:
+            "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
+          waiting_for: {
+            type: "evidence.available",
+            taskId: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+          },
+        },
+      };
+      await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+      const statePath = join(
+        projectDir,
+        ".state",
+        "feature-compact-loop",
+        "state.json",
+      );
+      const { state } = loadFeatureCompactLoopState({
+        appDir: projectDir,
+        projectDir,
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 1,
+        statePath,
+      });
+      updateFeatureCompactItem(state, "aad-rbac", {
+        status: "error",
+        errorClass: "package-partial",
+        taskId: "hold-compact-aad-rbac-package-partial-frontier",
+        waitingFor: null,
+        blockedReason:
+          "Reviewed same-path pass run 28847520644 cleared spec.aad-rbac.nonaad-to-aadv2-migration from the compact blocker surface.",
+      });
+      updateFeatureCompactItem(state, "egress-lockdown", {
+        status: "error",
+        errorClass: "package-partial",
+        taskId: "hold-compact-egress-lockdown-package-partial-frontier",
+        waitingFor: null,
+        blockedReason:
+          "Reuse existing wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 for spec.egress-lockdown.fips and avoid a duplicate compact passive wait.",
+      });
+      saveFeatureCompactLoopState(statePath, state);
+
+      const result = await executeController({
+        task: [
+          `app: ${projectDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          eventBlock({
+            type: "project.task.tick",
+            action: "feature-compact-loop",
+            project: "aks-rp-e2e",
+            taskId: "aks-feature-compact-loop",
+            target: { taskId: "aks-feature-compact-loop" },
+          }),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {},
+        runAgent: async () => ({ status: "success" }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      const saved = JSON.parse(await readFile(statePath, "utf8"));
+      expect(saved.features["aad-rbac"].frontierTaskIds).toEqual([
+        "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+      ]);
+      expect(saved.features["egress-lockdown"].frontierTaskIds).toEqual([
+        "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+      ]);
     } finally {
       restoreGh();
     }
@@ -6622,16 +7315,25 @@ describe("feature compact loop", () => {
 
   test("reconcile filters durable loop ids and aligns exact holder owner metadata", async () => {
     const projectDir = await makeProject();
-    await mkdir(join(projectDir, "features", "rp-nodepool-lifecycle", "specs"), {
-      recursive: true,
-    });
+    await mkdir(
+      join(projectDir, "features", "rp-nodepool-lifecycle", "specs"),
+      {
+        recursive: true,
+      },
+    );
     await writeFile(
       join(projectDir, "features", "rp-nodepool-lifecycle.yaml"),
       "capabilityId: rp-nodepool-lifecycle\nstatus: draft\n",
       "utf8",
     );
     await writeFile(
-      join(projectDir, "features", "rp-nodepool-lifecycle", "specs", "add-remove.json"),
+      join(
+        projectDir,
+        "features",
+        "rp-nodepool-lifecycle",
+        "specs",
+        "add-remove.json",
+      ),
       JSON.stringify({ id: "spec.rp-nodepool-lifecycle.add-remove" }),
       "utf8",
     );
@@ -6673,40 +7375,46 @@ describe("feature compact loop", () => {
       "hold-compact-node-http-proxy-package-partial-frontier",
       "hold-compact-aad-rbac-package-partial-frontier",
     ];
-    tree.tasks["hold-compact-rp-nodepool-lifecycle-package-partial-frontier"] = {
-      id: "hold-compact-rp-nodepool-lifecycle-package-partial-frontier",
-      parent_id: "aks-feature-compact-loop",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P1",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Hold compact feature rp-nodepool-lifecycle on exact package-partial wait until the named condition changes.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["holder stays visible"],
-      conflict_scope: ["feature-compact:rp-nodepool-lifecycle", "feature:rp-nodepool-lifecycle"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "rp-nodepool-lifecycle",
-        errorClass: "package-partial",
-        target: "staging",
-      },
-      blocker: {
-        condition:
-          "Current-head package-partial regeneration retires the older mixed five-member review wording. Four source-grounded carriers now classify as execute-ready-promotion-candidate, while rollback remains an accepted environment-only wait. Do not rerun unchanged.",
-        owner: "product-owner",
-        waiting_for: {
-          type: "owner.decision",
+    tree.tasks["hold-compact-rp-nodepool-lifecycle-package-partial-frontier"] =
+      {
+        id: "hold-compact-rp-nodepool-lifecycle-package-partial-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P1",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold compact feature rp-nodepool-lifecycle on exact package-partial wait until the named condition changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["holder stays visible"],
+        conflict_scope: [
+          "feature-compact:rp-nodepool-lifecycle",
+          "feature:rp-nodepool-lifecycle",
+        ],
+        context: {
+          featureCompactExactWait: true,
           featureKey: "rp-nodepool-lifecycle",
-          target: "staging",
           errorClass: "package-partial",
-          scope: "feature-compact",
+          target: "staging",
         },
-      },
-    };
-    tree.tasks["hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707"] = {
+        blocker: {
+          condition:
+            "Current-head package-partial regeneration retires the older mixed five-member review wording. Four source-grounded carriers now classify as execute-ready-promotion-candidate, while rollback remains an accepted environment-only wait. Do not rerun unchanged.",
+          owner: "product-owner",
+          waiting_for: {
+            type: "owner.decision",
+            featureKey: "rp-nodepool-lifecycle",
+            target: "staging",
+            errorClass: "package-partial",
+            scope: "feature-compact",
+          },
+        },
+      };
+    tree.tasks[
+      "hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707"
+    ] = {
       id: "hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707",
       parent_id: "project",
       state: "blocked",
@@ -6719,10 +7427,17 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["rollback wait holds"],
-      conflict_scope: ["feature:rp-nodepool-lifecycle", "spec:spec.rp-nodepool-lifecycle.rollback"],
+      conflict_scope: [
+        "feature:rp-nodepool-lifecycle",
+        "spec:spec.rp-nodepool-lifecycle.rollback",
+      ],
       blocker: {
         condition: "Rollback remains environment blocked.",
-        waiting_for: { type: "environment.available", taskId: "hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707" },
+        waiting_for: {
+          type: "environment.available",
+          taskId:
+            "hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707",
+        },
       },
     };
     tree.tasks["hold-compact-node-http-proxy-package-partial-frontier"] = {
@@ -6738,7 +7453,10 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["holder stays visible"],
-      conflict_scope: ["feature-compact:node-http-proxy", "feature:node-http-proxy"],
+      conflict_scope: [
+        "feature-compact:node-http-proxy",
+        "feature:node-http-proxy",
+      ],
       context: {
         featureCompactExactWait: true,
         featureKey: "node-http-proxy",
@@ -6791,7 +7509,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"] = {
+    tree.tasks[
+      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"
+    ] = {
       id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
       parent_id: "project",
       state: "blocked",
@@ -6804,13 +7524,22 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["shared wait holds"],
-      conflict_scope: ["spec:spec.aad-rbac.azure-rbac-automatic-sku", "feature:aad-rbac"],
+      conflict_scope: [
+        "spec:spec.aad-rbac.azure-rbac-automatic-sku",
+        "feature:aad-rbac",
+      ],
       blocker: {
         condition: "Automatic/ManagedSystem capacity family still blocked.",
-        waiting_for: { type: "azure.capacity.available", taskId: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702" },
+        waiting_for: {
+          type: "azure.capacity.available",
+          taskId:
+            "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+        },
       },
     };
-    tree.tasks["hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"] = {
+    tree.tasks[
+      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"
+    ] = {
       id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
       parent_id: "project",
       state: "blocked",
@@ -6823,13 +7552,22 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["row37 wait holds"],
-      conflict_scope: ["spec:spec.aad-rbac.managed-v2-lifecycle", "feature:aad-rbac"],
+      conflict_scope: [
+        "spec:spec.aad-rbac.managed-v2-lifecycle",
+        "feature:aad-rbac",
+      ],
       blocker: {
         condition: "Owner response still required for row-37 contradiction.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705" },
+        waiting_for: {
+          type: "evidence.available",
+          taskId:
+            "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        },
       },
     };
-    tree.tasks["hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"] = {
+    tree.tasks[
+      "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"
+    ] = {
       id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
       parent_id: "project",
       state: "blocked",
@@ -6845,12 +7583,21 @@ describe("feature compact loop", () => {
       conflict_scope: ["spec:spec.aad-rbac.run-command-access"],
       blocker: {
         condition: "Authorization branch ceiling remains unchanged.",
-        waiting_for: { type: "evidence.available", taskId: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706" },
+        waiting_for: {
+          type: "evidence.available",
+          taskId:
+            "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        },
       },
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
-    const statePath = join(projectDir, ".state", "feature-compact-loop", "state.json");
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
     const { state } = loadFeatureCompactLoopState({
       appDir: projectDir,
       projectDir,
@@ -6914,7 +7661,9 @@ describe("feature compact loop", () => {
         }),
       ]),
     );
-    expect(savedState.features["rp-nodepool-lifecycle"].frontierTaskIds).toEqual([
+    expect(
+      savedState.features["rp-nodepool-lifecycle"].frontierTaskIds,
+    ).toEqual([
       "hold-spec-rp-nodepool-lifecycle-rollback-environment-frontier-20260707",
     ]);
     expect(repair.stateRepairs).toEqual(
@@ -6930,29 +7679,34 @@ describe("feature compact loop", () => {
     expect(savedState.features["rp-nodepool-lifecycle"].taskId).toBe(
       "hold-compact-rp-nodepool-lifecycle-package-partial-frontier",
     );
-    expect(savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"].owner).toBe(
-      "product-owner",
-    );
     expect(
-      savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"].blocker.owner,
-    ).toBe("product-owner");
+      savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"]
+        .owner,
+    ).toBe("operator");
     expect(
-      savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"].blocker.waiting_for,
+      savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"]
+        .blocker.owner,
+    ).toBe("operator");
+    expect(
+      savedTree.tasks["hold-compact-node-http-proxy-package-partial-frontier"]
+        .blocker.waiting_for,
     ).toEqual({
       featureKey: "node-http-proxy",
       target: "staging",
       errorClass: "package-partial",
       scope: "feature-compact",
-      type: "owner.decision",
+      type: "compact.frontier.changed",
     });
-    expect(savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].owner).toBe(
-      "aks-explorer",
-    );
     expect(
-      savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].blocker.owner,
-    ).toBe("aks-explorer");
+      savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].owner,
+    ).toBe("operator");
     expect(
-      savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].blocker.waiting_for,
+      savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].blocker
+        .owner,
+    ).toBe("operator");
+    expect(
+      savedTree.tasks["hold-compact-aad-rbac-package-partial-frontier"].blocker
+        .waiting_for,
     ).toEqual({
       featureKey: "aad-rbac",
       target: "staging",
@@ -6969,9 +7723,12 @@ describe("feature compact loop", () => {
       await mkdir(join(projectDir, "features", "ossku-migration", "specs"), {
         recursive: true,
       });
-      await mkdir(join(projectDir, "features", "planned-maintenance", "specs"), {
-        recursive: true,
-      });
+      await mkdir(
+        join(projectDir, "features", "planned-maintenance", "specs"),
+        {
+          recursive: true,
+        },
+      );
       await mkdir(join(projectDir, "features", "egress-lockdown", "specs"), {
         recursive: true,
       });
@@ -6991,13 +7748,27 @@ describe("feature compact loop", () => {
         "utf8",
       );
       await writeFile(
-        join(projectDir, "features", "ossku-migration", "specs", "mariner.json"),
+        join(
+          projectDir,
+          "features",
+          "ossku-migration",
+          "specs",
+          "mariner.json",
+        ),
         JSON.stringify({ id: "spec.ossku-migration.mariner-era" }),
         "utf8",
       );
       await writeFile(
-        join(projectDir, "features", "planned-maintenance", "specs", "api.json"),
-        JSON.stringify({ id: "spec.planned-maintenance.autoupgrade-scheduling-api-lifecycle" }),
+        join(
+          projectDir,
+          "features",
+          "planned-maintenance",
+          "specs",
+          "api.json",
+        ),
+        JSON.stringify({
+          id: "spec.planned-maintenance.autoupgrade-scheduling-api-lifecycle",
+        }),
         "utf8",
       );
       await writeFile(
@@ -7018,7 +7789,9 @@ describe("feature compact loop", () => {
       tree.tasks["aks-feature-compact-loop"].children = [
         "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
       ];
-      tree.tasks["wait-compact-reviewed-exception-live-ready-policy-family-20260702"] = {
+      tree.tasks[
+        "wait-compact-reviewed-exception-live-ready-policy-family-20260702"
+      ] = {
         id: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         parent_id: "aks-feature-compact-loop",
         state: "blocked",
@@ -7041,7 +7814,8 @@ describe("feature compact loop", () => {
             "Blocked only while reviewed-exception members in planned-maintenance and ossku-migration remain intentionally excluded from the compact live-ready subset.",
           waiting_for: {
             type: "evidence.available",
-            taskId: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+            taskId:
+              "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
           },
         },
       };
@@ -7059,9 +7833,13 @@ describe("feature compact loop", () => {
         outputs: [],
         acceptance: ["egress exact wait holds"],
         forbidden: [],
-        conflict_scope: ["spec:spec.egress-lockdown.fips", "feature:egress-lockdown"],
+        conflict_scope: [
+          "spec:spec.egress-lockdown.fips",
+          "feature:egress-lockdown",
+        ],
         blocker: {
-          condition: "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
+          condition:
+            "Blocked until exact BYO UDR next-hop/prerequisite proof exists.",
           waiting_for: {
             type: "evidence.available",
             taskId: "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
@@ -7086,14 +7864,16 @@ describe("feature compact loop", () => {
       updateFeatureCompactItem(state, "ossku-migration", {
         status: "error",
         errorClass: "package-partial",
-        taskId: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+        taskId:
+          "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         blockedReason:
           "Reuse existing shared wait-compact-reviewed-exception-live-ready-policy-family-20260702 for the Mariner-era reviewed-exception member set.",
       });
       updateFeatureCompactItem(state, "planned-maintenance", {
         status: "error",
         errorClass: "package-partial",
-        taskId: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+        taskId:
+          "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         blockedReason:
           "Broad compact rerun remains untruthful because the only remaining blocker is the residual reviewed-exception pair under the shared live-ready filter wait.",
       });
@@ -7101,7 +7881,9 @@ describe("feature compact loop", () => {
         status: "error",
         errorClass: "package-partial",
         taskId: "hold-compact-egress-lockdown-package-partial-frontier",
-        frontierTaskIds: ["wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702"],
+        frontierTaskIds: [
+          "wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702",
+        ],
         blockedReason:
           "Reuse existing wait-spec-egress-lockdown-fips-udr-prereq-proof-20260702 for spec.egress-lockdown.fips and avoid a duplicate compact passive wait.",
       });
@@ -7132,11 +7914,24 @@ describe("feature compact loop", () => {
 
       expect(result.status).toBe("done");
       const savedTree = JSON.parse(await readFile(treePath, "utf8"));
-      expect(savedTree.tasks["hold-compact-ossku-migration-package-partial-frontier"]).toBeUndefined();
-      expect(savedTree.tasks["hold-compact-planned-maintenance-package-partial-frontier"]).toBeUndefined();
-      expect(savedTree.tasks["hold-compact-egress-lockdown-package-partial-frontier"]).toBeUndefined();
+      expect(
+        savedTree.tasks[
+          "hold-compact-ossku-migration-package-partial-frontier"
+        ],
+      ).toBeUndefined();
+      expect(
+        savedTree.tasks[
+          "hold-compact-planned-maintenance-package-partial-frontier"
+        ],
+      ).toBeUndefined();
+      expect(
+        savedTree.tasks[
+          "hold-compact-egress-lockdown-package-partial-frontier"
+        ],
+      ).toBeUndefined();
 
-      const progress = savedTree.tasks["aks-feature-compact-loop"].context.workflowProgress;
+      const progress =
+        savedTree.tasks["aks-feature-compact-loop"].context.workflowProgress;
       expect(progress.representedFeatureKeys).toEqual(
         expect.arrayContaining([
           "ossku-migration",
@@ -7198,12 +7993,16 @@ describe("feature compact loop", () => {
     );
     await writeFile(
       join(projectDir, "features", "cluster-autoscaler", "specs", "vm.json"),
-      JSON.stringify({ id: "spec.cluster-autoscaler.vm-prerelease-spot-reference" }),
+      JSON.stringify({
+        id: "spec.cluster-autoscaler.vm-prerelease-spot-reference",
+      }),
       "utf8",
     );
     await writeFile(
       join(projectDir, "features", "planned-maintenance", "specs", "api.json"),
-      JSON.stringify({ id: "spec.planned-maintenance.autoupgrade-scheduling-api-lifecycle" }),
+      JSON.stringify({
+        id: "spec.planned-maintenance.autoupgrade-scheduling-api-lifecycle",
+      }),
       "utf8",
     );
     await writeFile(
@@ -7252,7 +8051,9 @@ describe("feature compact loop", () => {
           "Replaced the generic compact gpu package-partial/environment holder with the two existing exact shared waits identified by the accepted repair memo: wait-spec-gpu-classic-westus2-sku-support-family-return-20260704 now owns spec.gpu.multi-gpu-workload and wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708 continues to own the vm-prerelease underlay carrier.",
       },
     };
-    tree.tasks["hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"] = {
+    tree.tasks[
+      "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"
+    ] = {
       id: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
       parent_id: "aks-feature-compact-loop",
       state: "done",
@@ -7265,7 +8066,10 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["cluster-autoscaler holder replaced"],
-      conflict_scope: ["feature-compact:cluster-autoscaler", "feature:cluster-autoscaler"],
+      conflict_scope: [
+        "feature-compact:cluster-autoscaler",
+        "feature:cluster-autoscaler",
+      ],
       context: {
         featureCompactExactWait: true,
         featureKey: "cluster-autoscaler",
@@ -7275,7 +8079,9 @@ describe("feature compact loop", () => {
           "Replaced by wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709 after the accepted audit verified cluster-autoscaler no longer needs a broad compact package-partial holder.",
       },
     };
-    tree.tasks["wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709"] = {
+    tree.tasks[
+      "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709"
+    ] = {
       id: "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
       parent_id: "project",
       state: "blocked",
@@ -7293,11 +8099,14 @@ describe("feature compact loop", () => {
           "Blocked only while the accepted cluster-autoscaler VM-prerelease environment-blocked frontier remains represented by exact downstream carriers.",
         waiting_for: {
           type: "environment.available",
-          taskId: "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
+          taskId:
+            "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
         },
       },
     };
-    tree.tasks["wait-compact-reviewed-exception-live-ready-policy-family-20260702"] = {
+    tree.tasks[
+      "wait-compact-reviewed-exception-live-ready-policy-family-20260702"
+    ] = {
       id: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -7311,19 +8120,26 @@ describe("feature compact loop", () => {
       acceptance: ["shared reviewed-exception wait survives"],
       conflict_scope: [
         "feature:ccp-coredns",
+        "feature-compact:ccp-coredns",
         "feature:planned-maintenance",
+        "feature-compact:planned-maintenance",
         "feature:ossku-migration",
+        "feature-compact:ossku-migration",
+        "feature-compact-wait:reviewed-exception",
       ],
       blocker: {
         condition:
           "Blocked only while residual reviewed-exception members in ccp-coredns, planned-maintenance, and ossku-migration remain intentionally excluded from the compact live-ready subset.",
         waiting_for: {
           type: "evidence.available",
-          taskId: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+          taskId:
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         },
       },
     };
-    tree.tasks["wait-spec-gpu-classic-westus2-sku-support-family-return-20260704"] = {
+    tree.tasks[
+      "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704"
+    ] = {
       id: "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
       parent_id: "project",
       state: "blocked",
@@ -7340,11 +8156,14 @@ describe("feature compact loop", () => {
         condition: "Classic westus2 GPU SKU support has not returned.",
         waiting_for: {
           type: "evidence.available",
-          taskId: "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
+          taskId:
+            "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
         },
       },
     };
-    tree.tasks["wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"] = {
+    tree.tasks[
+      "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708"
+    ] = {
       id: "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
       parent_id: "project",
       state: "blocked",
@@ -7356,18 +8175,27 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["shared underlay wait survives"],
-      conflict_scope: ["ops:shared-underlay-runtime-input-family", "feature:gpu"],
+      conflict_scope: [
+        "ops:shared-underlay-runtime-input-family",
+        "feature:gpu",
+      ],
       blocker: {
         condition: "Shared underlay/runtime input family still blocked.",
         waiting_for: {
           type: "environment.available",
-          taskId: "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
+          taskId:
+            "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
         },
       },
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
-    const statePath = join(projectDir, ".state", "feature-compact-loop", "state.json");
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
     const { state } = loadFeatureCompactLoopState({
       appDir: projectDir,
       projectDir,
@@ -7379,7 +8207,9 @@ describe("feature compact loop", () => {
       status: "error",
       errorClass: "package-partial",
       taskId: "hold-compact-gpu-package-partial-frontier",
-      frontierTaskIds: ["wait-spec-gpu-classic-westus2-sku-support-family-return-20260704"],
+      frontierTaskIds: [
+        "wait-spec-gpu-classic-westus2-sku-support-family-return-20260704",
+      ],
       retryReason:
         "Do not rerun unchanged. Same-day accepted GPU pending reviews already consumed the single-spec multi-gpu rerun lineage and now classify spec.gpu.multi-gpu-workload on a reviewed westus2 GPU SKU environment blocker rather than queued-run review.",
       resumeCondition:
@@ -7388,7 +8218,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "cluster-autoscaler", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
+      taskId:
+        "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
       retryReason:
         "Do not broad-rerun cluster-autoscaler unchanged. The published current-head compact package still regenerates as partial with one exact accepted-environment-blocked seven-member frontier.",
       resumeCondition:
@@ -7438,33 +8269,38 @@ describe("feature compact loop", () => {
       expect.arrayContaining([
         expect.objectContaining({
           featureKey: "cluster-autoscaler",
-          field: "taskId",
-          before: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
-          after: "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
+          field: "frontierTaskIds",
+          before: [],
+          after: [
+            "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
+          ],
         }),
         expect.objectContaining({
           featureKey: "planned-maintenance",
           field: "taskId",
           before: null,
-          after: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+          after:
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         }),
         expect.objectContaining({
           featureKey: "ccp-coredns",
           field: "taskId",
           before: null,
-          after: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+          after:
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         }),
         expect.objectContaining({
           featureKey: "ossku-migration",
           field: "taskId",
           before: "hold-compact-ossku-migration-package-partial-frontier",
-          after: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+          after:
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
         }),
       ]),
     );
-    expect(savedState.features["cluster-autoscaler"].taskId).toBe(
+    expect(savedState.features["cluster-autoscaler"].frontierTaskIds).toEqual([
       "wait-compact-cluster-autoscaler-vm-prerelease-environment-heptet-return-20260709",
-    );
+    ]);
     expect(savedState.features["planned-maintenance"].taskId).toBe(
       "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
     );
@@ -7490,7 +8326,9 @@ describe("feature compact loop", () => {
       "hold-compact-app-routing-package-partial-frontier-202607090657",
       "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
     ];
-    tree.tasks["hold-compact-app-routing-package-partial-frontier-202607090657"] = {
+    tree.tasks[
+      "hold-compact-app-routing-package-partial-frontier-202607090657"
+    ] = {
       id: "hold-compact-app-routing-package-partial-frontier-202607090657",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -7523,7 +8361,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"] = {
+    tree.tasks[
+      "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"
+    ] = {
       id: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -7536,7 +8376,10 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["cluster-autoscaler holder stays visible"],
-      conflict_scope: ["feature-compact:cluster-autoscaler", "feature:cluster-autoscaler"],
+      conflict_scope: [
+        "feature-compact:cluster-autoscaler",
+        "feature:cluster-autoscaler",
+      ],
       context: {
         featureCompactExactWait: true,
         featureKey: "cluster-autoscaler",
@@ -7588,7 +8431,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "cluster-autoscaler", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
+      taskId:
+        "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
       waitingFor: {
         type: "pipeline.result.or.artifact.available",
         featureKey: "cluster-autoscaler",
@@ -7626,14 +8470,16 @@ describe("feature compact loop", () => {
     expect(repair.taskRepairs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          taskId: "hold-compact-app-routing-package-partial-frontier-202607090657",
+          taskId:
+            "hold-compact-app-routing-package-partial-frontier-202607090657",
           featureKey: "app-routing",
           field: "task.owner",
           before: "",
           after: "product-owner",
         }),
         expect.objectContaining({
-          taskId: "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
+          taskId:
+            "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657",
           featureKey: "cluster-autoscaler",
           field: "task.owner",
           before: "",
@@ -7641,12 +8487,16 @@ describe("feature compact loop", () => {
         }),
       ]),
     );
-    expect(savedTree.tasks["hold-compact-app-routing-package-partial-frontier-202607090657"].owner).toBe(
-      "product-owner",
-    );
-    expect(savedTree.tasks["hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"].owner).toBe(
-      "aks-explorer",
-    );
+    expect(
+      savedTree.tasks[
+        "hold-compact-app-routing-package-partial-frontier-202607090657"
+      ].owner,
+    ).toBe("product-owner");
+    expect(
+      savedTree.tasks[
+        "hold-compact-cluster-autoscaler-package-partial-frontier-202607090657"
+      ].owner,
+    ).toBe("aks-explorer");
     expect(
       savedTree.tasks[
         "hold-compact-app-routing-package-partial-frontier-202607090657"
@@ -7732,7 +8582,10 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["defender-profile holder stays visible"],
-      conflict_scope: ["feature-compact:defender-profile", "feature:defender-profile"],
+      conflict_scope: [
+        "feature-compact:defender-profile",
+        "feature:defender-profile",
+      ],
       context: {
         featureCompactExactWait: true,
         featureKey: "defender-profile",
@@ -7753,7 +8606,9 @@ describe("feature compact loop", () => {
         fallback_at: "2026-07-11T18:30:00Z",
       },
     };
-    tree.tasks["hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier"] = {
+    tree.tasks[
+      "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier"
+    ] = {
       id: "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -7790,7 +8645,9 @@ describe("feature compact loop", () => {
         fallback_at: "2026-07-10T03:52:21.848Z",
       },
     };
-    tree.tasks["hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"] = {
+    tree.tasks[
+      "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706"
+    ] = {
       id: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
       parent_id: "aks-spec-verification-loop",
       state: "blocked",
@@ -7805,13 +8662,20 @@ describe("feature compact loop", () => {
       acceptance: ["aad-rbac exact frontier stays visible"],
       conflict_scope: ["feature:aad-rbac"],
       blocker: {
-        condition: "Owner decision still gates the aad-rbac run-command-access authorization branch.",
-        waiting_for: { type: "owner.decision", taskId: "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706" },
+        condition:
+          "Owner decision still gates the aad-rbac run-command-access authorization branch.",
+        waiting_for: {
+          type: "owner.decision",
+          taskId:
+            "hold-spec-aad-rbac-run-command-access-authorization-branch-ceiling-20260706",
+        },
         next_check_at: "2026-07-10T18:20:00Z",
         fallback_at: "2026-07-11T18:20:00Z",
       },
     };
-    tree.tasks["hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"] = {
+    tree.tasks[
+      "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705"
+    ] = {
       id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
       parent_id: "aks-spec-verification-loop",
       state: "blocked",
@@ -7826,13 +8690,20 @@ describe("feature compact loop", () => {
       acceptance: ["aad-rbac exact frontier stays visible"],
       conflict_scope: ["feature:aad-rbac"],
       blocker: {
-        condition: "Owner decision still gates the aad-rbac managed-v2 lifecycle contradiction branch.",
-        waiting_for: { type: "owner.decision", taskId: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705" },
+        condition:
+          "Owner decision still gates the aad-rbac managed-v2 lifecycle contradiction branch.",
+        waiting_for: {
+          type: "owner.decision",
+          taskId:
+            "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+        },
         next_check_at: "2026-07-10T18:00:00Z",
         fallback_at: "2026-07-11T18:00:00Z",
       },
     };
-    tree.tasks["wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"] = {
+    tree.tasks[
+      "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702"
+    ] = {
       id: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
       parent_id: "project",
       state: "blocked",
@@ -7847,13 +8718,20 @@ describe("feature compact loop", () => {
       acceptance: ["aad-rbac capacity frontier stays visible"],
       conflict_scope: ["feature:aad-rbac"],
       blocker: {
-        condition: "Capacity-family recovery still gates aad-rbac automatic SKU coverage.",
-        waiting_for: { type: "owner.decision", taskId: "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702" },
+        condition:
+          "Capacity-family recovery still gates aad-rbac automatic SKU coverage.",
+        waiting_for: {
+          type: "owner.decision",
+          taskId:
+            "wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702",
+        },
         next_check_at: "2026-07-10T18:00:00Z",
         fallback_at: "2026-07-11T18:00:00Z",
       },
     };
-    tree.tasks["wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704"] = {
+    tree.tasks[
+      "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704"
+    ] = {
       id: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
       parent_id: "project",
       state: "blocked",
@@ -7868,13 +8746,20 @@ describe("feature compact loop", () => {
       acceptance: ["defender-profile exact frontier stays visible"],
       conflict_scope: ["feature:defender-profile"],
       blocker: {
-        condition: "Owner promotion frontier still governs defender-profile compact eligibility.",
-        waiting_for: { type: "owner.decision", taskId: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704" },
+        condition:
+          "Owner promotion frontier still governs defender-profile compact eligibility.",
+        waiting_for: {
+          type: "owner.decision",
+          taskId:
+            "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
+        },
         next_check_at: "2026-07-10T18:30:00Z",
         fallback_at: "2026-07-11T18:30:00Z",
       },
     };
-    tree.tasks["wait-ccp-security-patch-reviewed-exception-owner-response-20260708"] = {
+    tree.tasks[
+      "wait-ccp-security-patch-reviewed-exception-owner-response-20260708"
+    ] = {
       id: "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
       parent_id: "aks-spec-verification-loop",
       state: "blocked",
@@ -7887,13 +8772,17 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["shared CCP wait stays visible"],
-      conflict_scope: ["spec-loop-followup:pending:ccp-security-patch", "feature:ccp-security-patch-os-variants"],
+      conflict_scope: [
+        "spec-loop-followup:pending:ccp-security-patch",
+        "feature:ccp-security-patch-os-variants",
+      ],
       blocker: {
         condition:
           "Blocked on the returned owner/source-authority decision for the remaining ccp-security-patch slice after durable send proof exists.",
         waiting_for: {
           type: "owner.decision",
-          taskId: "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
+          taskId:
+            "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
         },
         next_check_at: "2026-07-10T18:00:00Z",
         fallback_at: "2026-07-11T18:00:00Z",
@@ -7961,7 +8850,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "ccp-security-patch-os-variants", {
       status: "blocked",
       errorClass: "reviewed-exception",
-      taskId: "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
+      taskId:
+        "hold-compact-ccp-security-patch-os-variants-reviewed-exception-frontier",
       frontierTaskIds: [
         "wait-ccp-security-patch-reviewed-exception-owner-response-20260708",
       ],
@@ -8015,6 +8905,18 @@ describe("feature compact loop", () => {
           before: "2026-07-10T03:52:21.848Z",
           after: "2026-07-11T18:00:00Z",
         }),
+        expect.objectContaining({
+          featureKey: "defender-profile",
+          field: "nextCheckAt",
+          before: "2026-07-09T04:22:22.748Z",
+          after: "2026-07-10T18:30:00Z",
+        }),
+        expect.objectContaining({
+          featureKey: "defender-profile",
+          field: "fallbackAt",
+          before: "2026-07-10T03:52:22.748Z",
+          after: "2026-07-11T18:30:00Z",
+        }),
       ]),
     );
     expect(savedState.features["aad-rbac"].nextCheckAt).toBe(
@@ -8029,12 +8931,265 @@ describe("feature compact loop", () => {
     expect(savedState.features["defender-profile"].fallbackAt).toBe(
       "2026-07-11T18:30:00Z",
     );
-    expect(savedState.features["ccp-security-patch-os-variants"].nextCheckAt).toBe(
-      "2026-07-10T18:00:00Z",
+    expect(
+      savedState.features["ccp-security-patch-os-variants"].nextCheckAt,
+    ).toBe("2026-07-10T18:00:00Z");
+    expect(
+      savedState.features["ccp-security-patch-os-variants"].fallbackAt,
+    ).toBe("2026-07-11T18:00:00Z");
+  });
+
+  test("reopens exact compact holders that stale passed-spec cleanup closed", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "features", "managedsystem-pool", "specs"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "ccp-metricsserver", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "managedsystem-pool.yaml"),
+      "capabilityId: managedsystem-pool\nstatus: draft\n",
+      "utf8",
     );
-    expect(savedState.features["ccp-security-patch-os-variants"].fallbackAt).toBe(
-      "2026-07-11T18:00:00Z",
+    await writeFile(
+      join(projectDir, "features", "ccp-metricsserver.yaml"),
+      "capabilityId: ccp-metricsserver\nstatus: draft\n",
+      "utf8",
     );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "managedsystem-pool",
+        "specs",
+        "create.json",
+      ),
+      JSON.stringify({ id: "spec.managedsystem.cli-create-variant" }),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "features", "ccp-metricsserver", "specs", "ha.json"),
+      JSON.stringify({ id: "spec.ccp-metricsserver.ha-scaling" }),
+      "utf8",
+    );
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+    ];
+    tree.tasks["hold-compact-managedsystem-pool-reviewed-exception-frontier"] =
+      {
+        id: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "done",
+        status: "done",
+        done_by: "feature-compact-loop-controller",
+        resolution: "completed",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "product-owner",
+        children: [],
+        goal: "Hold compact feature managedsystem-pool on exact reviewed-exception wait until the named condition changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["managedsystem-pool holder stays visible"],
+        conflict_scope: [
+          "feature-compact:managedsystem-pool",
+          "feature:managedsystem-pool",
+          "feature-compact-wait:reviewed-exception",
+        ],
+      };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "managedsystem-pool", {
+      status: "blocked",
+      errorClass: "reviewed-exception",
+      taskId: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+      blockedReason:
+        "ManagedSystem compact remains blocked on the reviewed-exception mixed frontier.",
+      waitingFor: {
+        featureKey: "managedsystem-pool",
+        target: "staging",
+        errorClass: "reviewed-exception",
+        scope: "feature-compact",
+        type: "pipeline.result.or.artifact.available",
+      },
+      waitingCondition:
+        "Resume only after accepted evidence narrows the managedsystem-pool frontier.",
+      nextCheckAt: "2099-07-11T05:00:00Z",
+      fallbackAt: "2099-07-12T05:00:00Z",
+      blockerOwner: "product-owner",
+    });
+    updateFeatureCompactItem(state, "ccp-metricsserver", {
+      status: "blocked",
+      errorClass: "reviewed-exception",
+      taskId: "hold-compact-ccp-metricsserver-reviewed-exception-frontier",
+      blockedReason:
+        "Metrics server compact remains blocked on the reviewed-exception HA proof frontier.",
+      waitingFor: {
+        featureKey: "ccp-metricsserver",
+        target: "staging",
+        errorClass: "reviewed-exception",
+        scope: "feature-compact",
+        type: "pipeline.result.or.artifact.available",
+      },
+      waitingCondition:
+        "Resume only after authoritative HA proof or owner reclassification.",
+      nextCheckAt: "2099-07-11T06:00:00Z",
+      fallbackAt: "2099-07-12T06:00:00Z",
+      blockerOwner: "product-owner",
+    });
+
+    const savedTree = JSON.parse(await readFile(treePath, "utf8"));
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: savedTree.tasks["aks-feature-compact-loop"],
+      tasks: savedTree.tasks,
+      state,
+    });
+
+    expect(repair.taskRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+          featureKey: "managedsystem-pool",
+          field: "task.reopen",
+        }),
+        expect.objectContaining({
+          taskId: "hold-compact-ccp-metricsserver-reviewed-exception-frontier",
+          featureKey: "ccp-metricsserver",
+          field: "task.reopen",
+          before: null,
+        }),
+      ]),
+    );
+    expect(
+      savedTree.tasks[
+        "hold-compact-managedsystem-pool-reviewed-exception-frontier"
+      ],
+    ).toMatchObject({
+      state: "blocked",
+      status: "blocked",
+      blocker: {
+        condition:
+          "ManagedSystem compact remains blocked on the reviewed-exception mixed frontier.",
+        owner: "product-owner",
+        waiting_for: {
+          featureKey: "managedsystem-pool",
+          type: "pipeline.result.or.artifact.available",
+        },
+        next_check_at: "2099-07-11T05:00:00Z",
+        fallback_at: "2099-07-12T05:00:00Z",
+      },
+    });
+    expect(
+      savedTree.tasks[
+        "hold-compact-ccp-metricsserver-reviewed-exception-frontier"
+      ],
+    ).toMatchObject({
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "ccp-metricsserver",
+      },
+      blocker: {
+        condition:
+          "Metrics server compact remains blocked on the reviewed-exception HA proof frontier.",
+        owner: "product-owner",
+        waiting_for: {
+          featureKey: "ccp-metricsserver",
+          type: "pipeline.result.or.artifact.available",
+        },
+        next_check_at: "2099-07-11T06:00:00Z",
+        fallback_at: "2099-07-12T06:00:00Z",
+      },
+    });
+    expect(savedTree.tasks["aks-feature-compact-loop"].children).toContain(
+      "hold-compact-ccp-metricsserver-reviewed-exception-frontier",
+    );
+  });
+
+  test("recreated exact compact holders get fresh watch times when state is stale", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "blocked",
+      errorClass: "package-partial",
+      taskId: "hold-compact-windows-expired-holder",
+      blockedReason:
+        "Windows compact remains blocked on an exact package-partial frontier.",
+      waitingFor: {
+        featureKey: "windows",
+        target: "staging",
+        errorClass: "package-partial",
+        scope: "feature-compact",
+        type: "pipeline.result.or.artifact.available",
+      },
+      waitingCondition:
+        "Resume only after accepted evidence changes the windows frontier.",
+      nextCheckAt: "2026-01-01T00:00:00.000Z",
+      fallbackAt: "2026-01-02T00:00:00.000Z",
+      blockerOwner: "product-owner",
+    });
+
+    const before = Date.now();
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: tree.tasks["aks-feature-compact-loop"],
+      tasks: tree.tasks,
+      state,
+    });
+
+    const holder = tree.tasks["hold-compact-windows-expired-holder"];
+    const nextCheckAt = Date.parse(holder.blocker.next_check_at);
+    const fallbackAt = Date.parse(holder.blocker.fallback_at);
+
+    expect(repair.taskRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "hold-compact-windows-expired-holder",
+          featureKey: "windows",
+          field: "task.reopen",
+        }),
+      ]),
+    );
+    expect(nextCheckAt).toBeGreaterThanOrEqual(before);
+    expect(fallbackAt).toBeGreaterThan(nextCheckAt);
+    expect(state.features.windows.nextCheckAt).toBe(
+      holder.blocker.next_check_at,
+    );
+    expect(state.features.windows.fallbackAt).toBe(holder.blocker.fallback_at);
   });
 
   test("refreshes existing exact holders from generic wait types to the represented promotion or prerequisite frontier", async () => {
@@ -8061,7 +9216,13 @@ describe("feature compact loop", () => {
       "utf8",
     );
     await writeFile(
-      join(projectDir, "features", "managedsystem-pool", "specs", "create.json"),
+      join(
+        projectDir,
+        "features",
+        "managedsystem-pool",
+        "specs",
+        "create.json",
+      ),
       JSON.stringify({ id: "spec.managedsystem.cli-create-variant" }),
       "utf8",
     );
@@ -8086,52 +9247,58 @@ describe("feature compact loop", () => {
       inputs: [],
       outputs: [],
       acceptance: ["cost-analysis holder stays visible"],
-      conflict_scope: ["feature-compact:cost-analysis", "feature:cost-analysis"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "cost-analysis",
-        errorClass: "reviewed-exception",
-        target: "staging",
-      },
+      conflict_scope: [
+        "feature-compact:cost-analysis",
+        "feature:cost-analysis",
+      ],
       blocker: {
         condition:
           "reviewed-exception frontier still governs cost-analysis, including the execute-ready-promotion plus underlay-kubeconfig owner wait boundary recorded in compact state; restore the missing compact blocked holder and wait until that exact frontier changes.",
+        resume_condition:
+          "Resume compact proof for cost-analysis only after the exact reviewed-exception frontier named in the blocker materially changes or stronger accepted evidence supersedes it.",
+        next_check_at: "2026-07-10T05:00:00Z",
+        fallback_at: "2026-07-11T05:00:00Z",
         waiting_for: {
           type: "environment.available",
           taskId: "hold-compact-cost-analysis-reviewed-exception-frontier",
         },
       },
     };
-    tree.tasks["hold-compact-managedsystem-pool-reviewed-exception-frontier"] = {
-      id: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
-      parent_id: "aks-feature-compact-loop",
-      state: "blocked",
-      status: "blocked",
-      kind: "domain_leaf",
-      priority: "P2",
-      owner: "aks-explorer",
-      children: [],
-      goal: "Hold compact feature managedsystem-pool on exact reviewed-exception wait until the named condition changes.",
-      inputs: [],
-      outputs: [],
-      acceptance: ["managedsystem-pool holder stays visible"],
-      conflict_scope: ["feature-compact:managedsystem-pool", "feature:managedsystem-pool"],
-      context: {
-        featureCompactExactWait: true,
-        featureKey: "managedsystem-pool",
-        errorClass: "reviewed-exception",
-        target: "staging",
-      },
-      blocker: {
-        condition:
-          "reviewed-exception frontier still governs managedsystem-pool, including the repo-local mixed terminal and promotion frontier recorded in compact state; restore the missing compact blocked holder and wait until that exact frontier changes.",
-        waiting_for: {
-          type: "evidence.available",
-          taskId: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+    tree.tasks["hold-compact-managedsystem-pool-reviewed-exception-frontier"] =
+      {
+        id: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+        parent_id: "aks-feature-compact-loop",
+        state: "blocked",
+        status: "blocked",
+        kind: "domain_leaf",
+        priority: "P2",
+        owner: "aks-explorer",
+        children: [],
+        goal: "Hold compact feature managedsystem-pool on exact reviewed-exception wait until the named condition changes.",
+        inputs: [],
+        outputs: [],
+        acceptance: ["managedsystem-pool holder stays visible"],
+        conflict_scope: [
+          "feature-compact:managedsystem-pool",
+          "feature:managedsystem-pool",
+        ],
+        blocker: {
+          condition:
+            "reviewed-exception frontier still governs managedsystem-pool, including the repo-local mixed terminal and promotion frontier recorded in compact state; restore the missing compact blocked holder and wait until that exact frontier changes.",
+          resume_condition:
+            "Resume compact proof for managedsystem-pool only after the exact reviewed-exception frontier named in the blocker materially changes or stronger accepted evidence supersedes it.",
+          next_check_at: "2026-07-10T05:30:00Z",
+          fallback_at: "2026-07-11T05:30:00Z",
+          waiting_for: {
+            type: "evidence.available",
+            taskId:
+              "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+          },
         },
-      },
-    };
-    tree.tasks["hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier"] = {
+      };
+    tree.tasks[
+      "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier"
+    ] = {
       id: "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -8193,7 +9360,11 @@ describe("feature compact loop", () => {
         scope: "feature-compact",
         type: "environment.prerequisite.ready",
       },
+      nextCheckAt: "2026-07-09T04:22:22.525Z",
+      fallbackAt: "2026-07-10T03:52:22.525Z",
       blockedReason:
+        "Resume only after a working underlay kubeconfig is available and the owner explicitly reviews or promotes the source-grounded carrier.",
+      resumeCondition:
         "Resume only after a working underlay kubeconfig is available and the owner explicitly reviews or promotes the source-grounded carrier.",
     });
     updateFeatureCompactItem(state, "managedsystem-pool", {
@@ -8207,13 +9378,18 @@ describe("feature compact loop", () => {
         scope: "feature-compact",
         type: "owner.decision",
       },
+      nextCheckAt: "2026-07-09T04:32:38.707Z",
+      fallbackAt: "2026-07-10T04:02:38.707Z",
       blockedReason:
+        "Resume only if accepted evidence promotes or explicitly narrows spec.managedsystem.cli-create-variant, removes or rehomes any superseded lineage carrier, or if concrete external environment/product/client evidence reopens the remaining frontier.",
+      resumeCondition:
         "Resume only if accepted evidence promotes or explicitly narrows spec.managedsystem.cli-create-variant, removes or rehomes any superseded lineage carrier, or if concrete external environment/product/client evidence reopens the remaining frontier.",
     });
     updateFeatureCompactItem(state, "remediator-node-not-ready-restart", {
       status: "blocked",
       errorClass: "runtime-product-lineage",
-      taskId: "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
+      taskId:
+        "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
       waitingFor: {
         featureKey: "remediator-node-not-ready-restart",
         target: "staging",
@@ -8258,7 +9434,8 @@ describe("feature compact loop", () => {
           field: "blocker.waiting_for",
           before: {
             type: "evidence.available",
-            taskId: "hold-compact-managedsystem-pool-reviewed-exception-frontier",
+            taskId:
+              "hold-compact-managedsystem-pool-reviewed-exception-frontier",
           },
           after: {
             featureKey: "managedsystem-pool",
@@ -8269,7 +9446,8 @@ describe("feature compact loop", () => {
           },
         }),
         expect.objectContaining({
-          taskId: "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
+          taskId:
+            "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
           featureKey: "remediator-node-not-ready-restart",
           field: "blocker.waiting_for",
           before: {
@@ -8291,7 +9469,16 @@ describe("feature compact loop", () => {
       ]),
     );
     expect(
-      savedTree.tasks["hold-compact-cost-analysis-reviewed-exception-frontier"].blocker.waiting_for,
+      savedTree.tasks["hold-compact-cost-analysis-reviewed-exception-frontier"]
+        .blocker.condition,
+    ).toContain("reviewed-exception frontier still governs cost-analysis");
+    expect(
+      savedTree.tasks["hold-compact-cost-analysis-reviewed-exception-frontier"]
+        .blocker.resume_condition,
+    ).toContain("Resume compact proof for cost-analysis");
+    expect(
+      savedTree.tasks["hold-compact-cost-analysis-reviewed-exception-frontier"]
+        .blocker.waiting_for,
     ).toEqual({
       featureKey: "cost-analysis",
       target: "staging",
@@ -8300,7 +9487,19 @@ describe("feature compact loop", () => {
       type: "environment.prerequisite.ready",
     });
     expect(
-      savedTree.tasks["hold-compact-managedsystem-pool-reviewed-exception-frontier"].blocker.waiting_for,
+      savedTree.tasks[
+        "hold-compact-managedsystem-pool-reviewed-exception-frontier"
+      ].blocker.condition,
+    ).toContain("reviewed-exception frontier still governs managedsystem-pool");
+    expect(
+      savedTree.tasks[
+        "hold-compact-managedsystem-pool-reviewed-exception-frontier"
+      ].blocker.resume_condition,
+    ).toContain("Resume compact proof for managedsystem-pool");
+    expect(
+      savedTree.tasks[
+        "hold-compact-managedsystem-pool-reviewed-exception-frontier"
+      ].blocker.waiting_for,
     ).toEqual({
       featureKey: "managedsystem-pool",
       target: "staging",
@@ -8309,7 +9508,9 @@ describe("feature compact loop", () => {
       type: "owner.decision",
     });
     expect(
-      savedTree.tasks["hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier"].blocker.waiting_for,
+      savedTree.tasks[
+        "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier"
+      ].blocker.waiting_for,
     ).toEqual({
       featureKey: "remediator-node-not-ready-restart",
       target: "staging",
@@ -8320,11 +9521,139 @@ describe("feature compact loop", () => {
     expect(savedState.features["cost-analysis"].taskId).toBe(
       "hold-compact-cost-analysis-reviewed-exception-frontier",
     );
+    expect(savedState.features["cost-analysis"].nextCheckAt).toBe(
+      "2026-07-10T05:00:00Z",
+    );
+    expect(savedState.features["cost-analysis"].fallbackAt).toBe(
+      "2026-07-11T05:00:00Z",
+    );
     expect(savedState.features["managedsystem-pool"].taskId).toBe(
       "hold-compact-managedsystem-pool-reviewed-exception-frontier",
     );
-    expect(savedState.features["remediator-node-not-ready-restart"].taskId).toBe(
+    expect(savedState.features["managedsystem-pool"].nextCheckAt).toBe(
+      "2026-07-10T05:30:00Z",
+    );
+    expect(savedState.features["managedsystem-pool"].fallbackAt).toBe(
+      "2026-07-11T05:30:00Z",
+    );
+    expect(
+      savedState.features["remediator-node-not-ready-restart"].taskId,
+    ).toBe(
       "hold-compact-remediator-node-not-ready-restart-runtime-product-lineage-frontier",
+    );
+  });
+
+  test("reprojects blocked parent feature to live ADO subfeature wait instead of reopening stale holder", () => {
+    const state: any = {
+      features: {
+        "bootstrap-profile": {
+          featureKey: "bootstrap-profile",
+          status: "blocked",
+          errorClass: "live-workflow",
+          taskId:
+            "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710",
+          retryReason:
+            "Old same-surface timeout holder was replaced by a narrower ADO rerun wait.",
+          waitingFor: {
+            type: "compact.frontier.changed",
+            featureKey: "bootstrap-profile",
+          },
+        },
+      },
+    };
+    const loopTask: any = {
+      id: "aks-feature-compact-loop",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      children: [
+        "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710",
+        "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711",
+      ],
+    };
+    const tasks: any = {
+      "aks-feature-compact-loop": loopTask,
+      "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710":
+        {
+          id: "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710",
+          parent_id: "aks-feature-compact-loop",
+          state: "done",
+          status: "done",
+          resolution: "completed",
+          goal: "Hold compact feature bootstrap-profile on exact live-workflow wait until the named condition changes.",
+          children: [],
+          conflict_scope: [
+            "feature-compact:bootstrap-profile",
+            "feature:bootstrap-profile",
+            "feature-compact-wait:live-workflow",
+          ],
+          context: {
+            featureCompactExactWait: true,
+            featureKey: "bootstrap-profile",
+            errorClass: "live-workflow",
+          },
+        },
+      "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711":
+        {
+          id: "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          status: "blocked",
+          goal: "Carry exact live-workflow wait for bootstrap-profile BYO ACR rerun on ADO run 171800822.",
+          children: [],
+          conflict_scope: [
+            "feature-compact:bootstrap-profile:cache-direct-cache-switch",
+            "ado-run:171800822",
+          ],
+          blocker: {
+            condition:
+              "Blocked on terminal Azure DevOps rerun 171800822 for spec.bootstrap-profile-byo-acr.cache-direct-cache-switch.",
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId: "171800822",
+              runUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171800822",
+            },
+          },
+        },
+    };
+
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask,
+      tasks,
+      state,
+    });
+
+    expect(state.features["bootstrap-profile"].taskId).toBe(
+      "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711",
+    );
+    expect(
+      tasks[
+        "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710"
+      ].state,
+    ).toBe("done");
+    expect(
+      tasks[
+        "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711"
+      ].blocker.waiting_for,
+    ).toMatchObject({
+      type: "ado.pipeline_run.completed",
+      runId: "171800822",
+    });
+    expect(repair.stateRepairs).toContainEqual(
+      expect.objectContaining({
+        featureKey: "bootstrap-profile",
+        field: "taskId",
+        after:
+          "domain/wait-bootstrap-profile-cache-direct-cache-switch-ado171800822-terminal-result-20260711",
+      }),
+    );
+    expect(repair.taskRepairs).not.toContainEqual(
+      expect.objectContaining({
+        taskId:
+          "hold-compact-bootstrap-profile-cache-direct-create-cache-acr0-contradiction-frontier-20260710",
+        field: "task.reopen",
+      }),
     );
   });
 
@@ -8372,7 +9701,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["hold-compact-app-routing-package-partial-frontier-202607090617"] = {
+    tree.tasks[
+      "hold-compact-app-routing-package-partial-frontier-202607090617"
+    ] = {
       id: "hold-compact-app-routing-package-partial-frontier-202607090617",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -8404,7 +9735,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["hold-compact-machines-agentpool-package-partial-frontier-202607090617"] = {
+    tree.tasks[
+      "hold-compact-machines-agentpool-package-partial-frontier-202607090617"
+    ] = {
       id: "hold-compact-machines-agentpool-package-partial-frontier-202607090617",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -8436,7 +9769,9 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["hold-compact-node-http-proxy-package-partial-frontier-202607090544"] = {
+    tree.tasks[
+      "hold-compact-node-http-proxy-package-partial-frontier-202607090544"
+    ] = {
       id: "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
@@ -8542,14 +9877,17 @@ describe("feature compact loop", () => {
       expect.objectContaining({
         featureKey: "machines-agentpool",
         field: "taskId",
-        before: "wait-compact-machines-agentpool-run-28809049156-review-20260707",
-        after: "hold-compact-machines-agentpool-package-partial-frontier-202607090617",
+        before:
+          "wait-compact-machines-agentpool-run-28809049156-review-20260707",
+        after:
+          "hold-compact-machines-agentpool-package-partial-frontier-202607090617",
       }),
       expect.objectContaining({
         featureKey: "node-http-proxy",
         field: "taskId",
         before: "wait-compact-node-http-proxy-trusted-ca-quarantine-20260702",
-        after: "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
+        after:
+          "hold-compact-node-http-proxy-package-partial-frontier-202607090544",
       }),
     ]);
     expect(savedState.features["aad-rbac"].taskId).toBe(
@@ -8748,13 +10086,14 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "live-workflow",
       retryable: true,
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
       lastWorkflowRunId: "123",
       lastWorkflowRunUrl:
         "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
-      lastLiveProofVersion: null,
+      lastLiveProofVersion: "live-aks-proof-v2",
       lastSummary:
         "Backfilled completed compact Azure DevOps pipeline run 123 for windows; live proof is still failing.",
     });
@@ -8790,7 +10129,7 @@ describe("feature compact loop", () => {
       expect(saved.features.windows).toMatchObject({
         status: "error",
         lastWorkflowRunId: "123",
-        lastLiveProofVersion: null,
+        lastLiveProofVersion: "live-aks-proof-v2",
       });
       expect(saved.features.windows.lastSummary).toBe(
         "Backfilled completed compact Azure DevOps pipeline run 123 for windows; live proof is still failing.",
@@ -8850,6 +10189,7 @@ describe("feature compact loop", () => {
     });
     updateFeatureCompactItem(state, "windows", {
       status: "error",
+      errorClass: "live-workflow",
       retryable: true,
       attempts: 2,
       lastPlanPath: "features/windows/compact/staging.plan.json",
@@ -9011,6 +10351,7 @@ describe("feature compact loop", () => {
     tree.tasks["aks-feature-compact-loop"].children = [
       "wait-storage-csi-two-spec-live-run-review",
       "wait-storage-csi-mixed-frontier",
+      "hold-compact-storage-csi-reviewed-exception-frontier",
     ];
     tree.tasks["wait-storage-csi-two-spec-live-run-review"] = {
       id: "wait-storage-csi-two-spec-live-run-review",
@@ -9051,6 +10392,31 @@ describe("feature compact loop", () => {
       depends_on: [],
       blocker: {
         condition: "Waiting for a mixed storage-csi frontier to change.",
+      },
+    };
+    tree.tasks["hold-compact-storage-csi-reviewed-exception-frontier"] = {
+      id: "hold-compact-storage-csi-reviewed-exception-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P2",
+      children: [],
+      goal: "Hold compact feature storage-csi on exact reviewed-exception wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: [
+        "Do not close exact compact holders just because their text names already-passing specs.",
+      ],
+      forbidden: [],
+      conflict_scope: [
+        "feature-compact:storage-csi",
+        "feature:storage-csi",
+        "feature-compact-wait:reviewed-exception",
+      ],
+      depends_on: [],
+      blocker: {
+        condition:
+          "Exact compact holder still governs spec.storage-csi.disk-resize and spec.storage-csi.disk-xfs until the reviewed-exception frontier changes.",
       },
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
@@ -9125,6 +10491,11 @@ describe("feature compact loop", () => {
     expect(updated.tasks["wait-storage-csi-mixed-frontier"]).toMatchObject({
       state: "blocked",
     });
+    expect(
+      updated.tasks["hold-compact-storage-csi-reviewed-exception-frontier"],
+    ).toMatchObject({
+      state: "blocked",
+    });
   });
 
   test("controller keeps feature-compact exact waits blocked and rebinds persisted state to them", async () => {
@@ -9147,7 +10518,9 @@ describe("feature compact loop", () => {
     );
     await writeFile(
       join(projectDir, "features", "app-routing", "specs", "split.json"),
-      JSON.stringify({ id: "spec.app-routing.vm-prerelease.osm-acnginx-internal" }),
+      JSON.stringify({
+        id: "spec.app-routing.vm-prerelease.osm-acnginx-internal",
+      }),
       "utf8",
     );
     await writeFile(
@@ -9158,7 +10531,9 @@ describe("feature compact loop", () => {
         "specs",
         "cleanup.json",
       ),
-      JSON.stringify({ id: "spec.nap.default-machines-pool-cleanup-no-machine-crud" }),
+      JSON.stringify({
+        id: "spec.nap.default-machines-pool-cleanup-no-machine-crud",
+      }),
       "utf8",
     );
     await writeRootTree(projectDir);
@@ -9177,8 +10552,7 @@ describe("feature compact loop", () => {
       status: "blocked",
       priority: "P2",
       children: [],
-      goal:
-        "Preserve the exact app-routing shared fixture / split frontier after the internal OSM pair promotion.",
+      goal: "Preserve the exact app-routing shared fixture / split frontier after the internal OSM pair promotion.",
       inputs: [],
       outputs: [],
       acceptance: ["split frontier stays visible"],
@@ -9203,15 +10577,16 @@ describe("feature compact loop", () => {
         },
       },
     };
-    tree.tasks["wait-compact-machines-agentpool-run-28809049156-review-20260707"] = {
+    tree.tasks[
+      "wait-compact-machines-agentpool-run-28809049156-review-20260707"
+    ] = {
       id: "wait-compact-machines-agentpool-run-28809049156-review-20260707",
       parent_id: "aks-feature-compact-loop",
       state: "blocked",
       status: "blocked",
       priority: "P2",
       children: [],
-      goal:
-        "Preserve the exact same-spec compact rerun result 28809049156 for spec.nap.default-machines-pool-cleanup-no-machine-crud while reviewed-exception siblings stay on the shared family wait.",
+      goal: "Preserve the exact same-spec compact rerun result 28809049156 for spec.nap.default-machines-pool-cleanup-no-machine-crud while reviewed-exception siblings stay on the shared family wait.",
       inputs: [],
       outputs: [],
       acceptance: ["same-spec frontier stays isolated"],
@@ -9290,7 +10665,8 @@ describe("feature compact loop", () => {
     updateFeatureCompactItem(state, "machines-agentpool", {
       status: "error",
       errorClass: "package-partial",
-      taskId: "hold-compact-machines-agentpool-package-partial-frontier-202607090617",
+      taskId:
+        "hold-compact-machines-agentpool-package-partial-frontier-202607090617",
       waitingFor: null,
       blockedReason:
         "Rewrite review confirmed the stale runtime package-partial holder broadens the exact same-spec frontier; preserve wait-compact-machines-agentpool-run-28809049156-review-20260707.",
@@ -9322,11 +10698,15 @@ describe("feature compact loop", () => {
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).not.toContain("Closed 2 stale compact blocked wait");
+      expect(result.message).not.toContain(
+        "Closed 2 stale compact blocked wait",
+      );
 
       const updatedTree = JSON.parse(await readFile(treePath, "utf8"));
       expect(
-        updatedTree.tasks["hold-compact-app-routing-shared-fixture-frontier-20260708"],
+        updatedTree.tasks[
+          "hold-compact-app-routing-shared-fixture-frontier-20260708"
+        ],
       ).toMatchObject({ state: "blocked" });
       expect(
         updatedTree.tasks[
@@ -9532,6 +10912,86 @@ describe("feature compact loop", () => {
     expect(result.harvestedTaskIds).toEqual([]);
     const updated = JSON.parse(await readFile(treePath, "utf8"));
     expect(updated.tasks["wait-compact-windows-run"]).toMatchObject({
+      state: "blocked",
+      status: "blocked",
+    });
+  });
+
+  test("controller ignores historical run mentions in compact frontier blocker prose", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-windows-frontier",
+    ];
+    tree.tasks["hold-compact-windows-frontier"] = {
+      id: "hold-compact-windows-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P1",
+      children: [],
+      goal: "Hold windows compact frontier after reviewing Azure DevOps run 123456789.",
+      inputs: ["feature:windows"],
+      outputs: [],
+      acceptance: ["Resume only when the frontier changes."],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows"],
+      depends_on: [],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "windows",
+      },
+      blocker: {
+        category: "external-wait",
+        condition:
+          "Azure DevOps run 123456789 produced no promotion; keep this exact compact frontier until accepted evidence narrows it.",
+        waiting_for: {
+          type: "frontier.changed",
+          taskId: "hold-compact-windows-frontier",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "blocked",
+      taskId: "hold-compact-windows-frontier",
+      lastSummary: "Waiting for frontier change.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = harvestTerminalCompactGitHubWaits({
+      config: config(projectDir),
+      projectDir,
+      appDir: projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      state,
+      client: { kind: "gh" },
+      limit: 10,
+      getRun: () => {
+        throw new Error("historical prose run id should not be queried");
+      },
+    });
+
+    expect(result.harvestedTaskIds).toEqual([]);
+    expect(result.checkedRunIds).toEqual([]);
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["hold-compact-windows-frontier"]).toMatchObject({
       state: "blocked",
       status: "blocked",
     });

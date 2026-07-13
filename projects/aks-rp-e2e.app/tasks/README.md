@@ -58,6 +58,10 @@ folder does not keep a parallel task event log.
   control-flow protocol. Set these fields with `bun run task-tree add` or
   `bun run task-tree update-text` using `--blocker-category`,
   `--blocker-owner`, `--resume-condition`, and `--resume-at`.
+  `--blocker "..."` does not infer a specific `waiting_for` target from the
+  sentence. Use `--blocker-json` when the task is waiting for a known
+  ADO/GitHub run, capacity signal, environment prerequisite, evidence artifact,
+  or owner decision.
 - Do not use `gates` or `gate_status` in `tasks/tree.json`. They were a legacy
   catch-all for dependencies, safety constraints, external blockers, and live
   execution approval. Use `depends_on`, `forbidden`, `blocker`, structured

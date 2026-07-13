@@ -21,3 +21,4 @@ evidence/metric-alert-*
 evidence/metric-recovered-*
 evidence/archive/metric-alert-*
 evidence/archive/ops-*
+evidence/archive/ops/

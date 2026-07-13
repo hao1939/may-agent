@@ -40,6 +40,7 @@ function selfRepresentingDisposition(disposition: string): boolean {
 
   const exactAllow = new Set([
     "repaired-ready-residue-no-new-leaf",
+    "repo-local-witness-repair-landed-future-rerun-if-focus-reopens",
     "accepted-explicit-narrowing-source-only",
     "combined-boundary-nonlive-split-required",
     "blocked-hypothesis-nonlive-hold",

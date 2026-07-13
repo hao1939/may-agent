@@ -831,14 +831,50 @@ describe("project execution watchdog", () => {
   test("recovers an active task when the worker session finished but workflow bookkeeping was interrupted", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
-    writeRuntimeSession(stateDbPath, {
-      sessionId: "s_done",
-      status: "done",
-      outcome: "done",
-      opCount: 12,
-      startedAt: Date.now() - 120_000,
-      lastActivityAt: Date.now() - 60_000,
-    });
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer
+      );
+      create table events (
+        id integer primary key autoincrement,
+        event_type text not null,
+        data text,
+        timestamp integer not null
+      );
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?)").run(
+      "s_done",
+      "done",
+      "done",
+      12,
+      Date.now() - 120_000,
+      Date.now() - 60_000,
+    );
+    db.query(
+      "insert into events (event_type, data, timestamp) values (?, ?, ?)",
+    ).run(
+      "session.end",
+      JSON.stringify({
+        sessionId: "s_done",
+        status: "done",
+        outcome: "done",
+        summary: "Recovered useful worker output.",
+        finishParams: {
+          status: "success",
+          summary: "Recovered useful worker output.",
+          deliverables: [{ path: "evidence/archive/active-task.md" }],
+          verification_evidence: ["Step 1: proof"],
+        },
+      }),
+      Date.now() - 30_000,
+    );
+    db.close();
     await writeTree(
       projectDir,
       {
@@ -875,6 +911,8 @@ describe("project execution watchdog", () => {
       taskId: "active-task",
       attemptId: "attempt-1",
       result: "done",
+      summary: "Recovered useful worker output.",
+      evidenceRefs: ["evidence/archive/active-task.md"],
       review: {
         required: true,
         reason: "watchdog-recovered-terminal-worker-session",
@@ -886,6 +924,101 @@ describe("project execution watchdog", () => {
     );
     expect(updated.tasks["active-task"].state).toBe("review");
     expect(updated.tasks["active-task"].trace.last_worker_result).toBe("done");
+  });
+
+  test("does not recover a done session whose only recovered output is the generic placeholder", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer
+      );
+      create table events (
+        id integer primary key autoincrement,
+        event_type text not null,
+        data text,
+        timestamp integer not null
+      );
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?)").run(
+      "s_done_placeholder",
+      "done",
+      "done",
+      44,
+      Date.now() - 120_000,
+      Date.now() - 60_000,
+    );
+    db.query(
+      "insert into events (event_type, data, timestamp) values (?, ?, ?)",
+    ).run(
+      "session.end",
+      JSON.stringify({
+        sessionId: "s_done_placeholder",
+        status: "done",
+        outcome: "done",
+        summary: "Recovered completed worker session s_done_placeholder.",
+      }),
+      Date.now() - 30_000,
+    );
+    db.close();
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_done_placeholder",
+          trace: {
+            current_attempt_id: "attempt-1",
+            worker_started_attempt_id: "attempt-1",
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.planning.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
+          reason: "watchdog-stale-active-review",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+          staleActiveTasks: [
+            {
+              taskId: "active-task",
+              reason: "session-not-running",
+            },
+          ],
+        },
+      },
+    ]);
+
+    const updated = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["active-task"].state).toBe("active");
   });
 
   test("wakes owner for an active leaf whose runtime session has error outcome", async () => {
@@ -1615,7 +1748,7 @@ describe("project execution watchdog", () => {
           sampledOverdueTaskIds: ["zzz-overdue-wait"],
         },
         instruction: expect.stringContaining(
-          "passed its resume/fallback window",
+          "passed its next-check/resume/fallback window",
         ),
       },
     });
@@ -1662,7 +1795,59 @@ describe("project execution watchdog", () => {
           },
         ],
         instruction: expect.stringContaining(
-          "passed its resume/fallback window",
+          "passed its next-check/resume/fallback window",
+        ),
+      },
+    });
+  });
+
+  test("includes overdue next-check waits before fallback expires", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-next-check-wait": task("blocked-next-check-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for a pipeline result recheck.",
+          waiting_for: { type: "ado.pipeline_run.completed", runId: "123" },
+          owner: "aks-explorer",
+          observed_by: { workflow: "project-execution-watchdog" },
+          observation_method: "Poll Azure DevOps run 123.",
+          next_check_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2999-01-02T00:00:00.000Z",
+          fallback_action:
+            "Create pipeline diagnosis if the run still has no artifact.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        blockedOverdueCount: 1,
+        blockedFutureWatchCount: 0,
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [
+          {
+            taskId: "blocked-next-check-wait",
+            owner: "aks-explorer",
+            watchAt: "2001-01-01T00:00:00.000Z",
+            nextCheckAt: "2001-01-01T00:00:00.000Z",
+            fallbackAt: "2999-01-02T00:00:00.000Z",
+            fallbackAction:
+              "Create pipeline diagnosis if the run still has no artifact.",
+            recoveryRequired:
+              "Next-check window passed without active/review recovery work.",
+          },
+        ],
+        instruction: expect.stringContaining(
+          "passed its next-check/resume/fallback window",
         ),
       },
     });
@@ -1762,6 +1947,159 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("does not report spec-loop overdue owner action when legacy scoped recovery work is active", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_legacy_scoped_overdue_audit", "running");
+    await writeTree(projectDir, {
+      "legacy-scoped-overdue-audit": task(
+        "legacy-scoped-overdue-audit",
+        "active",
+        {
+          goal: "Audit overdue blocked waits under the spec loop.",
+          session_id: "s_legacy_scoped_overdue_audit",
+          conflict_scope: ["ops:spec-loop-overdue-blocked-frontier-batch"],
+        },
+      ),
+      "aks-spec-verification-loop": task(
+        "aks-spec-verification-loop",
+        "active",
+        {
+          children: ["blocked-spec-wait"],
+        },
+      ),
+      "blocked-spec-wait": task("blocked-spec-wait", "blocked", {
+        parent_id: "aks-spec-verification-loop",
+        blocker: {
+          condition: "Waiting for pipeline result.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the pipeline result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the pipeline and create a recovery task.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 0,
+        overdueOwnerActions: [],
+      },
+    });
+  });
+
+  test("does not report compact-loop overdue owner action when legacy scoped recovery work is active", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_legacy_compact_overdue_audit", "running");
+    await writeTree(projectDir, {
+      "legacy-compact-overdue-audit": task(
+        "legacy-compact-overdue-audit",
+        "active",
+        {
+          goal: "Audit overdue blocked waits under the compact loop.",
+          session_id: "s_legacy_compact_overdue_audit",
+          conflict_scope: ["ops:compact-overdue-blocked-frontier-batch"],
+        },
+      ),
+      "aks-feature-compact-loop": task("aks-feature-compact-loop", "active", {
+        children: ["blocked-compact-wait"],
+      }),
+      "blocked-compact-wait": task("blocked-compact-wait", "blocked", {
+        parent_id: "aks-feature-compact-loop",
+        blocker: {
+          condition: "Waiting for compact proof.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the compact result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the compact proof and create recovery work.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 0,
+        overdueOwnerActions: [],
+      },
+    });
+  });
+
+  test("does not treat prose-only blocked wait mention as active recovery work", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_prose_overdue_audit", "running");
+    await writeTree(projectDir, {
+      "prose-overdue-audit": task("prose-overdue-audit", "active", {
+        goal: "Recover blocked-spec-wait by checking the pipeline result.",
+        session_id: "s_prose_overdue_audit",
+      }),
+      "aks-spec-verification-loop": task(
+        "aks-spec-verification-loop",
+        "active",
+        {
+          children: ["blocked-spec-wait"],
+        },
+      ),
+      "blocked-spec-wait": task("blocked-spec-wait", "blocked", {
+        parent_id: "aks-spec-verification-loop",
+        blocker: {
+          condition: "Waiting for pipeline result.",
+          waiting_for: { type: "pipeline.completed" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the pipeline result is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the pipeline and create a recovery task.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.planning.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [{ taskId: "blocked-spec-wait" }],
+      },
+    });
+  });
+
   test("does not treat a broad parent loop as overdue recovery work", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
@@ -1821,7 +2159,9 @@ describe("project execution watchdog", () => {
         }),
         "review-task": task("review-task", "review", {
           trace: {
+            current_attempt_id: "a_review-task_1",
             last_worker_result: "done",
+            last_worker_summary: "Worker completed useful review output.",
             last_worker_completed_at: "2026-06-20T00:00:00.000Z",
           },
         }),
@@ -1843,30 +2183,22 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-review-pending.",
+        "Watchdog re-emitted completion for review task(s): review-task.",
     });
-    expect(dispatched).toEqual([
-      {
-        type: "project.planning.requested",
-        payload: {
-          project: "aks-rp-e2e",
-          target: { project: "aks-rp-e2e" },
-          reason: "watchdog-review-pending",
-          maxConcurrent: 1,
-          requested_by: "project-execution-watchdog",
-          reviewTasks: [
-            {
-              taskId: "review-task",
-              parentId: "project",
-              reviewKind: "worker-completion",
-              lastWorkerResult: "done",
-              updatedAt: "2026-06-20T00:00:00.000Z",
-            },
-          ],
-          reviewCount: 1,
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: {
+        taskId: "review-task",
+        attemptId: "a_review-task_1",
+        result: "done",
+        summary: "Worker completed useful review output.",
+        review: {
+          required: true,
+          reason: "watchdog-recovered-review-completion-trigger",
         },
       },
-    ]);
+    });
   });
 
   test("wakes overdue blocked recovery before ordinary review work", async () => {
@@ -1918,7 +2250,7 @@ describe("project execution watchdog", () => {
     });
   });
 
-  test("backfills terminal pipeline wait review context for planner action", async () => {
+  test("re-emits terminal pipeline wait review through task reviewer", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "terminal-run-review": task("terminal-run-review", "review", {
@@ -1947,33 +2279,29 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-review-pending.",
+        "Watchdog re-emitted completion for review task(s): terminal-run-review.",
     });
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.task.completed",
       payload: {
-        reason: "watchdog-review-pending",
-        reviewTasks: [
-          {
-            taskId: "terminal-run-review",
-            parentId: "aks-spec-verification-loop",
-            reviewKind: "terminal-pipeline-wait",
-            resultSummary:
-              "Azure DevOps pipeline run 123456789 is terminal; inspect returned artifacts.",
-            terminalPipelineWaitReview: {
-              runId: "123456789",
-              runStatus: "completed",
-              runConclusion: "failure",
-              runUrl:
-                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
-              namedSpecIds: ["spec.example"],
-            },
-          },
-        ],
-        reviewCount: 1,
+        taskId: "terminal-run-review",
+        attemptId: "a_terminal-run-review_123456789_terminal_wait_review",
+        result: "blocked",
+        summary:
+          "Azure DevOps pipeline run 123456789 is terminal; inspect returned artifacts.",
+        review: {
+          required: true,
+          reason: "watchdog-recovered-terminal-pipeline-wait-review",
+        },
       },
     });
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["terminal-run-review"].trace.current_attempt_id).toBe(
+      "a_terminal-run-review_123456789_terminal_wait_review",
+    );
   });
 
   test("moves blocked Azure DevOps wait to review when the run is terminal", async () => {
@@ -2015,8 +2343,7 @@ describe("project execution watchdog", () => {
           "utf8",
         ),
       );
-      const task =
-        tree.tasks["wait-dev-infra-core-ado-run-123456789-result"];
+      const task = tree.tasks["wait-dev-infra-core-ado-run-123456789-result"];
       expect(task.state).toBe("review");
       expect(task.context.terminalPipelineWaitReview).toMatchObject({
         runId: "123456789",
@@ -2026,6 +2353,112 @@ describe("project execution watchdog", () => {
       expect(task.result).toContain(
         "Azure DevOps pipeline run 123456789 is terminal",
       );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("does not infer terminal Azure DevOps waits from prose-only run ids", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "wait-prose-only-run": task("wait-prose-only-run", "blocked", {
+        parent_id: "focus-dev-infra-core-live-pass",
+        goal: "Wait for Azure DevOps run 123456789 to prove dev-infra-core.",
+        blocker: {
+          condition: "Azure DevOps run 123456789 is still running.",
+          category: "external-wait",
+        },
+      }),
+    });
+    let pipelineReadCount = 0;
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => {
+        pipelineReadCount += 1;
+        return {
+          status: "completed",
+          conclusion: "failure",
+          url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+        };
+      },
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(context({ projectDir, dispatched }));
+      expect(result).toEqual({
+        status: "done",
+        message:
+          "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+      });
+      expect(pipelineReadCount).toBe(0);
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.tasks["wait-prose-only-run"].state).toBe("blocked");
+      expect(dispatched[0]).toMatchObject({
+        type: "project.planning.requested",
+        payload: {
+          reason: "watchdog-blocked-frontier-review",
+        },
+      });
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("does not re-harvest artifact-recovery waits as terminal pipeline waits", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "wait-artifact-recovery": task("wait-artifact-recovery", "blocked", {
+        parent_id: "feature-frontier",
+        goal: "Preserve run 123456789 until authenticated Azure DevOps artifact recovery can classify the spec from returned files.",
+        blocker: {
+          condition:
+            "Blocked on exact artifact recovery for ADO run 123456789: no downloaded artifact bundle is available.",
+          category: "external-wait",
+          owner: "ado",
+          resume_condition:
+            "Resume only when an auth-capable runtime can recover run 123456789 artifacts.",
+          waiting_for: {
+            type: "ado.pipeline_run.completed",
+            runId: "123456789",
+          },
+        },
+      }),
+    });
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "completed",
+        conclusion: "success",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+        displayTitle: "aks-e2e_staging_specs_123456789",
+      }),
+    });
+    try {
+      const result = await execute(context({ projectDir }));
+      expect(result.status).toBe("done");
+      expect(result.message).not.toContain(
+        "Watchdog moved terminal Azure DevOps wait",
+      );
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      const task = tree.tasks["wait-artifact-recovery"];
+      expect(task.state).toBe("blocked");
+      expect(task.context?.terminalPipelineWaitReview).toBeUndefined();
+      expect(task.blocker).toMatchObject({
+        owner: "ado",
+      });
     } finally {
       setPipelineBackendForTests(null);
     }

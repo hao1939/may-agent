@@ -3,89 +3,103 @@
 - Alert id: `3479`
 - Judged at: `2026-07-12T17:59:41Z`
 - Chosen operation: `waiting_with_evidence`
-- Metric row at triage: current `2`, threshold `0`, target `0`, priority `P0`
+- Metric row at triage: current `12`, threshold `0`, target `0`, priority `P0`
 - Owner: `app-ops`
 
-## Current measurement is real and currently worse than the snapshot
+## Current measurement is real
 
-Runtime metric state at alert time was:
+Runtime metric state at triage:
 
 - metric `aks-rp-e2e.process.unpublished-change-count`
-- `current = 2`
+- `current = 12`
 - `threshold = 0`
 - `source_command = bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts aks-rp-e2e.process.unpublished-change-count`
 
 Fresh recompute during this triage returned:
 
 ```json
-{"measuredAt":1783867590421,"treePath":"/app/projects/aks-rp-e2e.app/.state/tasks/tree.json","value":6}
+{"measuredAt":1783882043767,"treePath":"/app/projects/aks-rp-e2e.app/.state/tasks/tree.json","value":12}
 ```
 
-So this is not a stale alert row and not a measurement bug. The breach is real, and the unpublished surface has increased since the last metric snapshot.
+So this is not a stale alert row and not a measurement bug. The breach is live now.
 
 ## Exact unpublished surface in the domain repo
 
-Fresh `git status --short` in `/app/projects/aks-rp-e2e` showed six tracked modified files:
+Fresh `git status --short` in `/app/projects/aks-rp-e2e` showed one unpublished local commit plus eleven tracked modified files:
 
 ```text
-M features/rp-cluster-lifecycle/compact/staging.diagnostics.json
-M features/rp-cluster-lifecycle/compact/staging.plan.json
-M features/rp-cluster-lifecycle/compact/staging.summary.md
-M features/rp-cluster-lifecycle/specs/rp-available-agent-pool-versions.json
-M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-stop-start.json
-M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-upgrade-k8s-version.json
+* 46c320565 (HEAD -> dev) checkpoint localdns ccp generated visible bundle
+* ecfb241e5 (origin/dev) checkpoint: refresh rp-cluster-lifecycle no-live frontier
+---
+ M features/rp-cluster-lifecycle/compact/staging.diagnostics.json
+ M features/rp-cluster-lifecycle/compact/staging.plan.json
+ M features/rp-cluster-lifecycle/compact/staging.summary.md
+ M features/rp-cluster-lifecycle/specs/rp-available-agent-pool-versions.json
+ M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-create-get-delete.json
+ M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-maintenance-state.json
+ M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-stop-start.json
+ M features/rp-cluster-lifecycle/specs/rp-cluster-lifecycle-upgrade-k8s-version.json
+ M features/rp-cluster-lifecycle/specs/rp-operation-status-polling.json
+ M features/rp-cluster-lifecycle/tests/rp-operation-status-polling.test.ts
+ M features/rp-cluster-lifecycle/tests/rp-operation-status-polling.ts
 ```
 
-The diff is coherent RP cluster lifecycle domain work, not app-runtime noise:
+That explains the live metric exactly:
 
-- compact summary/plan/diagnostics reclassify the family frontier from `7` quarantined members to `5`
-- `spec.rp-cluster-lifecycle.stop-start` is being reclassified from `draft/source-grounded` to `environment/reviewed-exception`
-- the new stop-start reason explicitly waits on exact Azure DevOps run `171798563` artifact recovery
-- `upgrade-k8s-version` and `available-agent-pool-versions` are removed from the compact frontier's current quarantined branch
+- `1` unpublished local commit ahead of `origin/dev`
+- `11` tracked modified files
+- total `12`
+
+A focused diffstat over the RP cluster lifecycle slice confirmed the breach is coherent domain work, not app-runtime noise:
+
+```text
+11 files changed, 136 insertions(+), 192 deletions(-)
+```
 
 ## Why this is a wait, not an app-side fix
 
-This metric counts unpublished domain-repo changes or unpushed local commits in `/app/projects/aks-rp-e2e`.
+This metric counts unpublished AKS domain-repo state in `/app/projects/aks-rp-e2e`.
 
-The owner can verify the process signal, but app-ops should not independently publish or revert AKS domain truth in feature/spec/compact files. The current edits are domain judgments about RP cluster lifecycle classification, not app orchestration residue.
+App-ops can verify and route the process signal, but app-ops should not independently publish or revert AKS domain truth in feature/spec/test/compact files. The live residue is RP cluster lifecycle domain work, not app orchestration drift.
 
-The app-side task tree already carries matching process context that explains why stop-start is not ready for blind publication:
+There is also a concrete runtime blocker on publication from this environment. Both remote checks failed because the Azure DevOps credential helper depends on `az`, which is unavailable here:
 
-- `hold-compact-rp-cluster-lifecycle-package-partial-frontier` remains blocked on the RP cluster lifecycle compact frontier changing truthfully
-- the current focus branch states that RP cluster lifecycle stop-start stays on one exact artifact-classification wait
-- archive evidence repeatedly ties the stop-start branch to authenticated artifact recovery for Azure DevOps run `171798563`
+```text
+/app/.state/.local/bin/git-credential-azdevops: line 28: az: command not found
+fatal: could not read Username for 'https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-e2e-spec-runner': No such device or address
+```
 
-So the right app-ops action is to keep the alert visible as a real wait on domain publication/classification, not to hide it or to publish domain changes from the wrong owner lane.
+That means this session cannot safely validate or complete a push even if the domain owner wanted to publish now.
 
 ## Why `waiting_with_evidence` is the correct operation now
 
 Choose `waiting_with_evidence`.
 
-- Not `resolve_stale`: a fresh recompute returned `6`, so the breach is live.
-- Not `calibrate_metric`: threshold `0` is still correct because unpublished domain repo changes are not visible to pipeline runs.
+- Not `resolve_stale`: fresh recompute still returns `12`.
+- Not `calibrate_metric`: threshold `0` remains correct because unpublished domain changes are not visible to pipeline runs.
 - Not `downgrade_priority`: this is still a real pipeline-visibility gap.
-- Not `fix_root_cause`: clearing the metric would require publishing, reverting, or replacing domain-repo RP lifecycle classification work. That is AKS domain ownership, not app orchestration repair.
-- Not `upgrade_or_escalate`: the current breach is bounded and already tied to an exact domain wait shape, not a destructive-action or policy emergency.
-- Not `document_exception`: this is not an accepted long-term exception; it is active unpublished domain work.
+- Not `fix_root_cause`: clearing the metric would require publishing, reverting, or replacing RP cluster lifecycle domain changes in the domain repo, which app-ops should not do from this triage lane; publication is also blocked by missing Azure DevOps auth tooling.
+- Not `upgrade_or_escalate`: this is a bounded known wait with an exact technical blocker, not a destructive-action or policy emergency.
+- Not `document_exception`: this is active unpublished domain work, not an accepted long-term exception.
 
 ## Exact wait, observer, and fallback
 
 ### Wait
-Wait for the RP cluster lifecycle owner lane to do one truthful closure:
+Wait for one of these exact closure paths:
 
-1. publish the six-file RP cluster lifecycle slice into the pipeline-visible repo state, or
+1. publish the current RP cluster lifecycle domain slice so pipeline-visible repo state matches local intended state, or
 2. revert/supersede the local slice if the classification is not ready, or
-3. replace it with a sharper exact domain/task carrier that leaves no ambiguous unpublished residue.
+3. restore an auth-capable publication path for this repo and then complete the truthful publish/revert decision.
 
 ### Observer
 `app-ops` rechecks via:
 
 - the next `metrics-snapshot` for `aks-rp-e2e.process.unpublished-change-count`, and
-- the domain repo state in `/app/projects/aks-rp-e2e` for the six listed RP cluster lifecycle files.
+- the domain repo state in `/app/projects/aks-rp-e2e` for the eleven listed RP cluster lifecycle files plus the ahead-1 branch state.
 
 ### Fallback
-If the next snapshot still breaches and the same six-file RP cluster lifecycle slice remains unpublished, escalate from passive wait to explicit domain-owner action request because the repo-local classification work is continuing to diverge from what the pipeline can see.
+If the next snapshot still breaches with the same RP cluster lifecycle residue and `az`-backed publication remains unavailable, escalate from passive wait to explicit owner/runtime repair because the repo-local domain slice will still be invisible to pipeline runs.
 
 ## Required next validation
 
-Validate on the next `metrics-snapshot` for `aks-rp-e2e.process.unpublished-change-count`, or sooner if the RP cluster lifecycle slice is published/reverted before the next snapshot.
+Validate on the next `metrics-snapshot` for `aks-rp-e2e.process.unpublished-change-count`, or sooner if the RP cluster lifecycle slice is published, reverted, or the Azure DevOps auth/runtime path is restored before the next snapshot.

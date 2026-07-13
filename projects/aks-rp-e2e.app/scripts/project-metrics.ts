@@ -54,6 +54,16 @@ type PlannerRun = {
   result?: string;
 };
 
+type TaskReviewerRun = {
+  ts?: string;
+  result?: string;
+  task_id?: string;
+  taskId?: string;
+  attempt_id?: string;
+  attemptId?: string;
+  decision?: string;
+};
+
 type SpecIndexEntry = {
   id?: string;
   status?: string;
@@ -173,6 +183,10 @@ const sessionStartGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "60000",
   10,
 );
+const reviewApplyGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS ?? "600000",
+  10,
+);
 const now = Date.now();
 const dayAgo = now - 24 * 60 * 60 * 1000;
 
@@ -181,6 +195,19 @@ function readJson<T>(path: string, fallback: T): T {
     return JSON.parse(readFileSync(path, "utf-8")) as T;
   } catch {
     return fallback;
+  }
+}
+
+function readJsonl<T>(path: string): T[] {
+  if (!existsSync(path)) return [];
+  try {
+    return readFileSync(path, "utf-8")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as T);
+  } catch {
+    return [];
   }
 }
 
@@ -287,19 +314,78 @@ function objectRecordField(
   return null;
 }
 
-function taskSearchText(task: TaskNode): string {
-  return JSON.stringify({
-    id: task.id,
-    goal: task.goal,
-    inputs: task.inputs,
-    outputs: task.outputs,
-    acceptance: task.acceptance,
-    conflict_scope: task.conflict_scope,
-    depends_on: task.depends_on,
-    context: task.context,
-    blocker: task.blocker,
-    trace: task.trace,
-  }).toLowerCase();
+function numberRecordField(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): number {
+  if (!record) return 0;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number.parseInt(value.trim(), 10);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return 0;
+}
+
+function stringArrayField(
+  record: Record<string, unknown> | null,
+  key: string,
+): string[] {
+  if (!record || !Array.isArray(record[key])) return [];
+  return (record[key] as unknown[])
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
+}
+
+function loopUnrepresentedRecordDetails(): {
+  value: number;
+  taskIds: string[];
+  records: Record<string, unknown>[];
+} {
+  const tree = loadTaskTree();
+  let value = 0;
+  const taskIds: string[] = [];
+  const records: Record<string, unknown>[] = [];
+  for (const task of Object.values(tree.tasks ?? {})) {
+    const context = recordValue(task.context);
+    const progress = objectRecordField(context, ["workflowProgress"]);
+    const count = numberRecordField(progress, [
+      "unrepresentedNonTerminalCount",
+    ]);
+    if (count <= 0) continue;
+    value += count;
+    if (typeof task.id === "string" && task.id.trim()) {
+      taskIds.push(task.id.trim());
+      records.push({
+        taskId: task.id.trim(),
+        unrepresentedNonTerminalCount: count,
+        unrepresentedNonTerminalFeatureKeys: stringArrayField(
+          progress,
+          "unrepresentedNonTerminalFeatureKeys",
+        ),
+        unrepresentedBlockedFeatureKeys: stringArrayField(
+          progress,
+          "unrepresentedBlockedFeatureKeys",
+        ),
+        unrepresentedErrorFeatureKeys: stringArrayField(
+          progress,
+          "unrepresentedErrorFeatureKeys",
+        ),
+        unrepresentedRunningFeatureKeys: stringArrayField(
+          progress,
+          "unrepresentedRunningFeatureKeys",
+        ),
+        unrepresentedPendingFeatureKeys: stringArrayField(
+          progress,
+          "unrepresentedPendingFeatureKeys",
+        ),
+      });
+    }
+  }
+  return { value, taskIds, records };
 }
 
 function blockedOverdueScope(parentId: unknown): string {
@@ -307,6 +393,17 @@ function blockedOverdueScope(parentId: unknown): string {
   if (parentId === "aks-feature-compact-loop") return "compact-loop";
   if (parentId === "project") return "project";
   return "";
+}
+
+function blockedOverdueScopeAliases(scope: string): string[] {
+  const aliases = new Set([scope]);
+  if (scope.endsWith("-loop")) {
+    aliases.add(scope.slice(0, -"-loop".length));
+  }
+  if (scope === "spec-loop") aliases.add("spec-verification");
+  if (scope === "compact-loop") aliases.add("feature-compact");
+  if (scope === "project") aliases.add("project-root");
+  return [...aliases];
 }
 
 function taskCoversBlockedOverdueWait(
@@ -322,18 +419,32 @@ function taskCoversBlockedOverdueWait(
     return false;
   }
   const blockedTaskId =
-    typeof blockedTask.id === "string" ? blockedTask.id.toLowerCase() : "";
-  if (blockedTaskId && taskSearchText(candidate).includes(blockedTaskId)) {
+    typeof blockedTask.id === "string" ? blockedTask.id.trim() : "";
+  if (
+    blockedTaskId &&
+    structuredBlockedTaskIds(candidate).includes(blockedTaskId)
+  ) {
     return true;
   }
 
   const scope = blockedOverdueScope(blockedTask.parent_id);
   if (!scope) return false;
-  return taskConflictScopes(candidate).some(
-    (conflictScope) =>
+  const aliases = blockedOverdueScopeAliases(scope);
+  return taskConflictScopes(candidate).some((conflictScope) => {
+    if (
       conflictScope === `ops:blocked-overdue:${scope}` ||
-      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`),
-  );
+      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`)
+    ) {
+      return true;
+    }
+    return aliases.some(
+      (alias) =>
+        conflictScope === `ops:${alias}-overdue-blocked-frontier` ||
+        conflictScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
+        conflictScope === `ops:${alias}-overdue-frontier` ||
+        conflictScope.startsWith(`ops:${alias}-overdue-frontier-`),
+    );
+  });
 }
 
 function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
@@ -424,7 +535,9 @@ function blockedFrontierActionability(): BlockedFrontierActionability {
         typeof warning.taskId === "string" ? warning.taskId.trim() : "",
       )
       .filter(Boolean);
-    const repeatedBlockerGroupKeys = Array.isArray(summary?.repeated_blocker_groups)
+    const repeatedBlockerGroupKeys = Array.isArray(
+      summary?.repeated_blocker_groups,
+    )
       ? summary.repeated_blocker_groups
           .map((group) => {
             if (typeof group.blocker_group_key === "string") {
@@ -577,17 +690,14 @@ function taskCounts() {
   const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
     (task, index) => {
       const blocker = recordValue(task.blocker);
-      const fallbackAt = Date.parse(
-        stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
-      );
-      const resumeAt = Date.parse(
+      const overdueAt = [
+        stringRecordField(blocker, ["next_check_at", "nextCheckAt"]),
         stringRecordField(blocker, ["resume_at", "resumeAt"]),
-      );
-      const overdueAt = Number.isFinite(fallbackAt)
-        ? fallbackAt
-        : Number.isFinite(resumeAt)
-          ? resumeAt
-          : Number.NaN;
+        stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
+      ]
+        .map((value) => Date.parse(value))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b)[0];
       if (!Number.isFinite(overdueAt) || overdueAt > now) {
         return [];
       }
@@ -646,6 +756,63 @@ function taskCounts() {
           tree.tasks.project.state ?? tree.tasks.project.status ?? "",
         )),
   };
+}
+
+function taskReviewNotAppliedDetails(): Array<{
+  taskId: string;
+  attemptId: string;
+  decision: string;
+  reviewedAt: string;
+}> {
+  const tree = loadTaskTree();
+  const latestReviewByAttempt = new Map<string, TaskReviewerRun>();
+  for (const row of readJsonl<TaskReviewerRun>(
+    join(effectiveAppDir, ".state", "task-reviewer-runs.jsonl"),
+  )) {
+    if (row.result !== "project.task.reviewed") continue;
+    const taskId = (row.task_id ?? row.taskId ?? "").trim();
+    const attemptId = (row.attempt_id ?? row.attemptId ?? "").trim();
+    if (!taskId || !attemptId) continue;
+    const reviewedMs = row.ts ? Date.parse(row.ts) : Number.NaN;
+    if (Number.isFinite(reviewedMs) && now - reviewedMs <= reviewApplyGraceMs) {
+      continue;
+    }
+    const key = `${taskId}:${attemptId}`;
+    const existing = latestReviewByAttempt.get(key);
+    const existingMs = existing?.ts ? Date.parse(existing.ts) : Number.NaN;
+    if (!existing || (Number.isFinite(reviewedMs) && reviewedMs > existingMs)) {
+      latestReviewByAttempt.set(key, row);
+    }
+  }
+
+  const offenders: Array<{
+    taskId: string;
+    attemptId: string;
+    decision: string;
+    reviewedAt: string;
+  }> = [];
+  for (const task of Object.values(tree.tasks ?? {})) {
+    if (taskState(task) !== "review") continue;
+    const taskId = typeof task.id === "string" ? task.id.trim() : "";
+    const attemptId =
+      typeof task.trace?.current_attempt_id === "string"
+        ? task.trace.current_attempt_id.trim()
+        : "";
+    if (!taskId || !attemptId) continue;
+    const review = latestReviewByAttempt.get(`${taskId}:${attemptId}`);
+    if (!review) continue;
+    offenders.push({
+      taskId,
+      attemptId,
+      decision: (review.decision ?? "unknown").trim() || "unknown",
+      reviewedAt: review.ts ?? "",
+    });
+  }
+  return offenders.sort((left, right) =>
+    left.taskId === right.taskId
+      ? left.attemptId.localeCompare(right.attemptId)
+      : left.taskId.localeCompare(right.taskId),
+  );
 }
 
 function openTaskAssignmentStateMismatchDetails(
@@ -911,6 +1078,37 @@ function taskConflictScopes(task: TaskNode | undefined): string[] {
     : [];
 }
 
+function structuredBlockedTaskIds(task: TaskNode | undefined): string[] {
+  const context = taskContext(task);
+  const ids = new Set<string>();
+  const collect = (value: unknown) => {
+    if (typeof value === "string" && value.trim()) {
+      ids.add(value.trim());
+      return;
+    }
+    const record = recordValue(value);
+    const id = stringRecordField(record, ["taskId", "task_id", "id"]);
+    if (id) ids.add(id);
+  };
+  const collectArray = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    for (const entry of value) collect(entry);
+  };
+
+  collectArray(context.blockedTaskIds);
+  collectArray(context.blocked_task_ids);
+  collectArray(context.blockedTasks);
+  collectArray(context.blocked_tasks);
+  collectArray(context.auditedBlockedTaskIds);
+  collectArray(context.audited_blocked_task_ids);
+  collectArray(context.auditedBlockedTasks);
+  collectArray(context.audited_blocked_tasks);
+  collectArray(context.overdueOwnerActions);
+  collectArray(context.overdue_owner_actions);
+
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
 function specFamily(specId: string): string {
   return (
     specId
@@ -1121,9 +1319,7 @@ function exactSpecLoopOwnerTaskId(input: {
     }
   }
 
-  const orderedTaskIds = [
-    ...taskIds,
-  ].sort((leftId, rightId) => {
+  const orderedTaskIds = [...taskIds].sort((leftId, rightId) => {
     const left = input.tree.tasks?.[leftId];
     const right = input.tree.tasks?.[rightId];
     const leftExact = left
@@ -1136,14 +1332,18 @@ function exactSpecLoopOwnerTaskId(input: {
       : false;
     if (leftExact !== rightExact) return leftExact ? -1 : 1;
     const leftStructured = left
-      ? taskHasStructuredBlocker(left) || specLoopFollowupGroupKeys(left).size > 0
+      ? taskHasStructuredBlocker(left) ||
+        specLoopFollowupGroupKeys(left).size > 0
       : false;
     const rightStructured = right
-      ? taskHasStructuredBlocker(right) || specLoopFollowupGroupKeys(right).size > 0
+      ? taskHasStructuredBlocker(right) ||
+        specLoopFollowupGroupKeys(right).size > 0
       : false;
     if (leftStructured !== rightStructured) return leftStructured ? -1 : 1;
-    if (leftId === candidateSpecTaskId && rightId !== candidateSpecTaskId) return 1;
-    if (rightId === candidateSpecTaskId && leftId !== candidateSpecTaskId) return -1;
+    if (leftId === candidateSpecTaskId && rightId !== candidateSpecTaskId)
+      return 1;
+    if (rightId === candidateSpecTaskId && leftId !== candidateSpecTaskId)
+      return -1;
     return leftId.localeCompare(rightId);
   });
 
@@ -1157,7 +1357,10 @@ function exactSpecLoopOwnerTaskId(input: {
       return taskId;
     }
     if (specLoopFollowupGroupKeys(task).size > 0) return taskId;
-    if (taskHasStructuredBlocker(task) && taskTextMentionsSpecFamily(task, input.specId)) {
+    if (
+      taskHasStructuredBlocker(task) &&
+      taskTextMentionsSpecFamily(task, input.specId)
+    ) {
       return taskId;
     }
     if (
@@ -1308,8 +1511,7 @@ function sqliteTableExists(db: Database, tableName: string): boolean {
 function workflowRunClaimsHealthyLoopOwnership(
   row: Record<string, unknown>,
 ): boolean {
-  const workflow =
-    typeof row.workflow === "string" ? row.workflow.trim() : "";
+  const workflow = typeof row.workflow === "string" ? row.workflow.trim() : "";
   if (workflow !== "task-worker") return false;
   const taskText = typeof row.task === "string" ? row.task : "";
   const trigger = parseTriggerEvent(taskText);
@@ -1379,7 +1581,8 @@ function staleRunningWorkflowRunDetails(): StaleWorkflowRunInfo[] {
           ? row.lastSessionActivityAt
           : startedAt;
       const sessionCount =
-        typeof row.sessionCount === "number" && Number.isFinite(row.sessionCount)
+        typeof row.sessionCount === "number" &&
+        Number.isFinite(row.sessionCount)
           ? row.sessionCount
           : 0;
       const runningSessionCount =
@@ -1413,17 +1616,27 @@ function staleRunningWorkflowRunDetails(): StaleWorkflowRunInfo[] {
 
 function activeTaskWorkerSessionRow(
   taskId: string,
+  currentAttemptId?: string | null,
+  currentSessionId?: string | null,
 ): Record<string, unknown> | null {
   if (!existsSync(stateDbPath)) return null;
   const db = new Database(stateDbPath, { readonly: true });
   const taskIdPattern = new RegExp(
     String.raw`"(?:taskId|id)"\s*:\s*"${taskId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`,
   );
+  const attemptId =
+    typeof currentAttemptId === "string" && currentAttemptId.trim()
+      ? currentAttemptId.trim()
+      : "";
+  const sessionId =
+    typeof currentSessionId === "string" && currentSessionId.trim()
+      ? currentSessionId.trim()
+      : "";
   try {
     const rows = db
       .query(
         `
-      select status, outcome, opCount, startedAt, lastActivityAt, task
+      select sessionId, status, outcome, opCount, startedAt, lastActivityAt, task
       from sessions
       where source = 'workflow:task-worker'
       order by startedAt desc
@@ -1431,11 +1644,24 @@ function activeTaskWorkerSessionRow(
     `,
       )
       .all() as Array<Record<string, unknown>>;
+    let firstTaskMatch: Record<string, unknown> | null = null;
     for (const row of rows) {
+      const rowSessionId =
+        typeof row.sessionId === "string" ? row.sessionId.trim() : "";
+      if (sessionId && rowSessionId === sessionId) return row;
+
       const taskText = typeof row.task === "string" ? row.task : "";
-      if (taskIdPattern.test(taskText)) return row;
+      if (!taskIdPattern.test(taskText)) continue;
+      firstTaskMatch ??= row;
+      if (!attemptId) continue;
+      if (
+        taskText.includes(`Attempt: ${attemptId}`) ||
+        taskText.includes(`attemptId: ${attemptId}`)
+      ) {
+        return row;
+      }
     }
-    return null;
+    return attemptId ? null : firstTaskMatch;
   } catch {
     return null;
   } finally {
@@ -1591,11 +1817,82 @@ function activeTaskQueuedAssignmentMatches(task: TaskNode): boolean {
       ? task.trace.current_attempt_id.trim()
       : "";
   if (!attemptId) return false;
-  return peekTaskAssignments(taskTreeConfig({ appDir: effectiveAppDir, projectDir }))
-    .some(
-      (assignment) =>
-        assignment.taskId === taskId && assignment.attemptId === attemptId,
-    );
+  return peekTaskAssignments(runtimeTaskTreeConfig()).some(
+    (assignment) =>
+      assignment.taskId === taskId && assignment.attemptId === attemptId,
+  );
+}
+
+function queuedAssignmentTimestampMs(assignment: {
+  assignedAt?: unknown;
+  assigned_at?: unknown;
+}): number | null {
+  const raw =
+    typeof assignment.assignedAt === "string" && assignment.assignedAt.trim()
+      ? assignment.assignedAt.trim()
+      : typeof assignment.assigned_at === "string" &&
+          assignment.assigned_at.trim()
+        ? assignment.assigned_at.trim()
+        : "";
+  if (!raw) return null;
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function assignmentNotConsumedDetails(): Array<{
+  taskId: string;
+  attemptId: string;
+  assignedAt: string;
+  taskState: string | null;
+}> {
+  const tree = loadTaskTree();
+  return peekTaskAssignments(runtimeTaskTreeConfig()).flatMap((assignment) => {
+    const taskId =
+      typeof assignment.taskId === "string" && assignment.taskId.trim()
+        ? assignment.taskId.trim()
+        : typeof assignment.task_id === "string" && assignment.task_id.trim()
+          ? assignment.task_id.trim()
+          : "";
+    const attemptId =
+      typeof assignment.attemptId === "string" && assignment.attemptId.trim()
+        ? assignment.attemptId.trim()
+        : typeof assignment.attempt_id === "string" &&
+            assignment.attempt_id.trim()
+          ? assignment.attempt_id.trim()
+          : "";
+    const assignedAt =
+      typeof assignment.assignedAt === "string" && assignment.assignedAt.trim()
+        ? assignment.assignedAt.trim()
+        : typeof assignment.assigned_at === "string" &&
+            assignment.assigned_at.trim()
+          ? assignment.assigned_at.trim()
+          : "";
+    if (!taskId || !attemptId) return [];
+
+    const assignedMs = queuedAssignmentTimestampMs(assignment);
+    if (assignedMs != null && Date.now() - assignedMs <= sessionStartGraceMs) {
+      return [];
+    }
+
+    const task = tree.tasks?.[taskId];
+    const state = task ? taskState(task) : null;
+    const trace = task?.trace ?? {};
+    const currentAttempt =
+      typeof trace.current_attempt_id === "string"
+        ? trace.current_attempt_id.trim()
+        : "";
+    const startedAttempt =
+      typeof trace.worker_started_attempt_id === "string"
+        ? trace.worker_started_attempt_id.trim()
+        : "";
+
+    if (state === "active" && currentAttempt === attemptId) {
+      if (startedAttempt === attemptId) return [];
+      return [{ taskId, attemptId, assignedAt, taskState: state }];
+    }
+
+    return [{ taskId, attemptId, assignedAt, taskState: state }];
+  });
 }
 
 function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
@@ -1733,7 +2030,11 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     sessionId.startsWith("s_task_") &&
     taskId
   ) {
-    const workerRow = activeTaskWorkerSessionRow(taskId);
+    const workerRow = activeTaskWorkerSessionRow(
+      taskId,
+      currentAttemptId,
+      sessionId,
+    );
     const workerReason = sessionRestartReasonFromRow(workerRow);
     if (workerReason === null) return null;
     if (workerReason !== "session-not-running") return workerReason;
@@ -1953,6 +2254,9 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       ? tasks.activeRunning
       : Math.max(0, tasks.active - tasks.activeStale);
   const blockedActionability = blockedFrontierActionability();
+  const loopUnrepresented = loopUnrepresentedRecordDetails();
+  const assignmentNotConsumed = assignmentNotConsumedDetails();
+  const reviewNotApplied = taskReviewNotAppliedDetails();
 
   const values: Record<string, () => MetricSampleOutput> = {
     "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
@@ -1965,10 +2269,8 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       note: JSON.stringify({
         blockedLeafCount: blockedActionability.blockedLeafCount,
         durableExactHolderCount: blockedActionability.durableExactHolderCount,
-        actionableWarningTaskIds:
-          blockedActionability.actionableWarningTaskIds,
-        repeatedBlockerGroupKeys:
-          blockedActionability.repeatedBlockerGroupKeys,
+        actionableWarningTaskIds: blockedActionability.actionableWarningTaskIds,
+        repeatedBlockerGroupKeys: blockedActionability.repeatedBlockerGroupKeys,
         motionStarved: blockedActionability.motionStarved,
         parentGroups: blockedActionability.parentGroups,
       }),
@@ -2044,8 +2346,30 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     "aks-rp-e2e.process.assignment-state-mismatch-count": () => ({
       value: tasks.projectClosed ? 0 : tasks.assignmentStateMismatch,
     }),
+    "aks-rp-e2e.process.assignment.not-consumed-count": () => ({
+      value: tasks.projectClosed ? 0 : assignmentNotConsumed.length,
+      sampleSize: assignmentNotConsumed.length,
+      note: JSON.stringify({
+        assignments: assignmentNotConsumed,
+      }),
+    }),
+    "aks-rp-e2e.process.task.review-not-applied-count": () => ({
+      value: tasks.projectClosed ? 0 : reviewNotApplied.length,
+      sampleSize: reviewNotApplied.length,
+      note: JSON.stringify({
+        reviews: reviewNotApplied,
+      }),
+    }),
     "aks-rp-e2e.process.unpublished-change-count": () => ({
       value: unpublishedGitChangeCount(projectDir),
+    }),
+    "aks-rp-e2e.process.loop.unrepresented-record-count": () => ({
+      value: loopUnrepresented.value,
+      sampleSize: loopUnrepresented.taskIds.length,
+      note: JSON.stringify({
+        taskIds: loopUnrepresented.taskIds,
+        records: loopUnrepresented.records,
+      }),
     }),
     "aks-rp-e2e.process.integrity.task-tree-problem-count": () => ({
       value: tasks.taskTreeProblemCount,

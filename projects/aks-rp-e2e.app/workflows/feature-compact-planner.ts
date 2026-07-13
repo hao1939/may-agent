@@ -974,6 +974,65 @@ function featureCompactResult(
   });
 }
 
+function pipelineWaitSchedule(input: {
+  runId: string;
+  runUrl: string | null;
+  pipeline: string;
+  branch: string;
+  target: string;
+  loopKey: string;
+  waitTimeoutMinutes: number;
+  existingFallbackAt?: string | null;
+}): {
+  waitingFor: Record<string, unknown>;
+  waitingCondition: string;
+  observedBy: Record<string, unknown>;
+  observationMethod: string;
+  nextCheckAt: string;
+  fallbackAt: string;
+  fallbackAction: string;
+  resumeAction: string;
+  blockerOwner: string;
+  lastCheckedAt: string;
+} {
+  const nowMs = Date.now();
+  const nextCheckAt = new Date(nowMs + 10 * 60 * 1000).toISOString();
+  const existingFallbackMs = input.existingFallbackAt
+    ? Date.parse(input.existingFallbackAt)
+    : NaN;
+  const fallbackAt = Number.isFinite(existingFallbackMs)
+    ? new Date(existingFallbackMs).toISOString()
+    : new Date(nowMs + input.waitTimeoutMinutes * 60 * 1000).toISOString();
+  return {
+    waitingFor: {
+      type: "ado.pipeline_run.completed",
+      runId: input.runId,
+      runUrl: input.runUrl,
+      pipeline: input.pipeline,
+      branch: input.branch,
+      target: input.target,
+      loopKey: input.loopKey,
+      successCriteria:
+        "Run completed and uploaded a passing live compact result artifact.",
+    },
+    waitingCondition: `Azure DevOps pipeline run ${input.runId} completes and uploads a live compact result artifact.`,
+    observedBy: {
+      workflow: "feature-compact-loop-controller",
+      trigger: "project.task.tick",
+    },
+    observationMethod:
+      "Poll Azure DevOps pipeline run status and inspect compact result artifacts.",
+    nextCheckAt,
+    fallbackAt,
+    fallbackAction:
+      "If the run is still unavailable, still running, or missing artifacts, create compact pipeline diagnosis or escalation work.",
+    resumeAction:
+      "When the run is terminal, inspect result artifacts and update the compact feature to pass, repair, exact wait, or error.",
+    blockerOwner: "feature-compact-loop-controller",
+    lastCheckedAt: new Date(nowMs).toISOString(),
+  };
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
@@ -1582,6 +1641,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const runId = String(run.databaseId);
+  const wait = pipelineWaitSchedule({
+    runId,
+    runUrl: run.url ?? null,
+    pipeline: workflow,
+    branch,
+    target,
+    loopKey,
+    waitTimeoutMinutes: githubWaitTimeoutMinutes,
+  });
   updateFeatureCompactItem(state, featureKey, {
     lastWorkflowRunId: runId,
     lastWorkflowRunUrl: run.url ?? null,
@@ -1594,6 +1662,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : null,
     activeWorkflowRunId: runId,
     heartbeatAt: new Date().toISOString(),
+    ...wait,
   });
   saveFeatureCompactLoopState(statePath, state);
 
@@ -1604,6 +1673,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     timeoutMs: githubWaitTimeoutMinutes * 60_000,
     onPoll: (observedRun) => {
       if (!observedRun?.url) return;
+      const wait = pipelineWaitSchedule({
+        runId,
+        runUrl: observedRun.url,
+        pipeline: workflow,
+        branch,
+        target,
+        loopKey,
+        waitTimeoutMinutes: githubWaitTimeoutMinutes,
+        existingFallbackAt: state.features[featureKey]?.fallbackAt,
+      });
       updateFeatureCompactItem(state, featureKey, {
         lastWorkflowRunId: runId,
         lastWorkflowRunUrl: observedRun.url,
@@ -1616,6 +1695,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             : null,
         activeWorkflowRunId: runId,
         heartbeatAt: new Date().toISOString(),
+        ...wait,
       });
       saveFeatureCompactLoopState(statePath, state);
     },

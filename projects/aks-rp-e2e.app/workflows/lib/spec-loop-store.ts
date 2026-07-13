@@ -47,6 +47,7 @@ export type SpecLoopSpecState = {
   catalogSpecState?: string;
   terminalDisposition?: boolean;
   successorDisposition?: string;
+  successorEvidencePath?: string;
   successorStateReason?: string;
   resumeCondition?: string;
   retryResetAt?: string;

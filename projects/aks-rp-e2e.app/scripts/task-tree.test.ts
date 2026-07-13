@@ -165,6 +165,64 @@ describe("task-tree CLI", () => {
     );
   });
 
+  test("repair-rollups normalizes legacy focus approval state to blocked wait", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks.project.children.push("focus-needs-approval");
+    tree.tasks["focus-needs-approval"] = {
+      id: "focus-needs-approval",
+      parent_id: "project",
+      state: "needs_approval",
+      status: "needs_approval",
+      kind: "focus_plan",
+      priority: "P1",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Propose a bounded focus plan.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["human approval decision is applied"],
+      context: {
+        needs_approval: true,
+      },
+      updated_at: "2026-07-10T05:58:00.000Z",
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const repaired = await runTaskTree(["repair-rollups"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      changed: true,
+      repairedLegacyFocusApprovalStates: ["focus-needs-approval"],
+    });
+
+    const updatedTree = JSON.parse(await readFile(treePath, "utf8"));
+    const focus = updatedTree.tasks["focus-needs-approval"];
+    expect(focus.state).toBe("blocked");
+    expect(focus.status).toBeUndefined();
+    expect(focus.blocker).toMatchObject({
+      category: "human-approval",
+      owner: "human",
+      waiting_for: {
+        type: "project.approval.submitted",
+        approvalKind: "focus-plan",
+        taskId: "focus-needs-approval",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.approval.submitted",
+      },
+    });
+    expect(focus.blocker.fallback_at).toBeTruthy();
+    expect(focus.context.needs_approval).toBe(true);
+  });
+
   test("mark-done refuses to close an active started attempt", async () => {
     const fixture = await makeFixture();
     const treePath = resolveTaskTreePath(fixture.appDir);
@@ -198,6 +256,43 @@ describe("task-tree CLI", () => {
     expect(`${result.stdout}${result.stderr}`).toContain(
       "active with current started attempt attempt-active-1",
     );
+  });
+
+  test("defaults ops-prefixed added tasks to app-ops owner", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "ops/review-future-window",
+        "--parent",
+        "project",
+        "--goal",
+        "Recheck one exact blocked-frontier review window.",
+        "--output",
+        "evidence/archive/ops-review-future-window.md",
+        "--acceptance",
+        "review window remains truthfully represented",
+        "--state",
+        "blocked",
+        "--blocker",
+        "Wait until the review window opens.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+    expect(JSON.parse(add.stdout).owner).toBe("app-ops");
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["ops/review-future-window"].owner).toBe("app-ops");
   });
 
   test("add and update-text support structured blocker resume metadata", async () => {
@@ -248,7 +343,7 @@ describe("task-tree CLI", () => {
       category: "external-wait",
       owner: "human",
       waiting_for: {
-        type: "evidence.available",
+        type: "blocker.resolved",
         taskId: "blocked-task",
       },
       observed_by: {
@@ -304,6 +399,34 @@ describe("task-tree CLI", () => {
       next_check_at: "2099-06-27T12:00:00.000Z",
       fallback_at: "2099-06-28T00:00:00.000Z",
       fallback_action: "Escalate again if proof has not landed.",
+    });
+
+    const refresh = await runTaskTree(
+      [
+        "update-text",
+        "blocked-task",
+        "--next-check-at",
+        "2099-06-29T12:00:00.000Z",
+        "--fallback-at",
+        "2099-06-30T00:00:00.000Z",
+        "--fallback-action",
+        "Escalate once more if proof has not landed.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(refresh.exitCode).toBe(0);
+    expect(JSON.parse(refresh.stdout).blocker).toMatchObject({
+      condition: "Waiting for returned operator proof.",
+      resume_at: "2099-06-29T12:00:00.000Z",
+      next_check_at: "2099-06-29T12:00:00.000Z",
+      fallback_at: "2099-06-30T00:00:00.000Z",
+      fallback_action: "Escalate once more if proof has not landed.",
     });
   });
 
@@ -362,7 +485,9 @@ describe("task-tree CLI", () => {
       type: "azure.capacity.available",
       taskId: "capacity-wait",
     });
-    expect(JSON.parse(update.stdout).blocker.waiting_for.sourceRunId).toBeUndefined();
+    expect(
+      JSON.parse(update.stdout).blocker.waiting_for.sourceRunId,
+    ).toBeUndefined();
 
     const tree = JSON.parse(
       await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
@@ -376,7 +501,7 @@ describe("task-tree CLI", () => {
     ).toBeUndefined();
   });
 
-  test("repair-blocked-contracts backfills explicit wait and observer fields", async () => {
+  test("repair-blocked-contracts backfills generic wait and observer fields", async () => {
     const fixture = await makeFixture();
 
     const runtimePaths = projectRuntimePaths(fixture.appDir);
@@ -396,7 +521,7 @@ describe("task-tree CLI", () => {
         "--state",
         "blocked",
         "--blocker",
-        "Blocked until GitHub Actions run 28702280698 returns authoritative logs. Resume: Resume when run 28702280698 has reviewed same-run logs.",
+        "Blocked until GitHub Actions run 28702280698 reaches terminal state and returns authoritative logs. Resume: Resume when run 28702280698 is terminal with reviewed same-run logs.",
       ],
       {
         ...process.env,
@@ -409,17 +534,17 @@ describe("task-tree CLI", () => {
     expect(add.exitCode).toBe(0);
     expect(JSON.parse(add.stdout).blocker).toMatchObject({
       condition:
-        "Blocked until GitHub Actions run 28702280698 returns authoritative logs.",
+        "Blocked until GitHub Actions run 28702280698 reaches terminal state and returns authoritative logs.",
       waiting_for: {
-        type: "github.workflow_run.completed",
-        runId: "28702280698",
+        type: "blocker.resolved",
+        taskId: "github-wait",
       },
       observed_by: {
         workflow: "project-planner",
         schedule: "blocked-frontier-app-ops-review",
       },
       resume_condition:
-        "Resume when run 28702280698 has reviewed same-run logs.",
+        "Resume when run 28702280698 is terminal with reviewed same-run logs.",
     });
 
     const repaired = await runTaskTree(["repair-blocked-contracts"], {
@@ -441,18 +566,18 @@ describe("task-tree CLI", () => {
     );
     expect(tree.tasks["github-wait"].blocker).toMatchObject({
       condition:
-        "Blocked until GitHub Actions run 28702280698 returns authoritative logs.",
+        "Blocked until GitHub Actions run 28702280698 reaches terminal state and returns authoritative logs.",
       owner: "aks-explorer",
       waiting_for: {
-        type: "github.workflow_run.completed",
-        runId: "28702280698",
+        type: "blocker.resolved",
+        taskId: "github-wait",
       },
       observed_by: {
         workflow: "project-planner",
         schedule: "blocked-frontier-app-ops-review",
       },
       resume_condition:
-        "Resume when run 28702280698 has reviewed same-run logs.",
+        "Resume when run 28702280698 is terminal with reviewed same-run logs.",
     });
     expect(tree.tasks["github-wait"].blocker.next_check_at).toBeTruthy();
     expect(tree.tasks["github-wait"].blocker.fallback_at).toBeTruthy();
@@ -461,7 +586,7 @@ describe("task-tree CLI", () => {
     );
   });
 
-  test("repair-blocked-contracts infers Azure DevOps waits from blocked text", async () => {
+  test("repair-blocked-contracts does not infer Azure DevOps waits from blocked text", async () => {
     const fixture = await makeFixture();
 
     const add = await runTaskTree(
@@ -505,15 +630,11 @@ describe("task-tree CLI", () => {
     );
     expect(tree.tasks["ado-wait"].blocker).toMatchObject({
       waiting_for: {
-        type: "ado.pipeline_run.completed",
-        runId: "171186535",
-        pipeline: "467665",
-        branch: "dev",
+        type: "blocker.resolved",
+        taskId: "ado-wait",
       },
     });
-    expect(tree.tasks["ado-wait"].blocker.waiting_for.runUrl).toContain(
-      "buildId=171186535",
-    );
+    expect(tree.tasks["ado-wait"].blocker.waiting_for.runUrl).toBeUndefined();
   });
 
   test("repair-blocked-contracts dry run sees no missing wait-target on already-normalized ADO waits", async () => {
@@ -529,8 +650,7 @@ describe("task-tree CLI", () => {
       priority: "P2",
       owner: "aks-explorer",
       children: [],
-      goal:
-        "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
+      goal: "Preserve the exact compact bootstrap-profile same-path wait until ADO run 171477458 returns artifacts.",
       outputs: ["tasks/tree.json"],
       acceptance: ["ADO result reviewed"],
       blocker: {
@@ -568,7 +688,113 @@ describe("task-tree CLI", () => {
     tree.tasks.project.children.push("planner-ado-wait");
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
 
-    const repaired = await runTaskTree(["repair-blocked-contracts", "--dry-run"], {
+    const repaired = await runTaskTree(
+      ["repair-blocked-contracts", "--dry-run"],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(repaired.exitCode).toBe(0);
+    expect(JSON.parse(repaired.stdout)).toMatchObject({
+      repairedCount: 0,
+      unchanged: ["planner-ado-wait"],
+    });
+  });
+
+  test("repair-blocked-contracts does not misclassify GitHub artifact-recovery owner waits as run-completion waits", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "github-owner-return",
+        "--parent",
+        "project",
+        "--goal",
+        "Wait for owner artifact recovery.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "owner response reviewed",
+        "--state",
+        "blocked",
+        "--blocker",
+        "Blocked on the returned owner/runtime response for already-sent artifact-recovery handoff for terminal GitHub run 28672036322. Resume: Resume when recovered same-run artifacts/logs, reviewed workflow-surface diagnosis, or exact decline/reroute returns.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+    expect(JSON.parse(add.stdout).blocker).toMatchObject({
+      waiting_for: {
+        type: "blocker.resolved",
+        taskId: "github-owner-return",
+      },
+    });
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["github-owner-return"].blocker).toMatchObject({
+      waiting_for: {
+        type: "blocker.resolved",
+        taskId: "github-owner-return",
+      },
+    });
+
+    tree.tasks["github-owner-return-existing"] = {
+      id: "github-owner-return-existing",
+      parent_id: "project",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Wait for owner artifact recovery.",
+      outputs: ["tasks/tree.json"],
+      acceptance: ["owner response reviewed"],
+      blocker: {
+        condition:
+          "Blocked on the returned owner/runtime response for already-sent artifact-recovery handoff for terminal GitHub run 28672036322.",
+        category: "external-wait",
+        owner: "human",
+        blocked_at: "2026-07-10T20:37:41.364Z",
+        waiting_for: {
+          type: "github.workflow_run.completed",
+          runId: "28672036322",
+          taskId: "github-owner-return-existing",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          schedule: "blocked-frontier-app-ops-review",
+          trigger: "project.planning.requested",
+        },
+        observation_method:
+          "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+        resume_condition:
+          "Resume when recovered same-run artifacts/logs, reviewed workflow-surface diagnosis, or exact decline/reroute returns.",
+        next_check_at: "2026-07-11T18:00:00Z",
+        fallback_at: "2026-07-12T18:00:00Z",
+        fallback_action: "Refresh or escalate.",
+      },
+    };
+    tree.tasks.project.children.push("github-owner-return-existing");
+    await writeFile(
+      resolveTaskTreePath(fixture.appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+    );
+
+    const repaired = await runTaskTree(["repair-blocked-contracts"], {
       ...process.env,
       APP_DIR: fixture.appDir,
       PROJECT_DIR: fixture.projectDir,
@@ -578,11 +804,24 @@ describe("task-tree CLI", () => {
     expect(repaired.exitCode).toBe(0);
     expect(JSON.parse(repaired.stdout)).toMatchObject({
       repairedCount: 0,
-      unchanged: ["planner-ado-wait"],
+      unchanged: ["github-owner-return", "github-owner-return-existing"],
+    });
+
+    const repairedTree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(
+      repairedTree.tasks["github-owner-return-existing"].blocker,
+    ).toMatchObject({
+      waiting_for: {
+        type: "github.workflow_run.completed",
+        runId: "28672036322",
+        taskId: "github-owner-return-existing",
+      },
     });
   });
 
-  test("repair-blocked-contracts corrects migrated Azure DevOps waits that still name GitHub", async () => {
+  test("repair-blocked-contracts does not rewrite mismatched wait types from prose", async () => {
     const fixture = await makeFixture();
     const treePath = resolveTaskTreePath(fixture.appDir);
     const tree = JSON.parse(await readFile(treePath, "utf8"));
@@ -635,18 +874,17 @@ describe("task-tree CLI", () => {
 
     expect(repaired.exitCode).toBe(0);
     expect(JSON.parse(repaired.stdout)).toMatchObject({
-      repaired: ["ado-migrated-wait"],
+      repairedCount: 0,
+      unchanged: ["ado-migrated-wait"],
     });
 
     const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(updated.tasks["ado-migrated-wait"].blocker.owner).toBe("ado");
+    expect(updated.tasks["ado-migrated-wait"].blocker.owner).toBe("human");
     expect(
       updated.tasks["ado-migrated-wait"].blocker.waiting_for,
     ).toMatchObject({
-      type: "ado.pipeline_run.completed",
+      type: "github.workflow_run.completed",
       runId: "171186535",
-      pipeline: "467665",
-      branch: "dev",
     });
   });
 
@@ -765,16 +1003,17 @@ describe("task-tree CLI", () => {
 
     expect(repaired.exitCode).toBe(0);
     expect(JSON.parse(repaired.stdout)).toMatchObject({
-      repaired: ["runtime-recovery-wait"],
+      repairedCount: 0,
+      unchanged: ["runtime-recovery-wait"],
     });
 
     const updated = JSON.parse(await readFile(treePath, "utf8"));
     expect(
       updated.tasks["runtime-recovery-wait"].blocker.waiting_for,
     ).toMatchObject({
-      type: "environment.available",
+      type: "github.workflow_run.completed",
+      runId: "171186535",
       taskId: "runtime-recovery-wait",
-      sourceRunId: "171186535",
     });
   });
 
@@ -819,15 +1058,12 @@ describe("task-tree CLI", () => {
     });
 
     const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(updated.tasks["kms-invalid-sku-wait"].blocker.owner).toBe(
-      "aks-explorer",
-    );
+    expect(updated.tasks["kms-invalid-sku-wait"].blocker.owner).toBe("ado");
     expect(
       updated.tasks["kms-invalid-sku-wait"].blocker.waiting_for,
     ).toMatchObject({
-      type: "environment.available",
+      type: "blocker.resolved",
       taskId: "kms-invalid-sku-wait",
-      sourceRunId: "171208533",
     });
   });
 });

@@ -83,13 +83,7 @@ function focusResult(text: string): FocusResult {
   ) {
     return raw;
   }
-  if (/needs approval|approve this plan|approval request/i.test(text))
-    return "needs_approval";
-  if (/off track|not on track|stale focus/i.test(text)) return "off_track";
-  if (/failed[-_ ]known[-_ ]issues|known issues|terminal failed/i.test(text))
-    return "failed_known_issues";
-  if (/completed|focus done/i.test(text)) return "completed";
-  return "updated";
+  return "off_track";
 }
 
 function truncate(text: string, max = 1800): string {
@@ -244,7 +238,7 @@ function approvalText(input: {
     summary,
     plannerNext,
     "",
-        "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to aks-rp-e2e app-ops.",
+    "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to aks-rp-e2e app-ops.",
   ]
     .filter(Boolean)
     .join("\n");

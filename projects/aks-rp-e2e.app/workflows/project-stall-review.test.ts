@@ -556,13 +556,13 @@ describe("project stall review", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "project.stall.reviewed (active-external-run-wait, risk-review)",
+      "project.stall.reviewed (inconclusive, risk-review)",
     );
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
       type: "project.stall.reviewed",
       payload: {
-        judgment: "active-external-run-wait",
+        judgment: "inconclusive",
         dispatchedTicks: [],
       },
     });
@@ -680,9 +680,9 @@ describe("project stall review", () => {
     const reviewed = dispatched.find(
       (event) => event.type === "project.stall.reviewed",
     );
-    expect(reviewed?.payload.judgment).toBe("needs-work");
+    expect(reviewed?.payload.judgment).toBe("inconclusive");
     expect(reviewed?.payload.stallReview).toMatchObject({
-      judgment: "needs-work",
+      judgment: "inconclusive",
       rootCause: "durable loop ledger has unrepresented non-terminal records",
     });
   });
