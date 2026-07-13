@@ -3,6 +3,13 @@
 async function loadEvents() {
   try {
     loadEventDeliveryHealth();
+    const eventIdInput = document.getElementById('event-graph-id');
+    if (eventIdInput && !eventIdInput.dataset.bound) {
+      eventIdInput.dataset.bound = '1';
+      eventIdInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') openEventGraphFromInput();
+      });
+    }
     const owner = document.getElementById('events-owner')?.value || '';
     const type = document.getElementById('events-type')?.value || '';
     let url = '/api/events?limit=200';
@@ -156,11 +163,24 @@ function openEventGraph(eventId) {
   routeTo(`/events/${encodeURIComponent(eventId)}`);
 }
 
+function openEventGraphFromInput() {
+  const input = document.getElementById('event-graph-id');
+  const eventId = String(input?.value || '').trim();
+  if (!eventId.match(/^\d+$/)) {
+    const el = document.getElementById('event-graph-content');
+    if (el) el.innerHTML = '<div style="padding:10px;color:var(--red);border:1px solid var(--border);border-radius:6px">Enter a numeric event id.</div>';
+    return;
+  }
+  openEventGraph(eventId);
+}
+
 async function loadEventGraph(eventId, opts = {}) {
   const el = document.getElementById('event-graph-content');
   if (!el) return;
   const detail = opts.detail === true;
   const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 3;
+  const input = document.getElementById('event-graph-id');
+  if (input) input.value = String(eventId);
   el.innerHTML = '<div style="padding:10px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">Loading event graph…</div>';
   try {
     const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/graph?depth=${encodeURIComponent(depth)}&detail=${detail ? 'true' : 'false'}`);
