@@ -137,9 +137,11 @@
   </div>
 
   <div id="events" class="hidden">
-    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <select id="events-owner" onchange="loadEvents()"><option value="">All owners</option></select>
       <select id="events-type" onchange="loadEvents()"><option value="">All types</option></select>
+      <input id="event-graph-id" placeholder="Event id" inputmode="numeric" style="width:110px">
+      <button onclick="openEventGraphFromInput()" style="font-size:12px;padding:5px 10px">Open</button>
       <span id="events-count" style="font-size:12px;color:var(--fg2)"></span>
     </div>
     <div id="event-delivery-health" style="margin-bottom:12px"></div>
