@@ -613,9 +613,16 @@ function expandedSessionEdge(edge, nodeById) {
 function itemLevel(item) {
   if (!item) return 0;
   if (item.kind === 'event') return 0;
+  if (item.kind === 'session-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
   if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event' || item.kind === 'more' || item.kind === 'more-event') return 1;
   if (item.kind === 'tool') return 2;
   return 0;
+}
+
+function graphXForLevel(level, eventX, turnX, toolX) {
+  if (level >= 2) return toolX;
+  if (level === 1) return turnX;
+  return eventX;
 }
 
 function buildExpandedSessionEdges(displayItems) {
@@ -719,8 +726,9 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
   const positions = new Map();
   const toolPositions = [];
   displayItems.forEach((item) => {
-    const x = item.kind === 'event' ? eventX : turnX;
-    positions.set(item.key, { x, y: cursorY, level: itemLevel(item) });
+    const level = itemLevel(item);
+    const x = graphXForLevel(level, eventX, turnX, toolX);
+    positions.set(item.key, { x, y: cursorY, level });
     if (item.kind === 'turn') {
       const toolCalls = (item.item?.assistant?.toolCalls || []).slice(0, 4);
       toolCalls.forEach((toolCall, toolIndex) => {
