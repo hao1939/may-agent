@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { ChatSession } from "./chat-session.js";
-import type { EventBus } from "./event-bus.js";
+import { childEventTrace, type EventBus } from "./event-bus.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export interface CommandRouterOptions {
@@ -218,6 +218,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return false;
     }
 
+    const appPath = normalized.endsWith(".app") ? normalized : `${normalized}.app`;
+    if (existsSync(join(options.projectRoot, appPath, "app.ts"))) {
+      bus.emit({
+        type: "info",
+        message: `[project.comment] Routed ${normalized} comment to its project app`,
+      });
+      return true;
+    }
+
     const projectDir = join(options.projectRoot, normalized);
     const projectFile = join(projectDir, "project.md");
     if (!existsSync(projectFile)) {
@@ -327,6 +336,53 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     const targetSessionId = nonEmptyString(target.sessionId);
+    const lower = message.trim().toLowerCase();
+    if (lower === "cancel") {
+      if (targetSessionId) {
+        bus.emit({
+          type: "session.cancel.requested",
+          source,
+          owner: eventOwner,
+          urgency: "high",
+          data: { sessionId: targetSessionId, reason: "human requested cancel" },
+        } as any);
+      } else {
+        bus.emit({
+          type: "human.input.rejected",
+          source: "command-router",
+          owner: eventOwner,
+          data: { reason: "cancel requires an explicit session target", input: message },
+        } as any);
+      }
+      return;
+    }
+    if (lower === "cancel all") {
+      bus.emit({
+        type: "session.cancel_all.requested",
+        source,
+        owner: "agent:may",
+        urgency: "high",
+        data: { reason: "human requested cancel all" },
+      } as any);
+      return;
+    }
+    if (lower === "reload" || lower === "restart" || lower === "close") {
+      const type =
+        lower === "reload"
+          ? "runtime.reload.requested"
+          : lower === "restart"
+            ? "runtime.restart.requested"
+            : "runtime.shutdown.requested";
+      bus.emit({
+        type,
+        source,
+        owner: "agent:may",
+        ...(lower === "reload" ? {} : { urgency: "high" }),
+        data: { reason: `human requested ${lower}` },
+      } as any);
+      return;
+    }
+
     if (targetSessionId && !escalationReply) {
       bus.emit({
         type: "session.steer.requested",
@@ -370,60 +426,21 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    const lower = message.trim().toLowerCase();
-    if (lower === "status") {
-      const sessions = manager.status();
-      if (sessions.length === 0) {
-        bus.emit({ type: "info", message: "[status] No active sessions" });
-      } else {
-        const lines = sessions.map(
-          (s) => `  ${s.agent} (${s.sessionId}): ${s.status} - "${s.task.slice(0, 80)}" [${s.runtime}]`,
-        );
-        bus.emit({ type: "info", message: `[status] ${sessions.length} active session(s):\n${lines.join("\n")}` });
-      }
-      return;
-    }
-    if (lower === "cancel" || lower === "cancel all") {
-      bus.emit({
-        type: "session.cancel_all.requested",
-        source,
-        owner: "agent:may",
-        urgency: "high",
-        data: { reason: "human requested cancel all" },
-      } as any);
-      return;
-    }
-    if (lower === "reload") {
-      bus.emit({
-        type: "runtime.reload.requested",
-        source,
-        owner: "agent:may",
-        data: { reason: "human requested reload" },
-      } as any);
-      return;
-    }
-    if (lower === "restart") {
-      bus.emit({
-        type: "runtime.restart.requested",
-        source,
-        owner: "agent:may",
-        urgency: "high",
-        data: { reason: "human requested restart" },
-      } as any);
-      return;
-    }
-    if (lower === "close") {
-      bus.emit({
-        type: "runtime.shutdown.requested",
-        source,
-        owner: "agent:may",
-        urgency: "high",
-        data: { reason: "human requested close" },
-      } as any);
-      return;
-    }
-
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
+    const boundChatSessionId = agent === "may" ? options.getChatSession()?.getSessionId?.() : null;
+    if (boundChatSessionId && context.forceNew !== true) {
+      bus.emit({
+        type: "session.steer.requested",
+        source,
+        owner: normalizeEventOwner(agent),
+        data: {
+          sessionId: boundChatSessionId,
+          message: deliveredMessage,
+          ...(Object.keys(context).length ? { context } : {}),
+        },
+      } as any);
+      return;
+    }
     bus.emit({
       type: "chat.start.requested",
       source,
@@ -441,7 +458,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
   }
 
-  function handleSteer(sessionId: unknown, message: unknown, source?: string): void {
+  function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): void {
     const targetSid = nonEmptyString(sessionId);
     const steerText = nonEmptyString(message);
     if (!targetSid || !steerText) return;
@@ -452,12 +469,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         // Idle or running — send() handles both: it enqueues the user
         // turn for the next agent loop iteration (idle: wakes up;
         // running: queued for mid-flight delivery).
-        manager.send(targetSid, steerText);
+        manager.send(targetSid, steerText, { trace: childEventTrace(event) });
       } else {
         try {
           manager.resumeSession(targetSid, steerText, {
             source: source ?? "human",
             suppressBenignRaceEvent: true,
+            trace: childEventTrace(event),
           });
           log("info", `[steer] Resumed cold session ${targetSid}`);
         } catch (err) {
@@ -487,7 +505,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const forceNew = data.forceNew === true;
     const chatSession = options.getChatSession();
     if (chatSession && agent === "may" && !forceNew) {
-      chatSession.handleInput(message, source);
+      chatSession.handleInput(message, source, childEventTrace(event));
       return;
     }
 
@@ -509,6 +527,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       autoClose: "never",
       source,
       requestId: nonEmptyString(data.requestId) ?? undefined,
+      trace: childEventTrace(event),
     });
     log("info", `[chat.start] Started ${agent} chat session: ${sessionId}`);
   }
@@ -550,12 +569,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         handleHumanInput(event);
         break;
       case "steer": {
-        handleSteer(event.sessionId, event.message, event.source);
+        handleSteer(event.sessionId, event.message, event.source, event);
         break;
       }
       case "session.steer.requested": {
         const data = eventData(event);
-        handleSteer(data.sessionId, data.message, eventSource(event));
+        handleSteer(data.sessionId, data.message, eventSource(event), event);
         break;
       }
       case "chat.start.requested":

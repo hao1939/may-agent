@@ -70,9 +70,21 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
           }
           break;
         case "session.end":
+        case "session.idle":
           if (session.error) {
             console.log(`\n⚠️ ${session.error}`);
           }
+          bus.emit({
+            type: "channel.delivery.completed",
+            source: "console",
+            owner: "agent:may",
+            target: { human: true },
+            data: {
+              channel: "console",
+              sessionId: String(session.sessionId),
+              resultEventType: event.type,
+            },
+          } as any);
           break;
       }
       return;

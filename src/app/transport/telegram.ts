@@ -114,10 +114,51 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
       replyToMessageId: context?.replyToMessageId,
     };
-    sendMessage(pendingChatId, text, undefined, ctx).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
-    });
+    sendMessage(pendingChatId, text, undefined, ctx)
+      .then((messageId) => {
+        if (messageId) {
+          bus.emit({
+            type: "channel.delivery.completed",
+            source: "telegram",
+            owner: "agent:may",
+            target: { human: true },
+            data: {
+              channel: "telegram",
+              externalMessageId: messageId,
+              sessionId: ctx.sessionId,
+              resultEventType: ctx.eventType,
+            },
+          } as any);
+          return;
+        }
+        bus.emit({
+          type: "channel.delivery.failed",
+          source: "telegram",
+          owner: "agent:may",
+          target: { human: true },
+          data: {
+            channel: "telegram",
+            sessionId: ctx.sessionId,
+            resultEventType: ctx.eventType,
+            reason: "Telegram send returned no message id",
+          },
+        } as any);
+      })
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        bus.emit({
+          type: "channel.delivery.failed",
+          source: "telegram",
+          owner: "agent:may",
+          target: { human: true },
+          data: {
+            channel: "telegram",
+            sessionId: ctx.sessionId,
+            resultEventType: ctx.eventType,
+            reason: msg,
+          },
+        } as any);
+      });
   }
 
   function shouldSuppressProactive(text: string, context?: { eventType?: string; agent?: string }): boolean {
@@ -166,6 +207,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     target?: { sessionId?: string; agent?: string; projectPath?: string },
     context?: Record<string, unknown>,
   ): void {
+    const currentSessionId = getSessionId();
     bus.emit({
       type: "human.input.received",
       source,
@@ -180,7 +222,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           channelThreadId: pendingChatId ?? undefined,
           channelMessageId,
         },
-        target: target ?? { agent: opts.interfaceAgent },
+        target:
+          target ??
+          (currentSessionId
+            ? { agent: opts.interfaceAgent, sessionId: currentSessionId }
+            : { agent: opts.interfaceAgent }),
         context,
       },
     } as any);

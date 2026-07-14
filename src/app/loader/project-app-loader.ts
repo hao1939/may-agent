@@ -10,7 +10,7 @@ import { runWorkflowDirect } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
 import { loadProjectReadModel } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
-import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
 
 type EventUrgency = "low" | "normal" | "high" | "immediate";
 
@@ -51,6 +51,9 @@ type EventSelector =
     };
 
 type ProjectAppContext = {
+  workspacePath(path: string): string;
+  workspaceCwd(): string;
+  /** @deprecated Use workspacePath(). */
   projectPath(path: string): string;
   appPath(path: string): string;
   readJson<T = unknown>(path: string): Promise<T>;
@@ -535,6 +538,8 @@ function hasExplicitWorkflowHandler(app: ProjectApp, event: Record<string, unkno
 
 function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): ProjectAppContext {
   return {
+    workspacePath: (path: string) => resolve(descriptor.projectDir, path),
+    workspaceCwd: () => descriptor.projectDir,
     projectPath: (path: string) => resolve(descriptor.projectDir, path),
     appPath: (path: string) => resolve(descriptor.appDir, path),
     readJson: async <T = unknown>(path: string) => {
@@ -710,6 +715,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
         if (!handlerAccepts(handler).some((selector) => matchesSelector(selector, flattened, descriptor.id))) return;
       }
       const runtime = requireWorkflowRuntimeOptions(opts);
+      const trace = childEventTrace(event);
       const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
       const task =
         includeEvent && event
@@ -727,6 +733,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
           workflowRunId: null,
           status: "started",
         },
+        ...(trace ? { trace } : {}),
       } as AgentEvent);
       const runtimeCtx = buildRuntimeCtx({
         bus: opts.bus,
@@ -749,6 +756,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
         guardsDir: paths.guardsDir,
         sharedGuardsDir: paths.sharedGuardsDir,
         projectId,
+        trace,
       });
       // Always emit the dispatch event for observability — even on failure.
       opts.bus.emit({
@@ -765,6 +773,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
           summary: result.type === "done" ? result.summary : undefined,
           reason: result.type === "blocked" ? result.reason : undefined,
         },
+        ...(trace ? { trace } : {}),
       } as AgentEvent);
       // When the workflow did not complete successfully (blocked, escalated,
       // interrupted), throw so cron's .catch() path fires. This triggers
@@ -818,6 +827,22 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
+
+/** Mark a bus event row as handled in the DB (best-effort). */
+function markEventHandled(opts: ProjectAppLoaderOptions, event: Record<string, unknown>, handlerName: string): void {
+  if (!opts.persistDir) return;
+  const rowId = (event as any)[EVENT_ROW_ID];
+  if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
+  try {
+    const db = getDb(opts.persistDir);
+    db.run(
+      `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed' WHERE id = ? AND status = 'pending'`,
+      [handlerName, rowId],
+    );
+  } catch {
+    /* best-effort — don't fail the handler for bookkeeping */
+  }
+}
 
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
   const existing = appRouterDescriptorsByBus.get(opts.bus);
@@ -874,13 +899,17 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           const ctx = makeContext(opts, descriptor);
           const result =
             typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
+          // Mark the trigger event as handled after onEvent completes successfully.
+          markEventHandled(opts, event, `project-app:${descriptor.id}`);
           if (result !== undefined) return;
           if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
           const sessionId = opts.manager.runAgent(descriptor.owner, ownerFallbackTask(descriptor, event), {
             source: "project-app:fallback",
             projectId: descriptor.id,
+            trace: childEventTrace(event),
           });
+          const trace = childEventTrace(event);
           opts.bus.emit({
             type: "handler.workflow_dispatched",
             source: "project-app-loader",
@@ -894,6 +923,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               status: "started",
               eventType: event.type,
             },
+            ...(trace ? { trace } : {}),
           } as AgentEvent);
         })
         .catch((err) => {

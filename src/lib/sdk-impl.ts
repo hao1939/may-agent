@@ -7,8 +7,8 @@
  * Design: shared/may-agent-docs/sdk.md
  */
 
-import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult, EscalationOptions } from "./sdk.js";
-import type { EventBus } from "../app/event-bus.js";
+import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult, EscalationOptions, EscalationRef } from "./sdk.js";
+import { EVENT_ROW_ID, type EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
 import { getDb } from "./requests.js";
@@ -249,7 +249,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       } as any);
     },
 
-    escalate(reason: string, opts?: EscalationOptions): void {
+    escalate(reason: string, opts?: EscalationOptions): EscalationRef {
       if (typeof (opts as unknown) === "string") {
         throw new Error(
           "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
@@ -281,6 +281,11 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       };
 
       deps.bus.emit(event as any);
+      const eventId = Number((event as any)[EVENT_ROW_ID]);
+      if (!Number.isInteger(eventId) || eventId <= 0) {
+        throw new Error("escalation.created was not persisted before routing");
+      }
+      return { eventId, compatibilityId: escalationId };
     },
 
     paths: {
@@ -315,13 +320,15 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
       return result;
     },
 
-    escalate(reason: string, opts?: EscalationOptions): void {
+    escalate(reason: string, opts?: EscalationOptions): WorkflowResult {
       if (typeof (opts as unknown) === "string") {
         throw new Error(
           "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
         );
       }
-      deps.finish({ status: "blocked", summary: reason });
+      const result: WorkflowResult = { status: "blocked", summary: reason };
+      deps.finish(result);
+      return result;
     },
   };
 }

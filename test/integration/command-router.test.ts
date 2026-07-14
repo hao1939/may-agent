@@ -45,12 +45,19 @@ function createHarness(overrides: Partial<SubagentManager> = {}, projectRoot = m
 }
 
 describe("command router", () => {
-  it("handles built-in status when no chat session is active", () => {
+  it("routes natural-language status through the human chat contract", () => {
     const h = createHarness();
 
     h.router.handleInput("status", "test");
 
-    expect(h.emitted).toContainEqual({ type: "info", message: "[status] No active sessions" });
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "chat.start.requested",
+        source: "test",
+        data: expect.objectContaining({ message: "status" }),
+      }),
+    );
+    expect(h.emitted).not.toContainEqual({ type: "info", message: "[status] No active sessions" });
     h.router.close();
   });
 

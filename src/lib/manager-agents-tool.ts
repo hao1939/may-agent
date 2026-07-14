@@ -1,5 +1,5 @@
 /**
- * Agents tool — lets agents cooperate: call, fork, context, list, peek, cancel, requests.
+ * Agents tool — lets agents cooperate: call, fork, context, list, peek, cancel, sessions.
  *
  * Takes manager dependencies as parameters to avoid circular imports.
  */
@@ -10,6 +10,7 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
+import type { EventTrace } from "../app/event-bus.js";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -17,16 +18,16 @@ import { getDb } from "./requests.js";
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string }>;
+  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace }>;
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -92,7 +93,7 @@ function textResult(text: string): AgentToolResult<string> {
 
 const AgentsToolParams = Type.Object({
   action: StringEnum(
-    ["call", "fork", "context", "list", "peek", "cancel", "requests"] as const,
+    ["call", "fork", "context", "list", "peek", "cancel", "sessions"] as const,
     {
       description: [
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
@@ -101,7 +102,7 @@ const AgentsToolParams = Type.Object({
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
         "'cancel': kill a running session (requires sessionId).",
-        "'requests': query the request tracking database (optionally filter by agent or status).",
+        "'sessions': query persisted execution sessions (optionally filter by agent or status).",
         "To send a one-way FYI notification, use the separate `message` tool instead of this action list.",
       ].join(" "),
     },
@@ -109,7 +110,7 @@ const AgentsToolParams = Type.Object({
   agent: Type.Optional(
     Type.String({
       description:
-        "Target agent name. Required for 'call' and 'fork'. Optional for 'requests' (filters by agent). Use 'list' first to see available agents if unsure.",
+        "Target agent name. Required for 'call' and 'fork'. Optional for 'sessions' (filters by agent). Use 'list' first to see available agents if unsure.",
     }),
   ),
   task: Type.Optional(
@@ -130,13 +131,13 @@ const AgentsToolParams = Type.Object({
   limit: Type.Optional(
     Type.Number({
       description:
-        "Max items to return. For 'peek': messages (default: 20). For 'requests': records (default: 50). Increase to see more.",
+        "Max items to return. For 'peek': messages (default: 20). For 'sessions': records (default: 50). Increase to see more.",
     }),
   ),
   filter: Type.Optional(
     StringEnum(["active", "stale", "failed", "all"] as const, {
       description:
-        "Filter for 'requests' action. 'active': in-progress or pending. 'stale': no progress for >2h. 'failed': completed with errors. 'all': everything. Default: 'active'.",
+        "Filter for 'sessions' action. 'active': running. 'stale': running for >2h. 'failed': terminal errors. 'all': everything. Default: 'active'.",
     }),
   ),
   force: Type.Optional(
@@ -148,13 +149,13 @@ const AgentsToolParams = Type.Object({
   context_files: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'call'/'fork': file paths the receiver MUST read for context. Included in the tracked request and appended to the task.",
+        "For 'call'/'fork': file paths the receiver MUST read for context. Appended to the delegated session task.",
     }),
   ),
   success_criteria: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'call'/'fork': bullet points describing how to verify the task is done correctly. Included in the tracked request.",
+        "For 'call'/'fork': bullet points describing how to verify the task is done correctly. Appended to the delegated session task.",
     }),
   ),
   priority: Type.Optional(
@@ -171,7 +172,7 @@ const AgentsToolParams = Type.Object({
 });
 
 interface AgentsToolParamsType {
-  action: "call" | "fork" | "context" | "list" | "peek" | "cancel" | "requests";
+  action: "call" | "fork" | "context" | "list" | "peek" | "cancel" | "sessions";
   agent?: string;
   task?: string;
   message?: string;
@@ -231,13 +232,14 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const triggerHeartbeat = opts?.triggerHeartbeat;
   const bus = opts?.bus;
 
-  const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string } => {
+  const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string; trace?: EventTrace } => {
     if (!sessionId) return {};
     const active = manager.activeSessions.get(sessionId);
     const persisted = manager.registry.getSession(sessionId);
     return {
       workflowRunId: active?.workflowRunId ?? persisted?.workflowRunId,
       projectId: active?.projectId ?? persisted?.projectId,
+      trace: active?.trace,
     };
   };
 
@@ -245,7 +247,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, 'requests' to query the tracking DB. For one-way FYI notifications, use the separate `message` tool.",
+      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, and 'sessions' to query persisted execution. For one-way FYI notifications, use the separate `message` tool.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params) => {
       const params = _params as AgentsToolParamsType;
@@ -300,6 +302,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               workflowRunId: lineage.workflowRunId,
               projectId: lineage.projectId,
               source: "agents.call",
+              trace: lineage.trace,
             });
 
             // Return result without full messages array (too large for tool output)
@@ -360,6 +363,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               workflowRunId: lineage.workflowRunId,
               projectId: lineage.projectId,
               source: "agents.fork",
+              trace: lineage.trace,
             });
 
             return textResult(
@@ -509,7 +513,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             return textResult(JSON.stringify({ error: `Unknown scope: ${scope}` }));
           }
 
-          case "requests": {
+          case "sessions": {
             try {
               const persistDir = manager.registry.persistDir;
               const filter = params.filter ?? "active";

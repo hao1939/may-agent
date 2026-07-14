@@ -11,7 +11,7 @@ import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult } from "../app/event
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
-import { persistEventTrace } from "./db/event-traces.js";
+import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 
 /** Maximum event data payload persisted (200KB). Prevents DB bloat from
  * recursive session tasks or oversized payloads. */
@@ -44,6 +44,7 @@ const CLOSING_SUFFIXES = [
   ".dismissed",
   ".closed",
   ".blocked",
+  ".reviewed",
 ];
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
@@ -179,6 +180,8 @@ function correlationKey(eventType: string, payload: Record<string, unknown>): st
     return keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
   if (eventType.startsWith("escalation.")) return keyPart(payload.escalationId);
   if (eventType.startsWith("cli.task.")) return keyPart(payload.taskId);
+  if (eventType.startsWith("project.owner."))
+    return keyPart(payload.projectId) ?? keyPart(payload.project) ?? keyPart(payload.projectPath);
   if (eventType.startsWith("project.task.")) {
     const taskId = keyPart(payload.taskId);
     if (!taskId) return undefined;
@@ -387,12 +390,17 @@ export class DbWriter {
     const timestamp = Date.now();
     this.sweepStalePairs(timestamp);
     this.sweepUnacceptedEvents(timestamp);
-    const info = this.db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [event.type, source, owner, capEventData(payload), timestamp, urgency, ttlMs],
-    );
-    const rowId = Number(info.lastInsertRowid);
-    if (Number.isFinite(rowId) && rowId > 0) {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const info = this.db.run(
+        "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [event.type, source, owner, capEventData(payload), timestamp, urgency, ttlMs],
+      );
+      const rowId = Number(info.lastInsertRowid);
+      if (!Number.isFinite(rowId) || rowId <= 0) {
+        this.db.exec("ROLLBACK");
+        return null;
+      }
       try {
         Object.defineProperty(event, EVENT_ROW_ID, {
           value: rowId,
@@ -401,23 +409,32 @@ export class DbWriter {
       } catch {
         /* event may be frozen; delivery metadata will be skipped */
       }
-      try {
-        persistEventTrace(this.db, event, rowId, timestamp);
-      } catch {
-        /* trace metadata is best-effort; the event row remains canonical */
-      }
+      persistEventTrace(this.db, event, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
       this.closeConventionPairs(event.type, payload, rowId, timestamp);
       this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
+      this.db.exec("COMMIT");
       return rowId;
+    } catch (error) {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        /* preserve the original persistence error */
+      }
+      throw error;
     }
-    return null;
   }
 
   private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
     const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
     const openEventId = typeof rawOpenEventId === "number" ? rawOpenEventId : Number(rawOpenEventId);
     if (!Number.isFinite(openEventId) || openEventId <= 0) return;
+    const rows = this.db.prepare(
+      `SELECT open_event_id, pair_name
+       FROM event_pair_runs
+       WHERE open_event_id = ?
+         AND status IN ('open', 'orphan')`,
+    ).all(openEventId) as Array<{ open_event_id?: unknown; pair_name?: unknown }>;
     this.db.run(
       `UPDATE event_pair_runs
        SET status = 'closed',
@@ -428,6 +445,15 @@ export class DbWriter {
          AND status IN ('open', 'orphan')`,
       [closeEventId, closedAt, openEventId],
     );
+    for (const row of rows) {
+      persistEventClosure(
+        this.db,
+        closeEventId,
+        Number(row.open_event_id),
+        typeof row.pair_name === "string" ? row.pair_name : "follow-up",
+        closedAt,
+      );
+    }
   }
 
   private openOwnerInboxPair(event: AgentEvent, openEventId: number, openedAt: number): void {
@@ -465,17 +491,29 @@ export class DbWriter {
     if (eventType === "project.task.assigned") {
       const taskId = keyPart(payload.taskId);
       if (taskId) {
+        const superseded = this.db.prepare(
+          `SELECT open_event_id
+           FROM event_pair_runs
+           WHERE status IN ('open', 'orphan')
+             AND pair_name = ?
+             AND correlation_key LIKE ? || ':%'
+             AND correlation_key != ?`,
+        ).all(pair.name, taskId, key) as Array<{ open_event_id?: unknown }>;
         this.db.run(
           `UPDATE event_pair_runs
            SET status = 'closed',
+               close_event_id = ?,
                closed_at = ?,
                note = 'superseded by new task attempt'
            WHERE status IN ('open', 'orphan')
              AND pair_name = ?
              AND correlation_key LIKE ? || ':%'
              AND correlation_key != ?`,
-          [openedAt, pair.name, taskId, key],
+          [openEventId, openedAt, pair.name, taskId, key],
         );
+        for (const row of superseded) {
+          persistEventClosure(this.db, openEventId, Number(row.open_event_id), pair.name, openedAt);
+        }
       }
     }
     this.db.run(
@@ -538,6 +576,7 @@ export class DbWriter {
           openEventId,
         ],
       );
+      persistEventClosure(this.db, closeEventId, openEventId, pairName, openedAt);
       return;
     }
   }
@@ -552,6 +591,13 @@ export class DbWriter {
     if (!pair) return;
     const key = correlationKey(eventType, payload);
     if (!key) return;
+    const rows = this.db.prepare(
+      `SELECT open_event_id
+       FROM event_pair_runs
+       WHERE status IN ('open', 'orphan')
+         AND pair_name = ?
+         AND correlation_key = ?`,
+    ).all(pair.base, key) as Array<{ open_event_id?: unknown }>;
     this.db.run(
       `UPDATE event_pair_runs
        SET status = 'closed',
@@ -563,6 +609,9 @@ export class DbWriter {
          AND correlation_key = ?`,
       [closeEventId, closedAt, `closed by ${eventType}`, pair.base, key],
     );
+    for (const row of rows) {
+      persistEventClosure(this.db, closeEventId, Number(row.open_event_id), pair.base, closedAt);
+    }
   }
 
   private sweepStalePairs(now: number): void {

@@ -20,6 +20,7 @@ export interface AttachControlSocketOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => void;
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
+  onDelivered?: (event: ControlEvent, clientCount: number) => void;
   onInfo?: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
   agentName: string;
@@ -102,6 +103,7 @@ export interface ControlSocketCoreOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => void;
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
+  onDelivered?: (event: ControlEvent, clientCount: number) => void;
   agentName: string;
   instance: string;
 }
@@ -111,7 +113,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
   close: () => void;
   clientCount: () => number;
 } {
-  const { getSessionId, getStatus, emitEvent, subscribeEvents, agentName, instance } = opts;
+  const { getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, agentName, instance } = opts;
   const clients = new Map<Duplex, ClientState>();
   function broadcast(event: ControlEvent): void {
     if (clients.size === 0) return;
@@ -138,13 +140,18 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     }
 
     const line = JSON.stringify(event) + "\n";
+    let delivered = 0;
     for (const [sock, client] of clients) {
       if (!shouldForward(client, event)) continue;
       try {
         sock.write(line);
+        delivered++;
       } catch {
         clients.delete(sock);
       }
+    }
+    if (delivered > 0 && (event.type === "session.idle" || event.type === "session.end")) {
+      onDelivered?.(event, delivered);
     }
   }
 
@@ -243,7 +250,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 }
 
 export async function attachControlSocket(opts: AttachControlSocketOptions): Promise<ControlSocket> {
-  const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onInfo, agentName, instance } = opts;
+  const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, onInfo, agentName, instance } = opts;
   mkdirSync(dirname(socketPath), { recursive: true });
 
   if (existsSync(socketPath)) {
@@ -255,7 +262,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     unlinkSync(socketPath);
   }
 
-  const core = createControlSocketCore({ getSessionId, getStatus, emitEvent, subscribeEvents, agentName, instance });
+  const core = createControlSocketCore({ getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, agentName, instance });
   const server: Server = createServer((socket) => core.attachClient(socket));
 
   server.on("close", () => {

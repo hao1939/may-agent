@@ -39,7 +39,7 @@ export interface AgentSDK {
   message(target: string, content: string): void;
 
   /** External escalation. Defaults to owner agent:may. */
-  escalate(reason: string, opts?: EscalationOptions): void;
+  escalate(reason: string, opts?: EscalationOptions): EscalationRef;
 
   /** System paths. */
   paths: {
@@ -53,7 +53,7 @@ export interface AgentSDK {
 
 // ── Workflow SDK ───────────────────────────────────────────────────────
 
-export interface WorkflowSDK extends AgentSDK {
+export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
   /** The task this workflow was invoked with. */
   task: string;
   /** The agent this workflow runs as. */
@@ -61,9 +61,9 @@ export interface WorkflowSDK extends AgentSDK {
 
   /** Terminate the workflow successfully. */
   done(summary: string, opts?: DoneOpts): WorkflowResult;
-  // Note: the file-based workflow runner uses WorkflowContext.escalate(), which
-  // returns a local terminal result and does not emit escalation.created.
-}
+  /** Terminate this local workflow as blocked; does not emit escalation.created. */
+  escalate(reason: string, opts?: EscalationOptions): WorkflowResult;
+};
 
 // ── Supporting types ──────────────────────────────────────────────────
 
@@ -96,6 +96,13 @@ export interface EscalationOptions extends EventEnvelopeOptions {
   sourceSessionId?: string;
   resume?: Record<string, unknown>;
   dedupKey?: string;
+}
+
+export interface EscalationRef {
+  /** Canonical identity of the persisted escalation.created event. */
+  eventId: number;
+  /** Temporary key for compatibility with legacy producers and stored rows. */
+  compatibilityId: string;
 }
 
 export interface TaskResult {

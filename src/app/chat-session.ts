@@ -16,7 +16,7 @@ import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
 import { isOverflowError } from "../lib/overflow.js";
 
-import type { EventBus } from "./event-bus.js";
+import type { EventBus, EventTrace } from "./event-bus.js";
 
 interface ChatSessionOptions {
   manager: SubagentManager;
@@ -118,7 +118,7 @@ export class ChatSession {
    * @agent prefixes route through May for orchestration.
    * Everything else goes to the persistent session.
    */
-  handleInput(message: string, source?: string): void {
+  handleInput(message: string, source?: string, trace?: EventTrace): void {
     const trimmed = message.trim();
     if (!trimmed) return;
 
@@ -163,21 +163,21 @@ export class ChatSession {
       // Fork keeps May responsive; she can peek/monitor and report back.
       const delegationMsg = `[Human asked @${targetAgent}]: ${agentMessage}\n\nFork ${targetAgent} to handle this. Use \`agents fork\` so you stay responsive, then peek at the result and report back to me.`;
       this.sendRetryDepth = 0;
-      this.sendMessage(delegationMsg, source);
+      this.sendMessage(delegationMsg, source, trace);
       return;
     }
 
     // ── Normal message → persistent session ──────────────────────────
     this.logHumanInput(trimmed, source, this.agentName);
     this.sendRetryDepth = 0;
-    this.sendMessage(trimmed, source);
+    this.sendMessage(trimmed, source, trace);
   }
 
   /**
    * Send a message to the chat session.
    * Creates a session on first call, then wakes the same session for later turns.
    */
-  private sendMessage(message: string, source?: string): void {
+  private sendMessage(message: string, source?: string, trace?: EventTrace): void {
     if (this.sessionId && !this.manager.hasActiveSession(this.sessionId)) {
       this.bus.emit({
         type: "info",
@@ -192,13 +192,14 @@ export class ChatSession {
         kind: "chat",
         autoClose: "never",
         source: source ?? "chat",
+        trace,
       });
       this.trackCompletion(this.sessionId);
       return;
     }
 
     // Subsequent messages: wake the idle session or steer the running one
-    this.manager.send(this.sessionId, message);
+    this.manager.send(this.sessionId, message, { trace });
     this.manager
       .waitForIdle(this.sessionId)
       .then(() => {
@@ -221,7 +222,7 @@ export class ChatSession {
           }
           this.sendRetryDepth++;
           this.sessionId = null;
-          this.sendMessage(message, source);
+          this.sendMessage(message, source, trace);
           return;
         }
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });

@@ -22,6 +22,13 @@ export type EventTraceIntegrity = {
   danglingLinkCount: number;
   invalidVisibilityCount: number;
   invalidLinkTypeCount: number;
+  closedPairMissingClosureCount: number;
+  pairTraceSplitCount: number;
+  humanRootWithoutSingleIntentCount: number;
+  humanResultUndeliveredCount: number;
+  bookkeepingOnlyAcceptanceCount: number;
+  structuralOk: boolean;
+  semanticOk: boolean;
   ok: boolean;
 };
 
@@ -202,7 +209,52 @@ export function persistEventTrace(
   }
 }
 
+/**
+ * Make a live lifecycle close authoritative in the trace graph.
+ *
+ * This is intentionally separate from historical backfill: callers use it in
+ * the same transaction that records the closing event and updates the pair.
+ */
+export function persistEventClosure(
+  db: SqliteDb,
+  closeEventId: number,
+  openEventId: number,
+  label: string,
+  createdAt: number,
+): void {
+  if (!eventExists(db, closeEventId) || !eventExists(db, openEventId)) return;
+  const traceId = eventTraceId(db, openEventId);
+  db.run(
+    `UPDATE event_traces
+     SET trace_id = ?,
+         parent_event_id = COALESCE(parent_event_id, ?)
+     WHERE event_id = ?`,
+    [traceId, openEventId, closeEventId],
+  );
+  const existing = db.prepare(
+    `SELECT 1 AS found
+     FROM event_trace_links
+     WHERE from_event_id = ?
+       AND to_event_id = ?
+       AND type = 'closure'
+     LIMIT 1`,
+  ).get(closeEventId, openEventId) as { found?: unknown } | null;
+  if (!existing) {
+    db.run(
+      `INSERT INTO event_trace_links
+       (from_event_id, to_event_id, type, label, created_at)
+       VALUES (?, ?, 'closure', ?, ?)`,
+      [closeEventId, openEventId, label, createdAt],
+    );
+  }
+}
+
 function cleanupInvalidTraceRows(db: SqliteDb): number {
+  const cleanupDanglingPairs = db.run(
+    `DELETE FROM event_pair_runs
+     WHERE open_event_id NOT IN (SELECT id FROM events)
+        OR (close_event_id IS NOT NULL AND close_event_id NOT IN (SELECT id FROM events))`,
+  );
   const cleanupDanglingTraces = db.run(
     `DELETE FROM event_traces
      WHERE event_id NOT IN (SELECT id FROM events)`,
@@ -219,6 +271,7 @@ function cleanupInvalidTraceRows(db: SqliteDb): number {
         OR to_event_id NOT IN (SELECT id FROM events)`,
   );
   return (
+    (cleanupDanglingPairs.changes ?? 0) +
     (cleanupDanglingTraces.changes ?? 0) +
     (cleanupDanglingParents.changes ?? 0) +
     (cleanupDanglingLinks.changes ?? 0)
@@ -368,20 +421,10 @@ export function backfillEventPairTraces(db: SqliteDb, options: { limit?: number;
      FROM event_pair_runs p
      JOIN events open_event ON open_event.id = p.open_event_id
      JOIN events close_event ON close_event.id = p.close_event_id
-     JOIN (
-       SELECT close_event_id, MIN(id) as id
-       FROM (
-         SELECT p.id, p.close_event_id
-         FROM event_pair_runs p
-         JOIN events open_event ON open_event.id = p.open_event_id
-         JOIN events close_event ON close_event.id = p.close_event_id
-         WHERE p.open_event_id IS NOT NULL
-           AND p.close_event_id IS NOT NULL
-         ORDER BY p.id
-         LIMIT ${limit}
-       )
-       GROUP BY close_event_id
-     ) picked ON picked.id = p.id`,
+     WHERE p.open_event_id IS NOT NULL
+       AND p.close_event_id IS NOT NULL
+     ORDER BY p.id
+     LIMIT ${limit}`,
   );
   db.exec("CREATE INDEX IF NOT EXISTS idx_temp_event_pair_trace_close ON temp_event_pair_trace_backfill(close_event_id)");
   const closeTraceInsert = db.run(
@@ -393,18 +436,21 @@ export function backfillEventPairTraces(db: SqliteDb, options: { limit?: number;
   const closeTraceUpdate = db.run(
     `UPDATE event_traces
      SET trace_id = (
-           SELECT 'event:' || p.open_event_id
+           SELECT COALESCE(opened.trace_id, 'event:' || p.open_event_id)
            FROM temp_event_pair_trace_backfill p
+           LEFT JOIN event_traces opened ON opened.event_id = p.open_event_id
            WHERE p.close_event_id = event_traces.event_id
+           ORDER BY p.open_event_id
+           LIMIT 1
          ),
          parent_event_id = (
            SELECT p.open_event_id
            FROM temp_event_pair_trace_backfill p
            WHERE p.close_event_id = event_traces.event_id
+           ORDER BY p.open_event_id
+           LIMIT 1
          )
-     WHERE parent_event_id IS NULL
-       AND trace_id = 'event:' || event_id
-       AND EXISTS (
+     WHERE EXISTS (
          SELECT 1
          FROM temp_event_pair_trace_backfill p
          WHERE p.close_event_id = event_traces.event_id
@@ -482,14 +528,104 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
        FROM event_trace_links
        WHERE type NOT IN ('reference', 'closure')`,
     ),
+    closedPairMissingClosureCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM event_pair_runs p
+       LEFT JOIN event_trace_links l
+         ON l.from_event_id = p.close_event_id
+        AND l.to_event_id = p.open_event_id
+        AND l.type = 'closure'
+       WHERE p.status = 'closed'
+         AND p.close_event_id IS NOT NULL
+         AND l.id IS NULL`,
+    ),
+    pairTraceSplitCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM event_pair_runs p
+       JOIN event_traces opened ON opened.event_id = p.open_event_id
+       JOIN event_traces closed ON closed.event_id = p.close_event_id
+       WHERE p.status = 'closed'
+         AND opened.trace_id != closed.trace_id
+         AND 1 = (
+           SELECT COUNT(*)
+           FROM event_pair_runs siblings
+           WHERE siblings.status = 'closed'
+             AND siblings.close_event_id = p.close_event_id
+         )`,
+    ),
+    humanRootWithoutSingleIntentCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM events root
+       WHERE root.event_type = 'human.input.received'
+         AND 1 != (
+           SELECT COUNT(*)
+           FROM event_traces child_trace
+           JOIN events child ON child.id = child_trace.event_id
+           WHERE child_trace.parent_event_id = root.id
+             AND (
+               child.event_type IN (
+                 'chat.start.requested',
+                 'session.steer.requested',
+                 'project.comment.created',
+                 'project.approval.submitted',
+                 'human.input.rejected'
+               )
+               OR child.event_type LIKE 'runtime.%.requested'
+               OR child.event_type IN ('session.cancel.requested', 'session.cancel_all.requested')
+             )
+         )`,
+    ),
+    humanResultUndeliveredCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM events terminal
+       JOIN event_traces terminal_trace ON terminal_trace.event_id = terminal.id
+       WHERE terminal.event_type IN ('session.idle', 'session.end')
+         AND EXISTS (
+           SELECT 1
+           FROM events root
+           JOIN event_traces root_trace ON root_trace.event_id = root.id
+           WHERE root.event_type = 'human.input.received'
+             AND root_trace.trace_id = terminal_trace.trace_id
+         )
+         AND NOT EXISTS (
+           SELECT 1
+           FROM events delivery
+           JOIN event_traces delivery_trace ON delivery_trace.event_id = delivery.id
+           WHERE delivery.event_type = 'channel.delivery.completed'
+             AND delivery_trace.trace_id = terminal_trace.trace_id
+         )`,
+    ),
+    bookkeepingOnlyAcceptanceCount: count(
+      db,
+      `SELECT COUNT(*) AS c
+       FROM events
+       WHERE accepted_by = 'event-pair-tracker'
+         AND event_type NOT LIKE 'session.%'
+         AND event_type NOT LIKE 'workflow.%'
+         AND event_type NOT LIKE 'handler.%'
+         AND event_type NOT LIKE 'cli.task.%'`,
+    ),
+    structuralOk: false,
+    semanticOk: false,
     ok: false,
   };
-  result.ok =
+  result.structuralOk =
     result.danglingTraceCount === 0 &&
     result.missingTraceCount === 0 &&
     result.danglingParentCount === 0 &&
     result.danglingLinkCount === 0 &&
     result.invalidVisibilityCount === 0 &&
     result.invalidLinkTypeCount === 0;
+  result.semanticOk =
+    result.closedPairMissingClosureCount === 0 &&
+    result.pairTraceSplitCount === 0 &&
+    result.humanRootWithoutSingleIntentCount === 0 &&
+    result.humanResultUndeliveredCount === 0 &&
+    result.bookkeepingOnlyAcceptanceCount === 0;
+  result.ok = result.structuralOk && result.semanticOk;
   return result;
 }

@@ -106,6 +106,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             allowedTargets: lazyAllowedTargets,
             emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
             getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerTrace: () => {
+              const sid = opts.getAgentSessionId(config.name);
+              return sid ? manager.activeSessions.get(sid)?.trace : undefined;
+            },
             triggerHeartbeat,
           }),
         );
@@ -133,6 +137,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
               const sid = opts.getAgentSessionId(config.name);
               if (!sid) throw new Error(`No active ${config.name} session`);
               return sid;
+            },
+            callerTrace: () => {
+              const sid = opts.getAgentSessionId(config.name);
+              return sid ? manager.activeSessions.get(sid)?.trace : undefined;
             },
             onEvent: (event) => {
               const label = `workflow:${config.name}`;
@@ -249,6 +257,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             persistDir,
             emit: (event) => bus.emit(event as any),
             getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerTrace: () => {
+              const sid = opts.getAgentSessionId(config.name);
+              return sid ? manager.activeSessions.get(sid)?.trace : undefined;
+            },
           }),
         );
         break;

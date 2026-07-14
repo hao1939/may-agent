@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { EventTrace } from "../../app/event-bus.js";
 
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -62,6 +63,7 @@ export interface RunCliAgentToolOptions {
   persistDir: string;
   emit?: (event: { type: string; [key: string]: unknown }) => void;
   getCallerSessionId?: () => string | undefined;
+  getCallerTrace?: () => EventTrace | undefined;
 }
 
 function textResult(text: string): AgentToolResult<undefined> {
@@ -141,6 +143,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
         )}\n`,
       );
 
+      const trace = opts.getCallerTrace?.();
       opts.emit?.({
         type: "cli.task.requested",
         source: `agent:${opts.agentName}`,
@@ -164,6 +167,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           files: params.files,
           worktree: params.worktree,
         },
+        ...(trace ? { trace } : {}),
       });
 
       return textResult(

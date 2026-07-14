@@ -311,6 +311,12 @@ export type SystemEvent =
       data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
     }
   | {
+      type: "project.owner.reviewed";
+      source?: string;
+      owner: string;
+      data: { project?: string; projectId?: string; projectPath?: string; summary?: string };
+    }
+  | {
       type: "project.nudge";
       source: string;
       owner: string;
@@ -358,7 +364,8 @@ export type SystemEvent =
       source: string;
       owner: string;
       data: {
-        escalationId: string;
+        openEventId?: number;
+        escalationId?: string;
         route: string;
         reason?: string;
       };
@@ -368,7 +375,8 @@ export type SystemEvent =
       source: string;
       owner: string;
       data: {
-        escalationId: string;
+        openEventId?: number;
+        escalationId?: string;
         resolverAgent?: string;
         outcome: "fixed" | "answered" | "dismissed" | "needs_human" | "expired" | string;
         summary: string;
@@ -382,7 +390,8 @@ export type SystemEvent =
       source: string;
       owner: string;
       data: {
-        escalationId: string;
+        openEventId?: number;
+        escalationId?: string;
         reason: string;
         resolverAgent?: string;
       };
@@ -806,14 +815,21 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 
 const eventContext = new AsyncLocalStorage<AgentEvent>();
 
-function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined): AgentEvent {
-  if (event.trace || !parent) return event;
-  const parentEventId = (parent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-  if (!Number.isInteger(parentEventId) || Number(parentEventId) <= 0) return event;
-  const trace: EventTrace = {
-    traceId: parent.trace?.traceId ?? `event:${parentEventId}`,
+export function childEventTrace(parent: unknown): EventTrace | undefined {
+  if (!parent || typeof parent !== "object" || Array.isArray(parent)) return undefined;
+  const event = parent as AgentEvent & { [EVENT_ROW_ID]?: number };
+  const parentEventId = event[EVENT_ROW_ID];
+  if (!Number.isInteger(parentEventId) || Number(parentEventId) <= 0) return event.trace;
+  return {
+    traceId: event.trace?.traceId ?? `event:${parentEventId}`,
     parentEventId,
   };
+}
+
+function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined): AgentEvent {
+  if (event.trace || !parent) return event;
+  const trace = childEventTrace(parent);
+  if (!trace) return event;
   if (Object.isExtensible(event)) {
     event.trace = trace;
     return event;
@@ -885,6 +901,7 @@ export class EventBus {
       }
       delivery ??= ownerInboxFallback(event);
       delivery ??= pairTrackerFallback(event);
+      delivery ??= evidenceProjectionFallback(event);
       delivery ??= defaultOwnerFallback(event);
       if (delivery) this.deliveryRecorder?.(event, delivery);
     } finally {
@@ -954,6 +971,7 @@ function ownerInboxFallback(event: AgentEvent): DeliveryResult | undefined {
 }
 
 function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
+  if (!isInfraLifecycleEvent(event.type)) return undefined;
   if (!isPairTrackedEvent(event.type)) return undefined;
   if (!hasPairCorrelationKey(event)) return undefined;
   return {
@@ -970,10 +988,29 @@ function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
   if (!owner) return undefined;
   return {
     accepted: true,
-    by: `default-owner:${owner}`,
-    route: "direct",
-    note: DEFAULT_OWNER_DELIVERY_NOTE,
+    by: `owner-inbox:${owner}`,
+    route: "owner_inbox",
+    note: `${DEFAULT_OWNER_DELIVERY_NOTE}; persisted in queryable owner inbox`,
   };
+}
+
+function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
+  if (!event.type.startsWith("channel.delivery.") && event.type !== "project.owner.reviewed") return undefined;
+  return {
+    accepted: true,
+    by: "event-store:evidence-projection",
+    route: "direct",
+    note: "terminal evidence persisted for trace projection",
+  };
+}
+
+function isInfraLifecycleEvent(eventType: string): boolean {
+  return (
+    eventType.startsWith("session.") ||
+    eventType.startsWith("workflow.") ||
+    eventType.startsWith("handler.") ||
+    eventType.startsWith("cli.task.")
+  );
 }
 
 function isPairTrackedEvent(eventType: string): boolean {
@@ -1000,7 +1037,7 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
   if (event.type.startsWith("handler."))
     return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
-  if (event.type.startsWith("escalation.")) return hasKey(data.escalationId);
+  if (event.type.startsWith("escalation.")) return hasKey(data.openEventId) || hasKey(data.escalationId);
   if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
   if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
   return hasKey(data.requestId);
