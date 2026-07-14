@@ -563,15 +563,95 @@ function isDefaultContextEdge(edge: EventGraphEdge): boolean {
   return edge.type === "reference" && edge.label === "same workflow";
 }
 
+function eventIdFromTraceId(traceId: string | undefined): number | undefined {
+  const match = traceId?.match(/^event:(\d+)$/);
+  return match ? numberValue(match[1]) : undefined;
+}
+
+function parentPathIds(focusEventId: number, edges: EventGraphEdge[], rowsById: Map<number, Row>): number[] {
+  const parentByChild = new Map<number, EventGraphEdge[]>();
+  for (const edge of edges) {
+    if (edge.type !== "parent") continue;
+    parentByChild.set(edge.target, [...(parentByChild.get(edge.target) ?? []), edge]);
+  }
+  const path: number[] = [];
+  const seen = new Set<number>();
+  let current = focusEventId;
+  while (Number.isFinite(current) && !seen.has(current)) {
+    seen.add(current);
+    path.push(current);
+    const parents = parentByChild.get(current) ?? [];
+    if (!parents.length) break;
+    parents.sort((a, b) => {
+      const aTime = numberValue(rowsById.get(a.source)?.timestamp) ?? 0;
+      const bTime = numberValue(rowsById.get(b.source)?.timestamp) ?? 0;
+      return aTime - bTime || a.source - b.source;
+    });
+    current = parents[0].source;
+  }
+  return path.reverse();
+}
+
+function visibleIdsForDefaultScope(
+  focusEventId: number,
+  edges: EventGraphEdge[],
+  depth: number,
+  rowsById: Map<number, Row>,
+  traceId: string | undefined,
+): Set<number> {
+  const visible = visibleIdsFromDepth(focusEventId, edges, depth);
+  const rootEventId = eventIdFromTraceId(traceId);
+  if (rootEventId && rowsById.has(rootEventId)) visible.add(rootEventId);
+  for (const id of parentPathIds(focusEventId, edges, rowsById)) visible.add(id);
+  return visible;
+}
+
+function moreNodeScope(edge: EventGraphEdge): EventGraphMoreNode["scope"] {
+  if (edge.label === "same workflow") return "workflow";
+  if (edge.label === "session") return "session";
+  if (edge.label === "review" || edge.label === "result" || edge.label === "project.task") return "task";
+  if (edge.label === "metric" || edge.label === "metric.breach") return "metric";
+  return "trace";
+}
+
+function moreNodeDirection(edge: EventGraphEdge, visibleId: number, hiddenNode: EventGraphNode): EventGraphMoreNode["direction"] {
+  if (isDefaultContextEdge(edge)) return "context";
+  if (hiddenNode.visibility === "detail") return "details";
+  if (edge.type === "parent" && edge.source === hiddenNode.id && edge.target === visibleId) return "before";
+  if (edge.type === "closure" || edge.type === "reference") {
+    if (edge.source === hiddenNode.id && edge.target === visibleId) return "before";
+  }
+  return "after";
+}
+
+function moreNodeLabel(
+  direction: EventGraphMoreNode["direction"],
+  scope: EventGraphMoreNode["scope"],
+  count: number,
+): string {
+  const plural = count === 1 ? "" : "s";
+  if (direction === "context" && scope === "workflow") return `... ${count} same-workflow session${plural}`;
+  if (direction === "before") return `... ${count} earlier event${plural}`;
+  if (direction === "details") return `... ${count} detail event${plural}`;
+  if (direction === "context") return `... ${count} related ${scope} event${plural}`;
+  return `... ${count} later event${plural}`;
+}
+
 function buildMoreNodes(
   allNodes: EventGraphNode[],
   allEdges: EventGraphEdge[],
   visibleIds: Set<number>,
 ): EventGraphMoreNode[] {
   const nodeById = new Map(allNodes.map((node) => [node.id, node]));
-  const byParent = new Map<number, { nodes: Map<number, EventGraphNode>; edges: Map<string, EventGraphEdge> }>();
+  const byKey = new Map<string, {
+    parentEventId: number;
+    direction: EventGraphMoreNode["direction"];
+    scope: EventGraphMoreNode["scope"];
+    nodes: Map<number, EventGraphNode>;
+    edges: Map<string, EventGraphEdge>;
+  }>();
 
-  for (const edge of allEdges.filter(isDefaultContextEdge)) {
+  for (const edge of allEdges) {
     const sourceVisible = visibleIds.has(edge.source);
     const targetVisible = visibleIds.has(edge.target);
     if (sourceVisible === targetVisible) continue;
@@ -579,26 +659,37 @@ function buildMoreNodes(
     const hiddenEventId = sourceVisible ? edge.target : edge.source;
     const hiddenNode = nodeById.get(hiddenEventId);
     if (!hiddenNode) continue;
-    const bucket = byParent.get(parentEventId) ?? { nodes: new Map<number, EventGraphNode>(), edges: new Map<string, EventGraphEdge>() };
+    const direction = moreNodeDirection(edge, parentEventId, hiddenNode);
+    const scope = moreNodeScope(edge);
+    const key = `more:${scope}:${direction}:${parentEventId}`;
+    const bucket = byKey.get(key) ?? {
+      parentEventId,
+      direction,
+      scope,
+      nodes: new Map<number, EventGraphNode>(),
+      edges: new Map<string, EventGraphEdge>(),
+    };
     bucket.nodes.set(hiddenEventId, hiddenNode);
     bucket.edges.set(edge.id, edge);
-    byParent.set(parentEventId, bucket);
+    byKey.set(key, bucket);
   }
 
-  return [...byParent.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([parentEventId, bucket]) => {
+  return [...byKey.entries()]
+    .sort(([, a], [, b]) => a.parentEventId - b.parentEventId || a.direction.localeCompare(b.direction) || a.scope.localeCompare(b.scope))
+    .map(([key, bucket]) => {
       const nodes = [...bucket.nodes.values()].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-      const sessionCount = new Set(nodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size;
-      const count = sessionCount || nodes.length;
+      const workflowSessionCount = bucket.scope === "workflow"
+        ? new Set(nodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size
+        : 0;
+      const count = workflowSessionCount || nodes.length;
       return {
-        key: `more:workflow:${parentEventId}`,
+        key,
         kind: "more" as const,
-        parentEventId,
-        direction: "context" as const,
-        scope: "workflow" as const,
+        parentEventId: bucket.parentEventId,
+        direction: bucket.direction,
+        scope: bucket.scope,
         count,
-        label: `... ${count} same-workflow ${count === 1 ? "session" : "sessions"}`,
+        label: moreNodeLabel(bucket.direction, bucket.scope, count),
         nodes,
         edges: [...bucket.edges.values()],
       };
@@ -607,7 +698,7 @@ function buildMoreNodes(
 
 function clampDepth(value: unknown): number {
   const depth = Number(value);
-  if (!Number.isFinite(depth)) return 3;
+  if (!Number.isFinite(depth)) return 1;
   return Math.max(0, Math.min(12, Math.floor(depth)));
 }
 
@@ -1200,7 +1291,7 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
 
   const allEdges = normalizeEdgesForReview([...edges.values()], rowsById);
   const traversalEdges = allEdges.filter((edge) => !isDefaultContextEdge(edge));
-  const visibleIds = visibleIdsFromDepth(focusEventId, traversalEdges, depth);
+  const visibleIds = visibleIdsForDefaultScope(focusEventId, traversalEdges, depth, rowsById, traceId);
   const graphNodes = [...rowsById.values()]
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)

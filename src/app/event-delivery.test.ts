@@ -267,6 +267,72 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("shows the trace start and parent path while hiding sibling branches behind more nodes", () => {
+    const root = tempRoot();
+    try {
+      const db = getDb(root);
+      const now = Date.now();
+      const insertEvent = (type: string, data: Record<string, unknown>, timestamp: number): number => {
+        const row = db.run(
+          `INSERT INTO events (event_type, source, owner, data, timestamp)
+           VALUES (?, ?, ?, ?, ?)`,
+          [type, "test", "agent:owner", JSON.stringify(data), timestamp],
+        ) as { lastInsertRowid?: number | bigint };
+        return Number(row.lastInsertRowid);
+      };
+      const insertTrace = (eventId: number, traceId: string, parentEventId: number | null = null): void => {
+        db.run(
+          `INSERT INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+           VALUES (?, ?, ?, ?)`,
+          [eventId, traceId, parentEventId, "default"],
+        );
+      };
+
+      const start = insertEvent("metric.breach", { metricId: "m_scope", summary: "scope started" }, now);
+      const owner = insertEvent("owner.inbox.created", { metricId: "m_scope" }, now + 1);
+      const workflow = insertEvent("workflow.started", { workflowRunId: "wr_scope" }, now + 2);
+      const session = insertEvent("session.start", { sessionId: "s_scope", workflowRunId: "wr_scope" }, now + 3);
+      const sibling = insertEvent("session.start", { sessionId: "s_sibling", workflowRunId: "wr_scope" }, now + 4);
+      const selected = insertEvent("project.task.completed", { taskId: "t_scope", sessionId: "s_scope" }, now + 5);
+      const directChild = insertEvent("project.task.reviewed", { taskId: "t_scope" }, now + 6);
+      const traceId = `event:${start}`;
+      insertTrace(start, traceId);
+      insertTrace(owner, traceId, start);
+      insertTrace(workflow, traceId, owner);
+      insertTrace(session, traceId, workflow);
+      insertTrace(sibling, traceId, workflow);
+      insertTrace(selected, traceId, session);
+      insertTrace(directChild, traceId, selected);
+
+      const graph = buildEventGraph(db, selected);
+
+      expect(graph.nodes.map((node) => node.id)).toEqual([start, owner, workflow, session, selected, directChild]);
+      expect(graph.nodes.find((node) => node.id === sibling)).toBeUndefined();
+      expect(graph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: start, target: owner, type: "parent" }),
+          expect.objectContaining({ source: owner, target: workflow, type: "parent" }),
+          expect.objectContaining({ source: workflow, target: session, type: "parent" }),
+          expect.objectContaining({ source: session, target: selected, type: "parent" }),
+          expect.objectContaining({ source: selected, target: directChild, type: "parent" }),
+        ]),
+      );
+      expect(graph.moreNodes).toContainEqual(
+        expect.objectContaining({
+          parentEventId: workflow,
+          direction: "after",
+          scope: "trace",
+          count: 1,
+          label: "... 1 later event",
+          nodes: [expect.objectContaining({ id: sibling, type: "session.start" })],
+        }),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reports event trace integrity gaps", () => {
     const root = tempRoot();
     try {
