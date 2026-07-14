@@ -204,7 +204,7 @@ async function loadEventGraph(eventId, opts = {}) {
   const el = document.getElementById('event-graph-content');
   if (!el) return;
   const detail = opts.detail === true;
-  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 3;
+  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 1;
   const numericEventId = Number(eventId);
   if (_eventGraphRootEventId !== numericEventId) {
     _eventGraphRootEventId = numericEventId;
@@ -1087,7 +1087,7 @@ function renderEventGraph(graph, opts = {}) {
   const diagnostics = graph.diagnostics || [];
   const focus = nodes.find((node) => Number(node.id) === Number(graph.focusEventId));
   const detail = opts.detail === true;
-  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 3;
+  const depth = Number.isFinite(Number(opts.depth)) ? Number(opts.depth) : 1;
   const eventId = Number(graph.focusEventId);
   const nodeIndex = new Map(nodes.map((node) => [Number(node.id), node]));
   const edgeRows = edges.map((edge) => {

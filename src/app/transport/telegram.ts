@@ -150,7 +150,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
-  function isApprovalReplyCandidate(context: Record<string, unknown>): boolean {
+  function isApprovalReplyCandidate(context: { originalIssue?: unknown; expectedClosure?: unknown }): boolean {
     const originalIssue =
       context.originalIssue && typeof context.originalIssue === "object" && !Array.isArray(context.originalIssue)
         ? (context.originalIssue as Record<string, unknown>)
