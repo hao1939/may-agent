@@ -501,6 +501,81 @@ describe("task-tree CLI", () => {
     ).toBeUndefined();
   });
 
+  test("update-text with only --blocker preserves existing structured wait metadata", async () => {
+    const fixture = await makeFixture();
+
+    const add = await runTaskTree(
+      [
+        "add",
+        "approval-wait",
+        "--parent",
+        "project",
+        "--goal",
+        "Keep exact approval wait.",
+        "--output",
+        "tasks/tree.json",
+        "--acceptance",
+        "approval wait stays truthful",
+        "--state",
+        "blocked",
+        "--blocker-json",
+        '{"condition":"Waiting for returned approval.","category":"external-wait","owner":"human","resume_condition":"Resume when the returned approval lands.","resume_at":"2026-07-10T18:00:00Z","waiting_for":{"type":"project.approval.submitted","taskId":"approval-wait","pathId":"focus-terminal-frontier-finality-reconciliation-20260714"},"observed_by":{"workflow":"project-planner","trigger":"project.approval.submitted"},"observation_method":"Planner handles the returned approval event.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(add.exitCode).toBe(0);
+
+    const update = await runTaskTree(
+      [
+        "update-text",
+        "approval-wait",
+        "--blocker",
+        "Waiting for the same returned approval after a readout refresh.",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(update.exitCode).toBe(0);
+    expect(JSON.parse(update.stdout).blocker).toMatchObject({
+      condition:
+        "Waiting for the same returned approval after a readout refresh.",
+      category: "external-wait",
+      owner: "human",
+      waiting_for: {
+        type: "project.approval.submitted",
+        taskId: "approval-wait",
+        pathId: "focus-terminal-frontier-finality-reconciliation-20260714",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.approval.submitted",
+      },
+      resume_condition: "Resume when the returned approval lands.",
+      next_check_at: "2026-07-10T18:00:00Z",
+      fallback_at: "2026-07-11T18:00:00Z",
+    });
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(fixture.appDir), "utf8"),
+    );
+    expect(tree.tasks["approval-wait"].blocker.waiting_for).toMatchObject({
+      type: "project.approval.submitted",
+      taskId: "approval-wait",
+      pathId: "focus-terminal-frontier-finality-reconciliation-20260714",
+    });
+  });
+
   test("repair-blocked-contracts backfills generic wait and observer fields", async () => {
     const fixture = await makeFixture();
 
