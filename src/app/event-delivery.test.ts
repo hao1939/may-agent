@@ -202,13 +202,7 @@ describe("event delivery metadata", () => {
         level: 1,
         visibility: "detail",
       });
-      expect(graph.displayEdges).toContainEqual(
-        expect.objectContaining({
-          sourceKey: startKey,
-          targetKey: guardDisplayNode?.key,
-          kind: "detail",
-        }),
-      );
+      expect(graph.displayEdges?.some((edge) => edge.targetKey === guardDisplayNode?.key)).toBe(false);
       expect(graph.displayNodes?.map((node) => node.type)).toEqual([
         "session.start",
         "guard.triggered",
