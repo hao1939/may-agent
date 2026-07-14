@@ -8,6 +8,9 @@ function makeCtx(action?: string) {
       emit: vi.fn(),
       log: vi.fn(),
       message: vi.fn(),
+      getDb: vi.fn(() => ({
+        prepare: vi.fn(() => ({ get: vi.fn(() => ({ id: 42 })) })),
+      })),
     },
     getLastDigest: vi.fn(() =>
       action
@@ -37,6 +40,7 @@ describe("escalation handler", () => {
       timestamp: Date.now(),
       data: {
         escalationId: "esc_1",
+        openEventId: 42,
         sourceAgent: "dev",
         sourceSessionId: "s_blocked",
         reason: "blocked: needs human",
@@ -69,6 +73,7 @@ describe("escalation handler", () => {
         originalIssue: expect.objectContaining({
           eventType: "escalation.created",
           escalationId: "esc_1",
+          openEventId: 42,
           sourceAgent: "dev",
           sourceSessionId: "s_blocked",
           reason: "blocked: needs human",

@@ -1,8 +1,8 @@
 # Design: Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** Partial; the convergence gaps at the end of this
-document remain open.
+**Implementation status:** Implemented for canonical CLI, Telegram, Web/control
+socket, and console paths. Legacy socket frames remain compatibility ingress.
 **Date**: 2026-06-05
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
@@ -397,12 +397,8 @@ intent.
 
 ## Runtime Convergence Gaps
 
-- Some active-chat paths still normalize ordinary input through
-  `chat.start.requested` instead of targeting the bound chat with
-  `session.steer.requested`.
-- Persistent chat input queues do not yet carry explicit per-turn trace
-  context through `session.idle` and all delegated work.
-- Some command routing still upgrades bare `cancel` to cancel-all; this violates
-  the safety contract above.
-- Legacy project-comment handling can mutate project files inside the command
-  router. V3 project apps should consume the event and own the state change.
+- Flat socket command frames remain accepted for compatibility but normalize
+  into the same canonical event path.
+- Non-app legacy projects still use command-router discussion-file mutation.
+  V3 project apps receive `project.comment.created` without command-router file
+  mutation and own any resulting state change.

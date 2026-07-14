@@ -585,7 +585,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   const summary = resultSummary(result);
   ctx.emit({
-    type: "project.reviewed",
+    type: "project.owner.reviewed",
     project: "may-agent",
     owner: ownerAgent,
     summary,

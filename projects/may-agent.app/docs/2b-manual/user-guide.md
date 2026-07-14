@@ -169,7 +169,7 @@ indexes are read on demand.
 |--------|-------------|
 | `coding` | Read, write, edit, and shell tools scoped to the project root |
 | `read-only` | Read files only |
-| `agents` | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`); `requests` is legacy compatibility only |
+| `agents` | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`, `sessions`) |
 | `message` | Async human/agent inbox messages |
 | `workflow` | Multi-step workflow recipes |
 | `background-exec` | Spawn background processes |
@@ -201,10 +201,10 @@ Agents cooperate through these canonical actions on the `agents` tool:
 | `list` | Query | List available agents and active sessions |
 | `peek` | Query | Read a running session's progress |
 | `cancel` | Control | Stop a running session |
+| `sessions` | Query | Query persisted execution sessions |
 
-The runtime's `requests` action is a legacy-named query over the sessions
-projection. Do not use it as a work lifecycle or routing primitive; use
-sessions, event traces, and the owner inbox.
+The removed `requests` action is not a work lifecycle or routing primitive.
+Use `sessions`, event traces, and the owner inbox.
 
 `call` is the primary cooperation primitive — synchronous, simple, debuggable.
 For async communication, use the `message` tool (emits `message.created`).

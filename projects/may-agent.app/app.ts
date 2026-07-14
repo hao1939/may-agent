@@ -236,7 +236,10 @@ async function routePlatformEvent(
     return ctx.noop("handled by may-agent owner workflow handler");
   }
 
-  if (event.type === "project.reviewed") {
+  if (
+    event.type === "project.owner.reviewed" ||
+    event.type === "project.reviewed"
+  ) {
     return ctx.noop(
       "terminal signal — review cycle complete, no further routing needed",
     );
@@ -410,7 +413,7 @@ export default defineProjectApp({
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.tasks.ready", project: projectId },
-    { type: "project.reviewed", project: projectId },
+    { type: "project.owner.reviewed", project: projectId },
     { type: "metric.alerted" },
     { type: "metric.breach" },
     { type: "metric.stalled" },
@@ -430,7 +433,7 @@ export default defineProjectApp({
           "Deterministically observes platform health and wakes the project owner only for meaningful signals.",
       },
       "may-agent-project-planner": {
-        emits: ["project.reviewed"],
+        emits: ["project.owner.reviewed"],
         description:
           "Tech-lead reviews platform project state and updates task tree, docs, or code when useful.",
       },
@@ -483,7 +486,7 @@ export default defineProjectApp({
       },
     ],
     externalEvents: [
-      "project.reviewed",
+      "project.owner.reviewed",
       "project.ops_health.observed",
       "project.ops_digest.created",
     ],

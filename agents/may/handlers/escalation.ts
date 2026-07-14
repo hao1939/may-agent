@@ -121,6 +121,24 @@ export const create: HandlerModule["create"] = (
     }
 
     const route = event.owner || "agent:may";
+    const openingRow = ctx.sdk
+      .getDb()
+      .prepare(
+        `SELECT id
+         FROM events
+         WHERE event_type = 'escalation.created'
+           AND json_extract(data, '$.escalationId') = ?
+         ORDER BY id DESC
+         LIMIT 1`,
+      )
+      .get(escalationId) as { id?: unknown } | null;
+    const openEventId = Number(openingRow?.id);
+    if (!Number.isInteger(openEventId) || openEventId <= 0) {
+      emitSkip(ctx, stringField(data, "sourceSessionId") || null, "persisted escalation.created event not found", {
+        escalationId,
+      });
+      return;
+    }
     const target = routeTarget(route);
     const sourceSessionId = stringField(data, "sourceSessionId") || undefined;
     const projectId = stringField(data, "projectId") || undefined;
@@ -129,7 +147,7 @@ export const create: HandlerModule["create"] = (
     const blockedOn = stringField(data, "blockedOn") || undefined;
     const resume = objectField(data, "resume");
     const evidence = objectField(data, "evidence");
-    const dedupKey = stringField(data, "dedupKey") || escalationId;
+    const dedupKey = stringField(data, "dedupKey") || `event:${openEventId}`;
 
     ctx.sdk.log(
       "info",
@@ -141,6 +159,7 @@ export const create: HandlerModule["create"] = (
     ctx.sdk.emit("handler.routed", {
       handler: "escalation",
       escalationId,
+      openEventId,
       sourceAgent,
       route,
       reason,
@@ -175,6 +194,7 @@ export const create: HandlerModule["create"] = (
             projectPath,
             sessionId: sourceSessionId,
             escalationId,
+            openEventId,
             sourceAgent,
             reason,
             requestedAction,
@@ -185,6 +205,7 @@ export const create: HandlerModule["create"] = (
             originalIssue: {
               eventType: "escalation.created",
               escalationId,
+              openEventId,
               sourceAgent,
               sourceSessionId,
               projectId,

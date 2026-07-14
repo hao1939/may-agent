@@ -1,9 +1,11 @@
 # Event Graph And Trace
 
 **Design status:** Accepted.
-**Implementation status:** Partial; persisted trace rows and graph reads exist,
-while live closure-link atomicity, per-turn propagation, and semantic integrity
-remain convergence gaps.
+**Implementation status:** Implemented for new runtime events. Live pair closure
+is transactional, queued human turns and delegation preserve trace context,
+terminal events close their semantic intents, channel delivery is projected,
+and integrity checks cover structural and semantic failures. Retained history
+may still require the explicit backfill command.
 
 ## Purpose
 
@@ -850,6 +852,13 @@ Implemented foundation:
 - `bun run check:event-graph -- --state-dir /app/.state` checks trace storage
   integrity. Add `--backfill` to create baseline trace rows for existing events
   and project lifecycle pair records into closure links.
+- Live event insertion, pair closure, trace alignment, and closure-link writes
+  commit in one database transaction.
+- Persistent chat turns carry their intent trace through send/cold resume,
+  agent calls/forks, workflows, CLI delegation, terminal events, and delivery.
+- The integrity checker reports missing live closure links, opener/closer trace
+  splits, malformed human roots, undelivered human results, and invalid
+  bookkeeping-only acceptance.
 
 ## Non-Goals
 

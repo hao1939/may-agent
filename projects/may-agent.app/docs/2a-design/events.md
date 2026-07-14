@@ -845,10 +845,9 @@ path: validate at the edge, persist via the bus, and let subscribers react.
   event.
 - Keep heartbeat bus events under the `heartbeat.*` namespace; workflow
   lifecycle callback names are local to the workflow tool.
-- Pair closure for `project.owner.requested` is not fully aligned: the design
-  uses `project.owner.reviewed`, while some app workflows still emit
-  `project.reviewed` or rely on workflow completion. Normalize app emissions or
-  pair detection so owner-requested events close consistently.
+- New owner workflows use `project.owner.requested` ->
+  `project.owner.reviewed`. `project.reviewed` remains read-compatible for
+  retained rows and apps not yet migrated.
 - Some historical names remain in docs, tests, or old event rows. Do not teach
   agents multiple names; update active producers/consumers to canonical names
   and leave old rows as historical data.
@@ -899,9 +898,10 @@ evidence. If the full trace cannot remain in the operational database, archive
 a compact trace manifest before pruning. Retention cleanup must not silently
 null a live parent or delete the only closure edge for retained work.
 
-The current handler applies the five-day age cutoff before all of these
-protections are implemented. Treat that as a runtime convergence gap, not as
-permission for new code to depend on dangling trace repair.
+The database now prevents age cleanup from deleting open-work roots, active
+session evidence, trace parents, or link endpoints. Compact trace manifests for
+very old closed traces remain a future storage optimization; correctness no
+longer depends on dangling-trace repair after routine cleanup.
 
 ### Size-based retention (added 2026-06-14, KE-1986)
 

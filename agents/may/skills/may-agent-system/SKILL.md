@@ -34,10 +34,9 @@ Core primitives:
 ## Discovery Boundary
 
 This file is the canonical May-local copy and is routed from `agents/may/AGENTS.md`
-and `agents/may/context.md`. Native CLI workers and other agent runtimes do not
-necessarily auto-discover it. When delegating May-agent maintenance, explicitly
-include this skill path or verify that the worker's installed copy exists and
-matches it; do not maintain an unsynchronized fork.
+and `agents/may/context.md`. Install it for native CLI discovery with a symlink
+from `.state/.codex/skills/may-agent-system` to this directory. Do not copy it or
+maintain an unsynchronized fork.
 
 ## Source Of Truth
 
@@ -96,7 +95,8 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Route by target first, then owner fallback. `owner` is the accountability
   backstop, not necessarily the first handler.
 - Ensure each emitted event has a consumer: direct handler, app adapter,
-  owner inbox/default owner route, or explicit external platform path.
+  queryable owner inbox, or explicit external platform path. Pair bookkeeping
+  alone is not domain delivery.
 - For handlers, read `event.data.*`; do not add shortcut field promotion.
 - Prefer canonical project events:
   `project.owner.requested`, `project.task.assigned`,
@@ -157,11 +157,10 @@ Keep domain projects portable and May-agent control planes separate.
 - Use app-local workflows for project-specific policy. Global handlers should
   deliver, discover, route, and surface missing closure, not encode domain
   strategy.
-- Use `ctx.appPath(...)` for app/control-plane files. The current app runtime
-  exposes `ctx.projectPath(...)` for the bound domain workspace. The accepted
-  design intends to rename that helper to `ctx.workspacePath(...)` and add
-  `ctx.workspaceCwd()`, but do not call those names until the runtime type and
-  loader implement them.
+- Use `ctx.appPath(...)` for app/control-plane files, `ctx.workspacePath(...)`
+  for files in the bound domain workspace, and `ctx.workspaceCwd()` when a tool
+  needs that workspace as its cwd. Treat `ctx.projectPath(...)` as a deprecated
+  compatibility alias.
 - Treat the project owner as the brain. Workflow code wakes sessions, passes
   compact context, and emits events; it should not own task decomposition,
   acceptance, retry policy, or project strategy.
@@ -229,10 +228,10 @@ Distinguish local blockers from ownership-boundary escalations.
 - Emit `escalation.created` only when another owner must answer or act. Prefer
   `sdk.escalate(reason, opts)` and include source agent/session, project
   context, reason, requested action, severity, blocker evidence, resume
-  context, and a stable `dedupKey` when possible. The persisted opening event
-  id and trace are the canonical escalation identity; the current SDK still
-  emits `data.escalationId` as a compatibility key, so preserve it when
-  touching legacy raw event paths but do not design new dependencies on it.
+  context, and a stable `dedupKey` when possible. `sdk.escalate(...)` returns
+  `{ eventId, compatibilityId }`; persist and use `eventId` as the canonical
+  escalation identity. Preserve `data.escalationId` only when touching legacy
+  raw event paths.
 - Route `owner: "human:<role>"` through May as deputy while preserving the
   human owner on the event.
 - On resolution, use `escalation.resolved` or `escalation.dismissed` with a
@@ -286,8 +285,8 @@ Before finishing:
   response is claimed.
 - Confirm every newly closed lifecycle pair writes a persisted closure link in
   the normal path rather than depending on backfill.
-- Confirm default-owner fallback creates queryable owner work and does not hide
-  a missing domain consumer.
+- Confirm unclaimed owned events create queryable owner-inbox work and do not
+  hide a missing domain consumer behind bookkeeping acceptance.
 - Confirm retention cannot delete an opener or closure still referenced by
   active/retained work.
 - For event/trace changes, add or update golden-trace tests and run semantic

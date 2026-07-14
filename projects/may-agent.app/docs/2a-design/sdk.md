@@ -41,7 +41,7 @@ interface AgentSDK {
   getDb(): Database; // compatibility escape hatch
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
-  escalate(reason: string, opts?: EscalationOptions): void;
+  escalate(reason: string, opts?: EscalationOptions): EscalationRef;
   paths: {
     persist: string;
     root: string;
@@ -104,7 +104,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `getDb()`                     | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`.                                                              |
 | `log(level, msg)`             | Log a diagnostic message.                                                                                                            |
 | `message(target, content)`    | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox.                                                      |
-| `escalate(reason, opts?)`     | Create `escalation.created`; defaults to `owner: "agent:may"` and `severity: "P2"`.                                                  |
+| `escalate(reason, opts?)`     | Create `escalation.created`, returning `{ eventId, compatibilityId }`; defaults to `owner: "agent:may"` and `severity: "P2"`. |
 | `paths`                       | `{ persist, root, agents, shared, projects }` — system directories.                                                                  |
 
 For escalations that should return to the original session after resolution,
@@ -278,7 +278,7 @@ The SDK and agent tools are two sides of the same coin:
 
 The SDK is the **canonical layer** for handlers and workflows. Agent tools share
 the same manager/bus internals. Most agent tool actions have corresponding SDK methods;
-some tool-only actions (fork, peek, cancel, context, list, requests) exist only on the
+some tool-only actions (fork, peek, cancel, context, list, sessions) exist only on the
 agents tool.
 
 Handler convention: handlers bridge events to workflows. Use

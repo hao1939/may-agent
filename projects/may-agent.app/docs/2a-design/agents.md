@@ -30,13 +30,12 @@ return a deprecation error.
 | `peek` | View recent messages from a running session | Monitor a forked session |
 | `cancel` | Cancel a running session | Abort background work |
 | `context` | Read/update agent context | Context management |
+| `sessions` | Query persisted execution sessions | Durable status/history lookup |
 
-The runtime still exposes `requests` as a legacy-named compatibility query over
-the `sessions` projection. It is not a canonical work identity and must
-not be used for new routing or lifecycle design. Query active sessions with
-`list`/`peek`, durable causality through the event graph, and fallback work
-through the queryable owner inbox. The implementation may remove the legacy
-projection after remaining consumers migrate.
+The removed `requests` action is not a work identity or compatibility surface.
+Query active sessions with `list`/`peek`, persisted execution with `sessions`,
+durable causality through the event graph, and fallback work through the
+queryable owner inbox.
 
 ### message tool
 
@@ -106,7 +105,7 @@ interface TaskResult {
 
 ## Implementation
 
-- **Agent tool:** `projects/may-agent/src/lib/manager-agents-tool.ts` (LLM-facing; actions: call, fork, list, peek, cancel, context, requests)
+- **Agent tool:** `projects/may-agent/src/lib/manager-agents-tool.ts` (LLM-facing; actions: call, fork, list, peek, cancel, context, sessions)
 - **Message tool:** `projects/may-agent/src/lib/tools/message-tool.ts` (async inter-agent messaging; replaces old agents.message action)
 - **SDK:** `projects/may-agent/src/lib/sdk-impl.ts` → `runAgent()` wraps `manager.callAgent()`
 - **Manager:** `projects/may-agent/src/lib/manager.ts` — session lifecycle

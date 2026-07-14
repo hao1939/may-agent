@@ -1,0 +1,7 @@
+interface:
+  display_name: "May-Agent System"
+  short_description: "Maintain May-agent loops and project apps"
+  default_prompt: "Use $may-agent-system to make this May-agent change consistent with the accepted event, trace, ownership, and project-app contracts."
+
+policy:
+  allow_implicit_invocation: true

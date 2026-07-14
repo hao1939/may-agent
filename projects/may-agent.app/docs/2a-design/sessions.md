@@ -1,8 +1,8 @@
 # Sessions
 
 **Design status:** Accepted.
-**Implementation status:** Partial; per-turn chat trace propagation and the
-known persistence issues below remain convergence work.
+**Implementation status:** Per-turn chat trace propagation is implemented;
+the historical persistence issues below remain compatibility/repair work.
 
 ## The Model
 

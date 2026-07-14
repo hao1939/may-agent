@@ -1,11 +1,11 @@
 # Design: Escalation System
 
-> **Implementation status (2026-07-11):** Routing (slices 1-2) is shipped: `escalation.created`
+> **Implementation status (2026-07-15):** Routing and trace lifecycle are shipped: `escalation.created`
 > events route to the owner via the `escalation` handler. The handler records
 > routing with `handler.routed`; it no longer emits `escalation.routed` because
-> that event was not consumed and accumulated as pending noise. Lifecycle
-> tracking (slices 3-5) is only partially implemented: terminal owner handling,
-> closure-link persistence, and lifecycle health projections are incomplete.
+> that event was not consumed and accumulated as pending noise. The SDK returns
+> the persisted opening event id, resolution accepts canonical `openEventId`,
+> and live terminal events align the trace and persist closure atomically.
 >
 > In practice, escalations can still accumulate if no owner emits
 > `escalation.resolved` or `escalation.dismissed`. The event trace should link

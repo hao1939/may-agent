@@ -341,6 +341,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
             'project.owner.requested',
             'project.planning.requested',
             'project.tasks.ready',
+            'project.owner.reviewed',
             'project.reviewed',
             'project.ops_health.tick',
             'project.ops_health.observed'
