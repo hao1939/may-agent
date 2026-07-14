@@ -12,8 +12,8 @@
 
 import { Agent } from "@earendil-works/pi-agent-core";
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import {
   generateId,
   extractLastAssistantText,
@@ -65,6 +65,12 @@ import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.j
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import {
+  formatBoundedSkillCatalog,
+  invokeCatalogSkill,
+  parseExplicitSkill,
+  type MaySkill,
+} from "./skills.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -98,6 +104,8 @@ export interface RunOptions {
   timeoutMs?: number;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
+  /** Explicit primary skill to activate for this turn. */
+  skill?: string;
 }
 
 interface ActiveSession {
@@ -124,6 +132,9 @@ interface ActiveSession {
   trace?: EventTrace;
   /** Semantic intent traces merged into the currently executing turn. */
   openTurnTraces: EventTrace[];
+  /** Prompt text may include an explicitly activated skill; task remains the work identity. */
+  promptTask?: string;
+  loadedSkillHashes: Set<string>;
 }
 
 type DispatchDedupDb = {
@@ -489,6 +500,11 @@ export class SubagentManager {
     if (!registered) throw new Error(`Agent "${name}" not registered`);
     const def = registered.definition;
 
+    const parsedSkill = parseExplicitSkill(task);
+    const skillName = opts?.skill ?? parsedSkill.skill;
+    const sessionTask = parsedSkill.skill ? parsedSkill.task : task;
+    if (skillName && !sessionTask) throw new Error(`Skill "${skillName}" requires a task`);
+    const activation = skillName ? invokeCatalogSkill(def.skillCatalog, skillName, sessionTask) : undefined;
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
     const startedAt = opts?.startedAt ?? Date.now();
@@ -509,7 +525,7 @@ export class SubagentManager {
     const sessionTools = this.resolveSessionTools(def, persistentChat);
     const agent = new Agent({
       initialState: {
-        systemPrompt: this.resolveSessionSystemPrompt(def, { kind, autoClose, sessionId, task }),
+        systemPrompt: this.resolveSessionSystemPrompt(def, { kind, autoClose, sessionId, task: sessionTask }),
         model: def.model,
         tools: sessionTools,
       },
@@ -529,7 +545,7 @@ export class SubagentManager {
       sessionId,
       agent,
       agentName: name,
-      task,
+      task: sessionTask,
       startedAt,
       status: "running",
       kind,
@@ -546,6 +562,8 @@ export class SubagentManager {
       resumeMessages: opts?.resumeMessages,
       trace: opts?.trace,
       openTurnTraces: opts?.trace ? [opts.trace] : [],
+      promptTask: activation?.prompt,
+      loadedSkillHashes: new Set(activation ? [activation.skill.contentHash] : []),
     };
 
     const existingMeta = this._registry.getSession(sessionId);
@@ -561,7 +579,7 @@ export class SubagentManager {
     this._registry.saveSession(sessionId, {
       ...(existingMeta ?? {}),
       agent: name,
-      task,
+      task: sessionTask,
       status: "running",
       startedAt,
       parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
@@ -577,6 +595,7 @@ export class SubagentManager {
 
     // Event bridge
     this.bridgeEvents(session);
+    if (activation) this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
 
     // Timeout
     const timeoutMs = opts?.timeoutMs ?? def.timeoutMs;
@@ -598,7 +617,7 @@ export class SubagentManager {
           if (session.resumeMessages) {
             agent.state.messages = session.resumeMessages as any;
           }
-          await agent.prompt(task);
+          await agent.prompt(activation?.prompt ?? sessionTask);
         },
         task,
       );
@@ -645,11 +664,21 @@ export class SubagentManager {
   }
 
   /** Send a message to a session (replaces steer/input). */
-  send(sessionId: string, text: string, opts?: { trace?: EventTrace }): void {
+  send(sessionId: string, text: string, opts?: { trace?: EventTrace; skill?: string }): void {
     const session = this._sessions.get(sessionId);
     if (!session) throw new Error(`Session "${sessionId}" not found`);
+    const parsedSkill = parseExplicitSkill(text);
+    const skillName = opts?.skill ?? parsedSkill.skill;
+    const turnTask = parsedSkill.skill ? parsedSkill.task : text;
+    const def = this.agents.get(session.agentName)?.definition;
+    const activation = skillName ? invokeCatalogSkill(def?.skillCatalog, skillName, turnTask) : undefined;
     this.queueTurnTrace(session, opts?.trace);
-    const msg = { role: "user" as const, content: [{ type: "text" as const, text }] };
+    if (activation) {
+      session.loadedSkillHashes.add(activation.skill.contentHash);
+      this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+    }
+    const promptText = activation?.prompt ?? turnTask;
+    const msg = { role: "user" as const, content: [{ type: "text" as const, text: promptText }] };
     if (session.status === "running") {
       session.agent.steer(msg as any);
     } else {
@@ -662,7 +691,7 @@ export class SubagentManager {
             // nobody starts a run to drain it.
             await session.agent.prompt(msg as any);
           },
-          text,
+          turnTask,
         );
       } else {
         session.status = "running";
@@ -777,6 +806,7 @@ export class SubagentManager {
       stepLabel?: string;
       timeout?: number;
       trace?: EventTrace;
+      skill?: string;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
@@ -800,6 +830,7 @@ export class SubagentManager {
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
       trace: opts?.trace,
+      skill: opts?.skill,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
@@ -817,6 +848,7 @@ export class SubagentManager {
       workflowRunId?: string;
       projectId?: string;
       trace?: EventTrace;
+      skill?: string;
     },
   ): string {
     return this.run(agentName, task, {
@@ -828,6 +860,7 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
       trace: opts?.trace,
+      skill: opts?.skill,
     });
   }
 
@@ -1408,6 +1441,15 @@ export class SubagentManager {
       if (identity) sections.push(identity);
     }
 
+    const tools = toolsOverride ?? def.tools;
+    if (def.skillCatalog && tools.some((tool) => tool.name === "read")) {
+      const catalog = formatBoundedSkillCatalog(def.skillCatalog);
+      if (catalog.text) sections.push(catalog.text);
+      if (catalog.omitted.length > 0) {
+        log("warn", `[skills] ${def.name}: omitted ${catalog.omitted.length} skill(s) from prompt budget: ${catalog.omitted.join(", ")}`);
+      }
+    }
+
     sections.push(this.runtimeEnvironment(def, agentDir, toolsOverride));
     return `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
   }
@@ -1579,16 +1621,21 @@ export class SubagentManager {
   // ── Private ──
 
   private buildGuards(def: SubagentDefinition): BeforeToolCallHook[] {
+    const named = (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
+      async (context, signal) => {
+        const result = await guard(context, signal);
+        return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
+      };
     return [
-      createEmptyArgsGuard(),
-      createToolSchemaGuard(),
-      createPathHallucinationGuard(),
-      createCompletenessGuard(def.name),
-      createFinishGuard(),
-      createCommitGuard(def.name, this.projectRoot),
-      createReadDedupGuard(),
-      createSessionReadGuard(),
-      createScrapeDedupGuard(),
+      named("empty-args", createEmptyArgsGuard()),
+      named("tool-schema", createToolSchemaGuard()),
+      named("path-hallucination", createPathHallucinationGuard()),
+      named("completeness", createCompletenessGuard(def.name)),
+      named("finish-evidence", createFinishGuard()),
+      named("commit", createCommitGuard(def.name, this.projectRoot)),
+      named("read-dedup", createReadDedupGuard()),
+      named("session-read", createSessionReadGuard()),
+      named("scrape-dedup", createScrapeDedupGuard()),
     ];
   }
 
@@ -1610,7 +1657,7 @@ export class SubagentManager {
             projectId: opts?.projectId,
             parentSessionId: opts?.parentSessionId,
             sessionId,
-            guard: "beforeToolCall",
+            guard: result.guardName ?? "unknown",
             demandType: result.block ? "block" : "warn",
             action: result.block ? "blocked" : "warned",
             reason: result.reason,
@@ -1641,7 +1688,7 @@ export class SubagentManager {
       if (session.resumeMessages) {
         agent.state.messages = session.resumeMessages as any;
       }
-      await agent.prompt(task);
+      await agent.prompt(session.promptTask ?? task);
       await agent.waitForIdle();
     } catch (err) {
       errorText = err instanceof Error ? err.message : String(err);
@@ -1704,6 +1751,7 @@ export class SubagentManager {
           agent: agentName,
           outcome: status,
           summary: lastText,
+          error: errorText,
           durationMs,
           status,
           task,
@@ -2054,10 +2102,34 @@ export class SubagentManager {
     return true;
   }
 
+  private emitSkillLoaded(
+    session: ActiveSession,
+    skill: MaySkill,
+    activation: "explicit" | "model",
+    trace?: EventTrace,
+  ): void {
+    this.bus?.emit({
+      type: "skill.loaded",
+      source: `agent:${session.agentName}`,
+      owner: normalizeEventOwner(session.agentName),
+      data: {
+        name: skill.name,
+        agent: session.agentName,
+        sessionId: session.sessionId,
+        activation,
+        scope: skill.scope,
+        filePath: skill.filePath,
+        contentHash: skill.contentHash,
+      },
+      ...(trace ?? session.trace ? { trace: trace ?? session.trace } : {}),
+    } as any);
+  }
+
   private bridgeEvents(session: ActiveSession): void {
     if (!this.bus) return;
     const { agent, sessionId, agentName, task } = session;
     const bus = this.bus;
+    const pendingSkillReads = new Map<string, MaySkill>();
     const persistProgress = (): void => {
       try {
         updateSessionProgress(this._persistDir, sessionId, {
@@ -2114,6 +2186,22 @@ export class SubagentManager {
             tool: (event as any).toolName,
             args: (event as any).args,
           });
+          if ((event as any).toolName === "read") {
+            const args = (event as any).args as { path?: unknown; offset?: unknown; limit?: unknown } | undefined;
+            const path = typeof args?.path === "string" ? args.path : "";
+            const def = this.agents.get(agentName)?.definition;
+            if (path && def?.skillCatalog && args?.offset === undefined && args?.limit === undefined) {
+              try {
+                const canonicalPath = realpathSync(resolve(def.projectRoot ?? process.cwd(), path));
+                const skill = [...def.skillCatalog.skills.values()].find((candidate) => candidate.canonicalPath === canonicalPath);
+                if (skill && statSync(canonicalPath).size <= 50_000 && skill.content.split("\n").length <= 2_000) {
+                  pendingSkillReads.set((event as any).toolCallId, skill);
+                }
+              } catch {
+                // The read tool reports path failures; no activation evidence is emitted.
+              }
+            }
+          }
           break;
         case "tool_execution_end": {
           const blocks = (event as any).result?.content ?? [];
@@ -2126,6 +2214,12 @@ export class SubagentManager {
             preview: text.slice(0, 200),
             isError: !!(event as any).isError,
           });
+          const loadedSkill = pendingSkillReads.get((event as any).toolCallId);
+          pendingSkillReads.delete((event as any).toolCallId);
+          if (loadedSkill && !(event as any).isError && !session.loadedSkillHashes.has(loadedSkill.contentHash)) {
+            session.loadedSkillHashes.add(loadedSkill.contentHash);
+            this.emitSkillLoaded(session, loadedSkill, "model", session.trace);
+          }
           break;
         }
         case "message_end": {

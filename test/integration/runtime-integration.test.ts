@@ -222,6 +222,7 @@ describe("runtime integration", () => {
     mkdirSync(workflowDir, { recursive: true });
     writeFileSync(join(workflowDir, "blocked.ts"), `
       export const name = "blocked";
+      export const description = "Blocks locally until the caller promotes the ownership boundary";
       export async function execute(ctx) {
         return ctx.blocked("missing approval", {
           owner: "human:operator",

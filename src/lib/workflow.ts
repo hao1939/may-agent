@@ -66,12 +66,12 @@ export type WorkflowGuardEvent =
 
 /** A demand returned by a guard in response to a workflow event. */
 export interface Demand {
-  type: "run_step" | "block" | "warn";
+  type: "observe" | "repair" | "run_step" | "block" | "warn";
   /** Human-readable reason. Included in logs, warnings, and block messages. */
   reason: string;
   /** Name of the guard that produced this demand. Auto-filled by runtime. */
   guardName?: string;
-  /** For run_step: the step to inject. */
+  /** For repair/run_step: the step to inject. */
   step?: {
     agent: string;
     task: string;
@@ -240,6 +240,10 @@ export interface WorkflowModule {
   name: string;
   description: string;
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
+  /** Immutable provenance captured when the catalog snapshot was built. */
+  sourcePath: string;
+  sourceScope: "agent" | "project";
+  entryContentHash: string;
 }
 
 // ── Workflow Interrupted ───────────────────────────────────────────────
@@ -329,7 +333,11 @@ export type WorkflowToolResult =
       steeringMessage: string;
     }
   | { type: "error"; workflow?: string; workflowRunId?: string; error: string; reason?: string; category?: string }
-  | { type: "list"; workflows: Array<{ name: string; description: string }> };
+  | {
+      type: "list";
+      workflows: Array<{ name: string; description: string; sourceScope?: "agent" | "project" }>;
+      diagnostics?: string[];
+    };
 
 /** Compact summary of a workflow step — included in the tool result so the supervisor
  *  can see what happened without calling trace(). */

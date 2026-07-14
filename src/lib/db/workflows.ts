@@ -14,6 +14,9 @@ export interface WorkflowRunRecord {
   result_summary: string | null;
   result_reason: string | null;
   resumedFromRunId: string | null;
+  sourcePath?: string | null;
+  sourceScope?: "agent" | "project" | null;
+  entryContentHash?: string | null;
 }
 
 /** Insert a new workflow run. */
@@ -21,12 +24,13 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
   const db = getDb(persistDir);
   db.run(
     `INSERT OR REPLACE INTO workflow_runs
-      (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       run.runId, run.workflow, run.task, run.parentSessionId, run.parentWorkflowRunId,
       run.projectId ?? null, run.depth, run.status, run.startedAt, run.endedAt,
       run.result_summary, run.result_reason, run.resumedFromRunId,
+      run.sourcePath ?? null, run.sourceScope ?? null, run.entryContentHash ?? null,
     ],
   );
 }

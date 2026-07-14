@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { createHash } from "node:crypto";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
@@ -42,6 +43,9 @@ function saveWorkflowRunCompat(dir: string, run: WorkflowRun): void {
     result_summary: null,
     result_reason: null,
     resumedFromRunId: run.resumedFromRunId ?? null,
+    sourcePath: run.sourcePath ?? null,
+    sourceScope: run.sourceScope ?? null,
+    entryContentHash: run.entryContentHash ?? null,
   });
 }
 
@@ -375,6 +379,11 @@ describe("workflow tool: resume", () => {
       depth: 1,
       startedAt: Date.now() - 60000,
       status: "running",
+      sourcePath: join(workflowDir, "one-step.ts"),
+      sourceScope: "agent",
+      entryContentHash: createHash("sha256")
+        .update(readFileSync(join(workflowDir, "one-step.ts")))
+        .digest("hex"),
       steps: [
         {
           sessionId: "s_step1",

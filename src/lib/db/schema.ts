@@ -376,7 +376,10 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
   endedAt             INTEGER,
   result_summary      TEXT,
   result_reason       TEXT,
-  resumedFromRunId    TEXT
+  resumedFromRunId    TEXT,
+  sourcePath          TEXT,
+  sourceScope         TEXT,
+  entryContentHash    TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_wfr_status ON workflow_runs(status);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
@@ -470,6 +473,17 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
     db.exec("ALTER TABLE workflow_runs ADD COLUMN projectId TEXT");
   } catch {
     /* already exists */
+  }
+  for (const [column, type] of [
+    ["sourcePath", "TEXT"],
+    ["sourceScope", "TEXT"],
+    ["entryContentHash", "TEXT"],
+  ] as const) {
+    try {
+      db.exec(`ALTER TABLE workflow_runs ADD COLUMN ${column} ${type}`);
+    } catch {
+      /* already exists */
+    }
   }
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_wfr_project ON workflow_runs(projectId)");

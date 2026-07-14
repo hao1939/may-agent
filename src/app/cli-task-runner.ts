@@ -27,6 +27,8 @@ type CliTaskRecord = {
   reuseSession?: boolean;
   files?: string[];
   worktree?: string;
+  worktreePolicy?: "use-existing" | "require";
+  expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
   cliSessionId?: string;
   resumeCommand?: string[];
   status: "requested" | "running" | "completed" | "failed" | "orphaned";
@@ -36,6 +38,7 @@ type CliTaskRecord = {
   finishedAt?: string;
   exitCode?: number;
   error?: string;
+  failureCategory?: "timeout" | "permission" | "tool" | "no_output" | "output_schema" | "process" | "orphaned";
   summary?: string;
 };
 
@@ -49,6 +52,7 @@ type StructuredCliResult = {
   nextAction?: string;
   exitCode?: number;
   error?: string;
+  failureCategory?: CliTaskRecord["failureCategory"];
 };
 
 export type CliTaskRunnerOptions = {
@@ -323,6 +327,39 @@ function structuredStatus(record: CliTaskRecord): StructuredCliResult["status"] 
   return "failed";
 }
 
+function classifyCliOutcome(
+  attempt: CliAttemptResult,
+  resultText: string,
+  expected?: CliTaskRecord["expectedOutput"],
+): { failureCategory?: CliTaskRecord["failureCategory"]; error?: string } {
+  const diagnosticText = `${attempt.stderr}\n${attempt.stdout}\n${attempt.error ?? ""}`;
+  if (attempt.error?.toLowerCase().includes("timeout") || attempt.error?.toLowerCase().includes("terminated")) {
+    return { failureCategory: "timeout", error: attempt.error };
+  }
+  if (/permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(diagnosticText)) {
+    return { failureCategory: "permission", error: "CLI worker was denied a required permission" };
+  }
+  if (attempt.exitCode !== 0) {
+    const category = /tool.*(?:failed|error)|command not found|ENOENT/i.test(diagnosticText) ? "tool" : "process";
+    return { failureCategory: category, error: attempt.error ?? `CLI exited with code ${attempt.exitCode}` };
+  }
+  if (!resultText.trim()) {
+    return { failureCategory: "no_output", error: "CLI worker exited successfully without a usable result" };
+  }
+  if (expected?.format === "json") {
+    try {
+      const parsed = JSON.parse(resultText) as Record<string, unknown>;
+      const missing = (expected.requiredFields ?? []).filter((field) => !(field in parsed));
+      if (missing.length > 0) {
+        return { failureCategory: "output_schema", error: `CLI JSON result is missing required fields: ${missing.join(", ")}` };
+      }
+    } catch (err) {
+      return { failureCategory: "output_schema", error: `CLI result is not valid JSON: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  }
+  return {};
+}
+
 function writeStructuredResult(record: CliTaskRecord): void {
   if (!record.structuredResultPath) return;
   const evidenceRefs = [record.resultPath, record.eventsPath].filter((entry): entry is string => Boolean(entry));
@@ -333,6 +370,7 @@ function writeStructuredResult(record: CliTaskRecord): void {
     nativeSessionId: record.cliSessionId,
     exitCode: record.exitCode,
     error: record.error,
+    failureCategory: record.failureCategory,
   };
   mkdirSync(dirname(record.structuredResultPath), { recursive: true });
   writeFileSync(record.structuredResultPath, `${JSON.stringify(result, null, 2)}\n`);
@@ -470,6 +508,7 @@ export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; 
     record.status = "orphaned";
     record.finishedAt = iso(now);
     record.error = "Runtime restarted while CLI task was running";
+    record.failureCategory = "orphaned";
     record.summary = record.error;
     writeStructuredResult(record);
     writeRecord(path, record);
@@ -551,6 +590,16 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
       reuseSession: data.reuseSession === true,
       files: safePathList(filesRoot, data.files),
       worktree,
+      worktreePolicy: data.worktreePolicy === "require" ? "require" : "use-existing",
+      expectedOutput:
+        data.expectedOutput && typeof data.expectedOutput === "object"
+          ? {
+              format: (data.expectedOutput as any).format === "json" ? "json" : "markdown",
+              requiredFields: Array.isArray((data.expectedOutput as any).requiredFields)
+                ? (data.expectedOutput as any).requiredFields.filter((field: unknown): field is string => typeof field === "string")
+                : undefined,
+            }
+          : undefined,
       status: "requested",
       requestedAt: iso(now),
     };
@@ -627,7 +676,8 @@ async function runCliTask(opts: {
     }
     const resultText = existsSync(record.resultPath) ? readFileSync(record.resultPath, "utf8") : "";
     record.summary = summarize(resultText);
-    if (attempt.exitCode === 0) {
+    const outcome = classifyCliOutcome(attempt, resultText, record.expectedOutput);
+    if (!outcome.failureCategory) {
       record.status = "completed";
       writeStructuredResult(record);
       writeRecord(recordPath, record);
@@ -654,7 +704,8 @@ async function runCliTask(opts: {
       emitSourceSessionUpdate(bus, record, "completed");
     } else {
       record.status = "failed";
-      record.error = attempt.error ?? `CLI exited with code ${attempt.exitCode}`;
+      record.failureCategory = outcome.failureCategory;
+      record.error = outcome.error ?? `CLI exited with code ${attempt.exitCode}`;
       record.summary = record.error;
       writeStructuredResult(record);
       writeRecord(recordPath, record);
@@ -669,6 +720,7 @@ async function runCliTask(opts: {
           structuredResultPath: record.structuredResultPath,
           eventsPath: record.eventsPath,
           error: record.error,
+          failureCategory: record.failureCategory,
           exitCode: attempt.exitCode,
           sourceSessionId: record.sourceSessionId,
           cliSessionId: record.cliSessionId,
@@ -685,6 +737,7 @@ async function runCliTask(opts: {
     record.status = "failed";
     record.finishedAt = iso(now);
     record.error = message;
+    record.failureCategory = "process";
     record.summary = message;
     writeStructuredResult(record);
     writeRecord(recordPath, record);
@@ -699,6 +752,7 @@ async function runCliTask(opts: {
         structuredResultPath: record.structuredResultPath,
         eventsPath: record.eventsPath,
         error: message,
+        failureCategory: record.failureCategory,
         sourceSessionId: record.sourceSessionId,
         cliSessionId: record.cliSessionId,
         resumeCommand: record.resumeCommand,
