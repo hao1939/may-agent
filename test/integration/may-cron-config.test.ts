@@ -37,7 +37,7 @@ describe("May cron config design alignment", () => {
     expect(detached).toEqual([]);
   });
 
-  it("routes session recovery through session.completed, not only legacy session.failed", () => {
+  it("routes session recovery through canonical session.end", () => {
     const cronPath = "/app/agents/may/cron.json";
     if (!existsSync(cronPath)) return;
 
@@ -45,7 +45,8 @@ describe("May cron config design alignment", () => {
     const recovery = entries.find((entry) => entry.name === "session-recovery");
 
     expect(recovery).toBeDefined();
-    expect(recovery?.on).toContain("session.completed");
+    expect(recovery?.on).toContain("session.end");
+    expect(recovery?.on ?? []).not.toContain("session.completed");
     expect(recovery?.on ?? []).not.toContain("session.failed");
   });
 

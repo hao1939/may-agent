@@ -79,13 +79,13 @@ describe("Cron event triggers", () => {
     }
   });
 
-  it("fires session recovery from canonical session.completed error events", async () => {
+  it("fires session recovery from canonical session.end error events", async () => {
     const { root, configPath, cleanup } = tempCronConfig([
       {
         name: "session-recovery",
         enabled: true,
         handler: "session-recovery",
-        on: ["session.completed"],
+        on: ["session.end"],
       },
     ]);
     try {
@@ -97,7 +97,7 @@ describe("Cron event triggers", () => {
       cron.subscribeToBus(bus);
 
       bus.emit({
-        type: "session.completed",
+        type: "session.end",
         source: "runtime",
         owner: "agent:may",
         data: { sessionId: "s_1", agent: "dev", outcome: "error", status: "error", error: "boom" },
@@ -106,7 +106,7 @@ describe("Cron event triggers", () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
-        type: "session.completed",
+        type: "session.end",
         source: "runtime",
         owner: "agent:may",
         data: expect.objectContaining({

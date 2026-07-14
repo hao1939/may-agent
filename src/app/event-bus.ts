@@ -10,6 +10,7 @@
  * See: shared/may-agent-docs/events.md
  */
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import { log } from "../lib/log.js";
 import { DEFAULT_OWNER_DELIVERY_NOTE } from "../lib/event-delivery.js";
 
@@ -295,22 +296,6 @@ export type SystemEvent =
         workflowRunId?: string | null;
         status: string;
         [key: string]: unknown;
-      };
-    }
-  | {
-      type: "session.completed";
-      source: "runtime";
-      owner: string;
-      data: {
-        sessionId: string;
-        agent: string;
-        parentSessionId?: string;
-        outcome?: string;
-        status?: string;
-        source?: string;
-        kind?: string;
-        error?: string;
-        task?: string;
       };
     }
   | {
@@ -819,6 +804,23 @@ export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => vo
 
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 
+const eventContext = new AsyncLocalStorage<AgentEvent>();
+
+function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined): AgentEvent {
+  if (event.trace || !parent) return event;
+  const parentEventId = (parent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+  if (!Number.isInteger(parentEventId) || Number(parentEventId) <= 0) return event;
+  const trace: EventTrace = {
+    traceId: parent.trace?.traceId ?? `event:${parentEventId}`,
+    parentEventId,
+  };
+  if (Object.isExtensible(event)) {
+    event.trace = trace;
+    return event;
+  }
+  return { ...event, trace } as AgentEvent;
+}
+
 /**
  * EventBus — typed pub/sub.
  *
@@ -859,13 +861,14 @@ export class EventBus {
    *  tracking, but does NOT gate execution of subsequent subscribers. Multiple cron
    *  instances (e.g. May's session-recovery + evaluator's evaluation-aftermath) must
    *  all see bus events even when one claims delivery first. */
-  emit(event: AgentEvent): void {
+  emit(input: AgentEvent): void {
+    const event = inheritedEventTrace(input, eventContext.getStore());
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
     try {
       for (const fn of this.firstSubscribers) {
         try {
-          const result = normalizeDeliveryResult(fn(event));
+          const result = normalizeDeliveryResult(eventContext.run(event, () => fn(event)));
           delivery ??= result;
         } catch (err) {
           this.reportSubscriberFailure(event, "first", err);
@@ -873,7 +876,7 @@ export class EventBus {
       }
       for (const fn of this.normalSubscribers) {
         try {
-          const result = normalizeDeliveryResult(fn(event));
+          const result = normalizeDeliveryResult(eventContext.run(event, () => fn(event)));
           delivery ??= result;
         } catch (err) {
           /* subscriber errors never break the bus */

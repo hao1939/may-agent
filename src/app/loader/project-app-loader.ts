@@ -31,6 +31,8 @@ type AppEvent = {
   ttlMs?: number;
   ttl_ms?: number;
   timestamp?: number;
+  visibility?: "default" | "detail";
+  trace?: EventEnvelope["trace"];
   data?: Record<string, unknown>;
   params?: Record<string, unknown>;
   [key: string]: unknown;
@@ -290,6 +292,8 @@ const envelopeFieldNames = new Set([
   "source",
   "owner",
   "timestamp",
+  "visibility",
+  "trace",
   "urgency",
   "ttlMs",
   "ttl_ms",
@@ -307,6 +311,8 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
   const ttlMs =
     typeof event.ttl_ms === "number" ? event.ttl_ms : typeof event.ttlMs === "number" ? event.ttlMs : undefined;
   const target = isRecord(event.target) ? (event.target as EventTarget) : undefined;
+  const visibility = event.visibility === "detail" ? "detail" : event.visibility === "default" ? "default" : undefined;
+  const trace = isRecord(event.trace) ? event.trace as EventEnvelope["trace"] : undefined;
   const flatPayload = Object.fromEntries(Object.entries(event).filter(([key]) => !envelopeFieldNames.has(key)));
   const data = {
     ...(isRecord(event.data) ? event.data : {}),
@@ -326,6 +332,8 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
     ...(action ? { action } : {}),
     ...(typeof ttlMs === "number" ? { ttl_ms: ttlMs } : {}),
     ...(target ? { target } : {}),
+    ...(visibility ? { visibility } : {}),
+    ...(trace ? { trace } : {}),
     data,
   };
 }
