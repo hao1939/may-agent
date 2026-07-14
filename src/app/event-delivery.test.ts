@@ -221,6 +221,52 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("keeps same-workflow sessions behind expandable more nodes by default", () => {
+    const root = tempRoot();
+    try {
+      const db = getDb(root);
+      const now = Date.now();
+      const insertEvent = (type: string, sessionId: string, timestamp: number): number => {
+        const row = db.run(
+          `INSERT INTO events (event_type, source, owner, data, timestamp)
+           VALUES (?, ?, ?, ?, ?)`,
+          [type, "test", "agent:owner", JSON.stringify({ sessionId, workflowRunId: "wr_scope" }), timestamp],
+        ) as { lastInsertRowid?: number | bigint };
+        return Number(row.lastInsertRowid);
+      };
+
+      const start1 = insertEvent("session.start", "s_scope_1", now);
+      const end1 = insertEvent("session.end", "s_scope_1", now + 1);
+      const start2 = insertEvent("session.start", "s_scope_2", now + 2);
+      insertEvent("session.end", "s_scope_2", now + 3);
+      db.run(
+        `INSERT INTO event_pair_runs
+         (pair_name, correlation_key, open_event_id, close_event_id, owner, status, opened_at, expected_close_at, closed_at, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ["session", "s_scope_1", start1, end1, "agent:owner", "closed", now, now + 1000, now + 1, "session closed"],
+      );
+
+      const graph = buildEventGraph(db, start1);
+
+      expect(graph.nodes.map((node) => node.id)).toEqual([start1, end1]);
+      expect(graph.edges).toContainEqual(expect.objectContaining({ source: start1, target: end1, type: "closure" }));
+      expect(graph.edges.find((edge) => edge.label === "same workflow")).toBeUndefined();
+      expect(graph.moreNodes).toContainEqual(
+        expect.objectContaining({
+          parentEventId: end1,
+          direction: "context",
+          scope: "workflow",
+          count: 1,
+          label: "... 1 same-workflow session",
+          nodes: [expect.objectContaining({ id: start2, type: "session.start" })],
+        }),
+      );
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reports event trace integrity gaps", () => {
     const root = tempRoot();
     try {

@@ -38,7 +38,8 @@ export type EventGraphDisplayNode = {
     | "tool_result"
     | "metric"
     | "notification"
-    | "diagnostic";
+    | "diagnostic"
+    | "more";
   role?: "primary" | "detail" | "diagnostic";
   parentKey?: string;
   level?: number;
@@ -72,6 +73,7 @@ export type EventGraphResponse = {
   edges: EventGraphEdge[];
   displayNodes?: EventGraphDisplayNode[];
   displayEdges?: EventGraphDisplayEdge[];
+  moreNodes?: EventGraphMoreNode[];
   eventList?: EventGraphNode[];
   eventListScope?: {
     kind: "session" | "workflow" | "task" | "graph";
@@ -81,6 +83,18 @@ export type EventGraphResponse = {
   diagnostics: string[];
   detailNodeCount?: number;
   review?: EventReview;
+};
+
+export type EventGraphMoreNode = {
+  key: string;
+  kind: "more";
+  parentEventId: number;
+  direction: "before" | "after" | "context" | "details";
+  scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
+  count: number;
+  label: string;
+  nodes: EventGraphNode[];
+  edges: EventGraphEdge[];
 };
 
 export type EventReviewLifecycle = {
@@ -543,6 +557,52 @@ function normalizeEdgesForReview(edges: EventGraphEdge[], rowsById: Map<number, 
     }
     return true;
   });
+}
+
+function isDefaultContextEdge(edge: EventGraphEdge): boolean {
+  return edge.type === "reference" && edge.label === "same workflow";
+}
+
+function buildMoreNodes(
+  allNodes: EventGraphNode[],
+  allEdges: EventGraphEdge[],
+  visibleIds: Set<number>,
+): EventGraphMoreNode[] {
+  const nodeById = new Map(allNodes.map((node) => [node.id, node]));
+  const byParent = new Map<number, { nodes: Map<number, EventGraphNode>; edges: Map<string, EventGraphEdge> }>();
+
+  for (const edge of allEdges.filter(isDefaultContextEdge)) {
+    const sourceVisible = visibleIds.has(edge.source);
+    const targetVisible = visibleIds.has(edge.target);
+    if (sourceVisible === targetVisible) continue;
+    const parentEventId = sourceVisible ? edge.source : edge.target;
+    const hiddenEventId = sourceVisible ? edge.target : edge.source;
+    const hiddenNode = nodeById.get(hiddenEventId);
+    if (!hiddenNode) continue;
+    const bucket = byParent.get(parentEventId) ?? { nodes: new Map<number, EventGraphNode>(), edges: new Map<string, EventGraphEdge>() };
+    bucket.nodes.set(hiddenEventId, hiddenNode);
+    bucket.edges.set(edge.id, edge);
+    byParent.set(parentEventId, bucket);
+  }
+
+  return [...byParent.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([parentEventId, bucket]) => {
+      const nodes = [...bucket.nodes.values()].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+      const sessionCount = new Set(nodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size;
+      const count = sessionCount || nodes.length;
+      return {
+        key: `more:workflow:${parentEventId}`,
+        kind: "more" as const,
+        parentEventId,
+        direction: "context" as const,
+        scope: "workflow" as const,
+        count,
+        label: `... ${count} same-workflow ${count === 1 ? "session" : "sessions"}`,
+        nodes,
+        edges: [...bucket.edges.values()],
+      };
+    });
 }
 
 function clampDepth(value: unknown): number {
@@ -1139,18 +1199,20 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
   addCorrelationEdges(edges, [...rowsById.values()]);
 
   const allEdges = normalizeEdgesForReview([...edges.values()], rowsById);
-  const visibleIds = visibleIdsFromDepth(focusEventId, allEdges, depth);
-  const allNodes = [...rowsById.values()]
+  const traversalEdges = allEdges.filter((edge) => !isDefaultContextEdge(edge));
+  const visibleIds = visibleIdsFromDepth(focusEventId, traversalEdges, depth);
+  const graphNodes = [...rowsById.values()]
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
-    .filter((node) => visibleIds.has(node.id))
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-  const detailNodeCount = allNodes.filter((node) => node.visibility === "detail").length;
-  const nodes = allNodes.filter((node) => includeDetail || node.visibility !== "detail");
+  const availableNodes = graphNodes.filter((node) => includeDetail || node.visibility !== "detail");
+  const detailNodeCount = graphNodes.filter((node) => node.visibility === "detail").length;
+  const nodes = availableNodes.filter((node) => visibleIds.has(node.id));
   const nodeIds = new Set(nodes.map((node) => node.id));
-  const visibleEdges = allEdges
+  const visibleEdges = traversalEdges
     .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => a.source - b.source || a.target - b.target || a.type.localeCompare(b.type));
+  const moreNodes = buildMoreNodes(availableNodes, allEdges, nodeIds);
   const eventListProjection = loadEventListRows(db, focus, rowsById, relationKeys);
   const eventList = eventListProjection.rows
     .map(nodeFromRow)
@@ -1169,6 +1231,7 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
     edges: visibleEdges,
     displayNodes: displayGraph.displayNodes,
     displayEdges: displayGraph.displayEdges,
+    moreNodes,
     eventList,
     eventListScope: eventListProjection.scope,
     diagnostics,
