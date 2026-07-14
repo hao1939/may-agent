@@ -770,6 +770,7 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
   const height = Math.max(230, cursorY + margin);
   const nodeById = new Map(nodes.map((node) => [Number(node.id), node]));
   const syntheticEdges = [...buildExpandedSessionEdges(displayItems), ...buildMoreEdges(displayItems)];
+  const startEventId = chronologicalNodes(nodes).find((node) => node.type)?.id;
 
   let svg = `<div id="event-overview-graph" style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);margin-bottom:12px;scroll-margin-top:14px">`;
   svg += `<div style="display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--border);font-size:12px">${componentAnchor('event-overview-graph', 'Overview Graph')}</div>`;
@@ -872,6 +873,7 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
 
     const node = item.node;
     const isFocus = Number(node.id) === Number(focusEventId);
+    const isStart = Number(node.id) === Number(startEventId);
     const sessionId = graphNodeSessionId(node);
     const expandable = isExpandableSessionNode(node);
     const expanded = !!(sessionId && _eventGraphExpandedSessions[sessionId]);
@@ -885,6 +887,7 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
     svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="${isFocus ? 'var(--accent)' : 'var(--fg)'}" font-size="12">${esc(shortGraphLabel(graphNodeTitle(node), 25))}</text>`;
     svg += `<text x="${pos.x + 10}" y="${pos.y + 39}" fill="var(--fg2)" font-size="11">${esc(shortGraphLabel(graphNodeSubtitle(node), 38))}</text>`;
     if (node.visibility === 'detail') svg += `<text x="${pos.x + nodeWidth - 42}" y="${pos.y + 21}" fill="var(--fg2)" font-size="10">detail</text>`;
+    if (isStart) svg += `<text x="${pos.x + nodeWidth - 104}" y="${pos.y + 21}" fill="var(--green)" font-size="10">start</text>`;
     if (expandable) svg += `<text x="${pos.x + nodeWidth - 58}" y="${pos.y + 21}" fill="var(--fg2)" font-size="10">${expanded ? 'collapse' : 'expand'}</text>`;
     svg += `</g>`;
   }
