@@ -1,5 +1,8 @@
 # Project App V3
 
+**Design status:** Accepted.
+**Implementation status:** Implemented and active.
+
 ## Status
 
 Accepted. This is the canonical project-app design.
@@ -1068,11 +1071,12 @@ must not reshape sibling branches, roll up parents, create planning/control
 nodes, or mutate task-tree completion state. The app event layer maps
 `project.task.completed` to the next `project.owner.requested` wake.
 
-The task id is durable; the worker session is an attempt detail. When the owner
-rejects an error review or requeues a stale active attempt, the next assignment
-should use a fresh worker session id and append it to `session_history`. Reusing
-a terminal/error session is not retry; it risks an immediate zero-op failure and
-should be treated as a runtime defect.
+The task id is durable; the worker session is an attempt detail. Every
+assignment uses a session id derived from `taskId + attemptId` and appends it to
+`session_history`. Re-delivery of one attempt may reattach to that same session,
+but a new attempt or a later task recreated with the same task id must use a
+fresh session. Reusing a terminal session from an older attempt risks accepting
+stale output without executing the assigned work and is a runtime defect.
 
 Repeated stale active attempts are not progress. A watchdog should observe
 missing or dead runtime attempts and wake the owner with stale-attempt evidence.

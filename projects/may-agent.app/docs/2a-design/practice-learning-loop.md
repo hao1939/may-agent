@@ -1,7 +1,9 @@
 # Design: Practice Learning Loop
 
 **Design status:** Draft.
-**Implementation status:** Partial; eval trails exist, while candidate promotion and validation remain proposed.
+**Implementation status:** Partial; eval trails and append-only candidate/owner
+decision artifacts exist. Automated validation metrics and evidence-backed
+application/promotion remain open and are never automatic from one session.
 **Date:** 2026-05-16.
 **Aligned with**: `../1-principles/work-model.md`, `session-eval-trail.md`, `projects.md`, `metrics.md`, `guards.md`, `sdk.md`
 

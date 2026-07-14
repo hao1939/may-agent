@@ -10,6 +10,7 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
+    "check:may-design": "bun scripts/check-may-design-integrity.ts",
     "test": "bun scripts/run-app-tests.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }

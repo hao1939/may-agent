@@ -1,5 +1,8 @@
 # Design: Escalation System
 
+**Design status:** Accepted.
+**Implementation status:** Implemented for create, route, resolve/dismiss, and resume; lifecycle metrics remain partial.
+
 > **Implementation status (2026-07-15):** Routing and trace lifecycle are shipped: `escalation.created`
 > events route to the owner via the `escalation` handler. The handler records
 > routing with `handler.routed`; it no longer emits `escalation.routed` because
@@ -371,25 +374,20 @@ Metrics should measure lifecycle health, not replace judgment:
 | `escalation.noisy-dedup-count` | Suppressed duplicate escalations by `dedupKey`. |
 | `escalation.unowned-count` | Escalations without a concrete agent/human owner. |
 
-## Current Implementation Cross-Check
-
-> **Last verified: 2026-06-13 ~00:30Z** — DB evidence from full escalation event
-> history (35 created, 35 routed, 0 resolved, 0 dismissed, 0 resume events).
-> All 35 escalations remain `pending` status — zero have been handled.
-> See KE-1739 for detailed analysis of the escalation graveyard.
+## Implementation Cross-Check
 
 | Area | Current state | Gap |
 |------|---------------|-----|
 | Event payload delivery | `Cron.triggerSubscribers()` passes the original bus event envelope directly; canonical handlers read domain fields from `event.data`. | Implemented. Keep this model; do not add per-field framework promotion or wrapper payloads. |
 | Workflow-backed handler | `handler: { workflow, agent, task, includeEvent: true }` uses the SDK workflow adapter, appends the event envelope, and can skip when missing. | Good for event-to-workflow bridges without custom handler code. |
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
-| Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 35 escalations originate from session-finish boundary code, not proactive mid-session calls. |
+| Session boundary promotion | Blocked/failure `finish()` results can promote to `escalation.created`; agents may also use `sdk.escalate()` at an explicit ownership boundary. | Keep promotion evidence-rich and avoid turning every local blocker into an escalation. |
 | Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `handler.routed`, and sends a message to the owner. Human-owned routes emit `message.created` with `conversationId`, `originalIssue`, and `expectedClosure`. | Implemented (Slice 2). Keep routing evidence as `handler.routed`; do not reintroduce orphan `escalation.routed` events. |
 | Human reply bridge | Telegram can recover `message.created` context and emit `human.input.received` with `context.telegramReply`. Command-router can enrich internal delivery messages from that context. | Escalation replies must route to May as a correlated reply-handling work item, not directly to `sourceSessionId`. |
-| Resolution | **Owner convention still needed.** May or the target owner must turn human/agent answers into `escalation.resolved` or `escalation.dismissed`. | Slice 3 remains the critical missing closure path. Without it, human replies are acknowledged but escalations stay open. |
-| Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Slice 4 infra exists. It works only after Slice 3 emits terminal resolution events. Directly steering the source session bypasses this lifecycle and should be avoided for escalations. |
-| `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
-| Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
+| Resolution | May or the target owner turns correlated human/agent answers into `escalation.resolved` or `escalation.dismissed`; the lifecycle subscriber records terminal disposition. | Owner interpretation remains a behavioral convention and needs evaluation coverage. |
+| Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` consumes `escalation.resolved` and resumes eligible source sessions through the manager. | Measure resume success and make non-resumable dispositions visible. Direct steering should not bypass this lifecycle. |
+| `dedupKey` | The SDK supports stable duplicate-suppression keys. | `dedupKey` remains optional, and the session-finish promotion path may omit it; improve deterministic keys before treating dedup metrics as complete. |
+| Escalation metrics | `escalation.pending-count` measures open lifecycle debt. | Add resolve time, resume success, noisy dedup, and unowned-count metrics. |
 | Workflow blocking | Workflow `ctx.blocked(reason, context)` returns a local blocked workflow result and stops the synchronous workflow. | It should not automatically publish `escalation.created`; boundary code decides whether the local blocker needs owner routing. |
 | Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples should keep using direct `event.data` payloads. |
 

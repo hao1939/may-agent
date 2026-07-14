@@ -77,9 +77,15 @@ When a session runs, the LLM receives three blocks:
 ┌─────────────────────────────────────────────┐
 │ 1. common-sense.md — behavioral fundamentals │
 │ 2. AGENTS.md       — identity and contract   │
-│ 3. Runtime env     — paths, workspace, tools │
+│ 3. Skill catalog   — task-specific metadata  │
+│ 4. Runtime env     — paths, workspace, tools │
 └─────────────────────────────────────────────┘
 ```
+
+The skill catalog contract in [skills.md](skills.md) is wired into
+`resolveSystemPrompt()` for sessions with a read-capable tool. It contains
+bounded metadata only; complete skill bodies remain per-turn context after a
+successful model read or explicit activation.
 
 Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
 `LESSONS.md`, `knowledge/INDEX.md`, `heartbeat.md`, and

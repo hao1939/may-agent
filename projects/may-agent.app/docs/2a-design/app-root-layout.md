@@ -1,5 +1,8 @@
 # App Root Layout
 
+**Design status:** Accepted.
+**Implementation status:** Partial; source roots are stable and read-only layout diagnostics identify unclassified entries.
+
 This document classifies the current `/app` root so cleanup can happen without
 blurring source, runtime state, project workspaces, and research scratch.
 

@@ -1,5 +1,8 @@
 # Projects
 
+**Design status:** Accepted.
+**Implementation status:** Implemented; project apps are primary and legacy projects are compatibility-only.
+
 > **Status (2026-06-18):** The project model has two tiers:
 >
 > 1. **Project-apps** (`*.app/app.ts`) — the primary model. App declares owner,

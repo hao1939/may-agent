@@ -46,7 +46,9 @@ A **project-centered, event-based autonomous agent system** where:
   that nobody reacts to should be stored as state/logs instead of invented as
   events.
 - Workflows relieve agents from orchestration decisions.
-- `pi-coding-agent` provides the full agent runtime — we don't reinvent it.
+- `pi-agent-core` provides the low-level agent loop plus reusable harness
+  primitives. May-agent owns the event, session, workflow, and scoped-resource
+  integration around it.
 - **Convention over configuration**: every component has sensible defaults. Agents opt into custom behavior only when needed.
 
 ---
@@ -61,6 +63,8 @@ The infra provides **primitives**. Agents build patterns on top.
 | Metrics (typed measurement + alerting) | Quality standards, SLOs |
 | Messages (async, persisted) | Work requests, status updates |
 | Sessions (runAgent, persist, resume) | Multi-step strategies |
+| Scoped skill discovery and invocation | Reusable situational methods |
+| Scoped workflow catalog and TypeScript executor | Repeatable orchestration |
 | Storage (files + SQLite) | Project docs, knowledge bases |
 | Safety (guards as middleware) | — |
 | Continuity (crash recovery) | — |

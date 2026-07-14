@@ -1,5 +1,8 @@
 # Agent Cooperation
 
+**Design status:** Accepted.
+**Implementation status:** Implemented; app-local registration is the preferred path.
+
 > **Status (2026-06-18):** Agent registration has two paths:
 > 1. **Global agents** — `agents/<name>/agent.json` discovered at startup
 > 2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`

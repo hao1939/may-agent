@@ -1,5 +1,8 @@
 # App/Project Integrity Design
 
+**Design status:** Accepted.
+**Implementation status:** Implemented across project apps, task trees, events, metrics, and owner loops.
+
 ## Status
 
 Accepted. This is the compact integrity model for May-agent project apps.

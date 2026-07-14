@@ -1,5 +1,8 @@
 # Handler Surface Audit
 
+**Design status:** Historical tracker.
+**Implementation status:** Historical migration evidence; active contracts live in subsystem designs.
+
 > **Status (2026-06-18):** Several handlers from this audit have been disabled:
 > - `project` — disabled (all projects are `.app` now)
 > - `closed-loop-steward` — disabled (97 sessions/day, redundant)

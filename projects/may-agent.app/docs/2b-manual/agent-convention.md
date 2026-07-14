@@ -17,18 +17,26 @@ agents/<name>/
   workspace/              # Scratch/runtime work, not system prompt.
     *.md
 
+  skills/                 # Reusable situational procedures.
+    <name>/SKILL.md        # Canonical package; not always loaded.
+    <name>/references/     # Optional progressive-disclosure detail.
+    <name>/scripts/        # Optional; prefer TypeScript/JavaScript + Bun.
+
   handlers/               # JS cron/event handlers.
-  workflows/              # Workflow definitions.
+  workflows/              # Executable TypeScript orchestration.
+    <name>.ts              # Canonical flat workflow entrypoint.
   last-session.md         # Generated runtime memory, not system prompt.
 
 projects/<id>.app/agents/<name>/
   agent.json              # Same shape; agent is scoped to the project app.
   AGENTS.md
+  skills/<name>/SKILL.md
   workspace/
 
 shared/
   common-sense.md         # Shared always-loaded behavioral fundamentals.
   knowledge/              # Shared references, read on demand.
+  skills/<name>/SKILL.md  # Fleet-wide reusable procedures.
 
 projects/may-agent.app/docs/
   ...                     # May-agent architecture, design, and operator docs.
@@ -47,6 +55,17 @@ Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
 `knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and
 `workspace/*` are not automatically loaded into the system prompt.
 
+Canonical skills live in named directories with `SKILL.md`; loose Markdown
+files under `skills/` are legacy. Native metadata discovery, bounded catalogs,
+and per-turn invocation are implemented as specified in
+[skills.md](../2a-design/skills.md). Callers may explicitly select one primary
+skill, while model-driven activation is evidenced by a successful full-file
+read.
+
+Skills and workflows share scoped discovery conventions but not execution.
+Skills are interpreted per-turn guidance; workflow TypeScript controls a
+durable run. See [workflows.md](../2a-design/workflows.md).
+
 ## What Goes Where
 
 | Content | Location | Reason |
@@ -56,6 +75,7 @@ Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
 | "Use evidence before changing evaluation criteria" | `AGENTS.md` | Always-on constraint |
 | "Long metric debugging recipe" | `knowledge/*.md` | Situational reference |
 | "Read X when handling Y" | `knowledge/INDEX.md` | Discovery routing |
+| "Use this procedure when task X appears" | `skills/<name>/SKILL.md` | Situational reusable method |
 | Heartbeat investigation prompts | `heartbeat.md` | Heartbeat workflow only |
 | Recent notes, drafts, temporary plans | `workspace/` | Runtime scratch |
 | Generated session continuity | `last-session.md` | Runtime/session context |
@@ -124,11 +144,16 @@ sessions, not normal agent configuration.
 
 Do not put prose instructions in `agent.json`.
 
+Skills are convention-discovered rather than enumerated in `agent.json`.
+Operational enable/disable policy may be added later without moving skill
+instructions into configuration.
+
 ## Adding a New Agent
 
 1. Create `agents/<name>/agent.json`.
 2. Create `agents/<name>/AGENTS.md`.
-3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows.
+3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`,
+   `skills/<name>/SKILL.md`, handlers, or workflows.
 4. Restart or use the runtime reload command.
 
 For a project-app-scoped agent, use the same shape under

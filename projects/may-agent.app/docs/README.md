@@ -48,10 +48,12 @@ proposals and link back to the governing design.
 ### I want to build or fix agent behavior
 
 1. [principles/work-model.md](1-principles/work-model.md) — projects, heartbeats, metrics, and triggers
-2. [manual/workflow-authoring.md](2b-manual/workflow-authoring.md) — write workflow-backed behavior
-3. [manual/handler-authoring.md](2b-manual/handler-authoring.md) — bridge events to workflows
-4. [design/project-app-v3.md](2a-design/project-app-v3.md) — project apps, owner events, and domain/app boundaries
-5. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
+2. [design/skills.md](2a-design/skills.md) — reusable situational methods and progressive disclosure
+3. [design/workflows.md](2a-design/workflows.md) — executable orchestration and its boundary with skills
+4. [manual/workflow-authoring.md](2b-manual/workflow-authoring.md) — write workflow-backed behavior
+5. [manual/handler-authoring.md](2b-manual/handler-authoring.md) — bridge events to workflows
+6. [design/project-app-v3.md](2a-design/project-app-v3.md) — project apps, owner events, and domain/app boundaries
+7. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
 
 Project App V3 is the only current project-app design. Earlier V2 project-app
 notes live under `archive/v2/` for history only.

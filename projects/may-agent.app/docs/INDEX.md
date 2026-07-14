@@ -61,6 +61,8 @@ System architecture and subsystem designs.
 | [http-boundary.md](2a-design/http-boundary.md) | Accepted / partial | Separate HTTP adapter from webui package |
 | [session-eval-trail.md](2a-design/session-eval-trail.md) | Draft / partial | Summary projection plus append-only line evidence beside raw session logs |
 | [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Draft / partial | Event-rooted learning loop from eval evidence through owner action and later validation |
+| [skills.md](2a-design/skills.md) | Accepted / implemented core | Scoped discovery, bounded catalogs, per-turn invocation, and load evidence |
+| [workflows.md](2a-design/workflows.md) | Accepted / implemented core | Validated TypeScript catalogs, entry provenance, lifecycle events, and safe replay |
 | [may-console.md](2a-design/may-console.md) | Draft / partial | Terminal REPL over the daemon socket, session switching, and canonical steering intents |
 | [web-terminal.md](2a-design/web-terminal.md) | Draft / partial | Browser terminal transport and tmux ownership contract |
 | [handler-audit.md](2a-design/handler-audit.md) | Tracker | Handler migration audit governed by architecture, cron, and system-boundary design |
@@ -117,6 +119,6 @@ preserved in
 |------|------|
 | Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [event-runtime-audit.md](2b-manual/event-runtime-audit.md), [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md), [runtime.md](2a-design/runtime.md) |
 | Handle an alert | [metric-alerts.md](2b-manual/metric-alerts.md), [metrics.md](2a-design/metrics.md), [events.md](2a-design/events.md) |
-| Write behavior | [work-model.md](1-principles/work-model.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |
+| Write behavior | [work-model.md](1-principles/work-model.md), [skills.md](2a-design/skills.md), [workflows.md](2a-design/workflows.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |
 | Change infra boundaries | [architecture.md](2a-design/architecture.md), [system-boundary.md](2a-design/system-boundary.md) |
 | Update agent conventions | [agent-convention.md](2b-manual/agent-convention.md), [heartbeat.md](2a-design/heartbeat.md), [projects.md](2a-design/projects.md) |

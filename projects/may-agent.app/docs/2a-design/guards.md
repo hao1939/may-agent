@@ -1,5 +1,8 @@
 # Guards As Signals
 
+**Design status:** Accepted.
+**Implementation status:** Implemented for observe, warn, repair, and block; escalation remains an owner-boundary action.
+
 Guards are detection signals first. Blocking is only one intervention mode.
 
 Default meaning:

@@ -1,5 +1,19 @@
 # How to Write a Workflow
 
+This manual describes the current authoring surface. The governing capability,
+discovery, provenance, and skill-composition contract is
+[`workflows.md`](../2a-design/workflows.md).
+
+## Choose A Skill Or Workflow
+
+Use a skill when the agent should interpret a reusable method for the current
+context. Use a workflow when the runtime must enforce sequencing, branching,
+bounded retries, verification, and a terminal result.
+
+A `SKILL.md` may include optional TypeScript/JavaScript helper scripts, but the
+model remains the controller. A workflow's TypeScript module is the controller;
+its description is discovery metadata, not executable instruction.
+
 ## Basics
 
 A workflow is a TypeScript file in an owning app or agent workflow directory.
@@ -9,6 +23,10 @@ Workflows are deliberately synchronous: each step returns a result before the
 next step runs, and `runWorkflow()` resolves only when the workflow is done or
 locally blocked. Use `agents.fork` for background agent sessions outside workflow
 control.
+
+Synchronous does not mean "no `await`." It means ordered, bounded execution with
+one terminal result. It is fine to await an agent, function, tool, or nested
+workflow that is expected to finish within the current run.
 
 ```typescript
 import type { WorkflowContext, WorkflowModule, WorkflowResult } from "@may-agent/sdk";
@@ -29,6 +47,46 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return ctx.done(`Completed: ${dev.lastAssistantText}`);
 }
 ```
+
+## Durable Wait Boundary
+
+Do not keep one workflow alive while waiting for a human, approval, timer,
+external callback, unavailable dependency, or runtime restart. End the current
+phase and let an event start a second synchronous workflow:
+
+```text
+workflow A
+  -> persist phase and resume condition
+  -> emit a domain continuation event
+  -> return ctx.done("Phase A completed; continuation established")
+
+later domain event
+  -> handler validates current phase and deduplicates delivery
+  -> workflow B
+```
+
+Use these rules:
+
+- Give workflow A and workflow B separate workflow run IDs.
+- Preserve the event `traceId`, causal parent, domain correlation key, and
+  closure link where applicable.
+- Store the waiting state and phase context in the owning app/project, not in
+  workflow variables or an open agent session.
+- Make workflow B reconstruct its input from durable current state.
+- Make continuation handling idempotent because events may be delivered or
+  reconciled more than once.
+- Treat `agents.fork` only as background dispatch. If a later phase depends on
+  its result, a session-result event and handler must establish that phase;
+  the original workflow must not wait in memory.
+- Do not map workflow A's `done` result to project-task completion. It means
+  only that phase A completed and established the continuation.
+- Do not return `blocked` for an expected wait. Return `blocked` only when no
+  safe continuation can be established.
+- Use `workflow.resume` only for crash recovery inside an interrupted
+  synchronous run, never for a normal cross-event wait.
+
+If state persistence and continuation emission cannot be atomic, use a durable
+outbox or a reconciliation check that can safely emit the missing event.
 
 ## WorkflowContext
 
@@ -203,6 +261,9 @@ pattern, keep the workflow owned by the app/agent that operates it and have
 other callers invoke that owner through the SDK/tool boundary, or factor
 reusable mechanics into a normal shared helper module that an app-local or
 agent-owned workflow imports.
+
+Keep the flat `<name>.ts` form. Do not create a workflow directory package or
+make Markdown executable; the current loader does not define either contract.
 
 ## Guards (Advanced)
 

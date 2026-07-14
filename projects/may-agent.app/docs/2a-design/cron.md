@@ -1,5 +1,8 @@
 # Timer Triggers & Handlers
 
+**Design status:** Accepted.
+**Implementation status:** Implemented through the centralized cron runtime.
+
 > **Status (2026-06-18):** Cron lifecycle is centralized in `cron-startup.ts`.
 > All crons (agent-level from toolset-loader, app-level from ensureOwnerCron)
 > are created and loaded by their respective loaders, but subscribe+start

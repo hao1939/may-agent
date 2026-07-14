@@ -1,5 +1,8 @@
 # AgentSDK
 
+**Design status:** Accepted.
+**Implementation status:** Implemented for runtime, event, workflow, project-app, and task-tree boundaries.
+
 > **Update (2026-06-18):** The SDK now also exports project-app primitives:
 > `defineProjectApp`, `eventDetails`, `eventData`, `eventString`, and
 > `workflowHandlers`. These are used in `*.app/app.ts` declarations. See

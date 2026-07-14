@@ -1,5 +1,8 @@
 # Infra Surface Refactor Plan
 
+**Design status:** Historical tracker.
+**Implementation status:** Historical evidence only; not an active implementation contract.
+
 > **Status (2026-06-18):** This tracker was written during the handler-centric
 > era. Many phases are now complete or superseded by the project-app migration.
 > Key completed items: project-app loader, app-local agent registration,

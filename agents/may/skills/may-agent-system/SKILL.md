@@ -33,10 +33,17 @@ Core primitives:
 
 ## Discovery Boundary
 
-This file is the canonical May-local copy and is routed from `agents/may/AGENTS.md`
-and `agents/may/context.md`. Install it for native CLI discovery with a symlink
-from `.state/.codex/skills/may-agent-system` to this directory. Do not copy it or
-maintain an unsynchronized fork.
+This file is the canonical May-local copy and is routed from `agents/may/AGENTS.md`.
+May-native discovery loads canonical immediate `<name>/SKILL.md` packages from
+app-local agent, global agent, and shared roots; closer scope wins. Invalid,
+ambiguous, archived, oversized, or trust-escaping packages are omitted with
+loader diagnostics. New turns receive a bounded metadata catalog, while the
+full body enters context only after a successful model read or explicit
+activation such as `$may-agent-system ...` or a typed `skill` option.
+
+Expose this canonical directory to external Codex workers through a supported
+skill location, preferably by symlink, and verify actual discovery; do not
+maintain an unsynchronized copy.
 
 ## Source Of Truth
 
@@ -49,6 +56,8 @@ Read the relevant design doc before changing behavior:
 - Event graph and trace: `/app/projects/may-agent.app/docs/2a-design/event-graph.md`
 - Human control surfaces: `/app/projects/may-agent.app/docs/2a-design/human-control-surfaces.md`
 - Sessions and chat-turn lifecycle: `/app/projects/may-agent.app/docs/2a-design/sessions.md`
+- Skills and progressive disclosure: `/app/projects/may-agent.app/docs/2a-design/skills.md`
+- Workflow discovery and execution: `/app/projects/may-agent.app/docs/2a-design/workflows.md`
 - Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
 - Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
 - Project apps: `/app/projects/may-agent.app/docs/2a-design/project-app-v3.md`
@@ -261,6 +270,14 @@ Distinguish local blockers from ownership-boundary escalations.
   sufficient for queued turns or work that outlives that continuation.
 - Bare cancel is session-scoped. Never upgrade it to cancel-all; broad
   cancellation requires the explicit `session.cancel_all.requested` intent.
+- Treat skills as per-turn advisory context. Do not use them as task state,
+  completion evidence, workflow enforcement, or a parallel request lifecycle.
+- Use one explicit primary skill when a human or delegation names it. Preserve
+  the enclosing event/session trace and verify `skill.loaded` evidence instead
+  of inventing `skill.completed`.
+- Treat workflow TypeScript as executable orchestration. Share discovery and
+  provenance conventions with skills, but keep workflow run state and terminal
+  closure in the existing workflow/event trace.
 
 ## Runtime Restart
 

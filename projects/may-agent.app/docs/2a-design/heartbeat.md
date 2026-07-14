@@ -1,5 +1,8 @@
 # Heartbeat System
 
+**Design status:** Accepted.
+**Implementation status:** Implemented; app-owned agents use app schedules and owner wakes.
+
 > **Status (2026-06-20):** Heartbeat auto-generation is disabled for app-owned
 > agents (scout, evaluator, arc) via `"heartbeat": false` in agent.json. Their
 > apps own deterministic schedules and event-driven owner reviews.

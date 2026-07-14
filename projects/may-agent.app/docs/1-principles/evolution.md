@@ -3,6 +3,8 @@
 **Design status**: Draft. This document defines a promotion heuristic, not a
 runtime lifecycle. Operational interfaces remain authoritative in
 [`agent-convention.md`](../2b-manual/agent-convention.md),
+[`skills.md`](../2a-design/skills.md),
+[`workflows.md`](../2a-design/workflows.md),
 [`workflow-authoring.md`](../2b-manual/workflow-authoring.md),
 [`guards.md`](../2a-design/guards.md), and [`sdk.md`](../2a-design/sdk.md).
 
@@ -64,17 +66,31 @@ description: Use when work products must be verified with tool evidence before c
 
 Then structured sections: Context, Core Principles, Actions, Anti-patterns.
 
-**How agents access it:** Runtime skill discovery or an explicit pointer from
-the owning agent's knowledge index; do not copy the full skill into always-on
-prompt files.
+**How agents access it:** The runtime discovers compact metadata and loads the
+full body only for a matching turn; see
+[`skills.md`](../2a-design/skills.md). A caller may also select one explicit
+primary skill for a turn. Do not copy the full skill into always-on prompt
+files.
 
-**Signal to level up:** The skill should execute automatically, not require the agent to remember.
+**Signal to level up:** Repeated evidence shows that the sequence must be
+consistent, missing or reordered steps create meaningful risk, and inputs,
+outputs, and terminal conditions can be made explicit. Frequency alone is not
+enough; a schedule may invoke a skill-bearing session without making the skill
+a workflow.
 
 ---
 
 ## Level 3: Workflow (automated multi-step pattern)
 
-A workflow codifies a skill into executable orchestration. Agents don't need to remember the steps — the workflow handles sequencing.
+A workflow codifies a stable practice into executable orchestration. It may
+have evolved from a skill, but promotion is not automatic: the workflow runtime
+must have a repeatable sequence worth enforcing. Agents do not need to remember
+the steps because the workflow handles sequencing.
+
+Skills and workflows share discovery, provenance, and evaluation conventions,
+but not execution semantics. `SKILL.md` is interpreted per turn; a workflow's
+TypeScript module controls a durable run. See
+[`workflows.md`](../2a-design/workflows.md).
 
 Workflow execution is synchronous by design. A workflow step waits for its
 agent/function/sub-workflow result before the next step runs; this keeps
@@ -261,7 +277,7 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 |-----------|-------|--------|
 | "I keep forgetting to check X" | 1 Lesson | Add to LESSONS.md |
 | "This pattern has 5 steps I always do" | 2 Skill | Write SKILL.md |
-| "Agents should follow this procedure automatically" | 3 Workflow | Write workflow .ts |
+| "The runtime must enforce this stable sequence and terminal result" | 3 Workflow | Write workflow .ts |
 | "A repeated mechanical risk needs observable intervention" | 4 Guard | Start with observe/warn; block only after validation |
 | "I need a new action type that doesn't exist" | 5 Tool | Write `tools/<name>.ts` |
 | "This should happen every N minutes / on every event" | 6 Handler | Write handler .ts |

@@ -1,8 +1,10 @@
 # Native Coding Workers
 
 **Design status:** Accepted.
-**Implementation status:** Implemented foundation with the explicit gaps and
-acceptance work below.
+**Implementation status:** Implemented for durable tasks, native session reuse,
+classified failures, expected JSON output, and required prepared worktrees;
+partial-result parsing, automatic worktree creation, UI, and metrics remain
+open.
 
 May can delegate bounded coding work to native coding agents such as Codex CLI
 and Claude Code. These tools are not terminal tabs and they are not project
@@ -497,24 +499,23 @@ workers are capacity, not an obligation.
 
 ## Open Design Gaps
 
-1. The Codex and Claude stream parsers should classify partial success,
-   permission failures, tool failures, and no-output failures explicitly.
-2. `run_cli_agent` should support an optional expected output schema.
-3. Patch mode should optionally create or require an isolated worktree, not
-   only use a provided worktree as cwd.
-4. Add a native-coding-worker skill so owners have reusable operational
-   guidance without bloating project workflows.
-5. UI should show active CLI worker tasks with native session id, status,
+1. The Codex and Claude stream parsers should classify partial success
+   explicitly. Permission, tool, timeout, process, output-schema, and no-output
+   failures are classified today.
+2. Expected JSON output with required fields is implemented; richer JSON Schema
+   validation remains optional follow-up.
+3. Patch mode can require an explicitly prepared isolated worktree. Automatic
+   safe worktree creation and cleanup remain open.
+4. UI should show active CLI worker tasks with native session id, status,
    result path, and events path.
-6. Metrics should track request count, completion rate, orphan count, timeout
+5. Metrics should track request count, completion rate, orphan count, timeout
    rate, average duration, and failed-parser/no-output rate.
 
 ## Recommended Next Step
 
 Keep the existing `cli.task.*` events. Improve the adapter in place:
 
-1. Strengthen Codex/Claude stream parsing.
-2. Add the native-coding-worker skill with operating rules and examples.
-3. Add UI/read-model visibility.
-4. Retire direct `codex_worker`/`cc_worker` from production guidance once
+1. Add partial-result parsing to the existing classified outcome adapter.
+2. Add UI/read-model visibility.
+3. Retire direct `codex_worker`/`cc_worker` from production guidance once
    `run_cli_agent` covers the same convenience.
