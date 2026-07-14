@@ -283,6 +283,74 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("projects approval replies into project.approval.submitted before session steering or project comments", () => {
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        actor: "human",
+        text: "approve one bounded replay",
+        conversation: { id: "approval:approval-123", channel: "telegram", channelMessageId: 1201 },
+        target: {
+          sessionId: "s_original_request",
+          projectPath: "projects/aks-rp-e2e.app",
+        },
+        context: {
+          telegramReply: {
+            conversationId: "approval:approval-123",
+            projectId: "projects/aks-rp-e2e.app",
+            originalIssue: {
+              eventType: "project.approval.requested",
+              approvalKind: "approval-packet-dispatch",
+              approvalId: "approval-123",
+              waitId: "wait-123",
+              pathId: "path.network.example",
+              packetPath: "evidence/archive/example-approval.md",
+              requestedAction: "Approve one bounded replay",
+              reason: "Need exact owner decision",
+            },
+            expectedClosure: ["project.approval.submitted"],
+          },
+        },
+      },
+    } as any);
+
+    expect(resumed).toEqual([]);
+    expect(h.emitted.some((event) => event.type === "session.steer.requested")).toBe(false);
+    expect(h.emitted.some((event) => event.type === "project.comment.created")).toBe(false);
+    expect(h.emitted.some((event) => event.type === "chat.start.requested")).toBe(false);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.approval.submitted",
+        source: "telegram",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          approvalKind: "approval-packet-dispatch",
+          approvalId: "approval-123",
+          waitId: "wait-123",
+          pathId: "path.network.example",
+          packetPath: "evidence/archive/example-approval.md",
+          projectPath: "projects/aks-rp-e2e.app",
+          projectId: "projects/aks-rp-e2e.app",
+          decision: "approve",
+          message: "approve one bounded replay",
+          conversationId: "approval:approval-123",
+        }),
+      }),
+    );
+    h.router.close();
+  });
+
   it("normalizes project-targeted human.input.received into project.comment.created", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "router-project-human-input-"));
     const projectPath = "projects/demo-human-input";

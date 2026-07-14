@@ -369,6 +369,151 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
+  it("projects approval notification replies into project.approval.submitted even when session context is present", async () => {
+    const db = getDb(persistDir);
+    db.run(
+      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        650,
+        "message.created",
+        "aks-explorer",
+        "s_approval_source",
+        "projects/aks-rp-e2e.app",
+        JSON.stringify({
+          text: "AKS RP E2E approval packet dispatch",
+          conversationId: "approval:approval-650",
+          originalIssue: {
+            eventType: "project.approval.requested",
+            approvalKind: "approval-packet-dispatch",
+            approvalId: "approval-650",
+            waitId: "wait-650",
+            pathId: "path.network.example",
+            packetPath: "evidence/archive/example-approval.md",
+            requestedAction: "Approve one bounded replay",
+            reason: "Need exact owner decision",
+          },
+          expectedClosure: ["project.approval.submitted"],
+        }),
+        Date.now(),
+      ],
+    );
+
+    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
+    let getUpdatesCount = 0;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount++;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            {
+              update_id: 9,
+              message: {
+                message_id: 651,
+                chat: { id: 12345 },
+                text: "approve one bounded replay",
+                reply_to_message: {
+                  message_id: 650,
+                  text: "AKS RP E2E approval packet dispatch",
+                },
+              },
+            },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 700 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const humanInputs: any[] = [];
+    const steers: any[] = [];
+    const chatStarts: any[] = [];
+    const comments: any[] = [];
+    const approvals: any[] = [];
+    const replies: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "human.input.received") humanInputs.push(event);
+      if (event.type === "session.steer.requested") steers.push(event);
+      if (event.type === "chat.start.requested") chatStarts.push(event);
+      if (event.type === "project.comment.created") comments.push(event);
+      if (event.type === "project.approval.submitted") approvals.push(event);
+      if (event.type === "telegram.reply") replies.push(event);
+    });
+
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "",
+      interfaceAgent: "may",
+    });
+    const router = attachCommandRouter({
+      bus,
+      manager: {
+        status: () => [],
+        cancel: () => {},
+        resumeSession: () => "unexpected-steer",
+        run: () => "unexpected-chat",
+      } as any,
+      getChatSession: () => null,
+      clearCancelLatch: () => {},
+      projectRoot: "/tmp/project",
+      reload: () => {},
+      restart: () => {},
+      shutdown: () => {},
+    });
+
+    await waitFor(() => {
+      expect(humanInputs).toHaveLength(1);
+      expect(String(humanInputs[0].data?.text)).toBe("approve one bounded replay");
+      expect(humanInputs[0].data?.conversation?.id).toBe("approval:approval-650");
+      expect(humanInputs[0].data?.target).toMatchObject({
+        sessionId: "s_approval_source",
+        projectPath: "projects/aks-rp-e2e.app",
+      });
+      expect(steers).toHaveLength(0);
+      expect(chatStarts).toHaveLength(0);
+      expect(comments).toHaveLength(0);
+      expect(approvals).toHaveLength(1);
+      expect(approvals[0]).toMatchObject({
+        type: "project.approval.submitted",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          approvalKind: "approval-packet-dispatch",
+          approvalId: "approval-650",
+          waitId: "wait-650",
+          pathId: "path.network.example",
+          packetPath: "evidence/archive/example-approval.md",
+          projectPath: "projects/aks-rp-e2e.app",
+          projectId: "projects/aks-rp-e2e.app",
+          decision: "approve",
+          message: "approve one bounded replay",
+          conversationId: "approval:approval-650",
+        },
+      });
+      expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
+      expect(
+        sentMessages.some(
+          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 651,
+        ),
+      ).toBe(true);
+    });
+
+    bot.close();
+    router.close();
+  });
+
   it("enriches a project notification reply and sends it to May", async () => {
     const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
 
