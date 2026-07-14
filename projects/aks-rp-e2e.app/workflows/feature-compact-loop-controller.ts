@@ -1474,6 +1474,52 @@ function reconcileReadyCompactArtifacts(input: {
   return resetFeatureKeys.sort((a, b) => a.localeCompare(b));
 }
 
+function reconcileResolvedBlockedCompactArtifacts(input: {
+  projectDir: string;
+  state: FeatureCompactLoopState;
+  target: string;
+}): string[] {
+  const resolvedFeatureKeys: string[] = [];
+  for (const [featureKey, item] of Object.entries(input.state.features)) {
+    if (item.status !== "blocked") continue;
+    if (
+      !currentPlanAllowsLiveDispatch({
+        projectDir: input.projectDir,
+        featureKey,
+        item,
+        target: input.target,
+      })
+    ) {
+      continue;
+    }
+    updateFeatureCompactItem(input.state, featureKey, {
+      status: "done",
+      errorClass: null,
+      retryable: true,
+      retryReason: null,
+      taskId: null,
+      frontierTaskIds: [],
+      blockedAt: null,
+      blockedReason: null,
+      waitingFor: null,
+      waitingCondition: null,
+      observedBy: null,
+      observationMethod: null,
+      nextCheckAt: null,
+      blockerOwner: null,
+      fallbackAt: null,
+      fallbackAction: null,
+      resumeAction: null,
+      blockedScope: null,
+      blockedFingerprint: null,
+      lastCheckedAt: null,
+      lastSummary: `Resolved compact feature ${featureKey}: current compact plan is live-dispatchable, so the prior blocked frontier is stale and no exact blocked holder should remain.`,
+    });
+    resolvedFeatureKeys.push(featureKey);
+  }
+  return resolvedFeatureKeys.sort((a, b) => a.localeCompare(b));
+}
+
 function applyCompactRetryResets(input: {
   loopTask: TaskNode | undefined;
   tasks: Record<string, TaskNode>;
@@ -3462,6 +3508,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     state,
     target,
   });
+  const reconciledResolvedBlockedArtifacts =
+    reconcileResolvedBlockedCompactArtifacts({
+      projectDir,
+      state,
+      target,
+    });
 
   const completedTaskId =
     trigger?.type === "project.task.completed" ||
@@ -3938,6 +3990,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     reconciledReadyArtifacts.length
       ? `Reset ${reconciledReadyArtifacts.length} stale package-gate error(s) whose current compact plan is live-dispatchable.`
       : "",
+    reconciledResolvedBlockedArtifacts.length
+      ? `Closed ${reconciledResolvedBlockedArtifacts.length} stale blocked compact frontier(s) whose current compact plan is already live-dispatchable.`
+      : "",
     completedWorkflowRunReconcile.reconciled.length
       ? `Reconciled ${completedWorkflowRunReconcile.reconciled.length} completed Azure DevOps compact run(s).`
       : "",
@@ -3993,6 +4048,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     terminal_github_wait_lookup_miss_run_ids:
       terminalGitHubWaitHarvest.lookupMissRunIds,
     reconciled_ready_artifact_feature_keys: reconciledReadyArtifacts,
+    reconciled_resolved_blocked_feature_keys:
+      reconciledResolvedBlockedArtifacts,
     reconciled_completed_workflow_feature_keys:
       completedWorkflowRunReconcile.reconciled,
     backfilled_completed_error_workflow_feature_keys:

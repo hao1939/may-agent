@@ -12,7 +12,8 @@ type RuntimeProjectionTaskRepair = {
     | "task.owner"
     | "task.projection"
     | "task.reopen"
-    | "task.replacement";
+    | "task.replacement"
+    | "task.completed";
   before: unknown;
   after: unknown;
   reason?: string;
@@ -867,6 +868,81 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
       after: { state: "blocked", status: "blocked" },
       reason: `Reopened exact compact holder ${child.id} because ${featureKey} remains blocked in compact state.`,
     });
+  }
+
+  for (const childId of input.loopTask.children ?? []) {
+    const child = input.tasks[childId];
+    if (!isFeatureCompactExactWaitHolder(child)) continue;
+    if (taskStatus(child) !== "blocked") continue;
+    const featureKey = exactWaitFeatureKey(child);
+    const feature = input.state.features[featureKey];
+    if (!feature) continue;
+    if (feature.status === "blocked" || feature.status === "error") {
+      continue;
+    }
+
+    const before = {
+      state: child.state ?? null,
+      status: child.status ?? null,
+      blocker: taskBlocker(child),
+    };
+    child.state = "done";
+    child.status = "done";
+    (child as TaskNode & { resolution?: string }).resolution = "completed";
+    (child as TaskNode & { done_at?: string }).done_at =
+      new Date().toISOString();
+    (child as TaskNode & { done_by?: string }).done_by =
+      "feature-compact-loop-controller";
+    (child as TaskNode & { result?: string }).result = feature
+      ? `Closed stale exact compact holder because ${featureKey} is no longer blocked in compact state.`
+      : `Closed stale exact compact holder because ${featureKey || child.id} no longer has a blocked compact state record.`;
+    delete (child as Record<string, unknown>).blocker;
+    child.trace = {
+      ...(child.trace ?? {}),
+      exact_compact_holder_completed_at: new Date().toISOString(),
+      exact_compact_holder_completed_by: "feature-compact-loop-controller",
+      exact_compact_holder_completed_reason: feature
+        ? "feature compact state is no longer blocked or error"
+        : "feature compact state record no longer exists",
+    };
+    taskRepairs.push({
+      taskId: child.id,
+      featureKey,
+      field: "task.completed",
+      before,
+      after: { state: "done", status: "done", resolution: "completed" },
+      reason: feature
+        ? `Closed stale exact compact holder ${child.id}; ${featureKey} is no longer blocked in compact state.`
+        : `Closed stale exact compact holder ${child.id}; ${featureKey || child.id} no longer has a blocked compact state record.`,
+    });
+    if (feature) {
+      if (stringValue(feature.taskId) === child.id) {
+        stateRepairs.push({
+          featureKey,
+          field: "taskId",
+          before: feature.taskId ?? null,
+          after: null,
+          reason: `Cleared stale taskId pointer after closing exact compact holder ${child.id}.`,
+        });
+        feature.taskId = null;
+      }
+      if (
+        Array.isArray(feature.frontierTaskIds) &&
+        feature.frontierTaskIds.some((taskId) => stringValue(taskId) === child.id)
+      ) {
+        const beforeFrontierTaskIds = [...feature.frontierTaskIds];
+        feature.frontierTaskIds = feature.frontierTaskIds.filter(
+          (taskId) => stringValue(taskId) !== child.id,
+        );
+        stateRepairs.push({
+          featureKey,
+          field: "frontierTaskIds",
+          before: beforeFrontierTaskIds,
+          after: feature.frontierTaskIds,
+          reason: `Removed closed exact compact holder ${child.id} from frontierTaskIds.`,
+        });
+      }
+    }
   }
 
   for (const childId of input.loopTask.children ?? []) {

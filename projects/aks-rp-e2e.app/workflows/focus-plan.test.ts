@@ -63,6 +63,105 @@ async function makeWorkspace(options?: { leafState?: string }) {
   return { appDir, projectDir };
 }
 
+async function makeOwnerReturnAlignedWorkspace() {
+  const root = await mkdtemp(join(tmpdir(), "aks-focus-plan-lineage-"));
+  const appDir = join(root, "aks-rp-e2e.app");
+  const projectDir = join(root, "aks-rp-e2e");
+  await mkdir(join(appDir, "tasks"), { recursive: true });
+  await mkdir(join(appDir, ".state"), { recursive: true });
+  await mkdir(projectDir, { recursive: true });
+  await writeFile(
+    resolveTaskTreePath(appDir),
+    `${JSON.stringify(
+      {
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        updated_at: new Date().toISOString(),
+        tasks: {
+          project: {
+            id: "project",
+            state: "blocked",
+            children: [
+              "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+              "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+            ],
+            goal: "Learn AKS RP input and expectation space.",
+            outputs: ["tasks/tree.json"],
+            acceptance: ["project advances"],
+          },
+          "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711": {
+            id: "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+            parent_id: "project",
+            state: "blocked",
+            kind: "focus_plan",
+            priority: "P1",
+            children: [],
+            owner: "aks-explorer",
+            goal: "Keep the focus branch normalized behind the governing owner-return wait.",
+            outputs: ["evidence/archive/focus.md"],
+            acceptance: ["focus stays aligned"],
+            blocker: {
+              condition: "Blocked behind the governing wait.",
+              category: "human-approval",
+              owner: "human",
+              blocked_at: "2026-07-14T00:00:00Z",
+              waiting_for: {
+                type: "blocker.resolved",
+                taskId: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              },
+            },
+          },
+          "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+            id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+            parent_id: "project",
+            state: "blocked",
+            kind: "domain_leaf",
+            priority: "P2",
+            children: [],
+            owner: "app-ops",
+            goal: "Carry the governing project-level owner-return wait.",
+            outputs: ["evidence/archive/wait.md"],
+            acceptance: ["wait stays exact"],
+            blocker: {
+              condition: "Blocked on the returned project approval decision for the exact focus/shared owner-return lineage.",
+              category: "external-wait",
+              owner: "human",
+              blocked_at: "2026-07-14T00:00:00Z",
+              waiting_for: {
+                type: "project.approval.submitted",
+                taskId: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                approvalKind: "approval-packet-dispatch",
+                acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+                lineages: [
+                  {
+                    taskId: "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+                    planId: "focus-review-off_track",
+                    pathId: "focus-review-off_track-approval-refresh-20260712",
+                    approvalId:
+                      "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    waitId:
+                      "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    packetPath:
+                      "evidence/archive/ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    requestEventId: 3069971,
+                    messageId: 3069974,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  return { appDir, projectDir };
+}
+
 function triggerEvent(event: Record<string, unknown>): string {
   return `## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
 }
@@ -332,6 +431,237 @@ describe("focus-plan workflow", () => {
       "utf8",
     );
     expect(focusRuns).toContain('"result":"needs_approval"');
+  });
+
+  test("prefers marker-bearing assistant text over plain summary", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        summary:
+          "Completed the regular focus progress review and confirmed the focus is still on track.",
+        lastAssistantText:
+          "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.planning.requested",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      project: "aks-rp-e2e",
+      reason: "focus-plan-review",
+      focusResult: "on_track",
+    });
+  });
+
+  test("does not re-notify human approval for summary-only on-track review text", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        summary:
+          "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live post-reconciliation stewardship focus is still on track, and refreshed both the durable evidence artifact and focus-plan metadata in .state/tasks/tree.json to match the current fully-drained executable frontier.",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("result on_track");
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.planning.requested",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      project: "aks-rp-e2e",
+      reason: "focus-plan-review",
+      focusResult: "on_track",
+    });
+  });
+
+  test("does not emit off-track approval metadata for unmarked on-track blocked reviews", async () => {
+    const { appDir, projectDir } = await makeWorkspace({
+      leafState: "blocked",
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        summary:
+          "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live stewardship focus is still on track, and kept it blocked behind the same governing approval wait while no returned owner decision exists.",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("result blocked");
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.planning.requested",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      project: "aks-rp-e2e",
+      reason: "focus-plan-review",
+      focusResult: "blocked",
+    });
+  });
+
+  test("reuses preserved governing focus approval lineage when approval is requested", async () => {
+    const { appDir, projectDir } = await makeOwnerReturnAlignedWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-mid-term-focus-plan",
+          mode: "plan",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "message.created",
+      "project.planning.requested",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      intent: "focus-plan-approval",
+      requestedAction:
+        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted carrying the preserved approvalId/waitId lineage.",
+      pathId: "focus-review-off_track-approval-refresh-20260712",
+      approvalId:
+        "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+      waitId:
+        "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+      dedupKey:
+        "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+      approval: {
+        kind: "focus-plan",
+        planId: "focus-review-off_track",
+        pathId: "focus-review-off_track-approval-refresh-20260712",
+        approvalId:
+          "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+        waitId:
+          "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+        packetPath:
+          "evidence/archive/ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+        directEvent: {
+          type: "project.approval.submitted",
+          project: "aks-rp-e2e",
+          projectPath: "projects/aks-rp-e2e.app",
+          approvalKind: "focus-plan",
+          planId: "focus-review-off_track",
+          pathId: "focus-review-off_track-approval-refresh-20260712",
+          approvalId:
+            "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+          packetPath:
+            "evidence/archive/ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+        },
+      },
+      evidence: {
+        governingFocusApprovalWaitTaskId:
+          "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+        preservedFocusApprovalPathId:
+          "focus-review-off_track-approval-refresh-20260712",
+      },
+    });
+    expect(dispatched[1].payload).toMatchObject({
+      project: "aks-rp-e2e",
+      reason: "focus-plan-proposal",
+      focusResult: "needs_approval",
+    });
   });
 
   test("progress review on track wakes owner review without human escalation", async () => {

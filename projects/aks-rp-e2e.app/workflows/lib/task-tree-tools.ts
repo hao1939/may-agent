@@ -16,6 +16,7 @@ import {
   pruneMissingChildren,
   readTask,
   readTaskTree,
+  taskState,
   repairTaskTreeRollups as sdkRepairTaskTreeRollups,
   rollupParent as sdkRollupParent,
   saveTaskTreeWithKanbanSnapshot,
@@ -35,6 +36,11 @@ import {
   exactBlockedWaitStewardshipProgress,
   runnableDurableLoopProgress,
 } from "./durable-loop-wait-stewardship.ts";
+import {
+  defaultFeatureCompactLoopStatePath,
+  loadFeatureCompactLoopState,
+  saveFeatureCompactLoopState,
+} from "./feature-compact-loop-store.ts";
 import {
   defaultSpecLoopStatePath,
   type SpecLoopSpecState,
@@ -96,6 +102,11 @@ export type {
 } from "@may-agent/sdk";
 
 export const completeTask = sdkCompleteTask;
+
+export type AppTaskTreeSummary = TaskTreeSummary & {
+  active_structural_task_ids: string[];
+  active_count_explanation: string;
+};
 
 export type RefreshBlockedWaitInput = {
   taskId: string;
@@ -220,7 +231,20 @@ function suppressedActiveDurableLoopRoots(
   );
 }
 
-export function summarizeTaskTree(config: TaskTreeConfig): TaskTreeSummary {
+function activeStructuralTaskIds(
+  tree: TaskTree,
+  frontierActiveIds: string[],
+): string[] {
+  const frontierActiveSet = new Set(frontierActiveIds);
+  return Object.values(tree.tasks)
+    .filter((task) => taskState(task) === "active")
+    .filter((task) => !isLeaf(task))
+    .filter((task) => !frontierActiveSet.has(task.id))
+    .map((task) => task.id)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
   const summary = sdkSummarizeTaskTree(config);
   const tree = readTaskTree(config);
   const nonReviewableDurableLoops = new Set(
@@ -234,20 +258,33 @@ export function summarizeTaskTree(config: TaskTreeConfig): TaskTreeSummary {
     tree,
     summary.frontier.active,
   );
+  const frontierActive = summary.frontier.active.filter(
+    (taskId) => !suppressedActiveDurableLoops.has(taskId),
+  );
+  const structuralActiveTaskIds = activeStructuralTaskIds(tree, frontierActive);
+  const activeCountExplanation =
+    structuralActiveTaskIds.length > 0
+      ? `tree_counts.active counts all active task nodes, including non-leaf structural ancestors; counts.active counts only active leaves; frontier.active lists live active frontier leaves/controllers after app-level suppression. Current non-frontier active structural task ids: ${structuralActiveTaskIds.join(", ")}.`
+      : "tree_counts.active, counts.active, and frontier.active currently agree on live active work semantics.";
+
   if (
     nonReviewableDurableLoops.size === 0 &&
     suppressedActiveDurableLoops.size === 0
   ) {
-    return summary;
+    return {
+      ...summary,
+      active_structural_task_ids: structuralActiveTaskIds,
+      active_count_explanation: activeCountExplanation,
+    };
   }
 
   return {
     ...summary,
+    active_structural_task_ids: structuralActiveTaskIds,
+    active_count_explanation: activeCountExplanation,
     frontier: {
       ...summary.frontier,
-      active: summary.frontier.active.filter(
-        (taskId) => !suppressedActiveDurableLoops.has(taskId),
-      ),
+      active: frontierActive,
       review: summary.frontier.review.filter(
         (taskId) => !nonReviewableDurableLoops.has(taskId),
       ),
@@ -684,6 +721,48 @@ function addMinutes(iso: string, minutes: number): string {
   return new Date(Date.parse(iso) + minutes * 60_000).toISOString();
 }
 
+function syncFeatureCompactProjectionTiming(
+  config: TaskTreeConfig,
+  task: TaskNode,
+): void {
+  const blocker = blockerRecord(task);
+  if (!blocker) return;
+  const nextCheckAt =
+    typeof blocker.next_check_at === "string" ? blocker.next_check_at : null;
+  const fallbackAt =
+    typeof blocker.fallback_at === "string" ? blocker.fallback_at : null;
+  if (!nextCheckAt && !fallbackAt) return;
+
+  const statePath = defaultFeatureCompactLoopStatePath(config.appDir);
+  if (!existsSync(statePath)) return;
+
+  const { state } = loadFeatureCompactLoopState({
+    appDir: config.appDir,
+    projectDir: config.projectDir,
+    loopTaskId: "aks-feature-compact-loop",
+    windowSize: 1,
+    statePath,
+    refreshFromProject: false,
+  });
+
+  let changed = false;
+  const now = new Date().toISOString();
+  for (const feature of Object.values(state.features ?? {})) {
+    if (feature.taskId !== task.id) continue;
+    if (nextCheckAt && feature.nextCheckAt !== nextCheckAt) {
+      feature.nextCheckAt = nextCheckAt;
+      changed = true;
+    }
+    if (fallbackAt && feature.fallbackAt !== fallbackAt) {
+      feature.fallbackAt = fallbackAt;
+      changed = true;
+    }
+    if (changed) feature.updatedAt = now;
+  }
+
+  if (changed) saveFeatureCompactLoopState(statePath, state);
+}
+
 export function refreshBlockedWait(
   config: TaskTreeConfig,
   input: RefreshBlockedWaitInput,
@@ -712,11 +791,39 @@ export function refreshBlockedWait(
         ? (target.trace as Record<string, unknown>)
         : {},
     );
+    const existingBlocker = blockerRecord(target);
     const blockedAt =
-      typeof (target.blocker as { blocked_at?: unknown } | undefined)
-        ?.blocked_at === "string"
-        ? ((target.blocker as { blocked_at: string }).blocked_at as string)
+      typeof existingBlocker?.blocked_at === "string"
+        ? existingBlocker.blocked_at
         : now;
+    const existingWaitingFor =
+      existingBlocker?.waiting_for &&
+      typeof existingBlocker.waiting_for === "object" &&
+      !Array.isArray(existingBlocker.waiting_for)
+        ? (existingBlocker.waiting_for as Record<string, unknown>)
+        : null;
+    const existingObservedBy =
+      existingBlocker?.observed_by &&
+      typeof existingBlocker.observed_by === "object" &&
+      !Array.isArray(existingBlocker.observed_by)
+        ? (existingBlocker.observed_by as Record<string, unknown>)
+        : null;
+    const existingObservationMethod =
+      typeof existingBlocker?.observation_method === "string"
+        ? existingBlocker.observation_method
+        : null;
+    const existingNextCheckAt =
+      typeof existingBlocker?.next_check_at === "string"
+        ? existingBlocker.next_check_at
+        : null;
+    const existingFallbackAt =
+      typeof existingBlocker?.fallback_at === "string"
+        ? existingBlocker.fallback_at
+        : null;
+    const existingFallbackAction =
+      typeof existingBlocker?.fallback_action === "string"
+        ? existingBlocker.fallback_action
+        : null;
     const previousStatus = String(target.status ?? target.state ?? "unknown");
 
     target.status = "blocked";
@@ -725,26 +832,39 @@ export function refreshBlockedWait(
     target.context = context;
     target.blocker = {
       condition,
-      category: input.category ?? "external-wait",
-      owner: input.owner ?? target.owner ?? "aks-explorer",
+      category:
+        input.category ??
+        (typeof existingBlocker?.category === "string"
+          ? existingBlocker.category
+          : "external-wait"),
+      owner:
+        input.owner ??
+        (typeof existingBlocker?.owner === "string"
+          ? existingBlocker.owner
+          : target.owner ?? "aks-explorer"),
       blocked_at: blockedAt,
-      waiting_for: input.waitingFor ?? {
-        type: "frontier.changed",
-        taskId: input.taskId,
-        source: "task-tree.refresh-blocked-wait",
-      },
-      observed_by: input.observedBy ?? {
-        workflow: "project-planner",
-        trigger: "task-tree.refresh-blocked-wait",
-      },
+      waiting_for: input.waitingFor ??
+        existingWaitingFor ?? {
+          type: "frontier.changed",
+          taskId: input.taskId,
+          source: "task-tree.refresh-blocked-wait",
+        },
+      observed_by: input.observedBy ??
+        existingObservedBy ?? {
+          workflow: "project-planner",
+          trigger: "task-tree.refresh-blocked-wait",
+        },
       observation_method:
         input.observationMethod ??
+        existingObservationMethod ??
         "Planner/app-ops refreshed this wait after reviewing returned evidence; controller ticks should keep it blocked until the named frontier changes.",
-      next_check_at: input.nextCheckAt ?? addMinutes(now, 10),
+      next_check_at:
+        input.nextCheckAt ?? existingNextCheckAt ?? addMinutes(now, 10),
       resume_condition: resumeCondition,
-      fallback_at: input.fallbackAt ?? addHours(now, 24),
+      fallback_at: input.fallbackAt ?? existingFallbackAt ?? addHours(now, 24),
       fallback_action:
         input.fallbackAction ??
+        existingFallbackAction ??
         "If the same wait remains true, refresh evidence or escalate the owner-specific blocker instead of retrying unchanged.",
     };
     target.trace = {
@@ -756,6 +876,7 @@ export function refreshBlockedWait(
       current_attempt_id: undefined,
     };
     saveTaskTreeWithKanbanSnapshot(config, tree);
+    syncFeatureCompactProjectionTiming(config, target);
     return target;
   });
 
@@ -1606,6 +1727,109 @@ function blockerWaitingForType(task: TaskNode): string {
   return typeof type === "string" ? type.trim().toLowerCase() : "";
 }
 
+function exactAdoWaitRunId(task: TaskNode): string {
+  const blocker = task.blocker;
+  if (blocker && typeof blocker === "object" && !Array.isArray(blocker)) {
+    const waitingFor = (blocker as Record<string, unknown>).waiting_for;
+    if (
+      waitingFor &&
+      typeof waitingFor === "object" &&
+      !Array.isArray(waitingFor)
+    ) {
+      const runId = (waitingFor as Record<string, unknown>).runId;
+      if (typeof runId === "string" && /^\d{6,}$/.test(runId.trim())) {
+        return runId.trim();
+      }
+    }
+  }
+
+  const context = taskContext(task);
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+  ]) {
+    const value = context[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
+  for (const key of [
+    "runId",
+    "workflowRunId",
+    "activeWorkflowRunId",
+    "lastRunId",
+  ]) {
+    const value = trace[key];
+    if (typeof value === "string" && /^\d{6,}$/.test(value.trim())) {
+      return value.trim();
+    }
+  }
+
+  for (const output of normalizeStringArray(task.outputs)) {
+    const match = output.match(
+      /\.state\/(?:spec-loop|feature-compact-loop)\/artifacts\/(\d{6,})(?:\/|$)/,
+    );
+    if (match) return match[1];
+  }
+
+  return "";
+}
+
+function isRefreshedExactAdoCompletionWait(task: TaskNode): boolean {
+  if (blockerWaitingForType(task) !== "frontier.changed") return false;
+
+  const runId = exactAdoWaitRunId(task);
+  if (!runId) return false;
+
+  const text = taskSearchText(task);
+  return (
+    includesAny(text, [
+      "exact ado completion wait",
+      "in-flight azure devops completion wait",
+      "queued-run metadata",
+      "ado rerun",
+    ]) &&
+    includesAny(text, [
+      `run ${runId} is terminal`,
+      `run ${runId} becomes terminal`,
+      `rerun ${runId}`,
+      `artifacts/${runId}`,
+    ]) &&
+    includesAny(text, [
+      "azure devops",
+      "pipeline",
+      "artifacts are available",
+      "terminal and reviewable",
+    ])
+  );
+}
+
+function isExactAdoCompletionWait(task: TaskNode): boolean {
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+
+  const category =
+    typeof blocker.category === "string"
+      ? blocker.category.trim().toLowerCase()
+      : "";
+  if (category !== "external-wait") return false;
+
+  if (blockerWaitingForType(task) === "ado.pipeline_run.completed") {
+    return exactAdoWaitRunId(task).length > 0;
+  }
+
+  return isRefreshedExactAdoCompletionWait(task);
+}
+
 function isPreWindowBlockedExecutionWait(
   task: TaskNode,
   now = Date.now(),
@@ -1736,6 +1960,38 @@ function isFocusPlanApprovalWait(task: TaskNode): boolean {
   return blockerWaitingForType(task) === "project.approval.submitted";
 }
 
+function isDependentHumanApprovalWait(task: TaskNode): boolean {
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+
+  const category =
+    typeof blocker.category === "string"
+      ? blocker.category.trim().toLowerCase()
+      : "";
+  if (category !== "human-approval") return false;
+  if (blockerWaitingForType(task) !== "project.approval.submitted") {
+    return false;
+  }
+
+  const waitingFor = (blocker as Record<string, unknown>).waiting_for;
+  if (
+    !waitingFor ||
+    typeof waitingFor !== "object" ||
+    Array.isArray(waitingFor)
+  ) {
+    return false;
+  }
+
+  const waitTaskId = (waitingFor as Record<string, unknown>).taskId;
+  const focusTaskId = (waitingFor as Record<string, unknown>).focusTaskId;
+  return (
+    (typeof waitTaskId === "string" && waitTaskId.trim() !== task.id) ||
+    typeof focusTaskId === "string"
+  );
+}
+
 function isRepresentedBlockedFrontier(task: TaskNode): boolean {
   const text = taskSearchText(task);
   const representedSignals = [
@@ -1831,7 +2087,8 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           isHumanOwnedExternalWait(task) ||
           isRepresentedBlockedFrontier(task) ||
           isFeatureCompactNonEnvironmentFrontier(task) ||
-          isFocusPlanApprovalWait(task)
+          isFocusPlanApprovalWait(task) ||
+          isDependentHumanApprovalWait(task)
         ) {
           continue;
         }
@@ -1882,8 +2139,10 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           isRepresentedBlockedFrontier(task) ||
           isFeatureCompactNonEnvironmentFrontier(task) ||
           isFocusPlanApprovalWait(task) ||
+          isDependentHumanApprovalWait(task) ||
           isPreWindowBlockedExecutionWait(task) ||
-          isWatchedAppOpsExternalWait(task)
+          isWatchedAppOpsExternalWait(task) ||
+          isExactAdoCompletionWait(task)
         ) {
           continue;
         }

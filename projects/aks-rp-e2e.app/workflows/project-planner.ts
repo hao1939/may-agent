@@ -830,6 +830,14 @@ Core operating model:
   still live in the current tree or current trigger; otherwise check recent
   done-leaf archives and classify accepted archived lineage as settled history,
   not a new missing-visibility repair.
+- For blocked-frontier or manual-learning wakes, treat an accepted same-lineage
+  diagnosis/evidence ceiling as live context even when its task was archived.
+  If the same spec/run/first-failing-surface question was already accepted and
+  the current trigger names no materially new evidence gap or narrower explicit
+  question, do not create another same-lineage diagnosis leaf from the same
+  async-op/node-RG pointers. Leave any already-started duplicate attempt alone,
+  judge its output against the accepted memo, and keep or refresh one exact
+  holder instead.
 - For project.problem.* events, trust the solver summary as new evidence. If an
   escalated event summary says the local cause was fixed and verified, treat it
   as resolved-but-misclassified, record that in the affected branch, and create
@@ -2129,13 +2137,17 @@ function blockedOverdueScopeAliases(scope: string): string[] {
 
 function blockedWaitOverdueAt(task: TaskNode): number | null {
   const blocker = objectValue(task.blocker);
-  const fallbackAt = Date.parse(stringValue(blocker?.fallback_at));
-  const resumeAt = Date.parse(stringValue(blocker?.resume_at));
-  const overdueAt = Number.isFinite(fallbackAt)
-    ? fallbackAt
-    : Number.isFinite(resumeAt)
-      ? resumeAt
-      : Number.NaN;
+  const overdueAt = [
+    blocker?.next_check_at,
+    blocker?.nextCheckAt,
+    blocker?.resume_at,
+    blocker?.resumeAt,
+    blocker?.fallback_at,
+    blocker?.fallbackAt,
+  ]
+    .map((value) => Date.parse(stringValue(value)))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => a - b)[0];
   return Number.isFinite(overdueAt) ? overdueAt : null;
 }
 
@@ -2249,6 +2261,8 @@ function structuredBlockedTaskIds(
   collectArray(context.audited_blocked_task_ids);
   collectArray(context.auditedBlockedTasks);
   collectArray(context.audited_blocked_tasks);
+  collectArray(context.offenderTaskIds);
+  collectArray(context.offender_task_ids);
 
   return [...ids].sort((a, b) => a.localeCompare(b));
 }
@@ -3152,6 +3166,14 @@ function routineRefillReason(rawTask: string): string | null {
     : null;
 }
 
+function isBlockedFrontierReviewReason(reason: unknown): boolean {
+  return [
+    "scheduled-blocked-frontier-review",
+    "blocked-frontier-review",
+    "watchdog-blocked-frontier-review",
+  ].includes(typeof reason === "string" ? reason : "");
+}
+
 function completedTaskIdFromTrigger(rawTask: string): string {
   const trigger = parseTriggerEvent(rawTask);
   const value =
@@ -3230,9 +3252,15 @@ function settledActiveNoopResult(input: {
     input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
     hasOnlyActiveFrontier &&
-    activeOpsTaskIds.length > 0;
+    activeOpsTaskIds.length === liveActiveIds.size &&
+    activeOpsTaskIds.length > 0 &&
+    activeOpsCoversBlockedOverdueOffenders({
+      config: input.config,
+      rawTask: input.rawTask,
+      activeOpsTaskIds,
+    });
   const blockedFrontierFutureWaitCoveredByActiveOps =
-    reason === "watchdog-blocked-frontier-review" &&
+    isBlockedFrontierReviewReason(reason) &&
     input.quickAssignments.length === 0 &&
     input.quickControllerPulses.length === 0 &&
     noHumanSteering &&
@@ -3350,6 +3378,51 @@ function triggerRunnableBacklogSnapshotAt(rawTask: string): string {
   const trigger = parseTriggerEvent(rawTask);
   const value = triggerValue(trigger, "runnableBacklogSnapshotAt");
   return typeof value === "string" ? value : "";
+}
+
+function triggerOffenderTaskIds(rawTask: string): string[] {
+  const trigger = parseTriggerEvent(rawTask);
+  const ids = new Set<string>();
+  const collect = (value: unknown) => {
+    if (typeof value === "string" && value.trim()) {
+      ids.add(value.trim());
+      return;
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) return;
+    const record = value as Record<string, unknown>;
+    const id = stringValue(record.taskId ?? record.task_id ?? record.id);
+    if (id) ids.add(id);
+  };
+  const collectArray = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    for (const entry of value) collect(entry);
+  };
+
+  collectArray(triggerValue(trigger, "offenderTaskIds"));
+  collectArray(triggerValue(trigger, "offender_task_ids"));
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function activeOpsCoversBlockedOverdueOffenders(input: {
+  config: TaskTreeConfig;
+  rawTask: string;
+  activeOpsTaskIds: string[];
+}): boolean {
+  const offenderTaskIds = triggerOffenderTaskIds(input.rawTask);
+  if (offenderTaskIds.length === 0) return true;
+
+  const activeOpsTasks = input.activeOpsTaskIds
+    .map((taskId) => readTask(input.config, taskId))
+    .filter((task): task is NonNullable<typeof task> => !!task);
+  if (activeOpsTasks.length === 0) return false;
+
+  return offenderTaskIds.every((taskId) => {
+    const blockedTask = readTask(input.config, taskId);
+    if (!blockedTask || taskState(blockedTask) !== "blocked") return true;
+    return activeOpsTasks.some((candidate) =>
+      taskCoversBlockedOverdueWait(candidate, blockedTask, ""),
+    );
+  });
 }
 
 function staleRunnableBacklogNoopResult(input: {
@@ -3652,7 +3725,7 @@ function blockedFrontierFutureWaitNoopResult(input: {
   quickControllerPulses: LoopControllerPulse[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
-  if (reason !== "watchdog-blocked-frontier-review") return null;
+  if (!isBlockedFrontierReviewReason(reason)) return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
   if (input.quickControllerPulses.length > 0) return null;

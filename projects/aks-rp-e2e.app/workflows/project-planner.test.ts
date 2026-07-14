@@ -1256,6 +1256,136 @@ describe("project owner workflow", () => {
     ).toBe("review");
   });
 
+  test("accepted overdue-wait audits stay open when only fallback_at moved forward", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-maintain-overdue-fallback-only-refresh",
+      context: {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        blockedOverdueAudit: true,
+        blockedTaskIds: ["wait-spec-loop-overdue-family"],
+      },
+      conflictScope: ["ops:blocked-overdue:spec-loop"],
+      extraTasks: {
+        "wait-spec-loop-overdue-family": {
+          id: "wait-spec-loop-overdue-family",
+          parent_id: "aks-spec-verification-loop",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Preserve the exact overdue spec-loop family wait.",
+          outputs: ["evidence/archive/wait-spec-loop-overdue-family.md"],
+          acceptance: ["wait is refreshed or replaced"],
+          blocker: {
+            condition: "Spec-loop family remains blocked.",
+            category: "external-wait",
+            owner: "human",
+            waiting_for: { type: "owner.response" },
+            observed_by: { workflow: "project-planner" },
+            observation_method:
+              "Planner/app-ops must refresh, replace, unblock, or escalate this exact wait.",
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            resume_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2999-01-01T00:00:00.000Z",
+            fallback_action:
+              "Refresh this exact wait with current evidence or replace it.",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops-maintain-overdue-fallback-only-refresh",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted evidence says the fallback window moved forward, so the overdue spec-loop family can close.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("Overdue-wait accept cannot close");
+    expect(
+      tree.tasks["ops-maintain-overdue-fallback-only-refresh"].state,
+    ).toBe("review");
+  });
+
+  test("accepted overdue-wait audits treat metric offenderTaskIds as structured blocked task ids", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops-apply-overdue-project-frontier-from-metric-offenders",
+      context: {
+        metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        blockedOverdueAudit: true,
+        offenderTaskIds: ["wait-shared-westus2-managed-cluster-capacity"],
+      },
+      conflictScope: ["ops:blocked-overdue:project"],
+      extraTasks: {
+        "wait-shared-westus2-managed-cluster-capacity": {
+          id: "wait-shared-westus2-managed-cluster-capacity",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Preserve exact westus2 capacity wait.",
+          outputs: ["evidence/archive/westus2.md"],
+          acceptance: ["wait is refreshed or replaced"],
+          conflict_scope: ["westus2-capacity"],
+          blocker: {
+            condition: "Capacity wait was refreshed by an apply task.",
+            category: "external-wait",
+            owner: "human",
+            waiting_for: { type: "azure.capacity.available" },
+            observed_by: { workflow: "project-planner" },
+            observation_method:
+              "Planner/app-ops should refresh, replace, unblock, or escalate.",
+            next_check_at: "2999-07-14T18:00:00Z",
+            fallback_at: "2999-07-15T18:00:00Z",
+            fallback_action:
+              "Refresh this exact wait with fresh evidence or replace it.",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops-apply-overdue-project-frontier-from-metric-offenders",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted evidence says the metric offender wait was refreshed with future timing.",
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Applied accept review");
+    expect(
+      tree.tasks["ops-apply-overdue-project-frontier-from-metric-offenders"]
+        .state,
+    ).toBe("done");
+  });
+
   test("applies blocked reviews by replacing the review leaf with an exact wait task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -2226,6 +2356,9 @@ describe("project owner workflow", () => {
     expect(prompts[1]).not.toContain('"path_gap_count"');
     expect(prompts[1]).toContain(
       "Do not stop merely because one rollup or one new leaf was created.",
+    );
+    expect(prompts[1]).toContain(
+      "do not create another same-lineage diagnosis leaf from the same",
     );
     expect(prompts[1]).not.toContain("Stop after one small material update");
   });
@@ -5932,7 +6065,137 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
-  test("skips owner session for blocked-frontier future-wait review when active ops repair already covers the frontier", async () => {
+  test("does not skip blocked-overdue metric wake when active ops repair covers different offenders", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-covered-wait",
+          active_task_ids: ["ops/repair-covered-wait"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "ops/repair-covered-wait",
+                "covered-wait",
+                "uncovered-wait",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-covered-wait": {
+              id: "ops/repair-covered-wait",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              session_id: "s_task_ops_repair_covered_wait",
+              children: [],
+              goal: "Repair one overdue wait.",
+              outputs: ["evidence/archive/ops-repair-covered-wait.md"],
+              acceptance: ["done"],
+              context: {
+                blockedTaskIds: ["covered-wait"],
+              },
+            },
+            "covered-wait": {
+              id: "covered-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal: "Covered blocked wait.",
+              outputs: ["evidence/archive/covered-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Covered wait.",
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+            "uncovered-wait": {
+              id: "uncovered-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal: "Uncovered blocked wait.",
+              outputs: ["evidence/archive/uncovered-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Uncovered wait.",
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "metric.breach",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "open-alert-updated",
+            metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+            offenderTaskIds: ["uncovered-wait"],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "owner reviewed" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Agent ran event-review");
+    expect(result.message).not.toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(prompts.length).toBeGreaterThan(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["event-review","planning-update"]');
+    expect(plannerRuns).toContain('"ran_agent":true');
+  });
+
+  test("skips owner session for scheduled blocked-frontier future-wait review when active ops repair already covers the frontier", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       resolveTaskTreePath(appDir),
@@ -6032,7 +6295,7 @@ describe("project owner workflow", () => {
           type: "project.planning.requested",
           data: {
             project: "aks-rp-e2e",
-            reason: "watchdog-blocked-frontier-review",
+            reason: "scheduled-blocked-frontier-review",
             blockedTasks: [
               {
                 taskId: "blocked-a",

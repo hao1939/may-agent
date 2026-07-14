@@ -7112,6 +7112,229 @@ describe("feature compact loop", () => {
     ]);
   });
 
+  test("closes stale exact compact holders when feature state is no longer blocked", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-windows-reviewed-exception-frontier",
+    ];
+    tree.tasks["hold-compact-windows-reviewed-exception-frontier"] = {
+      id: "hold-compact-windows-reviewed-exception-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature windows on exact reviewed-exception wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["windows holder stays visible"],
+      conflict_scope: [
+        "feature-compact:windows",
+        "feature:windows",
+        "feature-compact-wait:reviewed-exception",
+      ],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "windows",
+        errorClass: "reviewed-exception",
+        target: "staging",
+      },
+      blocker: {
+        condition: "Historic reviewed-exception frontier.",
+        waiting_for: {
+          featureKey: "windows",
+          target: "staging",
+          errorClass: "reviewed-exception",
+          scope: "feature-compact",
+          type: "owner.decision",
+        },
+      },
+    };
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "done",
+      taskId: "hold-compact-windows-reviewed-exception-frontier",
+      frontierTaskIds: ["hold-compact-windows-reviewed-exception-frontier"],
+      lastSummary: "Windows compact frontier already resolved.",
+    });
+
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask: tree.tasks["aks-feature-compact-loop"],
+      tasks: tree.tasks,
+      state,
+    });
+
+    expect(repair.taskRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "hold-compact-windows-reviewed-exception-frontier",
+          featureKey: "windows",
+          field: "task.completed",
+        }),
+      ]),
+    );
+    expect(repair.stateRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          featureKey: "windows",
+          field: "taskId",
+          after: null,
+        }),
+        expect.objectContaining({
+          featureKey: "windows",
+          field: "frontierTaskIds",
+          after: [],
+        }),
+      ]),
+    );
+    expect(tree.tasks["hold-compact-windows-reviewed-exception-frontier"])
+      .toMatchObject({
+        state: "done",
+        status: "done",
+        resolution: "completed",
+      });
+    expect(state.features.windows.taskId).toBeNull();
+    expect(state.features.windows.frontierTaskIds).toEqual([]);
+  });
+
+  test("controller pulse clears stale blocked compact frontier when current plan is already live-dispatchable", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    await mkdir(join(projectDir, "features", "windows", "compact"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "features", "windows", "compact", "staging.plan.json"),
+      `${JSON.stringify({ liveDispatchGate: { allowed: true } }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "hold-compact-windows-reviewed-exception-frontier",
+    ];
+    tree.tasks["hold-compact-windows-reviewed-exception-frontier"] = {
+      id: "hold-compact-windows-reviewed-exception-frontier",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "operator",
+      children: [],
+      goal: "Hold compact feature windows on exact reviewed-exception wait until the named condition changes.",
+      inputs: [],
+      outputs: [],
+      acceptance: ["windows holder stays visible"],
+      conflict_scope: [
+        "feature-compact:windows",
+        "feature:windows",
+        "feature-compact-wait:reviewed-exception",
+      ],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "windows",
+        errorClass: "reviewed-exception",
+        target: "staging",
+      },
+      blocker: {
+        condition: "Historic reviewed-exception frontier.",
+        waiting_for: {
+          featureKey: "windows",
+          target: "staging",
+          errorClass: "reviewed-exception",
+          scope: "feature-compact",
+          type: "owner.decision",
+        },
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "blocked",
+      errorClass: "reviewed-exception",
+      taskId: "hold-compact-windows-reviewed-exception-frontier",
+      frontierTaskIds: ["hold-compact-windows-reviewed-exception-frontier"],
+      lastPlanPath: "features/windows/compact/staging.plan.json",
+      lastSummary:
+        "Windows compact remained blocked on a reviewed-exception frontier before the ready plan landed.",
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = await executeController({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        eventBlock({
+          type: "project.task.tick",
+          action: "feature-compact-loop",
+          target: { taskId: "aks-feature-compact-loop" },
+          taskId: "aks-feature-compact-loop",
+          project: "aks-rp-e2e",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Closed 1 stale blocked compact frontier(s) whose current compact plan is already live-dispatchable.",
+    );
+
+    const repairedTree = JSON.parse(await readFile(treePath, "utf8"));
+    expect(
+      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"].state,
+    ).toBe("done");
+    expect(
+      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"].resolution,
+    ).toBe("completed");
+
+    const repairedState = JSON.parse(await readFile(statePath, "utf8"));
+    expect(repairedState.features.windows.status).toBe("done");
+    expect(repairedState.features.windows.taskId).toBeNull();
+    expect(repairedState.features.windows.frontierTaskIds).toEqual([]);
+  });
+
   test("controller pulse persists second-batch cross-loop frontier bindings", async () => {
     const projectDir = await makeProject();
     const restoreGh = await installCompactPipelineBackend(projectDir);

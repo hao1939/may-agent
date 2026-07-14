@@ -1814,4 +1814,104 @@ describe("task reviewer", () => {
       },
     });
   });
+
+  test("guarded no-secret-leak malformed review fallback emits app-state-repair and planner creates runnable reconciliation work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        workflow: "app-ops",
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const reviewResult = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(completionEvent()),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "blocked",
+        message:
+          'Workflow blocked by guard: 🚨 Secret leak detected in step "aks-reviewer": Telegram bot token found. guard=no-secret-leak',
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(reviewResult.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "escalate",
+        confidence: "low",
+        findings: expect.arrayContaining([
+          "reviewer-output-not-structured",
+          "reviewer-guard-no-secret-leak",
+        ]),
+        reviewAction: {
+          actionKind: "app-state-repair",
+          owner: "app-ops",
+          parentId: "project",
+        },
+      },
+    });
+
+    const plannerResult = await executePlanner({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 1",
+        triggerEvent({
+          type: dispatched[0].type,
+          data: dispatched[0].payload,
+        }),
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success", message: "owner should not run" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "owner should not run",
+      }),
+      summarize: () => "",
+    } as any);
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    ) as { tasks: Record<string, any> };
+    const followup = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId === "review-task" &&
+        task?.id !== "review-task",
+    ) as any;
+
+    expect(plannerResult.status).toBe("done");
+    expect(followup).toBeDefined();
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.owner).toBe("app-ops");
+    expect(followup.parent_id).toBe("project");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain("Manually reconcile the guarded review");
+    expect(followup.context.reviewedTask.reviewAction).toMatchObject({
+      actionKind: "app-state-repair",
+    });
+  });
 });

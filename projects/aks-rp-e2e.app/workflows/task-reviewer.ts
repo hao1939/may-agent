@@ -194,18 +194,50 @@ function parseReviewJson(text: string): Record<string, unknown> | null {
   }
 }
 
-function structuredReviewFromText(text: string): StructuredReview {
-  const parsed = parseReviewJson(text);
-  if (!parsed) {
+function malformedReviewFallback(text: string): StructuredReview {
+  const feedback = [text.slice(0, 1800)];
+  const guardBlocked = /Workflow blocked by guard:/i.test(text);
+  const noSecretLeak = /no-secret-leak|Secret leak detected/i.test(text);
+
+  if (guardBlocked && noSecretLeak) {
     return {
       decision: "escalate",
       confidence: "low",
       summary:
-        "Task reviewer did not emit valid TASK_REVIEW_JSON; planner must inspect completion manually.",
-      findings: ["reviewer-output-not-structured"],
-      feedback: [text.slice(0, 1800)],
-      suggestedFollowups: [],
+        "Task reviewer was halted by the no-secret-leak guard; planner should route a bounded app-ops manual reconciliation from the existing worker evidence.",
+      findings: [
+        "reviewer-output-not-structured",
+        "reviewer-guard-no-secret-leak",
+      ],
+      feedback,
+      suggestedFollowups: [
+        "App-ops should inspect the existing worker evidence, accept or reject the reviewed task, or create one exact successor without duplicating passive blocked waits.",
+      ],
+      reviewAction: {
+        actionKind: "app-state-repair",
+        owner: "app-ops",
+        parentId: "project",
+        goal:
+          "Manually reconcile the guarded review from the existing worker evidence and either accept it, reject it, or create one exact successor without duplicating passive waits.",
+      },
     };
+  }
+
+  return {
+    decision: "escalate",
+    confidence: "low",
+    summary:
+      "Task reviewer did not emit valid TASK_REVIEW_JSON; planner must inspect completion manually.",
+    findings: ["reviewer-output-not-structured"],
+    feedback,
+    suggestedFollowups: [],
+  };
+}
+
+function structuredReviewFromText(text: string): StructuredReview {
+  const parsed = parseReviewJson(text);
+  if (!parsed) {
+    return malformedReviewFallback(text);
   }
 
   const summary =

@@ -419,6 +419,73 @@ describe("check-integrity durable loop contracts", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
+  test("rejects stale focus owner-return metadata that still points at archived waits", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await Bun.file(treePath).text());
+
+    tree.tasks.project.context = {
+      current_focus_proposal: {
+        id: "focus-owner-return-test",
+        reason:
+          "The live owner-return holder set is now focus-owner-return-test, wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175; the consumed wait should have been removed.",
+      },
+    };
+    tree.tasks.project.children.push("focus-owner-return-test");
+    tree.tasks["focus-owner-return-test"] = {
+      id: "focus-owner-return-test",
+      parent_id: "project",
+      kind: "focus_plan",
+      state: "blocked",
+      children: [],
+      goal: "Keep the owner-return lineage visible.",
+      outputs: ["evidence/archive/focus-owner-return-test.md"],
+      acceptance: ["Live holder set is current."],
+      context: {
+        progress_review: {
+          evidence: [
+            "2026-07-13T17:14:11.012Z the current live owner-return blocked-holder set is focus-owner-return-test, wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175.",
+          ],
+        },
+        observations: {
+          linked_blocked_task_ids: [
+            "focus-owner-return-test",
+            "wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175",
+          ],
+        },
+      },
+      blocker: {
+        condition: "Waiting for exact owner-return decision.",
+        category: "human-approval",
+        owner: "human",
+        blocked_at: "2026-07-13T17:14:11.012Z",
+        waiting_for: {
+          type: "project.approval.submitted",
+          taskId: "focus-owner-return-test",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.approval.submitted",
+        },
+        observation_method: "Planner reconciles the returned approval.",
+        next_check_at: "2026-07-14T01:14:11.012Z",
+        resume_condition: "Resume when the owner responds.",
+        fallback_at: "2026-07-14T13:14:11.012Z",
+        fallback_action: "Refresh the same wait.",
+      },
+    };
+
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(`${result.stdout}${result.stderr}`).toContain("focus metadata drift");
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175",
+    );
+  });
+
   test("rejects git-tracked project-app runtime files", async () => {
     const fixture = await makeFixture();
     execFileSync("git", ["init"], { cwd: fixture.root });

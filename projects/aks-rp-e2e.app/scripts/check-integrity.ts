@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { exactBlockedWaitStewardshipProgress } from "../workflows/lib/durable-loop-wait-stewardship.ts";
 import { resolveTaskTreePath } from "@may-agent/sdk";
+import { auditFocusMetadataIssues } from "./lib/focus-metadata-audit.ts";
 
 type AgentConfig = {
   name?: string;
@@ -1063,6 +1064,11 @@ validateWorkflowHandlers(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);
 validateTaskTree(taskTree, workflowNames);
+for (const issue of auditFocusMetadataIssues(taskTree ?? {})) {
+  fail(
+    `focus metadata drift: ${issue.reason} (owner=${issue.ownerTaskId}, expected=${issue.expectedState}, actual=${issue.actualState})`,
+  );
+}
 validateDurableLoopTasks(taskTree);
 
 for (const message of warnings) {

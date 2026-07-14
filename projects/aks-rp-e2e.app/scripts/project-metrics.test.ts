@@ -1777,6 +1777,80 @@ describe("project metrics", () => {
     ).toBe("1");
   });
 
+  test("counts stale focus owner-return metadata as a task-tree integrity problem", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "focus-owner-return-test": {
+          id: "focus-owner-return-test",
+          parent_id: "project",
+          kind: "focus_plan",
+          state: "blocked",
+          children: [],
+          goal: "Keep the owner-return lineage visible.",
+          outputs: ["evidence/archive/focus-owner-return-test.md"],
+          acceptance: ["Live holder set is current."],
+          context: {
+            progress_review: {
+              evidence: [
+                "2026-07-13T17:14:11.012Z the current live owner-return blocked-holder set is focus-owner-return-test, wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175.",
+              ],
+            },
+            observations: {
+              linked_blocked_task_ids: [
+                "focus-owner-return-test",
+                "wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175",
+              ],
+            },
+          },
+          blocker: {
+            condition: "Waiting for exact owner-return decision.",
+            category: "human-approval",
+            owner: "human",
+            blocked_at: "2026-07-13T17:14:11.012Z",
+            waiting_for: {
+              type: "project.approval.submitted",
+              taskId: "focus-owner-return-test",
+            },
+            observed_by: {
+              workflow: "project-planner",
+              trigger: "project.approval.submitted",
+            },
+            observation_method: "Planner reconciles the returned approval.",
+            next_check_at: "2026-07-14T01:14:11.012Z",
+            resume_condition: "Resume when the owner responds.",
+            fallback_at: "2026-07-14T13:14:11.012Z",
+            fallback_action: "Refresh the same wait.",
+          },
+        },
+      },
+    );
+
+    const tree = JSON.parse(
+      await Bun.file(resolveTaskTreePath(fixture.appDir)).text(),
+    );
+    tree.tasks.project.context = {
+      current_focus_proposal: {
+        id: "focus-owner-return-test",
+        reason:
+          "The live owner-return holder set is now focus-owner-return-test, wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175; the consumed wait should have been removed.",
+      },
+    };
+    await writeFile(
+      resolveTaskTreePath(fixture.appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+    );
+
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.integrity.task-tree-problem-count",
+      ),
+    ).toBe("3");
+  });
+
   test("does not count freshly queued active assignments as unowned stale-active work", async () => {
     const fixture = await makeFixture();
     const assignedAt = new Date().toISOString();
@@ -1808,6 +1882,45 @@ describe("project metrics", () => {
     expect(
       await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
     ).toBe("0");
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment.not-consumed-count",
+      ),
+    ).toBe("0");
+  });
+
+  test("does not count queued assignments that already have a running worker session", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_active-task",
+      trace: {
+        current_attempt_id: "a_active-task_1",
+        assigned_at: "2026-07-03T12:05:00.000Z",
+      },
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "task-assignments.jsonl"),
+      `${JSON.stringify({
+        taskId: "active-task",
+        task_id: "active-task",
+        attemptId: "a_active-task_1",
+        attempt_id: "a_active-task_1",
+        sessionId: "s_task_active-task",
+        session_id: "s_task_active-task",
+        worker: "app-ops",
+        assignedAt: "2026-07-03T12:05:00.000Z",
+        assigned_at: "2026-07-03T12:05:00.000Z",
+      })}\n`,
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_task_active-task",
+      status: "running",
+      source: "workflow:task-worker",
+      startedAt: Date.now() - 1_000,
+      lastActivityAt: Date.now(),
+    });
+
     expect(
       await metricValue(
         fixture,

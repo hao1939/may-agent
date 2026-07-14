@@ -19,6 +19,7 @@ import {
   parseTriggerEvent,
   triggerString,
 } from "../workflows/lib/workflow-input.ts";
+import { auditFocusMetadataIssues } from "./lib/focus-metadata-audit.ts";
 
 type ModelStatus = {
   features?: {
@@ -718,6 +719,7 @@ function taskCounts() {
   const roots = tasks.filter(
     (task) => task.id && !childRefs.has(task.id),
   ).length;
+  const focusMetadataProblems = auditFocusMetadataIssues(tree).length;
   return {
     total: tasks.length,
     runnable:
@@ -744,7 +746,8 @@ function taskCounts() {
     blockedOverdueUnworkedTaskIds,
     done: byStatus.get("done") ?? 0,
     completed24h,
-    taskTreeProblemCount: (roots === 1 ? 0 : 1) + assignmentStateMismatch,
+    taskTreeProblemCount:
+      (roots === 1 ? 0 : 1) + assignmentStateMismatch + focusMetadataProblems,
     projectClosed:
       tree.project_lifecycle === "closed" ||
       tree.project_lifecycle === "review" ||
@@ -1103,6 +1106,8 @@ function structuredBlockedTaskIds(task: TaskNode | undefined): string[] {
   collectArray(context.audited_blocked_task_ids);
   collectArray(context.auditedBlockedTasks);
   collectArray(context.audited_blocked_tasks);
+  collectArray(context.offenderTaskIds);
+  collectArray(context.offender_task_ids);
   collectArray(context.overdueOwnerActions);
   collectArray(context.overdue_owner_actions);
 
@@ -1888,6 +1893,20 @@ function assignmentNotConsumedDetails(): Array<{
 
     if (state === "active" && currentAttempt === attemptId) {
       if (startedAttempt === attemptId) return [];
+
+      const sessionId =
+        typeof task?.session_id === "string" && task.session_id.trim()
+          ? task.session_id.trim()
+          : typeof assignment.sessionId === "string" &&
+              assignment.sessionId.trim()
+            ? assignment.sessionId.trim()
+            : typeof assignment.session_id === "string" &&
+                assignment.session_id.trim()
+              ? assignment.session_id.trim()
+              : null;
+      const workerRow = activeTaskWorkerSessionRow(taskId, attemptId, sessionId);
+      if (sessionRestartReasonFromRow(workerRow) === null) return [];
+
       return [{ taskId, attemptId, assignedAt, taskState: state }];
     }
 

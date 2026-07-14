@@ -229,6 +229,31 @@ Workflow lesson:
   wait is now visible, exact, and has owner/resume/fallback fields. The planner
   then created the next active domain triage task for the create-cache-acr0
   frontier instead of leaving a hidden archived-id dependency.
+- Follow-up review can race with manual/app-ops apply. On 2026-07-13, the
+  focus metadata repair worker produced only a repair packet, so the reviewer
+  correctly returned `followup`. While applying that follow-up, the target truth
+  changed again: the diagnosis task
+  `ops/diagnose-dev-infra-core-ado171990664-environment-overblock-20260713`
+  had already been retired and replaced by the exact ADO wait
+  `ops/wait-dev-infra-core-ado171990664-queue-result-20260713b`. The correct
+  repair was not to replay the stale packet literally; it was to re-check live
+  task-tree state, update focus/project metadata to the current exact wait, then
+  close the original review with `--review-decision followup`. The planner also
+  created a duplicate successor task after the follow-up decision; because the
+  metadata repair had already landed, that successor was closed as `replaced`
+  and its stale queued assignment was drained.
+- Live validation progress requires a pipeline result. The same 2026-07-13
+  dev-infra-core case has a real ADO run, `171990664`, but the run is still
+  `notStarted`. That is not a test pass and not cluster creation proof. The
+  app-visible state should remain one exact blocked wait for the ADO run result
+  or artifact, with fallback escalation if the queue/result never arrives.
+- Blocked waits must not point at completed diagnosis tasks as if they are
+  still active owners. During the same ADO run `171990664` case, a later
+  planner/worker update rewrote the exact wait to say an "active diagnosis"
+  task owned the queue stall, but that diagnosis had already completed and been
+  accepted. The correct wait shape is simpler: the wait itself owns the next
+  ADO status/artifact check, records the last authenticated observation, and
+  escalates only at the stated fallback if the run still has not moved.
 
 ## Routing result
 
@@ -3344,3 +3369,1381 @@ Process lesson:
 - Project-level approval waits should be audited by checking controller-visible
   return evidence first. If no return is visible, preserve the same lineage and
   avoid creating a new request that would split human context.
+
+Follow-up at 2026-07-13T13:22Z:
+
+- Case: the VirtualMachines agentpool compact frontier had a good domain memo
+  but still needed the app-owned state repair. The reviewer correctly converted
+  `domain/reconcile-virtualmachines-agentpool-split-frontier-visible-members-20260713`
+  into the app-ops follow-up
+  `ops-apply-reconcile-virtualmachines-agentpool-split-frontier-visible-mem`.
+- The app-ops worker generated and ran the supported repair script
+  `scripts/ops-apply-reconcile-virtualmachines-agentpool-split-frontier-visible-mem-20260713.ts`.
+  The repair created four exact compact holder leaves for
+  `cli-add-multi-sku`, `managedsystem-combined`, `pool-delete-rest`, and
+  `vmas-to-vms-migration-slb`, tightened
+  `hold-compact-virtualmachines-agentpool-split-frontier-maintained-20260708b`,
+  and synchronized `.state/feature-compact-loop/state.json`.
+- The completion was proven by the normal app path: `task_worker_completed`,
+  then `task_marked_done`, plus the accepted evidence memo
+  `evidence/archive/ops-apply-reconcile-virtualmachines-agentpool-split-frontier-visible-mem-20260713.md`.
+  Health then returned to blocked-only stewardship with no active or review
+  work.
+- A separate LocalDNS follow-up,
+  `ops/apply-localdns-compact-controller-visible-state-repair-20260713`, was
+  intentionally created as blocked, not active, because it is gated by the
+  refreshed broadened focus approval wait. That is a real waiting condition,
+  not an orphaned repair.
+
+Process lesson:
+
+- Do not judge an app-ops repair from the existence of a generated script alone.
+  The proof is the full path: worker completion, accepted review/planner action,
+  and repaired task-tree or loop-state fields.
+- A blocked app-state repair can be correct when it names the exact approval or
+  resume condition. The problem is not "blocked"; the problem would be a blocked
+  task without owner, condition, observer, or fallback.
+- For compact frontier work, better progress often means making hidden members
+  explicit as exact holders, not triggering a new ADO run. Live reruns should
+  wait until one represented same-surface frontier actually changes.
+
+Follow-up at 2026-07-13T13:28Z:
+
+- Case: the runner/dev-infra-core focus looked like it could be "pushed
+  forward" by local task-tree repair, but no Azure DevOps run was active. That
+  would not prove live validation.
+- Before dispatch, the domain repo was clean but ahead of ADO `origin/dev` by
+  one commit: `2c9d7c78a`. Running the pipeline before publishing would have
+  tested stale remote code. The commit was pushed to ADO first.
+- A real ADO run was then queued for pipeline `467665` on branch `dev`:
+  `171990664`, commit `2c9d7c78a366856b80f6f1cc8165f5757c25bfc8`,
+  `feature_set=dev-infra-core`, `target=staging`, `parallel=5`, `slices=5`,
+  `slice_max_parallel=5`.
+- The run was made visible to the task tree as
+  `ops/wait-dev-infra-core-ado171990664-live-validation-result-20260713`, a
+  blocked wait with `waiting_for.runId=171990664`, the ADO run URL, branch,
+  commit, feature set, target, next check, and fallback.
+
+Process lesson:
+
+- Local app movement and live validation movement are different. A live
+  validation task is not really moving unless a current pipeline run id exists
+  and the task tree knows how to inspect it when it finishes.
+- Always check pipeline-visible source before dispatch. If the domain repo has
+  unpublished commits, push first or explicitly record that the run is testing
+  older code.
+- A manual dispatch should still be converted into a project-visible wait.
+  Otherwise the app cannot close the loop when the run succeeds, fails, or
+  uploads no usable artifacts.
+
+Follow-up at 2026-07-13T16:05Z:
+
+- Case: ADO run `171990664` for `feature_set=dev-infra-core` moved from
+  queued to terminal `completed/failed`, but still published no artifacts.
+- Authenticated timeline inspection showed this was not a test failure and did
+  not create AKS clusters. The plan step succeeded and selected 30 specs / 29
+  clusters, then `Live dependency preflight` failed before slice execution.
+- The exact preflight blockers were:
+  - `spec.rp-nodepool-lifecycle.multi-agentpool-runner`: selected scenario test
+    depends on mounted private AKS RP source.
+  - `spec.kms.v2-private-vnet-integration-private-kv-lifecycle`: selected
+    scenario test shells out to Azure CLI instead of scenario-lib REST helpers.
+- The old ADO wait/recheck tasks were removed after terminal review, but the
+  frontier had no runnable repair work until two exact domain repair tasks were
+  added:
+  - `domain/repair-rp-nodepool-multi-agentpool-runner-self-contained-20260713`
+  - `domain/repair-kms-private-vnet-private-kv-remove-az-cli-20260713`
+
+Process lesson:
+
+- A terminal ADO run with no artifacts still needs log/timeline inspection
+  before classification. If it failed in preflight, do not mark planned specs as
+  pass/fail and do not wait for missing artifacts forever.
+- Preflight failures should create exact repair tasks for the cited policy
+  violations. The next live validation step is a rerun only after those repairs
+  land and are visible to ADO.
+- "Plan selected N clusters" is not proof of cluster creation. Cluster creation
+  starts only after the execute slice runs; here it never ran.
+
+Follow-up at 2026-07-13T16:16Z:
+
+- Case: the two dev-infra-core preflight blockers were split into exact repair
+  tasks instead of leaving the failed feature-set run as one generic blocker.
+- `domain/repair-kms-private-vnet-private-kv-remove-az-cli-20260713` found the
+  KMS carrier already repaired on `dev` at commit `87b67098a`. It verified
+  private-source policy, live-admission policy, and check mode, then reused the
+  already queued ADO run `171997614`.
+- ADO run `171997614` succeeded and published `slice-01-test-results`. The
+  downloaded `result.json` showed
+  `spec.kms.v2-private-vnet-integration-private-kv-lifecycle` passed in
+  staging/westus2. The shared-cluster artifact proved real cloud work:
+  resource group `rg-plan-001-5134-t9jlsq-745500`, cluster
+  `aks-plan-001-5134-t9jlsq-745500`, and `cleanupStatus=complete`.
+- `domain/repair-rp-nodepool-multi-agentpool-runner-self-contained-20260713`
+  produced commit `40ab1483a`, making the multi-agentpool runner self-contained
+  and live-admissible. The first worker result still named a push blocker, but
+  the actual root cause was only the credential-helper PATH used during that
+  worker attempt. Retrying with `/app/.state/.local/bin` in PATH pushed
+  `40ab1483a` to ADO `origin/dev`.
+- After publication, the same-spec ADO rerun `172009175` was queued and
+  represented as
+  `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175`.
+
+Process lesson:
+
+- Exact preflight repair tasks can finish quickly when they prove the policy
+  surface directly. After repair, always verify the remote branch that ADO will
+  run, not only the local branch.
+- A reviewer may accept "committed locally" as repair completion, but live
+  validation still needs remote publication plus a visible ADO wait. If a task
+  result mentions a push blocker, re-check the current shell/credential state
+  before treating it as a durable external blocker.
+- A passing ADO run is strongest when backed by three facts together:
+  pipeline result, downloaded `result.json`, and cluster/resource cleanup
+  artifact. Use all three before marking a spec as live-passed.
+
+Follow-up at 2026-07-13T16:21Z:
+
+- Case: `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175` was
+  inspected after the repair commit `40ab1483a` was pushed and the same-spec
+  ADO rerun was queued.
+- Live ADO state still reported `status=notStarted`, `result=null`,
+  `startTime=null`, and zero artifacts for run `172009175`.
+- The wait is valid because it now carries the exact ADO run id, pipeline id,
+  branch, commit, target, selected spec, next check, and fallback. The right
+  action is to recheck the same run when it starts or finishes, not create a new
+  environment diagnosis yet.
+- The app-ops warning triage
+  `ops/triage-rp-nodepool-multi-agentpool-run-172009175-warning-20260713`
+  completed and was accepted. It concluded the same thing: keep the wait-only
+  blocked leaf until terminal artifacts exist or the fallback window expires.
+
+Process lesson:
+
+- A queued ADO run with no `startTime` is still useful project state when it is
+  fresh and exact. It should be represented as a blocked external wait, not as a
+  failure and not as a live pass.
+- The app should distinguish three ADO states:
+  queued/not started means wait and recheck; terminal/no artifacts means inspect
+  timeline/logs; terminal/with artifacts means review `result.json` and cleanup
+  proof.
+- A repair is not fully verified until its successor run either passes with
+  artifacts or fails with enough logs to create the next exact repair.
+
+Follow-up at 2026-07-13T16:21Z:
+
+- Case: a raw tree scan appeared to find
+  `focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711`
+  as blocked without blocker metadata.
+- `bun run task-tree show` proved the real task has a complete blocker:
+  `category=human-approval`,
+  `waiting_for.type=project.approval.submitted`, owner `human`, next check, and
+  fallback.
+- The apparent missing blocker came from a duplicate summary copy under
+  `project.context.current_focus_proposal`, not from the live task record.
+
+Process lesson:
+
+- Blocked-frontier audits must inspect the authoritative task record, not every
+  nested summary object in `tasks/tree.json`. Context snapshots can reuse task
+  ids but are not the task state.
+- The task-tree helper output is the safer source for one-task review. Bulk
+  scanners should only walk `tree.tasks`, or they should explicitly ignore
+  `context` snapshots.
+- This false positive is useful: it shows why app code should collect facts and
+  present evidence, while the agent judges the real task state from the
+  authoritative path.
+
+Follow-up at 2026-07-13T16:31Z:
+
+- Case: `ops/wait-project-approval-owner-return-primary-blocker-20260713`
+  looked healthy in prior metric-recovery evidence, but the current
+  authoritative `bun run task-tree show` output showed `blocker` had regressed
+  to prose-only text.
+- The prose still described the right wait, but the structured fields were
+  missing from the live task payload: no `waiting_for.type`, no `observed_by`,
+  no `observation_method`, no `next_check_at`, and no `fallback_at`.
+- A bulk scan over `tree.tasks` confirmed this was the only blocked leaf still
+  missing watcher metadata outside child rollups.
+- The current frontier also had real motion: ADO run `172009175` moved to
+  `inProgress`, `ops/repair-exact-ado-wait-warning-proving-case-shape-20260713b`
+  was active, and
+  `domain/reconcile-vm-prerelease-cluster-autoscaler-mounted-source-20260713`
+  was active.
+- Created and assigned
+  `ops/repair-project-approval-owner-return-structured-wait-regression-20260713`
+  so app-ops owns the regression rather than silently hand-editing the task
+  state.
+
+Process lesson:
+
+- Do not trust a recovered metric only because it recovered earlier. Re-read
+  the current authoritative task payload when a long-lived wait is still in the
+  frontier.
+- A blocked wait is only machine-watchable when the structured fields survive:
+  `waiting_for`, `observed_by`, `observation_method`, `next_check_at`, and
+  `fallback_at`. Prose alone is human-readable but not enough for watchdog
+  closure.
+- If a focus/frontier refresh rewrites a structured blocker as prose, the
+  systemic fix is to repair the refresh path or add regression coverage, not to
+  repeatedly patch the single task by hand.
+
+Follow-up at 2026-07-13T16:42Z:
+
+- The app-ops repair
+  `ops/repair-project-approval-owner-return-structured-wait-regression-20260713`
+  found the exact runtime bug: `refreshBlockedWait()` rebuilt blockers with
+  generic defaults when a caller did not supply a new wait target.
+- For exact approval-return waits, that meant a refresh could preserve the
+  human-readable condition but replace the real machine contract with
+  `waiting_for.type = frontier.changed` and generic
+  `observed_by.trigger = task-tree.refresh-blocked-wait`.
+- The repair restored
+  `ops/wait-project-approval-owner-return-primary-blocker-20260713` to a
+  structured `project.approval.submitted` wait with lineages, observer,
+  next-check, resume, and fallback fields.
+- The repair also changed `workflows/lib/task-tree-tools.ts` so
+  `refreshBlockedWait()` preserves existing structured blocker fields unless
+  the caller explicitly provides replacements, and added a regression test for
+  preserving approval-return metadata.
+
+Process lesson:
+
+- Refresh helpers must preserve exact wait identity by default. If a caller only
+  wants to refresh prose or timing, it should not have to restate the whole
+  machine-readable wait contract.
+- A long-lived blocked wait can be valid and still suffer representation drift.
+  The watchdog/app-ops review should check both: is the wait semantically still
+  true, and is the structured watcher still exact?
+- When a repair task fixes both runtime state and code, the review should prove
+  both sides: current `task-tree show` for the live wait, plus a regression test
+  that prevents the same drift from recurring.
+
+Follow-up at 2026-07-13T16:54Z:
+
+- Case: `domain/apply-cluster-autoscaler-vm-prerelease-source-provenance-frontier-split-20260713`
+  was accepted after it updated repo-local compact/spec artifacts to split the
+  VM-prerelease cluster-autoscaler frontier into an e2ev3 suite-native quartet
+  and an e2ev2-overlay trio.
+- The accepted domain task left `/app/projects/aks-rp-e2e` dirty with 11
+  intended files. A separate publish task was needed:
+  `domain/publish-cluster-autoscaler-vm-prerelease-frontier-split-20260713`.
+- The publish task validated and committed the intended changes locally as
+  `90fdd1710`, but its worker could not push because its environment could not
+  find the Azure DevOps auth-capable `az` path.
+- The shell environment did have `/app/.state/.local/bin/az`; pushing from the
+  current shell succeeded and `origin/dev` now resolves to
+  `90fdd1710cbd004954cdfd516584bc36a0ae6d01`.
+
+Process lesson:
+
+- Accepted repo-local domain mutations still need a publication check. A clean
+  app-local review is not enough when future ADO runs and workers read
+  `origin/dev`.
+- If a worker reports an ADO push blocker, verify whether it is a real auth
+  blocker or just a PATH/helper mismatch. The same machine may already have an
+  auth-capable `az` at `/app/.state/.local/bin/az`.
+- Publication tasks should prove three facts: exact intended diff, validation
+  command result, and remote branch visibility after push.
+
+## Case: manual assignment is not the same as dispatched work
+
+Tasks:
+
+- `domain/review-rp-nodepool-multi-agentpool-ado-run-172009175-pass-20260713`
+- `ops/repair-assignment-not-consumed-metric-consume-lag-20260713`
+
+Observed facts:
+
+- ADO run `172009175` had already reached terminal success and artifacts were
+  downloaded, but the exact wait
+  `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175` still said to
+  wait for terminal artifacts.
+- Creating and assigning the domain review task with `bun run task-tree assign`
+  changed the task tree to `active` and wrote an assignment row, but no worker
+  started until the canonical `project.task.assigned` event was emitted.
+- The same queue shape appeared again for
+  `ops/repair-assignment-not-consumed-metric-consume-lag-20260713`: task state
+  was `active`, `.state/task-assignments.jsonl` still had the assignment row,
+  and `worker_started_at` was absent.
+- Emitting the normal event with `may-agent --emit project.task.assigned ...`
+  caused `task_worker_started` to appear and drained `bun run task-tree
+  assignments` back to `[]`.
+
+Diagnosis:
+
+- `task-tree assign` is a state/queue helper, not a complete worker dispatch.
+  In normal app flow, the planner or loop controller drains the queued
+  assignment and emits `project.task.assigned`; direct manual assignment can
+  leave a task looking active while no worker has been woken.
+- The assignment-not-consumed metric was useful because it exposed this gap as
+  a process issue instead of letting the task sit silently in active state.
+
+Suggested app action:
+
+- Keep using the canonical event path for manual recovery: either wake the
+  planner so it drains and dispatches queued assignments, or emit the exact
+  `project.task.assigned` event when intentionally debugging a single assigned
+  task.
+- Add or keep an app-ops repair path for queued assignments that are active but
+  lack `worker_started_at`, because that state is not real progress.
+- Do not treat active task state alone as proof that work is happening. Check
+  `task-tree assignments` and the task trace for `worker_started_at`.
+
+Workflow lesson:
+
+- The task tree records intent; the event bus starts work. A healthy process
+  needs both.
+- Manual debugging should preserve the same event semantics as the app. If we
+  bypass the event, metrics should catch it and app-ops should convert it into
+  a concrete dispatch/observability repair.
+
+Follow-up at 2026-07-13T17:08Z:
+
+- Re-emitting the original `project.task.completed` fact for
+  `domain/review-rp-nodepool-multi-agentpool-ado-run-172009175-pass-20260713`
+  restored the normal review path. The reviewer accepted the ADO run evidence
+  but returned a follow-up because the exact wait leaf was still live.
+- The planner created
+  `ops-apply-review-rp-nodepool-multi-agentpool-ado-run-172009175-pass-2026`.
+  That app-ops task used the supported `task-tree mark-done` path to close
+  `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175` from the reviewed
+  terminal-pass evidence.
+- A later readback of `bun run task-tree show
+  wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175` returned `Task not
+  found`, which is correct after archival. The reviewer accepted the apply task
+  because the archived done-leaves bundle records the stale wait as completed.
+- The assignment metric false-positive was also repaired in code:
+  `scripts/project-metrics.ts` now checks for a fresh running
+  `workflow:task-worker` session before counting a queued assignment as not
+  consumed. `scripts/project-metrics.test.ts` covers both the repaired
+  false-positive case and the true stale-assignment case.
+
+Process lesson:
+
+- When a review task is stuck in `review` with a worker claim but no reviewer
+  row, the right repair is to replay the missing completion fact, not to mark
+  the task done by hand. That keeps the reviewer as the judge and the planner as
+  the state mutator.
+- A metric should count the real process condition, not an intermediate queue
+  artifact. An assignment row is not a problem when the matching worker session
+  is already running and fresh.
+
+## Case: closed waits can remain alive through stale focus metadata
+
+Tasks:
+
+- `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175`
+- `ops/repair-focus-owner-return-stale-ado-lineage-20260713`
+- `ops/repair-focus-owner-return-metadata-drift-root-cause-20260713`
+
+Observed facts:
+
+- ADO run `172009175` proved a real live pass for
+  `spec.rp-nodepool-lifecycle.multi-agentpool-runner`, including result
+  artifacts and shared-cluster cleanup evidence.
+- The exact wait leaf was closed through the supported task-tree path and later
+  readback showed `Task not found`, which is correct after archival.
+- Even after the wait was no longer live, focus/owner-return metadata still
+  named `wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175` as part of
+  the current blocked-holder set.
+- A one-off stale-lineage cleanup removed the bad live reference, but the
+  follow-up root-cause task found the broader issue: focus metadata and project
+  current-focus prose had no integrity check after waits were archived or
+  replaced.
+
+Diagnosis:
+
+- Closing a wait is not enough if another live task carries copied holder lists
+  in `context.observations`, progress-review evidence, or project focus prose.
+- The project can look blocked on already-settled work when summary/focus fields
+  are treated as durable routing truth but are not validated against the live
+  task tree.
+- This is an app-process bug, not an AKS domain bug. The right repair is a
+  reusable consistency check that compares focus metadata to live task states.
+
+App action taken:
+
+- `scripts/lib/focus-metadata-audit.ts` now audits focus-plan linked active,
+  review, and blocked task ids, plus owner-return live-holder prose that claims
+  a current blocked set.
+- `scripts/check-integrity.ts` fails on focus metadata drift.
+- `scripts/project-metrics.ts` includes focus metadata drift in the task-tree
+  problem metric so watchdog/evaluation can catch it without manual inspection.
+- Targeted tests in `scripts/check-integrity.test.ts` and
+  `scripts/project-metrics.test.ts` cover the stale run-172009175 owner-return
+  pattern.
+
+Process lesson:
+
+- For blocked-task recovery, always verify both the leaf state and the summary
+  metadata that points to it.
+- A completed wait should disappear from live blocked-holder sets. If it still
+  appears, do not re-open the wait; repair the metadata producer or add an
+  integrity signal that catches the stale reference.
+- When a pattern repeats after a one-off cleanup, the next task should be a
+  root-cause app-ops repair with a metric or integrity gate, not another manual
+  text refresh.
+
+## Case: active diagnosis duplicated a same-lineage evidence ceiling
+
+Tasks:
+
+- `hold-compact-bootstrap-profile-byo-acr-create-cache-acr0-runtime-frontier-20260711b`
+- `domain/diagnose-bootstrap-profile-byo-acr-create-cache-acr0-runtime-frontier-20260713c`
+- `domain/diagnose-bootstrap-profile-byo-acr-create-cache-acr0-runtime-surface-20260713`
+
+Observed facts:
+
+- The compact holder for
+  `spec.bootstrap-profile-byo-acr.cache-direct-cache-switch` is blocked on the
+  exact run `171800822` frontier: managed-cluster create step
+  `create-cache-acr0` timed out after `4500000ms` under runtime API
+  `2026-04-02-preview`, with last poll state `CreatingAgentPools: 0/1 nodes
+  completed`.
+- At `2026-07-13T16:08Z`, the task
+  `domain/diagnose-bootstrap-profile-byo-acr-create-cache-acr0-runtime-frontier-20260713c`
+  was accepted as completed. Its evidence memo says the async operation
+  `8e0e36d1-3ed3-4073-b7a1-d8f887417990` and node resource group
+  `MC_rg-plan-001-0335-69ezcw-903180_aks-plan-001-0335-69ezcw-903180_westus2`
+  are only pointers, not lower-level proof, so the existing
+  `create-cache-acr0` holder remains the strongest truthful local frontier.
+- At `2026-07-13T17:24Z`, the planner created a new active task,
+  `domain/diagnose-bootstrap-profile-byo-acr-create-cache-acr0-runtime-surface-20260713`,
+  asking almost the same same-run/same-spec question: check whether run
+  `171800822`, the same async operation, or the same node resource group expose
+  a narrower first failing surface below `create-cache-acr0`.
+
+Diagnosis:
+
+- The planner made a useful kind of move by converting a passive blocked holder
+  into active domain diagnosis instead of blindly waiting.
+- The problem is that it did not first recognize an accepted same-lineage
+  evidence ceiling. Same spec, same run id, same async operation id, same node
+  resource group, and same requested lower-level question had already been
+  reviewed and accepted one hour earlier.
+- This creates repeat work without adding new evidence. It also risks making
+  the project look active while it is re-answering an already-settled question.
+
+Suggested app action:
+
+- Before creating a blocked-holder diagnosis task, the planner should scan
+  accepted recent evidence for the same diagnosis identity:
+  `specId + sourceRunId + firstFailingStep + asyncOperationId/nodeResourceGroup`
+  plus the requested question, such as "narrow below create-cache-acr0".
+- If an accepted memo already states the current evidence ceiling and no newer
+  artifact or material runtime change exists, do not create a duplicate domain
+  diagnosis. Refresh the holder with a pointer to the accepted ceiling, or set
+  the next check/fallback to ask only for genuinely new evidence.
+- If the planner still creates a new diagnosis, the task goal should explicitly
+  say what new evidence or new question makes it different from the accepted
+  prior diagnosis.
+
+App action taken:
+
+- The manual learning wake was consumed by the planner. It left the already
+  active diagnosis attempt alone, which avoided interrupting in-flight work,
+  but created `ops/repair-duplicate-same-lineage-diagnosis-guard-20260713` to
+  fix the process path that allowed the duplicate dispatch.
+- The repeated diagnosis
+  `domain/diagnose-bootstrap-profile-byo-acr-create-cache-acr0-runtime-surface-20260713`
+  completed and was accepted. It reached the same evidence-ceiling conclusion:
+  run `171800822`, async operation
+  `8e0e36d1-3ed3-4073-b7a1-d8f887417990`, and node resource group
+  `MC_rg-plan-001-0335-69ezcw-903180_aks-plan-001-0335-69ezcw-903180_westus2`
+  still do not narrow below `create-cache-acr0`.
+- The planner applied the accepted review, refreshed
+  `hold-compact-bootstrap-profile-byo-acr-create-cache-acr0-runtime-frontier-20260711b`,
+  and marked the duplicate diagnosis done without replacing the holder.
+
+Process lesson:
+
+- "Turn a blocked wait into active diagnosis" is the right instinct, but it
+  needs a same-lineage history check.
+- A duplicate-diagnosis guard should not be a hard code judgment about domain
+  truth. Code can collect candidate prior evidence and identity fields; the
+  planner/reviewer agent should decide whether the new task is genuinely new or
+  a duplicate.
+
+## Case: future-window review leaves duplicated governed family waits
+
+Tasks:
+
+- `wait-shared-westus2-managed-cluster-capacity-family-return-20260703`
+- `ops/review-1800-shared-westus2-managed-cluster-capacity-family-lineage-20260713b`
+- `ops/review-1800-westus2-managed-cluster-capacity-family-lineage-20260713`
+- `hold-compact-localdns-package-partial-frontier`
+- `ops/review-1800-localdns-compact-frontier-lineage-20260713`
+- `ops/review-1800-localdns-compact-split-frontier-lineage-20260713`
+
+Observed facts:
+
+- At `2026-07-13T17:36Z`, the project had no runnable, active, review, or
+  waiting leaves. It had only blocked leaves.
+- No blocked leaf was overdue yet. The nearest project/loop rollup check was
+  `2026-07-13T17:45:28Z`, and many exact blocked holders had
+  `next_check_at` / `resume_at = 2026-07-13T18:00:00Z`.
+- The shared westus2 capacity family wait already carries the 18:00Z review
+  contract:
+  `wait-shared-westus2-managed-cluster-capacity-family-return-20260703` has
+  `next_check_at = resume_at = 2026-07-13T18:00:00Z`, `fallback_at =
+  2026-07-14T18:00:00Z`, and says the review should preserve or sharpen one
+  exact westus2 managed-cluster capacity/headroom family.
+- Two project-level 18:00Z review leaves also exist for the same capacity
+  family:
+  `ops/review-1800-shared-westus2-managed-cluster-capacity-family-lineage-20260713b`
+  and `ops/review-1800-westus2-managed-cluster-capacity-family-lineage-20260713`.
+- The LocalDNS compact holder already carries an 18:00Z review contract for the
+  regenerated five-member frontier plus two consumed pass-history members.
+- Two project-level 18:00Z review leaves also exist for that same LocalDNS
+  compact lineage:
+  `ops/review-1800-localdns-compact-frontier-lineage-20260713` and
+  `ops/review-1800-localdns-compact-split-frontier-lineage-20260713`.
+- Existing evidence
+  `evidence/archive/ops-repair-project-review-window-frontier-decomposition-20260713.md`
+  had already classified
+  `ops/review-1800-shared-westus2-managed-cluster-capacity-family-lineage-20260713b`
+  as a duplicate passive review leaf that should be folded into
+  `wait-shared-westus2-managed-cluster-capacity-family-return-20260703`, but
+  that duplicate still exists in the live tree.
+
+Diagnosis:
+
+- A future review leaf is useful only when it adds a distinct review surface.
+  When the governed family wait/holder already carries the same scope, same
+  review window, same fallback, and same observation contract, a separate
+  project-level review leaf is duplicate passive work.
+- The app has two related failure modes here:
+  1. an accepted or useful decomposition audit was not fully applied to the live
+     tree; and
+  2. later blocked-frontier repair created another sibling review leaf for the
+     same family instead of reusing or sharpening the existing governed wait.
+- This is different from a normal all-blocked state. Waiting until 18:00Z is
+  reasonable, but waking multiple duplicate leaves at 18:00Z would waste agent
+  time and can produce inconsistent refresh decisions for the same lineage.
+
+Suggested app action:
+
+- Before creating a future-window review leaf, compare it to existing governed
+  waits/holders by lineage, affected scope, `next_check_at`, `resume_at`, and
+  `fallback_at`.
+- If an existing family wait already carries the exact review contract, refresh
+  that wait/holder instead of creating a separate project-level passive review
+  leaf.
+- If two review leaves are genuinely different, their goals should state the
+  difference explicitly. Otherwise, fold the duplicate leaves into the single
+  governed family wait/holder before the review window opens.
+- The planner should consume the prior decomposition audit and either apply it
+  or record why the prior fold recommendation is no longer valid.
+
+## Case: approval-governed ready holder with self-referential wait target
+
+Task:
+
+- `domain/hold-rp-cluster-lifecycle-ready-carriers-visible-backlog-20260713`
+
+Observed facts:
+
+- At `2026-07-13T17:49Z`, the project was moving with active app-ops work:
+  `ops/reconcile-localdns-blocked-frontier-visible-shape-20260713` and
+  `ops/reconcile-rp-lifecycle-ready-holder-visible-shape-20260713`.
+- The RP cluster lifecycle ready holder prose says it is blocked behind the
+  governing approval/owner-return wait
+  `ops/wait-project-approval-owner-return-primary-blocker-20260713`.
+- Its structured `blocker.waiting_for` instead points back to itself:
+  `{ "type": "blocker.resolved", "taskId":
+  "domain/hold-rp-cluster-lifecycle-ready-carriers-visible-backlog-20260713" }`.
+- The active RP reconciliation task acceptance requires matching approval-wait
+  lineage for the RP lifecycle ready/backlog families.
+
+Diagnosis:
+
+- This is not an exact wait even though the prose is mostly clear. A blocked
+  holder waiting for itself cannot be consumed as a real resume signal.
+- The useful repair is not a blind retry. App-ops should re-check the live
+  approval carrier and either link this holder to the governing approval wait,
+  replace it with a sharper holder, or document why the self-reference is only
+  stale metadata and the current holder should remain.
+
+Suggested app action:
+
+- Let `ops/reconcile-rp-lifecycle-ready-holder-visible-shape-20260713` consume
+  this finding as part of its current live reconciliation work.
+- Future blocked-frontier review should flag `waiting_for.taskId == task.id`
+  as a high-value sample for agent review. Code can collect the mismatch; the
+  agent should decide the correct governing wait or replacement.
+
+## Case: matured future-window review leaf still blocked on itself
+
+Tasks:
+
+- `ops/review-1800-bootstrap-profile-byo-acr-runtime-frontier-lineage-20260713`
+- `ops/review-1800-ccp-compact-represented-owner-decision-family-lineage-20260713`
+- Related due holder sample:
+  `hold-compact-localdns-package-partial-frontier`
+
+Observed facts:
+
+- At `2026-07-13T18:01Z`, the project had one active app-ops task
+  (`ops/review-unpublished-knowledge-map-drift-20260713`) and no runnable,
+  review, waiting, or assignment rows.
+- Many blocked leaves had `next_check_at` / `resume_at` equal to
+  `2026-07-13T18:00:00Z`, so the review window was open.
+- The `ops/review-1800-*` future-window leaves still had `state: blocked`
+  after the window opened.
+- Their structured wait target pointed to themselves, for example
+  `{ "type": "blocker.resolved", "taskId":
+  "ops/review-1800-bootstrap-profile-byo-acr-runtime-frontier-lineage-20260713" }`.
+- The task prose says "Do not start before 2026-07-13T18:00:00Z"; after that
+  timestamp the task should be eligible for app-ops review, not waiting for
+  itself to resolve.
+
+Diagnosis:
+
+- A future-window review leaf is a delayed review request. Its resume signal is
+  time plus any named lineage evidence, not the leaf resolving itself.
+- Once `resume_at` / `next_check_at` is in the past, a self-referential
+  `waiting_for.taskId` turns the leaf into a dead end: no external event can
+  satisfy "this task is resolved" because this task is the one that should now
+  run.
+- This is related to the earlier self-referential RP holder bug, but the
+  correct handling is different. A governed holder should be linked to its
+  upstream owner/approval wait. A matured future-window review leaf should be
+  unblocked/requeued or replaced by one exact app-ops review task.
+- The app should also dedupe by lineage before waking all 18:00Z leaves. Some
+  due leaves may be passive duplicates of governed holders, while others are
+  the single intended review surface.
+
+Suggested app action:
+
+- When a blocked task has `resume_at` or `next_check_at` in the past and
+  `waiting_for.taskId == task.id`, treat it as an actionable process-hygiene
+  sample for app-ops review.
+- The planner/watchdog should ask an agent to classify each matured future
+  review leaf as one of:
+  1. unblock/requeue this exact review task;
+  2. fold it into an existing governed wait/holder for the same lineage;
+  3. replace it with one sharper successor; or
+  4. keep it blocked only with a real external owner/event wait and refreshed
+     `next_check_at` / `fallback_at`.
+- Code should collect the due/self-reference facts. The agent should decide
+  whether the right action is unblock, fold, replace, or keep-wait.
+
+## Case: transient model/provider failure during blocked-frontier review
+
+Tasks:
+
+- `ops/review-1805-westus2-capacity-frontier-family-lineage-20260713`
+- `ops/review-1810-localdns-compact-split-frontier-lineage-20260713`
+- `ops/review-1815-ccp-compact-reviewed-exception-frontiers-20260713`
+
+Observed facts:
+
+- The planner correctly created and assigned overdue blocked-frontier review
+  work after the 18:00Z window opened.
+- The workers did not perform domain review. They returned only
+  `OpenAI API error (429): 429 No deployments available for selected model`.
+- The reviewer recognized this as missing evidence:
+  - westus2 and CCP were reviewed as `redo`;
+  - LocalDNS was reviewed as `blocked` with `retry-after-tooling-recovery`;
+  - no AKS/domain conclusion was accepted from the failed worker attempts.
+
+Diagnosis:
+
+- A model/provider availability error is infrastructure noise, not a product
+  blocker and not evidence about the AKS feature frontier.
+- The correct next action is to retry the same task after cooldown with the
+  same scope and acceptance criteria. Creating a new domain holder, widening
+  the blocker, or marking the family as reviewed would hide the real work.
+- The reviewer should keep this distinction loud: "worker could not run" is
+  different from "worker ran and found the feature still blocked."
+
+Suggested app action:
+
+- Treat provider 429/no-deployment failures as retryable execution failures for
+  the same task.
+- Preserve the exact original review scope and required output artifact on
+  retry.
+- If repeated provider failures exhaust a bounded retry window, escalate as an
+  app/runtime availability problem, not as an AKS-domain blocker.
+
+## Case: overdue blocked-wait review memo without state change
+
+Tasks:
+
+- `ops/review-1826-compact-loop-overdue-blocked-frontier-wave-20260713`
+- `ops/review-1827-project-overdue-blocked-frontier-wave-20260713`
+- `ops/review-1830-traffic-applink-compact-frontier-pair-20260713`
+- `ops/repair-1840-localdns-compact-frontier-projection-sync-20260713`
+- `ops/repair-1845-ccp-security-patch-holder-represented-metadata-sync-20260713`
+
+Observed facts:
+
+- The watchdog/planner correctly created concrete review tasks for overdue
+  blocked frontier samples.
+- Several workers produced useful evidence memos that classified the current
+  lineage accurately, but explicitly made no runtime task-tree or loop-state
+  mutation.
+- The reviewer did not accept those memos as closure when the affected waits
+  still had stale `next_check_at` / `fallback_at`, stale represented metadata,
+  or stale projection state.
+- The reviewer converted those cases into concrete app-state repair successors:
+  refresh the affected waits in place, fold stale review leaves into the exact
+  holder, or apply metadata/projection sync.
+- The LocalDNS projection repair is the positive example: after the worker
+  actually updated `.state/feature-compact-loop/state.json` and proved the
+  exact three frontier ids, the reviewer accepted it.
+
+Diagnosis:
+
+- For overdue blocked-wait work, analysis is not enough. The project is stuck
+  because a wait is still overdue, stale, or incorrectly represented.
+- A review memo is useful input, but it does not remove passive overdue debt
+  unless it is paired with one of:
+  1. an applied task-tree/loop-state repair;
+  2. a replacement with one sharper successor;
+  3. a closure/unblock backed by evidence;
+  4. an explicit escalation or external wait with refreshed watch/fallback; or
+  5. an active/review successor that owns the concrete mutation.
+- The worker and reviewer boundary worked well here: the worker gathered facts
+  and the reviewer insisted that stale waits need an actual app-state outcome.
+
+Suggested app action:
+
+- Make overdue blocked-wait review workflows ask for both a decision and an
+  apply path. If the worker cannot safely mutate state, it should return a
+  structured repair packet that the planner can immediately convert into an
+  app-ops apply task.
+- Keep rejecting "memo only" completions for overdue waits when the live
+  frontier still shows stale timing, stale represented ids, or stale loop
+  projection.
+- Treat accepted projection repairs as the reusable happy path: show before
+  state, apply the bounded repair, show after state, and cite the evidence path.
+
+## Case: active repair shortcut must be offender-aware
+
+Tasks:
+
+- `ops/review-1825-spec-loop-overdue-blocked-frontier-wave-20260713`
+- `ops-apply-review-1825-spec-loop-overdue-blocked-frontier-wave-20260713-s`
+- `hold-compact-windows-eligibility-frontier-20260707`
+- `hold-compact-net-integration-package-partial-frontier`
+- `ops/wait-windows-node-pool-create-owner-arbitration-return-20260709s-owner-normalized`
+- `ops/review-1200-net-integration-compact-authority-frontier-lineage-20260713`
+
+Observed facts:
+
+- The spec-loop overdue repair correctly restored
+  `ops/review-1825-spec-loop-overdue-blocked-frontier-wave-20260713` as an
+  active exact carrier for the 37 sampled waits.
+- A later live metric sample still reported four different overdue offenders:
+  the Windows compact holder, net-integration compact holder, Windows owner
+  wait, and net-integration authority watch leaf.
+- The planner initially no-oped the four-offender wake because an app-ops
+  blocked-overdue repair was already active.
+- That active task did not actually cover the four new offender ids. It covered
+  the 37 spec-loop waits.
+- After the planner shortcut was made offender-aware, the app reprocessed the
+  four-offender wake, refreshed those four exact waits with future review
+  windows, and `aks-rp-e2e.process.blocked.overdue-unworked-count` recomputed
+  to zero.
+
+Diagnosis:
+
+- "Some active app-ops blocked-overdue work exists" is not enough evidence to
+  suppress a metric wake.
+- The no-op is valid only when the active/review task covers the current
+  trigger's exact offender ids, either through structured `blockedTaskIds` /
+  `auditedBlockedTaskIds` / `offenderTaskIds` or an exact matching
+  blocked-overdue scope.
+- Broad active repair shortcuts are dangerous because they can hide unrelated
+  stale waits while making health look "moving".
+- The useful division is: code collects exact offender ids and active coverage;
+  the agent decides whether the covered lineage is the same work or a separate
+  repair family.
+
+Suggested app action:
+
+- Keep `settled-active-noop` optimizations offender-aware for overdue blocked
+  metrics. If the trigger names offenders, every live blocked offender should
+  be covered by the active/review work before the planner skips owner review.
+- Preserve the old fast path only for triggers without exact offender ids.
+- When a wake names offenders not covered by active work, run the planner
+  owner pass even if the frontier is otherwise active-only.
+- Record the exact current offender ids in task context when creating repair
+  tasks so future no-op and accept-invariant checks can reason structurally
+  instead of by prose.
+
+## Case: exact carrier must be durable while successors are built
+
+Tasks:
+
+- `ops/review-1825-spec-loop-overdue-blocked-frontier-wave-20260713`
+- `ops-apply-review-1825-spec-loop-overdue-blocked-frontier-wave-20260713-s`
+- `aks-spec-verification-loop`
+
+Observed facts:
+
+- The spec-loop overdue repair tried to use
+  `ops/review-1825-spec-loop-overdue-blocked-frontier-wave-20260713` as the
+  active exact carrier for 37 overdue spec-loop waits.
+- The reviewer correctly rejected later apply attempts when live readback showed
+  the carrier was `done`, not active/review, and the apply task still carried
+  broad `ops:blocked-overdue:spec-loop` self-suppression.
+- A later readback showed the carrier task was not present in the live task
+  tree, while the apply task was active and still depended on restoring that
+  same reviewed task.
+- The app had already created sharper same-lineage review leaves for LocalDNS,
+  cluster-autoscaler, private-cluster, and serverless, but the broad carrier was
+  still the only thing preventing the 37-wait self-excluded residue from
+  returning.
+
+Diagnosis:
+
+- A completed review task is a poor durable coverage carrier. Normal review
+  application and parent rollup are allowed to mark it done and archive it.
+- Retrying a repair that repeatedly revives a done/review task is fragile. The
+  repair can look correct for a moment, then disappear again when the tree
+  performs normal cleanup.
+- For blocked-frontier stewardship, "exact active coverage" needs a task whose
+  purpose is to be the holder, not a prior review leaf that the system is also
+  trying to retire.
+
+Suggested app action:
+
+- When a broad overdue review finds residue that still needs exact coverage,
+  create or retarget a durable holder task for that coverage instead of relying
+  on the completed review task to stay active.
+- If the app must temporarily use a review task as a carrier, mark it with
+  explicit protection/structured coverage so parent rollup cannot archive it
+  until successor holders exist and the self-excluded baseline proves the
+  residue is gone.
+- Remove broad self-suppression from apply tasks before using them as evidence
+  for overdue metric closure; the evidence should come from exact covered wait
+  ids on active/review holders.
+- Prefer retiring the broad carrier only after same-lineage successor holders
+  are live and a self-excluded recompute shows zero or a named smaller residue.
+
+## Case: retry oversized repair as a smaller successor, not the same packet
+
+Tasks:
+
+- `ops/review-1870-rp-lifecycle-nodepool-environment-overblock-repair-20260713`
+- `ops/review-1895-rp-lifecycle-nodepool-overblock-repair-slim-20260713`
+
+Observed facts:
+
+- `ops/review-1870-rp-lifecycle-nodepool-environment-overblock-repair-20260713`
+  failed before doing domain work because the worker request exceeded the model
+  context window.
+- The reviewer correctly treated that as a process failure, not as a real
+  blocked AKS/environment wait.
+- The planner did not blindly retry the same oversized packet. It created
+  `ops/review-1895-rp-lifecycle-nodepool-overblock-repair-slim-20260713` with a
+  narrower goal: inspect only the visible RP backlog holders and the current
+  visibility repair leaves.
+- The slim successor was assigned and consumed by the worker, leaving no
+  assignment backlog.
+
+Diagnosis:
+
+- "Worker could not fit the packet" means the app should shrink the work shape.
+  It is not evidence about the domain blocker.
+- Retrying the identical large context would likely repeat the same failure and
+  waste the review loop.
+- The clean recovery is a same-lineage successor with fewer inputs and a
+  concrete decision target.
+
+Suggested app action:
+
+- When a task fails with a context-window/process-size error, create or requeue
+  a slim same-lineage successor instead of preserving the same prompt shape.
+- The slim task should name the few task ids or holders to inspect and should
+  still require one concrete tree move or exact no-op decision.
+- Keep the original failed task in review/done history as evidence, but let the
+  slim successor own forward progress.
+
+## Case: overdue timing must use the canonical earliest-time rule
+
+Tasks:
+
+- `ops/review-1825-spec-loop-overdue-blocked-frontier-wave-20260713`
+- `ops/review-1900-spec-loop-overdue-carrier-restoration-20260713`
+
+Observed facts:
+
+- A worker claimed the original 37 spec-loop waits were no longer overdue
+  because fallback windows had moved into the future.
+- The reviewer rejected that claim after checking the canonical metric logic:
+  overdue uses the earliest finite `next_check_at`, `resume_at`, or
+  `fallback_at`, not `fallback_at` alone.
+- The sampled waits still had an earliest overdue time through
+  `next_check_at`/`resume_at`, so retiring the carrier was unsupported.
+- The planner created
+  `ops/review-1900-spec-loop-overdue-carrier-restoration-20260713` to restore
+  truthful controller-visible coverage while exact successors or refreshed
+  windows catch up.
+
+Diagnosis:
+
+- A wait is only non-overdue when every relevant review/resume/fallback timing
+  used by the metric has moved out of the overdue window.
+- Evidence based on one timestamp field can contradict the metric and should
+  not close the task.
+- The reviewer was right to distrust the worker's conclusion and force a
+  canonical replay.
+
+Suggested app action:
+
+- Any worker claiming an overdue wait is cleared must cite the same time rule
+  as `scripts/project-metrics.ts`: earliest finite `next_check_at`,
+  `resume_at`, or `fallback_at`.
+- Refresh actions should update the full intended timing set, not only
+  `fallback_at`, when the goal is to remove overdue pressure.
+- Reviewer should continue rejecting overdue-closure claims that do not include
+  canonical metric replay evidence or equivalent structured readback.
+
+## Case: do not close the only controller-visible carrier before a replacement exists
+
+Tasks:
+
+- `ops/review-1900-spec-loop-overdue-carrier-restoration-20260713`
+- `ops-apply-review-1900-spec-loop-overdue-carrier-restoration-20260713-sta`
+
+Observed facts:
+
+- `ops/review-1900-spec-loop-overdue-carrier-restoration-20260713` proved that
+  the historical 37 spec-loop overdue waits were hidden only because that review
+  task was still controller-visible.
+- A self-excluded replay showed all 37 waits became uncovered again when the
+  carrier itself was excluded.
+- The reviewer correctly returned `followup`, not `accept`, because closing the
+  task would remove the only live coverage for the same overdue residue.
+- The planner created
+  `ops-apply-review-1900-spec-loop-overdue-carrier-restoration-20260713-sta` to
+  preserve or replace the open carrier before final closure.
+- The apply task restored `ops/review-1900...` as an active holder with
+  `ops:blocked-overdue:spec-loop`, moved the broad scope off the apply task, and
+  attached the 37 exact blocked/audited ids to the reopened carrier.
+
+Diagnosis:
+
+- A carrier review is not ordinary done work when its own open state is what
+  keeps the metric truthful.
+- Closing a carrier and then relying on the closed task's evidence is a process
+  gap: closed evidence is useful for history, but it is not controller-visible
+  coverage.
+- A follow-up apply task is the right shape when the review result is "useful
+  evidence, but do not close yet."
+
+Suggested app action:
+
+- Before accepting a carrier review, run or cite a self-excluded coverage check.
+- If the self-excluded residue is still nonzero, first create or reopen an
+  active/review carrier with exact structured coverage.
+- The temporary apply task must not keep the broad conflict scope itself; it
+  should move coverage to the durable carrier and then complete for review.
+
+## Case: unpublished generated artifacts need generator plus publish lineage
+
+Task:
+
+- `ops/reconcile-unpublished-knowledge-map-drift-owner-and-publish-path-20260713`
+
+Observed facts:
+
+- The unpublished-change metric found seven modified files under
+  `../aks-rp-e2e/model/knowledge-map`.
+- The reconciliation traced all seven files to the same generator:
+  `ops/review-1880-serverless-standard-metadata-parity-repair-20260713`.
+- The changes were one coherent serverless-standard evidence-id/path rename from
+  the older 2026-07-10 evidence to the current 2026-07-11 evidence.
+- A later metric-alert triage session published the exact seven-file slice as
+  commit `e3ca49d86`, pushed it to `origin/dev`, and resampled
+  `aks-rp-e2e.process.unpublished-change-count` back to `0`.
+
+Diagnosis:
+
+- Unpublished generated model files are not automatically bad or orphaned.
+  They need ownership proof.
+- The useful question is: which task generated the files, is the slice coherent,
+  and is there a visible commit or discard path?
+- The metric did the right fallback job by exposing hidden repo drift, but the
+  app should prefer a visible publish path immediately after legitimate
+  generator work.
+
+Suggested app action:
+
+- For generated artifacts, record both the generator task/session and the
+  publisher commit/session in the close evidence.
+- If all changed files belong to one coherent accepted slice, publish only that
+  slice and cite the commit hash.
+- If ownership cannot be proven, create the smallest exact repair/discard
+  follow-up instead of silently leaving local drift.
+
+## Case: review-only overdue findings must turn into apply work
+
+Tasks:
+
+- `ops/review-overdue-jwt-authenticator-shared-owner-return-20260713`
+- `ops-apply-review-overdue-jwt-authenticator-shared-owner-return-20260713-`
+- `ops/review-overdue-trusted-access-ta-gateway-family-waits-20260713`
+- `ops-apply-review-overdue-trusted-access-ta-gateway-family-waits-20260713`
+- `ops/review-overdue-spec-loop-localdns-family-waits-20260713`
+- `ops-apply-review-overdue-spec-loop-localdns-family-waits-20260713-state-`
+
+Observed facts:
+
+- The overdue-unworked metric first exposed exact stale waits, then the planner
+  split them into small review tasks by family.
+- The JWT, trusted-access, and LocalDNS workers produced useful evidence and
+  correctly identified that the same blocked waits still governed.
+- Those workers did not mutate task-tree or loop state. They returned
+  planner-ready refresh guidance instead.
+- The reviewer rejected those as final closure and returned `followup`: if the
+  wait remains true, the app must actually refresh the wait or create a sharper
+  successor.
+- The planner converted those follow-up reviews into concrete app-ops apply
+  tasks.
+- The JWT apply task used the supported task-tree refresh path, was accepted,
+  and the overdue metric remained at `0`.
+
+Diagnosis:
+
+- This is the healthy split between review and apply. Review-only evidence is
+  useful, but it is not enough to close overdue blocked-wait work.
+- A worker saying "here is the exact command" still leaves the project stuck
+  unless a supported app-state mutation or successor task happens.
+- The reviewer/planner pair should keep enforcing this: no stale wait is
+  considered handled until the live tree/projection changes or a real successor
+  owns the remaining action.
+
+Suggested app action:
+
+- Keep converting review-only overdue findings into app-ops apply tasks with
+  exact blocked ids and evidence paths.
+- Apply tasks should show before/after readback for the named waits and cite the
+  support command or helper used.
+- If an apply task cannot safely mutate, it should return a specific blocker or
+  escalation; it should not close with another recommendation-only memo.
+
+## Case: metric wake should split overdue waits into applyable waves
+
+Tasks:
+
+- `ops/repair-spec-loop-overdue-owner-return-wave-20260713`
+- `ops/repair-spec-loop-overdue-net-private-contract-wave-20260713`
+- `ops-apply-repair-spec-loop-overdue-net-private-contract-wave-20260713-st`
+- `ops/repair-spec-loop-overdue-environment-frontier-wave-20260713`
+- `ops-apply-repair-spec-loop-overdue-environment-frontier-wave-20260713-st`
+
+Observed facts:
+
+- After the owner/artifact repair closed, the live
+  `aks-rp-e2e.process.blocked.overdue-unworked-count` metric exposed 21
+  overdue blocked waits.
+- Emitting a `metric.breach` event for that metric caused the planner to split
+  the offenders into three coherent waves: owner-return/source-authority,
+  net/private-contract, and environment/frontier.
+- The owner-return wave directly refreshed all six named waits and was accepted.
+- The net/private-contract and environment/frontier workers produced useful
+  evidence packets but did not mutate the live task tree because they believed
+  the initial worker dispatch did not explicitly authorize bounded task-tree
+  updates.
+- The reviewer correctly rejected both memo-only results as final closure. The
+  planner created apply successors, those successors refreshed the named waits
+  through supported task-tree commands, and reviewer/planner then closed them.
+- The metric returned to `0` while active/review/apply work covered the
+  offenders, and the final accepted apply tasks proved the live waits had future
+  watch windows.
+
+Diagnosis:
+
+- The metric-to-planner path works when the breach is emitted: it can turn a
+  large blocked-only frontier into focused family work.
+- The remaining friction is worker prompt clarity. A task whose acceptance says
+  "refresh or replace these named waits" should be understood as authorizing
+  bounded supported task-tree refresh commands for exactly those waits.
+- The reviewer/planner fallback is doing the right thing, but it costs an extra
+  cycle. The better first pass is for the family repair worker to either apply
+  the supported refresh directly or explicitly return why mutation is unsafe.
+
+Suggested app action:
+
+- When planner creates overdue blocked-wait repair waves, include the exact
+  affected task ids and make the mutation boundary explicit: supported
+  `task-tree refresh-blocked-wait` / `update-text` is allowed only for those ids.
+- Keep reviewer enforcement strict: recommendation-only memos do not close
+  overdue waits unless another active/review/apply successor already owns the
+  runtime mutation.
+- Prefer family waves over one giant umbrella. The three-wave split made review,
+  apply, and acceptance readable while still handling 21 offenders quickly.
+
+## Case: blocked-only frontier after overdue recovery
+
+Sampled at:
+
+- `bun run health --json` at 2026-07-13T19:23Z.
+- `bun run metrics:sample aks-rp-e2e.process.blocked.overdue-unworked-count --json`.
+- Representative `task-tree show` / readback of the spec loop, compact loop,
+  focus approval holder, LocalDNS compact holder, workload-autoscaler compact
+  holder, and the shared auth/artifact family waits.
+
+Observed facts:
+
+- The immediate process metric was healthy:
+  `aks-rp-e2e.process.blocked.overdue-unworked-count = 0`.
+- The task frontier had no runnable, active, review, or waiting leaves.
+- The remaining visible leaves were blocked waits:
+  69 under the spec loop, 51 compact-loop blocked feature holders, and several
+  project-level approval/environment holders.
+- The feature-reference loop was complete: 305 done, 0 pending/running/error.
+- The spec loop still had 486 passing specs and 178 pending specs, but zero
+  dispatchable pending work because all remaining pending work was represented
+  by exact blocked holders.
+- The compact loop still had 33 done features and 51 blocked compact holders.
+- Representative blocked holders had structured wait contracts:
+  `waiting_for`, owner, observer, resume condition, next check, and fallback.
+- Several project-level owner/artifact waits are scheduled for the next review
+  or fallback at 2026-07-13T20:40:00Z; none were overdue at the 19:23Z sample.
+
+Diagnosis:
+
+- This is a parked but not currently abandoned state. The app should not invent
+  domain work just because the frontier is blocked-only.
+- A blocked-only frontier is still risky if every holder waits for humans or
+  external signals, but the correct next move depends on the holder:
+  approval waits need a returned decision or resend at fallback; environment
+  waits need refreshed environment evidence; frontier waits need source/runtime
+  change evidence; artifact waits need exact artifact/result recovery.
+- The app handled the previous overdue wave correctly: metric breach produced
+  focused review waves, reviewer rejected memo-only closures, planner created
+  apply follow-ups, and supported task-tree refreshes moved the overdue metric
+  back to zero.
+- The next useful pressure point is not a blind rerun. It is the next scheduled
+  review/fallback window for the exact wait families, especially the 20:40Z
+  owner/artifact and ADO artifact-result group.
+
+Suggested app action:
+
+- Keep the current waits parked until their named signal or review window lands.
+- At each review/fallback window, create small family-scoped app-ops work:
+  refresh, replace, unblock, or escalate the exact holders; do not reopen broad
+  unchanged live runs.
+- For approval/artifact waits, the worker must collect current facts itself:
+  check event returns, message/approval ledger, artifact/result availability,
+  and current task-tree state before deciding whether to resend, escalate, or
+  keep the wait.
+- Parent loop controllers should report that execution is drained by exact wait
+  stewardship, but they should not be treated as the real blockers. The real
+  blockers are the child wait leaves.
+
+Workflow lesson:
+
+- "No runnable work" is not automatically a bug. It becomes a bug when the
+  blocked waits are overdue, missing observer/fallback metadata, or unsupported
+  by an active/review/apply carrier when a metric says action is required.
+- The useful systemic pattern is:
+  metric or schedule catches a due blocked wait -> planner creates a focused
+  family review -> worker gathers hot facts -> reviewer judges the claim ->
+  planner applies a concrete live-state change or preserves an exact wait with
+  fresh evidence.
+
+## Case: exact owner/artifact handoff after memo-only recovery
+
+Tasks:
+
+- `ops/recover-secops-fips-authenticated-artifact-visibility-family-20260713`
+- `ops/send-secops-fips-github-auth-artifact-recovery-handoff-20260713`
+- `wait-spec-secops-fips-terminal-artifact-visibility-family-return-20260708`
+
+Observed facts:
+
+- The recovery worker found useful current facts for runs `28618650515` and
+  `28621344506`: no local app-visible bundles, no `gh` helper, and `GH_TOKEN`
+  returned `401 Bad credentials` for run/artifact/log API requests.
+- The reviewer correctly returned follow-up because the first worker produced
+  a memo but did not update or replace the live wait.
+- The planner/app-ops follow-up then routed an exact owner handoff to
+  `human:operator`, wrote durable evidence, and rebound the live wait to
+  `project.approval.submitted` for the same lineage.
+- Reviewer accepted only after live task-tree readback showed the wait had
+  updated outputs, future watch metadata, and the exact approval-return
+  metadata.
+
+Diagnosis:
+
+- This is the desired shape for blocked task recovery. The first result was
+  valuable but not sufficient; the project only moved after the live wait was
+  updated and the human-return path existed.
+- The app should preserve this distinction. A memo can explain the answer, but
+  the task is not handled until the state tree has a concrete next carrier.
+
+Suggested app action:
+
+- For every artifact/approval recovery task, require before/after live readback
+  of the exact wait.
+- If a worker cannot mutate state, it must return an exact follow-up ask with
+  task id, wait lineage, evidence path, and requested owner signal.
+- Reviewer should continue rejecting memo-only closure for blocked waits that
+  still need a handoff, refresh, replacement, or escalation.
+
+Workflow lesson:
+
+- "Agent decides, code applies supported mutation" works when the decision is
+  visible in task-tree state. It fails when the decision remains only in prose.
+
+## Case: due approval-return wait refreshed after hot event check
+
+Task:
+
+- `wait-compact-managedsystem-cli-default-payload-owner-decision-return-20260711`
+
+Observed facts:
+
+- At 2026-07-13T19:31Z, the wait had reached its `next_check_at` /
+  `resume_at` window of `2026-07-13T19:30:00Z`.
+- A local metric recompute returned:
+  `aks-rp-e2e.process.blocked.overdue-unworked-count = 1` with this task as
+  the only offender.
+- The task was an already-sent approval-return wait for
+  `path.managedsystem.cli-create-default-payload`, with stable `approvalId`,
+  `waitId`, `pathId`, and send-proof evidence.
+- The app planner processed a focused planning wake asynchronously. The HTTP
+  event API returned `workflowStarted: false`, but the later planner run still
+  handled the wake.
+- The planner collected hot facts before deciding:
+  no matching `project.approval.submitted` event existed for the exact
+  approvalId, waitId, or pathId.
+- The app refreshed the same exact wait in place, preserved the same
+  approval-return lineage, advanced the review/fallback window to
+  `2026-07-14T19:30:00Z`, and did not reopen any unchanged compact rerun.
+- A fresh metric sample returned the overdue-unworked metric to `0`.
+
+Diagnosis:
+
+- This is the desired behavior for an approval-return wait whose check window
+  matures: verify current returned-decision evidence first, then either apply
+  the returned decision or refresh/escalate the same exact wait.
+- The right fix was not a new compact run. The blocker was missing owner return
+  for an already-sent adjacent CLI default-payload decision.
+- The API response field `workflowStarted: false` is not enough to conclude the
+  event was ignored. The reliable evidence is planner-run/journal movement and
+  the live task-tree/metric result.
+
+Suggested app action:
+
+- For due approval-return waits, planner/app-ops should always check current
+  event/message/approval state using the exact lineage identifiers before
+  deciding.
+- If no return exists, refresh or escalate the same lineage with a future
+  review/fallback. Do not create a duplicate send-required holder unless the
+  send proof is missing or invalid.
+- When manually nudging the app, prefer a narrow `project.planning.requested`
+  or metric breach containing the exact offender ids. Then verify via
+  planner-runs, journal, task-tree readback, and metric recompute.
+
+Workflow lesson:
+
+- A metric breach is a good way to make overdue wait debt explicit, but the
+  planner should still decide from hot facts. In this case it did: no approval
+  return was visible, so the correct outcome was a same-lineage refresh.
+
+## Follow-up: dangling compact holder mapping needs applied repair
+
+Tasks:
+
+- `ops/audit-live-blockers-for-archived-active-lineage-20260713`
+- `ops/reconcile-virtualmachines-agentpool-live-holder-mapping-20260713`
+- `ops-apply-reconcile-virtualmachines-agentpool-live-holder-mapping-202607`
+- `hold-compact-virtualmachines-agentpool-split-frontier-maintained-20260708b`
+
+Observed facts:
+
+- The archived-lineage audit repaired seven stale blocked-frontier references
+  and left one exact offender: the VirtualMachines agentpool maintained compact
+  holder still cited three holder ids that were not live tasks.
+- The first reconciliation task collected the right facts and proved the
+  mapping was dangling, but returned only a planner-ready memo.
+- The reviewer correctly returned `followup` instead of accepting the memo as
+  closure because the live holder mapping was still untruthful.
+- Planner created the apply successor
+  `ops-apply-reconcile-virtualmachines-agentpool-live-holder-mapping-202607`.
+- The apply worker restored the three missing exact compact holders, resynced
+  the maintained holder, updated `.state/feature-compact-loop/state.json`, and
+  wrote the apply evidence memo.
+- Reviewer accepted only after live readback showed the restored holder ids
+  existed, the maintained holder mapped all represented members to live holders,
+  and feature-compact-loop state had no missing frontier/task references.
+
+Diagnosis:
+
+- This was not a live AKS rerun problem. It was a process/state-integrity
+  problem: compact state claimed exact downstream owners that no longer existed
+  in the live task tree.
+- The important boundary held: the agent judged the meaning from evidence, and
+  code/app mechanisms applied supported task-tree and loop-state mutations.
+- The project should not close a "reconcile" task just because it describes the
+  fix. It should close only after a concrete apply task leaves the live state
+  truthful or creates an exact successor.
+
+Suggested app action:
+
+- Keep rejecting memo-only closure when a blocked holder still points at
+  nonexistent current tasks.
+- For compact maintained holders, reviewer should verify both sides before
+  accepting: task-tree holders exist, and feature-compact-loop state points only
+  at live holder ids.
+- When a repair restores exact holders, preserve the maintained holder instead
+  of reopening broad compact reruns if the represented member meanings are
+  already known.
+
+Workflow lesson:
+
+- A compact holder is only useful if its represented members point to live
+  current holders. If the mapping is dangling, the next move is an app-state
+  repair or truthful reduction, not a new pipeline run and not a memo-only
+  closure.
+
+## Follow-up: self-referential blocked holders need a real governing wait
+
+Tasks:
+
+- `domain/hold-rp-nodepool-lifecycle-execute-ready-promotion-visible-backlog-20260713`
+- `domain/hold-rp-nodepool-lifecycle-ready-subset-pass-sync-visible-backlog-20260713`
+- `domain/hold-rp-nodepool-lifecycle-execute-ready-promotion-visible-backlog-20260713b`
+- `domain/hold-rp-nodepool-lifecycle-ready-subset-pass-sync-visible-backlog-20260713b`
+- `ops/wait-project-approval-owner-return-primary-blocker-20260713`
+
+Observed facts:
+
+- The planner found two project-level RP nodepool backlog holders whose blocker
+  lineage effectively pointed back to themselves instead of to the real
+  governing wait.
+- The app replaced both holders with `20260713b` versions and marked the older
+  holders `done` with resolution `replaced`.
+- The replacement holders now point at the single governing project-level
+  owner-return wait, `ops/wait-project-approval-owner-return-primary-blocker-20260713`.
+- No pipeline rerun was started. This was a task-tree lineage repair, not a
+  product/test execution change.
+
+Diagnosis:
+
+- A blocked holder must say what external condition or owner-return signal can
+  wake it. If it points back to itself, nothing can make progress: the task is
+  "waiting because it is waiting."
+- The correct fix is to retarget or replace the holder so it names the true
+  upstream wait. Keeping the old holder blocked only preserves a dead end.
+
+Suggested app action:
+
+- Treat self-referential blocker lineage as process debt. The planner/app-ops
+  path should replace or retarget it to a concrete governing wait.
+- Prefer a narrow replacement holder with the same domain meaning and corrected
+  blocker contract over broad replanning or live reruns.
+
+Workflow lesson:
+
+- Blocked is only useful when it carries a real wake condition. If the wake
+  condition is self-referential, the app should repair the blocked contract
+  before asking domain workflows to do more work.

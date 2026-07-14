@@ -1648,6 +1648,37 @@ describe("project execution watchdog", () => {
     ]);
   });
 
+  test("skips early blocked-frontier wake when all blocked waits are future-dated exact waits", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-task": task("blocked-task", "blocked", {
+        blocker: {
+          condition: "Waiting for returned operator proof.",
+          category: "external-wait",
+          owner: "human",
+          resume_condition:
+            "Resume when proof lands or the follow-up window opens.",
+          resume_at: "2099-06-26T00:40:00.000Z",
+          next_check_at: "2099-06-26T00:40:00.000Z",
+          fallback_at: "2099-06-27T00:00:00.000Z",
+          fallback_action: "Recheck the operator ask.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog skipped: blocked frontier is entirely future-dated exact waits until 2099-06-26T00:40:00.000Z.",
+    );
+    expect(dispatched).toHaveLength(0);
+  });
+
   test("copies structured blocker resume metadata into blocked frontier packets", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -1663,6 +1694,9 @@ describe("project execution watchdog", () => {
           fallback_action: "Recheck the operator ask.",
         },
       }),
+      "waiting-task": task("waiting-task", "backlog", {
+        depends_on: ["blocked-task"],
+      }),
     });
 
     const dispatched: Array<{
@@ -1676,6 +1710,7 @@ describe("project execution watchdog", () => {
       type: "project.planning.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
+        waitingBacklogCount: 1,
         blockedTasks: [
           {
             taskId: "blocked-task",
@@ -2543,6 +2578,52 @@ describe("project execution watchdog", () => {
         ],
       },
     });
+  });
+
+  test("skips capacity-underfilled wake when active work is the only non-blocked frontier and all blocked waits are future-dated exact waits", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_running", "running");
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_running",
+        }),
+        "blocked-task": task("blocked-task", "blocked", {
+          blocker: {
+            condition: "Waiting for returned operator proof.",
+            category: "external-wait",
+            owner: "human",
+            resume_condition:
+              "Resume when proof lands or the follow-up window opens.",
+            resume_at: "2099-06-26T00:40:00.000Z",
+            next_check_at: "2099-06-26T00:40:00.000Z",
+            fallback_at: "2099-06-27T00:00:00.000Z",
+            fallback_action: "Recheck the operator ask.",
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, maxConcurrent: 3, dispatched }),
+    );
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog skipped: 1 active task(s) still have running attempts, and the remaining frontier is entirely future-dated exact waits until 2099-06-26T00:40:00.000Z.",
+    });
+    expect(dispatched).toHaveLength(0);
   });
 
   test("wakes owner when active work underfills capacity", async () => {

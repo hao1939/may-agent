@@ -343,6 +343,8 @@ function structuredBlockedTaskIds(task: TaskTree["tasks"][string]): string[] {
   collectArray(context.audited_blocked_task_ids);
   collectArray(context.auditedBlockedTasks);
   collectArray(context.audited_blocked_tasks);
+  collectArray(context.offenderTaskIds);
+  collectArray(context.offender_task_ids);
   collectArray(context.overdueOwnerActions);
   collectArray(context.overdue_owner_actions);
 
@@ -967,6 +969,17 @@ function blockedFrontierSummary(
       "waitType",
     ) as BlockedFrontierSummary["waitTypeGroups"],
   };
+}
+
+function futureBlockedFrontierEarliestWatchAt(
+  tasks: OpenTaskSnapshot[],
+): string | null {
+  const futureWatches = tasks
+    .map(blockedWatchTime)
+    .filter((value): value is number => typeof value === "number")
+    .filter((value) => value > Date.now());
+  if (futureWatches.length === 0) return null;
+  return new Date(Math.min(...futureWatches)).toISOString();
 }
 
 function recoveryTaskAlreadyOpen(
@@ -1778,6 +1791,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ...snapshot,
     staleActiveTasks: staleActiveTasks(config, snapshot.activeTasks),
   };
+  const sampledBlockedTasks = recovery.blockedTasks.slice(0, 20);
+  const blockedSummary = blockedFrontierSummary(
+    recovery.blockedTasks,
+    sampledBlockedTasks,
+  );
+  const futureOnlyBlockedFrontierNoop =
+    recovery.blockedTasks.length > 0 &&
+    recovery.waitingBacklogTasks.length === 0 &&
+    blockedSummary.overdueCount === 0 &&
+    blockedSummary.missingWatchCount === 0 &&
+    blockedSummary.futureWatchCount === recovery.blockedTasks.length;
+  const futureOnlyBlockedFrontierEarliestWatchAt =
+    futureOnlyBlockedFrontierNoop
+      ? futureBlockedFrontierEarliestWatchAt(recovery.blockedTasks)
+      : null;
   const recoveredTerminalTasks = recoverTerminalDoneActiveTasks(
     ctx,
     config,
@@ -1839,11 +1867,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (recovery.overdueOwnerActions.length > 0) {
     const reason = "watchdog-blocked-frontier-review";
-    const sampledBlockedTasks = recovery.blockedTasks.slice(0, 20);
-    const blockedSummary = blockedFrontierSummary(
-      recovery.blockedTasks,
-      sampledBlockedTasks,
-    );
     emitOwnerRequested(ctx, config, reason, {
       blockedTasks: sampledBlockedTasks,
       blockedCount: recovery.blockedTasks.length,
@@ -1907,14 +1930,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (
     (recovery.blockedTasks.length > 0 ||
       recovery.waitingBacklogTasks.length > 0) &&
-    recovery.activeCount < config.maxConcurrent
+    recovery.activeCount < config.maxConcurrent &&
+    !futureOnlyBlockedFrontierNoop
   ) {
     const reason = "watchdog-blocked-frontier-review";
-    const sampledBlockedTasks = recovery.blockedTasks.slice(0, 20);
-    const blockedSummary = blockedFrontierSummary(
-      recovery.blockedTasks,
-      sampledBlockedTasks,
-    );
     const waitingBacklogDetails =
       recovery.waitingBacklogTasks.length > 0
         ? {
@@ -1937,6 +1956,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         "Review blocked and dependency-waiting tasks before treating underfilled capacity as idle. The blockedTasks sample is ordered by actionability: expired next-check/resume/fallback windows first, malformed waits next, future waits last. overdueOwnerActions names waits whose next-check/resume/fallback window passed without active/review recovery or handoff work; owner=human is not enough by itself. Push expired or malformed blockers toward done, rework, a visible problem task, or a refreshed exact external ask/resume condition; do not retry an unchanged blocked leaf.",
     });
     return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+  }
+
+  if (futureOnlyBlockedFrontierNoop) {
+    const earliestWatchAt =
+      futureOnlyBlockedFrontierEarliestWatchAt ?? "<missing-future-watch>";
+    if (recovery.activeCount > 0 && recovery.activeCount < config.maxConcurrent) {
+      return ctx.done(
+        `Watchdog skipped: ${recovery.activeCount} active task(s) still have running attempts, and the remaining frontier is entirely future-dated exact waits until ${earliestWatchAt}.`,
+      );
+    }
+    if (recovery.activeCount === 0) {
+      return ctx.done(
+        `Watchdog skipped: blocked frontier is entirely future-dated exact waits until ${earliestWatchAt}.`,
+      );
+    }
   }
 
   if (recovery.activeCount > 0 && recovery.activeCount < config.maxConcurrent) {

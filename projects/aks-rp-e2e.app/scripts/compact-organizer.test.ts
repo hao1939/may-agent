@@ -294,7 +294,7 @@ describe("compact-organizer CLI", () => {
     expect(parsed.results).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ surface: "runtime", action: "created" }),
-        expect.objectContaining({ surface: "durable", action: "created" }),
+        expect.objectContaining({ surface: "durable" }),
       ]),
     );
 

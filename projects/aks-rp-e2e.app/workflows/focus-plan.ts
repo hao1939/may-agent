@@ -20,6 +20,11 @@ import {
   type TaskPlanningPacket,
 } from "./lib/task-tree-tools.ts";
 import {
+  readTaskTree,
+  type TaskNode,
+  type TaskTreeConfig,
+} from "./lib/task-tree-store.ts";
+import {
   field,
   parseTriggerEvent,
   resolveAppDir,
@@ -50,6 +55,16 @@ type FocusResult =
   | "blocked"
   | "failed_known_issues";
 
+const focusResultValues = new Set<FocusResult>([
+  "on_track",
+  "updated",
+  "needs_approval",
+  "off_track",
+  "completed",
+  "blocked",
+  "failed_known_issues",
+]);
+
 function focusRunKind(
   trigger: ReturnType<typeof parseTriggerEvent>,
 ): "proposal" | "review" {
@@ -70,20 +85,99 @@ function extractMarker(text: string, name: string): string {
   return match?.[1]?.trim() ?? "";
 }
 
-function focusResult(text: string): FocusResult {
+function focusResultFromMarker(text: string): FocusResult | null {
   const raw = extractMarker(text, "FOCUS_PLAN_RESULT").toLowerCase();
+  return focusResultValues.has(raw as FocusResult)
+    ? (raw as FocusResult)
+    : null;
+}
+
+function focusResultText(result: unknown): string {
+  if (typeof result === "string") return result;
+  if (!result || typeof result !== "object") return resultText(result);
+  const typed = result as {
+    message?: unknown;
+    summary?: unknown;
+    lastAssistantText?: unknown;
+    finishResult?: { summary?: unknown };
+  };
+  const texts = [
+    typed.message,
+    typed.summary,
+    typed.lastAssistantText,
+    typed.finishResult?.summary,
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return texts.find((value) => focusResultFromMarker(value)) ?? resultText(result);
+}
+
+function inferFocusResult(input: {
+  text: string;
+  result: unknown;
+}): FocusResult {
+  const marker = focusResultFromMarker(input.text);
+  if (marker) return marker;
+
+  const typed =
+    input.result && typeof input.result === "object"
+      ? (input.result as {
+          status?: unknown;
+          finishResult?: { status?: unknown };
+        })
+      : null;
+  const finishStatus =
+    typeof typed?.finishResult?.status === "string"
+      ? typed.finishResult.status.toLowerCase()
+      : "";
+  if (finishStatus === "blocked") return "blocked";
+
+  const raw = input.text.trim();
+  const lower = raw.toLowerCase();
+  const blockedLanguage =
+    /\b(blocked|pending approval|awaiting approval|awaiting human approval|approval still pending|owner-return|approval wait|governing wait|waiting on)\b/.test(
+      lower,
+    );
+  const onTrackLanguage =
+    /\b(on track|still on track|remains on track|right branch|remains the right|correct 12-24h mission|truthful 12-24h mission|remains correct)\b/.test(
+      lower,
+    );
+
+  if (blockedLanguage && onTrackLanguage) return "blocked";
   if (
-    raw === "on_track" ||
-    raw === "updated" ||
-    raw === "needs_approval" ||
-    raw === "off_track" ||
-    raw === "completed" ||
-    raw === "blocked" ||
-    raw === "failed_known_issues"
+    /\b(needs approval|approval requested|material change|proposed 12-24h focus shift|new direction|refresh the visible focus branch)\b/.test(
+      lower,
+    )
   ) {
-    return raw;
+    return "needs_approval";
   }
-  return "off_track";
+  if (
+    /\b(off track|needs human attention|significant pivot|adjust direction|hold for now)\b/.test(
+      lower,
+    )
+  ) {
+    return "off_track";
+  }
+  if (
+    /\b(failed known issues|known issues were exhausted|local repair paths were exhausted)\b/.test(
+      lower,
+    )
+  ) {
+    return "failed_known_issues";
+  }
+  if (
+    /\b(focus done|goal achieved|project at true terminal completion|project fully closed|focus plan accepted and completed)\b/.test(
+      lower,
+    )
+  ) {
+    return "completed";
+  }
+  if (onTrackLanguage) return "on_track";
+  if (typeof typed?.status === "string" && typed.status.toLowerCase() === "error") {
+    return "blocked";
+  }
+  return "updated";
 }
 
 function truncate(text: string, max = 1800): string {
@@ -394,9 +488,152 @@ function dispatchOwnerRequested(
   }
 }
 
+type FocusApprovalLineage = {
+  governingTaskId?: string;
+  taskId?: string;
+  planId?: string;
+  pathId?: string;
+  approvalId?: string;
+  waitId?: string;
+  packetPath?: string;
+  requestEventId?: number;
+  messageId?: number;
+  acceptedDecisions?: string[];
+};
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function taskState(task: TaskNode | undefined): string {
+  return stringValue(task?.status ?? task?.state ?? "backlog") || "backlog";
+}
+
+function liveFocusPlanTask(tree: ReturnType<typeof readTaskTree>): TaskNode | null {
+  const live = Object.values(tree.tasks ?? {})
+    .filter((task) => task.kind === "focus_plan" && taskState(task) !== "done")
+    .sort((a, b) => a.id.localeCompare(b.id));
+  return live[0] ?? null;
+}
+
+function lineageFromWaitingFor(input: {
+  waitingFor: Record<string, unknown> | null;
+  focusTaskId: string;
+  governingTaskId?: string;
+}): FocusApprovalLineage | null {
+  const waitingFor = input.waitingFor;
+  if (!waitingFor) return null;
+  if (stringValue(waitingFor.type) !== "project.approval.submitted") return null;
+
+  const directTaskId = stringValue(waitingFor.taskId);
+  if (!directTaskId || directTaskId === input.focusTaskId) {
+    const pathId = stringValue(waitingFor.pathId);
+    const approvalId = stringValue(waitingFor.approvalId);
+    const waitId = stringValue(waitingFor.waitId);
+    const packetPath = stringValue(waitingFor.packetPath);
+    const planId = stringValue(waitingFor.planId);
+    if (pathId || approvalId || waitId || planId) {
+      return {
+        governingTaskId: input.governingTaskId,
+        taskId: directTaskId || input.focusTaskId,
+        planId,
+        pathId,
+        approvalId,
+        waitId,
+        packetPath,
+        requestEventId: numberValue(waitingFor.requestEventId),
+        messageId: numberValue(waitingFor.messageId),
+        acceptedDecisions: stringList(waitingFor.acceptedDecisions),
+      };
+    }
+  }
+
+  for (const entry of Array.isArray(waitingFor.lineages) ? waitingFor.lineages : []) {
+    const lineage = recordValue(entry);
+    if (!lineage || stringValue(lineage.taskId) !== input.focusTaskId) continue;
+    const pathId = stringValue(lineage.pathId);
+    const approvalId = stringValue(lineage.approvalId);
+    const waitId = stringValue(lineage.waitId);
+    const packetPath = stringValue(lineage.packetPath);
+    const planId = stringValue(lineage.planId);
+    if (!pathId && !approvalId && !waitId && !planId) continue;
+    return {
+      governingTaskId: input.governingTaskId,
+      taskId: input.focusTaskId,
+      planId,
+      pathId,
+      approvalId,
+      waitId,
+      packetPath,
+      requestEventId: numberValue(lineage.requestEventId),
+      messageId: numberValue(lineage.messageId),
+      acceptedDecisions: stringList(waitingFor.acceptedDecisions),
+    };
+  }
+
+  return null;
+}
+
+function resolveFocusApprovalLineage(config: TaskTreeConfig): FocusApprovalLineage | null {
+  const tree = readTaskTree(config);
+  const focusTask = liveFocusPlanTask(tree);
+  if (!focusTask) return null;
+
+  const focusBlocker = recordValue(focusTask.blocker);
+  const focusWaitingFor = recordValue(focusBlocker?.waiting_for);
+  const governingTaskId = stringValue(focusWaitingFor?.taskId);
+  if (stringValue(focusWaitingFor?.type) === "blocker.resolved" && governingTaskId) {
+    const governingTask = tree.tasks?.[governingTaskId];
+    const governingWaitingFor = recordValue(recordValue(governingTask?.blocker)?.waiting_for);
+    const resolved = lineageFromWaitingFor({
+      waitingFor: governingWaitingFor,
+      focusTaskId: focusTask.id,
+      governingTaskId,
+    });
+    if (resolved) return resolved;
+  }
+
+  const direct = lineageFromWaitingFor({
+    waitingFor: focusWaitingFor,
+    focusTaskId: focusTask.id,
+  });
+  if (direct) return direct;
+
+  for (const task of Object.values(tree.tasks ?? {})) {
+    const waitingFor = recordValue(recordValue(task.blocker)?.waiting_for);
+    const resolved = lineageFromWaitingFor({
+      waitingFor,
+      focusTaskId: focusTask.id,
+      governingTaskId: task.id,
+    });
+    if (resolved) return resolved;
+  }
+
+  return null;
+}
+
 function dispatchHumanApproval(
   ctx: WorkflowContext,
   input: {
+    appDir: string;
+    projectDir: string;
+    config: TaskTreeConfig;
     result: FocusResult;
     kind: "proposal" | "review";
     title: string;
@@ -413,14 +650,38 @@ function dispatchHumanApproval(
     (input.result === "off_track"
       ? "AKS RP E2E focus is off track"
       : "AKS RP E2E focus plan needs approval");
-  const planId = focusPlanId(input.kind, input.result);
+  const preservedLineage = resolveFocusApprovalLineage(input.config);
+  const planId = preservedLineage?.planId || focusPlanId(input.kind, input.result);
   const question = approvalQuestion({ ...input, title });
   const text = approvalText({ ...input, title, plannerNext });
+  const directEvent = {
+    type: "project.approval.submitted",
+    project: "aks-rp-e2e",
+    projectPath: "projects/aks-rp-e2e.app",
+    approvalKind: "focus-plan",
+    planId,
+    ...(preservedLineage?.pathId ? { pathId: preservedLineage.pathId } : {}),
+    ...(preservedLineage?.approvalId
+      ? { approvalId: preservedLineage.approvalId }
+      : {}),
+    ...(preservedLineage?.waitId ? { waitId: preservedLineage.waitId } : {}),
+    ...(preservedLineage?.packetPath
+      ? { packetPath: preservedLineage.packetPath }
+      : {}),
+  };
   const approval = {
     kind: "focus-plan",
     planId,
     focusResult: input.result,
     focusKind: input.kind,
+    ...(preservedLineage?.pathId ? { pathId: preservedLineage.pathId } : {}),
+    ...(preservedLineage?.approvalId
+      ? { approvalId: preservedLineage.approvalId }
+      : {}),
+    ...(preservedLineage?.waitId ? { waitId: preservedLineage.waitId } : {}),
+    ...(preservedLineage?.packetPath
+      ? { packetPath: preservedLineage.packetPath }
+      : {}),
     question,
     options: [
       {
@@ -442,13 +703,16 @@ function dispatchHumanApproval(
           "Owner does not start the proposed direction and only keeps safe bookkeeping work.",
       },
     ],
-    directEvent: {
-      type: "project.approval.submitted",
-      project: "aks-rp-e2e",
-      projectPath: "projects/aks-rp-e2e.app",
-      planId,
-    },
+    directEvent,
   };
+  const requestedAction = preservedLineage?.approvalId || preservedLineage?.waitId
+    ? "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted carrying the preserved approvalId/waitId lineage."
+    : "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted.";
+  const resumeCondition = preservedLineage?.approvalId || preservedLineage?.waitId
+    ? "Resume the governing focus approval wait when project.approval.submitted carries the preserved approvalId or waitId with a bounded decision."
+    : undefined;
+  const dedupKey =
+    preservedLineage?.approvalId || `aks-rp-e2e:focus-plan:${input.result}`;
 
   try {
     ctx.dispatchEvent("message.created", {
@@ -463,9 +727,17 @@ function dispatchHumanApproval(
       domainProjectId: "aks-rp-e2e",
       projectPath: "projects/aks-rp-e2e.app",
       reason: title,
-      requestedAction:
-        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted.",
+      requestedAction,
       approval,
+      ...(preservedLineage?.pathId ? { pathId: preservedLineage.pathId } : {}),
+      ...(preservedLineage?.approvalId
+        ? { approvalId: preservedLineage.approvalId }
+        : {}),
+      ...(preservedLineage?.waitId ? { waitId: preservedLineage.waitId } : {}),
+      ...(preservedLineage?.packetPath
+        ? { packetPath: preservedLineage.packetPath }
+        : {}),
+      ...(resumeCondition ? { resumeCondition } : {}),
       focusResult: input.result,
       focusKind: input.kind,
       summary: truncate(input.summary, 3000),
@@ -473,13 +745,24 @@ function dispatchHumanApproval(
       plannerNext: truncate(plannerNext, 1000),
       evidence: {
         focusPlanId: planId,
-        appTaskTree: resolveTaskTreePath("/app/projects/aks-rp-e2e.app"),
-        projectState: "/app/projects/aks-rp-e2e.app/.state/project-state.json",
-        domainStatusCommand:
-          "cd /app/projects/aks-rp-e2e && bun run status -- --gaps",
+        ...(preservedLineage?.governingTaskId
+          ? { governingFocusApprovalWaitTaskId: preservedLineage.governingTaskId }
+          : {}),
+        ...(preservedLineage?.pathId
+          ? { preservedFocusApprovalPathId: preservedLineage.pathId }
+          : {}),
+        ...(preservedLineage?.approvalId
+          ? { preservedFocusApprovalId: preservedLineage.approvalId }
+          : {}),
+        ...(preservedLineage?.waitId
+          ? { preservedFocusWaitId: preservedLineage.waitId }
+          : {}),
+        appTaskTree: resolveTaskTreePath(input.appDir),
+        projectState: join(input.appDir, ".state", "project-state.json"),
+        domainStatusCommand: `cd ${input.projectDir} && bun run status -- --gaps`,
         kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
       },
-      dedupKey: `aks-rp-e2e:focus-plan:${input.result}`,
+      dedupKey,
     });
   } catch {
     // Local tests may not provide a dispatcher.
@@ -529,16 +812,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }),
   });
 
-  const rawSummary = resultText(focusAgentResult);
+  const rawSummary = focusResultText(focusAgentResult);
   const guarded = guardFocusSummary({
     packet,
-    result: focusResult(rawSummary),
+    result: inferFocusResult({ text: rawSummary, result: focusAgentResult }),
     summary: rawSummary,
   });
   const summary = guarded.summary;
   const result = guarded.result;
   const title = extractMarker(summary, "FOCUS_PLAN_TITLE");
-  dispatchHumanApproval(ctx, { result, kind, title, summary });
+  dispatchHumanApproval(ctx, {
+    appDir,
+    projectDir,
+    config,
+    result,
+    kind,
+    title,
+    summary,
+  });
   dispatchOwnerRequested(ctx, { result, kind, summary });
   appendFocusRun(appDir, {
     kind,
