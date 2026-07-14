@@ -150,6 +150,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
+  function isApprovalReplyCandidate(context: Record<string, unknown>): boolean {
+    const originalIssue =
+      context.originalIssue && typeof context.originalIssue === "object" && !Array.isArray(context.originalIssue)
+        ? (context.originalIssue as Record<string, unknown>)
+        : null;
+    if (originalIssue?.eventType === "project.approval.requested") return true;
+    return Array.isArray(context.expectedClosure) && context.expectedClosure.includes("project.approval.submitted");
+  }
+
   function emitChatStart(
     message: string,
     source = "telegram",
@@ -243,8 +252,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             conversationId: route.context.conversationId,
             telegramReply: route.context,
           };
-          if (route.sessionId) {
-            inputTarget = { sessionId: route.sessionId };
+          if (route.sessionId || (route.projectPath && isApprovalReplyCandidate(route.context))) {
+            inputTarget = {
+              sessionId: route.sessionId ?? undefined,
+              projectPath: isApprovalReplyCandidate(route.context) ? route.projectPath ?? undefined : undefined,
+            };
           }
           bus.emit({ type: "info", message: route.infoMessage });
 
