@@ -3813,31 +3813,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (normalizedBlockedFeatures.repairedTaskIds.length > 0) {
     saveTaskTreeWithKanbanSnapshot(config, latestTree);
   }
-  const latestRepresentedFeatureKeys = openFeatureScopedChildKeys(
-    latestLoopTask,
-    latestTree.tasks,
-  );
-  const latestProjectedBlockedFeatureKeys = projectedBlockedFeatureKeys({
-    state,
-    tasks: latestTree.tasks,
-  });
-  const latestRepresentedSupportErrorClasses = new Set<string>([
-    ...(latestLoopTask
-      ? representedSupportErrorClasses(latestLoopTask, latestTree.tasks)
-      : new Set<string>()),
-  ]);
   normalizeActivePipelineWaitSchedules({
     state,
     waitTimeoutMinutes: githubWaitTimeoutMinutes,
   });
-  const latestActivePipelineWaits = activePipelineWaits({
-    state,
-    activeWorkflowRuns: activeGithubRunList,
-    waitTimeoutMinutes: githubWaitTimeoutMinutes,
-  });
-  const latestActivePipelineFeatureKeys = new Set(
-    latestActivePipelineWaits.map((wait) => wait.featureKey),
-  );
   const finalReleasedStaleRunning = releaseStaleRunningFeatures({
     state,
     existing: latestLoopTask
@@ -3858,25 +3837,51 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return repair;
   });
   saveFeatureCompactLoopState(statePath, state);
+  const postProjectionTree = readTaskTree(config);
+  const postProjectionLoopTask = postProjectionTree.tasks[loopTask.id];
+  const latestRepresentedFeatureKeys = openFeatureScopedChildKeys(
+    postProjectionLoopTask,
+    postProjectionTree.tasks,
+  );
+  const latestProjectedBlockedFeatureKeys = projectedBlockedFeatureKeys({
+    state,
+    tasks: postProjectionTree.tasks,
+  });
+  const latestRepresentedSupportErrorClasses = new Set<string>([
+    ...(postProjectionLoopTask
+      ? representedSupportErrorClasses(
+          postProjectionLoopTask,
+          postProjectionTree.tasks,
+        )
+      : new Set<string>()),
+  ]);
+  const latestActivePipelineWaits = activePipelineWaits({
+    state,
+    activeWorkflowRuns: activeGithubRunList,
+    waitTimeoutMinutes: githubWaitTimeoutMinutes,
+  });
+  const latestActivePipelineFeatureKeys = new Set(
+    latestActivePipelineWaits.map((wait) => wait.featureKey),
+  );
   updateControllerWorkflowProgress({
     appDir,
     projectDir,
     taskId: loopTask.id,
     progress: compactLoopWorkflowProgress({
       state,
-      openChildren: latestLoopTask
-        ? openChildCount(latestLoopTask, latestTree.tasks)
+      openChildren: postProjectionLoopTask
+        ? openChildCount(postProjectionLoopTask, postProjectionTree.tasks)
         : 0,
-      openSupportChildren: latestLoopTask
-        ? openSupportChildCount(latestLoopTask, latestTree.tasks)
+      openSupportChildren: postProjectionLoopTask
+        ? openSupportChildCount(postProjectionLoopTask, postProjectionTree.tasks)
         : 0,
-      blockedWaitChildren: latestLoopTask
-        ? blockedWaitChildCount(latestLoopTask, latestTree.tasks)
+      blockedWaitChildren: postProjectionLoopTask
+        ? blockedWaitChildCount(postProjectionLoopTask, postProjectionTree.tasks)
         : 0,
-      blockedWaitFeatureKeys: latestLoopTask
+      blockedWaitFeatureKeys: postProjectionLoopTask
         ? blockedWaitFeatureKeys(
-            latestLoopTask,
-            latestTree.tasks,
+            postProjectionLoopTask,
+            postProjectionTree.tasks,
             knownFeatureKeys,
           )
         : new Set<string>(),

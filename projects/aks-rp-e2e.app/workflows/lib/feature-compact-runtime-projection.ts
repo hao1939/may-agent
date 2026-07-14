@@ -395,6 +395,107 @@ function uniqueSorted(values: string[]): string[] {
   );
 }
 
+function numericValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function syncLoopWorkflowProgressRepresentation(input: {
+  loopTask: TaskNode | undefined;
+  featureKey: string;
+  state: FeatureCompactLoopState;
+}): void {
+  if (!input.loopTask) return;
+  const loopContext = taskContext(input.loopTask);
+  const workflowProgress = recordValue(loopContext.workflowProgress) ?? {};
+  const aliases = featureKeyAliases(input.featureKey, input.state);
+  if (aliases.length === 0) return;
+
+  const representedFeatureKeys = uniqueSorted([
+    ...stringArrayValue(workflowProgress.representedFeatureKeys),
+    ...aliases,
+  ]);
+  const previousUnrepresentedBlockedFeatureKeys = stringArrayValue(
+    workflowProgress.unrepresentedBlockedFeatureKeys,
+  );
+  const previousUnrepresentedErrorFeatureKeys = stringArrayValue(
+    workflowProgress.unrepresentedErrorFeatureKeys,
+  );
+  const previousUnrepresentedNonTerminalFeatureKeys = stringArrayValue(
+    workflowProgress.unrepresentedNonTerminalFeatureKeys,
+  );
+  const nextUnrepresentedBlockedFeatureKeys =
+    previousUnrepresentedBlockedFeatureKeys.filter(
+      (value) => !aliases.includes(value),
+    );
+  const nextUnrepresentedErrorFeatureKeys =
+    previousUnrepresentedErrorFeatureKeys.filter(
+      (value) => !aliases.includes(value),
+    );
+  const nextUnrepresentedNonTerminalFeatureKeys =
+    previousUnrepresentedNonTerminalFeatureKeys.filter(
+      (value) => !aliases.includes(value),
+    );
+  const removedBlockedCount =
+    previousUnrepresentedBlockedFeatureKeys.length -
+    nextUnrepresentedBlockedFeatureKeys.length;
+  const removedErrorCount =
+    previousUnrepresentedErrorFeatureKeys.length -
+    nextUnrepresentedErrorFeatureKeys.length;
+  const removedNonTerminalCount =
+    previousUnrepresentedNonTerminalFeatureKeys.length -
+    nextUnrepresentedNonTerminalFeatureKeys.length;
+
+  const nextUnrepresentedBlockedCount = Math.max(
+    0,
+    (numericValue(workflowProgress.unrepresentedBlockedCount) ?? 0) -
+      removedBlockedCount,
+  );
+  const nextUnrepresentedErrorCount = Math.max(
+    0,
+    (numericValue(workflowProgress.unrepresentedErrorCount) ?? 0) -
+      removedErrorCount,
+  );
+  const nextUnrepresentedNonTerminalCount = Math.max(
+    0,
+    (numericValue(workflowProgress.unrepresentedNonTerminalCount) ?? 0) -
+      removedNonTerminalCount,
+  );
+  const pending = numericValue(workflowProgress.pending) ?? 0;
+  const running = numericValue(workflowProgress.running) ?? 0;
+  const blocked = numericValue(workflowProgress.blocked) ?? 0;
+  const openChildren = numericValue(workflowProgress.openChildren) ?? 0;
+  const openSupportChildren =
+    numericValue(workflowProgress.openSupportChildren) ?? 0;
+  const blockedWaitChildren =
+    numericValue(workflowProgress.blockedWaitChildren) ?? 0;
+  const noRefillNow =
+    pending === 0 &&
+    running === 0 &&
+    openChildren === 0 &&
+    openSupportChildren === 0 &&
+    nextUnrepresentedNonTerminalCount === 0 &&
+    blocked > 0 &&
+    blockedWaitChildren > 0;
+
+  loopContext.workflowProgress = {
+    ...workflowProgress,
+    representedFeatureKeys,
+    unrepresentedBlockedCount: nextUnrepresentedBlockedCount,
+    unrepresentedErrorCount: nextUnrepresentedErrorCount,
+    unrepresentedNonTerminalCount: nextUnrepresentedNonTerminalCount,
+    unrepresentedBlockedFeatureKeys: nextUnrepresentedBlockedFeatureKeys,
+    unrepresentedErrorFeatureKeys: nextUnrepresentedErrorFeatureKeys,
+    unrepresentedNonTerminalFeatureKeys: nextUnrepresentedNonTerminalFeatureKeys,
+    noRefillNow: noRefillNow ? true : undefined,
+    reason: noRefillNow
+      ? "feature-compact loop has no runnable planner or support children; the remaining frontier is exact blocked wait stewardship until a stated resume signal lands"
+      : stringValue(workflowProgress.reason) ||
+        "feature-compact loop state still has non-terminal features",
+    updatedAt: new Date().toISOString(),
+  };
+  input.loopTask.context = loopContext;
+}
+
 function featureRelatedBlockedTasks(input: {
   featureKey: string;
   tasks: Record<string, TaskNode>;
@@ -934,6 +1035,13 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
     });
     const projectedFrontierTaskIds =
       namedFrontierTaskIds.length > 0 ? namedFrontierTaskIds : crossLoopTaskIds;
+    if (liveExactWaitTaskId || projectedFrontierTaskIds.length > 0) {
+      syncLoopWorkflowProgressRepresentation({
+        loopTask: input.loopTask,
+        featureKey,
+        state: input.state,
+      });
+    }
     const previousFrontierTaskIds = uniqueSorted(
       Array.isArray(feature.frontierTaskIds)
         ? feature.frontierTaskIds.filter(

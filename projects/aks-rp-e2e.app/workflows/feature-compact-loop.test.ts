@@ -5546,6 +5546,97 @@ describe("feature compact loop", () => {
     ]);
   });
 
+  test("recreated exact compact holders clear stale unrepresented workflow progress", () => {
+    const holderTaskId =
+      "hold-compact-defender-profile-reviewed-exception-frontier";
+    const loopTask = {
+      id: "aks-feature-compact-loop",
+      state: "active",
+      status: "active",
+      children: [],
+      context: {
+        workflowProgress: {
+          pending: 0,
+          running: 0,
+          blocked: 1,
+          openChildren: 0,
+          openSupportChildren: 0,
+          blockedWaitChildren: 1,
+          unrepresentedBlockedCount: 1,
+          unrepresentedErrorCount: 0,
+          unrepresentedNonTerminalCount: 1,
+          unrepresentedBlockedFeatureKeys: ["defender-profile"],
+          unrepresentedErrorFeatureKeys: [],
+          unrepresentedNonTerminalFeatureKeys: ["defender-profile"],
+          representedFeatureKeys: ["aad-rbac"],
+        },
+      },
+    } as any;
+    const tasks = {
+      "aks-feature-compact-loop": loopTask,
+    } as any;
+    const state = {
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      features: {
+        "defender-profile": {
+          featureKey: "defender-profile",
+          status: "blocked",
+          errorClass: "reviewed-exception",
+          taskId: holderTaskId,
+          waitingFor: {
+            featureKey: "defender-profile",
+            target: "staging",
+            errorClass: "reviewed-exception",
+            scope: "feature-compact",
+            type: "publish.auth.ready",
+          },
+          blockedReason:
+            "Owner promotion or explicit reclassification still gates the compact frontier.",
+          resumeCondition:
+            "Resume only after the owner promotes or intentionally reclassifies spec.defender-profile.vm-prerelease-matrix.",
+        },
+      },
+    } as any;
+
+    const repair = reconcileFeatureCompactRuntimeProjection({
+      loopTask,
+      tasks,
+      state,
+    });
+
+    expect(repair.taskRepairs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: holderTaskId,
+          featureKey: "defender-profile",
+          field: "task.reopen",
+          before: null,
+          after: { state: "blocked", status: "blocked" },
+        }),
+      ]),
+    );
+    expect(loopTask.children).toContain(holderTaskId);
+    expect(tasks[holderTaskId]).toMatchObject({
+      state: "blocked",
+      status: "blocked",
+      context: expect.objectContaining({
+        featureCompactExactWait: true,
+        featureKey: "defender-profile",
+      }),
+    });
+    expect(loopTask.context.workflowProgress).toMatchObject({
+      unrepresentedBlockedCount: 0,
+      unrepresentedErrorCount: 0,
+      unrepresentedNonTerminalCount: 0,
+      unrepresentedBlockedFeatureKeys: [],
+      unrepresentedErrorFeatureKeys: [],
+      unrepresentedNonTerminalFeatureKeys: [],
+      representedFeatureKeys: ["aad-rbac", "defender-profile"],
+      noRefillNow: true,
+    });
+  });
+
   test("counts blocked compact features with projected frontier tasks as represented", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -5712,9 +5803,11 @@ describe("feature compact loop", () => {
       updated.tasks["aks-feature-compact-loop"].context.workflowProgress,
     ).toMatchObject({
       blocked: 1,
-      blockedWaitBlockedCount: 0,
+      blockedWaitBlockedCount: 1,
+      blockedWaitChildren: 1,
       unrepresentedBlockedCount: 0,
       unrepresentedNonTerminalCount: 0,
+      noRefillNow: true,
     });
   });
 
