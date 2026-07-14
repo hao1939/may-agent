@@ -161,6 +161,44 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("returns detailed session events separately from the bounded graph", () => {
+    const root = tempRoot();
+    try {
+      const db = getDb(root);
+      const now = Date.now();
+      const startRow = db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        ["session.start", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", summary: "started" }), now],
+      ) as { lastInsertRowid?: number | bigint };
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        ["guard.triggered", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", reason: "tool guard detail" }), now + 1],
+      );
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES (?, ?, ?, ?, ?)`,
+        ["session.end", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", status: "completed" }), now + 2],
+      );
+      const start = db.prepare("SELECT id FROM events WHERE event_type = 'session.start'").get() as {
+        id: number;
+      };
+      const graph = buildEventGraph(db, Number(startRow.lastInsertRowid ?? start.id));
+
+      expect(graph.eventListScope).toMatchObject({ kind: "session", ids: ["s_detail"] });
+      expect(graph.eventList?.map((node) => node.type)).toEqual([
+        "session.start",
+        "guard.triggered",
+        "session.end",
+      ]);
+      expect(graph.eventList?.find((node) => node.type === "guard.triggered")?.visibility).toBe("detail");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reports event trace integrity gaps", () => {
     const root = tempRoot();
     try {
@@ -255,12 +293,9 @@ describe("event delivery metadata", () => {
       const detailGraph = buildEventGraph(db, rootEvent.id, { detail: true });
       expect(detailGraph.traceId).toBe(`event:${rootEvent.id}`);
       expect(detailGraph.nodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(detailGraph.edges).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "parent" }),
-          expect.objectContaining({ source: closeEvent.id, target: rootEvent.id, type: "closure" }),
-        ]),
-      );
+      expect(detailGraph.edges).toEqual([
+        expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
+      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -314,12 +349,9 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, rootEvent.id);
       expect(graph.nodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(graph.edges).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "parent" }),
-          expect.objectContaining({ source: closeEvent.id, target: rootEvent.id, type: "closure" }),
-        ]),
-      );
+      expect(graph.edges).toEqual([
+        expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
+      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -380,12 +412,9 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, created.id);
       expect(graph.nodes.map((node) => node.id)).toEqual([created.id, resolved.id]);
-      expect(graph.edges).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: created.id, target: resolved.id, type: "parent" }),
-          expect.objectContaining({ source: resolved.id, target: created.id, type: "closure" }),
-        ]),
-      );
+      expect(graph.edges).toEqual([
+        expect.objectContaining({ source: created.id, target: resolved.id, type: "closure" }),
+      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -494,12 +523,9 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, pair.open_event_id);
       expect(graph.nodes.map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
-      expect(graph.edges).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "parent" }),
-          expect.objectContaining({ source: pair.close_event_id, target: pair.open_event_id, type: "closure" }),
-        ]),
-      );
+      expect(graph.edges).toEqual([
+        expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
+      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
