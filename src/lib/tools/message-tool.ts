@@ -25,6 +25,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { EventTrace } from "../../app/event-bus.js";
 
 export interface MessageToolOptions {
   /** Name of the calling agent. */
@@ -37,6 +38,8 @@ export interface MessageToolOptions {
   emit?: (event: { type: string; [key: string]: unknown }) => void;
   /** Optional: function to get the caller's current session ID. */
   getCallerSessionId?: () => string | undefined;
+  /** Resolve the active caller turn trace. */
+  getCallerTrace?: () => EventTrace | undefined;
   /** Optional: function to trigger a target agent's heartbeat. */
   triggerHeartbeat?: (agent: string) => boolean;
   /** Optional: list of agents this tool is allowed to send to.
@@ -153,6 +156,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
       _params: unknown,
     ): Promise<AgentToolResult<undefined>> => {
       const params = _params as MessageParams;
+      const callerTrace = opts.getCallerTrace?.();
 
       if (!params.to || !params.content) {
         return textResult(JSON.stringify({ error: "'to' and 'content' are required" }));
@@ -177,6 +181,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
               content: preview(params.content),
               priority: params.priority ?? "P2",
             },
+            ...(callerTrace ? { trace: callerTrace } : {}),
           });
         } catch {
           /* best-effort */
@@ -233,6 +238,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
             artifact: params.artifact,
             priority,
           },
+          ...(callerTrace ? { trace: callerTrace } : {}),
         });
       } catch {
         /* best-effort */

@@ -41,6 +41,21 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     getStatus: () => toControlStatus(manager.status()),
     emitEvent: (event) => bus.emit(event as AgentEvent),
     subscribeEvents: (handler) => bus.subscribe((event) => handler(event as unknown as Record<string, unknown> & { type: string })),
+    onDelivered: (event, clientCount) => {
+      const data = event.data && typeof event.data === "object" ? event.data as Record<string, unknown> : event;
+      bus.emit({
+        type: "channel.delivery.completed",
+        source: "control-socket",
+        owner: "agent:may",
+        target: { human: true },
+        data: {
+          channel: "control-socket",
+          clientCount,
+          sessionId: data.sessionId,
+          resultEventType: event.type,
+        },
+      } as any);
+    },
     onInfo: (message) => bus.emit({ type: "info", message }),
     agentName,
     instance,

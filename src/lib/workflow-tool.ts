@@ -60,6 +60,7 @@ import { createUnavailableMetricService } from "./metrics.js";
 import { createUnavailableQueryService } from "./query-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import type { EventTrace } from "../app/event-bus.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -386,6 +387,7 @@ async function resolveDemands(
   manager: SubagentManager,
   parentSessionId: string | undefined,
   projectId: string | undefined,
+  trace: EventTrace | undefined,
   onEvent: ((event: WorkflowEvent) => void) | undefined,
   run: WorkflowRun,
   persistDir: string | undefined,
@@ -477,6 +479,7 @@ async function resolveDemands(
           projectId,
           stepLabel: label,
           source: "guard",
+          trace,
         });
 
         const step: CompletedStep = { step: label, sessionId: taskResult.sessionId, result: taskResult };
@@ -532,6 +535,7 @@ export interface RunWorkflowDirectOpts {
   parentSessionId?: string;
   projectId?: string;
   onEvent?: (event: WorkflowEvent) => void;
+  trace?: EventTrace;
 }
 
 /**
@@ -555,6 +559,7 @@ export async function runWorkflowDirect(
     parentSessionId: opts.parentSessionId,
     projectId: opts.projectId,
     onEvent: opts.onEvent,
+    trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
   });
 
@@ -624,11 +629,20 @@ export interface WorkflowToolOptions {
   projectId?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
+  /** Trace inherited from the event that started this workflow. */
+  trace?: EventTrace;
+  /** Resolve the active caller turn trace for long-lived chat sessions. */
+  callerTrace?: () => EventTrace | undefined;
 }
 
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   const { manager, workflowDir, projectWorkflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
+  const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
+  const emitRuntimeEvent = (event: { type: string; [key: string]: unknown }): void => {
+    const trace = resolveTrace();
+    opts.runtimeCtx?.emit(event.trace || !trace ? event : { ...event, trace });
+  };
 
   const resolveCallerSessionId = (): string | undefined => {
     const v = opts.callerSessionId;
@@ -677,7 +691,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
       },
     } as const;
-    opts.runtimeCtx?.emit(event);
+    emitRuntimeEvent(event);
     onEvent?.(event);
   };
 
@@ -702,7 +716,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         nextAction: "none",
       },
     } as const;
-    opts.runtimeCtx?.emit(event);
+    emitRuntimeEvent(event);
     onEvent?.(event);
   };
 
@@ -720,7 +734,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const workflowOwner = normalizeEventOwner(opts.agentName);
     const taskProjectId = data.taskContext?.projectId ?? data.projectId;
     if (data.taskContext?.taskId && taskProjectId) {
-      opts.runtimeCtx?.emit({
+      emitRuntimeEvent({
         type: "project.task.completed",
         source: "workflow-tool",
         owner: workflowOwner,
@@ -761,7 +775,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       context: data.context,
     };
     if (data.projectId) {
-      opts.runtimeCtx?.emit({
+      emitRuntimeEvent({
         type: "project.owner.requested",
         source: "workflow-tool",
         owner: workflowOwner,
@@ -771,7 +785,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       } as any);
       return;
     }
-    opts.runtimeCtx?.emit({
+    emitRuntimeEvent({
       type: "workflow.owner.requested",
       source: "workflow-tool",
       owner: workflowOwner,
@@ -884,7 +898,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const guardWarnings: string[] = [];
     const emitGuardSignal: GuardSignalEmitter = (demand, action, extra = {}) => {
       const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
-      opts.runtimeCtx?.emit({
+      emitRuntimeEvent({
         type: "guard.triggered",
         source: "workflow",
         owner: `agent:${opts.agentName ?? "may"}`,
@@ -1029,6 +1043,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               source: `workflow:${workflow.name}`,
               kind: "call",
               timeoutMs: stepOpts?.timeoutMs,
+              trace: resolveTrace(),
             });
             taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
@@ -1046,6 +1061,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           projectId: effectiveProjectId,
           stepLabel: agentName,
           timeout: stepOpts?.timeoutMs,
+          trace: resolveTrace(),
         });
         sid = taskResult.sessionId;
       }
@@ -1092,6 +1108,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             manager,
             parentSessionId,
             effectiveProjectId,
+            resolveTrace(),
             onEvent,
             run,
             persistDir ?? undefined,
@@ -1132,11 +1149,11 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       }),
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
-        opts.runtimeCtx?.emit(event);
+        emitRuntimeEvent(event);
         onEvent?.(event as WorkflowEvent);
       },
       dispatchEvent: (eventType: string, data?: Record<string, unknown>) => {
-        opts.runtimeCtx?.dispatchEvent(eventType, data);
+        emitRuntimeEvent({ type: eventType, data: data ?? {} });
       },
 
       runAgent: (agentName: string, agentTask: string, stepOpts?: { timeoutMs?: number }): Promise<TaskResult> =>
@@ -1220,6 +1237,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               manager,
               parentSessionId,
               effectiveProjectId,
+              resolveTrace(),
               onEvent,
               run,
               persistDir ?? undefined,
@@ -1302,6 +1320,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               projectId: effectiveProjectId,
               stepLabel: stepName,
               source: `workflow:${label}`,
+              trace: resolveTrace(),
             });
 
             lastResponse = taskResult.lastAssistantText || "";
@@ -1357,6 +1376,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
                   manager,
                   parentSessionId,
                   effectiveProjectId,
+                  resolveTrace(),
                   onEvent,
                   run,
                   persistDir ?? undefined,
@@ -1399,6 +1419,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           manager,
           parentSessionId,
           effectiveProjectId,
+          resolveTrace(),
           onEvent,
           run,
           persistDir ?? undefined,

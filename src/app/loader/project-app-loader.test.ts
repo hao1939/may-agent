@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { Cron } from "../cron.ts";
-import { EventBus } from "../event-bus.ts";
+import { EVENT_ROW_ID, EventBus } from "../event-bus.ts";
 import { closeDb, getDb } from "../../lib/requests.ts";
 import {
   inferProjectAppOwner,
@@ -251,6 +251,67 @@ export default defineProjectApp({
       expect(result.installed.map((app) => `${app.id}:${app.owner}:${app.projectDir}`)).toEqual([
         `sample-lib:scout:${domainDir}`,
       ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("exposes explicit workspace path helpers while retaining the compatibility alias", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample-lib.app");
+      const domainDir = join(projectsRoot, "sample-lib");
+      mkdirSync(domainDir, { recursive: true });
+      writeApp(
+        appDir,
+        `{
+          id: "sample-lib",
+          owner: "scout",
+          workspace: { localPath: "../sample-lib" },
+          async onEvent(ctx, event) {
+            if (event.type === "project.path.check") {
+              return ctx.emit({
+                type: "project.path.observed",
+                target: { project: "sample-lib" },
+                data: {
+                  workspacePath: ctx.workspacePath("src/index.ts"),
+                  workspaceCwd: ctx.workspaceCwd(),
+                  compatibilityPath: ctx.projectPath("src/index.ts")
+                }
+              });
+            }
+            if (event.type === "project.path.observed") return ctx.noop("observed");
+          }
+        }`,
+      );
+
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => name === "scout" } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+      bus.emit({
+        type: "project.path.check",
+        source: "test",
+        owner: "agent:scout",
+        target: { project: "sample-lib" },
+        data: {},
+      } as any);
+      await waitForMicrotasks();
+      await waitForMicrotasks();
+
+      const pathEvent = observed.find((event) => event.type === "project.path.observed") as any;
+      expect(pathEvent.data).toMatchObject({
+        workspacePath: join(domainDir, "src/index.ts"),
+        workspaceCwd: domainDir,
+        compatibilityPath: join(domainDir, "src/index.ts"),
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -852,12 +913,14 @@ export default defineProjectApp({
         `export const name = "worker";
 export async function execute(ctx: any) {
   ctx.dispatchEvent("test.workflow.executed", { task: ctx.task });
+  await ctx.runAgent(ctx.agent, "inspect trigger context");
   return ctx.done("workflow module executed");
 }
 `,
       );
 
       const events: any[] = [];
+      let spawnedSessionTrace: unknown;
       const bus = new EventBus();
       bus.subscribe((event) => {
         events.push(event);
@@ -867,6 +930,17 @@ export async function execute(ctx: any) {
         hasAgent: () => true,
         runAgent: () => {
           throw new Error("raw agent session should not be used for workflow handler dispatch");
+        },
+        callAgent: async (_agent: string, _task: string, opts: Record<string, unknown>) => {
+          spawnedSessionTrace = opts.trace;
+          return {
+            sessionId: "s_test_workflow",
+            status: "done",
+            lastAssistantText: "inspected",
+            messages: [],
+            duration: "1ms",
+            outputDir: "",
+          };
         },
       } as any;
 
@@ -885,12 +959,14 @@ export async function execute(ctx: any) {
       cron.subscribeToBus(bus);
       cron.start();
 
-      bus.emit({
+      const trigger = {
         type: "project.work",
         source: "test",
         owner: "human:test",
         data: { project: "sample" },
-      } as any);
+      } as any;
+      Object.defineProperty(trigger, EVENT_ROW_ID, { value: 41 });
+      bus.emit(trigger);
 
       await waitUntil(() =>
         events.some(
@@ -911,7 +987,16 @@ export async function execute(ctx: any) {
       expect(row.status).toBe("done");
       expect(row.result_summary).toBe("workflow module executed");
       expect(row.task).toContain('"type": "project.work"');
-      expect(events.some((event) => event.type === "test.workflow.executed")).toBe(true);
+      expect(events.find((event) => event.type === "test.workflow.executed")?.trace).toEqual({
+        traceId: "event:41",
+        parentEventId: 41,
+      });
+      expect(
+        events.find(
+          (event) => event.type === "handler.workflow_dispatched" && event.data?.status === "done",
+        )?.trace,
+      ).toEqual({ traceId: "event:41", parentEventId: 41 });
+      expect(spawnedSessionTrace).toEqual({ traceId: "event:41", parentEventId: 41 });
     } finally {
       cron?.stop();
       closeDb(persistDir);

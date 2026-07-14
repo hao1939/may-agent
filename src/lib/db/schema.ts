@@ -259,6 +259,35 @@ CREATE TABLE IF NOT EXISTS event_pair_runs (
 CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id);
 CREATE INDEX IF NOT EXISTS idx_event_pair_status ON event_pair_runs(status, expected_close_at);
 
+-- Retention is allowed to prune unreferenced detail, but never the evidence
+-- that makes retained or active work explainable. RAISE(IGNORE) lets existing
+-- batched cleanup statements continue while preserving protected rows.
+CREATE TRIGGER IF NOT EXISTS trg_events_referential_retention
+BEFORE DELETE ON events
+WHEN
+  EXISTS (
+    SELECT 1 FROM event_pair_runs p
+    WHERE p.open_event_id = OLD.id AND p.status IN ('open', 'orphan')
+  )
+  OR EXISTS (
+    SELECT 1 FROM event_traces t
+    WHERE t.parent_event_id = OLD.id AND t.event_id != OLD.id
+  )
+  OR EXISTS (
+    SELECT 1 FROM event_trace_links l
+    WHERE l.from_event_id = OLD.id OR l.to_event_id = OLD.id
+  )
+  OR EXISTS (
+    SELECT 1
+    FROM sessions s
+    WHERE s.status IN ('running', 'idle')
+      AND json_valid(OLD.data)
+      AND json_extract(OLD.data, '$.sessionId') = s.sessionId
+  )
+BEGIN
+  SELECT RAISE(IGNORE);
+END;
+
 CREATE TABLE IF NOT EXISTS metrics (
   id              TEXT PRIMARY KEY,
   name            TEXT,
