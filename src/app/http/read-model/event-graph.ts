@@ -62,7 +62,7 @@ export type EventGraphDisplayEdge = {
   key: string;
   sourceKey: string;
   targetKey: string;
-  kind: "flow" | "reference" | "closure" | "detail" | "tool_call" | "tool_result" | "return";
+  kind: "parent" | "reference" | "closure" | "tool_call" | "tool_result";
   label?: string;
 };
 
@@ -313,7 +313,7 @@ function displayEdgeKey(edge: Omit<EventGraphDisplayEdge, "key">): string {
 
 function displayEdgeFromEventEdge(edge: EventGraphEdge): EventGraphDisplayEdge {
   const kind: EventGraphDisplayEdge["kind"] =
-    edge.type === "closure" ? "closure" : edge.type === "reference" ? "reference" : "flow";
+    edge.type === "closure" ? "closure" : edge.type === "reference" ? "reference" : "parent";
   const sourceKey = eventNodeKey(edge.source);
   const targetKey = eventNodeKey(edge.target);
   return {
@@ -323,12 +323,6 @@ function displayEdgeFromEventEdge(edge: EventGraphEdge): EventGraphDisplayEdge {
     kind,
     ...(edge.label ? { label: edge.label } : {}),
   };
-}
-
-function addDisplayEdge(edges: Map<string, EventGraphDisplayEdge>, edge: Omit<EventGraphDisplayEdge, "key">): void {
-  if (!edge.sourceKey || !edge.targetKey || edge.sourceKey === edge.targetKey) return;
-  const key = displayEdgeKey(edge);
-  edges.set(key, { ...edge, key });
 }
 
 function edgeKey(edge: EventGraphEdge): string {
@@ -1062,18 +1056,6 @@ function detailParentKeyForNode(
   return eventNodeKey(focusEventId);
 }
 
-function detailReturnKeyForParent(parentKey: string, primaryNodes: EventGraphNode[]): string | undefined {
-  const parentId = Number(parentKey.replace(/^event:/, ""));
-  const parent = primaryNodes.find((node) => node.id === parentId);
-  if (!parent) return undefined;
-  const sessionId = nodeSessionId(parent);
-  if (sessionId && parent.type === "session.start") {
-    const end = primaryNodes.find((node) => node.type === "session.end" && nodeSessionId(node) === sessionId);
-    if (end) return eventNodeKey(end.id);
-  }
-  return undefined;
-}
-
 function buildDisplayGraph(
   focusEventId: number,
   nodes: EventGraphNode[],
@@ -1093,7 +1075,6 @@ function buildDisplayGraph(
     displayEdges.set(displayEdge.key, displayEdge);
   }
 
-  const detailByParent = new Map<string, EventGraphDisplayNode[]>();
   for (const node of eventList) {
     if (primaryIds.has(node.id)) continue;
     const parentKey = detailParentKeyForNode(node, nodes, focusEventId);
@@ -1103,30 +1084,6 @@ function buildDisplayGraph(
       role: nodeKindForEventType(node.type) === "diagnostic" ? "diagnostic" : "detail",
     });
     displayNodes.set(detailNode.key, detailNode);
-    detailByParent.set(parentKey, [...(detailByParent.get(parentKey) ?? []), detailNode]);
-  }
-
-  for (const [parentKey, children] of detailByParent) {
-    const ordered = children.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0) || (a.eventId ?? 0) - (b.eventId ?? 0));
-    let previousKey = parentKey;
-    for (const child of ordered) {
-      addDisplayEdge(displayEdges, {
-        sourceKey: previousKey,
-        targetKey: child.key,
-        kind: previousKey === parentKey ? "detail" : "flow",
-        label: previousKey === parentKey ? "detail" : undefined,
-      });
-      previousKey = child.key;
-    }
-    const returnKey = detailReturnKeyForParent(parentKey, nodes);
-    if (returnKey && previousKey !== parentKey) {
-      addDisplayEdge(displayEdges, {
-        sourceKey: previousKey,
-        targetKey: returnKey,
-        kind: "return",
-        label: "return",
-      });
-    }
   }
 
   const childNodes = new Map<string, EventGraphDisplayNode[]>();
