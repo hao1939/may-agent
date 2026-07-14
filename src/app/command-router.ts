@@ -72,6 +72,40 @@ function isEscalationReplyContext(context: Record<string, unknown>): boolean {
   return closures.includes("escalation.resolved") || closures.includes("escalation.dismissed");
 }
 
+function approvalReplyContext(context: Record<string, unknown>): Record<string, unknown> | null {
+  const reply = telegramReplyContext(context);
+  if (!reply) return null;
+  const issue = objectField(reply, "originalIssue");
+  const closures = stringList(reply.expectedClosure);
+  if (stringField(issue, "eventType") === "project.approval.requested") return reply;
+  return closures.includes("project.approval.submitted") ? reply : null;
+}
+
+type ApprovalDecision = "approve" | "adjust" | "hold" | "decline" | "reroute";
+
+function parseApprovalDecision(message: string): ApprovalDecision {
+  const normalized = message.trim().toLowerCase().replace(/\s+/g, " ");
+
+  if (
+    /\b(reroute|re-route|route to|redirect|hand off|handoff|assign to|ask\s+[^\n]+\s+instead)\b/.test(normalized)
+  ) {
+    return "reroute";
+  }
+  if (/\b(hold|pause|wait|not yet|defer|later|pending|park)\b/.test(normalized)) {
+    return "hold";
+  }
+  if (/\b(decline|reject|den(y|ied)|do not|don't|stop|cancel|no)\b/.test(normalized)) {
+    return "decline";
+  }
+  if (/\b(adjust|change|modify|revise|instead|except|with|smaller|narrower|only)\b/.test(normalized)) {
+    return "adjust";
+  }
+  if (/\b(approve|approved|approval|yes|ok|okay|go ahead|proceed|continue)\b/.test(normalized)) {
+    return "approve";
+  }
+  return "adjust";
+}
+
 function buildDeliveredHumanMessage(message: string, context: Record<string, unknown>): string {
   const reply = telegramReplyContext(context);
   if (!reply) return message;
@@ -259,8 +293,38 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
     const deliveredMessage = buildDeliveredHumanMessage(message, context);
     const escalationReply = isEscalationReplyContext(context);
+    const approvalReply = approvalReplyContext(context);
     const eventOwner =
       typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
+
+    if (approvalReply) {
+      const issue = objectField(approvalReply, "originalIssue");
+      const expectedResponse = objectField(issue, "expectedResponse");
+      const normalizedProjectPath =
+        normalizeProjectPath(target.projectPath) ??
+        normalizeProjectPath(stringField(issue, "projectPath")) ??
+        normalizeProjectPath(stringField(approvalReply, "projectId")) ??
+        normalizeProjectPath(stringField(issue, "targetProject"));
+      bus.emit({
+        type: "project.approval.submitted",
+        source,
+        owner: eventOwner,
+        data: {
+          approvalKind: stringField(issue, "approvalKind") ?? stringField(approvalReply, "approvalKind") ?? "approval-packet-dispatch",
+          approvalId: stringField(issue, "approvalId") ?? stringField(expectedResponse, "approvalId") ?? undefined,
+          waitId: stringField(issue, "waitId") ?? stringField(expectedResponse, "waitId") ?? undefined,
+          pathId: stringField(issue, "pathId") ?? stringField(expectedResponse, "pathId") ?? undefined,
+          packetPath: stringField(issue, "packetPath") ?? undefined,
+          projectPath: normalizedProjectPath ?? undefined,
+          projectId: normalizedProjectPath ?? undefined,
+          targetProject: stringField(issue, "targetProject") ?? undefined,
+          decision: parseApprovalDecision(message),
+          message,
+          conversationId: stringField(approvalReply, "conversationId") ?? undefined,
+        },
+      } as any);
+      return;
+    }
 
     const targetSessionId = nonEmptyString(target.sessionId);
     if (targetSessionId && !escalationReply) {
