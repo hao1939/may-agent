@@ -237,6 +237,13 @@ async function loadEventGraphSessionTranscript(sessionId) {
   }
 }
 
+async function loadEventGraphData(eventId, detail, depth) {
+  const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/graph?depth=${encodeURIComponent(depth)}&detail=${detail ? 'true' : 'false'}`);
+  const graph = await res.json();
+  if (!res.ok) throw new Error(graph.error || 'failed');
+  return graph;
+}
+
 async function toggleEventGraphSessionExpansion(rootEventId, eventId, sessionId, depth) {
   const key = String(sessionId || '').trim();
   if (!key) return;
@@ -249,13 +256,17 @@ async function toggleEventGraphSessionExpansion(rootEventId, eventId, sessionId,
   _eventGraphExpandedSessions[key] = { loading: true, eventId: Number(eventId), sessionId: key, requestId };
   loadEventGraph(rootEventId, { depth });
   try {
-    const transcript = await loadEventGraphSessionTranscript(key);
+    const [transcript, detailGraph] = await Promise.all([
+      loadEventGraphSessionTranscript(key),
+      loadEventGraphData(eventId, false, Math.max(3, Number(depth) || 3)),
+    ]);
     if (_eventGraphExpandedSessions[key]?.requestId !== requestId) return;
     _eventGraphExpandedSessions[key] = {
       ready: true,
       eventId: Number(eventId),
       sessionId: key,
       transcript,
+      sessionEvents: Array.isArray(detailGraph.eventList) ? detailGraph.eventList : [],
     };
   } catch (e) {
     if (_eventGraphExpandedSessions[key]?.requestId !== requestId) return;
@@ -478,7 +489,7 @@ function chronologicalNodes(nodes) {
   return [...(nodes || [])].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0) || Number(a.id || 0) - Number(b.id || 0));
 }
 
-function sessionExpansionItems(sessionId, expansion) {
+function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()) {
   if (expansion?.loading) {
     return [{ kind: 'status', key: `status:${sessionId}:loading`, sessionId, status: 'loading', label: 'loading transcript' }];
   }
@@ -486,33 +497,49 @@ function sessionExpansionItems(sessionId, expansion) {
     return [{ kind: 'status', key: `status:${sessionId}:error`, sessionId, status: 'error', label: expansion.error }];
   }
   const flow = transcriptFlow(expansion?.transcript);
-  if (!flow.length) {
-    return [{ kind: 'status', key: `status:${sessionId}:empty`, sessionId, status: 'empty', label: 'no transcript turns' }];
+  const sessionEvents = chronologicalNodes(expansion?.sessionEvents || []).filter((node) => {
+    const nodeSessionId = graphNodeSessionId(node);
+    if (nodeSessionId && nodeSessionId !== sessionId) return false;
+    if (visibleEventIds.has(Number(node.id))) return false;
+    return true;
+  });
+  const items = [
+    ...flow.map((item, index) => ({
+      kind: 'turn',
+      key: `turn:${sessionId}:${index}`,
+      sessionId,
+      item,
+      turnIndex: index + 1,
+    })),
+    ...sessionEvents.map((node) => ({
+      kind: 'session-event',
+      key: `session-event:${sessionId}:${node.id}`,
+      sessionId,
+      node,
+    })),
+  ];
+  if (!items.length) {
+    return [{ kind: 'status', key: `status:${sessionId}:empty`, sessionId, status: 'empty', label: 'no session details' }];
   }
-  return flow.map((item, index) => ({
-    kind: 'turn',
-    key: `turn:${sessionId}:${index}`,
-    sessionId,
-    item,
-    turnIndex: index + 1,
-  }));
+  return items;
 }
 
 function buildEventGraphDisplay(nodes) {
   const ordered = chronologicalNodes(nodes);
   const hasStart = new Set(ordered.filter((node) => node.type === 'session.start').map(graphNodeSessionId).filter(Boolean));
+  const visibleEventIds = new Set(ordered.map((node) => Number(node.id)).filter(Number.isFinite));
   const inserted = new Set();
   const items = [];
   for (const node of ordered) {
     const sessionId = graphNodeSessionId(node);
     const expansion = sessionId ? _eventGraphExpandedSessions[sessionId] : null;
     if (expansion && !inserted.has(sessionId) && node.type === 'session.end' && !hasStart.has(sessionId)) {
-      items.push(...sessionExpansionItems(sessionId, expansion));
+      items.push(...sessionExpansionItems(sessionId, expansion, visibleEventIds));
       inserted.add(sessionId);
     }
     items.push({ kind: 'event', key: `event:${node.id}`, node });
     if (expansion && !inserted.has(sessionId) && node.type === 'session.start') {
-      items.push(...sessionExpansionItems(sessionId, expansion));
+      items.push(...sessionExpansionItems(sessionId, expansion, visibleEventIds));
       inserted.add(sessionId);
     }
   }
@@ -536,7 +563,7 @@ function expandedSessionEdge(edge, nodeById) {
 function itemLevel(item) {
   if (!item) return 0;
   if (item.kind === 'event') return 0;
-  if (item.kind === 'turn' || item.kind === 'status') return 1;
+  if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event') return 1;
   if (item.kind === 'tool') return 2;
   return 0;
 }
@@ -685,6 +712,19 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth) {
       if (toolCalls.length > 4) {
         svg += `<text x="${toolX + 8}" y="${pos.y + 4 * 46 + 14}" fill="var(--fg2)" font-size="10">+${esc(String(toolCalls.length - 4))} more tool calls</text>`;
       }
+      continue;
+    }
+
+    if (item.kind === 'session-event') {
+      const node = item.node;
+      const tone = node.type === 'handler.skipped' || node.type === 'evaluation.skipped' ? 'var(--yellow)' : 'var(--fg2)';
+      const summary = node.summary || node.dataPreview?.summary || node.dataPreview?.reason || node.dataPreview?.status || '';
+      svg += `<g onclick="loadEventGraph(${Number(node.id)})" style="cursor:pointer">`;
+      svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="var(--bg2)" stroke="${tone}" stroke-width="1.3"></rect>`;
+      svg += `<text x="${pos.x + 10}" y="${pos.y + 19}" fill="${tone}" font-size="12" font-family="monospace">${esc(shortGraphLabel(node.type, 28))}</text>`;
+      svg += `<text x="${pos.x + 10}" y="${pos.y + 38}" fill="var(--fg2)" font-size="10">${esc(shortGraphLabel(summary || `#${node.id}`, 38))}</text>`;
+      svg += `<text x="${pos.x + nodeWidth - 58}" y="${pos.y + 19}" fill="var(--fg2)" font-size="10">#${esc(String(node.id))}</text>`;
+      svg += `</g>`;
       continue;
     }
 
