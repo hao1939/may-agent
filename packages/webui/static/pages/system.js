@@ -376,7 +376,14 @@ function findSessionLifecycle(nodes) {
   return { start, end };
 }
 
-function renderEventReviewPanel(review, nodes, edges = []) {
+function eventListScopeTitle(scope) {
+  if (scope?.kind === 'session') return 'Focused Session Timeline';
+  if (scope?.kind === 'workflow') return 'Workflow Timeline';
+  if (scope?.kind === 'trace') return 'Trace Timeline';
+  return 'Visible Graph Timeline';
+}
+
+function renderEventReviewPanel(review, nodes, edges = [], scope = null) {
   if (!review) return '';
   const verdict = review.verdict || {};
   const tone = graphStatusTone(verdict.status);
@@ -393,6 +400,11 @@ function renderEventReviewPanel(review, nodes, edges = []) {
   html += `</div>`;
 
   if (lifecycles.length) {
+    html += `<div id="event-lifecycles" style="display:grid;gap:6px;scroll-margin-top:14px">`;
+    html += `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">`;
+    html += `<span style="font-size:12px;font-weight:600">${componentAnchor('event-lifecycles', 'Related Lifecycles')}</span>`;
+    html += `<span style="font-size:11px;color:var(--fg2)">context cards; timeline below follows the focused scope</span>`;
+    html += `</div>`;
     html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">`;
     for (const lifecycle of lifecycles.slice(0, 8)) {
       const cardTone = graphStatusTone(lifecycle.status);
@@ -418,11 +430,18 @@ function renderEventReviewPanel(review, nodes, edges = []) {
       html += `</div>`;
     }
     html += `</div>`;
+    html += `</div>`;
   }
 
   if (timeline.length) {
+    const title = eventListScopeTitle(scope);
+    const label = scope?.label || (Array.isArray(scope?.ids) && scope.ids.length === 1 ? scope.ids[0] : '');
     html += `<div id="event-timeline" style="border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:8px;scroll-margin-top:14px">`;
-    html += `<div style="font-size:12px;font-weight:600;margin-bottom:6px;display:flex;gap:6px;align-items:center">${componentAnchor('event-timeline', 'Timeline')}</div>`;
+    html += `<div style="font-size:12px;font-weight:600;margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">`;
+    html += componentAnchor('event-timeline', title);
+    if (label) html += `<span style="font-size:11px;font-weight:400;color:var(--fg2);font-family:monospace">${esc(shortIdentity(label, 48))}</span>`;
+    html += `<span style="font-size:11px;font-weight:400;color:var(--fg2)">${timeline.length} event${timeline.length === 1 ? '' : 's'}</span>`;
+    html += `</div>`;
     html += `<div style="display:grid;gap:4px">`;
     for (const node of timeline.slice(0, 16)) {
       const isDetail = node.visibility === 'detail';
@@ -441,8 +460,8 @@ function renderEventReviewPanel(review, nodes, edges = []) {
   return html;
 }
 
-function renderEventGraphSummary(graph, nodes, edges, focus) {
-  if (graph.review) return renderEventReviewPanel(graph.review, nodes, edges);
+function renderEventGraphSummary(graph, nodes, edges, focus, eventRows = nodes) {
+  if (graph.review) return renderEventReviewPanel(graph.review, eventRows, edges, graph.eventListScope);
   const enrichedNodes = nodes.map((node) => ({ ...node, isFocus: Number(node.id) === Number(graph.focusEventId) }));
   const session = findSessionLifecycle(enrichedNodes);
   const closureCount = edges.filter((edge) => edge.type === 'closure').length;
@@ -1170,7 +1189,7 @@ function renderEventGraph(graph, opts = {}) {
     html += `</div>`;
   }
 
-  html += renderEventGraphSummary(graph, nodes, edges, focus);
+  html += renderEventGraphSummary(graph, nodes, edges, focus, eventRows);
 
   if (diagnostics.length) {
     html += `<div style="display:grid;gap:4px;margin-bottom:10px">`;
