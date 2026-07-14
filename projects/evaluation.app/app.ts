@@ -146,7 +146,7 @@ async function routeEvaluationEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (
-    event.type === "session.completed" ||
+    event.type === "session.end" ||
     event.type === "evaluation.session.requested" ||
     event.type === "evaluation.deep.requested" ||
     event.type === "evaluation.tick" ||
@@ -305,7 +305,7 @@ export default defineProjectApp({
     {
       id: "session-aftermath-scan",
       enabled: true,
-      intervalMs: 420_000, // 7min — backfill terminal sessions missed by completion event
+      intervalMs: 420_000, // 7min — backfill terminal sessions missed by session.end handling
       event: {
         type: "evaluation.aftermath.scan",
         project: projectId,
@@ -343,7 +343,7 @@ export default defineProjectApp({
       maxConcurrentTriggers: 5,
       description:
         "Evaluates one completed session. It must be triggered with a sessionId.",
-      on: ["session.completed", "evaluation.session.requested"],
+      on: ["session.end", "evaluation.session.requested"],
       handler: {
         workflow: "evaluator-aftermath",
         agent: "evaluator",
@@ -390,7 +390,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Backfill safety net: evaluate terminal sessions missed by session.completed event (7min delay, limit 1).",
+        "Backfill safety net: evaluate terminal sessions missed by session.end handling (7min delay, limit 1).",
       on: ["evaluation.aftermath.scan"],
       handler: {
         workflow: "evaluator-aftermath",
@@ -439,7 +439,7 @@ export default defineProjectApp({
   ],
 
   events: [
-    "session.completed",
+    "session.end",
     "evaluation.session.requested",
     "evaluation.deep.requested",
     "evaluation.tick",

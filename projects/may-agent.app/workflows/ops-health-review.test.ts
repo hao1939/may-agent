@@ -454,7 +454,7 @@ describe("ops-health-review", () => {
     });
   });
 
-  it("wakes the owner for event delivery health failures", async () => {
+  it("wakes the owner when canonical session.end is unhandled", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();
     db.run(
@@ -462,10 +462,10 @@ describe("ops-health-review", () => {
        (event_type, owner, source, data, timestamp, delivery_status, delivery_note)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        "custom.requested",
+        "session.end",
         "agent:tech-lead",
         "test",
-        JSON.stringify({ requestId: "req_unaccepted" }),
+        JSON.stringify({ sessionId: "s_unaccepted", agent: "tech-lead", status: "done" }),
         now - 5 * 60_000,
         "unhandled",
         "no responsible consumer accepted event before timeout",

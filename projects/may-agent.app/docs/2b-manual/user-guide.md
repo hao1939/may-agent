@@ -267,7 +267,7 @@ You usually interact with events through features, not through the event schema:
 | Scenario | What to do |
 |----------|------------|
 | Manually rerun a cron job | Emit `trigger.<entry-name>` as an operator shortcut, for example `trigger.metrics-snapshot` |
-| React when a session ends | Subscribe a handler to `session.completed` and read session fields from the trigger payload |
+| React when a session ends | Subscribe a handler to `session.end` and read the result from `event.data` |
 | React when a metric breaches | Subscribe a handler to `metric.breach`; the handler should route to the metric owner/workflow |
 | Send work to another agent asynchronously | Use `sdk.message(...)` or the `message` tool; this emits `message.created` |
 | Route a blocker outside current ownership | Use `sdk.escalate(...)`; for humans use `owner: "human:<role>"` |
@@ -276,7 +276,7 @@ You usually interact with events through features, not through the event schema:
 
 `trigger.*` events are control shortcuts. They are useful for operators and
 tests, but they are not domain lifecycle events. Lifecycle docs and handlers
-should use canonical event names such as `session.completed`, `metric.breach`,
+should use canonical event names such as `session.end`, `metric.breach`,
 `escalation.created`, and `escalation.resolved`.
 
 Dot-named domain events use the canonical envelope: top-level `type`, `source`,

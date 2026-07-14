@@ -450,16 +450,15 @@ Event-to-event edges are only drawn for real links recorded by the graph model:
 For session transcript expansion, the useful shape is:
 
 ```text
-session.start --closure--> session.end --reference:completed--> session.completed
+session.start --closure--> session.end
       |
       +--details--> first turn -> ... -> last turn --details--> session.end
 ```
 
 The transcript turn branch belongs inside the session lifecycle. The first turn
 is anchored from the expanded session event, and the last turn can close back to
-`session.end` when that event is present. Do not connect transcript turns
-directly to `session.completed`; `session.completed` is a runtime follow-up
-event and should be linked from `session.end` by real trace metadata.
+`session.end` when that event is present. Historical derivative completion
+events remain visible but are not part of the current runtime lifecycle.
 
 Do not draw a sibling edge. Events with the same session, workflow, task,
 metric, or owner are siblings in a group. Their order is the timeline order,
@@ -614,7 +613,7 @@ Session review starts from `/sessions/:sessionId` or
 Default graph:
 
 ```text
-trigger event -> session.started -> session.completed -> emitted events
+trigger event -> session.start -> session.end -> emitted events
 ```
 
 Default questions:

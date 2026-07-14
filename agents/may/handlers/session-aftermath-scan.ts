@@ -1,7 +1,7 @@
 /**
  * session-aftermath-scan — 7-minute fallback for evaluator aftermath.
  *
- * Normal session completion is handled by the `session.completed` event. This
+ * Normal session completion is handled by the `session.end` event. This
  * cron job is only the safety net: every 7 minutes it evaluates terminal
  * sessions that still have no evaluation and ended at least 7 minutes ago.
  */
@@ -35,7 +35,7 @@ const DEFAULT_HEURISTIC_VERSION = 2;
 
 function taskFor(candidate: Candidate): string {
   const trigger = {
-    type: "session.completed.backfill",
+    type: "session.end",
     source: "timer",
     owner: "agent:evaluator",
     timestamp: Date.now(),

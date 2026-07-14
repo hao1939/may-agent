@@ -61,12 +61,16 @@ export const AUTO_HANDLER_REGISTRY: MetricAutoHandler[] = [
             WHERE sessionId = ? AND status = 'running'
           `).run(Date.now(), "Auto-closed by metric-auto-handler: stale >30min", row.sessionId);
 
-          ctx.sdk.emit("session.completed", {
+          ctx.sdk.emit("session.end", {
             sessionId: row.sessionId,
             agent: row.agent,
-            status: "failed",
+            status: "error",
+            outcome: "error",
+            summary: "Auto-closed stale session after 30 minutes.",
             error: "Auto-closed by metric-auto-handler: stale >30min",
-            reason: "stale_auto_handler",
+            durationMs: Math.max(0, Date.now() - row.startedAt),
+            task: row.task,
+            reconciled: true,
           });
 
           ctx.sdk.log("info", `[metric-auto-handler] Auto-closed stale session ${row.sessionId} (agent: ${row.agent})`);

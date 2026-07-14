@@ -128,7 +128,7 @@ function truncate(text: string, max = 700): string {
 function isEvaluationRuntimeEvent(row: Record<string, unknown>): boolean {
   const type = String(row.event_type ?? row.type ?? "");
   if (type.startsWith("evaluation.")) return true;
-  if (type === "session.completed") return true;
+  if (type === "session.end") return true;
   if (!type.startsWith("metric.")) return false;
 
   const data = parseEventData(row);

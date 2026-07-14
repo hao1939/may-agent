@@ -54,7 +54,7 @@ infra behavior remains owned by a global agent such as May.
 | `closed-loop-steward` | Disabled May/global legacy audit | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Disabled because it was too expensive and overlapped metric-alert-reactor plus `may-agent.app` owner review. |
 | `eval-llm-scan` | Evaluator entry in May cron | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Retired | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
-| `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.completed` recoverable outcomes. |
+| `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.end` recoverable outcomes. |
 | `escalation` | May/global | Escalation routing | canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations. |
 | `db-retention` | May/global | Daily data retention cleanup: prune events (7d), sessions (14d), snapshots (30d); VACUUM after large deletes | direct DB | yes | Keep direct; deterministic cleanup with no judgment. |
 | `feedback-echo-sync` | May/global | Sync evaluator feedback into `agents/<name>/last-eval.md` files | direct DB read + FS write | yes | Keep direct; inline handler replaced a flaky subprocess spawn (bun:sqlite race). |
@@ -147,7 +147,7 @@ enabled and the missing proof becomes a task.
   `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
   LLM work through `evaluator-deep-eval`.
 - Session recovery bridge slice: `session-recovery` should be event-first on
-  `session.completed` terminal error/interrupted outcomes, record
+  `session.end` terminal error/interrupted outcomes, record
   skipped/workflow-dispatched evidence, and avoid opening recovery agent
   sessions directly from the handler.
 - Escalation routing slice: blocked/failure session finishes promote to

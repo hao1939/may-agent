@@ -221,7 +221,7 @@ The owner emits `escalation.resolved` when it has a disposition.
   "data": {
     "resolverAgent": "may",
     "outcome": "fixed",
-    "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
+    "summary": "The session.end emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
     "evidence": {
       "commits": ["abc1234"],
       "files": ["projects/may-agent/src/app/daemon-events.ts", "projects/evaluation.app/workflows/evaluator-aftermath.ts"],
@@ -397,7 +397,7 @@ cross-agent event:
 ```typescript
 if (!sessionId) {
   return ctx.blocked("Missing sessionId", {
-    requestedAction: "Fix the event producer so session.completed includes sessionId.",
+    requestedAction: "Fix the event producer so session.end includes sessionId.",
     evidence: { trigger },
   });
 }

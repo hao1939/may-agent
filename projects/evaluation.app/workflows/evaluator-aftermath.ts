@@ -887,7 +887,7 @@ function getModeFromTrigger(trigger: any): string {
 
 export function triggerRequiresSessionId(trigger: any): boolean {
   return [
-    "session.completed",
+    "session.end",
     "evaluation.session.requested",
     "evaluation.deep.requested",
   ].includes(getTriggerType(trigger));
@@ -2357,17 +2357,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
       return `skipped aftermath for ${sessionId}: ${skipAftermath.reason}`;
     });
-
-    ctx.emit({
-      type: "evaluation.skipped",
-      source: "evaluator-aftermath",
-      owner: "evaluator",
-      sessionId,
-      agent: session.agent,
-      reason: skipAftermath.reason,
-      opCount: Number(session.opCount ?? 0),
-      heuristicVersion: HEURISTIC_VERSION,
-    } as any);
 
     return ctx.done(
       `Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`,

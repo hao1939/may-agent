@@ -225,22 +225,30 @@ event name.
 ### Session lifecycle
 ```typescript
 {
-  type: "session.completed",
-  source: "runtime",
+  type: "session.end",
+  source: "workflow:project-planner",
   owner: "agent:tech-lead",
   data: {
     sessionId: "s_123",
     agent: "tech-lead",
     outcome: "done",
     status: "done",
-    summary: "Implemented and verified."
+    summary: "Implemented and verified.",
+    durationMs: 42000,
+    finishParams: {
+      status: "success",
+      verification_evidence: ["bun test: 42 passed"],
+      deliverables: [{ path: "src/feature.ts" }]
+    }
   }
 }
 ```
 
-`session.end` is the low-level runtime lifecycle event. `session.completed` is
-the canonical subscriber-facing terminal event for `outcome: "done" | "error" |
-"interrupted"`. Runtime does not emit live `session.failed`.
+`session.end` is the canonical terminal event for `outcome: "done" | "error" |
+"interrupted"`. It carries the structured `finishParams` result, so subscribers
+do not need a copied completion or receipt event. Runtime does not emit live
+`session.completed`, `session.receipt`, or `session.failed`. Historical copies
+remain readable in the event log.
 
 ### Metrics
 ```typescript
@@ -720,8 +728,8 @@ event-specific fields from `event.data`.
 Example:
 
 ```typescript
-sdk.emit("session.completed",
-  { sessionId: "s_123", outcome: "done" },
+sdk.emit("session.end",
+  { sessionId: "s_123", agent: "may", outcome: "done", status: "done", summary: "Done", durationMs: 42 },
   { owner: "agent:may", source: "runtime" },
 );
 

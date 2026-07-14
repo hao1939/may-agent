@@ -1,7 +1,7 @@
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "session-recovery";
-export const description = "Recover or escalate a failed session from a session.completed error/interrupted event.";
+export const description = "Recover or escalate a failed session from a session.end error/interrupted event.";
 
 type RecoveryDecision = {
   sessionId: string;

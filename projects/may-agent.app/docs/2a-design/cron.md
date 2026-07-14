@@ -61,7 +61,7 @@ Workflow-backed handler:
     "timeoutMs": 900000
   },
   "enabled": true,
-  "on": ["session.completed"]
+  "on": ["session.end"]
 }
 ```
 
@@ -69,7 +69,7 @@ Workflow-backed handler:
 - `on` — event types that also trigger this handler (reactive). `trigger.<entry>`
   is an operator/control shortcut for manual firing; domain lifecycle events
   should use their canonical names such as `timer.tick` or
-  `session.completed`.
+  `session.end`.
 - `handler: "name"` — filename in `handlers/` beside the owning `cron.json`
 - `handler: { workflow, agent, task }` — workflow-backed handler
 - `context` — local docs/projects/agent files that explain why this trigger
@@ -161,10 +161,17 @@ canonical event envelope:
 
 ```typescript
 {
-  type: "session.completed",
+  type: "session.end",
   source: "runtime",
   owner: "agent:may",
-  data: { "sessionId": "s_123", "outcome": "done" },
+  data: {
+    sessionId: "s_123",
+    agent: "may",
+    outcome: "done",
+    status: "done",
+    summary: "Completed the task.",
+    durationMs: 4200
+  },
   timestamp: 1778932481366
 }
 ```
@@ -220,7 +227,7 @@ Every handler fire emits lifecycle events:
 ```
 handler.started              → handler.completed | handler.failed
                              → handler.workflow_dispatched  (workflow-backed handlers)
-handler.skipped              (handler declined to run — dedup, no-op, classifier chose nothing)
+handler.skipped              (an explicit request was declined or malformed)
 handler.routed               (rare — handler forwarded to another handler)
 ```
 
@@ -228,12 +235,14 @@ handler.routed               (rare — handler forwarded to another handler)
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `handler.started`             | Handler fire began                                                                                                                                                |
 | `handler.completed`           | Handler fire finished successfully                                                                                                                                |
-| `handler.skipped`             | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
+| `handler.skipped`             | An explicit request could not be handled, was malformed, or was deliberately declined; routine event filtering returns silently                             |
 | `handler.workflow_dispatched` | Workflow-backed handler dispatched an agent session                                                                                                               |
 | `handler.failed`              | Handler fire threw an error (dominated by task-execution-worker timeouts)                                                                                         |
 | `handler.routed`              | Handler forwarded work to another handler                                                                                                                         |
 
-**Relative frequency (structural, not pinned to a date):** `started` ≈ `completed` ≫ `workflow_dispatched` > `skipped` ≫ `failed` ≈ `routed`. The skip rate (skipped/started) has grown with the project execution engine's dedup and precondition checks; as of mid-June 2026 it is 30–40%. This is healthy behavior (handlers checking preconditions and bailing early), not waste. For current counts, query:
+Routine filtering is not a durable event. This keeps `handler.skipped` useful:
+it means work was addressed to the handler but could not proceed. For current
+counts, query:
 
 ```sql
 SELECT event_type, COUNT(*) AS c

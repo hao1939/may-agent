@@ -1,7 +1,7 @@
 /**
  * session-recovery — Auto-resume failed sessions (Ambulance Protocol).
  *
- * Subscribes to canonical `session.completed` error/interrupted events.
+ * Subscribes to canonical `session.end` error/interrupted events.
  * Two-tier classification:
  *   Tier 1: Digest classifier (structured understanding of what happened)
  *   Tier 2: classifyError fallback (string matching)
@@ -22,6 +22,7 @@ const MAX_RECOVERY_ATTEMPTS = 2;
 const STALE_AUTOCLOSE_MS = 30 * 60_000;
 const STALE_IDLE_AUTOCLOSE_MS = 45 * 60_000; // sessions idle >45min with autoClose:"immediate"
 const MAX_STALE_AUTOCLOSE_REAPS = 5;
+const STALE_REAP_INTERVAL_MS = 5 * 60_000;
 
 /** Key: "agent:taskPrefix", Value: recovery attempt count. */
 const recoveryAttempts = new Map<string, number>();
@@ -234,20 +235,21 @@ function reapIdleAutocloseSessions(ctx: HandlerContext): void {
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+  let lastStaleReapAt = 0;
+
   return async (event?: EventEnvelope) => {
-    // Always run stale session reap — timer ticks are permanently preempted
-    // by the high rate of session.completed events, so reap must piggyback
-    // on event-driven invocations too. The reap logic is idempotent and fast
-    // (~100ms DB scan + conditional updates). Guard against missing getDb
-    // in test mocks.
-    if (typeof ctx.sdk.getDb === "function") {
+    const isTimerTick = !event || event.type === "timer.tick";
+    const now = Date.now();
+    if (
+      typeof ctx.sdk.getDb === "function" &&
+      (isTimerTick || now - lastStaleReapAt >= STALE_REAP_INTERVAL_MS)
+    ) {
+      lastStaleReapAt = now;
       reapStaleAutocloseSessions(ctx);
       reapIdleAutocloseSessions(ctx);
     }
 
-    if (!event || event.type === "timer.tick") {
-      return;
-    }
+    if (isTimerTick) return;
 
     if (!event.data) {
       emitSkip(ctx, null, "missing session recovery event data", { eventType: event?.type ?? null });
@@ -264,8 +266,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ? payload.error
       : `session ended with status=${status || "unknown"} outcome=${outcome || "unknown"}`;
 
-    if (event.type === "session.completed" && status !== "error" && status !== "interrupted" && outcome !== "error" && outcome !== "interrupted") {
-      emitSkip(ctx, sessionId || null, "session.completed is not recoverable", { eventType: event.type, status, outcome });
+    if (event.type === "session.end") {
+      if (agent === "evaluator" || agent === "judge") return;
+      const terminalFailure = [status, outcome].some((value) =>
+        value === "error" || value === "failed" || value === "interrupted"
+      );
+      if (!terminalFailure) {
+        if (!status && !outcome) {
+          emitSkip(ctx, sessionId || null, "session.end is missing terminal status", {
+            eventType: event.type,
+          });
+        }
+        return;
+      }
+    }
+
+    if (event.type !== "session.end") {
+      emitSkip(ctx, sessionId || null, "unsupported session recovery event", {
+        eventType: event.type,
+      });
       return;
     }
 

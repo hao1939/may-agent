@@ -166,7 +166,7 @@ type SystemEvent =
   | EventEnvelope<{ handler: string; agent: string; durationMs?: number; error?: string }> & { type: "handler.started" | "handler.completed" | "handler.failed" }
   | EventEnvelope<{ metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }> & { type: "metric.breach" }
   | EventEnvelope<{ metricId: string; metricName: string }> & { type: "metric.recovered" }
-  | EventEnvelope<{ sessionId: string; agent: string; outcome: "done" | "error" | "interrupted"; status: string; summary?: string; workflowRunId?: string; projectId?: string }> & { type: "session.completed" }
+  | EventEnvelope<{ sessionId: string; agent: string; outcome: "done" | "error" | "interrupted"; status: string; summary: string; durationMs: number; finishParams?: Record<string, unknown>; workflowRunId?: string; projectId?: string }> & { type: "session.end" }
   | EventEnvelope<{ from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }> & { type: "message.created" }
   | EventEnvelope<{ projectId: string; author: string; text: string }> & { type: "project.comment.created" }
   | EventEnvelope<{ guard: string; action: string; reason: string; sessionId?: string; workflowRunId?: string; projectId?: string }> & { type: "guard.triggered" }

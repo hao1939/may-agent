@@ -1534,7 +1534,7 @@ function terminalDoneSessionRecovery(
           select event_type, data
           from events
           where data like ?
-            and event_type in ('session.end', 'session.receipt')
+            and event_type = 'session.end'
           order by timestamp desc
           limit 10
         `,
@@ -1571,25 +1571,11 @@ function terminalDoneSessionRecovery(
         ) {
           actionable = true;
         }
-        if (
-          !summary.startsWith("Recovered completed worker session") &&
-          row.event_type !== "session.receipt"
-        ) {
-          continue;
-        }
         if (typeof parsed.summary === "string" && parsed.summary.trim()) {
           summary = parsed.summary.trim();
         }
-        const refs = Array.isArray(parsed.evidence) ? parsed.evidence : [];
-        for (const ref of refs) {
-          if (
-            ref &&
-            typeof ref === "object" &&
-            !Array.isArray(ref) &&
-            typeof (ref as Record<string, unknown>).ref === "string"
-          ) {
-            evidence.push((ref as Record<string, string>).ref);
-          }
+        for (const ref of verification) {
+          if (typeof ref === "string" && ref.trim()) evidence.push(ref.trim());
         }
         for (const deliverable of deliverables) {
           if (

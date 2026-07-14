@@ -24,7 +24,7 @@ describe("session-recovery handler", () => {
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:dev",
       timestamp: Date.now(),
@@ -59,7 +59,7 @@ describe("session-recovery handler", () => {
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:dev",
       timestamp: Date.now(),
@@ -109,7 +109,7 @@ describe("session-recovery handler", () => {
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:dev",
       timestamp: Date.now(),
@@ -128,12 +128,34 @@ describe("session-recovery handler", () => {
     expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "session-recovery",
-      reason: "session.completed is not recoverable",
-      eventType: "session.completed",
+      reason: "session.end is missing terminal status",
+      eventType: "session.end",
       sessionId: null,
     }));
     expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       sessionId: "s_nested",
     }));
+  });
+
+  it("silently ignores successful terminal sessions", async () => {
+    const ctx = makeCtx("requeue");
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:dev",
+      timestamp: Date.now(),
+      data: {
+        sessionId: "s_done",
+        agent: "dev",
+        status: "done",
+        outcome: "done",
+        summary: "Done",
+      },
+    });
+
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalled();
   });
 });

@@ -554,20 +554,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(platformRepeatedSymptoms, 8),
     });
   }
-  // Filter out known-benign unhandled event types before generating wake signals.
-  // session.end is a lifecycle bookkeeping event that is NOT expected to have a
-  // consumer — session.completed is the event that triggers downstream handlers
-  // (e.g. evaluation-aftermath). session.end events with delivery_status='unhandled'
-  // are normal (deliveryNote: "no responsible consumer accepted event before timeout").
-  // Without this filter, 10-15 evaluator session.end events per hour generate a
-  // false P1 signal every hour, producing 24 owner wakes/day against a 6/day budget.
-  const BENIGN_UNHANDLED_EVENT_TYPES = new Set(["session.end"]);
-  const actionableUnhandled = unhandledEvents.filter(
-    (row) => !BENIGN_UNHANDLED_EVENT_TYPES.has(stringValue(row.eventType)),
-  );
-  const actionableOverdue = overduePendingEvents.filter(
-    (row) => !BENIGN_UNHANDLED_EVENT_TYPES.has(stringValue(row.eventType)),
-  );
+  const actionableUnhandled = unhandledEvents;
+  const actionableOverdue = overduePendingEvents;
   if (actionableUnhandled.length > 0 || actionableOverdue.length > 0) {
     signals.push({
       kind: "event-delivery-unaccepted",

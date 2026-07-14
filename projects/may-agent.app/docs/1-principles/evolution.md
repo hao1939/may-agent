@@ -216,7 +216,7 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 };
 ```
 
-**Triggers:** Timer (`intervalMs`), events (`on: ["metric.breach", "session.completed"]`), or manual.
+**Triggers:** Timer (`intervalMs`), events (`on: ["metric.breach", "session.end"]`), or manual.
 
 ---
 

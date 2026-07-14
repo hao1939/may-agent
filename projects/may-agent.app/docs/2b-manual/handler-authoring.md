@@ -49,7 +49,7 @@ handler directly in `cron.json`:
     "timeoutMs": 900000
   },
   "enabled": true,
-  "on": ["session.completed"]
+  "on": ["session.end"]
 }
 ```
 

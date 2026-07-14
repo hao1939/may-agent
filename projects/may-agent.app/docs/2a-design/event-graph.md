@@ -14,7 +14,8 @@ links = related events that are not the direct parent
 attributes = event data
 graph node = event or supporting detail represented in the read model
 parentKey = display hierarchy inside the graph
-more node = expandable boundary hiding non-default graph context
+frontier = expandable boundary containing a complete bounded hidden fragment
+provenance = whether an edge was persisted or projected from lifecycle, correlation, or transcript data
 ```
 
 Events remain the source of truth for cross-boundary work. The event graph does
@@ -149,8 +150,10 @@ type EventGraphFrontier = {
   scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
   hiddenCount: number;
   label: string; // "... 4 later events", "... 2 same-workflow sessions"
-  nodes: EventGraphNode[]; // optional preloaded fragment for this frontier
-  edges: EventGraphEdge[];
+  nodes: EventGraphDisplayNode[]; // complete hidden fragment within the current server bound
+  edges: EventGraphDisplayEdge[];
+  eventNodes: EventGraphNode[];   // raw event projection for inspection
+  eventEdges: EventGraphEdge[];
 };
 ```
 
@@ -172,9 +175,11 @@ The browser maintains view state separately from loaded data:
 visible graph = base graph + loaded frontier/session data - hidden branches
 ```
 
-Expanding may fetch more data, but rendering does not care whether data came
-from the first response or a later request. Collapsing only hides visible child
-branches in the current view; it must not delete fetched data.
+The initial response contains complete fragments for its bounded review scope.
+Expanding a frontier merges that fragment locally. Expanding a session requests
+the same graph endpoint with that session selected; the server returns transcript
+turns, tool calls, and tool results as graph nodes and edges. Collapsing only
+hides visible child branches; it must not delete loaded data.
 
 Controls are data-driven:
 
@@ -230,6 +235,8 @@ The read model owns graph semantics:
 - which edges mean main flow, reference, closure, detail, tool call, or return;
 - which nodes are default evidence and which are expanded detail evidence;
 - which abnormal/skipped/unhandled records must remain visible for inspection.
+- the provenance of every edge: `persisted`, `lifecycle`, `correlation`,
+  `projection`, or `transcript`.
 
 The UI owns only presentation:
 
@@ -304,10 +311,16 @@ type EventGraphDisplayEdge = {
     | "reference"
     | "closure"
     | "detail"
+    | "sequence"
     | "tool_call"
-    | "tool_result"
-    | "return";
+    | "tool_result";
   label?: string;
+  provenance:
+    | "persisted"
+    | "lifecycle"
+    | "correlation"
+    | "projection"
+    | "transcript";
 };
 ```
 
@@ -317,15 +330,32 @@ Important distinction:
 - `parentKey` is the display hierarchy used to draw detail nodes under a
   selected event/session/workflow.
 
-For example, `session.receipt`, `handler.skipped`, and `evaluation.skipped`
-may be detail children of a session start node even when their durable trace
-parent is different or missing. That is acceptable as long as the graph node
-also keeps its original `eventId`, `type`, and trace metadata available in the
-inspector.
+Historical `session.completed`, `session.receipt`, routine `handler.skipped`,
+and `evaluation.skipped` records may be detail children of a session start node
+even when their durable trace parent is different or missing. The graph keeps
+their original `eventId`, `type`, and trace metadata; the runtime no longer
+creates these derivative records for normal session completion.
 
 The read model must not drop records because they look secondary. Skipped,
 unhandled, malformed, orphan, and diagnostic records are often the evidence the
 human is looking for.
+
+### One terminal session fact
+
+New sessions have one terminal event: `session.end`. Its `data` contains the
+runtime outcome, summary, duration, structured `finishParams`, and correlation
+fields. Recovery, evaluation, and project workflows subscribe to that event
+directly.
+
+The runtime does not copy it into `session.completed` or `session.receipt`.
+Expected filtering returns without an event; `handler.skipped` is reserved for
+an explicit request that was malformed or deliberately declined. Evaluation
+preflight stores an intentional skip in the evaluation read model instead of
+emitting a dead-end `evaluation.skipped` event.
+
+This rule keeps the graph faithful: one fact has one event ID, one payload, and
+one place in the timeline. Historical derivative events remain inspectable but
+must not influence current routing.
 
 ## Event Envelope
 
@@ -461,7 +491,7 @@ Then apply stronger relations:
 |-------------------|-----------------|
 | `event_pair_runs.open_event_id` and `close_event_id` | Put both events in `trace_id = event:<open_event_id>`. Set close event `parent_event_id` to the open event when no better parent exists. Add `closure` link from close event to open event. |
 | Payload has `openEventId` / `open_event_id` | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise. |
-| Same `sessionId` | Link `session.start`, `session.end`, `session.completed`, `session.receipt`, `guard.triggered`, evaluation events, and detail records into the session trace. |
+| Same `sessionId` | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace. |
 | Same `workflowRunId` | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace. |
 | Same `taskId` plus `attemptId` | Link `project.task.assigned`, worker session, `project.task.completed`, `project.task.reviewed`, and planner follow-up. |
 | Same `metricId` / `alertId` | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events. |
@@ -481,6 +511,13 @@ should:
 2. Resolve the inserted event id.
 3. Insert or update `event_traces` for that event.
 4. Insert `event_trace_links` for `trace.links`.
+
+Event producers normally do not copy trace metadata manually. While a handler
+is processing an event, events it emits inherit the triggering event's
+`traceId` and use the triggering event id as `parentEventId`. The event bus
+preserves this context across asynchronous handler continuations. Producers
+provide explicit trace metadata only when starting a new trace, linking to
+additional events, or overriding the natural parent.
 
 Manual event insertion paths, such as inbox review follow-up events, must use
 the same trace helper. Otherwise new traces will be split between writer-created
@@ -655,8 +692,11 @@ Response shape:
 type EventGraphResponse = {
   focusEventId: number;
   traceId?: string;
+  revision: string;
   nodes: EventGraphDisplayNode[];
   edges: EventGraphDisplayEdge[];
+  eventNodes: EventGraphNode[];
+  eventEdges: EventGraphEdge[];
   frontiers?: EventGraphFrontier[];
   eventList?: Array<{
     id: number;
@@ -669,7 +709,11 @@ type EventGraphResponse = {
     summary?: string;
     dataPreview?: Record<string, unknown>;
   }>;
-  eventListScope?: string;
+  eventListScope?: {
+    kind: "session" | "workflow" | "task" | "graph";
+    ids: string[];
+    label: string;
+  };
   diagnostics: string[];
 };
 ```
@@ -716,8 +760,13 @@ Implemented foundation:
   trace rows and closure links.
 - `GET /api/events/:eventId/graph?depth=3&detail=false` returns graph nodes,
   edges, and diagnostics.
-- The current UI can expand sessions inline, but the long-term contract is for
-  the graph API to provide semantic hierarchy so the UI only renders it.
+- Graph `nodes` and `edges` are the canonical display contract. Raw event
+  projections are available separately as `eventNodes`, `eventEdges`, and
+  `eventList` for inspection.
+- Frontiers contain complete bounded hidden fragments. Session expansion uses
+  `?session=<sessionId>` and projects transcript turns and tools on the server.
+- The UI renders backend node keys, hierarchy, edge kinds, and provenance. It
+  owns only selection, layout, local hide/show state, and response caching.
 - `bun run check:event-graph -- --state-dir /app/.state` checks trace storage
   integrity. Add `--backfill` to create baseline trace rows for existing events
   and project lifecycle pair records into closure links.

@@ -17,7 +17,7 @@ describe("evaluator aftermath event contract", () => {
   });
 
   it("requires session id only for concrete session events", () => {
-    expect(triggerRequiresSessionId({ type: "session.completed" })).toBe(true);
+    expect(triggerRequiresSessionId({ type: "session.end" })).toBe(true);
     expect(
       triggerRequiresSessionId({ type: "evaluation.session.requested" }),
     ).toBe(true);

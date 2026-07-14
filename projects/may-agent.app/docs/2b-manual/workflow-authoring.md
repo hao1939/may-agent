@@ -103,7 +103,7 @@ escalation:
 
 ```typescript
 return ctx.blocked("Missing sessionId", {
-  requestedAction: "Fix the session.completed emitter to include sessionId.",
+  requestedAction: "Fix the session.end emitter to include sessionId.",
   evidence: { trigger: event },
 });
 ```

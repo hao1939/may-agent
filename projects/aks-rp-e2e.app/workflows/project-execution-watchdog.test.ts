@@ -912,7 +912,7 @@ describe("project execution watchdog", () => {
       attemptId: "attempt-1",
       result: "done",
       summary: "Recovered useful worker output.",
-      evidenceRefs: ["evidence/archive/active-task.md"],
+      evidenceRefs: ["Step 1: proof", "evidence/archive/active-task.md"],
       review: {
         required: true,
         reason: "watchdog-recovered-terminal-worker-session",

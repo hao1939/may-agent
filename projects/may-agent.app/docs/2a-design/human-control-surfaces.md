@@ -30,7 +30,7 @@ envelope before it reaches runtime logic.
 |---|---|---:|---|
 | Channel input | CLI argv, Telegram update, browser click, terminal line | No | Human-interface detail |
 | Intent event | `session.steer.requested`, `chat.start.requested` | Yes | State-changing request entering the system |
-| Domain event | `session.start`, `session.completed`, `project.comment.created` | Yes | Fact that happened |
+| Domain event | `session.start`, `session.end`, `project.comment.created` | Yes | Fact that happened |
 | Read/control frame | `subscribe`, `status` | No | Stream selection and read-only status |
 
 Channel adapters should be boring: parse the human action, resolve local UI
