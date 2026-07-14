@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { appendLearningCandidate } from "./lib/learning-candidates.js";
 
 export const name = "evaluator-aftermath";
 export const description =
@@ -2647,6 +2648,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (/Learning Created:\s*yes/i.test(artifactText)) {
+    const candidatePath = join(ctx.projectsRoot, "evaluation.app", ".state", "learning-candidates.jsonl");
+    const candidate = appendLearningCandidate(candidatePath, {
+      sessionId,
+      reviewSessionId: (review as any).sessionId,
+      agent: session.agent,
+      artifactPath: postReviewArtifactPath,
+      summary: normalized.route.reason,
+      evidence: {
+        lane: normalized.route.lane,
+        signals: normalized.route.signals,
+        reviewedVerdict,
+      },
+    });
     ctx.emit({
       type: "evaluation.learning_created",
       source: "evaluator-aftermath",
@@ -2656,6 +2670,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       lane: normalized.route.lane,
       reviewSessionId: (review as any).sessionId,
       artifactPath: postReviewArtifactPath,
+      candidateId: candidate.candidateId,
+      candidatePath,
+      candidateCreated: candidate.created,
     } as any);
   }
 
