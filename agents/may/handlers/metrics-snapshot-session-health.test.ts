@@ -1237,8 +1237,8 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       current: 2,
       owner: "may",
       target: 0,
-      threshold: 25,
-      priority: "P2",
+      threshold: 3,
+      priority: "P1",
     });
     expect(metric("guard.triggered-count-24h")).toMatchObject({
       current: 3,
