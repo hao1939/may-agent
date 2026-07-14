@@ -32,7 +32,46 @@ export type EventGraphResponse = {
   traceId?: string;
   nodes: EventGraphNode[];
   edges: EventGraphEdge[];
+  eventList?: EventGraphNode[];
+  eventListScope?: {
+    kind: "session" | "workflow" | "task" | "graph";
+    ids: string[];
+    label: string;
+  };
   diagnostics: string[];
+  detailNodeCount?: number;
+  review?: EventReview;
+};
+
+export type EventReviewLifecycle = {
+  kind: string;
+  id: string;
+  status: "closed" | "open" | "orphan" | "overdue" | "unknown";
+  relation?: "focused" | "same-workflow" | "same-task" | "related";
+  owner?: string;
+  openEventId?: number;
+  closeEventId?: number;
+  openType?: string;
+  closeType?: string;
+  openedAt?: number;
+  expectedCloseAt?: number;
+  closedAt?: number;
+  summary?: string;
+  issues?: string[];
+};
+
+export type EventReview = {
+  verdict: {
+    status: "healthy" | "warning" | "failed" | "orphaned" | "unknown";
+    text: string;
+  };
+  focus: {
+    id: number;
+    type: string;
+    title: string;
+  };
+  lifecycles: EventReviewLifecycle[];
+  relationKeys: Array<{ kind: string; value: string }>;
 };
 
 function safeAll(db: SqliteDb, sql: string, ...params: unknown[]): Row[] {
@@ -116,6 +155,33 @@ function previewData(data: Record<string, unknown>): Record<string, unknown> | u
   return Object.keys(out).length ? out : undefined;
 }
 
+function eventTitle(type: string): string {
+  if (type === "session.start") return "Session started";
+  if (type === "session.end") return "Session completed";
+  if (type === "project.task.assigned") return "Task assigned";
+  if (type === "project.task.completed") return "Task completed";
+  if (type === "project.task.reviewed") return "Task reviewed";
+  if (type === "workflow.started") return "Workflow started";
+  if (type === "workflow.completed") return "Workflow completed";
+  if (type === "workflow.failed") return "Workflow failed";
+  if (type === "escalation.created") return "Escalation opened";
+  if (type === "escalation.resolved") return "Escalation resolved";
+  if (type === "escalation.dismissed") return "Escalation dismissed";
+  if (type === "metric.breach") return "Metric breach";
+  return type;
+}
+
+function defaultVisibilityForType(type: string | undefined): "default" | "detail" {
+  if (!type) return "default";
+  if (type === "session.start" || type === "session.end") return "default";
+  if (type.startsWith("project.task.")) return "default";
+  if (type.startsWith("workflow.")) return "default";
+  if (type.startsWith("escalation.")) return "default";
+  if (type === "metric.breach") return "default";
+  if (type.startsWith("cli.task.")) return "default";
+  return "detail";
+}
+
 function nodeFromRow(row: Row): EventGraphNode | null {
   const id = numberValue(row.id);
   const type = stringValue(row.event_type);
@@ -152,6 +218,224 @@ function addEdge(edges: Map<string, EventGraphEdge>, edge: Omit<EventGraphEdge, 
   edges.set(withId.id, withId);
 }
 
+type RelationKey = { kind: string; value: string };
+
+function addRelationKey(keys: Map<string, RelationKey>, kind: string, value: unknown): void {
+  const text = stringValue(value);
+  if (!text) return;
+  keys.set(`${kind}:${text}`, { kind, value: text });
+}
+
+function dataValue(data: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = stringValue(data[key]);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function relationKeysFromData(data: Record<string, unknown>): RelationKey[] {
+  const keys = new Map<string, RelationKey>();
+  const sessionId = dataValue(data, ["sessionId", "session_id"]);
+  const workflowRunId = dataValue(data, ["workflowRunId", "workflow_run_id"]);
+  const taskId = dataValue(data, ["taskId", "task_id"]);
+  const attemptId = dataValue(data, ["attemptId", "attempt_id"]);
+  addRelationKey(keys, "session", sessionId);
+  addRelationKey(keys, "sourceSession", dataValue(data, ["sourceSessionId", "source_session_id"]));
+  addRelationKey(keys, "workflow", workflowRunId);
+  addRelationKey(keys, "task", taskId);
+  addRelationKey(keys, "attempt", attemptId);
+  addRelationKey(keys, "escalation", dataValue(data, ["escalationId", "escalation_id"]));
+  addRelationKey(keys, "metric", dataValue(data, ["metricId", "metric_id"]));
+  addRelationKey(keys, "alert", dataValue(data, ["alertId", "alert_id"]));
+  if (taskId && attemptId) addRelationKey(keys, "pair", `${taskId}:${attemptId}`);
+  return [...keys.values()];
+}
+
+function mergeRelationKeys(rows: Row[]): RelationKey[] {
+  const keys = new Map<string, RelationKey>();
+  for (const row of rows) {
+    for (const key of relationKeysFromData(parseData(row))) {
+      keys.set(`${key.kind}:${key.value}`, key);
+    }
+  }
+  return [...keys.values()];
+}
+
+function rowWithVisibility(row: Row): Row {
+  return {
+    ...row,
+    visibility: row.visibility === "detail" ? "detail" : defaultVisibilityForType(stringValue(row.event_type)),
+  };
+}
+
+function addRowsByCorrelation(db: SqliteDb, rowsById: Map<number, Row>, relationKeys: RelationKey[]): void {
+  const fields: Record<string, string[]> = {
+    session: ["$.sessionId", "$.session_id"],
+    workflow: ["$.workflowRunId", "$.workflow_run_id"],
+    task: ["$.taskId", "$.task_id"],
+    attempt: ["$.attemptId", "$.attempt_id"],
+    escalation: ["$.escalationId", "$.escalation_id"],
+    metric: ["$.metricId", "$.metric_id"],
+    alert: ["$.alertId", "$.alert_id"],
+  };
+  const conditions: string[] = [];
+  const params: string[] = [];
+  for (const [kind, paths] of Object.entries(fields)) {
+    const values = relationKeys.filter((key) => key.kind === kind).map((key) => key.value);
+    if (!values.length) continue;
+    const placeholders = values.map(() => "?").join(",");
+    for (const path of paths) {
+      conditions.push(`json_extract(e.data, '${path}') IN (${placeholders})`);
+      params.push(...values);
+    }
+  }
+  if (!conditions.length) return;
+  const rows = safeAll(
+    db,
+    `SELECT e.*, COALESCE(t.visibility, 'default') as visibility, t.trace_id, t.parent_event_id
+     FROM events e
+     LEFT JOIN event_traces t ON t.event_id = e.id
+     WHERE json_valid(e.data)
+       AND (${conditions.join(" OR ")})
+     ORDER BY e.timestamp ASC, e.id ASC
+     LIMIT 120`,
+    ...params,
+  );
+  for (const row of rows) {
+    const id = numberValue(row.id);
+    if (!id || rowsById.has(id)) continue;
+    rowsById.set(id, rowWithVisibility(row));
+  }
+}
+
+function loadRowsByIds(db: SqliteDb, rowsById: Map<number, Row>, ids: number[]): void {
+  const missing = [...new Set(ids)].filter((id) => id && !rowsById.has(id));
+  if (!missing.length) return;
+  const placeholders = missing.map(() => "?").join(",");
+  const rows = safeAll(
+    db,
+    `SELECT e.*, COALESCE(t.visibility, 'default') as visibility, t.trace_id, t.parent_event_id
+     FROM events e
+     LEFT JOIN event_traces t ON t.event_id = e.id
+     WHERE e.id IN (${placeholders})`,
+    ...missing,
+  );
+  for (const row of rows) {
+    const id = numberValue(row.id);
+    if (id) rowsById.set(id, rowWithVisibility(row));
+  }
+}
+
+function loadRelatedPairs(db: SqliteDb, eventIds: number[], relationKeys: RelationKey[]): Row[] {
+  const ids = [...new Set(eventIds)].filter((id) => Number.isFinite(id) && id > 0);
+  const pairKeys = relationKeys
+    .filter((key) => ["session", "workflow", "task", "pair", "escalation", "alert"].includes(key.kind))
+    .map((key) => key.value);
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  if (ids.length) {
+    const placeholders = ids.map(() => "?").join(",");
+    clauses.push(`p.open_event_id IN (${placeholders})`);
+    params.push(...ids);
+    clauses.push(`p.close_event_id IN (${placeholders})`);
+    params.push(...ids);
+  }
+  if (pairKeys.length) {
+    const placeholders = pairKeys.map(() => "?").join(",");
+    clauses.push(`p.correlation_key IN (${placeholders})`);
+    params.push(...pairKeys);
+  }
+  if (!clauses.length) return [];
+  return safeAll(
+    db,
+    `SELECT p.*, oe.event_type as open_type, ce.event_type as close_type
+     FROM event_pair_runs p
+     LEFT JOIN events oe ON oe.id = p.open_event_id
+     LEFT JOIN events ce ON ce.id = p.close_event_id
+     WHERE ${clauses.join(" OR ")}
+     ORDER BY p.opened_at ASC, p.id ASC
+     LIMIT 80`,
+    ...params,
+  );
+}
+
+function addPairEdges(edges: Map<string, EventGraphEdge>, pairs: Row[]): void {
+  for (const pair of pairs) {
+    const openEventId = numberValue(pair.open_event_id);
+    const closeEventId = numberValue(pair.close_event_id);
+    if (!openEventId || !closeEventId) continue;
+    addEdge(edges, {
+      source: openEventId,
+      target: closeEventId,
+      type: "closure",
+      label: stringValue(pair.pair_name) ?? "lifecycle",
+    });
+  }
+}
+
+function addCorrelationEdges(edges: Map<string, EventGraphEdge>, rows: Row[]): void {
+  const bySession = new Map<string, Row[]>();
+  const byTask = new Map<string, Row[]>();
+  const byWorkflow = new Map<string, Row[]>();
+  for (const row of rows) {
+    const data = parseData(row);
+    const sessionId = dataValue(data, ["sessionId", "session_id", "sourceSessionId"]);
+    const taskId = dataValue(data, ["taskId", "task_id"]);
+    const workflowRunId = dataValue(data, ["workflowRunId", "workflow_run_id"]);
+    if (sessionId) bySession.set(sessionId, [...(bySession.get(sessionId) ?? []), row]);
+    if (taskId) byTask.set(taskId, [...(byTask.get(taskId) ?? []), row]);
+    if (workflowRunId) byWorkflow.set(workflowRunId, [...(byWorkflow.get(workflowRunId) ?? []), row]);
+  }
+  for (const rowsForSession of bySession.values()) {
+    const assigned = rowsForSession.find((row) => row.event_type === "project.task.assigned");
+    const start = rowsForSession.find((row) => row.event_type === "session.start");
+    const end = rowsForSession.find((row) => row.event_type === "session.end");
+    const completed = rowsForSession.find((row) => row.event_type === "project.task.completed");
+    const assignedId = numberValue(assigned?.id);
+    const startId = numberValue(start?.id);
+    const endId = numberValue(end?.id);
+    const completedId = numberValue(completed?.id);
+    if (assignedId && startId) addEdge(edges, { source: assignedId, target: startId, type: "reference", label: "session" });
+    if (endId && completedId) addEdge(edges, { source: endId, target: completedId, type: "reference", label: "result" });
+  }
+  for (const rowsForTask of byTask.values()) {
+    const completed = rowsForTask.find((row) => row.event_type === "project.task.completed");
+    const reviewed = rowsForTask.find((row) => row.event_type === "project.task.reviewed");
+    const completedId = numberValue(completed?.id);
+    const reviewedId = numberValue(reviewed?.id);
+    if (completedId && reviewedId) addEdge(edges, { source: completedId, target: reviewedId, type: "reference", label: "review" });
+  }
+  for (const rowsForWorkflow of byWorkflow.values()) {
+    const starts = rowsForWorkflow
+      .filter((row) => row.event_type === "session.start")
+      .sort((a, b) => (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0));
+    for (let index = 0; index < starts.length - 1; index++) {
+      const currentStart = starts[index];
+      const nextStart = starts[index + 1];
+      const currentSessionId = dataValue(parseData(currentStart), ["sessionId", "session_id"]);
+      const currentEnd = rowsForWorkflow.find((row) => row.event_type === "session.end" && dataValue(parseData(row), ["sessionId", "session_id"]) === currentSessionId);
+      const source = numberValue(currentEnd?.id) ?? numberValue(currentStart.id);
+      const target = numberValue(nextStart.id);
+      if (source && target) addEdge(edges, { source, target, type: "reference", label: "same workflow" });
+    }
+  }
+}
+
+function normalizeEdgesForReview(edges: EventGraphEdge[], rowsById: Map<number, Row>): EventGraphEdge[] {
+  const timestamp = (eventId: number) => numberValue(rowsById.get(eventId)?.timestamp) ?? 0;
+  const hasClosure = new Set(edges.filter((edge) => edge.type === "closure").map((edge) => `${edge.source}:${edge.target}`));
+  return edges.filter((edge) => {
+    if (edge.type === "closure" && timestamp(edge.source) > timestamp(edge.target) && hasClosure.has(`${edge.target}:${edge.source}`)) {
+      return false;
+    }
+    if (edge.type === "parent" && hasClosure.has(`${edge.source}:${edge.target}`)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function clampDepth(value: unknown): number {
   const depth = Number(value);
   if (!Number.isFinite(depth)) return 3;
@@ -182,6 +466,214 @@ function visibleIdsFromDepth(focusEventId: number, edges: EventGraphEdge[], maxD
   return visible;
 }
 
+function lifecycleStatus(pair: Row, now = Date.now()): EventReviewLifecycle["status"] {
+  const status = stringValue(pair.status);
+  if (status === "closed") return "closed";
+  if (status === "orphan") return "orphan";
+  const expected = numberValue(pair.expected_close_at);
+  if ((status === "open" || !status) && expected && expected < now) return "overdue";
+  if (status === "open") return "open";
+  return "unknown";
+}
+
+function rowSummary(row: Row | undefined): string | undefined {
+  if (!row) return undefined;
+  const data = parseData(row);
+  return compact(data.summary, 220) ??
+    compact(data.reason, 220) ??
+    compact(data.message, 220) ??
+    compact(data.status, 120) ??
+    compact(data.outcome, 120);
+}
+
+function buildReviewLifecycle(pair: Row, rowsById: Map<number, Row>): EventReviewLifecycle | null {
+  const kind = stringValue(pair.pair_name);
+  const id = stringValue(pair.correlation_key);
+  if (!kind || !id) return null;
+  const openEventId = numberValue(pair.open_event_id);
+  const closeEventId = numberValue(pair.close_event_id);
+  const status = lifecycleStatus(pair);
+  const issues: string[] = [];
+  if (status === "orphan") issues.push("Expected close event was not recorded before the lifecycle became orphaned.");
+  if (status === "overdue") issues.push("Expected close event is overdue.");
+  if (status === "open") issues.push("Lifecycle is still open.");
+  return {
+    kind,
+    id,
+    status,
+    ...(stringValue(pair.owner) ? { owner: stringValue(pair.owner) } : {}),
+    ...(openEventId ? { openEventId } : {}),
+    ...(closeEventId ? { closeEventId } : {}),
+    ...(stringValue(pair.open_type) ? { openType: stringValue(pair.open_type) } : {}),
+    ...(stringValue(pair.close_type) ? { closeType: stringValue(pair.close_type) } : {}),
+    ...(numberValue(pair.opened_at) ? { openedAt: numberValue(pair.opened_at) } : {}),
+    ...(numberValue(pair.expected_close_at) ? { expectedCloseAt: numberValue(pair.expected_close_at) } : {}),
+    ...(numberValue(pair.closed_at) ? { closedAt: numberValue(pair.closed_at) } : {}),
+    ...(rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined) ? { summary: rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined) } : {}),
+    ...(issues.length ? { issues } : {}),
+  };
+}
+
+function lifecyclePriority(kind: string): number {
+  if (kind === "project.task") return 0;
+  if (kind === "workflow") return 1;
+  if (kind === "session") return 2;
+  if (kind === "escalation") return 3;
+  if (kind === "owner_inbox") return 4;
+  return 5;
+}
+
+function dedupeLifecycles(lifecycles: EventReviewLifecycle[]): EventReviewLifecycle[] {
+  const byKey = new Map<string, EventReviewLifecycle>();
+  for (const lifecycle of lifecycles) {
+    const key = `${lifecycle.kind}:${lifecycle.id}:${lifecycle.closeEventId ?? ""}`;
+    const current = byKey.get(key);
+    if (!current) {
+      byKey.set(key, lifecycle);
+      continue;
+    }
+    const lifecycleIsRequested = String(lifecycle.openType || "").endsWith(".requested");
+    const currentIsRequested = String(current.openType || "").endsWith(".requested");
+    if (lifecycleIsRequested && !currentIsRequested) {
+      byKey.set(key, lifecycle);
+      continue;
+    }
+    if (!currentIsRequested && (lifecycle.openedAt ?? Number.MAX_SAFE_INTEGER) < (current.openedAt ?? Number.MAX_SAFE_INTEGER)) {
+      byKey.set(key, lifecycle);
+    }
+  }
+  return [...byKey.values()];
+}
+
+function focusLifecycle(focusEventId: number, lifecycles: EventReviewLifecycle[]): EventReviewLifecycle | undefined {
+  return lifecycles.find((lifecycle) => lifecycle.openEventId === focusEventId || lifecycle.closeEventId === focusEventId) ??
+    lifecycles[0];
+}
+
+function lifecycleRowValues(lifecycle: EventReviewLifecycle, rowsById: Map<number, Row>, keys: string[]): string[] {
+  const values = new Set<string>();
+  for (const eventId of [lifecycle.openEventId, lifecycle.closeEventId]) {
+    if (!eventId) continue;
+    const value = dataValue(parseData(rowsById.get(eventId)), keys);
+    if (value) values.add(value);
+  }
+  return [...values];
+}
+
+function markLifecycleRelations(
+  lifecycles: EventReviewLifecycle[],
+  focusEventId: number,
+  focus: Row,
+  rowsById: Map<number, Row>,
+): EventReviewLifecycle[] {
+  const focusData = parseData(focus);
+  const focusSessionId = dataValue(focusData, ["sessionId", "session_id"]);
+  const focusWorkflowRunId = dataValue(focusData, ["workflowRunId", "workflow_run_id"]);
+  const focusTaskId = dataValue(focusData, ["taskId", "task_id"]);
+  return lifecycles.map((lifecycle) => {
+    let relation: EventReviewLifecycle["relation"] = "related";
+    const lifecycleSessionIds = lifecycleRowValues(lifecycle, rowsById, ["sessionId", "session_id"]);
+    const lifecycleWorkflowRunIds = lifecycleRowValues(lifecycle, rowsById, ["workflowRunId", "workflow_run_id"]);
+    const lifecycleTaskIds = lifecycleRowValues(lifecycle, rowsById, ["taskId", "task_id"]);
+    if (
+      lifecycle.openEventId === focusEventId ||
+      lifecycle.closeEventId === focusEventId ||
+      (focusSessionId && lifecycle.kind === "session" && lifecycle.id === focusSessionId) ||
+      (focusTaskId && lifecycle.kind === "project.task" && (lifecycle.id === focusTaskId || lifecycle.id.startsWith(`${focusTaskId}:`)))
+    ) {
+      relation = "focused";
+    } else if (focusTaskId && lifecycleTaskIds.includes(focusTaskId)) {
+      relation = "same-task";
+    } else if (focusWorkflowRunId && lifecycleWorkflowRunIds.includes(focusWorkflowRunId)) {
+      relation = "same-workflow";
+    }
+    return { ...lifecycle, relation };
+  });
+}
+
+function hasFailedSession(rows: Row[]): boolean {
+  return rows.some((row) => {
+    if (row.event_type !== "session.end") return false;
+    const data = parseData(row);
+    const status = String(data.status ?? data.outcome ?? "").toLowerCase();
+    return ["error", "failed", "fail", "rejected"].includes(status);
+  });
+}
+
+function buildVerdict(focusEventId: number, lifecycles: EventReviewLifecycle[], rows: Row[]): EventReview["verdict"] {
+  const orphan = lifecycles.find((lifecycle) => lifecycle.status === "orphan");
+  if (orphan) {
+    if (orphan.kind === "owner_inbox") {
+      return {
+        status: "orphaned",
+        text: `Owner inbox item for ${eventTitle(orphan.openType ?? "event")} is orphaned; ${orphan.owner ?? "the owner"} has not acknowledged it.`,
+      };
+    }
+    return {
+      status: "orphaned",
+      text: `${eventTitle(orphan.openType ?? orphan.kind)} is orphaned; no ${orphan.closeType ?? "close event"} was recorded.`,
+    };
+  }
+  const overdue = lifecycles.find((lifecycle) => lifecycle.status === "overdue");
+  if (overdue) {
+    return {
+      status: "warning",
+      text: `${eventTitle(overdue.openType ?? overdue.kind)} is overdue; expected ${overdue.closeType ?? "a close event"}.`,
+    };
+  }
+  if (hasFailedSession(rows)) {
+    return { status: "failed", text: "A related session ended with failure." };
+  }
+  const open = lifecycles.find((lifecycle) => lifecycle.status === "open");
+  if (open) {
+    if (open.kind === "escalation") return { status: "warning", text: "Escalation is still open." };
+    if (open.kind === "owner_inbox") {
+      return {
+        status: "warning",
+        text: `Owner inbox item for ${eventTitle(open.openType ?? "event")} is still open.`,
+      };
+    }
+    return {
+      status: "warning",
+      text: `${eventTitle(open.openType ?? open.kind)} is still open.`,
+    };
+  }
+  const primary = focusLifecycle(focusEventId, lifecycles);
+  const hasTask = lifecycles.some((lifecycle) => lifecycle.kind === "project.task" && lifecycle.status === "closed");
+  const hasSession = lifecycles.some((lifecycle) => lifecycle.kind === "session" && lifecycle.status === "closed");
+  if (hasTask && hasSession) return { status: "healthy", text: "Task completed and the worker session completed." };
+  if (primary?.kind === "session" && primary.status === "closed") return { status: "healthy", text: "Session completed." };
+  if (primary?.status === "closed") return { status: "healthy", text: `${eventTitle(primary.closeType ?? primary.kind)} closed the lifecycle.` };
+  return { status: "unknown", text: "No complete lifecycle verdict is available for this event yet." };
+}
+
+function buildEventReview(
+  focusEventId: number,
+  focus: Row,
+  rowsById: Map<number, Row>,
+  pairs: Row[],
+  relationKeys: RelationKey[],
+): EventReview {
+  const lifecycles = pairs
+    .map((pair) => buildReviewLifecycle(pair, rowsById))
+    .filter((item): item is EventReviewLifecycle => !!item)
+    .reduce<EventReviewLifecycle[]>((items, item) => [...items, item], []);
+  const dedupedLifecycles = markLifecycleRelations(dedupeLifecycles(lifecycles), focusEventId, focus, rowsById)
+    .sort((a, b) => lifecyclePriority(a.kind) - lifecyclePriority(b.kind) || (a.openedAt ?? 0) - (b.openedAt ?? 0));
+  const focusType = stringValue(focus.event_type) ?? "event";
+  const rows = [...rowsById.values()];
+  return {
+    verdict: buildVerdict(focusEventId, dedupedLifecycles, rows),
+    focus: {
+      id: focusEventId,
+      type: focusType,
+      title: eventTitle(focusType),
+    },
+    lifecycles: dedupedLifecycles,
+    relationKeys: relationKeys.slice(0, 20),
+  };
+}
+
 function loadTraceRows(db: SqliteDb, traceId: string): Row[] {
   return safeAll(
     db,
@@ -193,6 +685,89 @@ function loadTraceRows(db: SqliteDb, traceId: string): Row[] {
      LIMIT 500`,
     traceId,
   );
+}
+
+function loadEventListRows(
+  db: SqliteDb,
+  focus: Row,
+  rowsById: Map<number, Row>,
+  relationKeys: RelationKey[],
+): { rows: Row[]; scope: NonNullable<EventGraphResponse["eventListScope"]> } {
+  const focusData = parseData(focus);
+  const focusSessionId = dataValue(focusData, ["sessionId", "session_id"]);
+  const focusWorkflowRunId = dataValue(focusData, ["workflowRunId", "workflow_run_id"]);
+  const focusTaskId = dataValue(focusData, ["taskId", "task_id"]);
+  const relationSessionIds = relationKeys.filter((key) => key.kind === "session").map((key) => key.value);
+  const relationWorkflowIds = relationKeys.filter((key) => key.kind === "workflow").map((key) => key.value);
+  const relationTaskIds = relationKeys.filter((key) => key.kind === "task").map((key) => key.value);
+
+  let kind: NonNullable<EventGraphResponse["eventListScope"]>["kind"] = "graph";
+  let ids: string[] = [];
+  let paths: string[] = [];
+
+  if (focusSessionId) {
+    kind = "session";
+    ids = [focusSessionId];
+    paths = ["$.sessionId", "$.session_id"];
+  } else if (focusWorkflowRunId) {
+    kind = "workflow";
+    ids = [focusWorkflowRunId];
+    paths = ["$.workflowRunId", "$.workflow_run_id"];
+  } else if (focusTaskId) {
+    kind = "task";
+    ids = [focusTaskId];
+    paths = ["$.taskId", "$.task_id"];
+  } else if (relationSessionIds.length === 1) {
+    kind = "session";
+    ids = relationSessionIds;
+    paths = ["$.sessionId", "$.session_id"];
+  } else if (relationWorkflowIds.length === 1) {
+    kind = "workflow";
+    ids = relationWorkflowIds;
+    paths = ["$.workflowRunId", "$.workflow_run_id"];
+  } else if (relationTaskIds.length === 1) {
+    kind = "task";
+    ids = relationTaskIds;
+    paths = ["$.taskId", "$.task_id"];
+  }
+
+  if (!ids.length || !paths.length) {
+    const rows = [...rowsById.values()].sort((a, b) => (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) || (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0));
+    return {
+      rows,
+      scope: { kind: "graph", ids: [String(numberValue(focus.id) ?? "")].filter(Boolean), label: "visible graph events" },
+    };
+  }
+
+  const uniqueIds = [...new Set(ids)];
+  const clauses: string[] = [];
+  const params: string[] = [];
+  for (const path of paths) {
+    const placeholders = uniqueIds.map(() => "?").join(",");
+    clauses.push(`json_extract(e.data, '${path}') IN (${placeholders})`);
+    params.push(...uniqueIds);
+  }
+
+  const rows = safeAll(
+    db,
+    `SELECT e.*, COALESCE(t.visibility, 'default') as visibility, t.trace_id, t.parent_event_id
+     FROM events e
+     LEFT JOIN event_traces t ON t.event_id = e.id
+     WHERE json_valid(e.data)
+       AND (${clauses.join(" OR ")})
+     ORDER BY e.timestamp ASC, e.id ASC
+     LIMIT 300`,
+    ...params,
+  );
+
+  return {
+    rows: rows.map(rowWithVisibility),
+    scope: {
+      kind,
+      ids: uniqueIds,
+      label: `${kind} ${uniqueIds.join(", ")}`,
+    },
+  };
 }
 
 function loadFallbackPairRows(db: SqliteDb, focusEventId: number): { rows: Row[]; edges: EventGraphEdge[] } {
@@ -302,18 +877,37 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
     rowsById.set(focusEventId, { ...focus, visibility: focusTrace?.visibility ?? "default", trace_id: traceId });
   }
 
-  const allEdges = [...edges.values()];
+  let relationKeys = mergeRelationKeys([...rowsById.values()]);
+  addRowsByCorrelation(db, rowsById, relationKeys);
+  relationKeys = mergeRelationKeys([...rowsById.values()]);
+  const relatedPairs = loadRelatedPairs(db, [...rowsById.keys()], relationKeys);
+  loadRowsByIds(
+    db,
+    rowsById,
+    relatedPairs.flatMap((pair) => [numberValue(pair.open_event_id), numberValue(pair.close_event_id)]).filter((id): id is number => !!id),
+  );
+  relationKeys = mergeRelationKeys([...rowsById.values()]);
+  addPairEdges(edges, relatedPairs);
+  addCorrelationEdges(edges, [...rowsById.values()]);
+
+  const allEdges = normalizeEdgesForReview([...edges.values()], rowsById);
   const visibleIds = visibleIdsFromDepth(focusEventId, allEdges, depth);
-  const nodes = [...rowsById.values()]
+  const allNodes = [...rowsById.values()]
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .filter((node) => visibleIds.has(node.id))
-    .filter((node) => includeDetail || node.visibility !== "detail")
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+  const detailNodeCount = allNodes.filter((node) => node.visibility === "detail").length;
+  const nodes = allNodes.filter((node) => includeDetail || node.visibility !== "detail");
   const nodeIds = new Set(nodes.map((node) => node.id));
   const visibleEdges = allEdges
     .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => a.source - b.source || a.target - b.target || a.type.localeCompare(b.type));
+  const eventListProjection = loadEventListRows(db, focus, rowsById, relationKeys);
+  const eventList = eventListProjection.rows
+    .map(nodeFromRow)
+    .filter((node): node is EventGraphNode => !!node)
+    .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
 
   if (!nodes.some((node) => node.id === focusEventId)) {
     diagnostics.push("focus event is hidden by current detail filter");
@@ -324,6 +918,10 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
     ...(traceId ? { traceId } : {}),
     nodes,
     edges: visibleEdges,
+    eventList,
+    eventListScope: eventListProjection.scope,
     diagnostics,
+    detailNodeCount,
+    review: buildEventReview(focusEventId, focus, rowsById, relatedPairs, relationKeys),
   };
 }
