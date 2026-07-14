@@ -415,6 +415,26 @@ guess that a node is a child because its event type starts with `session.` or
 because a payload string happens to contain a session id. The browser renders
 the hierarchy it is given and keeps page-local expanded/collapsed state.
 
+The graph API should also return `frontiers`: explicit boundaries where related
+data exists but was not included in the bounded response. The browser renders
+frontiers as `... expand` nodes. Expanding a frontier fetches or reveals data
+and then merges real nodes back into their real graph/timeline position.
+Collapsing only hides currently visible child branches; it does not delete
+fetched data. In practical terms:
+
+```text
+visible graph = base graph + loaded data - hidden branches
+```
+
+This keeps the UI simple:
+
+- data model and event ids define truth and order;
+- `... expand` appears only where the read model says more data exists;
+- `- collapse` appears on nodes that currently have visible child/detail
+  branches;
+- collapse hides children in the current view and re-expand reveals loaded data
+  when available.
+
 Event-to-event edges are only drawn for real links recorded by the graph model:
 
 - `parent`: a real parent/child trace relationship.

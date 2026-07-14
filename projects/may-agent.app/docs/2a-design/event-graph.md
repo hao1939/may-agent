@@ -127,37 +127,61 @@ Around the selected event, show direct evidence:
 The default API/UI radius is one direct graph hop around the selected event.
 The structural parent path and start point are included regardless of radius, so
 a deep selected event still shows where the chain began. Wider exploration
-should happen by expanding `more` nodes or requesting a larger depth explicitly.
+should happen by expanding graph frontiers or requesting a larger depth
+explicitly.
 
 Do not auto-expand broader context such as same workflow, same task, same
 metric, or same owner inbox. Show those as expandable boundaries.
 
-### More Nodes
+### Frontiers
 
-`more` nodes are real graph nodes used for progressive disclosure. They are not
-decoration.
+The data model is the truth. The API returns real event nodes and real graph
+edges. It also returns `frontiers`, which are explicit boundaries where the
+backend knows connected data exists but did not include it in the current
+bounded response. A frontier is not a persisted event and is not an event-to-
+event edge. It is a UI affordance backed by the read model.
 
 ```typescript
-type EventGraphMoreNode = {
-  key: string;
-  kind: "more";
-  parentKey: string;
+type EventGraphFrontier = {
+  id: string;
+  anchorEventId: number;
   direction: "before" | "after" | "context" | "details";
   scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
-  count?: number;
+  hiddenCount: number;
   label: string; // "... 4 later events", "... 2 same-workflow sessions"
+  nodes: EventGraphNode[]; // optional preloaded fragment for this frontier
+  edges: EventGraphEdge[];
 };
 ```
 
-Clicking a `more` node expands that boundary:
+Clicking a frontier expands that boundary:
 
 - `before`: hidden earlier parents;
 - `after`: hidden children or later follow-up events;
 - `details`: detail evidence such as receipts, guards, LLM turns, tool calls;
 - `context`: same workflow/task/session/metric/owner context.
 
-If the graph reaches a visible node with hidden continuation, it must show a
-`more` node instead of pretending that visible node is the end.
+If the graph reaches a visible node with hidden continuation, the API must
+return a frontier instead of pretending that visible node is the end. The UI
+renders that frontier as a `... expand` node at the anchor where expansion is
+available.
+
+The browser maintains view state separately from loaded data:
+
+```text
+visible graph = base graph + loaded frontier/session data - hidden branches
+```
+
+Expanding may fetch more data, but rendering does not care whether data came
+from the first response or a later request. Collapsing only hides visible child
+branches in the current view; it must not delete fetched data.
+
+Controls are data-driven:
+
+- show `... expand` where a returned frontier is not currently visible;
+- show `- collapse` on any visible node with visible child/detail branches;
+- re-expanding a collapsed branch should reveal already fetched data when
+  available.
 
 ## Core Model
 
@@ -633,6 +657,7 @@ type EventGraphResponse = {
   traceId?: string;
   nodes: EventGraphDisplayNode[];
   edges: EventGraphDisplayEdge[];
+  frontiers?: EventGraphFrontier[];
   eventList?: Array<{
     id: number;
     type: string;
