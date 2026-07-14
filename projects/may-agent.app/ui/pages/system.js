@@ -539,6 +539,38 @@ function transcriptItemTimestamp(item) {
     graphTimestampValue(item?.toolResults?.[0]?.timestamp);
 }
 
+function fillTranscriptSortTimes(flowItems) {
+  const items = [...(flowItems || [])];
+  for (let index = 0; index < items.length; index++) {
+    if (items[index].sortTime != null) continue;
+    let previousIndex = -1;
+    let nextIndex = -1;
+    for (let cursor = index - 1; cursor >= 0; cursor--) {
+      if (items[cursor].sortTime != null) {
+        previousIndex = cursor;
+        break;
+      }
+    }
+    for (let cursor = index + 1; cursor < items.length; cursor++) {
+      if (items[cursor].sortTime != null) {
+        nextIndex = cursor;
+        break;
+      }
+    }
+    const previousTime = previousIndex >= 0 ? Number(items[previousIndex].sortTime) : null;
+    const nextTime = nextIndex >= 0 ? Number(items[nextIndex].sortTime) : null;
+    if (previousTime != null && nextTime != null && nextTime > previousTime) {
+      const step = (nextTime - previousTime) / (nextIndex - previousIndex);
+      items[index].sortTime = previousTime + step * (index - previousIndex);
+    } else if (nextTime != null) {
+      items[index].sortTime = nextTime - (nextIndex - index);
+    } else if (previousTime != null) {
+      items[index].sortTime = previousTime + (index - previousIndex);
+    }
+  }
+  return items;
+}
+
 function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()) {
   if (expansion?.loading) {
     return [{ kind: 'status', key: `status:${sessionId}:loading`, sessionId, status: 'loading', label: 'loading transcript' }];
@@ -553,7 +585,7 @@ function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()
     if (visibleEventIds.has(Number(node.id))) return false;
     return true;
   });
-  const flowItems = flow.map((item, index) => ({
+  const flowItems = fillTranscriptSortTimes(flow.map((item, index) => ({
       kind: 'turn',
       key: `turn:${sessionId}:${index}`,
       sessionId,
@@ -561,7 +593,7 @@ function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()
       turnIndex: index + 1,
       sortTime: transcriptItemTimestamp(item),
       sortIndex: index,
-    }));
+    })));
   const eventItems = sessionEvents.map((node, index) => ({
       kind: 'session-event',
       key: `session-event:${sessionId}:${node.id}`,
@@ -820,6 +852,7 @@ function eventOverviewRawItem(item) {
     moreLabel: item?.more?.label,
     status: item?.status,
     turnIndex: item?.turnIndex,
+    sortTime: item?.sortTime,
   };
 }
 
