@@ -367,8 +367,8 @@ and traceable state transitions.
 The event graph trace is the most important debugging surface. It should be
 specified as a product/API contract, not just a button on an event table.
 Events are nodes; parent relationships and trace links are edges. The default
-view should show default events, with LLM turns and tool calls hidden behind a
-detail toggle.
+view should show a bounded graph of default events. LLM turns and tool calls
+stay hidden until the user expands a node inline in the graph.
 
 This should become a dedicated Event Review page, not only an events table.
 The same page supports four common review starts:
@@ -460,12 +460,15 @@ Left rail:
 
 Center:
 
-- default timeline rendering for quick reading
+- default bounded graph rendering for quick reading
 - graph rendering for branch/merge/loop inspection
+- click a session node to expand that session inline into session events,
+  LLM/user turns, tool calls, tool results, and the closing session event
+- keep already expanded nodes open so two sessions can be compared side by side
+- collapse an expanded node when it is clicked again
 - expand/collapse repeated loop slices
 - show closure links distinctly
-- detail toggle for LLM turns, tool calls, context reads, and raw transcript
-  refs
+- rows/raw payloads are fallback audit views, not the primary detail surface
 
 Right inspector:
 

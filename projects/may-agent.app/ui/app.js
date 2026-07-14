@@ -28,9 +28,27 @@ const LEGACY_TAB_ALIAS = {
 
 function routeFromHash() {
   if (!location.hash) return '';
-  const rawHash = location.hash.replace(/^#\/?/, '');
-  if (!rawHash) return '/';
-  return rawHash.startsWith('/') ? rawHash : '/' + rawHash;
+  if (location.hash.startsWith('#/')) return location.hash.slice(1) || '/';
+  const rawHash = location.hash.slice(1);
+  if (!rawHash) return '';
+  const legacyHashRoutes = new Set(['dashboard', 'chat', 'events', 'system']);
+  const head = rawHash.split('/').filter(Boolean)[0] || '';
+  if (legacyHashRoutes.has(head)) return '/' + rawHash;
+  return '';
+}
+
+function currentAnchorId() {
+  if (!location.hash || routeFromHash()) return '';
+  try { return decodeURIComponent(location.hash.slice(1)); } catch { return location.hash.slice(1); }
+}
+
+function scrollToHashAnchor() {
+  const id = currentAnchorId();
+  if (!id) return;
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
 }
 
 function parseRouteString(route) {
@@ -173,7 +191,19 @@ function render() {
   if (tab === 'terminal') initTerminalPage(params.profileId || null);
   if (tab === 'system') {
     loadEvents();
-    if (params.eventId) setTimeout(() => loadEventGraph(params.eventId), 80);
+    if (params.eventId) {
+      setTimeout(() => {
+        const anchor = currentAnchorId();
+        if (anchor === 'event-details' || anchor === 'event-detail-rows') {
+          if (typeof _eventGraphView !== 'undefined') _eventGraphView = 'list';
+          if (typeof _eventGraphDetailView !== 'undefined') _eventGraphDetailView = anchor === 'event-detail-rows' ? 'rows' : 'graph';
+          loadEventGraph(params.eventId, { detail: true });
+        } else {
+          loadEventGraph(params.eventId);
+        }
+        if (anchor === 'loop-trace') loadLoopTrace(params.eventId);
+      }, 80);
+    }
   }
   if (tab === 'projects') {
     // Project id deep-link: /projects/<id>
@@ -187,6 +217,7 @@ function render() {
       loadProjects();
     }
   }
+  scrollToHashAnchor();
 }
 
 window.addEventListener('popstate', render);
@@ -194,8 +225,10 @@ window.addEventListener('hashchange', () => {
   const hashRoute = routeFromHash();
   if (hashRoute) {
     history.replaceState({}, '', hashRoute);
+    render();
+    return;
   }
-  render();
+  scrollToHashAnchor();
 });
 
 // ── WebSocket pub-sub ──────────────────────────────────────────────────

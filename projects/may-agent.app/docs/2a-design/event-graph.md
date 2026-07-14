@@ -12,7 +12,7 @@ event = node in the trace
 parentEventId = direct parent event
 links = related events that are not the direct parent
 attributes = event data
-detail events = expandable LLM/tool/session evidence
+detail nodes = expandable LLM/tool/session evidence
 ```
 
 Events remain the source of truth for cross-boundary work. The event graph does
@@ -25,6 +25,32 @@ records trace relationships so humans, agents, and UI can answer:
 - what closed it?
 - where did the chain stop?
 - which LLM turn or tool call made the decision?
+
+## Review Interaction
+
+The event review UI is graph-first.
+
+1. The user starts from an event id.
+2. The page renders a bounded graph around that event: lifecycle pair, direct
+   parent/reference/closure edges, and closely related session/workflow/task
+   nodes.
+3. The user clicks nodes in the graph to expand them inline.
+
+Expansion is scoped to the clicked node:
+
+- `session.start` or `session.end` expands that session into session events,
+  LLM turns, tool calls, tool results, and the closing session event.
+- workflow nodes expand workflow-level structure only when the workflow is
+  selected; a session click must not automatically explode the whole workflow.
+- task, escalation, and metric nodes expand their own lifecycle/context when a
+  projection exists.
+
+Multiple nodes may stay expanded at the same time. Clicking another session does
+not collapse the first one; this lets humans compare two sessions in one graph.
+Clicking an expanded node again collapses that node.
+
+Rows and raw payloads are fallback views. They are useful for exact audit, but
+the primary investigation surface is the graph with inline expansion.
 
 ## Core Model
 
