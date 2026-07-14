@@ -614,15 +614,33 @@ function itemLevel(item) {
   if (!item) return 0;
   if (item.kind === 'event') return 0;
   if (item.kind === 'session-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
-  if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event' || item.kind === 'more' || item.kind === 'more-event') return 1;
+  if (item.kind === 'more') return moreItemLevel(item.more);
+  if (item.kind === 'more-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
+  if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event' || item.kind === 'more-event') return 1;
   if (item.kind === 'tool') return 2;
   return 0;
+}
+
+function moreItemLevel(more) {
+  const nodes = more?.nodes || [];
+  if (more?.direction === 'context' && more?.scope === 'workflow' && nodes.some((node) => node.type === 'session.start' || node.type === 'session.end')) {
+    return 0;
+  }
+  return more?.direction === 'details' ? 1 : 0;
 }
 
 function graphXForLevel(level, eventX, turnX, toolX) {
   if (level >= 2) return toolX;
   if (level === 1) return turnX;
   return eventX;
+}
+
+function edgeRouteForItems(source, target) {
+  const sourceLevel = itemLevel(source);
+  const targetLevel = itemLevel(target);
+  if (sourceLevel > targetLevel) return 'return';
+  if (sourceLevel < targetLevel) return 'child';
+  return 'same';
 }
 
 function buildExpandedSessionEdges(displayItems) {
@@ -662,25 +680,27 @@ function buildMoreEdges(displayItems) {
   for (const item of displayItems) {
     if (item.kind !== 'more') continue;
     const parentKey = eventNodeKey(item.more?.parentEventId);
-    if (itemByKey.has(parentKey)) {
+    const parentItem = itemByKey.get(parentKey);
+    if (parentItem) {
       edges.push({
         sourceKey: parentKey,
         targetKey: item.key,
         type: 'more',
         label: item.more?.label || '...',
-        route: 'child',
+        route: edgeRouteForItems(parentItem, item),
       });
     }
     if (!_eventGraphExpandedMore[item.key]) continue;
     const children = displayItems.filter((candidate) => candidate.kind === 'more-event' && candidate.moreKey === item.key);
     let previousKey = item.key;
     for (const child of children) {
+      const previousItem = itemByKey.get(previousKey);
       edges.push({
         sourceKey: previousKey,
         targetKey: child.key,
         type: 'more-expanded',
         label: previousKey === item.key ? 'context' : '',
-        route: 'same',
+        route: previousItem ? edgeRouteForItems(previousItem, child) : 'same',
       });
       previousKey = child.key;
     }
