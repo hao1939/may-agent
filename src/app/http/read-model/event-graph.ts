@@ -27,11 +27,51 @@ export type EventGraphEdge = {
   label?: string;
 };
 
+export type EventGraphDisplayNode = {
+  key: string;
+  kind:
+    | "event"
+    | "session"
+    | "workflow"
+    | "turn"
+    | "tool_call"
+    | "tool_result"
+    | "metric"
+    | "notification"
+    | "diagnostic";
+  role?: "primary" | "detail" | "diagnostic";
+  parentKey?: string;
+  level?: number;
+  visibility: "default" | "detail";
+  eventId?: number;
+  sessionId?: string;
+  workflowRunId?: string;
+  turnIndex?: number;
+  toolCallId?: string;
+  timestamp?: number;
+  type?: string;
+  label: string;
+  summary?: string;
+  dataPreview?: Record<string, unknown>;
+  refs?: Record<string, string | number | boolean | null>;
+  order?: number;
+};
+
+export type EventGraphDisplayEdge = {
+  key: string;
+  sourceKey: string;
+  targetKey: string;
+  kind: "flow" | "reference" | "closure" | "detail" | "tool_call" | "tool_result" | "return";
+  label?: string;
+};
+
 export type EventGraphResponse = {
   focusEventId: number;
   traceId?: string;
   nodes: EventGraphNode[];
   edges: EventGraphEdge[];
+  displayNodes?: EventGraphDisplayNode[];
+  displayEdges?: EventGraphDisplayEdge[];
   eventList?: EventGraphNode[];
   eventListScope?: {
     kind: "session" | "workflow" | "task" | "graph";
@@ -206,6 +246,75 @@ function nodeFromRow(row: Row): EventGraphNode | null {
     ...(summary ? { summary } : {}),
     ...(previewData(data) ? { dataPreview: previewData(data) } : {}),
   };
+}
+
+function eventNodeKey(eventId: number): string {
+  return `event:${eventId}`;
+}
+
+function nodeKindForEventType(type: string | undefined): EventGraphDisplayNode["kind"] {
+  if (!type) return "event";
+  if (type.startsWith("session.")) return "session";
+  if (type.startsWith("workflow.") || type.startsWith("handler.workflow_")) return "workflow";
+  if (type.startsWith("metric.")) return "metric";
+  if (type.startsWith("message.") || type.startsWith("human.") || type.startsWith("telegram.")) return "notification";
+  if (type.includes("skipped") || type.includes("guard") || type.includes("orphan")) return "diagnostic";
+  return "event";
+}
+
+function displayNodeFromEventNode(
+  node: EventGraphNode,
+  options: { parentKey?: string; level?: number; role?: EventGraphDisplayNode["role"] } = {},
+): EventGraphDisplayNode {
+  const sessionId = stringValue(node.dataPreview?.sessionId) ?? stringValue(node.dataPreview?.session_id);
+  const workflowRunId = stringValue(node.dataPreview?.workflowRunId) ?? stringValue(node.dataPreview?.workflow_run_id);
+  const kind = nodeKindForEventType(node.type);
+  const role = options.role ?? (kind === "diagnostic" ? "diagnostic" : options.parentKey ? "detail" : "primary");
+  return {
+    key: eventNodeKey(node.id),
+    kind,
+    role,
+    ...(options.parentKey ? { parentKey: options.parentKey } : {}),
+    level: options.level ?? (options.parentKey ? 1 : 0),
+    visibility: options.parentKey ? "detail" : node.visibility,
+    eventId: node.id,
+    ...(sessionId ? { sessionId } : {}),
+    ...(workflowRunId ? { workflowRunId } : {}),
+    timestamp: node.timestamp,
+    type: node.type,
+    label: node.label,
+    ...(node.summary ? { summary: node.summary } : {}),
+    ...(node.dataPreview ? { dataPreview: node.dataPreview } : {}),
+    refs: {
+      eventId: node.id,
+      ...(sessionId ? { sessionId } : {}),
+      ...(workflowRunId ? { workflowRunId } : {}),
+    },
+  };
+}
+
+function displayEdgeKey(edge: Omit<EventGraphDisplayEdge, "key">): string {
+  return `${edge.kind}:${edge.sourceKey}:${edge.targetKey}:${edge.label ?? ""}`;
+}
+
+function displayEdgeFromEventEdge(edge: EventGraphEdge): EventGraphDisplayEdge {
+  const kind: EventGraphDisplayEdge["kind"] =
+    edge.type === "closure" ? "closure" : edge.type === "reference" ? "reference" : "flow";
+  const sourceKey = eventNodeKey(edge.source);
+  const targetKey = eventNodeKey(edge.target);
+  return {
+    key: displayEdgeKey({ sourceKey, targetKey, kind, label: edge.label }),
+    sourceKey,
+    targetKey,
+    kind,
+    ...(edge.label ? { label: edge.label } : {}),
+  };
+}
+
+function addDisplayEdge(edges: Map<string, EventGraphDisplayEdge>, edge: Omit<EventGraphDisplayEdge, "key">): void {
+  if (!edge.sourceKey || !edge.targetKey || edge.sourceKey === edge.targetKey) return;
+  const key = displayEdgeKey(edge);
+  edges.set(key, { ...edge, key });
 }
 
 function edgeKey(edge: EventGraphEdge): string {
@@ -770,6 +879,145 @@ function loadEventListRows(
   };
 }
 
+function nodeSessionId(node: EventGraphNode | undefined): string | undefined {
+  return stringValue(node?.dataPreview?.sessionId) ?? stringValue(node?.dataPreview?.session_id);
+}
+
+function nodeWorkflowRunId(node: EventGraphNode | undefined): string | undefined {
+  return stringValue(node?.dataPreview?.workflowRunId) ?? stringValue(node?.dataPreview?.workflow_run_id);
+}
+
+function detailParentKeyForNode(
+  node: EventGraphNode,
+  primaryNodes: EventGraphNode[],
+  focusEventId: number,
+): string {
+  const sessionId = nodeSessionId(node);
+  if (sessionId) {
+    const sessionStart = primaryNodes.find((item) => item.type === "session.start" && nodeSessionId(item) === sessionId);
+    if (sessionStart) return eventNodeKey(sessionStart.id);
+    const sessionEnd = primaryNodes.find((item) => item.type === "session.end" && nodeSessionId(item) === sessionId);
+    if (sessionEnd) return eventNodeKey(sessionEnd.id);
+  }
+
+  const workflowRunId = nodeWorkflowRunId(node);
+  if (workflowRunId) {
+    const workflowNode = primaryNodes.find((item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("workflow."));
+    if (workflowNode) return eventNodeKey(workflowNode.id);
+    const sessionNode = primaryNodes.find((item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("session."));
+    if (sessionNode) return eventNodeKey(sessionNode.id);
+  }
+
+  return eventNodeKey(focusEventId);
+}
+
+function detailReturnKeyForParent(parentKey: string, primaryNodes: EventGraphNode[]): string | undefined {
+  const parentId = Number(parentKey.replace(/^event:/, ""));
+  const parent = primaryNodes.find((node) => node.id === parentId);
+  if (!parent) return undefined;
+  const sessionId = nodeSessionId(parent);
+  if (sessionId && parent.type === "session.start") {
+    const end = primaryNodes.find((node) => node.type === "session.end" && nodeSessionId(node) === sessionId);
+    if (end) return eventNodeKey(end.id);
+  }
+  return undefined;
+}
+
+function buildDisplayGraph(
+  focusEventId: number,
+  nodes: EventGraphNode[],
+  edges: EventGraphEdge[],
+  eventList: EventGraphNode[],
+): { displayNodes: EventGraphDisplayNode[]; displayEdges: EventGraphDisplayEdge[] } {
+  const displayNodes = new Map<string, EventGraphDisplayNode>();
+  const displayEdges = new Map<string, EventGraphDisplayEdge>();
+  const primaryIds = new Set(nodes.map((node) => node.id));
+
+  for (const node of nodes) {
+    displayNodes.set(eventNodeKey(node.id), displayNodeFromEventNode(node));
+  }
+
+  for (const edge of edges) {
+    const displayEdge = displayEdgeFromEventEdge(edge);
+    displayEdges.set(displayEdge.key, displayEdge);
+  }
+
+  const detailByParent = new Map<string, EventGraphDisplayNode[]>();
+  for (const node of eventList) {
+    if (primaryIds.has(node.id)) continue;
+    const parentKey = detailParentKeyForNode(node, nodes, focusEventId);
+    const detailNode = displayNodeFromEventNode(node, {
+      parentKey,
+      level: 1,
+      role: nodeKindForEventType(node.type) === "diagnostic" ? "diagnostic" : "detail",
+    });
+    displayNodes.set(detailNode.key, detailNode);
+    detailByParent.set(parentKey, [...(detailByParent.get(parentKey) ?? []), detailNode]);
+  }
+
+  for (const [parentKey, children] of detailByParent) {
+    const ordered = children.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0) || (a.eventId ?? 0) - (b.eventId ?? 0));
+    let previousKey = parentKey;
+    for (const child of ordered) {
+      addDisplayEdge(displayEdges, {
+        sourceKey: previousKey,
+        targetKey: child.key,
+        kind: previousKey === parentKey ? "detail" : "flow",
+        label: previousKey === parentKey ? "detail" : undefined,
+      });
+      previousKey = child.key;
+    }
+    const returnKey = detailReturnKeyForParent(parentKey, nodes);
+    if (returnKey && previousKey !== parentKey) {
+      addDisplayEdge(displayEdges, {
+        sourceKey: previousKey,
+        targetKey: returnKey,
+        kind: "return",
+        label: "return",
+      });
+    }
+  }
+
+  const childNodes = new Map<string, EventGraphDisplayNode[]>();
+  const rootNodes: EventGraphDisplayNode[] = [];
+  for (const node of displayNodes.values()) {
+    if (node.parentKey) {
+      childNodes.set(node.parentKey, [...(childNodes.get(node.parentKey) ?? []), node]);
+    } else {
+      rootNodes.push(node);
+    }
+  }
+
+  const byKey = new Map(displayNodes);
+  const ordered: EventGraphDisplayNode[] = [];
+  const visited = new Set<string>();
+  const chronological = (a: EventGraphDisplayNode, b: EventGraphDisplayNode) =>
+    (a.timestamp ?? 0) - (b.timestamp ?? 0) ||
+    (a.eventId ?? 0) - (b.eventId ?? 0) ||
+    a.key.localeCompare(b.key);
+  const appendNode = (node: EventGraphDisplayNode, fallbackLevel: number): void => {
+    if (visited.has(node.key)) return;
+    visited.add(node.key);
+    const level = Number.isFinite(Number(node.level)) ? Number(node.level) : fallbackLevel;
+    ordered.push({ ...node, level, order: ordered.length });
+    for (const child of [...(childNodes.get(node.key) ?? [])].sort(chronological)) {
+      appendNode(child, level + 1);
+    }
+  };
+
+  for (const primary of nodes) {
+    const node = byKey.get(eventNodeKey(primary.id));
+    if (node) appendNode(node, 0);
+  }
+  for (const node of rootNodes.sort(chronological)) appendNode(node, 0);
+  for (const node of [...displayNodes.values()].sort(chronological)) appendNode(node, node.parentKey ? 1 : 0);
+
+  return {
+    displayNodes: ordered,
+    displayEdges: [...displayEdges.values()],
+  };
+}
+
 function loadFallbackPairRows(db: SqliteDb, focusEventId: number): { rows: Row[]; edges: EventGraphEdge[] } {
   const pairs = safeAll(
     db,
@@ -908,6 +1156,7 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+  const displayGraph = buildDisplayGraph(focusEventId, nodes, visibleEdges, eventList);
 
   if (!nodes.some((node) => node.id === focusEventId)) {
     diagnostics.push("focus event is hidden by current detail filter");
@@ -918,6 +1167,8 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
     ...(traceId ? { traceId } : {}),
     nodes,
     edges: visibleEdges,
+    displayNodes: displayGraph.displayNodes,
+    displayEdges: displayGraph.displayEdges,
     eventList,
     eventListScope: eventListProjection.scope,
     diagnostics,

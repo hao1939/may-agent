@@ -489,6 +489,20 @@ function chronologicalNodes(nodes) {
   return [...(nodes || [])].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0) || Number(a.id || 0) - Number(b.id || 0));
 }
 
+function graphTimestampValue(value) {
+  if (value == null || value === '') return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function transcriptItemTimestamp(item) {
+  return graphTimestampValue(item?.timestamp) ??
+    graphTimestampValue(item?.assistant?.timestamp) ??
+    graphTimestampValue(item?.toolResults?.[0]?.timestamp);
+}
+
 function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()) {
   if (expansion?.loading) {
     return [{ kind: 'status', key: `status:${sessionId}:loading`, sessionId, status: 'loading', label: 'loading transcript' }];
@@ -503,21 +517,32 @@ function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()
     if (visibleEventIds.has(Number(node.id))) return false;
     return true;
   });
-  const items = [
-    ...flow.map((item, index) => ({
+  const flowItems = flow.map((item, index) => ({
       kind: 'turn',
       key: `turn:${sessionId}:${index}`,
       sessionId,
       item,
       turnIndex: index + 1,
-    })),
-    ...sessionEvents.map((node) => ({
+      sortTime: transcriptItemTimestamp(item),
+      sortIndex: index,
+    }));
+  const eventItems = sessionEvents.map((node, index) => ({
       kind: 'session-event',
       key: `session-event:${sessionId}:${node.id}`,
       sessionId,
       node,
-    })),
-  ];
+      sortTime: graphTimestampValue(node.timestamp),
+      sortIndex: flowItems.length + index,
+    }));
+  const canAlignByTime = [...flowItems, ...eventItems].filter((item) => item.sortTime != null).length >= 2;
+  const items = canAlignByTime
+    ? [...flowItems, ...eventItems].sort((a, b) => {
+        if (a.sortTime == null && b.sortTime == null) return a.sortIndex - b.sortIndex;
+        if (a.sortTime == null) return 1;
+        if (b.sortTime == null) return -1;
+        return a.sortTime - b.sortTime || a.sortIndex - b.sortIndex;
+      })
+    : [...flowItems, ...eventItems];
   if (!items.length) {
     return [{ kind: 'status', key: `status:${sessionId}:empty`, sessionId, status: 'empty', label: 'no session details' }];
   }
