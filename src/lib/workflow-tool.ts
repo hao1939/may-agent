@@ -1,5 +1,6 @@
-import { readdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
 import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -36,6 +37,9 @@ export interface WorkflowRun {
   status: "running" | "done" | "blocked" | "escalated" | "interrupted" | "error";
   steps: WorkflowStep[];
   resumedFromRunId?: string;
+  sourcePath?: string;
+  sourceScope?: "agent" | "project";
+  entryContentHash?: string;
   result?: {
     summary?: string;
     reason?: string;
@@ -232,72 +236,101 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
   }
 }
 
-async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
+async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"): Promise<WorkflowModule> {
   const mod = await importRuntimeModule<{ name?: unknown; description?: unknown; execute?: unknown }>(filePath);
+  if (typeof mod.name !== "string" || !mod.name.trim()) {
+    throw new Error(`Workflow file ${filePath} must export a non-empty 'name' string`);
+  }
+  if (typeof mod.description !== "string" || !mod.description.trim()) {
+    throw new Error(`Workflow file ${filePath} must export a non-empty 'description' string`);
+  }
   const execute = mod.execute;
   if (typeof execute !== "function") {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
   }
-  // name: use export, or derive from filename (e.g. "scout-heartbeat.ts" → "scout-heartbeat")
-  const name = typeof mod.name === "string" ? mod.name : (filePath.split("/").pop()?.replace(/\.ts$/, "") ?? "unknown");
   return {
-    name,
-    description: typeof mod.description === "string" ? mod.description : "(no description)",
+    name: mod.name.trim(),
+    description: mod.description.trim(),
     execute: execute as WorkflowModule["execute"],
+    sourcePath: filePath,
+    sourceScope,
+    entryContentHash: createHash("sha256").update(readFileSync(filePath)).digest("hex"),
   };
 }
 
-function listWorkflowFiles(workflowDir: string, projectWorkflowDir?: string): string[] {
-  const files: string[] = [];
-  const seenNames = new Set<string>();
-  const pushDir = (dir: string | undefined) => {
-    if (!dir) return;
-    try {
-      const dirFiles = readdirSync(dir)
-        .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.includes("-helpers") && !f.includes("-utils"))
-        .sort();
-      for (const f of dirFiles) {
-        if (seenNames.has(f)) continue;
-        seenNames.add(f);
-        files.push(join(dir, f));
-      }
-    } catch {
-      // dir may not exist
-    }
-  };
-  // Precedence: project > agent.
-  // First in wins because findWorkflow scans in order and returns the first match.
-  pushDir(projectWorkflowDir);
-  pushDir(workflowDir);
-  return files;
+function listWorkflowFiles(workflowDir: string | undefined): string[] {
+  if (!workflowDir) return [];
+  try {
+    const trustedRoot = realpathSync(workflowDir);
+    return readdirSync(workflowDir)
+      .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.includes("-helpers") && !f.includes("-utils"))
+      .sort()
+      .map((file) => realpathSync(join(workflowDir, file)))
+      .filter((filePath) => {
+        const fromRoot = relative(trustedRoot, filePath);
+        return fromRoot !== ".." && !fromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) && !isAbsolute(fromRoot);
+      });
+  } catch {
+    return [];
+  }
 }
 
-async function findWorkflow(
-  workflowDir: string,
-  name: string,
-  projectWorkflowDir?: string,
-): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
-  const files = listWorkflowFiles(workflowDir, projectWorkflowDir);
-  const loadErrors: string[] = [];
+interface WorkflowCatalog {
+  readonly workflows: ReadonlyMap<string, WorkflowModule>;
+  readonly diagnostics: readonly string[];
+}
 
-  for (const filePath of files) {
+async function loadWorkflowScope(
+  dir: string | undefined,
+  scope: "agent" | "project",
+): Promise<{ workflows: Map<string, WorkflowModule>; diagnostics: string[] }> {
+  const grouped = new Map<string, WorkflowModule[]>();
+  const diagnostics: string[] = [];
+  for (const filePath of listWorkflowFiles(dir)) {
     try {
-      const wf = await loadWorkflow(filePath);
-      if (wf.name === name) {
-        return { workflow: wf, error: null };
-      }
+      const workflow = await loadWorkflow(filePath, scope);
+      const matches = grouped.get(workflow.name) ?? [];
+      matches.push(workflow);
+      grouped.set(workflow.name, matches);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      const shortPath = filePath.split("/").slice(-3).join("/");
-      loadErrors.push(`${shortPath}: ${msg}`);
+      diagnostics.push(`${filePath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  const error =
-    loadErrors.length > 0
-      ? `Workflow "${name}" not found. Load errors:\n  ${loadErrors.join("\n  ")}`
-      : `Workflow "${name}" not found`;
-  return { workflow: null, error };
+  const workflows = new Map<string, WorkflowModule>();
+  for (const [name, matches] of grouped) {
+    if (matches.length > 1) {
+      diagnostics.push(
+        `Ambiguous ${scope} workflow name "${name}": ${matches.map((item) => item.sourcePath).join(", ")}`,
+      );
+      continue;
+    }
+    workflows.set(name, matches[0]);
+  }
+  return { workflows, diagnostics };
+}
+
+async function buildWorkflowCatalog(
+  workflowDir: string,
+  projectWorkflowDir?: string,
+): Promise<WorkflowCatalog> {
+  const [agent, project] = await Promise.all([
+    loadWorkflowScope(workflowDir, "agent"),
+    loadWorkflowScope(projectWorkflowDir, "project"),
+  ]);
+  const workflows = new Map(agent.workflows);
+  for (const [name, workflow] of project.workflows) workflows.set(name, workflow);
+  return Object.freeze({
+    workflows,
+    diagnostics: Object.freeze([...agent.diagnostics, ...project.diagnostics]),
+  });
+}
+
+function findWorkflow(catalog: WorkflowCatalog, name: string): { workflow: WorkflowModule | null; error: string | null } {
+  const workflow = catalog.workflows.get(name) ?? null;
+  if (workflow) return { workflow, error: null };
+  const diagnostics = catalog.diagnostics.length > 0 ? ` Catalog diagnostics:\n  ${catalog.diagnostics.join("\n  ")}` : "";
+  return { workflow: null, error: `Workflow "${name}" not found.${diagnostics}` };
 }
 
 // ── Guard Discovery ────────────────────────────────────────────────────
@@ -372,7 +405,7 @@ export function emitAndCollectDemands(guards: WorkflowGuard[], event: WorkflowGu
   return demands;
 }
 
-type GuardSignalAction = "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+type GuardSignalAction = "observed" | "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
 type GuardSignalEmitter = (demand: Demand, action: GuardSignalAction, extra?: Record<string, unknown>) => void;
 
 /** Resolve a list of demands: run injected steps, emit warnings, or block. */
@@ -398,7 +431,7 @@ async function resolveDemands(
   const seenRunStepLabels = new Set<string>();
   const dedupedDemands: Demand[] = [];
   for (const demand of demands) {
-    if (demand.type === "run_step") {
+    if (demand.type === "run_step" || demand.type === "repair") {
       const label = demand.step?.label ?? demand.reason;
       if (seenRunStepLabels.has(label)) {
         log("info", `[guards] Deduplicating run_step demand with label "${label}" from "${demand.guardName}"`);
@@ -417,6 +450,15 @@ async function resolveDemands(
 
   for (const demand of dedupedDemands) {
     switch (demand.type) {
+      case "observe":
+        log("info", `[guards] OBSERVE from "${demand.guardName}": ${demand.reason}`);
+        emitGuardSignal?.(demand, "observed", {
+          sourceEventType: sourceEvent.type,
+          step: "step" in sourceEvent ? sourceEvent.step : undefined,
+          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
+        });
+        break;
+
       case "block":
         log("warn", `[guards] BLOCK from "${demand.guardName}": ${demand.reason}`);
         emitGuardSignal?.(demand, "blocked", {
@@ -436,6 +478,7 @@ async function resolveDemands(
         warnings.push(`${demand.reason} (from: ${demand.guardName})`);
         break;
 
+      case "repair":
       case "run_step": {
         if (!demand.step) {
           log("warn", `[guards] run_step demand from "${demand.guardName}" missing step config, skipping`);
@@ -841,6 +884,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
    *  no longer applies.
    */
   async function executeWorkflow(
+    catalog: WorkflowCatalog,
     workflow: WorkflowModule,
     task: string,
     depth: number,
@@ -856,8 +900,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const callerMeta = getCallerSessionMeta(parentSessionId);
     const effectiveProjectId = previousRun?.projectId ?? opts.projectId ?? callerMeta.projectId;
     const projectTaskContext = projectTaskContextFromTask(task, effectiveProjectId);
-    // Once we detect a mismatch (workflow code changed), stop replaying
-    let replayExhausted = false;
+    const revisionMatches = Boolean(
+      previousRun?.entryContentHash && previousRun.entryContentHash === workflow.entryContentHash,
+    );
+    let replayExhausted = !revisionMatches;
 
     // Create the workflow run record (DB-backed)
     const run: WorkflowRun = {
@@ -872,6 +918,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       status: "running",
       steps: [],
       resumedFromRunId: previousRun?.runId,
+      sourcePath: workflow.sourcePath,
+      sourceScope: workflow.sourceScope,
+      entryContentHash: workflow.entryContentHash,
     };
     if (persistDir) {
       insertWorkflowRun(persistDir, {
@@ -888,6 +937,43 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         result_summary: null,
         result_reason: null,
         resumedFromRunId: previousRun?.runId ?? null,
+        sourcePath: workflow.sourcePath,
+        sourceScope: workflow.sourceScope,
+        entryContentHash: workflow.entryContentHash,
+      });
+    }
+    emitRuntimeEvent({
+      type: "workflow.started",
+      source: `workflow:${workflow.name}`,
+      owner: normalizeEventOwner(opts.agentName),
+      data: {
+        workflowRunId: runId,
+        workflow: workflow.name,
+        task: truncate(task, 2_000),
+        projectId: effectiveProjectId,
+        parentSessionId,
+        parentWorkflowRunId,
+        resumedFromRunId: previousRun?.runId,
+        sourcePath: workflow.sourcePath,
+        sourceScope: workflow.sourceScope,
+        entryContentHash: workflow.entryContentHash,
+      },
+    });
+    if (previousRun && !revisionMatches) {
+      emitRuntimeEvent({
+        type: "workflow.resume_restarted",
+        source: `workflow:${workflow.name}`,
+        owner: normalizeEventOwner(opts.agentName),
+        data: {
+          workflowRunId: runId,
+          resumedFromRunId: previousRun.runId,
+          workflow: workflow.name,
+          reason: previousRun.entryContentHash
+            ? "workflow entry revision changed"
+            : "previous run has no workflow revision provenance",
+          previousEntryContentHash: previousRun.entryContentHash,
+          entryContentHash: workflow.entryContentHash,
+        },
       });
     }
 
@@ -950,7 +1036,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       // actual fresh/resumed work and should not be satisfied from replay alone.
       if (!sessionToReuse && previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
         const prevStep = previousRun.steps[currentStep];
-        if (prevStep.agent === agentName) {
+        if (prevStep.agent === agentName && prevStep.task === agentTask) {
           try {
             const taskResult = manager.result(prevStep.sessionId);
             const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
@@ -1264,7 +1350,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           return { type: "blocked", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
         }
 
-        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName, projectWorkflowDir);
+        const { workflow: subWf, error: subErr } = findWorkflow(catalog, wfName);
         if (!subWf) {
           return { type: "blocked", reason: subErr ?? `Workflow "${wfName}" not found` };
         }
@@ -1272,6 +1358,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         onEvent?.({ type: "workflow.started", workflow: subWf.name, task: wfTask });
 
         const sub = await executeWorkflow(
+          catalog,
           subWf,
           wfTask,
           depth + 1,
@@ -1452,6 +1539,18 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           parentWorkflowRunId,
         });
       }
+      emitRuntimeEvent({
+        type: result.type === "done" ? "workflow.completed" : "workflow.blocked",
+        source: `workflow:${workflow.name}`,
+        owner: normalizeEventOwner(opts.agentName),
+        data: {
+          workflowRunId: runId,
+          workflow: workflow.name,
+          projectId: effectiveProjectId,
+          durationMs: run.endedAt - run.startedAt,
+          ...(result.type === "done" ? { summary: result.summary } : { reason: result.reason, context: result.context }),
+        },
+      });
 
       return { result, runId, steps: localSteps };
     } catch (err) {
@@ -1483,6 +1582,28 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           parentWorkflowRunId,
         });
       }
+      emitRuntimeEvent({
+        type:
+          err instanceof WorkflowInterrupted
+            ? "workflow.interrupted"
+            : err instanceof WorkflowBlocked
+              ? "workflow.blocked"
+              : "workflow.failed",
+        source: `workflow:${workflow.name}`,
+        owner: normalizeEventOwner(opts.agentName),
+        data: {
+          workflowRunId: runId,
+          workflow: workflow.name,
+          projectId: effectiveProjectId,
+          durationMs: run.endedAt - run.startedAt,
+          reason:
+            err instanceof WorkflowInterrupted
+              ? err.steeringMessage
+              : err instanceof Error
+                ? err.message
+                : String(err),
+        },
+      });
       throw err;
     }
   }
@@ -1490,6 +1611,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   /** Shared logic for both 'run' and 'resume' actions — sets up steering,
    *  executes the workflow, and maps the result to a tool response. */
   async function runOrResume(
+    catalog: WorkflowCatalog,
     workflow: WorkflowModule,
     task: string,
     depth: number,
@@ -1506,6 +1628,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     try {
       const { result, runId } = await executeWorkflow(
+        catalog,
         workflow,
         task,
         depth,
@@ -1601,22 +1724,21 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     execute: async (_toolCallId, _params) => {
       const params = _params as WorkflowInput;
+      const catalog = await buildWorkflowCatalog(workflowDir, projectWorkflowDir);
       switch (params.action) {
         case "list": {
-          const files = listWorkflowFiles(workflowDir, projectWorkflowDir);
-          const workflows: Array<{ name: string; description: string }> = [];
-
-          for (const filePath of files) {
-            try {
-              const wf = await loadWorkflow(filePath);
-              workflows.push({ name: wf.name, description: wf.description });
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              workflows.push({ name: filePath, description: `(load error: ${msg})` });
-            }
-          }
-
-          const result: WorkflowToolResult = { type: "list", workflows };
+          const workflows = [...catalog.workflows.values()]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((workflow) => ({
+              name: workflow.name,
+              description: workflow.description,
+              sourceScope: workflow.sourceScope,
+            }));
+          const result: WorkflowToolResult = {
+            type: "list",
+            workflows,
+            ...(catalog.diagnostics.length > 0 ? { diagnostics: [...catalog.diagnostics] } : {}),
+          };
           return textResult(JSON.stringify(result, null, 2));
         }
 
@@ -1625,14 +1747,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
           }
 
-          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name, projectWorkflowDir);
+          const { workflow, error: findError } = findWorkflow(catalog, params.name);
           if (!workflow) {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
 
           const callerSessionId = resolveCallerSessionId();
           const callerMeta = getCallerSessionMeta(callerSessionId);
-          return runOrResume(workflow, params.task, 1, callerSessionId, callerMeta.workflowRunId);
+          return runOrResume(catalog, workflow, params.task, 1, callerSessionId, callerMeta.workflowRunId);
         }
 
         case "resume": {
@@ -1683,6 +1805,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             endedAt: prevRunRecord.endedAt ?? undefined,
             status: prevRunRecord.status as WorkflowRun["status"],
             resumedFromRunId: prevRunRecord.resumedFromRunId ?? undefined,
+            sourcePath: prevRunRecord.sourcePath ?? undefined,
+            sourceScope: prevRunRecord.sourceScope ?? undefined,
+            entryContentHash: prevRunRecord.entryContentHash ?? undefined,
             steps: stepSessions.map((s) => ({
               sessionId: s.sessionId,
               agent: s.agent,
@@ -1730,11 +1855,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify(result, null, 2));
           }
 
-          const { workflow: resumeWf, error: resumeFindError } = await findWorkflow(
-            workflowDir,
-            prevRun.workflow,
-            projectWorkflowDir,
-          );
+          const { workflow: resumeWf, error: resumeFindError } = findWorkflow(catalog, prevRun.workflow);
           if (!resumeWf) {
             return workflowResumeError({
               workflowRunId: prevRun.runId,
@@ -1747,6 +1868,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           }
 
           return runOrResume(
+            catalog,
             resumeWf,
             prevRun.task,
             prevRun.depth,

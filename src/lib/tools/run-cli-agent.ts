@@ -43,6 +43,17 @@ const paramsSchema = Type.Object({
       description: "Optional isolated worktree for patch mode.",
     }),
   ),
+  worktreePolicy: Type.Optional(
+    Type.Union([Type.Literal("use-existing"), Type.Literal("require")], {
+      description: "Patch isolation policy. 'require' rejects patch work without an explicitly prepared worktree.",
+    }),
+  ),
+  expectedOutput: Type.Optional(
+    Type.Object({
+      format: Type.Union([Type.Literal("markdown"), Type.Literal("json")]),
+      requiredFields: Type.Optional(Type.Array(Type.String())),
+    }, { description: "Optional deterministic output contract checked by the runner." }),
+  ),
   resumeSessionId: Type.Optional(
     Type.String({
       description: "Optional native Claude/Codex session id to resume.",
@@ -111,6 +122,9 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
       const eventsPath = join(dir, "events.jsonl");
       const cwd = safeCwd(opts.projectRoot, params.cwd);
       const mode = params.mode ?? "investigate";
+      if (mode === "patch" && params.worktreePolicy === "require" && !params.worktree) {
+        return textResult(JSON.stringify({ error: "patch mode requires an explicitly prepared worktree" }));
+      }
       const sandbox = params.sandbox ?? defaultSandbox(params.tool, mode);
       const timeoutMs = params.timeoutMs && Number.isFinite(params.timeoutMs) ? params.timeoutMs : DEFAULT_TIMEOUT_MS;
 
@@ -136,6 +150,8 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
             reuseSession: params.reuseSession === true,
             files: params.files,
             worktree: params.worktree,
+            worktreePolicy: params.worktreePolicy,
+            expectedOutput: params.expectedOutput,
             requestedAt: new Date().toISOString(),
           },
           null,
@@ -166,6 +182,8 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           reuseSession: params.reuseSession === true,
           files: params.files,
           worktree: params.worktree,
+          worktreePolicy: params.worktreePolicy,
+          expectedOutput: params.expectedOutput,
         },
         ...(trace ? { trace } : {}),
       });

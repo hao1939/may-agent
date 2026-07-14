@@ -1,6 +1,7 @@
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";
+import type { SkillCatalog } from "./skills.js";
 
 /**
  * Model with an optional apiKey attached at runtime.
@@ -53,6 +54,9 @@ export interface SubagentDefinition {
    * Kept while older agent.json files migrate away from context_files.
    */
   contextFiles?: string[];
+
+  /** Validated, precedence-resolved skill snapshot used by new turns. */
+  skillCatalog?: SkillCatalog;
 }
 
 /** Runtime info about a session. */

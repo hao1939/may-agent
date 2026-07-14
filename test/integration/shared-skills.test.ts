@@ -28,8 +28,8 @@ describe("shared system skills", () => {
       const fm = frontmatter(content);
       expect(fm).toContain("name:");
       expect(fm).toContain("description:");
-      expect(fm).toContain("owner:");
-      expect(fm).toContain("tools:");
+      expect(fm).not.toContain("owner:");
+      expect(fm).not.toContain("tools:");
       expect(content).toContain("## When to Apply");
       expect(content).toContain("## Core Rule");
       expect(content).toContain("## Anti-Patterns");
@@ -41,14 +41,14 @@ describe("shared system skills", () => {
     expect(content).toContain("Intensive work");
     expect(content).toContain("Monitoring");
     expect(content).toContain("A project is not a ritual");
-    expect(content).toContain("goal currently satisfied; monitoring continues");
+    expect(content).toContain("move to monitoring when the goal is currently satisfied");
     expect(content).not.toContain("run_mode:");
   });
 
   it("control-plane-operation keeps agents on the event/workflow boundary", () => {
     const content = readSkill("shared/skills/control-plane-operation/SKILL.md");
-    expect(content).toContain("external input -> socket/control event -> daemon event -> handler -> workflow");
-    expect(content).toContain("handler bridge -> workflow");
+    expect(content).toContain("human input -> human.input.received -> one semantic intent");
+    expect(content).toContain("event/timer -> handler -> workflow");
     expect(content).toContain("docker exec may-agent may-agent --emit");
     expect(content).toContain("Do not add socket candidate scanning");
   });

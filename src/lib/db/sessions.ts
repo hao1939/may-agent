@@ -102,7 +102,7 @@ export function updateSessionDb(
     `UPDATE sessions SET
       status = ?,
       endedAt = COALESCE(?, endedAt),
-      error = ?,
+      error = COALESCE(?, error),
       outcome = COALESCE(?, outcome),
       opCount = CASE WHEN ? > opCount THEN ? ELSE opCount END,
       lastActivityAt = CASE
