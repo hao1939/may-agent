@@ -124,6 +124,11 @@ Around the selected event, show direct evidence:
 - direct emitted follow-up events;
 - detail children when the selected node is expanded.
 
+The default API/UI radius is one direct graph hop around the selected event.
+The structural parent path and start point are included regardless of radius, so
+a deep selected event still shows where the chain began. Wider exploration
+should happen by expanding `more` nodes or requesting a larger depth explicitly.
+
 Do not auto-expand broader context such as same workflow, same task, same
 metric, or same owner inbox. Show those as expandable boundaries.
 

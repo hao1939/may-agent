@@ -458,6 +458,11 @@ expanded detail children. Broader same-workflow, same-task, same-session,
 same-metric, and same-owner context should appear as `...` boundary nodes until
 the user expands them.
 
+Default graph radius is one direct hop around the selected event. The start
+point and structural parent path are always included even when they are farther
+away, so the graph has a clear beginning without dumping every correlated
+branch.
+
 Every step should link to the strongest available object:
 
 - event id -> `/events/:eventId`
