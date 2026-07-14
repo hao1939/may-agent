@@ -34,6 +34,9 @@ export type EventSelector =
     };
 
 export type ProjectAppContext = {
+  workspacePath(path: string): string;
+  workspaceCwd(): string;
+  /** @deprecated Use workspacePath(). */
   projectPath(path: string): string;
   appPath(path: string): string;
   readJson<T = unknown>(path: string): Promise<T>;

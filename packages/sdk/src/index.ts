@@ -353,7 +353,7 @@ export interface AgentSDK {
   metrics: MetricService;
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
-  escalate(reason: string, opts?: EscalationOptions): void;
+  escalate(reason: string, opts?: EscalationOptions): EscalationRef;
   paths: {
     persist: string;
     root: string;
@@ -363,11 +363,12 @@ export interface AgentSDK {
   };
 }
 
-export interface WorkflowSDK extends AgentSDK {
+export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
   task: string;
   agent: string;
   done(summary: string, opts?: DoneOpts): SDKWorkflowResult;
-}
+  escalate(reason: string, opts?: EscalationOptions): SDKWorkflowResult;
+};
 
 export interface EventEnvelopeOptions {
   owner?: string;
@@ -392,6 +393,11 @@ export interface EscalationOptions extends EventEnvelopeOptions {
   sourceSessionId?: string;
   resume?: Record<string, unknown>;
   dedupKey?: string;
+}
+
+export interface EscalationRef {
+  eventId: number;
+  compatibilityId: string;
 }
 
 // ── Handler / cron contract ───────────────────────────────────────────

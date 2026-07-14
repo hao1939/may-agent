@@ -49,7 +49,7 @@ import {
   getDb,
 } from "./requests.js";
 import { readIdentity } from "./detached.js";
-import type { EventBus } from "../app/event-bus.js";
+import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession } from "./persistence.js";
 import { log } from "./log.js";
@@ -97,6 +97,7 @@ export interface RunOptions {
   startedAt?: number;
   timeoutMs?: number;
   resumeMessages?: AgentMessage[];
+  trace?: EventTrace;
 }
 
 interface ActiveSession {
@@ -120,6 +121,9 @@ interface ActiveSession {
   requestId?: string;
   projectId?: string;
   resumeMessages?: AgentMessage[];
+  trace?: EventTrace;
+  /** Semantic intent traces merged into the currently executing turn. */
+  openTurnTraces: EventTrace[];
 }
 
 type DispatchDedupDb = {
@@ -365,6 +369,7 @@ export class SubagentManager {
       unarchive?: boolean;
       resetDbRow?: boolean;
       timeoutMs?: number;
+      trace?: EventTrace;
     },
   ): void {
     if (opts.unarchive) {
@@ -434,6 +439,7 @@ export class SubagentManager {
         projectId: meta.projectId,
         timeoutMs: opts.timeoutMs,
         resumeMessages,
+        trace: opts.trace,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -538,6 +544,8 @@ export class SubagentManager {
       requestId: opts?.requestId,
       projectId: opts?.projectId,
       resumeMessages: opts?.resumeMessages,
+      trace: opts?.trace,
+      openTurnTraces: opts?.trace ? [opts.trace] : [],
     };
 
     const existingMeta = this._registry.getSession(sessionId);
@@ -637,9 +645,10 @@ export class SubagentManager {
   }
 
   /** Send a message to a session (replaces steer/input). */
-  send(sessionId: string, text: string): void {
+  send(sessionId: string, text: string, opts?: { trace?: EventTrace }): void {
     const session = this._sessions.get(sessionId);
     if (!session) throw new Error(`Session "${sessionId}" not found`);
+    this.queueTurnTrace(session, opts?.trace);
     const msg = { role: "user" as const, content: [{ type: "text" as const, text }] };
     if (session.status === "running") {
       session.agent.steer(msg as any);
@@ -767,6 +776,7 @@ export class SubagentManager {
       projectId?: string;
       stepLabel?: string;
       timeout?: number;
+      trace?: EventTrace;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
@@ -789,6 +799,7 @@ export class SubagentManager {
       projectId: opts?.projectId,
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
+      trace: opts?.trace,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
@@ -805,6 +816,7 @@ export class SubagentManager {
       requestId?: string;
       workflowRunId?: string;
       projectId?: string;
+      trace?: EventTrace;
     },
   ): string {
     return this.run(agentName, task, {
@@ -815,6 +827,7 @@ export class SubagentManager {
       requestId: opts?.requestId,
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
+      trace: opts?.trace,
     });
   }
 
@@ -969,7 +982,7 @@ export class SubagentManager {
   resumeSession(
     sessionId: string,
     message: string,
-    opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean },
+    opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean; trace?: EventTrace },
   ): string {
     if (this._sessions.has(sessionId)) {
       const reason = `Session "${sessionId}" is already active — use steer/input instead`;
@@ -1018,6 +1031,7 @@ export class SubagentManager {
       unarchive: true,
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
+      trace: opts?.trace,
     });
     return sessionId;
   }
@@ -1679,6 +1693,7 @@ export class SubagentManager {
 
     // Emit session.end
     if (this.bus) {
+      const trace = this.terminalTrace(session);
       this.bus.emit({
         type: "session.end",
         source: session.source ?? "runtime",
@@ -1702,7 +1717,9 @@ export class SubagentManager {
           requestId: session.requestId,
           stepLabel: session.stepLabel,
         },
+        ...(trace ? { trace } : {}),
       } as any);
+      this.clearTurnTraces(session);
     }
 
     if (session.autoClose === "immediate") {
@@ -1768,6 +1785,38 @@ export class SubagentManager {
       }
       return messages;
     };
+  }
+
+  private queueTurnTrace(session: ActiveSession, trace: EventTrace | undefined): void {
+    if (!trace) return;
+    session.trace = trace;
+    session.openTurnTraces ??= [];
+    const intentId = trace.parentEventId;
+    if (
+      !intentId ||
+      !session.openTurnTraces.some(
+        (candidate) => candidate.traceId === trace.traceId && candidate.parentEventId === intentId,
+      )
+    ) {
+      session.openTurnTraces.push(trace);
+    }
+  }
+
+  private terminalTrace(session: ActiveSession): EventTrace | undefined {
+    const openTurnTraces = session.openTurnTraces ?? [];
+    const base = session.trace ?? openTurnTraces.at(-1);
+    if (!base) return undefined;
+    const links = [...(base.links ?? [])];
+    for (const trace of openTurnTraces) {
+      if (!trace.parentEventId) continue;
+      if (links.some((link) => link.eventId === trace.parentEventId && link.type === "closure")) continue;
+      links.push({ eventId: trace.parentEventId, type: "closure", label: "turn-intent" });
+    }
+    return { ...base, ...(links.length ? { links } : {}) };
+  }
+
+  private clearTurnTraces(session: ActiveSession): void {
+    session.openTurnTraces = [];
   }
 
   private startChatTurn(session: ActiveSession, start: () => Promise<void>, turnTask?: string): void {
@@ -1892,6 +1941,7 @@ export class SubagentManager {
       };
       this.completedResults.set(sessionId, result);
 
+      const trace = this.terminalTrace(session);
       this.bus?.emit({
         type: "session.end",
         source: session.source ?? "runtime",
@@ -1916,7 +1966,9 @@ export class SubagentManager {
           requestId: session.requestId,
           stepLabel: session.stepLabel,
         },
+        ...(trace ? { trace } : {}),
       } as any);
+      this.clearTurnTraces(session);
       if (errorText) throw new Error(errorText);
       throw new Error(`Session "${sessionId}" interrupted`);
     }
@@ -1935,6 +1987,7 @@ export class SubagentManager {
       unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
     } catch {}
 
+    const trace = this.terminalTrace(session);
     this.bus?.emit({
       type: "session.idle",
       source: session.source ?? "runtime",
@@ -1959,7 +2012,9 @@ export class SubagentManager {
         requestId: session.requestId,
         stepLabel: session.stepLabel,
       },
+      ...(trace ? { trace } : {}),
     } as any);
+    this.clearTurnTraces(session);
   }
 
   private async retryChatTurnAfterEmptyAssistant(
@@ -2014,7 +2069,7 @@ export class SubagentManager {
       }
     };
 
-    bus.emit({
+    const startEvent = {
       type: "session.start",
       source: session.source ?? "runtime",
       owner: normalizeEventOwner(agentName),
@@ -2032,7 +2087,16 @@ export class SubagentManager {
         requestId: session.requestId,
         stepLabel: session.stepLabel,
       },
-    } as any);
+      ...(session.trace ? { trace: session.trace } : {}),
+    } as any;
+    bus.emit(startEvent);
+    const startEventId = startEvent[EVENT_ROW_ID];
+    if (Number.isInteger(startEventId) && Number(startEventId) > 0) {
+      session.trace = {
+        traceId: startEvent.trace?.traceId ?? `event:${startEventId}`,
+        parentEventId: startEventId,
+      };
+    }
 
     agent.subscribe((event) => {
       switch (event.type) {

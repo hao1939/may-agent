@@ -128,7 +128,7 @@ function detectAgentsMissingAction(args: Record<string, unknown>): string | unde
   if (!args.action) {
     return (
       "agents() is missing the required `action` argument.\n" +
-      "Valid actions: 'list', 'call', 'fork', 'context', 'peek', 'cancel', 'requests'"
+      "Valid actions: 'list', 'call', 'fork', 'context', 'peek', 'cancel', 'sessions'"
     );
   }
   return undefined;

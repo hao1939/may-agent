@@ -76,6 +76,14 @@ describe("V2 agents tool", () => {
     expect(result.runningSessions).toHaveLength(0);
   });
 
+  it("exposes persisted execution as sessions without a request lifecycle action", async () => {
+    const tool = manager.createAgentsTool();
+    const result = await callTool(tool, { action: "sessions", filter: "all" });
+    expect(result).toMatchObject({ filter: "all", count: 0, sessions: [] });
+    expect(JSON.stringify(tool.parameters)).toContain("sessions");
+    expect(JSON.stringify(tool.parameters)).not.toContain('"requests"');
+  });
+
   it("call without agent/task returns error", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "call" });

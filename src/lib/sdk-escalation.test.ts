@@ -4,14 +4,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAgentSDK, buildWorkflowSDK } from "./sdk-impl.js";
 import type { SDKDeps } from "./sdk-impl.js";
+import { EventBus } from "../app/event-bus.js";
+import { DbWriter } from "./db-writer.js";
+import { closeDb } from "./requests.js";
 
 type EmittedEvent = { type: string; [key: string]: unknown };
 
 function makeSdk() {
   const root = mkdtempSync(join(tmpdir(), "may-sdk-escalation-"));
   const events: EmittedEvent[] = [];
+  const bus = new EventBus();
+  const writer = new DbWriter(root);
+  bus.subscribe(writer.handler, { priority: "first" });
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  bus.subscribe((event) => events.push(event as EmittedEvent));
   const deps: SDKDeps = {
-    bus: { emit: (event: EmittedEvent) => events.push(event) } as never,
+    bus,
     persistDir: root,
     projectRoot: root,
     agentsRoot: join(root, "agents"),
@@ -31,6 +39,7 @@ const roots: string[] = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
+    closeDb(root);
     if (existsSync(root)) rmSync(root, { recursive: true, force: true });
   }
 });
@@ -75,7 +84,7 @@ describe("AgentSDK escalation", () => {
     const { sdk, events, root } = makeSdk();
     roots.push(root);
 
-    sdk.escalate("Missing production decision", {
+    const ref = sdk.escalate("Missing production decision", {
       owner: "human:operator",
       requestedAction: "Choose whether to deploy now or wait.",
       evidence: { runbook: "deploy.md" },
@@ -112,6 +121,7 @@ describe("AgentSDK escalation", () => {
     });
     expect(typeof data.escalationId).toBe("string");
     expect(data.escalationId).toMatch(/^esc_/);
+    expect(ref).toEqual({ eventId: expect.any(Number), compatibilityId: data.escalationId });
     expect(data).not.toHaveProperty("owner");
   });
 

@@ -1,10 +1,10 @@
-import { eventData, type AgentEvent, type EventBus, type Subscriber } from "../app/event-bus.js";
+import { childEventTrace, eventData, type AgentEvent, type EventBus, type EventTrace, type Subscriber } from "../app/event-bus.js";
 import { getDb } from "./requests.js";
 
 type ResumeManager = {
   hasActiveSession?: (sessionId: string) => boolean;
-  send?: (sessionId: string, text: string) => void;
-  resumeSession?: (sessionId: string, message: string, opts?: { source?: string }) => string;
+  send?: (sessionId: string, text: string, opts?: { trace?: EventTrace }) => void;
+  resumeSession?: (sessionId: string, message: string, opts?: { source?: string; trace?: EventTrace }) => string;
 };
 
 type EscalationCreated = {
@@ -42,6 +42,19 @@ function findEscalationCreated(persistDir: string, escalationId: string): Escala
   return { rowId: row.id, source: row.source, owner: row.owner, data: parseData(row.data) };
 }
 
+function findEscalationCreatedByEventId(persistDir: string, eventId: number): EscalationCreated | null {
+  if (!Number.isInteger(eventId) || eventId <= 0) return null;
+  const row = getDb(persistDir)
+    .prepare(
+      `SELECT id, source, owner, data
+       FROM events
+       WHERE id = ? AND event_type = 'escalation.created'`,
+    )
+    .get(eventId) as { id: number; source: string | null; owner: string | null; data: string | null } | undefined;
+  if (!row) return null;
+  return { rowId: row.id, source: row.source, owner: row.owner, data: parseData(row.data) };
+}
+
 function terminalOutcome(event: AgentEvent): string | null {
   if (event.type === "escalation.dismissed") return "dismissed";
   if (event.type !== "escalation.resolved") return null;
@@ -49,7 +62,7 @@ function terminalOutcome(event: AgentEvent): string | null {
 }
 
 function shouldResume(outcome: string): boolean {
-  return outcome !== "needs_human";
+  return !["needs_human", "dismissed", "superseded"].includes(outcome);
 }
 
 function sourceSessionId(escalation: EscalationCreated): string | undefined {
@@ -129,21 +142,25 @@ export function createEscalationLifecycleSubscriber(opts: {
 
     const resolvedData = eventData(event);
     const resolvedEscalationId = nonEmptyString(resolvedData.escalationId);
+    const openEventId = Number(resolvedData.openEventId ?? resolvedData.open_event_id);
     const owner = nonEmptyString((event as Record<string, unknown>).owner) ?? "agent:may";
-    if (!resolvedEscalationId) {
+    if ((!Number.isInteger(openEventId) || openEventId <= 0) && !resolvedEscalationId) {
       emitResumeFailed(opts.bus, owner, {
-        reason: "escalation resolution missing escalationId",
+        reason: "escalation resolution missing canonical openEventId and compatibility escalationId",
         category: "invalid_resolution",
         recoverable: false,
       });
       return;
     }
 
-    const resolvedCreated = findEscalationCreated(opts.persistDir, resolvedEscalationId);
+    const resolvedCreated =
+      findEscalationCreatedByEventId(opts.persistDir, openEventId) ??
+      (resolvedEscalationId ? findEscalationCreated(opts.persistDir, resolvedEscalationId) : null);
     if (!resolvedCreated) {
       emitResumeFailed(opts.bus, owner, {
         escalationId: resolvedEscalationId,
-        reason: `escalation.created not found for ${resolvedEscalationId}`,
+        openEventId: Number.isInteger(openEventId) ? openEventId : undefined,
+        reason: `escalation.created not found for ${Number.isInteger(openEventId) ? `event ${openEventId}` : resolvedEscalationId}`,
         category: "not_found",
         recoverable: false,
       });
@@ -165,7 +182,7 @@ export function createEscalationLifecycleSubscriber(opts: {
       return;
     }
 
-    const sourceEscalationId = nonEmptyString(sourceCreated.data.escalationId) ?? resolvedEscalationId;
+    const sourceEscalationId = nonEmptyString(sourceCreated.data.escalationId) ?? resolvedEscalationId ?? `event:${sourceCreated.rowId}`;
     const sessionId = sourceSessionId(sourceCreated);
     const workflowRunId = workflowRunIdContext(sourceCreated);
     const baseData = {
@@ -188,6 +205,8 @@ export function createEscalationLifecycleSubscriber(opts: {
       return;
     }
 
+    const isActiveSession = opts.manager.hasActiveSession?.(sessionId) ?? false;
+
     const attemptData = {
       ...baseData,
       sourceKind: "session",
@@ -198,12 +217,15 @@ export function createEscalationLifecycleSubscriber(opts: {
     emitResumeAttempted(opts.bus, owner, attemptData);
 
     try {
-      if (opts.manager.hasActiveSession?.(sessionId)) {
+      if (isActiveSession) {
         if (!opts.manager.send) throw new Error("manager cannot send to active sessions");
-        opts.manager.send(sessionId, resumeText);
+        opts.manager.send(sessionId, resumeText, { trace: childEventTrace(event) });
       } else {
         if (!opts.manager.resumeSession) throw new Error("manager cannot resume sessions");
-        opts.manager.resumeSession(sessionId, resumeText, { source: "escalation-resolution" });
+        opts.manager.resumeSession(sessionId, resumeText, {
+          source: "escalation-resolution",
+          trace: childEventTrace(event),
+        });
       }
       emitResumeStarted(opts.bus, owner, {
         ...baseData,
