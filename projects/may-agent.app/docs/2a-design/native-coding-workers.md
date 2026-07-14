@@ -1,5 +1,9 @@
 # Native Coding Workers
 
+**Design status:** Accepted.
+**Implementation status:** Implemented foundation with the explicit gaps and
+acceptance work below.
+
 May can delegate bounded coding work to native coding agents such as Codex CLI
 and Claude Code. These tools are not terminal tabs and they are not project
 owners. They are worker runtimes behind May's event system.
@@ -14,7 +18,7 @@ May agent decides whether delegation is useful
         |
         v
 tool call: run_cli_agent(...)
-  writes prompt.md and request.json
+  writes prompt.md and task metadata
   emits cli.task.requested
         |
         v
@@ -40,7 +44,8 @@ needed.
 
 The split is intentional:
 
-- The tool call is May's request to delegate work.
+- The tool call records May's decision to delegate work; `cli.task.requested`
+  is the durable lifecycle opener in the existing trace.
 - The event is the durable handoff.
 - The runner is the runtime owner of the external process.
 - The native CLI process is replaceable implementation detail.

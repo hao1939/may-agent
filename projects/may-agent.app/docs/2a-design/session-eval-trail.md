@@ -1,7 +1,8 @@
 # Design: Session Evaluation Trail
 
-**Status**: Draft  
-**Date**: 2026-05-16  
+**Design status:** Draft.
+**Implementation status:** Partial.
+**Date:** 2026-05-16.
 **Aligned with**: `sessions.md`, `webui.md`, `runtime.md`, `sdk.md`
 
 ## Purpose

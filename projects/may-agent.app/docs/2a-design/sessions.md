@@ -1,5 +1,9 @@
 # Sessions
 
+**Design status:** Accepted.
+**Implementation status:** Partial; per-turn chat trace propagation and the
+known persistence issues below remain convergence work.
+
 ## The Model
 
 Every agent interaction is a **session** — a single LLM conversation with tools.
@@ -48,6 +52,23 @@ session. A retryable empty assistant turn does not terminal-close the
 conversation: the runtime removes the empty assistant message, retries the same
 user request once, and if the retry is still empty leaves the session `idle`
 with a visible error on the `session.idle` event.
+
+## Chat Turn Causality
+
+A persistent chat session can participate in many traces. Session identity
+answers "which conversation?"; trace identity answers "which human turn or
+causal chain?" They must not be conflated.
+
+Each queued input carries the trace of its triggering
+`chat.start.requested` or `session.steer.requested` event. While processing that
+turn, tool emissions, calls/forks, workflows, CLI tasks, and the terminal
+`session.idle` / `session.end` use that turn trace. The terminal session event
+adds a closure link to the opening intent. The next unrelated human turn gets a
+new trace even though the session id remains unchanged.
+
+`requestId` is a compatibility/correlation field when an exact opening event id
+is unavailable. It is not the canonical identity of human work; the persisted
+opening event id and trace are authoritative.
 
 ## Session Tree
 

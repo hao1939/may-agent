@@ -30,7 +30,13 @@ return a deprecation error.
 | `peek` | View recent messages from a running session | Monitor a forked session |
 | `cancel` | Cancel a running session | Abort background work |
 | `context` | Read/update agent context | Context management |
-| `requests` | Query the request tracking DB | Check request status |
+
+The runtime still exposes `requests` as a legacy-named compatibility query over
+the `sessions` projection. It is not a canonical work identity and must
+not be used for new routing or lifecycle design. Query active sessions with
+`list`/`peek`, durable causality through the event graph, and fallback work
+through the queryable owner inbox. The implementation may remove the legacy
+projection after remaining consumers migrate.
 
 ### message tool
 

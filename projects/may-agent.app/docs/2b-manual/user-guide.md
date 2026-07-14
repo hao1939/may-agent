@@ -3,6 +3,8 @@
 ## Starting an Instance
 
 ```bash
+# Run these commands from /app/projects/may-agent.
+
 # Local full stack: chat + cron + console + socket + web UI
 ./start.sh
 
@@ -167,7 +169,7 @@ indexes are read on demand.
 |--------|-------------|
 | `coding` | Read, write, edit, and shell tools scoped to the project root |
 | `read-only` | Read files only |
-| `agents` | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`, `requests`) |
+| `agents` | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`); `requests` is legacy compatibility only |
 | `message` | Async human/agent inbox messages |
 | `workflow` | Multi-step workflow recipes |
 | `background-exec` | Spawn background processes |
@@ -189,7 +191,7 @@ See [Agent Convention](agent-convention.md) for full directory layout.
 
 ## Agent Cooperation
 
-Agents cooperate through 7 actions on the `agents` tool:
+Agents cooperate through these canonical actions on the `agents` tool:
 
 | Action | Type | Description |
 |--------|------|-------------|
@@ -199,7 +201,10 @@ Agents cooperate through 7 actions on the `agents` tool:
 | `list` | Query | List available agents and active sessions |
 | `peek` | Query | Read a running session's progress |
 | `cancel` | Control | Stop a running session |
-| `requests` | Query | Inspect tracked sessions/requests |
+
+The runtime's `requests` action is a legacy-named query over the sessions
+projection. Do not use it as a work lifecycle or routing primitive; use
+sessions, event traces, and the owner inbox.
 
 `call` is the primary cooperation primitive — synchronous, simple, debuggable.
 For async communication, use the `message` tool (emits `message.created`).
@@ -228,7 +233,8 @@ Control a running instance via Unix socket:
 # Watch events
 socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Send input
+# Send input through the compatibility socket frame. New adapters emit
+# human.input.received and one canonical semantic child intent.
 echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Send a canonical async message
@@ -271,8 +277,8 @@ You usually interact with events through features, not through the event schema:
 | React when a metric breaches | Subscribe a handler to `metric.breach`; the handler should route to the metric owner/workflow |
 | Send work to another agent asynchronously | Use `sdk.message(...)` or the `message` tool; this emits `message.created` |
 | Route a blocker outside current ownership | Use `sdk.escalate(...)`; for humans use `owner: "human:<role>"` |
-| Finish an escalation | Emit `escalation.resolved`; terminal outcomes resume the blocked task/session when one is linked |
-| Need human input before unblocking | Resolve the parent with `outcome: "needs_human"` and link a child escalation owned by `human:<role>` |
+| Finish an escalation | Emit `escalation.resolved` or `escalation.dismissed` with a closure link; wake the source owner, which still judges whether the project/task is unblocked |
+| Need human input before unblocking | Keep the source work blocked and emit a linked child escalation owned by `human:<role>` with an exact requested action and resume context |
 
 `trigger.*` events are control shortcuts. They are useful for operators and
 tests, but they are not domain lifecycle events. Lifecycle docs and handlers
@@ -324,7 +330,7 @@ See [cron.md](../2a-design/cron.md) for details.
 # Start background instance
 docker compose -f container/compose.yml up -d
 
-# Start local foreground instance
+# Start local foreground instance from /app/projects/may-agent
 ./start.sh
 
 # Direct status check

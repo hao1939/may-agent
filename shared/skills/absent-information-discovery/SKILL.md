@@ -1,11 +1,9 @@
 ---
 name: absent-information-discovery
-version: 1.0.0
 description: >
   After fixing all visible/test-caught issues, cross-reference authoritative source
   documents (models, schemas, specs) to discover requirements that no test reveals.
   Tests are a subset of correctness, not the full definition.
-owner: optimizer
 ---
 
 # Absent Information Discovery

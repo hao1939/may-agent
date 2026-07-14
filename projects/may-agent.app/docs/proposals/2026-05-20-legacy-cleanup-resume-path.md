@@ -1,5 +1,9 @@
 # 2026-05-20 — Legacy cleanup: dead ApiGate + unified resume path
 
+**Status:** Historical implementation record. Completed removals and deferred
+observations below describe that migration point; re-verify any remaining gap
+against current Tier 2 design and source before acting.
+
 ## Context
 
 Audit of `may-agent` design docs vs implementation (per

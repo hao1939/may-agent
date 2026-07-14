@@ -12,7 +12,9 @@
 > See [system-operations-model.md](../3-proposals/system-operations-model.md)
 > for the current plan.
 
-**Status**: first audit slice.
+**Design status:** Tracker. This is a migration audit, not a subsystem
+contract; `architecture.md`, `cron.md`, and `system-boundary.md` govern the
+handler model.
 
 This audit applies the infra surface model:
 

@@ -1,8 +1,7 @@
 # HTTP API and WebUI Boundary
 
-## Status
-
-Draft, accepted direction.
+**Design status:** Accepted.
+**Implementation status:** Partial.
 
 ## Problem
 

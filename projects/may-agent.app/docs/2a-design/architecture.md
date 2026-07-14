@@ -1,6 +1,8 @@
 # May-Agent Architecture
 
-**Status**: Active. This is the system's architecture reference.
+**Design status:** Accepted. This is the system's architecture reference.
+**Implementation status:** Active and partially converged; subsystem gaps are
+owned by their linked design docs and trackers.
 
 > **Update (2026-06-18):** The system has evolved from handler-centric to
 > **project-app-centric**. The canonical execution model is now:

@@ -1,5 +1,10 @@
 # Proposal: Chat Agent vs Task Agent Separation
 
+**Design status:** Draft proposal. The human-turn trace rules repeated here are
+already governed by `../2a-design/human-control-surfaces.md`,
+`../2a-design/sessions.md`, and `../2a-design/event-graph.md`.
+**Implementation status:** Partial.
+
 ## Context
 
 The may-agent system has two fundamentally different execution lifecycles
@@ -315,6 +320,15 @@ directly. Human intent should still enter the system as canonical events:
 Chat tools may provide ergonomic wrappers around these events, but the durable
 record should be the event, not an untracked in-memory method call.
 
+Each standalone human turn has its own trace even when it reuses the same
+persistent chat session. `human.input.received` is the boundary/root event; the
+router emits `chat.start.requested` only when it must create or bind a chat and
+uses `session.steer.requested` for an existing target. The queued turn carries
+that trace through tools/delegation and closes the semantic intent with
+`session.idle` or `session.end`. The chat session id is conversation continuity,
+not causal identity. See [event-graph.md](../2a-design/event-graph.md) and
+[human-control-surfaces.md](../2a-design/human-control-surfaces.md).
+
 Transport adapters should only understand channel mechanics: Telegram reply
 ids, web auth, socket framing, terminal lines, attachments. They should not
 decide backend behavior. The adapter emits `human.input.received` with channel
@@ -590,21 +604,25 @@ metrics. Production May delegation should use `run_cli_agent`.
    Current implementation prefers compact snapshots during resume and refreshes
    the chat prompt on every turn; recovery still needs an end-to-end restart
    scenario with notification verification.
-7. ✅ Add durable CLI delegation runner: persist task before spawn, run Claude
+7. ⚠️ Carry explicit per-turn trace context through active-chat steering,
+   `manager.send()`, delegated work, `session.idle`, and outbound delivery. Add
+   golden-trace tests for new chat, existing chat, correction, approval,
+   cancellation, and async delegation.
+8. ✅ Add durable CLI delegation runner: persist task before spawn, run Claude
    Code / Codex in non-interactive mode, write structured result files, emit
    `cli.task.*` events, recover orphans after restart, and present results in
    chat.
    Current remaining work is hardening and end-to-end verification from
    Chat-May: request accepted immediately, chat stays responsive, completion
    steers the source session, and May presents the result.
-8. ✅ Move `tech-lead` into may-agent.app and transfer may-agent.app ownership
+9. ✅ Move `tech-lead` into may-agent.app and transfer may-agent.app ownership
    away from May.
-9. Route Deputy-May system judgments through infra handlers, but route concrete
+10. Route Deputy-May system judgments through infra handlers, but route concrete
    may-agent platform repair into may-agent.app/tech-lead.
-10. ✅ Migrate dev to may-agent.app. Arc is already app-local under
+11. ✅ Migrate dev to may-agent.app. Arc is already app-local under
     may-agent.app with standalone heartbeat disabled.
-11. ✅ Move remaining legacy roles to app-local homes: bob/coach/optimizer/qa/
+12. ✅ Move remaining legacy roles to app-local homes: bob/coach/optimizer/qa/
     master under may-agent.app, judge under evaluation.app, amy/amy-kimi under
     scout-knowledge-lib.app.
-12. Shrink `agents/` toward only `may/` once runtime leftover files are drained
+13. Shrink `agents/` toward only `may/` once runtime leftover files are drained
     or archived.

@@ -6,8 +6,6 @@ description: >
   pre-planned fallback ladder, and execute it — all within one turn. Targets FM-2.2
   (dead-end non-recovery) and the gap between error-handling's "don't retry blindly"
   principle and actually knowing what to do instead.
-version: 1.0.0
-owner: optimizer
 ---
 
 # Obstacle Pivot: When Plan A Fails, Execute Plan B

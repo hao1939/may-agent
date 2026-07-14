@@ -1,5 +1,9 @@
 # Metrics & Alerts
 
+**Design status:** Accepted.
+**Implementation status:** Implemented with explicit blind spots and
+convergence gaps documented below.
+
 ## Overview
 
 Metrics are **the system's vital signs**. They measure system health, execution
@@ -149,8 +153,8 @@ These are measured but not in the prioritized tables above.
 - `evaluator.aftermath-coverage-rate-3h` — aftermath pipeline liveness, not a north-star quality goal
 - `evaluator.false-good-rate-sample` — reviewed good sessions overturned (24h); quality control on the evaluator itself
 - `evaluator.meaningful-review-rate-24h` — fraction of evaluations that are substantive (24h)
-- `evaluator.success-candidates-24h` — good sessions marked for learning extraction (24h)
-- `evaluator.success-learnings-24h` — learnings extracted from good sessions (24h)
+- `evaluator.project-finding-delivery-rate-24h` — share of evaluation findings handled by the target owner's workflow; this measures routing completion, not owner agreement or remediation
+- `evaluator.project-feedback-pending-age-h` — age of the oldest evaluation finding still pending in the owner-delivery path
 - `evaluator.triage-closure-rate-24h` — fraction of failed sessions triaged and closed (24h)
 
 **Guard:**

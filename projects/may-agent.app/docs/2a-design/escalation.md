@@ -1,12 +1,11 @@
 # Design: Escalation System
 
-> **Status (2026-07-11):** Routing (slices 1-2) is shipped: `escalation.created`
+> **Implementation status (2026-07-11):** Routing (slices 1-2) is shipped: `escalation.created`
 > events route to the owner via the `escalation` handler. The handler records
 > routing with `handler.routed`; it no longer emits `escalation.routed` because
 > that event was not consumed and accumulated as pending noise. Lifecycle
-> tracking (slices 3-5) is only partially implemented —
-> there is no `escalations` entity table, no `escalation.resolved` handler,
-> and no lifecycle metrics.
+> tracking (slices 3-5) is only partially implemented: terminal owner handling,
+> closure-link persistence, and lifecycle health projections are incomplete.
 >
 > In practice, escalations can still accumulate if no owner emits
 > `escalation.resolved` or `escalation.dismissed`. The event trace should link
@@ -15,12 +14,12 @@
 > with `trace.links[].type = "closure"`. Missing closure links are the primary
 > orphan signal.
 >
-> Immediate gap: 400+ escalations accumulated before anyone noticed. The system
-> can query raw events today, but the durable graph should make "open
+> The system can query raw events today, but the durable graph should make "open
 > escalations" a direct graph query: `escalation.created` nodes without a
 > terminal closure link.
 
-**Status:** proposal refined against current docs and implementation
+**Design status:** Accepted. The event id and trace are the escalation
+identity; this design does not require a parallel escalation lifecycle object.
 **Date:** 2026-05-19
 **References:** [events.md](./events.md), [handler-authoring.md](../2b-manual/handler-authoring.md), [practice-learning-loop.md](./practice-learning-loop.md), KE-1242
 
@@ -245,6 +244,12 @@ Allowed outcomes:
 For `needs_human`, the source escalation stays effectively open until the child
 human escalation resolves or is dismissed. Runtime should not resume the original
 source work merely because an intermediate owner asked a human.
+
+`escalation.dismissed` and `escalation.resolved` with
+`outcome=superseded` close obsolete work without resuming its source session.
+Replaying an obsolete blocked session can recreate the same escalation and turn
+cleanup into a loop. Use `fixed` or `answered` only when the original source work
+should actually continue with the returned context.
 
 ### 4. Resume The Blocked Task
 

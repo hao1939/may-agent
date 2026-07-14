@@ -34,7 +34,7 @@ Three stigmergic substrates already exist:
 
 ## Proposed change
 
-Add a short "Coordination" section to `../architecture.md` that names two coordination channels and when each is the right choice:
+Add a short "Coordination" section to `../2a-design/architecture.md` that names two coordination channels and when each is the right choice:
 
 > ### Coordination
 >

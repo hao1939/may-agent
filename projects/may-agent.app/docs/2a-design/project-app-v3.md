@@ -711,6 +711,14 @@ when validating a broken manifest after a failed automatic reload.
 
 App code should not use ad hoc relative paths.
 
+**Convergence gap:** the accepted names below are the target API, but the
+current loader and `ProjectAppContext` type expose `ctx.appPath(...)` plus
+`ctx.projectPath(...)`, where `projectPath` resolves inside the bound domain
+workspace. They do not yet expose `workspacePath` or `workspaceCwd`. Until the
+runtime adds the target names, use `projectPath` in executable app code and do
+not call nonexistent helpers. Migrate call sites when the SDK and loader land
+the aliases together.
+
 ```ts
 ctx.appPath("tasks/tree.json"); // aks-rp-e2e.app/tasks/tree.json
 ctx.workspacePath(

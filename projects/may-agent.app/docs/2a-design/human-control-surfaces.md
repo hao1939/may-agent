@@ -1,6 +1,8 @@
 # Design: Human Control Surfaces
 
-**Status**: Draft
+**Design status:** Accepted.
+**Implementation status:** Partial; the convergence gaps at the end of this
+document remain open.
 **Date**: 2026-06-05
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
@@ -37,6 +39,39 @@ Channel adapters should be boring: parse the human action, resolve local UI
 state if needed, and emit the canonical intent event. The daemon owns session
 state, chat creation, cold resume, cancellation, persistence, and follow-up
 domain events.
+
+## Human Turn Trace
+
+Free-form human text enters as `human.input.received`. It is the boundary/root
+event for one turn, not a request database object. The input router emits one
+semantic child intent:
+
+```text
+human.input.received
+  -> chat.start.requested       create or bind when no chat target is known
+  -> session.steer.requested    deliver to an existing session
+  -> project.comment.created    attach project direction
+  -> project.approval.submitted apply structured approval context
+  -> runtime.*.requested        explicit runtime control
+```
+
+A persistent chat session is a conversation container, not a trace. Each
+standalone human turn receives a new trace even when it reuses the same session.
+A reply to a prior notification/result stays in that prior trace through its
+reply context. The selected input's trace travels with the queued turn through
+session execution, delegation, terminal `session.idle` / `session.end`, and
+channel delivery.
+
+The semantic intent is the lifecycle opener. `human.input.received` itself is
+an external boundary fact and is not convention-paired. For chat work,
+`session.idle` or `session.end` closes the turn intent. Channel delivery is a
+linked transport projection; explicit approval/confirmation is required only
+when the domain workflow asks for it.
+
+Read-only controls remain outside this path when the surface knows they are
+controls. For example, a status button or exact CLI `may status` command can
+query the read model directly. Natural-language text such as "what needs
+attention?" remains human input and goes through Chat-May.
 
 ## Canonical Human Intent Events
 
@@ -345,7 +380,29 @@ Each human surface should have tests for the same behavior:
 - Project comment sends `project.comment.created`.
 - Unknown or ambiguous target fails locally.
 - Opening/attaching to the surface does not emit a state-changing event.
+- `human.input.received` is the trace root and the normalized intent is its
+  child.
+- Existing-chat input uses `session.steer.requested`; only an unbound or
+  explicitly fresh chat uses `chat.start.requested`.
+- The turn's `session.idle` / `session.end` stays in the same trace and closes
+  the semantic intent.
+- Forked/workflow/CLI work and outbound delivery remain connected to the turn
+  trace.
+- Bare cancel never becomes cancel-all; broad cancellation requires the
+  explicit `session.cancel_all.requested` intent.
 
 The point of these tests is not UI coverage. It is preventing CLI, Telegram,
 Web, and May Console from drifting into different meanings for the same human
 intent.
+
+## Runtime Convergence Gaps
+
+- Some active-chat paths still normalize ordinary input through
+  `chat.start.requested` instead of targeting the bound chat with
+  `session.steer.requested`.
+- Persistent chat input queues do not yet carry explicit per-turn trace
+  context through `session.idle` and all delegated work.
+- Some command routing still upgrades bare `cancel` to cancel-all; this violates
+  the safety contract above.
+- Legacy project-comment handling can mutate project files inside the command
+  router. V3 project apps should consume the event and own the state change.

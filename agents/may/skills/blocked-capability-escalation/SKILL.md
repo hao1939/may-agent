@@ -1,69 +1,34 @@
 ---
 name: blocked-capability-escalation
-description: What to do when you discover a capability is missing, a tool doesn't exist, or a command is unavailable
-trigger: Any time a tool call reveals that a capability doesn't exist (e.g., "command not found", "no such tool", process manager unavailable, permission denied)
+description: Handle missing capabilities, unavailable commands or tools, permission failures, and restart/deploy/admin gaps by finding a bounded alternative or creating a structured owner handoff with evidence and resume context.
 ---
 
 # Blocked Capability Escalation
 
-## When This Applies
-You've just discovered that something you need doesn't exist or isn't available:
-- `systemctl` / `pm2` / service manager not installed
-- A tool or command you expected doesn't exist in this environment
-- A restart/deploy/admin capability is missing
-- Permission denied on an operation you need
+## Procedure
 
-## The Procedure (4 steps — all mandatory)
+1. **Record the evidence.** State the intended outcome, failed capability,
+   exact tool/command result, owner, and current session/project/trace context.
+2. **Check one canonical alternative.** Read the relevant design/manual or
+   inspect the available control surface. For May-agent restart/deploy work,
+   use the supervisor-owned restarter path from the May-agent system skill;
+   do not improvise process signals or inline stop/copy/start sequences.
+3. **Return locally when the caller owns the decision.** A workflow uses
+   `ctx.blocked(...)`; a project task returns blocked through
+   `project.task.completed` so the project owner can repair or reassign it.
+4. **Escalate only across an owner boundary.** Emit `escalation.created` (or use
+   the SDK escalation helper) with the concrete owner, requested action,
+   evidence, blocker, resume context, severity, project/session identifiers,
+   and a stable dedup key. A direct agent delegation uses the `agents` tool;
+   an async note uses the separate `message` tool.
+5. **Verify acceptance.** Confirm the local blocked result, targeted agent, or
+   queryable owner inbox accepted the handoff. A file-only todo or owner label
+   without a readable route is not delivery.
 
-### Step 1: Name the gap
-State exactly what's missing and what you were trying to accomplish.
-> Example: "I need to restart the web server, but `systemctl` is not available (exit code 127) and PID1 is docker-init, so there's no system service manager."
+## Completion Contract
 
-### Step 2: Search for a workaround (spend ≤2 tool calls)
-Try ONE alternative approach:
-- Different command that achieves the same goal (e.g., `kill -HUP` instead of `systemctl restart`)
-- Different tool that's available (check `which`, `type`, or `ls /usr/bin/`)
-- Manual equivalent (e.g., stop process + start process instead of restart)
-
-If the workaround works → use it, report what you did, done.
-
-### Step 3: If no workaround — escalate concretely
-Pick exactly ONE:
-
-**Option A — Handoff to Hao:**
-```
-agents.send("may", "ESCALATION: I need [capability] to [goal]. Tried [alternative], which also failed because [reason]. Hao: please [specific ask].")
-```
-Or use handoff() if available.
-
-**Option B — Create a todo:**
-Write a concrete item to `workspace/todo.md`:
-```
-- [ ] BLOCKED: [goal] requires [capability] which is unavailable. Proposed solution: [specific proposal]. Discovered in session [session_id].
-```
-
-**Option C — Delegate to another agent:**
-If another agent might have the capability (e.g., tech-lead for infrastructure):
-```
-agents.send("[agent]", "[specific request]")
-```
-
-### Step 4: Confirm your escalation was executed
-Before finishing the session, verify:
-- [ ] Did I actually send the handoff / write the todo / send the delegation? (Check tool output, exit code 0)
-- [ ] My finish() summary mentions the escalation and what's still blocked
-
-## Banned Conclusions
-These phrases mean you failed this skill:
-- ❌ "Nothing actionable"
-- ❌ "All healthy" (when something was blocked)
-- ❌ "Cannot be done" (without Step 3)
-- ❌ Any finish() that doesn't mention the gap you discovered
-
-## Examples from Past Failures
-
-**Bad (s_1773461301049_206):**
-> Discovered systemctl and pm2 unavailable → concluded "All healthy. Nothing actionable."
-
-**Good alternative:**
-> Discovered systemctl and pm2 unavailable → tried `kill -HUP $(pgrep node)` as workaround → that worked / that also failed → created todo: "BLOCKED: Need process restart capability. Propose adding a restart script or documenting the container restart procedure."
+- Do not report the system healthy while the capability gap still blocks work.
+- Do not say the work is impossible until the canonical alternative and owner
+  route have been checked.
+- Report what remains blocked, who owns the next action, how they can resume,
+  and the event/session evidence that makes the handoff auditable.

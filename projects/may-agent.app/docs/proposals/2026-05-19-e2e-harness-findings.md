@@ -1,6 +1,7 @@
 # E2E harness findings — gaps surfaced while building test/e2e/
 
-**Status:** open
+**Status:** Historical; all recorded findings are resolved. Active contracts
+now live in the linked Tier 2 design and manual documents.
 **Author:** assistant via e2e-suite work
 **Date:** 2026-05-19
 

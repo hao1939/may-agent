@@ -6,8 +6,6 @@ description: >
   skeletons early, and checkpoint progress at 50% and 75% marks. Targets FM-3.1
   (premature termination / non-delivery) — the #1 uncovered failure mode at 31
   occurrences across all agents.
-version: 1.0.0
-owner: optimizer
 ---
 
 # Budget-Before-Act: Estimate Turns, Guarantee Delivery

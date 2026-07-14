@@ -1,20 +1,11 @@
 ---
 name: evidence-over-narrative
-version: 1.0.0
 description: >
   When narrative cues (code comments, task descriptions, prior beliefs) conflict
   with runtime evidence (test results, file contents, system state), trust the
   evidence. This skill enforces an explicit evidence-gathering-then-reconciliation
   protocol that prevents phantom fixes, stale-state busywork, and comment-driven
   development.
-owner: optimizer
-evidence: >
-  Observed across 4 agents in 20+ sessions. Primary: phantom-fix-config scenario
-  where coder breaks working code (2/5 baseline, exp-145/174) by trusting
-  misleading comments over passing tests. Secondary: QA re-scans unchanged repos
-  (3/4 sessions, ~39 wasted ops), Bob reads 77KB of unchanged files per session
-  (5/5 sessions). Confirmed in finding-cost-scan-0323-0009, finding-llm-to-js-
-  scan-0322-2115, and coach method-catalog (0/13 text methods improved behavior).
 ---
 
 # Evidence Over Narrative

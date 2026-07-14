@@ -1,11 +1,9 @@
 ---
 name: context-verification
-version: 1.0.0
 description: >
   When session context or prior work claims say "X is already done" or "Y was
   completed previously," verify against the filesystem before trusting. Context
   can be stale, incorrect, or from a failed session.
-owner: optimizer
 ---
 
 # Context Claim Verification

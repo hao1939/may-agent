@@ -109,6 +109,55 @@ LIMIT 100;
 An orphan is an investigation signal. It can mean stuck work, a missing close
 event, a wrong correlation key, a bad timeout, or an event naming issue.
 
+## Semantic Trace Health
+
+Structural integrity is necessary but insufficient. One default singleton
+trace row per event can pass dangling-reference checks while causal propagation
+and closure are broken.
+
+Find closed pairs whose authoritative closure link was not persisted:
+
+```sql
+SELECT p.pair_name, p.open_event_id, p.close_event_id, p.closed_at
+FROM event_pair_runs p
+LEFT JOIN event_trace_links l
+  ON l.from_event_id = p.close_event_id
+ AND l.to_event_id = p.open_event_id
+ AND l.type = 'closure'
+WHERE p.status = 'closed'
+  AND l.id IS NULL
+ORDER BY p.closed_at DESC;
+```
+
+Find opener/closer trace splits:
+
+```sql
+SELECT p.pair_name, p.open_event_id, p.close_event_id,
+       ot.trace_id AS open_trace, ct.trace_id AS close_trace
+FROM event_pair_runs p
+JOIN event_traces ot ON ot.event_id = p.open_event_id
+JOIN event_traces ct ON ct.event_id = p.close_event_id
+WHERE p.status = 'closed'
+  AND ot.trace_id != ct.trace_id;
+```
+
+For human-rooted work, inspect complete traces and verify this shape:
+
+```text
+human.input.received
+  -> exactly one semantic intent
+    -> session/workflow/task/rejection/no-op
+      -> terminal closure
+        -> channel delivery projection
+```
+
+Also check that persistent-chat turns use distinct traces unless reply context
+links them, that bookkeeping acceptance does not hide a missing domain/owner
+reaction, and that generated human output has a linked transport delivery.
+
+Golden-trace tests should cover new chat, existing chat, correction, approval,
+cancellation, async fork/workflow/CLI delegation, failure, and cold resume.
+
 ## Audit Smells
 
 Treat these as follow-up tasks:
@@ -116,7 +165,14 @@ Treat these as follow-up tasks:
 - A documented canonical event has no emitter.
 - A live event has no direct consumer and repeatedly falls back to
   `default-owner:<owner>` when a direct handler should own it.
-- A lifecycle-shaped event has no correlation key and no explicit exception.
+- A lifecycle-shaped event has no direct-close contract, compatibility
+  correlation key, or explicit exception.
+- A closed pair has no persisted closure link or its opener/closer traces differ.
+- A persistent chat session reuses one trace for unrelated human turns.
+- A human semantic intent has no child work/disposition or its result has no
+  channel-delivery projection.
+- A targeted domain event is accepted only by lifecycle bookkeeping or a
+  non-queryable default-owner label.
 - A handler subscribes to a legacy or shortcut event when a canonical event
   exists.
 - An ingress path persists flattened data instead of the canonical envelope.

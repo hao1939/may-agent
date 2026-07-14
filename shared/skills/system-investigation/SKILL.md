@@ -4,9 +4,6 @@ description: >
   Debug may-agent runtime, metrics, alerts, handlers, workflows, and session
   failures with a repeatable evidence loop. Use this when investigating why the
   autonomous system is not closing the loop, not when doing normal feature work.
-version: 1.0.0
-owner: may
-tools: [query_db, bash, read]
 ---
 
 # Skill: System Investigation
@@ -46,8 +43,9 @@ truth.
 
 - DB tables: use `query_db("pragma table_info(<table>)")` when available.
 - Handler/workflow contracts: read the handler or workflow source first.
-- Agent/project conventions: read the relevant `project.md`, `AGENTS.md`, or
-  manual page.
+- Agent/project conventions: read the relevant V3 `project.json`, `app.ts`,
+  `tasks/tree.json`, `AGENTS.md`, or manual page. Treat `project.md` as legacy
+  compatibility material only.
 
 If `query_db` is unavailable, use a bounded readonly runtime query, not
 `sqlite3` and not guessed DB paths.
@@ -97,8 +95,10 @@ After a fix, force a validation signal instead of waiting:
    `trigger.metrics-snapshot`.
 2. Re-read the metric row or workflow/session row.
 3. Check alert closure: `metric_alerts.resolved_at`.
-4. Check event closure: `metric.recovered`, `metric.alert_judged`, or the
-   expected follow-up event.
+4. Check semantic event closure: the opener and terminal event share the trace,
+   the terminal event persists a closure link, and any claimed human result has
+   channel-delivery evidence. `metric.alert_judged` proves owner judgment, not
+   recovery or project success.
 5. If the value is still bad, continue the investigation; do not declare done.
 
 ## Repetition Rule

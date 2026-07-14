@@ -1,6 +1,8 @@
 # Default Project UI
 
-Status: phase 1 browser-side control readout implemented; layout simplified
+**Design status:** Accepted.
+**Implementation status:** Partial; the phase-1 browser control readout is
+implemented and the remaining slices are described below.
 
 The default project UI should be the shared control surface for every project
 app. Project-specific UIs can go deeper into a domain, but the default UI must
@@ -316,8 +318,9 @@ no-op. Preserve the raw fact in the task tree or discussion.
 
 Send behavior:
 
-- project-wide steering emits `project.planning.requested` or
-  `project.owner.requested` with selected project context;
+- project-wide steering emits `project.owner.requested` with selected project
+  context; `project.planning.requested` is a legacy ingress alias and must not
+  be emitted by new UI code;
 - task-specific steering includes task id, parent chain, state, and local row
   context;
 - declared project actions emit canonical project action events;

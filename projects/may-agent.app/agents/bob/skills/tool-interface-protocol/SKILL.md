@@ -1,13 +1,11 @@
 ---
 name: tool-interface-protocol
 description: >
-  Use tool-interface calls (checkpoint, finish, agents) via their native tool
+  Use tool-interface calls (checkpoint, finish, agents, and message) via their native tool
   interfaces, NEVER via bash. Prevents FM-2.6 (TOOL_INTERFACE_MISUSE) where
   the agent runs `checkpoint` or `finish` as shell commands (exit code 127)
   instead of calling the structured tool. Also reinforces FM-3.3 prevention:
   verify deliverables exist before calling finish().
-version: 1.0.0
-owner: coach
 ---
 
 # Tool-Interface Protocol: Native Calls, Not Bash
@@ -82,12 +80,20 @@ finish({
 })
 ```
 
-**agents** — call/send to other agents:
+**agents** — call or fork another agent session:
 ```
 agents({
-  action: "message",
+  action: "call",
   agent: "tech-lead",
-  message: "Please implement X"
+  task: "Please implement X"
+})
+```
+
+**message** — send an asynchronous agent or human message:
+```
+message({
+  to: "tech-lead",
+  content: "Please review X"
 })
 ```
 
@@ -97,6 +103,7 @@ These are all WRONG and will always fail:
 - ❌ `bash("checkpoint ...")`
 - ❌ `bash("finish ...")`  
 - ❌ `bash("agents ...")`
+- ❌ `bash("message ...")`
 - ❌ `bash("echo '...' | checkpoint")`
 
 ### Step 4: VERIFY deliverables before finish()

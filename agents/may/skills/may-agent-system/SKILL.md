@@ -15,6 +15,13 @@ model:
 
 `event -> owner routing -> agent judgment -> evidence -> state update -> follow-up event`
 
+For human interaction, preserve the more specific shape:
+
+`human.input.received -> semantic intent -> bounded work -> terminal evidence -> channel delivery`
+
+The root event and trace represent the commitment. Do not add a parallel
+request lifecycle object.
+
 Core primitives:
 
 - Event: durable signal that something can consume.
@@ -24,20 +31,35 @@ Core primitives:
 - Metric: signal for investigation, not a target.
 - Escalation: structured handoff across an ownership boundary.
 
+## Discovery Boundary
+
+This file is the canonical May-local copy and is routed from `agents/may/AGENTS.md`
+and `agents/may/context.md`. Native CLI workers and other agent runtimes do not
+necessarily auto-discover it. When delegating May-agent maintenance, explicitly
+include this skill path or verify that the worker's installed copy exists and
+matches it; do not maintain an unsynchronized fork.
+
 ## Source Of Truth
 
 Read the relevant design doc before changing behavior:
 
+- Architecture: `/app/projects/may-agent.app/docs/2a-design/architecture.md`
 - Core principles: `/app/projects/may-agent.app/docs/1-principles/core-principles.md`
 - Work model: `/app/projects/may-agent.app/docs/1-principles/work-model.md`
 - Events: `/app/projects/may-agent.app/docs/2a-design/events.md`
+- Event graph and trace: `/app/projects/may-agent.app/docs/2a-design/event-graph.md`
+- Human control surfaces: `/app/projects/may-agent.app/docs/2a-design/human-control-surfaces.md`
+- Sessions and chat-turn lifecycle: `/app/projects/may-agent.app/docs/2a-design/sessions.md`
 - Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
 - Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
 - Project apps: `/app/projects/may-agent.app/docs/2a-design/project-app-v3.md`
+- App/project integrity: `/app/projects/may-agent.app/docs/2a-design/app-project-integrity.md`
 - Task trees: `/app/projects/may-agent.app/docs/2a-design/task-tree-engine.md`
 - Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
 - Metric alert triage: `/app/projects/may-agent.app/docs/2b-manual/metric-alerts.md`
-- Chat/job separation: `/app/projects/may-agent.app/docs/3-proposals/chat-agent-separation.md`
+
+Tier 3 proposals are background, not source of truth. Use them only when an
+accepted design doc explicitly points to unresolved proposal context.
 
 If implementation and docs disagree, treat it as a design or implementation
 gap. Do not invent a third convention. Either align code to the doc, update the
@@ -55,6 +77,9 @@ doc with evidence, or call out the mismatch.
 4. Make the smallest change that keeps the loop closed. Prefer existing
    conventions, app-local workflows, SDK helpers, and task-tree tools over new
    configuration or broad framework code.
+   Prefer JavaScript/TypeScript and Bun for new May-agent scripts and runtime
+   tooling; use another language only when an existing required tool has no
+   maintained JavaScript/TypeScript equivalent.
 5. Verify with the app/runtime command surface. Use app-local `bun run check`
    or narrower scripts when available; otherwise run targeted tests, typecheck,
    or read-only integrity commands and report what was not verified.
@@ -65,7 +90,7 @@ Use events only for durable signals that can be consumed. Facts that nobody
 reacts to belong in state, logs, traces, metrics, or knowledge.
 
 - Emit canonical event envelopes: `type`, `source`, `owner`, optional
-  `urgency`/`ttl_ms`/`timestamp`, and `data`.
+  `target`/`urgency`/`ttl_ms`/`timestamp`/`trace`, and `data`.
 - Put domain fields in `data`, not on the envelope. Do not duplicate `owner`
   as `data.owner`.
 - Route by target first, then owner fallback. `owner` is the accountability
@@ -83,6 +108,44 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Remember retention: `events` are currently short-window operational evidence,
   not permanent history.
 
+### Human-rooted traces
+
+- Treat `human.input.received` as the transport-neutral boundary/root event for
+  free-form human input, not as a request entity.
+- Emit exactly one semantic child intent from the input router. Use
+  `chat.start.requested` only to create/bind a chat; use
+  `session.steer.requested` for an existing target.
+- Treat a persistent chat session as a conversation container, not a trace.
+  Carry trace context per queued turn through `manager.send()`, cold resume,
+  tools, calls/forks, workflows, CLI delegation, and outbound delivery.
+- Close the semantic intent with the turn's `session.idle` or `session.end`.
+  Do not attach all future turns to the session's original trace.
+- Keep replies to notifications/results in the referenced trace. A standalone
+  follow-up starts a new trace. Never mutate or reopen an old closure; represent
+  rework as a new linked branch.
+
+### Delivery and closure integrity
+
+- Delivery acceptance must mean a domain consumer acted/queued work or a
+  queryable owner inbox received it. A default-owner label without a readable
+  owner route is not delivery.
+- Lifecycle bookkeeping may consume infra-only lifecycle events, but the pair
+  tracker must not mask a missing targeted project/session/workflow/owner
+  consumer.
+- When live pair tracking closes a pair, persist the pair update and trace
+  closure link atomically. Backfill is historical repair, not the normal write
+  path.
+- Distinguish handled, started, completed, delivered, and human-confirmed as
+  derived graph questions. Closure does not automatically mean project success
+  or human satisfaction.
+- Trace verification must be semantic as well as structural: look for closed
+  pairs without closure links, opener/closer trace splits, human intents with no
+  child work/disposition, generated results without channel delivery, and
+  unexpected singleton lifecycle events.
+- Preserve events referenced by open work or retained trace links. Apply base
+  age retention only after referential protection; prune detail before root,
+  delivery, and closure evidence.
+
 ## Project Apps And Task Trees
 
 Keep domain projects portable and May-agent control planes separate.
@@ -94,8 +157,11 @@ Keep domain projects portable and May-agent control planes separate.
 - Use app-local workflows for project-specific policy. Global handlers should
   deliver, discover, route, and surface missing closure, not encode domain
   strategy.
-- Use `ctx.appPath(...)` for app/control-plane files and
-  `ctx.workspacePath(...)` or `ctx.workspaceCwd()` for domain files.
+- Use `ctx.appPath(...)` for app/control-plane files. The current app runtime
+  exposes `ctx.projectPath(...)` for the bound domain workspace. The accepted
+  design intends to rename that helper to `ctx.workspacePath(...)` and add
+  `ctx.workspaceCwd()`, but do not call those names until the runtime type and
+  loader implement them.
 - Treat the project owner as the brain. Workflow code wakes sessions, passes
   compact context, and emits events; it should not own task decomposition,
   acceptance, retry policy, or project strategy.
@@ -126,8 +192,11 @@ Treat metrics as signals, not decisions.
 
 - Inspect the metric row, recent snapshots, related events/sessions, project
   context, and current value before acting.
-- Resolve ownership by runtime convention: `metrics.owner`,
-  project owner from `metrics.project`, metric id prefix, then May.
+- Resolve ownership by runtime convention: explicit `metrics.owner` first;
+  project-scoped metrics enter the `project:<id>` / project-app owner path;
+  unscoped metrics fall back through a valid agent-like metric-id prefix, then
+  May. The project owner remains the accountability backstop for project
+  judgment.
 - Do not manually reroute alerts by editing `metrics.owner`; fix
   `metrics.project`, project owner metadata, metric definitions, or resolver
   code.
@@ -157,15 +226,20 @@ Distinguish local blockers from ownership-boundary escalations.
   reason, and compact context.
 - Use `project.owner.requested` for project workflows without task context and
   `workflow.owner.requested` for non-project workflows.
-- Emit `escalation.created` only when another owner must answer or act. Include
-  `escalationId`, source agent/session, project context, reason,
-  requested action, severity, blocker, evidence, resume context, and a stable
-  `dedupKey` when possible.
+- Emit `escalation.created` only when another owner must answer or act. Prefer
+  `sdk.escalate(reason, opts)` and include source agent/session, project
+  context, reason, requested action, severity, blocker evidence, resume
+  context, and a stable `dedupKey` when possible. The persisted opening event
+  id and trace are the canonical escalation identity; the current SDK still
+  emits `data.escalationId` as a compatibility key, so preserve it when
+  touching legacy raw event paths but do not design new dependencies on it.
 - Route `owner: "human:<role>"` through May as deputy while preserving the
   human owner on the event.
-- On resolution, use `escalation.resolved` or `escalation.dismissed` with
-  correlation by `escalationId`. A resolution disposition is not proof the
-  source project is fixed; the source owner still judges unblock.
+- On resolution, use `escalation.resolved` or `escalation.dismissed` with a
+  closure link to the opening event in the same trace. Accept legacy
+  `data.escalationId` correlation only for compatibility. A resolution
+  disposition is not proof the source project is fixed; the source owner still
+  judges unblock.
 - Do not hide human notification, retry loops, or project-specific workarounds
   inside escalation code.
 
@@ -183,59 +257,18 @@ Distinguish local blockers from ownership-boundary escalations.
   terminal cleanup.
 - Human, CLI, Telegram, web, and socket actions should enter through canonical
   intent events rather than untracked side channels.
+- Keep per-turn causality explicit across long-lived chat sessions. Ambient
+  async trace inheritance is useful inside one handler continuation but is not
+  sufficient for queued turns or work that outlives that continuation.
+- Bare cancel is session-scoped. Never upgrade it to cancel-all; broad
+  cancellation requires the explicit `session.cancel_all.requested` intent.
 
 ## Runtime Restart
 
-- Do not run inline `supervisorctl restart may-agent ...` from an agent shell.
-  The shell is a child of the runtime being stopped and can die before the
-  restart finishes.
-- Prefer the event path: emit `runtime.restart.requested` and let the runtime
-  ask supervisor to start `may-agent-restarter`.
-- If a shell command is explicitly needed, use
-  `supervisorctl start may-agent-restarter`. That one-shot program is owned by
-  supervisord and performs the actual `may-agent` / `may-agent-web` restart.
-- Once supervisor accepts the start request, the restarter survives
-  `may-agent` stopping or crashing. If `may-agent` crashes before sending the
-  request, normal supervisor `autorestart` owns recovery.
-
-## Build And Deploy Runtime Binary
-
-When a runtime code change needs to become live inside the container, build the
-binary in the workspace and hand the install/restart to supervisor:
-
-```bash
-cd /app/projects/may-agent
-bun run check
-bun test <targeted tests>
-bun run deploy
-supervisorctl status may-agent may-agent-web may-agent-restarter
-tail -80 /tmp/may-agent-supervisor-restart.log
-```
-
-`bun run deploy` runs `bun run bundle`, writes the staged deploy marker, then
-starts the supervisor-owned one-shot `may-agent-restarter`. The restarter
-copies `/app/projects/may-agent/bundle/may-agent` to
-`/usr/local/bin/may-agent` while the runtime is stopped, then starts
-`may-agent` / `may-agent-web`. Do not inline
-`cp ... /usr/local/bin/may-agent && supervisorctl restart ...` from an agent
-shell.
-
-If the live restarter does not support staged deploy, the command fails with a
-recreate message. Recreate the container from the updated image; do not
-silently fall back to an inline stop/copy/start sequence from May.
-
-Treat deploy as accepted-then-async: after `bun run deploy` returns, verify the
-restarter log, confirm `may-agent` and `may-agent-web` are `RUNNING`, and make
-sure the deploy marker is gone.
-
-## Key Principles
-
-- Reactive work is event-driven and must close the loop.
-- Everything has an owner; owner boundaries define accountability.
-- Context is discovered as needed, not dumped into prompts.
-- Evidence comes before state changes, escalation, or completion claims.
-- Prefer structure and convention over prose-only instructions.
-- Debug the message, route, state, or evidence before blaming the model.
+For restart, deploy, binary activation, or supervisor work, read
+[`references/runtime-operations.md`](references/runtime-operations.md) before
+acting. Keep that situational procedure out of ordinary project, event, metric,
+and task-tree work.
 
 ## Change Checklist
 
@@ -248,4 +281,15 @@ Before finishing:
 - Confirm metrics and alerts remain signals requiring owner judgment.
 - Confirm blockers either return to the owner loop or become structured
   escalations with resume evidence.
+- Confirm every human-rooted turn has one semantic intent, explicit per-turn
+  trace propagation, terminal evidence, and channel-delivery evidence when a
+  response is claimed.
+- Confirm every newly closed lifecycle pair writes a persisted closure link in
+  the normal path rather than depending on backfill.
+- Confirm default-owner fallback creates queryable owner work and does not hide
+  a missing domain consumer.
+- Confirm retention cannot delete an opener or closure still referenced by
+  active/retained work.
+- For event/trace changes, add or update golden-trace tests and run semantic
+  integrity checks in addition to schema/dangling-reference checks.
 - Run the narrowest meaningful checks and report any verification gap.

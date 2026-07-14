@@ -1,7 +1,8 @@
 # Design: Practice Learning Loop
 
-**Status**: Draft  
-**Date**: 2026-05-16  
+**Design status:** Draft.
+**Implementation status:** Partial; eval trails exist, while candidate promotion and validation remain proposed.
+**Date:** 2026-05-16.
 **Aligned with**: `../1-principles/work-model.md`, `session-eval-trail.md`, `projects.md`, `metrics.md`, `guards.md`, `sdk.md`
 
 ## Purpose
@@ -11,27 +12,35 @@ May-agent should improve by practicing real work, not by guessing rules in advan
 The learning loop turns completed sessions into durable improvement candidates:
 
 ```text
-trigger -> WorkRequest -> session.jsonl -> session.eval.jsonl -> owner findings -> owner action -> later sessions prove or reject it
+root event -> semantic intent -> bounded work -> session.jsonl -> session.eval.jsonl -> owner findings -> owner action -> later evidence
 ```
 
 The system should not treat one bad session as automatic truth. It should preserve the raw attempt, evaluator judgment, and human correction, then use repeated evidence to decide whether to update prompts, project context, workflows, guards, SDK surfaces, or metrics.
 
-The first-class object is the **WorkRequest**. It may originate from a human, metric, cron, heartbeat, evaluator, or another agent. Once it is actionable, the same loop applies.
+The first-class commitment is the existing **root event and trace**. It may
+originate from a human, metric, cron, heartbeat, evaluator, or another agent.
+The learning loop must not add a parallel request entity or lifecycle.
 
 ```text
-WorkRequest -> Session -> Eval -> Owner Finding -> Owner Action -> Validation
+Root Event + Trace -> Session/Workflow -> Eval -> Owner Finding -> Owner Action -> Validation
 ```
 
 This avoids treating every failure as "the agent failed". The evaluator should separate bad input, bad execution, weak result, and missing verification.
 
-## WorkRequest Model
+## Root Event And Trace Model
 
-A WorkRequest is a normalized description of work to be done. It does not need to start as a database table; initially it can be reconstructed from the session's first user/task message and evaluator output.
+The root event records why work began. Its semantic child intent records what
+the system committed to do, and the trace connects that intent to bounded work,
+terminal evidence, and delivery. Evaluation reads these existing records; it
+does not reconstruct or persist another work-request object.
 
-Minimum shape:
+Minimum context carried by the root event, semantic intent, or linked project
+state:
 
 ```json
 {
+  "rootEventId": 123,
+  "traceId": "event:123",
   "source": "human | metric | cron | heartbeat | evaluator | agent",
   "projectId": "platform",
   "purpose": "Why this work should happen now.",
@@ -39,15 +48,19 @@ Minimum shape:
   "expectedOutput": "What artifact, code change, decision, or evidence should exist after the work.",
   "verification": "How the agent should prove the result is correct enough.",
   "constraints": ["Boundaries, ownership, files, safety limits."],
-  "parentSessionId": "optional source session"
+  "parentEventId": "optional causal event",
+  "sessionId": "optional bounded execution"
 }
 ```
+
+This JSON is an evaluator-facing joined view of existing event/project/session
+fields, not a new persisted entity or envelope type.
 
 The evaluator classifies every session along four targets:
 
 | Target | Question |
 |--------|----------|
-| `request` | Was the WorkRequest clear, complete, grounded, current, and bounded? |
+| `intent_context` | Did the root event, semantic intent, and linked project context make the work clear, grounded, current, and bounded? |
 | `execution` | Did the agent choose appropriate steps and tool calls? |
 | `result` | Did the work produce useful output or evidence? |
 | `verification` | Did the agent prove the result before reporting completion? |
@@ -206,11 +219,16 @@ Later, if candidates need querying across projects, add a projection table. The 
 
 ## Loop
 
-### 1. Normalize The Request
+### 1. Preserve The Root And Intent
 
-Every trigger becomes a WorkRequest. For human messages, the request may be explicit. For agent-triggered work, the request must include the triggering evidence and why action is needed now.
+Every trigger starts or joins a trace. Free-form human input uses
+`human.input.received` plus exactly one semantic child intent. Other triggers
+use their canonical event directly. The intent event or linked project state
+must carry the triggering evidence and why action is needed now.
 
-If the request is obviously missing critical information, the correct next action is clarification, not execution.
+If critical information is missing, close the current intent with an explicit
+clarification disposition and route the question to the responsible owner or
+human. Do not leave an untracked pause.
 
 ### 2. Practice
 
@@ -222,7 +240,7 @@ Every real work session is practice. The system should prefer real project work 
 
 The evaluator should judge deeply:
 
-- Was the user's request clear, complete, simple, and non-misleading?
+- Did the human input or triggering event provide enough grounded context?
 - Did the assistant choose the right next action?
 - Were tool calls necessary, scoped, and connected to the task?
 - Did tool outputs support the next claim?
@@ -256,7 +274,7 @@ owner = agent:<name> | human:<name-or-role>
 Scope is separate from owner:
 
 ```text
-scope = request_quality | agent_behavior | project_context | workflow | tooling | verification
+scope = intent_context | agent_behavior | project_context | workflow | tooling | verification
 ```
 
 A workflow issue still belongs to the agent or human who can fix that workflow. Do not use vague owners like `platform` or `project` unless they resolve to a concrete agent/human recipient.
@@ -283,12 +301,12 @@ finding context under `data.finding`:
     "sessionId": "s_...",
     "projectId": "platform",
     "evalTrailPath": ".state/sessions/history/s_.../session.eval.jsonl",
-    "summary": "[high] request_quality/request-quality: clarify missing request context",
+    "summary": "[high] intent_context/input-context: clarify missing trigger context",
     "finding": {
-      "id": "request-quality",
-      "scope": "request_quality",
+      "id": "input-context",
+      "scope": "intent_context",
       "severity": "high",
-      "finding": "The request missed the blocker evidence needed to choose the next action.",
+      "finding": "The triggering input missed the blocker evidence needed to choose the next action.",
       "suggestedActions": ["Ask the requester for the missing blocker evidence."]
     }
   }
@@ -296,8 +314,8 @@ finding context under `data.finding`:
 ```
 
 Only actionable findings are sent immediately. Guard-triggered findings must be
-reviewed first. Raw guard counts may appear on dashboards and may trigger a
-review work request, but they do not become `learning.feedback` until someone
+reviewed first. Raw guard counts may appear on dashboards and may trigger an
+owner review turn, but they do not become `learning.feedback` until someone
 classifies the trigger as true positive, false positive, noisy, useful, harmful,
 or unknown.
 
@@ -332,10 +350,13 @@ Findings should contain evidence and suggested actions, not commands:
 The fast path is not waiting for future sessions, but the owner chooses the action:
 
 ```text
-WorkRequest -> session -> eval -> owner finding -> owner action -> compare later evidence -> candidate
+root event + trace -> bounded work -> eval -> owner finding -> owner action -> compare later evidence -> candidate
 ```
 
-Possible owner actions include rewriting the next WorkRequest, updating project context, asking a human, rerunning a narrow repair session, converting repeated checks to metrics, or creating an agent evolution candidate. Full replay is only worth it when comparison data justifies the cost.
+Possible owner actions include improving the next intent's context, updating
+project state, asking a human, rerunning a narrow repair session as a new linked
+branch, converting repeated checks to metrics, or creating an agent evolution
+candidate. Full replay is only worth it when comparison data justifies the cost.
 
 ### 4. Correct
 
@@ -398,7 +419,7 @@ Recommended routing:
 | Guard | Guard design/code/tests plus metrics |
 | SDK gap | SDK package and docs |
 | Web UI investigation gap | Platform project UI/API work |
-| User request quality pattern | Project templates or human-facing guidance |
+| Human-input/context quality pattern | Project templates or human-facing guidance |
 
 The improvement itself is normal project work: update files, run tests, update journal, and validate with later sessions.
 
@@ -410,7 +431,7 @@ After a project-local improvement works, decide whether it should stay local or 
 |---------------|------------------|
 | Only useful for one project | Keep in that project's `project.md`, workflow, or UI. |
 | Useful for one agent's repeated work | Agent context, lessons, or skill. |
-| Useful across many projects | Shared workflow, shared docs, SDK helper, or metric. |
+| Useful across many projects | Shared skill or design guidance, SDK helper, or metric. Keep workflow policy in one owning app/agent. |
 | Prevents a concrete repeated failure | Guard, starting in observe/warn mode. |
 
 Retirement is part of evolution. If later sessions show the promoted behavior is stale, too noisy, or has the wrong abstraction, append a retirement note to the candidate and remove or downgrade the implementation.
@@ -479,7 +500,7 @@ This view is an index over project artifacts and eval trails. It should not beco
 ### Slice 1: Use the Existing Trail
 
 - Keep `session.eval.jsonl` as the source of evaluation truth.
-- Add `target: request | execution | result | verification | evolution | session` to seeded eval rows.
+- Add `target: intent_context | execution | result | verification | evolution | session` to seeded eval rows.
 - Add summary-level owner findings with scope, concrete owner, severity, evidence, suggested actions, target breakdown, and notification decision.
 - Improve evaluator prompt/code so critique explains judgment, why it matters, and better behavior.
 - Make re-evaluation include existing human feedback.

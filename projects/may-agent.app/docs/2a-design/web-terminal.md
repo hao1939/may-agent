@@ -1,6 +1,7 @@
 # Design: Web Terminal
 
-**Status**: Draft
+**Design status:** Draft.
+**Implementation status:** Partial.
 **Date**: 2026-07-10
 **Aligned with**: `webui.md`, `may-console.md`, `http-boundary.md`
 

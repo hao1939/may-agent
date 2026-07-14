@@ -11,9 +11,9 @@
 > This file is preserved as historical context for the phases that shipped.
 > For current architecture direction, see [project-app-v3.md](project-app-v3.md).
 
-**Status**: Canonical implementation tracker. This is the single go-forward
-plan for the infra surface work. The older implementation tracker has been
-folded into this file; the gap mitigation notes are incorporated here.
+**Design status:** Historical tracker. It records completed and superseded
+handler-centric migration slices. Current gaps belong in the governing Tier 2
+design doc or the explicitly linked operations migration record above.
 
 This plan pushes [system-boundary.md](system-boundary.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one

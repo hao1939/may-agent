@@ -19,6 +19,21 @@ Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts 
 - **`2b-manual/`** (Tier 2b) — How-to guides. Derived from principles + implementation.
 - **`3-proposals/`** (Tier 3) — Plans, specs, historical. May be outdated or superseded.
 
+Folder tier expresses authority, not implementation progress. Use these fields
+inside a document when status matters:
+
+- **Design status:** `Accepted`, `Draft`, `Tracker`, or `Historical`.
+- **Implementation status:** `Implemented`, `Partial`, `Gap`, or `N/A`.
+
+Keep those axes separate. An accepted design may still have implementation
+gaps; shipped code does not promote a proposal into authoritative design. A
+tracker records convergence work and must link to the accepted design it is
+tracking. Historical documents must say which active document replaces them.
+
+Stable design docs define contracts and current gaps, not dated row counts or
+incident narration. Put live findings in manuals, task evidence, or dated
+proposals and link back to the governing design.
+
 ## Reading Paths
 
 ### I want to operate the running system
@@ -45,7 +60,7 @@ notes live under `archive/v2/` for history only.
 
 1. [design/architecture.md](2a-design/architecture.md) — current system architecture
 2. [design/system-boundary.md](2a-design/system-boundary.md) — north-star infra boundary
-3. [design/system-boundary-tracker.md](2a-design/system-boundary-tracker.md) — active tracker
+3. [design/system-boundary-tracker.md](2a-design/system-boundary-tracker.md) — historical migration tracker; follow its links for remaining work
 4. [design/events.md](2a-design/events.md), [design/sessions.md](2a-design/sessions.md), [design/cron.md](2a-design/cron.md) — subsystem details
 
 See [INDEX.md](INDEX.md) for complete navigation.

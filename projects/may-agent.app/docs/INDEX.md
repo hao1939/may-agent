@@ -32,12 +32,10 @@ System architecture and subsystem designs.
 | [architecture.md](2a-design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
 | [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
 | [events.md](2a-design/events.md) | Event-native architecture: delivery, inbox, event types |
+| [event-graph.md](2a-design/event-graph.md) | Event trace graph: causality, closure links, delivery evidence, and graph read model |
 | [sessions.md](2a-design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
-| [session-eval-trail.md](2a-design/session-eval-trail.md) | Session evaluation trail: summary projection plus append-only line evidence beside raw session logs |
-| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Practice learning loop: sessions become eval trails, human feedback, evolution candidates, and project changes |
 | [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
 | [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console contract: targeted sessions and event-shaped human intents |
-| [may-console.md](2a-design/may-console.md) | May Console: terminal REPL over the daemon socket, session switching, direct steering |
 | [native-coding-workers.md](2a-design/native-coding-workers.md) | Native coding workers: Codex/Claude CLI adapter model, event contract, session continuity |
 | [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
@@ -45,21 +43,27 @@ System architecture and subsystem designs.
 | [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
 | [projects.md](2a-design/projects.md) | Project system: V3 app layout, lifecycle, task tree, legacy compatibility |
 | [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
-| [app-root-layout.md](2a-design/app-root-layout.md) | App directory structure: app.ts, tasks/, workflows/, agents/, scripts/, .state/ |
+| [app-project-integrity.md](2a-design/app-project-integrity.md) | Compact integrity contract tying project apps, events, task trees, metrics, and escalation together |
+| [app-root-layout.md](2a-design/app-root-layout.md) | Repository-root classification: durable source, runtime state, project workspaces, and scratch |
 | [task-tree-engine.md](2a-design/task-tree-engine.md) | Task tree data/tool model: owner review, worker completion, Kanban projection, human steering |
+| [default-project-ui.md](2a-design/default-project-ui.md) | Shared project operating readout and structured steering contract |
 
-### Design Decisions
+### Design Status And Convergence
 
 | Doc | Status | What |
 |-----|--------|------|
-| [system-boundary.md](2a-design/system-boundary.md) | Accepted | North-star: infra primitives, agent patterns, SDK/control surfaces |
-| [system-boundary-tracker.md](2a-design/system-boundary-tracker.md) | Active tracker | Phased implementation tracker for system boundary |
-| [guards.md](2a-design/guards.md) | Shipped (partial) | Guards as detection signals with default observability |
-| [escalation.md](2a-design/escalation.md) | Partial | Basic routing shipped; lifecycle proposed |
-| [telegram-notifications.md](2a-design/telegram-notifications.md) | Partial | Envelope shipped; enrichment proposed |
-| [webui.md](2a-design/webui.md) | Shipped (partial) | Web UI design: surfaces, steering, nav |
-| [http-boundary.md](2a-design/http-boundary.md) | Accepted | Separate HTTP adapter from webui package |
-| [handler-audit.md](2a-design/handler-audit.md) | First slice | Handler infra surface audit |
+| [system-boundary.md](2a-design/system-boundary.md) | Accepted / mostly implemented | North-star: infra primitives, agent patterns, SDK/control surfaces |
+| [system-boundary-tracker.md](2a-design/system-boundary-tracker.md) | Historical tracker | Completed/superseded handler-centric migration record with pointers to remaining work |
+| [guards.md](2a-design/guards.md) | Accepted / partial | Guards as detection signals with default observability |
+| [escalation.md](2a-design/escalation.md) | Accepted / partial | Owner-boundary escalation contract; terminal handling and closure health still converge |
+| [telegram-notifications.md](2a-design/telegram-notifications.md) | Accepted / partial | Channel envelope shipped; interaction refinement remains |
+| [webui.md](2a-design/webui.md) | Accepted / partial | Web UI design: surfaces, steering, nav; modular-route subsection remains draft |
+| [http-boundary.md](2a-design/http-boundary.md) | Accepted / partial | Separate HTTP adapter from webui package |
+| [session-eval-trail.md](2a-design/session-eval-trail.md) | Draft / partial | Summary projection plus append-only line evidence beside raw session logs |
+| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Draft / partial | Event-rooted learning loop from eval evidence through owner action and later validation |
+| [may-console.md](2a-design/may-console.md) | Draft / partial | Terminal REPL over the daemon socket, session switching, and canonical steering intents |
+| [web-terminal.md](2a-design/web-terminal.md) | Draft / partial | Browser terminal transport and tmux ownership contract |
+| [handler-audit.md](2a-design/handler-audit.md) | Tracker | Handler migration audit governed by architecture, cron, and system-boundary design |
 
 ## Tier 2 — Manual
 
@@ -82,13 +86,19 @@ Proposals under consideration and historical docs preserved for context.
 
 | Doc | Status | What |
 |-----|--------|------|
-| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted | Ops health as may-agent.app responsibility: static checks, runtime metrics, signal-gated review |
+| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted concepts / partial implementation | Ops health as may-agent.app responsibility; remaining migration is tracked in the document |
+| [chat-agent-separation.md](3-proposals/chat-agent-separation.md) | Draft / partial implementation | Separate persistent chat execution from bounded jobs while preserving the shared event and trace model |
 | [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Draft | Formalize stigmergic coordination as a first-class pattern |
 | [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
 
 Old V2 project-app proposals were moved to [`archive/v2/`](archive/v2/). They
 are historical only; [project-app-v3.md](2a-design/project-app-v3.md) is the
 single current project-app design.
+
+Dated implementation records under [`proposals/`](proposals/) are historical
+evidence, not Tier 2 contracts. Completed records remain useful for migration
+rationale; unresolved findings must link to the active design or tracker that
+owns convergence.
 
 ---
 

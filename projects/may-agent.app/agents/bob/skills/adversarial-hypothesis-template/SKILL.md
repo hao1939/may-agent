@@ -1,4 +1,9 @@
-# Skill: Adversarial Hypothesis Template
+---
+name: adversarial-hypothesis-template
+description: Use when proposing or updating an experimental hypothesis file to require concrete counter-mechanisms, strongest counter-evidence, a pre-mortem, and an explicit decision on whether the hypothesis remains worth testing.
+---
+
+# Adversarial Hypothesis Template
 
 **Trigger**: When proposing a new hypothesis (creating an h-exp-*.md file)
 

@@ -1,7 +1,8 @@
 # Infra Surface Design
 
-**Status**: Accepted direction, mostly implemented across the core infra
-surface. Keep this as the north-star while folding stable pieces into
+**Design status:** Accepted.
+**Implementation status:** Mostly implemented across the core infra surface.
+Keep this as the north-star while folding stable pieces into
 `architecture.md`, `sdk.md`, `events.md`, `metrics.md`, `cron.md`, and
 `../1-principles/work-model.md`.
 

@@ -3,9 +3,6 @@ name: control-plane-operation
 description: >
   Use may-agent infra through the intended control plane: events, workflows,
   SDK query/metrics helpers, and the daemon socket.
-version: 1.0.0
-owner: may
-tools: [query_db, workflow, message, bash, finish]
 ---
 
 # Skill: Control Plane Operation
@@ -24,9 +21,13 @@ Use this skill when you need to interact with may-agent runtime behavior:
 
 Use the control plane first.
 
+```text
+human input -> human.input.received -> one semantic intent -> bounded work -> terminal evidence -> channel delivery
+system signal -> owner/target routing -> handler/workflow -> evidence -> state update -> follow-up event
 ```
-external input -> socket/control event -> daemon event -> handler -> workflow -> session/function
-```
+
+The root event and trace are the commitment. Do not add a parallel request
+record or lifecycle.
 
 Direct DB reads are for diagnosis. Direct DB writes are mechanical infra work
 only, and should normally live behind SDK/query/metrics helpers.
@@ -35,7 +36,7 @@ only, and should normally live behind SDK/query/metrics helpers.
 
 | Need | Prefer |
 |---|---|
-| External adapter or CLI action | `packages/control` client or `may-agent --emit` |
+| External adapter or CLI action | `packages/control` client or `may-agent --emit`; free-form human text enters through `human.input.received` |
 | Judgment/action from an event | handler bridge -> workflow |
 | Workflow or handler live reads | `sdk.query.*` or targeted workflow-collected context |
 | Metric creation/update | `sdk.metrics.*` |
@@ -99,10 +100,12 @@ When you must query manually, inspect schema first.
 
 After a change, trigger one representative event and verify the durable trace:
 
-- event accepted,
+- event accepted by the responsible domain consumer or queryable owner inbox,
 - handler started/completed or failed with reason,
 - workflow/session linked when expected,
-- metric/alert updated when expected.
+- terminal closure link persisted when expected,
+- metric/alert or project state updated when expected,
+- outbound channel delivery linked when a human response is claimed.
 
 Do not rely only on TypeScript compile success for control-plane changes.
 

@@ -1,6 +1,8 @@
 # Design: Telegram Channel
 
-**Status**: implemented foundation, needs interaction refinement
+**Design status:** Accepted.
+**Implementation status:** Partial; the foundation is implemented and the
+interaction refinements below remain.
 **Updated**: 2026-06-14
 
 ## Purpose

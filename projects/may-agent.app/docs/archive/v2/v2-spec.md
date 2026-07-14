@@ -40,7 +40,7 @@ Each layer answers a different question. Each layer's claims are observed by met
 
 The diagnostic ladder is top-down: a red capability metric is a *symptom*; the cause is in the infra layer or the structural layer below. Investigate from the top, descend until you find the broken rung.
 
-A note on what this means for the architecture doc: `../architecture.md` describes intent. It is the *design*. This doc is the *contract*. The intent doc is read for understanding; this doc is read for evaluating whether what we built lives up to it.
+A note on what this means for the architecture doc: `../../2a-design/architecture.md` describes intent. It is the active design; this document is historical V2 material.
 
 ---
 
@@ -109,7 +109,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 **Claim.** Each iteration builds on the previous one. Today's heartbeat references yesterday's journal. Agents don't re-discover the same problem repeatedly.
 
-**Why.** Per `../architecture.md`, `../work-model.md`, and `../2a-design/heartbeat.md`: projects are *context*; without continuity they become amnesia.
+**Why.** Per `../../2a-design/architecture.md`, `../../1-principles/work-model.md`, and `../../2a-design/heartbeat.md`: projects are *context*; without continuity they become amnesia.
 
 **Measurement.** `capability.journal-reference-rate` — fraction of heartbeat sessions whose `agent.decision` event references prior journal entries (by date stamp or by content phrase) divided by heartbeat sessions where a referenceable journal exists.
 

@@ -1,11 +1,9 @@
 ---
 name: primary-source-analysis
-version: 1.0.0
 description: >
   When analyzing failures or drawing conclusions, always read primary sources
   (logs, code, data) before accepting summaries or reports. Summaries can be
   wrong, biased, or incomplete.
-owner: optimizer
 ---
 
 # Primary Source Analysis

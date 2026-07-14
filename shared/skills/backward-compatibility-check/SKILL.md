@@ -1,11 +1,9 @@
 ---
 name: backward-compatibility-check
-version: 1.0.0
 description: >
   When changing data formats, APIs, or schemas, always verify what happens to
   existing data. New code must handle both old and new formats, or include a
   migration step for existing data.
-owner: optimizer
 ---
 
 # Backward Compatibility Check

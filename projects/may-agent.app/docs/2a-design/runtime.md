@@ -2,17 +2,28 @@
 
 How the binary processes input, runs sessions concurrently, and structures LLM calls.
 
+**Design status:** Accepted runtime reference.
+**Implementation status:** Partial; compatibility frames remain while human
+control paths converge on the event contract below.
+
 ## Input Routing
 
-### ChatSession (--chat mode)
+### ChatSession (`--chat` mode)
 
-User input goes through `ChatSession.handleInput()`:
+Free-form user input first emits `human.input.received`. The input router emits
+exactly one semantic child intent:
 
-1. **Built-in commands** (`status`, `cancel`, `reload`, `/new`) — handled directly, no LLM
-2. **@agent prefix** (`@dev fix the test`) — rewritten into May's chat session as a delegation request; May forks/monitors the target agent
-3. **Normal message** — routed to the persistent chat session:
-   - No session yet → `manager.run(agent, message, { kind: "chat", autoClose: "never" })`
-   - Session exists → `manager.input(sessionId, message)` (wakes if idle, steers if running)
+1. **Read-only transport commands** such as status/subscription may stay local.
+2. **State-changing commands** emit canonical intents such as
+   `session.cancel.requested` or `runtime.reload.requested`.
+3. **Normal message with no bound chat** emits `chat.start.requested`.
+4. **Normal message with an existing target** emits
+   `session.steer.requested`.
+
+The manager then runs or resumes the persistent chat. Each queued turn carries
+its own trace context through manager send/resume, session terminal evidence,
+and outbound delivery. The chat session is a conversation container, not the
+trace identity.
 
 ### Socket Commands
 
@@ -24,8 +35,10 @@ Socket-local commands are intentionally narrow:
 | `status` | Return current active-session status |
 
 Everything else is normalized into a daemon event and routed through the event
-bus. Examples: `input`, `steer`, `cancel`, `resume`, `reload`, `shutdown`,
-`project.comment.created`, and the control shortcut `trigger.<handler-name>`.
+bus. `input`, `steer`, `cancel_all`, `reload`, and `shutdown` are compatibility
+frames, not canonical event names. New control surfaces emit the intent events
+defined in `human-control-surfaces.md`; `trigger.<handler-name>` remains a
+manual operator shortcut.
 Event handlers then decide whether to call manager mechanics directly or
 dispatch a workflow.
 

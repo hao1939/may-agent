@@ -1,8 +1,10 @@
 # Design: Web UI
 
-**Status**: Partially shipped (2026-05-08); modular route proposal added for review (2026-06-13)
+**Design status:** Accepted overall; the modular-route subsection remains a
+local draft where explicitly marked.
+**Implementation status:** Partial.
 **Date**: 2026-05-06 (revised 2026-05-08, 2026-06-13)
-**Aligned with**: `../architecture.md`, `../work-model.md`, `metrics.md`,
+**Aligned with**: `architecture.md`, `../1-principles/work-model.md`, `metrics.md`,
 `heartbeat.md`, `default-project-ui.md`, `web-terminal.md`
 
 ## What this UI is for
@@ -55,7 +57,8 @@ So conversation belongs in the dashboard — but it doesn't get its own separate
 
 ## The system model the UI surfaces
 
-Three first-class concepts (defined in detail in `../architecture.md`, `../work-model.md`, and `heartbeat.md`):
+Three first-class concepts (defined in detail in `architecture.md`,
+`../1-principles/work-model.md`, and `heartbeat.md`):
 
 - **Project** — the context an agent works within: goals, history, journal, accumulated experience. Owned by an agent. Iterated on at heartbeat.
 - **Heartbeat** — the recurring moment when an agent reads context, decides, and acts. Where agency lives.
@@ -366,9 +369,10 @@ and traceable state transitions.
 
 The event graph trace is the most important debugging surface. It should be
 specified as a product/API contract, not just a button on an event table.
-Events are nodes; parent relationships and trace links are edges. The default
-view should show a bounded graph of default events. LLM turns and tool calls
-stay hidden until the user expands a node inline in the graph.
+Events are nodes; parent relationships and trace links are edges. The server
+returns the complete graph resolved from the selected event's trace, lifecycle,
+and correlation records. Available LLM turns and tool calls are projected into
+that same graph.
 
 This should become a dedicated Event Review page, not only an events table.
 The same page supports four common review starts:
@@ -393,7 +397,7 @@ API:
 
 ```text
 GET /api/events/:eventId/trace
-GET /api/events/:eventId/graph?depth=3&detail=false
+GET /api/events/:eventId/graph
 ```
 
 The response should describe graph structure and display context separately:
@@ -413,27 +417,22 @@ nodes and edges with stable keys, node kind, visibility, parent key, optional
 level, object ids, labels, summaries, and data previews. The browser should not
 guess that a node is a child because its event type starts with `session.` or
 because a payload string happens to contain a session id. The browser renders
-the hierarchy it is given and keeps page-local expanded/collapsed state.
-
-The graph API should also return `frontiers`: explicit boundaries where related
-data exists but was not included in the bounded response. The browser renders
-frontiers as `... expand` nodes. Expanding a frontier fetches or reveals data
-and then merges real nodes back into their real graph/timeline position.
-Collapsing only hides currently visible child branches; it does not delete
-fetched data. In practical terms:
-
-```text
-visible graph = base graph + loaded data - hidden branches
-```
+the complete hierarchy it is given. Nodes use one generic presentation of the
+stored envelope (`type`, `source`, `owner`, trace) and bounded top-level `data`
+key/value pairs; they do not use event-type-specific extraction rules. The
+focused node exposes its complete stored payload. The browser does not own semantic filtering,
+expansion state, or graph-fragment caching.
 
 This keeps the UI simple:
 
 - data model and event ids define truth and order;
-- `... expand` appears only where the read model says more data exists;
-- `- collapse` appears on nodes that currently have visible child/detail
-  branches;
-- collapse hides children in the current view and re-expand reveals loaded data
-  when available.
+- one endpoint response contains every resolved event and available transcript
+  node;
+- the UI lays out and renders all returned nodes and edges;
+- hierarchy depth controls the horizontal column, while global event time
+  controls top-to-bottom order;
+- clicking a persisted event refocuses the review without changing graph
+  visibility.
 
 Event-to-event edges are only drawn for real links recorded by the graph model:
 
@@ -1073,7 +1072,7 @@ Five rules for the steering surface:
 
 ## Live vs. historical: the two data planes
 
-The "UI = bus subscriber" rule from `../architecture.md` applies to **live updates**. For **historical state** (last 7 days of metric values, breach history, agent timeline, project journals), the UI reads SQLite and the filesystem directly. Both are correct, both are needed.
+The "UI = bus subscriber" rule from `architecture.md` applies to **live updates**. For **historical state** (last 7 days of metric values, breach history, agent timeline, project journals), the UI reads SQLite and the filesystem directly. Both are correct, both are needed.
 
 ### Plane A — Live (1 endpoint)
 
@@ -1232,7 +1231,7 @@ Backend additions: `GET /api/agents` (per-agent rollup), `GET /api/agents/:name/
 
 ## Why this is v2-shaped
 
-- **Projects are the primary navigable object** — because projects are the durable work context (per `../work-model.md`).
+- **Projects are the primary navigable object** — because projects are the durable work context (per `../1-principles/work-model.md`).
 - **Heartbeats are visible** — because heartbeats are agency (per `heartbeat.md`), and agency is the thing the operator most needs to see.
 - **Metrics are vitals, not pagers** — breach badge is in the top bar; the metric grid is one click in. (Per `metrics.md`.)
 - **Steering is participation, not control** — verbs shape what agents see at their next look. Async by design.

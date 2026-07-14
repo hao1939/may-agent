@@ -1,6 +1,10 @@
 # Agent Evolution: How to Extend Your Abilities
 
-**Status**: draft — describes the desired evolution model, not yet fully implemented.
+**Design status**: Draft. This document defines a promotion heuristic, not a
+runtime lifecycle. Operational interfaces remain authoritative in
+[`agent-convention.md`](../2b-manual/agent-convention.md),
+[`workflow-authoring.md`](../2b-manual/workflow-authoring.md),
+[`guards.md`](../2a-design/guards.md), and [`sdk.md`](../2a-design/sdk.md).
 
 ## The Progression
 
@@ -46,21 +50,23 @@ Lessons are not auto-loaded. Promote only durable always-on behavior into
 
 A skill is a lesson with structure: context, principles, actions, anti-patterns.
 
-**Where it lives:** `shared/skills/<name>/SKILL.md`
+**Where it lives:** `shared/skills/<name>/SKILL.md`,
+`agents/<owner>/skills/<name>/SKILL.md`, or
+`projects/<id>.app/agents/<owner>/skills/<name>/SKILL.md`, depending on scope.
 
 **Format:**
 ```yaml
 ---
 name: verification
-description: Ensure outputs are verified with tool evidence
-version: 1.0.0
-tools: [bash, read]
+description: Use when work products must be verified with tool evidence before completion is claimed.
 ---
 ```
 
 Then structured sections: Context, Core Principles, Actions, Anti-patterns.
 
-**How agents access it:** Distilled summary in `knowledge/INDEX.md`, full guide read on demand.
+**How agents access it:** Runtime skill discovery or an explicit pointer from
+the owning agent's knowledge index; do not copy the full skill into always-on
+prompt files.
 
 **Signal to level up:** The skill should execute automatically, not require the agent to remember.
 
@@ -74,7 +80,8 @@ Workflow execution is synchronous by design. A workflow step waits for its
 agent/function/sub-workflow result before the next step runs; this keeps
 orchestration simple and auditable.
 
-**Where it lives:** `agents/<agent>/workflows/<name>.ts` or `projects/<id>/workflows/<name>.ts`
+**Where it lives:** `agents/<agent>/workflows/<name>.ts` or
+`projects/<id>.app/workflows/<name>.ts`.
 
 **Interface:**
 ```typescript
@@ -95,7 +102,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 **Invoke from handler:** `ctx.sdk.runWorkflow("implement-and-verify", task)`
 **Invoke from agent:** `workflow({ action: "run", name: "implement-and-verify", task })`
 
-**Signal to level up:** Certain steps must ALWAYS happen (safety, quality) — not just when the workflow chooses.
+**Signal to level up:** Repeated evidence shows a mechanically detectable risk
+needs an observable intervention. Judgment-heavy quality rules should remain in
+owner context or workflows.
 
 ---
 
@@ -154,11 +163,13 @@ Declare standard tool bundles in your agent config:
 }
 ```
 
-Available presets:
+Common presets are shown below only as examples; `agent.json` and the running
+tool loader are authoritative:
+
 | Preset | What it gives |
 |--------|---------------|
 | `coding` | read + write + edit + bash |
-| `agents` | call, fork, message, list, peek, cancel other agents |
+| `agents` | call, fork, list, peek, and cancel agent sessions |
 | `workflow` | list/run/resume workflows from within a session |
 | `message` | send messages to humans or agents (lightweight) |
 | `scrape` | web scraping |
@@ -173,9 +184,11 @@ Available presets:
 
 ### Custom Local Tools (agents/<name>/tools/)
 
-For domain-specific capabilities, create a tool file:
+For domain-specific capabilities, create a tool file under the owning global or
+app-local agent:
 
-**Where it lives:** `agents/<name>/tools/<name>.ts`
+**Where it lives:** `agents/<name>/tools/<name>.ts` or
+`projects/<id>.app/agents/<name>/tools/<name>.ts`.
 
 **Interface:**
 ```typescript
@@ -194,7 +207,8 @@ export default async function(opts: { projectRoot: string; agentRoot: string; pe
 }
 ```
 
-Tools are auto-discovered and hot-reloaded. No config changes needed — just create the file.
+Tool discovery and reload behavior are runtime contracts; verify the tool is
+present in the agent's actual tool list before relying on it.
 
 ---
 
@@ -232,9 +246,9 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 | `read(path)` | Read files |
 | `write(path, content)` | Create/overwrite files |
 | `edit(path, old, new)` | Surgical text replacement |
-| `agents.call(agent, task)` | Delegate to another agent (sync) |
-| `agents.fork(agent, task)` | Fire-and-forget delegation (async) |
-| `message(target, content)` | Send a human or agent message |
+| `agents` with `action: "call"` | Delegate to another agent and wait |
+| `agents` with `action: "fork"` | Start bounded background delegation |
+| `message({ to, content })` | Send an asynchronous human or agent message |
 | `workflow(action, name, task)` | Run a multi-step workflow |
 | `checkpoint(summary)` | Save progress mid-session |
 | `finish(summary, deliverables)` | End session with structured output |
@@ -248,7 +262,7 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 | "I keep forgetting to check X" | 1 Lesson | Add to LESSONS.md |
 | "This pattern has 5 steps I always do" | 2 Skill | Write SKILL.md |
 | "Agents should follow this procedure automatically" | 3 Workflow | Write workflow .ts |
-| "This must NEVER be violated regardless of workflow" | 4 Guard | Write guard .ts |
+| "A repeated mechanical risk needs observable intervention" | 4 Guard | Start with observe/warn; block only after validation |
 | "I need a new action type that doesn't exist" | 5 Tool | Write `tools/<name>.ts` |
 | "This should happen every N minutes / on every event" | 6 Handler | Write handler .ts |
 | "I don't know how to handle this" | — Escalate | `sdk.escalate(reason)` |
@@ -282,7 +296,9 @@ coordinating agent), records the event, and stops the current work cleanly.
 The owning project app or owner route is responsible for noticing unresolved
 blocked state and following up.
 
-**The principle:** It's always better to escalate too early than to proceed with uncertainty. Wasted work from a wrong guess costs more than a 5-minute human clarification.
+**The principle:** Escalate when the next action crosses an ownership boundary
+and cannot be resolved locally. Preserve the blocked evidence and resume
+context; do not create escalation noise for ordinary local retries.
 
 ---
 
@@ -296,9 +312,10 @@ Growth (experimentation, iteration, improvement) is an agent's responsibility, n
 
 For work that spans multiple sessions, see [projects.md](../2a-design/projects.md).
 
-**Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done
-
-See [projects.md](../2a-design/projects.md) for the canonical lifecycle.
+Project status, task-tree state, and session lifecycle are separate. See
+[projects.md](../2a-design/projects.md) and
+[task-tree-engine.md](../2a-design/task-tree-engine.md) for the canonical
+vocabularies.
 
 ---
 
@@ -306,20 +323,30 @@ See [projects.md](../2a-design/projects.md) for the canonical lifecycle.
 
 ### "I want agents to always run tests after code changes"
 
-**Level 4 (Guard):** `shared/guards/auto-test.ts` — injects a test step after any code-writing step.
+**Level 3 (Workflow):** put the test and evidence gate in the owning coding
+workflow. Use a guard only to detect a repeated, mechanically identifiable
+omission.
 
 ### "I want a daily research scan"
 
-**Level 5 (Handler):** `agents/scout/handlers/daily-scan.ts` — cron fires every 24h, does preflight, then calls `sdk.runWorkflow("daily-research-scan", task)`. The workflow collects context and runs scout.
+**Level 6 (Handler or app schedule):** an owning app schedule emits a canonical
+event to its workflow handler. A standalone global agent may use an agent-owned
+handler when no project app owns the behavior.
 
 ### "Implement then verify is our default flow"
 
-**Level 3 (Workflow):** `agents/dev/workflows/implement-and-verify.ts` or `projects/<id>/workflows/implement-and-verify.ts` — project-scoped workflows override agent workflows when a project supplies its own version.
+**Level 3 (Workflow):** `agents/dev/workflows/implement-and-verify.ts` or
+`projects/<id>.app/workflows/implement-and-verify.ts`. Each workflow has one
+owner; copy and diverge when another owner needs different policy.
 
 ### "Never commit secrets to git"
 
-**Level 4 (Guard):** `shared/guards/no-secret-leak.ts` — blocks workflow if step output contains secret patterns.
+**Level 4 (Guard):** a high-confidence secret detector emits
+`guard.triggered`; blocking is justified only at a boundary where the match is
+reliable and the impact is severe.
 
 ### "Check if project is stalled and re-launch"
 
-**Level 5 (Handler):** `agents/may/handlers/project.ts` — the project health monitor.
+**Project owner loop:** the app emits `project.owner.requested`; the owner
+reviews current project/task state and either assigns work, records an exact
+wait, escalates across an owner boundary, or emits `project.owner.reviewed`.

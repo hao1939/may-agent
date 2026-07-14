@@ -1,5 +1,10 @@
 # Proposal: System Operations Model
 
+**Design status:** Accepted concepts; authoritative subsystem contracts remain
+in Tier 2 design docs.
+**Implementation status:** Partial; see the final implementation-status section
+and the handler migration gates.
+
 ## Context
 
 Over the past two days we fixed 6 problems manually that the system should have

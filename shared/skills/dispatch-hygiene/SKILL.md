@@ -1,8 +1,12 @@
-# Skill: Dispatch Hygiene — Pre-Dispatch Completion Check
+---
+name: dispatch-hygiene
+description: Prevent duplicate, completed, blocked, or already-running recurring work before agent call/fork or project-task assignment by checking current task state, active sessions, recent attempts, and owner disposition.
+---
 
-**ID**: dispatch-hygiene
+# Dispatch Hygiene — Pre-Dispatch Completion Check
+
 **Author**: Bob | **Date**: 2028-01-06
-**Trigger**: Before any `agents.fork()` or `agents.call()` in a heartbeat or recurring task
+**Trigger**: Before any `agents` tool call/fork or `project.task.assigned` emission in recurring work
 **Evidence**: KE-432 (dispatch loop antipattern), KE-435 (documentation-gen live loop), KE-436 (safety cap termination)
 
 ## Problem
@@ -16,13 +20,14 @@ Before dispatching ANY recurring or previously-attempted task:
 ```
 1. CHECK COMPLETION: Does the expected output already exist?
    - Experiment: Does results.md contain CONCLUDED/CLOSED/COMPLETED?
-   - Project: Is project.md status "closed" or "completed"?
+   - Project: Is `project.json` terminal, or is the relevant task-tree node done?
    - One-off task: Does the deliverable file exist?
    → If YES: Skip dispatch. Log "already complete."
 
 2. CHECK IN-FLIGHT: Is an identical task already running?
-   - Use agents.list() to see active sessions
-   - Use agents.requests(filter="active") to check pending requests
+   - Use the `agents` tool with `action: "list"` to see active sessions.
+   - Query the project task tree, event trace, or queryable owner inbox for
+     already-accepted work; do not invent a parallel request queue.
    → If YES: Skip dispatch. Log "already in-flight."
 
 3. CHECK CIRCUIT BREAKER: Has this task failed 3+ times recently?

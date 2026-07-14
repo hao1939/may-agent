@@ -1,6 +1,8 @@
 # Design: May Console
 
-**Status**: Draft
+**Design status:** Draft.
+**Implementation status:** Partial; the event-convergence slices below remain
+the acceptance contract.
 **Date**: 2026-06-05
 **Aligned with**: `human-control-surfaces.md`, `runtime.md`, `sessions.md`, `events.md`, `webui.md`, `web-terminal.md`
 
