@@ -396,15 +396,16 @@ GET /api/events/:eventId/trace
 GET /api/events/:eventId/graph?depth=3&detail=false
 ```
 
-The response should describe a graph:
+The response should describe graph structure and display context separately:
 
 ```text
 event nodes
   + parent edges
   + reference links
   + closure links
-  + optional detail nodes for session, workflow, LLM, tool, metric,
-    notification, and diagnostic details
+  + optional groups for same-session, same-workflow, same-task, same-metric,
+    and same-owner context
+  + optional detail nodes for LLM, tool, metric, notification, and diagnostics
 ```
 
 The graph API is responsible for graph semantics. It should return display
@@ -413,6 +414,39 @@ level, object ids, labels, summaries, and data previews. The browser should not
 guess that a node is a child because its event type starts with `session.` or
 because a payload string happens to contain a session id. The browser renders
 the hierarchy it is given and keeps page-local expanded/collapsed state.
+
+Event-to-event edges are only drawn for real links recorded by the graph model:
+
+- `parent`: a real parent/child trace relationship.
+- `closure`: a lifecycle close/result relationship.
+- `reference`: an explicit relation such as task result, review, session, or
+  same-workflow handoff.
+- detail connectors: an expanded event node can connect to its non-event detail
+  nodes, such as transcript turns. These are containment/detail connectors, not
+  event-to-event links.
+- transcript/tool links: ordered LLM/user turns and tool calls from a session
+  transcript. These are not event-to-event links.
+
+For session transcript expansion, the useful shape is:
+
+```text
+session.start --closure--> session.end --reference:completed--> session.completed
+      |
+      +--details--> first turn -> ... -> last turn --details--> session.end
+```
+
+The transcript turn branch belongs inside the session lifecycle. The first turn
+is anchored from the expanded session event, and the last turn can close back to
+`session.end` when that event is present. Do not connect transcript turns
+directly to `session.completed`; `session.completed` is a runtime follow-up
+event and should be linked from `session.end` by real trace metadata.
+
+Do not draw a sibling edge. Events with the same session, workflow, task,
+metric, or owner are siblings in a group. Their order is the timeline order,
+not an implied edge. The UI can show sibling groups as lanes, bands, aligned
+columns, or ordered rows, but arrows between event nodes must come from real
+graph edges only. This keeps the graph useful for debugging: when an event has
+no edge, that absence remains visible.
 
 This lets the same page support multiple hierarchy depths without changing the
 UI model:
@@ -457,6 +491,19 @@ direct closure/reference links, lifecycle pair, direct emitted follow-ups, and
 expanded detail children. Broader same-workflow, same-task, same-session,
 same-metric, and same-owner context should appear as `...` boundary nodes until
 the user expands them.
+
+`...` nodes are hidden-boundary controls, not graph edges. A collapsed `...`
+node means "there is hidden context here." Clicking it replaces that placeholder
+with the directly hidden event nodes from the API. Those revealed events become
+normal event nodes: they can be selected, inspected, and expanded just like
+events that were visible initially. Revealing a boundary must not create a fake
+chain between siblings.
+
+If the revealed boundary still has more graph beyond it, show another `...`
+node at the end of that boundary as "continue", not "collapse". Continuing
+should fetch or reveal the next bounded slice from the last revealed event while
+keeping the existing graph in place. Collapsing is secondary UI behavior; it
+must not be the only action offered after expansion.
 
 Default graph radius is one direct hop around the selected event. The start
 point and structural parent path are always included even when they are farther
