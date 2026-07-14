@@ -469,6 +469,50 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("requires an explicitly prepared worktree when patch isolation is required", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-worktree-required-"));
+    const tool = createRunCliAgentTool({ agentName: "may", projectRoot: root, persistDir: join(root, ".state") });
+    try {
+      const result = await tool.execute("call-1", {
+        tool: "codex",
+        mode: "patch",
+        prompt: "Patch the code.",
+        worktreePolicy: "require",
+      });
+      expect(JSON.parse(result.content[0].text).error).toContain("requires an explicitly prepared worktree");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies a successful process with invalid expected output as an output-schema failure", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-schema-failure-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: fakeSpawn as any });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        prompt: "Return JSON.",
+        expectedOutput: { format: "json", requiredFields: ["summary"] },
+      });
+      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
+      const failed = events.find((event) => event.type === "cli.task.failed") as any;
+      expect(failed.data.failureCategory).toBe("output_schema");
+      expect(failed.data.error).toContain("valid JSON");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("marks stale running CLI tasks orphaned on restart", () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-orphan-"));
     const persistDir = join(root, ".state");

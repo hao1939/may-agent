@@ -12,6 +12,7 @@ import {
   listRuntimeAgentDirectories,
 } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
+import { discoverAgentSkills } from "../../lib/skills.js";
 
 export interface AgentLoaderOptions {
   agentsRoot: string;
@@ -97,6 +98,33 @@ export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistr
     const knowledgeDir = resolve(agentDir, "knowledge");
     const workspace = resolve(agentDir, "workspace");
     const effectiveProjectRoot = agentProjectRoot(agentSource, projectRoot);
+    const skillCatalog = await discoverAgentSkills({
+      agentDir,
+      appLocal: !!agentSource.projectId,
+      globalAgentDir: resolve(agentsRoot, config.name),
+      sharedRoot: opts.sharedRoot,
+    });
+    if (skillCatalog.diagnostics.length > 0) {
+      const skillErrors: ValidationError[] = skillCatalog.diagnostics.map((message) => ({
+        agent: config.name,
+        field: "skills",
+        message,
+      }));
+      const report = skillErrors.map((error) => `  ${error.agent}.${error.field}: ${error.message}`).join("\n");
+      opts.bus.emit({ type: "info", message: `[loader] Skill diagnostics:\n${report}` });
+      opts.bus.emit({
+        type: "agent.config_invalid",
+        source: "loader",
+        owner: "agent:may",
+        urgency: "immediate",
+        data: {
+          count: skillErrors.length,
+          errors: skillErrors,
+          message: `Skill diagnostics:\n${report}`,
+          priority: "P0",
+        },
+      });
+    }
 
     manager.register({
       name: config.name,
@@ -122,6 +150,7 @@ export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistr
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
+      skillCatalog,
     });
 
     if (isUpdate) {

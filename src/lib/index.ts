@@ -42,6 +42,8 @@ export type {
 } from "./tools/index.js";
 export { createScrapeTool } from "./scrape.js";
 export { createWorkflowTool } from "./workflow-tool.js";
+export { discoverAgentSkills, formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill } from "./skills.js";
+export type { MaySkill, MaySkillScope, SkillCatalog } from "./skills.js";
 export type { WorkflowTool } from "./workflow-tool.js";
 export { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 export type {

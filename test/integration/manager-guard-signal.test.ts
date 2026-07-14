@@ -27,7 +27,7 @@ describe("SubagentManager guard signals", () => {
       bus: { emit: (event: any) => emitted.push(event) } as any,
     });
     const hook = (manager as any).createGuardSignalHook(
-      async () => ({ block: true, reason: "finish blocked by test guard" }),
+      async () => ({ block: true, reason: "finish blocked by test guard", guardName: "test-finish" }),
       "s_guard",
       "may",
       { workflowRunId: "wr_guard", projectId: "p_guard", parentSessionId: "s_parent" },
@@ -50,7 +50,7 @@ describe("SubagentManager guard signals", () => {
           projectId: "p_guard",
           parentSessionId: "s_parent",
           sessionId: "s_guard",
-          guard: "beforeToolCall",
+          guard: "test-finish",
           demandType: "block",
           action: "blocked",
           reason: "finish blocked by test guard",

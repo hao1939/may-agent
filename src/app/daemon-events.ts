@@ -11,6 +11,7 @@ import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
+import { getDb } from "../lib/db/connection.js";
 
 function createEscalationId(): string {
   return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -46,6 +47,34 @@ export function attachEventPersistence(opts: {
   opts.bus.setDeliveryRecorder(dbWriter.recordDelivery);
 }
 
+/** Apply state changes only after their canonical event has been persisted. */
+export function createMetricMutationSubscriber(persistDir: string) {
+  return (event: Parameters<EventBus["emit"]>[0]): void => {
+    const data = eventData(event) as Record<string, unknown>;
+    const db = getDb(persistDir);
+
+    if (event.type === "metric.threshold_changed") {
+      const metricId = typeof data.metricId === "string" ? data.metricId : "";
+      const threshold = data.to;
+      if (!metricId || typeof threshold !== "number" || !Number.isFinite(threshold)) return;
+      db.run(
+        "UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?",
+        [threshold, event.timestamp ?? Date.now(), metricId],
+      );
+      return;
+    }
+
+    if (event.type === "metric.alert_resolved") {
+      const alertId = Number(data.alertId);
+      if (!Number.isInteger(alertId) || alertId <= 0) return;
+      db.run(
+        "UPDATE metric_alerts SET resolved_at = COALESCE(resolved_at, ?) WHERE id = ?",
+        [event.timestamp ?? Date.now(), alertId],
+      );
+    }
+  };
+}
+
 export function attachDaemonEventSubscribers(opts: {
   bus: EventBus;
   manager: SubagentManager;
@@ -55,6 +84,7 @@ export function attachDaemonEventSubscribers(opts: {
   const { bus, manager, persistDir, projectRoot } = opts;
 
   attachCliTaskRunner({ bus, persistDir, projectRoot });
+  bus.subscribe(createMetricMutationSubscriber(persistDir));
   const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir });
   if (orphanedCliTasks > 0) {
     bus.emit({

@@ -19,7 +19,14 @@ function freshDir(): string {
 
 /** Write a workflow .ts file. */
 function writeWorkflow(name: string, content: string): void {
-  writeFileSync(join(workflowDir, name), content, "utf-8");
+  const fixture =
+    content.includes("export const description") || name === "minimal.ts" || name === "broken.ts"
+      ? content
+      : content.replace(
+          /(export const name\s*=\s*[^;]+;)/,
+          '$1\n      export const description = "Test workflow fixture";',
+        );
+  writeFileSync(join(workflowDir, name), fixture, "utf-8");
 }
 
 /** Create a promise that resolves when the first event matching the predicate is seen. */
@@ -131,12 +138,12 @@ describe("workflow tool: list", () => {
 
     expect(parsed.type).toBe("list");
     if (parsed.type === "list") {
-      expect(parsed.workflows).toHaveLength(1);
-      expect(parsed.workflows[0].description).toContain("load error");
+      expect(parsed.workflows).toHaveLength(0);
+      expect(parsed.diagnostics?.join("\n")).toContain("name");
     }
   });
 
-  it("uses default description when not exported", async () => {
+  it("rejects workflows without an explicit description", async () => {
     writeWorkflow(
       "minimal.ts",
       `
@@ -153,8 +160,65 @@ describe("workflow tool: list", () => {
 
     expect(parsed.type).toBe("list");
     if (parsed.type === "list") {
-      expect(parsed.workflows[0].description).toBe("(no description)");
+      expect(parsed.workflows).toHaveLength(0);
+      expect(parsed.diagnostics?.join("\n")).toContain("description");
     }
+  });
+
+  it("resolves precedence by exported name and rejects duplicates within one scope", async () => {
+    const projectWorkflowDir = join(testDir, "project-workflows");
+    mkdirSync(projectWorkflowDir, { recursive: true });
+    writeWorkflow(
+      "agent-file.ts",
+      `
+      export const name = "effective";
+      export const description = "Agent version";
+      export async function execute(ctx) { return ctx.done("agent"); }
+    `,
+    );
+    writeFileSync(
+      join(projectWorkflowDir, "different-file.ts"),
+      `
+      export const name = "effective";
+      export const description = "Project version";
+      export async function execute(ctx) { return ctx.done("project"); }
+      `,
+    );
+    writeWorkflow(
+      "duplicate-a.ts",
+      `
+      export const name = "ambiguous";
+      export const description = "Duplicate A";
+      export async function execute(ctx) { return ctx.done("a"); }
+    `,
+    );
+    writeWorkflow(
+      "duplicate-b.ts",
+      `
+      export const name = "ambiguous";
+      export const description = "Duplicate B";
+      export async function execute(ctx) { return ctx.done("b"); }
+    `,
+    );
+
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const tool = createWorkflowTool({ manager, workflowDir, projectWorkflowDir });
+    const listed = JSON.parse((await tool.execute("tc1", { action: "list" })).content[0].text) as WorkflowToolResult;
+    expect(listed.type).toBe("list");
+    if (listed.type !== "list") return;
+    expect(listed.workflows).toContainEqual({
+      name: "effective",
+      description: "Project version",
+      sourceScope: "project",
+    });
+    expect(listed.workflows.some((workflow) => workflow.name === "ambiguous")).toBe(false);
+    expect(listed.diagnostics?.join("\n")).toContain('Ambiguous agent workflow name "ambiguous"');
+
+    const result = JSON.parse(
+      (await tool.execute("tc2", { action: "run", name: "effective", task: "task" })).content[0].text,
+    ) as WorkflowToolResult;
+    expect(result.type).toBe("done");
+    if (result.type === "done") expect(result.summary).toBe("project");
   });
 });
 

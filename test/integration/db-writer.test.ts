@@ -91,4 +91,26 @@ describe("DbWriter", () => {
       workflowRunId: "wr_project",
     });
   });
+
+  it("preserves an existing terminal error when a later projection omits it", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, error) VALUES (?, ?, ?, ?, ?, ?)",
+      ["s_error", "dev", "task", "error", now - 10, "provider failed"],
+    );
+
+    writer.handler({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:dev",
+      data: { sessionId: "s_error", agent: "dev", status: "error" },
+    } as any);
+
+    expect(db.prepare("SELECT status, error FROM sessions WHERE sessionId = ?").get("s_error")).toEqual({
+      status: "error",
+      error: "provider failed",
+    });
+  });
 });

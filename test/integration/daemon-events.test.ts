@@ -3,9 +3,40 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 import { EventBus } from "../../src/app/event-bus.js";
-import { attachDaemonEventSubscribers } from "../../src/app/daemon-events.js";
+import { attachDaemonEventSubscribers, createMetricMutationSubscriber } from "../../src/app/daemon-events.js";
+import { getDb } from "../../src/lib/requests.js";
 
 describe("daemon event subscribers", () => {
+  it("projects metric mutations only from their durable canonical events", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-metric-events-"));
+    const bus = new EventBus();
+    try {
+      const db = getDb(persistDir);
+      db.run("INSERT INTO metrics (id, threshold, updated_at) VALUES (?, ?, ?)", ["metric.test", 1, 0]);
+      db.run("INSERT INTO metric_alerts (id, metric_id, created_at) VALUES (?, ?, ?)", [7, "metric.test", 1]);
+      bus.subscribe(createMetricMutationSubscriber(persistDir));
+      bus.emit({
+        type: "metric.threshold_changed",
+        owner: "agent:may",
+        timestamp: 123,
+        data: { metricId: "metric.test", from: 1, to: 3 },
+      });
+      bus.emit({
+        type: "metric.alert_resolved",
+        owner: "agent:may",
+        timestamp: 456,
+        data: { metricId: "metric.test", alertId: 7 },
+      });
+      expect(db.prepare("SELECT threshold, updated_at FROM metrics WHERE id = ?").get("metric.test")).toEqual({
+        threshold: 3,
+        updated_at: 123,
+      });
+      expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = ?").get(7)).toEqual({ resolved_at: 456 });
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
   it("translates blocked session.end into a canonical escalation without copying the terminal event", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-"));
     const bus = new EventBus();

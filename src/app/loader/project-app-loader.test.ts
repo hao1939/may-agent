@@ -911,6 +911,7 @@ export default defineProjectApp({
         appDir,
         "worker",
         `export const name = "worker";
+export const description = "Execute the sample project workflow";
 export async function execute(ctx: any) {
   ctx.dispatchEvent("test.workflow.executed", { task: ctx.task });
   await ctx.runAgent(ctx.agent, "inspect trigger context");
@@ -1027,7 +1028,9 @@ export async function execute(ctx: any) {
       writeWorkflow(
         appDir,
         "worker",
-        `export async function execute(ctx: any) {
+        `export const name = "worker";
+export const description = "Expose app-local workflow roots";
+export async function execute(ctx: any) {
   ctx.dispatchEvent("test.workflow.agentsRoot", { agentsRoot: ctx.agentsRoot });
   return ctx.done("ok");
 }

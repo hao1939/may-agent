@@ -1141,7 +1141,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       `For assistant/tool lines, explain what was good or bad, why it mattered, and how the agent should do better next time.`,
       `Use existing human-feedback rows in the eval trail as correction signal when present.`,
     ].filter(Boolean).join("\n");
-    const evaluator = await sendDaemonFrame({ type: "fork", agent: "evaluator", task, opts: { kind: "job", source: "session-eval" } });
+    const evaluator = await sendDaemonFrame({
+      type: "evaluation.session.requested",
+      source: "web-ui",
+      owner: "agent:evaluator",
+      data: {
+        sessionId,
+        source: resolved.source,
+        focusLine: hasFocusLine ? focusLine : null,
+        focusRaw: hasFocusLine ? focusRaw : null,
+        instructions: task,
+      },
+    });
 
     return json({
       sessionId,
@@ -3689,12 +3700,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (typeof body.threshold !== "number" || !Number.isFinite(body.threshold)) {
       return json({ error: "threshold (finite number) required" }, 400);
     }
-    const db = _db();
-    const existing = db.prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; owner?: string | null; threshold: number | null } | undefined;
+    const existing = _db().prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; owner?: string | null; threshold: number | null } | undefined;
     if (!existing) return json({ error: "metric not found" }, 404);
-    db.prepare("UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?").run(body.threshold, Date.now(), metricId);
-    // Best-effort emit so subscribers see the change.
-    void sendDaemonFrame({
+    const result = await sendDaemonFrame({
       type: "metric.threshold_changed",
       source: "web-ui",
       owner: normalizeEventOwner(existing.owner ?? "may"),
@@ -3704,7 +3712,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         to: body.threshold,
       },
     });
-    return json({ ok: true, metric: metricId, from: existing.threshold, to: body.threshold });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, accepted: true, metric: metricId, from: existing.threshold, to: body.threshold });
   }
 
   async function handleAlertResolve(req: Request, alertId: string): Promise<Response> {
@@ -3712,8 +3721,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!Number.isFinite(id)) return json({ error: "numeric alertId required" }, 400);
     let body: { reason?: string } = {};
     try { body = await req.json() as { reason?: string }; } catch { /* body optional */ }
-    const db = _db();
-    const existing = db.prepare(
+    const existing = _db().prepare(
       `SELECT ma.id, ma.metric_id, ma.resolved_at, m.owner
        FROM metric_alerts ma
        LEFT JOIN metrics m ON m.id = ma.metric_id
@@ -3721,8 +3729,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     ).get(id) as { id: number; metric_id: string; owner?: string | null; resolved_at: number | null } | undefined;
     if (!existing) return json({ error: "alert not found" }, 404);
     if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
-    db.prepare("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?").run(Date.now(), id);
-    void sendDaemonFrame({
+    const result = await sendDaemonFrame({
       type: "metric.alert_resolved",
       source: "web-ui",
       owner: normalizeEventOwner(existing.owner ?? "may"),
@@ -3732,7 +3739,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         reason: body.reason ?? null,
       },
     });
-    return json({ ok: true, alertId: id });
+    if (!result.ok) return json({ error: result.error }, 503);
+    return json({ ok: true, accepted: true, alertId: id });
   }
 
   // ── WebSocket proxy ─────────────────────────────────────────────────

@@ -624,12 +624,14 @@ export type SystemEvent =
       type: "metric.threshold_changed";
       source?: string;
       owner: string;
+      timestamp?: number;
       data: { metricId: string; from?: number | null; to: number };
     }
   | {
       type: "metric.alert_resolved";
       source?: string;
       owner: string;
+      timestamp?: number;
       data: { metricId: string; alertId: number; reason?: string | null };
     }
   | {
