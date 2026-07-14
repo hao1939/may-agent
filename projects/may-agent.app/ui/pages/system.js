@@ -648,11 +648,11 @@ function expandedSessionEdge(edge, nodeById) {
 function itemLevel(item) {
   if (!item) return 0;
   if (item.kind === 'event') return 0;
-  if (item.kind === 'session-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
+  if (item.kind === 'session-event') return 0;
   if (item.kind === 'more') return moreItemLevel(item.more);
   if (item.kind === 'more-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
   if (item.kind === 'more-tail') return moreItemLevel(item.more);
-  if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event' || item.kind === 'more-event') return 1;
+  if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'more-event') return 1;
   if (item.kind === 'tool') return 2;
   return 0;
 }
@@ -690,7 +690,7 @@ function buildExpandedSessionEdges(displayItems) {
   for (const [sessionId, items] of bySession) {
     const start = items.find((item) => (item.kind === 'event' || item.kind === 'more-event') && item.node?.type === 'session.start');
     const end = [...items].reverse().find((item) => (item.kind === 'event' || item.kind === 'more-event') && item.node?.type === 'session.end');
-    const details = items.filter((item) => item.kind !== 'event' && item.kind !== 'more-event');
+    const details = items.filter((item) => item.kind !== 'event' && item.kind !== 'more-event' && item.kind !== 'session-event');
     if (!details.length) continue;
     const sequence = [start, ...details, end].filter(Boolean);
     for (let index = 0; index < sequence.length - 1; index++) {
@@ -1107,7 +1107,7 @@ function renderEventDetailGraph(nodes, edges, focusEventId, scope, eventId, deta
   for (let index = 0; index < positionedSlots.length - 1; index++) {
     const y1 = positionedSlots[index].y + nodeHeight;
     const y2 = positionedSlots[index + 1].y;
-    html += `<path d="M ${margin + 66} ${y1} L ${margin + 66} ${y2}" fill="none" stroke="var(--fg2)" stroke-width="1.2" marker-end="url(#event-detail-arrow)" style="color:var(--fg2)"></path>`;
+    html += `<path d="M ${margin + 66} ${y1} L ${margin + 66} ${y2}" fill="none" stroke="var(--fg2)" stroke-width="1" stroke-dasharray="2 5" opacity=".55"></path>`;
   }
 
   positionedSlots.forEach((slot) => {
