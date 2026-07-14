@@ -2,6 +2,7 @@
 
 let _eventGraphView = 'graph';
 let _eventGraphDetailView = 'graph';
+let _eventOverviewGraphView = 'view';
 let _eventGraphRootEventId = null;
 let _eventGraphExpandedSessions = {};
 let _eventGraphExpandedMore = {};
@@ -187,6 +188,12 @@ function setEventGraphDetailView(view, eventId, detail, depth) {
   _eventGraphDetailView = view === 'rows' ? 'rows' : 'graph';
   _eventGraphView = 'list';
   loadEventGraph(eventId, { detail: true, depth });
+}
+
+function setEventOverviewGraphView(view, eventId, depth) {
+  _eventOverviewGraphView = view === 'raw' ? 'raw' : 'view';
+  _eventGraphView = 'graph';
+  loadEventGraph(eventId, { depth });
 }
 
 function openEventGraphFromInput() {
@@ -776,6 +783,59 @@ function renderGraphEdge(svg, source, target, nodeWidth, nodeHeight, label, colo
   return svg;
 }
 
+function eventOverviewGraphHeader(rootEventId, depth) {
+  const rawActive = _eventOverviewGraphView === 'raw';
+  const nextView = rawActive ? 'view' : 'raw';
+  const label = rawActive ? 'View graph' : 'Raw data';
+  return `<div style="display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--border);font-size:12px">` +
+    componentAnchor('event-overview-graph', 'Overview Graph') +
+    `<button onclick="setEventOverviewGraphView('${nextView}', ${Number(rootEventId)}, ${Number(depth)})" style="margin-left:auto;font-size:11px;padding:3px 8px">${label}</button>` +
+    `</div>`;
+}
+
+function eventOverviewRawNode(node) {
+  if (!node) return node;
+  return {
+    id: node.id,
+    type: node.type,
+    visibility: node.visibility,
+    owner: node.owner,
+    source: node.source,
+    timestamp: node.timestamp,
+    summary: node.summary,
+    dataPreview: node.dataPreview,
+  };
+}
+
+function eventOverviewRawItem(item) {
+  const node = item?.node;
+  return {
+    key: item?.key,
+    kind: item?.kind,
+    level: itemLevel(item),
+    eventId: node?.id,
+    type: node?.type,
+    sessionId: item?.sessionId || graphNodeSessionId(node),
+    moreKey: item?.moreKey,
+    moreLabel: item?.more?.label,
+    status: item?.status,
+    turnIndex: item?.turnIndex,
+  };
+}
+
+function eventOverviewRawMore(more) {
+  return {
+    key: more.key,
+    parentEventId: more.parentEventId,
+    direction: more.direction,
+    scope: more.scope,
+    count: more.count,
+    label: more.label,
+    nodes: (more.nodes || []).map(eventOverviewRawNode),
+    edges: more.edges || [],
+  };
+}
+
 function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, moreNodes = []) {
   if (!nodes.length) return '';
   const displayItems = buildEventGraphDisplay(nodes, moreNodes);
@@ -820,7 +880,25 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
   const startEventId = chronologicalNodes(nodes).find((node) => node.type)?.id;
 
   let svg = `<div id="event-overview-graph" style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);margin-bottom:12px;scroll-margin-top:14px">`;
-  svg += `<div style="display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--border);font-size:12px">${componentAnchor('event-overview-graph', 'Overview Graph')}</div>`;
+  svg += eventOverviewGraphHeader(rootEventId, depth);
+  if (_eventOverviewGraphView === 'raw') {
+    const raw = {
+      backend: {
+        nodes: nodes.map(eventOverviewRawNode),
+        edges: structuralEdges,
+        moreNodes: (moreNodes || []).map(eventOverviewRawMore),
+      },
+      view: {
+        expandedSessions: Object.keys(_eventGraphExpandedSessions || {}),
+        expandedPlaceholders: Object.keys(_eventGraphExpandedMore || {}),
+        displayItems: displayItems.map(eventOverviewRawItem),
+        syntheticEdges,
+      },
+    };
+    svg += `<pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;color:var(--fg2);margin:0;padding:10px;max-height:620px;overflow:auto">${esc(JSON.stringify(raw, null, 2))}</pre>`;
+    svg += `</div>`;
+    return svg;
+  }
   svg += `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="event graph" style="display:block;min-width:100%">`;
   svg += `<defs><marker id="event-graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>`;
   for (const edge of structuralEdges) {
