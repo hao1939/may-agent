@@ -584,12 +584,13 @@ function buildEventGraphDisplay(nodes, moreNodes = []) {
       inserted.add(sessionId);
     }
     for (const more of moreByParent.get(Number(node.id)) || []) {
-      const moreItem = { kind: 'more', key: more.key, more };
-      items.push(moreItem);
       if (_eventGraphExpandedMore[more.key]) {
         for (const hidden of chronologicalNodes(more.nodes || [])) {
-          items.push({ kind: 'more-event', key: `${more.key}:event:${hidden.id}`, node: hidden, moreKey: more.key });
+          items.push({ kind: 'more-event', key: `${more.key}:event:${hidden.id}`, node: hidden, moreKey: more.key, more });
         }
+        items.push({ kind: 'more-tail', key: `${more.key}:tail`, moreKey: more.key, more });
+      } else {
+        items.push({ kind: 'more', key: more.key, more });
       }
     }
   }
@@ -616,6 +617,7 @@ function itemLevel(item) {
   if (item.kind === 'session-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
   if (item.kind === 'more') return moreItemLevel(item.more);
   if (item.kind === 'more-event' && (item.node?.type === 'session.start' || item.node?.type === 'session.end')) return 0;
+  if (item.kind === 'more-tail') return moreItemLevel(item.more);
   if (item.kind === 'turn' || item.kind === 'status' || item.kind === 'session-event' || item.kind === 'more-event') return 1;
   if (item.kind === 'tool') return 2;
   return 0;
@@ -690,20 +692,31 @@ function buildMoreEdges(displayItems) {
         route: edgeRouteForItems(parentItem, item),
       });
     }
-    if (!_eventGraphExpandedMore[item.key]) continue;
-    const children = displayItems.filter((candidate) => candidate.kind === 'more-event' && candidate.moreKey === item.key);
-    let previousKey = item.key;
-    for (const child of children) {
-      const previousItem = itemByKey.get(previousKey);
+  }
+
+  const expandedGroups = new Map();
+  for (const item of displayItems) {
+    if (item.kind !== 'more-event' && item.kind !== 'more-tail') continue;
+    expandedGroups.set(item.moreKey, [...(expandedGroups.get(item.moreKey) || []), item]);
+  }
+  for (const items of expandedGroups.values()) {
+    const more = items.find((item) => item.more)?.more;
+    if (!more) continue;
+    const parentKey = eventNodeKey(more.parentEventId);
+    let previousKey = parentKey;
+    let previousItem = itemByKey.get(parentKey);
+    if (!previousItem) continue;
+    items.forEach((item, index) => {
       edges.push({
         sourceKey: previousKey,
-        targetKey: child.key,
+        targetKey: item.key,
         type: 'more-expanded',
-        label: previousKey === item.key ? 'context' : '',
-        route: previousItem ? edgeRouteForItems(previousItem, child) : 'same',
+        label: index === 0 ? more.scope || 'context' : '',
+        route: edgeRouteForItems(previousItem, item),
       });
-      previousKey = child.key;
-    }
+      previousKey = item.key;
+      previousItem = item;
+    });
   }
   return edges;
 }
@@ -855,6 +868,16 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
       svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="rgba(255,255,255,.025)" stroke="var(--fg2)" stroke-width="1.3" stroke-dasharray="4 4"></rect>`;
       svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="var(--fg2)" font-size="12" font-family="monospace">${esc(shortGraphLabel(label, 30))}</text>`;
       svg += `<text x="${pos.x + 10}" y="${pos.y + 39}" fill="var(--fg2)" font-size="10">${esc(shortGraphLabel(`${more.scope || 'context'} · ${expanded ? 'collapse' : 'expand'}`, 38))}</text>`;
+      svg += `</g>`;
+      continue;
+    }
+
+    if (item.kind === 'more-tail') {
+      const more = item.more || {};
+      svg += `<g onclick='toggleEventGraphMoreExpansion(${Number(rootEventId)}, ${jsStringAttr(item.moreKey)}, ${Number(depth)})' style="cursor:pointer">`;
+      svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="rgba(255,255,255,.018)" stroke="var(--fg2)" stroke-width="1.1" stroke-dasharray="4 4"></rect>`;
+      svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="var(--fg2)" font-size="12" font-family="monospace">...</text>`;
+      svg += `<text x="${pos.x + 10}" y="${pos.y + 39}" fill="var(--fg2)" font-size="10">${esc(shortGraphLabel(`${more.scope || 'context'} · collapse`, 38))}</text>`;
       svg += `</g>`;
       continue;
     }
