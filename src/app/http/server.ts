@@ -26,7 +26,7 @@ import { createTerminalManager } from "@may-agent/terminal";
 import { ensureTaskTreeState, loadProjectReadModel } from "@may-agent/sdk";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
-import { buildEventGraph } from "./read-model/event-graph.js";
+import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -1180,9 +1180,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ ok: true, row, rows: readEvalRows(resolved.path) });
   }
 
-  function handleTranscript(sessionId: string): Response {
+  function readSessionTranscript(sessionId: string): Record<string, unknown> | null {
     const resolved = resolveSessionJsonl(sessionId);
-    if (!resolved) return json({ error: "Transcript not found" }, 404);
+    if (!resolved) return null;
     const rawLines = readFileSync(resolved.path, "utf-8").split("\n");
     const messages: unknown[] = [];
     for (let i = 0; i < rawLines.length; i++) {
@@ -1250,7 +1250,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         }
       } catch {}
     }
-    return json({ sessionId, source: resolved.source, messageCount: messages.length, messages });
+    return { sessionId, source: resolved.source, messageCount: messages.length, messages };
+  }
+
+  function handleTranscript(sessionId: string): Response {
+    const transcript = readSessionTranscript(sessionId);
+    return transcript ? json(transcript) : json({ error: "Transcript not found" }, 404);
   }
 
   function handleRawLog(sessionId: string, url: URL): Response {
@@ -3234,7 +3239,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!Number.isFinite(eventId)) return json({ error: "event id must be numeric" }, 400);
     const depth = url.searchParams.has("depth") ? Number(url.searchParams.get("depth")) : undefined;
     const detail = url.searchParams.get("detail") === "true" || url.searchParams.get("detail") === "1";
-    return json(buildEventGraph(_db(), eventId, { depth, detail }));
+    let graph = buildEventGraph(_db(), eventId, { depth, detail });
+    const expandedSessions = url.searchParams.getAll("session").map((value) => value.trim()).filter(Boolean);
+    for (const sessionId of expandedSessions) {
+      const transcript = readSessionTranscript(sessionId);
+      if (transcript) graph = addSessionTranscriptToEventGraph(graph, sessionId, transcript);
+    }
+    return json(graph);
   }
 
   function json(data: unknown, status = 200): Response {

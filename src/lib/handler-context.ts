@@ -20,6 +20,12 @@ export interface EventEnvelope {
   action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
+  visibility?: "default" | "detail";
+  trace?: {
+    traceId: string;
+    parentEventId?: number;
+    links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }>;
+  };
   target?: {
     project?: string;
     taskId?: string;

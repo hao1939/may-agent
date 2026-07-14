@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
 
 describe("EventBus subscriber priority", () => {
   it("runs 'first' subscribers before 'normal' subscribers", () => {
@@ -104,5 +104,61 @@ describe("EventBus subscriber priority", () => {
     bus.subscribe(() => {}, { priority: "first" });
 
     expect(bus.listenerCount).toBe(3);
+  });
+
+  it("inherits trace context for events emitted by a handler", () => {
+    const bus = new EventBus();
+    const events: any[] = [];
+    let nextId = 40;
+
+    bus.subscribe((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
+      events.push(event);
+    }, { priority: "first" });
+    bus.subscribe((event) => {
+      if (event.type !== "info") return;
+      bus.emit({
+        type: "subscriber.failed",
+        source: "test",
+        owner: "agent:may",
+        timestamp: Date.now(),
+        data: { originalEventType: event.type, subscriberPriority: "normal", error: "test" },
+      });
+    });
+
+    bus.emit({ type: "info", message: "parent" });
+
+    expect(events[1].trace).toEqual({ traceId: "event:41", parentEventId: 41 });
+  });
+
+  it("keeps trace context across asynchronous handler continuations", async () => {
+    const bus = new EventBus();
+    const events: any[] = [];
+    let nextId = 90;
+    let resolveChild!: () => void;
+    const childEmitted = new Promise<void>((resolve) => { resolveChild = resolve; });
+
+    bus.subscribe((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
+      events.push(event);
+    }, { priority: "first" });
+    bus.subscribe((event) => {
+      if (event.type !== "info") return;
+      void Promise.resolve().then(() => {
+        bus.emit({
+          type: "subscriber.failed",
+          source: "test",
+          owner: "agent:may",
+          timestamp: Date.now(),
+          data: { originalEventType: event.type, subscriberPriority: "normal", error: "async test" },
+        });
+        resolveChild();
+      });
+    });
+
+    bus.emit({ type: "info", message: "parent" });
+    await childEmitted;
+
+    expect(events[1].trace).toEqual({ traceId: "event:91", parentEventId: 91 });
   });
 });

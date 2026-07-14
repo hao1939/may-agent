@@ -1,6 +1,11 @@
+import { createHash } from "node:crypto";
 import type { SqliteDb } from "./state-db.js";
 
 type Row = Record<string, unknown>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
 
 export type EventGraphOptions = {
   depth?: number;
@@ -25,6 +30,8 @@ export type EventGraphEdge = {
   target: number;
   type: "parent" | "reference" | "closure";
   label?: string;
+  provenance: "persisted" | "lifecycle" | "correlation";
+  declaredByEventId?: number;
 };
 
 export type EventGraphDisplayNode = {
@@ -62,18 +69,21 @@ export type EventGraphDisplayEdge = {
   key: string;
   sourceKey: string;
   targetKey: string;
-  kind: "parent" | "reference" | "closure" | "tool_call" | "tool_result";
+  kind: "flow" | "reference" | "closure" | "detail" | "sequence" | "tool_call" | "tool_result";
   label?: string;
+  provenance: "persisted" | "lifecycle" | "correlation" | "projection" | "transcript";
+  declaredByEventId?: number;
 };
 
 export type EventGraphResponse = {
   focusEventId: number;
   traceId?: string;
-  nodes: EventGraphNode[];
-  edges: EventGraphEdge[];
-  displayNodes?: EventGraphDisplayNode[];
-  displayEdges?: EventGraphDisplayEdge[];
-  moreNodes?: EventGraphMoreNode[];
+  revision: string;
+  nodes: EventGraphDisplayNode[];
+  edges: EventGraphDisplayEdge[];
+  eventNodes: EventGraphNode[];
+  eventEdges: EventGraphEdge[];
+  frontiers?: EventGraphFrontier[];
   eventList?: EventGraphNode[];
   eventListScope?: {
     kind: "session" | "workflow" | "task" | "graph";
@@ -85,16 +95,21 @@ export type EventGraphResponse = {
   review?: EventReview;
 };
 
-export type EventGraphMoreNode = {
+export type EventGraphFrontier = {
   key: string;
+  id: string;
   kind: "more";
+  anchorEventId: number;
   parentEventId: number;
   direction: "before" | "after" | "context" | "details";
   scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
   count: number;
+  hiddenCount: number;
   label: string;
-  nodes: EventGraphNode[];
-  edges: EventGraphEdge[];
+  nodes: EventGraphDisplayNode[];
+  edges: EventGraphDisplayEdge[];
+  eventNodes: EventGraphNode[];
+  eventEdges: EventGraphEdge[];
 };
 
 export type EventReviewLifecycle = {
@@ -112,6 +127,12 @@ export type EventReviewLifecycle = {
   closedAt?: number;
   summary?: string;
   issues?: string[];
+};
+
+export type EventGraphTranscript = {
+  sessionId?: string;
+  source?: string;
+  messages?: Array<Record<string, unknown>>;
 };
 
 export type EventReview = {
@@ -211,7 +232,8 @@ function previewData(data: Record<string, unknown>): Record<string, unknown> | u
 
 function eventTitle(type: string): string {
   if (type === "session.start") return "Session started";
-  if (type === "session.end") return "Session completed";
+  if (type === "session.end") return "Session ended";
+  if (type === "session.completed") return "Session completed";
   if (type === "project.task.assigned") return "Task assigned";
   if (type === "project.task.completed") return "Task completed";
   if (type === "project.task.reviewed") return "Task reviewed";
@@ -313,26 +335,30 @@ function displayEdgeKey(edge: Omit<EventGraphDisplayEdge, "key">): string {
 
 function displayEdgeFromEventEdge(edge: EventGraphEdge): EventGraphDisplayEdge {
   const kind: EventGraphDisplayEdge["kind"] =
-    edge.type === "closure" ? "closure" : edge.type === "reference" ? "reference" : "parent";
+    edge.type === "closure" ? "closure" : edge.type === "reference" ? "reference" : "flow";
   const sourceKey = eventNodeKey(edge.source);
   const targetKey = eventNodeKey(edge.target);
   return {
-    key: displayEdgeKey({ sourceKey, targetKey, kind, label: edge.label }),
+    key: displayEdgeKey({ sourceKey, targetKey, kind, label: edge.label, provenance: edge.provenance }),
     sourceKey,
     targetKey,
     kind,
     ...(edge.label ? { label: edge.label } : {}),
+    provenance: edge.provenance,
+    ...(edge.declaredByEventId ? { declaredByEventId: edge.declaredByEventId } : {}),
   };
 }
 
 function edgeKey(edge: EventGraphEdge): string {
-  return `${edge.type}:${edge.source}:${edge.target}:${edge.label ?? ""}`;
+  return `${edge.type}:${edge.source}:${edge.target}`;
 }
 
 function addEdge(edges: Map<string, EventGraphEdge>, edge: Omit<EventGraphEdge, "id">): void {
   if (!Number.isFinite(edge.source) || !Number.isFinite(edge.target) || edge.source === edge.target) return;
   const withId = { ...edge, id: edgeKey(edge as EventGraphEdge) };
-  edges.set(withId.id, withId);
+  const existing = edges.get(withId.id);
+  const rank = { correlation: 0, lifecycle: 1, persisted: 2 } as const;
+  if (!existing || rank[withId.provenance] > rank[existing.provenance]) edges.set(withId.id, withId);
 }
 
 type RelationKey = { kind: string; value: string };
@@ -487,6 +513,7 @@ function addPairEdges(edges: Map<string, EventGraphEdge>, pairs: Row[]): void {
       target: closeEventId,
       type: "closure",
       label: stringValue(pair.pair_name) ?? "lifecycle",
+      provenance: "lifecycle",
     });
   }
 }
@@ -509,24 +536,33 @@ function addCorrelationEdges(edges: Map<string, EventGraphEdge>, rows: Row[]): v
     const start = rowsForSession.find((row) => row.event_type === "session.start");
     const end = rowsForSession.find((row) => row.event_type === "session.end");
     const completed = rowsForSession.find((row) => row.event_type === "project.task.completed");
+    const sessionCompleted = rowsForSession.find((row) => row.event_type === "session.completed");
     const assignedId = numberValue(assigned?.id);
     const startId = numberValue(start?.id);
     const endId = numberValue(end?.id);
     const completedId = numberValue(completed?.id);
-    if (assignedId && startId) addEdge(edges, { source: assignedId, target: startId, type: "reference", label: "session" });
-    if (endId && completedId) addEdge(edges, { source: endId, target: completedId, type: "reference", label: "result" });
+    const sessionCompletedId = numberValue(sessionCompleted?.id);
+    if (startId && endId) addEdge(edges, { source: startId, target: endId, type: "closure", label: "session", provenance: "correlation" });
+    if (assignedId && startId) addEdge(edges, { source: assignedId, target: startId, type: "reference", label: "session", provenance: "correlation" });
+    if (endId && completedId) addEdge(edges, { source: endId, target: completedId, type: "reference", label: "result", provenance: "correlation" });
+    if (endId && sessionCompletedId) {
+      addEdge(edges, { source: endId, target: sessionCompletedId, type: "reference", label: "completed", provenance: "correlation" });
+    }
   }
   for (const rowsForTask of byTask.values()) {
     const completed = rowsForTask.find((row) => row.event_type === "project.task.completed");
     const reviewed = rowsForTask.find((row) => row.event_type === "project.task.reviewed");
     const completedId = numberValue(completed?.id);
     const reviewedId = numberValue(reviewed?.id);
-    if (completedId && reviewedId) addEdge(edges, { source: completedId, target: reviewedId, type: "reference", label: "review" });
+    if (completedId && reviewedId) addEdge(edges, { source: completedId, target: reviewedId, type: "reference", label: "review", provenance: "correlation" });
   }
   for (const rowsForWorkflow of byWorkflow.values()) {
     const starts = rowsForWorkflow
       .filter((row) => row.event_type === "session.start")
-      .sort((a, b) => (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0));
+      .sort((a, b) =>
+        (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) ||
+        (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0)
+      );
     for (let index = 0; index < starts.length - 1; index++) {
       const currentStart = starts[index];
       const nextStart = starts[index + 1];
@@ -534,19 +570,31 @@ function addCorrelationEdges(edges: Map<string, EventGraphEdge>, rows: Row[]): v
       const currentEnd = rowsForWorkflow.find((row) => row.event_type === "session.end" && dataValue(parseData(row), ["sessionId", "session_id"]) === currentSessionId);
       const source = numberValue(currentEnd?.id) ?? numberValue(currentStart.id);
       const target = numberValue(nextStart.id);
-      if (source && target) addEdge(edges, { source, target, type: "reference", label: "same workflow" });
+      if (source && target) addEdge(edges, { source, target, type: "reference", label: "same workflow", provenance: "correlation" });
     }
   }
 }
 
 function normalizeEdgesForReview(edges: EventGraphEdge[], rowsById: Map<number, Row>): EventGraphEdge[] {
   const timestamp = (eventId: number) => numberValue(rowsById.get(eventId)?.timestamp) ?? 0;
+  const eventOrder = (eventId: number) => [timestamp(eventId), eventId] as const;
+  const isAfter = (source: number, target: number): boolean => {
+    const [sourceTime, sourceId] = eventOrder(source);
+    const [targetTime, targetId] = eventOrder(target);
+    return sourceTime > targetTime || (sourceTime === targetTime && sourceId > targetId);
+  };
   const hasClosure = new Set(edges.filter((edge) => edge.type === "closure").map((edge) => `${edge.source}:${edge.target}`));
+  const persistedRelations = new Set(
+    edges.filter((edge) => edge.provenance === "persisted").map((edge) => `${edge.source}:${edge.target}`),
+  );
   return edges.filter((edge) => {
-    if (edge.type === "closure" && timestamp(edge.source) > timestamp(edge.target) && hasClosure.has(`${edge.target}:${edge.source}`)) {
+    if (edge.type === "closure" && isAfter(edge.source, edge.target) && hasClosure.has(`${edge.target}:${edge.source}`)) {
       return false;
     }
     if (edge.type === "parent" && hasClosure.has(`${edge.source}:${edge.target}`)) {
+      return false;
+    }
+    if (edge.provenance === "correlation" && persistedRelations.has(`${edge.source}:${edge.target}`)) {
       return false;
     }
     return true;
@@ -600,7 +648,7 @@ function visibleIdsForDefaultScope(
   return visible;
 }
 
-function moreNodeScope(edge: EventGraphEdge): EventGraphMoreNode["scope"] {
+function moreNodeScope(edge: EventGraphEdge): EventGraphFrontier["scope"] {
   if (edge.label === "same workflow") return "workflow";
   if (edge.label === "session") return "session";
   if (edge.label === "review" || edge.label === "result" || edge.label === "project.task") return "task";
@@ -608,7 +656,7 @@ function moreNodeScope(edge: EventGraphEdge): EventGraphMoreNode["scope"] {
   return "trace";
 }
 
-function moreNodeDirection(edge: EventGraphEdge, visibleId: number, hiddenNode: EventGraphNode): EventGraphMoreNode["direction"] {
+function moreNodeDirection(edge: EventGraphEdge, visibleId: number, hiddenNode: EventGraphNode): EventGraphFrontier["direction"] {
   if (isDefaultContextEdge(edge)) return "context";
   if (hiddenNode.visibility === "detail") return "details";
   if (edge.type === "parent" && edge.source === hiddenNode.id && edge.target === visibleId) return "before";
@@ -619,8 +667,8 @@ function moreNodeDirection(edge: EventGraphEdge, visibleId: number, hiddenNode: 
 }
 
 function moreNodeLabel(
-  direction: EventGraphMoreNode["direction"],
-  scope: EventGraphMoreNode["scope"],
+  direction: EventGraphFrontier["direction"],
+  scope: EventGraphFrontier["scope"],
   count: number,
 ): string {
   const plural = count === 1 ? "" : "s";
@@ -631,18 +679,22 @@ function moreNodeLabel(
   return `... ${count} later event${plural}`;
 }
 
-function buildMoreNodes(
+function buildFrontiers(
   allNodes: EventGraphNode[],
   allEdges: EventGraphEdge[],
   visibleIds: Set<number>,
-): EventGraphMoreNode[] {
+): EventGraphFrontier[] {
   const nodeById = new Map(allNodes.map((node) => [node.id, node]));
+  const adjacency = new Map<number, number[]>();
+  for (const edge of allEdges) {
+    adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]);
+    adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]);
+  }
   const byKey = new Map<string, {
     parentEventId: number;
-    direction: EventGraphMoreNode["direction"];
-    scope: EventGraphMoreNode["scope"];
+    direction: EventGraphFrontier["direction"];
+    scope: EventGraphFrontier["scope"];
     nodes: Map<number, EventGraphNode>;
-    edges: Map<string, EventGraphEdge>;
   }>();
 
   for (const edge of allEdges) {
@@ -661,31 +713,52 @@ function buildMoreNodes(
       direction,
       scope,
       nodes: new Map<number, EventGraphNode>(),
-      edges: new Map<string, EventGraphEdge>(),
     };
     bucket.nodes.set(hiddenEventId, hiddenNode);
-    bucket.edges.set(edge.id, edge);
     byKey.set(key, bucket);
   }
 
   return [...byKey.entries()]
     .sort(([, a], [, b]) => a.parentEventId - b.parentEventId || a.direction.localeCompare(b.direction) || a.scope.localeCompare(b.scope))
     .map(([key, bucket]) => {
-      const nodes = [...bucket.nodes.values()].sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+      const hiddenIds = new Set<number>(bucket.nodes.keys());
+      const queue = [...hiddenIds];
+      while (queue.length) {
+        const current = queue.shift()!;
+        for (const next of adjacency.get(current) ?? []) {
+          if (visibleIds.has(next) || hiddenIds.has(next) || !nodeById.has(next)) continue;
+          hiddenIds.add(next);
+          queue.push(next);
+        }
+      }
+      const eventNodes = [...hiddenIds]
+        .flatMap((id) => nodeById.get(id) ? [nodeById.get(id)!] : [])
+        .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+      const eventEdges = allEdges.filter((edge) =>
+        (hiddenIds.has(edge.source) && hiddenIds.has(edge.target)) ||
+        (edge.source === bucket.parentEventId && hiddenIds.has(edge.target)) ||
+        (edge.target === bucket.parentEventId && hiddenIds.has(edge.source))
+      );
+      const display = buildDisplayGraph(bucket.parentEventId, eventNodes, eventEdges, eventNodes);
       const workflowSessionCount = bucket.scope === "workflow"
-        ? new Set(nodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size
+        ? new Set(eventNodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size
         : 0;
-      const count = workflowSessionCount || nodes.length;
+      const count = workflowSessionCount || eventNodes.length;
       return {
         key,
+        id: key,
         kind: "more" as const,
+        anchorEventId: bucket.parentEventId,
         parentEventId: bucket.parentEventId,
         direction: bucket.direction,
         scope: bucket.scope,
         count,
+        hiddenCount: count,
         label: moreNodeLabel(bucket.direction, bucket.scope, count),
-        nodes,
-        edges: [...bucket.edges.values()],
+        nodes: display.displayNodes,
+        edges: display.displayEdges,
+        eventNodes,
+        eventEdges,
       };
     });
 }
@@ -1084,41 +1157,32 @@ function buildDisplayGraph(
       role: nodeKindForEventType(node.type) === "diagnostic" ? "diagnostic" : "detail",
     });
     displayNodes.set(detailNode.key, detailNode);
-  }
-
-  const childNodes = new Map<string, EventGraphDisplayNode[]>();
-  const rootNodes: EventGraphDisplayNode[] = [];
-  for (const node of displayNodes.values()) {
-    if (node.parentKey) {
-      childNodes.set(node.parentKey, [...(childNodes.get(node.parentKey) ?? []), node]);
-    } else {
-      rootNodes.push(node);
-    }
+    const detailEdge: EventGraphDisplayEdge = {
+      key: `detail:${parentKey}:${detailNode.key}`,
+      sourceKey: parentKey,
+      targetKey: detailNode.key,
+      kind: "detail",
+      label: "detail",
+      provenance: "projection",
+    };
+    displayEdges.set(detailEdge.key, detailEdge);
   }
 
   const byKey = new Map(displayNodes);
-  const ordered: EventGraphDisplayNode[] = [];
-  const visited = new Set<string>();
   const chronological = (a: EventGraphDisplayNode, b: EventGraphDisplayNode) =>
     (a.timestamp ?? 0) - (b.timestamp ?? 0) ||
     (a.eventId ?? 0) - (b.eventId ?? 0) ||
     a.key.localeCompare(b.key);
-  const appendNode = (node: EventGraphDisplayNode, fallbackLevel: number): void => {
-    if (visited.has(node.key)) return;
-    visited.add(node.key);
-    const level = Number.isFinite(Number(node.level)) ? Number(node.level) : fallbackLevel;
-    ordered.push({ ...node, level, order: ordered.length });
-    for (const child of [...(childNodes.get(node.key) ?? [])].sort(chronological)) {
-      appendNode(child, level + 1);
-    }
+  const levelFor = (node: EventGraphDisplayNode, seen = new Set<string>()): number => {
+    if (!node.parentKey || seen.has(node.key)) return 0;
+    const parent = byKey.get(node.parentKey);
+    if (!parent) return 1;
+    seen.add(node.key);
+    return levelFor(parent, seen) + 1;
   };
-
-  for (const primary of nodes) {
-    const node = byKey.get(eventNodeKey(primary.id));
-    if (node) appendNode(node, 0);
-  }
-  for (const node of rootNodes.sort(chronological)) appendNode(node, 0);
-  for (const node of [...displayNodes.values()].sort(chronological)) appendNode(node, node.parentKey ? 1 : 0);
+  const ordered = [...displayNodes.values()]
+    .sort(chronological)
+    .map((node, order) => ({ ...node, level: levelFor(node), order }));
 
   return {
     displayNodes: ordered,
@@ -1149,6 +1213,7 @@ function loadFallbackPairRows(db: SqliteDb, focusEventId: number): { rows: Row[]
         target: closeEventId,
         type: "closure",
         label: stringValue(pair.pair_name) ?? "event_pair",
+        provenance: "lifecycle",
       });
     }
   }
@@ -1165,7 +1230,15 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
   const includeDetail = options.detail === true;
   const focus = safeGet(db, "SELECT * FROM events WHERE id = ?", focusEventId);
   if (!focus) {
-    return { focusEventId, nodes: [], edges: [], diagnostics: [`event ${focusEventId} not found`] };
+    return {
+      focusEventId,
+      revision: `missing:${focusEventId}`,
+      nodes: [],
+      edges: [],
+      eventNodes: [],
+      eventEdges: [],
+      diagnostics: [`event ${focusEventId} not found`],
+    };
   }
 
   const focusTrace = safeGet(db, "SELECT * FROM event_traces WHERE event_id = ?", focusEventId);
@@ -1179,7 +1252,7 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
       if (id) rowsById.set(id, row);
       const parentEventId = numberValue(row.parent_event_id);
       if (id && parentEventId) {
-        addEdge(edges, { source: parentEventId, target: id, type: "parent" });
+        addEdge(edges, { source: parentEventId, target: id, type: "parent", provenance: "persisted" });
       }
     }
     const traceEventIds = [...rowsById.keys()];
@@ -1200,7 +1273,16 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
         const to = numberValue(link.to_event_id);
         const type = link.type === "closure" ? "closure" : "reference";
         if (!from || !to) continue;
-        addEdge(edges, { source: from, target: to, type, ...(stringValue(link.label) ? { label: stringValue(link.label) } : {}) });
+        const source = type === "closure" ? to : from;
+        const target = type === "closure" ? from : to;
+        addEdge(edges, {
+          source,
+          target,
+          type,
+          provenance: "persisted",
+          declaredByEventId: from,
+          ...(stringValue(link.label) ? { label: stringValue(link.label) } : {}),
+        });
         for (const id of [from, to]) {
           if (rowsById.has(id)) continue;
           const row = safeGet(
@@ -1260,13 +1342,15 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
   const visibleEdges = traversalEdges
     .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => a.source - b.source || a.target - b.target || a.type.localeCompare(b.type));
-  const moreNodes = buildMoreNodes(availableNodes, allEdges, nodeIds);
+  const frontiers = buildFrontiers(availableNodes, allEdges, nodeIds);
   const eventListProjection = loadEventListRows(db, focus, rowsById, relationKeys);
   const eventList = eventListProjection.rows
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
   const displayGraph = buildDisplayGraph(focusEventId, nodes, visibleEdges, eventList);
+  const latestTimestamp = graphNodes.reduce((latest, node) => Math.max(latest, node.timestamp), 0);
+  const revision = `${focusEventId}:${latestTimestamp}:${graphNodes.length}:${allEdges.length}:${includeDetail ? 1 : 0}`;
 
   if (!nodes.some((node) => node.id === focusEventId)) {
     diagnostics.push("focus event is hidden by current detail filter");
@@ -1275,15 +1359,211 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
   return {
     focusEventId,
     ...(traceId ? { traceId } : {}),
-    nodes,
-    edges: visibleEdges,
-    displayNodes: displayGraph.displayNodes,
-    displayEdges: displayGraph.displayEdges,
-    moreNodes,
+    revision,
+    nodes: displayGraph.displayNodes,
+    edges: displayGraph.displayEdges,
+    eventNodes: nodes,
+    eventEdges: visibleEdges,
+    frontiers,
     eventList,
     eventListScope: eventListProjection.scope,
     diagnostics,
     detailNodeCount,
     review: buildEventReview(focusEventId, focus, rowsById, relatedPairs, relationKeys),
+  };
+}
+
+function transcriptTimestamp(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function transcriptSummary(value: unknown, fallback: string): string {
+  const text = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  return compact(text, 180) ?? fallback;
+}
+
+function transcriptKeyPart(value: string): string {
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+export function addSessionTranscriptToEventGraph(
+  graph: EventGraphResponse,
+  sessionId: string,
+  transcript: EventGraphTranscript,
+): EventGraphResponse {
+  const cleanSessionId = sessionId.trim();
+  if (!cleanSessionId) return graph;
+  const sessionNodes = graph.nodes.filter((node) => node.sessionId === cleanSessionId && node.eventId);
+  const start = sessionNodes.find((node) => node.type === "session.start");
+  const end = [...sessionNodes].reverse().find((node) => node.type === "session.end");
+  const parentKey = start?.key ?? end?.key;
+  if (!parentKey) return graph;
+
+  const messages = Array.isArray(transcript.messages) ? transcript.messages : [];
+  const projectedNodes: EventGraphDisplayNode[] = [];
+  const projectedEdges: EventGraphDisplayEdge[] = [];
+  const turnKeys: string[] = [];
+  const toolKeys = new Map<string, string>();
+
+  for (let index = 0; index < messages.length; index++) {
+    const message = messages[index] ?? {};
+    const role = stringValue(message.role) ?? "message";
+    if (role === "tool_result" || role === "toolresult") {
+      const toolCallId = stringValue(message.toolCallId);
+      const toolKey = toolCallId ? toolKeys.get(toolCallId) : undefined;
+      if (!toolKey) continue;
+      const key = `${toolKey}:result`;
+      projectedNodes.push({
+        key,
+        kind: "tool_result",
+        role: message.isError ? "diagnostic" : "detail",
+        parentKey: toolKey,
+        level: 3,
+        visibility: "detail",
+        sessionId: cleanSessionId,
+        ...(toolCallId ? { toolCallId } : {}),
+        timestamp: transcriptTimestamp(message.timestamp),
+        type: "tool.result",
+        label: stringValue(message.toolName) ?? "tool result",
+        summary: transcriptSummary(message.content, message.isError ? "tool failed" : "tool completed"),
+        refs: {
+          sessionId: cleanSessionId,
+          ...(toolCallId ? { toolCallId } : {}),
+          ...(numberValue(message.rawLine) ? { rawLine: numberValue(message.rawLine)! } : {}),
+          ...(stringValue(message.rawSource) ? { rawSource: stringValue(message.rawSource)! } : {}),
+        },
+      });
+      projectedEdges.push({
+        key: `tool_result:${toolKey}:${key}`,
+        sourceKey: toolKey,
+        targetKey: key,
+        kind: "tool_result",
+        provenance: "transcript",
+      });
+      continue;
+    }
+
+    if (role !== "user" && role !== "assistant") continue;
+    const rawLine = numberValue(message.rawLine) ?? index + 1;
+    const key = `session:${cleanSessionId}:turn:${rawLine}`;
+    turnKeys.push(key);
+    const toolCalls = Array.isArray(message.toolCalls) ? message.toolCalls.filter(isRecord) : [];
+    projectedNodes.push({
+      key,
+      kind: "turn",
+      role: "detail",
+      parentKey,
+      level: 1,
+      visibility: "detail",
+      sessionId: cleanSessionId,
+      turnIndex: turnKeys.length,
+      timestamp: transcriptTimestamp(message.timestamp),
+      type: `llm.${role}`,
+      label: role,
+      summary: transcriptSummary(message.text, toolCalls.length ? `${toolCalls.length} tool call${toolCalls.length === 1 ? "" : "s"}` : role),
+      refs: {
+        sessionId: cleanSessionId,
+        rawLine,
+        ...(stringValue(message.rawSource) ? { rawSource: stringValue(message.rawSource)! } : {}),
+      },
+    });
+
+    for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex++) {
+      const toolCall = toolCalls[toolIndex];
+      const toolCallId = stringValue(toolCall.id) ?? `${rawLine}:${toolIndex}`;
+      const toolKey = `${key}:tool:${transcriptKeyPart(toolCallId)}`;
+      toolKeys.set(toolCallId, toolKey);
+      projectedNodes.push({
+        key: toolKey,
+        kind: "tool_call",
+        role: "detail",
+        parentKey: key,
+        level: 2,
+        visibility: "detail",
+        sessionId: cleanSessionId,
+        toolCallId,
+        timestamp: transcriptTimestamp(message.timestamp),
+        type: "tool.call",
+        label: stringValue(toolCall.tool) ?? "tool",
+        summary: transcriptSummary(JSON.stringify(toolCall.args ?? {}), "tool call"),
+        refs: {
+          sessionId: cleanSessionId,
+          toolCallId,
+          rawLine,
+          ...(stringValue(toolCall.rawSource) ? { rawSource: stringValue(toolCall.rawSource)! } : {}),
+        },
+      });
+      projectedEdges.push({
+        key: `tool_call:${key}:${toolKey}`,
+        sourceKey: key,
+        targetKey: toolKey,
+        kind: "tool_call",
+        provenance: "transcript",
+      });
+    }
+  }
+
+  const turnNodes = projectedNodes.filter((node) => node.kind === "turn");
+  const startTime = start?.timestamp;
+  const endTime = end?.timestamp;
+  for (let index = 0; index < turnNodes.length; index++) {
+    if (turnNodes[index].timestamp != null) continue;
+    if (startTime != null && endTime != null && endTime > startTime) {
+      turnNodes[index].timestamp = startTime + ((endTime - startTime) * (index + 1)) / (turnNodes.length + 1);
+    } else if (startTime != null) {
+      turnNodes[index].timestamp = startTime + index + 1;
+    } else if (endTime != null) {
+      turnNodes[index].timestamp = endTime - (turnNodes.length - index);
+    }
+  }
+  const projectedByKey = new Map(projectedNodes.map((node) => [node.key, node]));
+  for (const node of projectedNodes) {
+    if (node.timestamp != null || !node.parentKey) continue;
+    node.timestamp = projectedByKey.get(node.parentKey)?.timestamp;
+  }
+
+  if (turnKeys.length) {
+    projectedEdges.push({
+      key: `detail:${parentKey}:${turnKeys[0]}`,
+      sourceKey: parentKey,
+      targetKey: turnKeys[0],
+      kind: "detail",
+      label: "transcript",
+      provenance: "transcript",
+    });
+    for (let index = 0; index < turnKeys.length - 1; index++) {
+      projectedEdges.push({
+        key: `sequence:${turnKeys[index]}:${turnKeys[index + 1]}`,
+        sourceKey: turnKeys[index],
+        targetKey: turnKeys[index + 1],
+        kind: "sequence",
+        provenance: "transcript",
+      });
+    }
+    if (end && end.key !== parentKey) {
+      projectedEdges.push({
+        key: `detail:${turnKeys[turnKeys.length - 1]}:${end.key}`,
+        sourceKey: turnKeys[turnKeys.length - 1],
+        targetKey: end.key,
+        kind: "detail",
+        label: "returns",
+        provenance: "transcript",
+      });
+    }
+  }
+
+  const nodesByKey = new Map(graph.nodes.map((node) => [node.key, node]));
+  for (const node of projectedNodes) nodesByKey.set(node.key, node);
+  const edgesByKey = new Map(graph.edges.map((edge) => [edge.key, edge]));
+  for (const edge of projectedEdges) edgesByKey.set(edge.key, edge);
+  const nodes = [...nodesByKey.values()].map((node, order) => ({ ...node, order }));
+  return {
+    ...graph,
+    revision: `${graph.revision}:session:${cleanSessionId}:${messages.length}`,
+    nodes,
+    edges: [...edgesByKey.values()],
   };
 }

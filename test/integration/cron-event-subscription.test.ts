@@ -155,7 +155,7 @@ describe("Cron event subscriptions", () => {
           task: "Review completed session.",
           includeEvent: true,
         },
-        on: ["session.completed"],
+        on: ["session.end"],
       },
     ]));
 
@@ -172,7 +172,7 @@ describe("Cron event subscriptions", () => {
     cron.subscribeToBus(bus);
 
     const completedEvent = {
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:dev",
       data: {
@@ -203,7 +203,7 @@ describe("Cron event subscriptions", () => {
         name: "canonical-session-handler",
         enabled: true,
         handler: "canonical-session-handler",
-        on: ["session.completed"],
+        on: ["session.end"],
       },
     ]));
 
@@ -217,7 +217,7 @@ describe("Cron event subscriptions", () => {
     cron.subscribeToBus(bus);
 
     const canonicalEvent = {
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:may",
       data: {

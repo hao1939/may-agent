@@ -72,9 +72,70 @@ function eventTtlMs(event: Record<string, unknown>): number | null {
   return typeof ttl === "number" ? ttl : null;
 }
 
-function capEventData(json: string): string {
+function compactEventValue(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") {
+    const max = depth === 0 ? 16_000 : 8_000;
+    return value.length <= max
+      ? value
+      : `${value.slice(0, max)}...[TRUNCATED: ${value.length} chars]`;
+  }
+  if (value === null || typeof value !== "object") return value;
+  if (depth >= 6) return "[TRUNCATED: maximum event data depth]";
+  if (Array.isArray(value)) {
+    const items = value.slice(0, 50).map((item) => compactEventValue(item, depth + 1));
+    if (value.length > 50) items.push(`[TRUNCATED: ${value.length - 50} more items]`);
+    return items;
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  const compacted = Object.fromEntries(
+    entries.slice(0, 100).map(([key, item]) => [key, compactEventValue(item, depth + 1)]),
+  );
+  if (entries.length > 100) compacted._truncatedProperties = entries.length - 100;
+  return compacted;
+}
+
+function capEventData(payload: Record<string, unknown>): string {
+  const json = JSON.stringify(payload);
   if (json.length <= MAX_EVENT_DATA) return json;
-  return `${json.slice(0, MAX_EVENT_DATA)}...[TRUNCATED: ${json.length} chars]`;
+
+  const compacted = compactEventValue(payload) as Record<string, unknown>;
+  const compactJson = JSON.stringify({
+    ...compacted,
+    _truncated: { originalLength: json.length },
+  });
+  if (compactJson.length <= MAX_EVENT_DATA) return compactJson;
+
+  const fallback: Record<string, unknown> = {
+    _truncated: {
+      originalLength: json.length,
+      reason: "event payload exceeded persistence limit",
+    },
+  };
+  const priorityKeys = [
+    "sessionId",
+    "agent",
+    "status",
+    "outcome",
+    "summary",
+    "error",
+    "workflowRunId",
+    "projectId",
+    "taskId",
+    "handler",
+  ];
+  const scalarEntries = Object.entries(payload).filter(
+    ([, value]) => value === null || typeof value !== "object",
+  );
+  const orderedEntries = [
+    ...priorityKeys.flatMap((key) => scalarEntries.filter(([entryKey]) => entryKey === key)),
+    ...scalarEntries.filter(([key]) => !priorityKeys.includes(key)),
+  ];
+  for (const [key, value] of orderedEntries) {
+    const candidate = { ...fallback, [key]: compactEventValue(value, 1) };
+    if (JSON.stringify(candidate).length > MAX_EVENT_DATA) continue;
+    fallback[key] = candidate[key];
+  }
+  return JSON.stringify(fallback);
 }
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
@@ -328,7 +389,7 @@ export class DbWriter {
     this.sweepUnacceptedEvents(timestamp);
     const info = this.db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [event.type, source, owner, capEventData(JSON.stringify(payload)), timestamp, urgency, ttlMs],
+      [event.type, source, owner, capEventData(payload), timestamp, urgency, ttlMs],
     );
     const rowId = Number(info.lastInsertRowid);
     if (Number.isFinite(rowId) && rowId > 0) {
