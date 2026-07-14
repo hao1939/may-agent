@@ -580,8 +580,13 @@ function sessionExpansionItems(sessionId, expansion, visibleEventIds = new Set()
 
 function buildEventGraphDisplay(nodes, moreNodes = []) {
   const ordered = chronologicalNodes(nodes);
-  const hasStart = new Set(ordered.filter((node) => node.type === 'session.start').map(graphNodeSessionId).filter(Boolean));
-  const visibleEventIds = new Set(ordered.map((node) => Number(node.id)).filter(Number.isFinite));
+  const expandedHiddenNodes = [];
+  for (const more of moreNodes || []) {
+    if (_eventGraphExpandedMore[more.key]) expandedHiddenNodes.push(...chronologicalNodes(more.nodes || []));
+  }
+  const visibleNodes = [...ordered, ...expandedHiddenNodes];
+  const hasStart = new Set(visibleNodes.filter((node) => node.type === 'session.start').map(graphNodeSessionId).filter(Boolean));
+  const visibleEventIds = new Set(visibleNodes.map((node) => Number(node.id)).filter(Number.isFinite));
   const moreByParent = new Map();
   for (const more of moreNodes || []) {
     const parentId = Number(more.parentEventId);
@@ -605,7 +610,17 @@ function buildEventGraphDisplay(nodes, moreNodes = []) {
     for (const more of moreByParent.get(Number(node.id)) || []) {
       if (_eventGraphExpandedMore[more.key]) {
         for (const hidden of chronologicalNodes(more.nodes || [])) {
-          items.push({ kind: 'more-event', key: `${more.key}:event:${hidden.id}`, node: hidden, moreKey: more.key, more });
+          const hiddenSessionId = graphNodeSessionId(hidden);
+          const hiddenExpansion = hiddenSessionId ? _eventGraphExpandedSessions[hiddenSessionId] : null;
+          if (hiddenExpansion && !inserted.has(hiddenSessionId) && hidden.type === 'session.end' && !hasStart.has(hiddenSessionId)) {
+            items.push(...sessionExpansionItems(hiddenSessionId, hiddenExpansion, visibleEventIds));
+            inserted.add(hiddenSessionId);
+          }
+          items.push({ kind: 'more-event', key: `${more.key}:event:${hidden.id}`, node: hidden, sessionId: hiddenSessionId, moreKey: more.key, more });
+          if (hiddenExpansion && !inserted.has(hiddenSessionId) && hidden.type === 'session.start') {
+            items.push(...sessionExpansionItems(hiddenSessionId, hiddenExpansion, visibleEventIds));
+            inserted.add(hiddenSessionId);
+          }
         }
         items.push({ kind: 'more-tail', key: `${more.key}:tail`, moreKey: more.key, more });
       } else {
@@ -673,9 +688,9 @@ function buildExpandedSessionEdges(displayItems) {
     bySession.set(sessionId, [...(bySession.get(sessionId) || []), item]);
   }
   for (const [sessionId, items] of bySession) {
-    const start = items.find((item) => item.kind === 'event' && item.node?.type === 'session.start');
-    const end = [...items].reverse().find((item) => item.kind === 'event' && item.node?.type === 'session.end');
-    const details = items.filter((item) => item.kind !== 'event');
+    const start = items.find((item) => (item.kind === 'event' || item.kind === 'more-event') && item.node?.type === 'session.start');
+    const end = [...items].reverse().find((item) => (item.kind === 'event' || item.kind === 'more-event') && item.node?.type === 'session.end');
+    const details = items.filter((item) => item.kind !== 'event' && item.kind !== 'more-event');
     if (!details.length) continue;
     const sequence = [start, ...details, end].filter(Boolean);
     for (let index = 0; index < sequence.length - 1; index++) {
@@ -903,12 +918,19 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
 
     if (item.kind === 'more-event') {
       const node = item.node;
+      const sessionId = graphNodeSessionId(node);
+      const expandable = isExpandableSessionNode(node);
+      const expanded = !!(sessionId && _eventGraphExpandedSessions[sessionId]);
       const summary = node.summary || node.dataPreview?.summary || node.dataPreview?.reason || node.dataPreview?.status || graphNodeSubtitle(node);
-      svg += `<g onclick="loadEventGraph(${Number(node.id)})" style="cursor:pointer">`;
-      svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="var(--bg2)" stroke="var(--fg2)" stroke-width="1.2" stroke-dasharray="3 4"></rect>`;
+      const click = expandable
+        ? `toggleEventGraphSessionExpansion(${Number(rootEventId)}, ${Number(node.id)}, ${jsStringAttr(sessionId)}, ${Number(depth)})`
+        : `loadEventGraph(${Number(node.id)})`;
+      svg += `<g onclick='${click}' style="cursor:pointer">`;
+      svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="${expanded ? 'rgba(80,150,255,.16)' : 'var(--bg2)'}" stroke="${expanded ? 'var(--accent)' : 'var(--border)'}" stroke-width="${expanded ? 2 : 1}"></rect>`;
       svg += `<text x="${pos.x + 10}" y="${pos.y + 19}" fill="var(--fg)" font-size="12" font-family="monospace">${esc(shortGraphLabel(node.type, 28))}</text>`;
       svg += `<text x="${pos.x + 10}" y="${pos.y + 38}" fill="var(--fg2)" font-size="10">${esc(shortGraphLabel(summary, 38))}</text>`;
       svg += `<text x="${pos.x + nodeWidth - 58}" y="${pos.y + 19}" fill="var(--fg2)" font-size="10">#${esc(String(node.id))}</text>`;
+      if (expandable) svg += `<text x="${pos.x + nodeWidth - 58}" y="${pos.y + 36}" fill="var(--fg2)" font-size="10">${expanded ? 'collapse' : 'expand'}</text>`;
       svg += `</g>`;
       continue;
     }
