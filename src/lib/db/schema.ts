@@ -228,6 +228,16 @@ CREATE TABLE IF NOT EXISTS event_trace_links (
 CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type);
 CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type);
 
+INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+SELECT id, 'event:' || id, NULL, 'default' FROM events;
+
+CREATE TRIGGER IF NOT EXISTS trg_events_default_trace
+AFTER INSERT ON events
+BEGIN
+  INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+  VALUES (NEW.id, 'event:' || NEW.id, NULL, 'default');
+END;
+
 CREATE TABLE IF NOT EXISTS runtime_migrations (
   key        TEXT PRIMARY KEY,
   applied_at INTEGER NOT NULL

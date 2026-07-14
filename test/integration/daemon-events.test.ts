@@ -6,7 +6,7 @@ import { EventBus } from "../../src/app/event-bus.js";
 import { attachDaemonEventSubscribers } from "../../src/app/daemon-events.js";
 
 describe("daemon event subscribers", () => {
-  it("translates blocked session.end into completion and canonical escalation events", () => {
+  it("translates blocked session.end into a canonical escalation without copying the terminal event", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-"));
     const bus = new EventBus();
     const events: any[] = [];
@@ -56,25 +56,14 @@ describe("daemon event subscribers", () => {
       });
       expect(escalation.data).not.toHaveProperty("owner");
       expect(events.some((event) => event.type === "session.escalated")).toBe(false);
-      const completed = events.find((event) => event.type === "session.completed");
-      expect(completed).toMatchObject({
-        type: "session.completed",
-        source: "runtime",
-        owner: "agent:scout",
-        data: {
-          sessionId: "s_1",
-          agent: "scout",
-          outcome: "need input",
-          status: "done",
-        },
-      });
-      expect(completed).not.toHaveProperty("sessionId");
+      expect(events.some((event) => event.type === "session.completed")).toBe(false);
+      expect(events.some((event) => event.type === "session.receipt")).toBe(false);
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
 
-  it("translates error session.end to session.completed without emitting live session.failed", () => {
+  it("does not manufacture another terminal event for error session.end", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-error-"));
     const bus = new EventBus();
     const events: any[] = [];
@@ -103,19 +92,8 @@ describe("daemon event subscribers", () => {
         task: "fix issue",
       });
 
-      expect(events).toContainEqual(expect.objectContaining({
-        type: "session.completed",
-        source: "runtime",
-        owner: "agent:dev",
-        data: expect.objectContaining({
-          sessionId: "s_error",
-          agent: "dev",
-          outcome: "error",
-          status: "error",
-          error: "boom",
-          task: "fix issue",
-        }),
-      }));
+      expect(events.some((event) => event.type === "session.completed")).toBe(false);
+      expect(events.some((event) => event.type === "session.receipt")).toBe(false);
       expect(events.some((event) => event.type === "session.failed")).toBe(false);
     } finally {
       rmSync(persistDir, { recursive: true, force: true });

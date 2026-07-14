@@ -92,6 +92,18 @@ function applyReadModelMigrations(db: SqliteDb): void {
         UNIQUE(from_event_id, to_event_id, type, label)
       );
     `);
+    db.exec(`
+      INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+      SELECT id, 'event:' || id, NULL, 'default' FROM events;
+    `);
+    db.exec(`
+      CREATE TRIGGER IF NOT EXISTS trg_events_default_trace
+      AFTER INSERT ON events
+      BEGIN
+        INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
+        VALUES (NEW.id, 'event:' || NEW.id, NULL, 'default');
+      END;
+    `);
   } catch {
     /* best-effort trace compatibility migration */
   }

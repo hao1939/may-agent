@@ -78,13 +78,20 @@ describe("createWorkflowHandler", () => {
     });
   });
 
-  it("passes session.completed event data through in trigger context", async () => {
+  it("passes session.end event data through in trigger context", async () => {
     const { ctx, calls, emitted } = context();
     const completedEvent: EventEnvelope = {
-      type: "session.completed",
+      type: "session.end",
       source: "runtime",
       owner: "agent:dev",
-      data: { sessionId: "s_done", agent: "dev", status: "done" },
+      data: {
+        sessionId: "s_done",
+        agent: "dev",
+        status: "done",
+        outcome: "done",
+        summary: "Done",
+        durationMs: 42,
+      },
       timestamp: 456,
     };
     const handler = createWorkflowHandler({
