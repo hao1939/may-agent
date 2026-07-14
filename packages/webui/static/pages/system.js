@@ -1059,7 +1059,7 @@ function renderEventGraphMap(nodes, edges, focusEventId, rootEventId, depth, mor
       : `loadEventGraph(${Number(node.id)})`;
     svg += `<g onclick='${click}' style="cursor:pointer">`;
     svg += `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" fill="${fill}" stroke="${expanded ? 'var(--accent)' : stroke}" stroke-width="${isFocus || expanded ? 2 : 1}"></rect>`;
-    svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="${isFocus ? 'var(--accent)' : 'var(--fg)'}" font-size="12">${esc(shortGraphLabel(graphNodeTitle(node), 25))}</text>`;
+    svg += `<text x="${pos.x + 10}" y="${pos.y + 21}" fill="${isFocus ? 'var(--accent)' : 'var(--fg)'}" font-size="12" font-family="monospace">${esc(shortGraphLabel(node.type, 28))}</text>`;
     svg += `<text x="${pos.x + 10}" y="${pos.y + 39}" fill="var(--fg2)" font-size="11">${esc(shortGraphLabel(graphNodeSubtitle(node), 38))}</text>`;
     if (node.visibility === 'detail') svg += `<text x="${pos.x + nodeWidth - 42}" y="${pos.y + 21}" fill="var(--fg2)" font-size="10">detail</text>`;
     if (isStart) svg += `<text x="${pos.x + nodeWidth - 104}" y="${pos.y + 21}" fill="var(--green)" font-size="10">start</text>`;
@@ -1352,8 +1352,7 @@ function renderEventGraph(graph, opts = {}) {
     const bg = isFocus ? 'rgba(80,150,255,.08)' : 'var(--bg)';
     html += `<div style="border:1px solid ${border};border-radius:6px;background:${bg};padding:8px;display:grid;gap:3px">`;
     html += `<div style="display:flex;gap:8px;align-items:center">`;
-    html += `<span style="font-family:monospace;color:${isFocus ? 'var(--accent)' : 'var(--fg)'}">${esc(graphNodeTitle(node))}</span>`;
-    if (graphNodeTitle(node) !== node.type) html += `<span style="font-size:11px;color:var(--fg2);font-family:monospace">${esc(node.type)}</span>`;
+    html += `<span style="font-family:monospace;color:${isFocus ? 'var(--accent)' : 'var(--fg)'}">${esc(node.type || '')}</span>`;
     html += `<span style="font-size:11px;color:var(--fg2)">#${esc(String(node.id))}</span>`;
     if (node.visibility === 'detail') html += `<span style="font-size:10px;border:1px solid var(--border);border-radius:8px;padding:1px 6px;color:var(--fg2)">detail</span>`;
     html += `<span style="margin-left:auto;font-size:11px;color:var(--fg2)">${timeAgo(node.timestamp)}</span>`;
