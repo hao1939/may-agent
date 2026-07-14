@@ -12,7 +12,9 @@ event = node in the trace
 parentEventId = direct parent event
 links = related events that are not the direct parent
 attributes = event data
-detail nodes = expandable LLM/tool/session evidence
+graph node = event or supporting detail represented in the read model
+parentKey = display hierarchy inside the graph
+more node = expandable boundary hiding non-default graph context
 ```
 
 Events remain the source of truth for cross-boundary work. The event graph does
@@ -52,6 +54,106 @@ Clicking an expanded node again collapses that node.
 Rows and raw payloads are fallback views. They are useful for exact audit, but
 the primary investigation surface is the graph with inline expansion.
 
+## Default Graph Scope
+
+The default graph should not dump every correlated event. It should answer four
+questions:
+
+```text
+Where did this chain start?
+Which structural parent path explains this selected event?
+What directly happened around the selected event?
+Where does hidden or later context continue?
+```
+
+For a selected event, render this shape:
+
+```text
+start point
+  -> key parent
+  -> ...
+  -> selected event
+       -> direct child/detail/result
+       -> ... later/context/details
+```
+
+### Start Point
+
+Use the strongest provable start:
+
+1. Trace root: walk `trace.parentEventId` backward until there is no parent.
+2. Lifecycle opener: `*.started`, `*.requested`, `*.created`, or `*.assigned`.
+3. External boundary: timer/cron, human input, API/web request, Telegram reply,
+   metric breach, external callback, or manual operator action.
+4. Selected event fallback: use the selected event and mark `start unknown`.
+
+Do not treat correlation-only events as start points. A second session with the
+same `workflowRunId` is context, not the start of the selected event chain.
+
+### Key Parent Path
+
+The key parent path is the structural path, not every parent event. Show parent
+nodes when they explain a hierarchy, branch, ownership, or work-scope change:
+
+- boundary entry: human input, timer, metric breach, API request, callback;
+- ownership change: routed to owner, owner inbox, delegated to agent/workflow;
+- work-scope change: project task assigned, workflow started, session started,
+  CLI task started, escalation created;
+- branch or merge: one event emits multiple follow-ups, closes another chain,
+  resumes prior work, or triggers redo/replan;
+- lifecycle close: task/session/workflow/escalation completed, failed,
+  blocked, resolved, or dismissed.
+
+Linear noise should collapse behind a `more` node:
+
+- receipts;
+- handler skipped;
+- evaluation skipped;
+- context read;
+- guard details;
+- low-level tool events;
+- same-workflow/session/task correlation that is not on the causal path.
+
+### Selected Event Direct Scope
+
+Around the selected event, show direct evidence:
+
+- direct parent and direct children;
+- lifecycle open/close pair;
+- closure/reference links directly attached to the selected event;
+- direct emitted follow-up events;
+- detail children when the selected node is expanded.
+
+Do not auto-expand broader context such as same workflow, same task, same
+metric, or same owner inbox. Show those as expandable boundaries.
+
+### More Nodes
+
+`more` nodes are real graph nodes used for progressive disclosure. They are not
+decoration.
+
+```typescript
+type EventGraphMoreNode = {
+  key: string;
+  kind: "more";
+  parentKey: string;
+  direction: "before" | "after" | "context" | "details";
+  scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
+  count?: number;
+  label: string; // "... 4 later events", "... 2 same-workflow sessions"
+};
+```
+
+Clicking a `more` node expands that boundary:
+
+- `before`: hidden earlier parents;
+- `after`: hidden children or later follow-up events;
+- `details`: detail evidence such as receipts, guards, LLM turns, tool calls;
+- `context`: same workflow/task/session/metric/owner context.
+
+If the graph reaches a visible node with hidden continuation, it must show a
+`more` node instead of pretending that visible node is the end.
+
 ## Core Model
 
 Every persisted event already has an event-store id. That id is the node id.
@@ -84,6 +186,117 @@ Meaning:
 
 This follows the common tracing shape: one trace id, parent relationship for the
 main chain, and links for non-parent relationships.
+
+## Graph Read Model
+
+Trace storage records durable event relationships. The graph read model turns
+those relationships plus projections such as sessions, workflow runs,
+transcripts, notifications, metrics, and pair runs into display-ready graph
+nodes and edges.
+
+The read model owns graph semantics:
+
+- which records are graph nodes;
+- which node is the parent of another node in the displayed hierarchy;
+- which edges mean main flow, reference, closure, detail, tool call, or return;
+- which nodes are default evidence and which are expanded detail evidence;
+- which abnormal/skipped/unhandled records must remain visible for inspection.
+
+The UI owns only presentation:
+
+- layout direction, spacing, colors, and selection;
+- which expandable node keys are currently open;
+- scroll position, anchors, and fallback raw rows;
+- rendering different node/edge kinds consistently.
+
+Do not make the browser infer semantic hierarchy from event names or payload
+string matching. If the graph needs a session event, an LLM turn, a tool call,
+or a diagnostic to appear as a child of a session node, the API response should
+carry that relationship explicitly.
+
+Display hierarchy is intentionally generic and can have multiple levels:
+
+```text
+event
+  session detail event
+  transcript turn
+    tool call
+      tool result
+  workflow step
+    child session
+      transcript turn
+```
+
+The current UI may render only two or three visible levels, but the data model
+must not bake in that limit.
+
+Recommended display node shape:
+
+```typescript
+type EventGraphDisplayNode = {
+  key: string; // stable within response: event:3128372, session:s_123:turn:4
+  kind:
+    | "event"
+    | "session"
+    | "workflow"
+    | "turn"
+    | "tool_call"
+    | "tool_result"
+    | "metric"
+    | "notification"
+    | "diagnostic";
+  role?: "primary" | "detail" | "diagnostic";
+  parentKey?: string; // display parent, not necessarily trace parent
+  level?: number; // convenience for simple renderers; derivable from parentKey
+  visibility: "default" | "detail";
+  eventId?: number;
+  sessionId?: string;
+  workflowRunId?: string;
+  turnIndex?: number;
+  toolCallId?: string;
+  timestamp?: number;
+  type?: string;
+  label: string;
+  summary?: string;
+  dataPreview?: Record<string, unknown>;
+  refs?: Record<string, string | number | boolean | null>;
+};
+```
+
+Recommended display edge shape:
+
+```typescript
+type EventGraphDisplayEdge = {
+  key: string;
+  sourceKey: string;
+  targetKey: string;
+  kind:
+    | "flow"
+    | "reference"
+    | "closure"
+    | "detail"
+    | "tool_call"
+    | "tool_result"
+    | "return";
+  label?: string;
+};
+```
+
+Important distinction:
+
+- `trace.parentEventId` is the durable event-to-event parent.
+- `parentKey` is the display hierarchy used to draw detail nodes under a
+  selected event/session/workflow.
+
+For example, `session.receipt`, `handler.skipped`, and `evaluation.skipped`
+may be detail children of a session start node even when their durable trace
+parent is different or missing. That is acceptable as long as the graph node
+also keeps its original `eventId`, `type`, and trace metadata available in the
+inspector.
+
+The read model must not drop records because they look secondary. Skipped,
+unhandled, malformed, orphan, and diagnostic records are often the evidence the
+human is looking for.
 
 ## Event Envelope
 
@@ -413,7 +626,9 @@ Response shape:
 type EventGraphResponse = {
   focusEventId: number;
   traceId?: string;
-  nodes: Array<{
+  nodes: EventGraphDisplayNode[];
+  edges: EventGraphDisplayEdge[];
+  eventList?: Array<{
     id: number;
     type: string;
     visibility: "default" | "detail";
@@ -424,24 +639,20 @@ type EventGraphResponse = {
     summary?: string;
     dataPreview?: Record<string, unknown>;
   }>;
-  edges: Array<{
-    id: string;
-    source: number;
-    target: number;
-    type: "parent" | "reference" | "closure";
-    label?: string;
-  }>;
+  eventListScope?: string;
   diagnostics: string[];
 };
 ```
 
 UI defaults:
 
-- render `default` events
+- render graph nodes with `visibility = "default"`
 - hide `detail` events until toggled
 - label `closure` links distinctly
 - collapse repeated loop slices
-- show raw event envelope and transcript/tool references in the side panel
+- show raw event envelope and transcript/tool references in the inspector
+- preserve all nodes returned by the API, including skipped/unhandled
+  diagnostics; filtering is a user choice, not a default data loss
 
 React Flow is a good renderer for the interactive UI, with ELK.js or a similar
 layout engine for left-to-right DAG layout. Mermaid export is useful for static
@@ -458,8 +669,11 @@ reports.
 6. Add detail-level session/tool/LLM events as references rather than full
    transcript duplication.
 7. Build `/api/events/:eventId/graph`.
-8. Replace ad hoc trace UI with graph rendering and detail toggle.
-9. Update evaluation checks to look for broken trace chains rather than
+8. Move display hierarchy into the graph read model: return node keys,
+   `parentKey`, `level`, node kind, edge kind, and detail visibility from the
+   API instead of reconstructing session/tool hierarchy in the browser.
+9. Replace ad hoc trace UI with graph rendering and detail toggle.
+10. Update evaluation checks to look for broken trace chains rather than
    matching strings or escalation-specific fields.
 
 Implemented foundation:
@@ -472,6 +686,8 @@ Implemented foundation:
   trace rows and closure links.
 - `GET /api/events/:eventId/graph?depth=3&detail=false` returns graph nodes,
   edges, and diagnostics.
+- The current UI can expand sessions inline, but the long-term contract is for
+  the graph API to provide semantic hierarchy so the UI only renders it.
 - `bun run check:event-graph -- --state-dir /app/.state` checks trace storage
   integrity. Add `--backfill` to create baseline trace rows for existing events
   and project lifecycle pair records into closure links.

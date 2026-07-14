@@ -403,18 +403,60 @@ event nodes
   + parent edges
   + reference links
   + closure links
-  + optional detail nodes for LLM/tool details
+  + optional detail nodes for session, workflow, LLM, tool, metric,
+    notification, and diagnostic details
 ```
 
-The page should render the graph as linked steps by default, with a graph view
-available for branches and loops:
+The graph API is responsible for graph semantics. It should return display
+nodes and edges with stable keys, node kind, visibility, parent key, optional
+level, object ids, labels, summaries, and data previews. The browser should not
+guess that a node is a child because its event type starts with `session.` or
+because a payload string happens to contain a session id. The browser renders
+the hierarchy it is given and keeps page-local expanded/collapsed state.
+
+This lets the same page support multiple hierarchy depths without changing the
+UI model:
 
 ```text
-project.task.completed
-  -> project.task.reviewed
-  -> project.planning.requested (decision=accept)
-  -> project.task.assigned
+event
+  session event
+  transcript turn
+    tool call
+      tool result
+  workflow step
+    child session
 ```
+
+The graph must not hide abnormal evidence by default. Skipped handlers,
+skipped evaluations, receipts, unhandled events, orphan diagnostics, and failed
+tool calls are inspection evidence. The API can mark them as `detail` or
+`diagnostic`, but they should remain available when the related node is
+expanded.
+
+The page should render the selected event in a bounded structural graph by
+default:
+
+```text
+start point
+  -> key parent
+  -> ...
+  -> selected event
+       -> direct child/detail/result
+       -> ... later/context/details
+```
+
+The start point is the trace root, lifecycle opener, external boundary event,
+or selected-event fallback when no earlier evidence is known.
+
+Key parents are structural changes, not every parent event. Show them when they
+represent boundary entry, ownership change, work-scope change, branch/merge, or
+lifecycle close. Collapse linear noise behind an expandable `...` node.
+
+The selected event's direct scope should show direct parents, direct children,
+direct closure/reference links, lifecycle pair, direct emitted follow-ups, and
+expanded detail children. Broader same-workflow, same-task, same-session,
+same-metric, and same-owner context should appear as `...` boundary nodes until
+the user expands them.
 
 Every step should link to the strongest available object:
 
@@ -462,8 +504,17 @@ Center:
 
 - default bounded graph rendering for quick reading
 - graph rendering for branch/merge/loop inspection
-- click a session node to expand that session inline into session events,
-  LLM/user turns, tool calls, tool results, and the closing session event
+- click a node to expand its API-provided detail children inline in the same
+  graph
+- click a `...` node to expand that hidden boundary inline in the same graph
+- click a session node to enrich the current graph with that session's events,
+  LLM/user turns, tool calls, tool results, receipts, skipped handlers,
+  evaluations, diagnostics, and closing session event
+- show why a `...` node exists: hidden earlier parents, later events, detail
+  evidence, same-workflow sessions, same-task review, metric context, or owner
+  inbox context
+- do not open a separate graph or panel for expansion; the existing graph grows
+  in place
 - keep already expanded nodes open so two sessions can be compared side by side
 - collapse an expanded node when it is clicked again
 - expand/collapse repeated loop slices
