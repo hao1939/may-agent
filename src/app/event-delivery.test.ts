@@ -193,6 +193,28 @@ describe("event delivery metadata", () => {
         "session.end",
       ]);
       expect(graph.eventList?.find((node) => node.type === "guard.triggered")?.visibility).toBe("detail");
+      const startKey = `event:${Number(startRow.lastInsertRowid ?? start.id)}`;
+      const guardDisplayNode = graph.displayNodes?.find((node) => node.type === "guard.triggered");
+      expect(guardDisplayNode).toMatchObject({
+        kind: "diagnostic",
+        role: "diagnostic",
+        parentKey: startKey,
+        level: 1,
+        visibility: "detail",
+      });
+      expect(graph.displayEdges).toContainEqual(
+        expect.objectContaining({
+          sourceKey: startKey,
+          targetKey: guardDisplayNode?.key,
+          kind: "detail",
+        }),
+      );
+      expect(graph.displayNodes?.map((node) => node.type)).toEqual([
+        "session.start",
+        "guard.triggered",
+        "session.end",
+      ]);
+      expect(graph.displayNodes?.map((node) => node.order)).toEqual([0, 1, 2]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
