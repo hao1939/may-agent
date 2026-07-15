@@ -1050,7 +1050,14 @@ function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
   if (taskState(task) !== "backlog") return false;
   if (isPlanningTask(task)) return false;
-  if (task.kind === "work" || task.kind === "focus_plan" || task.kind === "durable_lane") return false;
+  if (
+    task.kind === "work" ||
+    task.kind === "focus_plan" ||
+    task.kind === "durable_lane" ||
+    task.kind === "standing_task"
+  ) {
+    return false;
+  }
   if (isWorkflowControllerTask(task) && controllerRefillPaused(task)) return false;
   return true;
 }
