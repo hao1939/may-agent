@@ -108,8 +108,8 @@ const ALL_METRICS: MetricDef[] = [
     name: "Heartbeat coverage (agents with sessions in 2h)",
     owner: "may",
     type: "gauge",
-    target: 1,
-    threshold: 1,
+    target: 0,
+    threshold: 0,
     unit: "count",
     alert_op: "<",
     priority: "P2",
@@ -322,26 +322,26 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P2",
   },
   {
-    id: "evaluator.success-candidates-24h",
-    name: "Good sessions marked for learning (24h)",
+    id: "evaluator.project-finding-delivery-rate-24h",
+    name: "Evaluation findings handled by target owner workflows (24h)",
     owner: "evaluator",
     type: "gauge",
-    target: 1,
-    threshold: 0,
-    unit: "count",
+    target: 0.8,
+    threshold: 0.5,
+    unit: "ratio",
     alert_op: "<",
-    priority: "P3",
+    priority: "P1",
   },
   {
-    id: "evaluator.success-learnings-24h",
-    name: "Learnings extracted from good sessions (24h)",
+    id: "evaluator.project-feedback-pending-age-h",
+    name: "Oldest pending evaluation finding delivery (hours)",
     owner: "evaluator",
     type: "gauge",
-    target: 1,
-    threshold: 0,
-    unit: "count",
-    alert_op: "<",
-    priority: "P3",
+    target: 0,
+    threshold: 12,
+    unit: "hours",
+    alert_op: ">",
+    priority: "P1",
   },
   {
     id: "runtime.stale-running-session-count",
@@ -677,6 +677,14 @@ const ALL_METRICS: MetricDef[] = [
 
 const RETIRED_METRIC_IDS = [
   "evaluator.stale-running-session-count",
+  "evaluator.success-candidates-24h",
+  "evaluator.success-learnings-24h",
+  "evaluator.project-feedback-acceptance-rate-24h",
+  "evaluator.learning-feedback-adoption-rate-24h",
+  "evaluator.project-finding-recurrence-rate-24h",
+  "evaluator.project-feedback-acceptance-rate-7d",
+  "evaluator.learning-feedback-adoption-rate-7d",
+  "evaluator.project-finding-recurrence-rate-7d",
   "v2.spec-coverage-rate",
   "project.blocked-rate-7d",
   "capability.session-trace-completeness",
@@ -957,14 +965,23 @@ function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
   try {
     for (const entry of readdirSync(projectsDir)) {
       // Skip huge irrelevant directories that exhaust the walk cap
-      if (entry === "aks-rp-e2e" || entry === "aks-rp-e2e.app" || entry === "runs") continue;
+      if (
+        entry === "aks-rp-e2e" ||
+        entry === "aks-rp-e2e.app" ||
+        entry === "runs"
+      )
+        continue;
       if (entry === "_archive" || entry === "aks-explorer") continue;
       const p = join(projectsDir, entry);
       try {
         if (statSync(p).isDirectory()) projectSubdirs.push(p);
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
-  } catch { /* skip */ }
+  } catch {
+    /* skip */
+  }
 
   return [
     ...walkMarkdownFiles(join(root, "agents")),
@@ -1736,7 +1753,9 @@ export const create: HandlerModule["create"] = (
       // triaged. The old filter `IN ('needs_improvement', 'skipped')` excluded
       // sessions whose verdict was 'acceptable' or 'good', deflating the rate
       // even though the evaluator did look at them.
-      const triaged = failedRows.filter((row) => Number(row.triaged) > 0).length;
+      const triaged = failedRows.filter(
+        (row) => Number(row.triaged) > 0,
+      ).length;
       // Small failure counts cause this metric to flap around a single recently-ended
       // session before evaluator aftermath catches up. Keep the signal meaningful by
       // treating windows with fewer than 5 failed sessions as neutral while still
@@ -1990,32 +2009,59 @@ export const create: HandlerModule["create"] = (
     }
 
     try {
+      const outcomeWindowStart = twentyFourH;
+      const feedbackTotal = count(
+        `SELECT COUNT(*) AS c
+           FROM events
+          WHERE event_type = 'project.planning.requested'
+            AND source = 'evaluation.app'
+            AND timestamp > ?
+            AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
+        outcomeWindowStart,
+      );
+      const feedbackDelivered = count(
+        `SELECT COUNT(*) AS c
+           FROM events
+          WHERE event_type = 'project.planning.requested'
+            AND source = 'evaluation.app'
+            AND (accepted_at IS NOT NULL OR COALESCE(status, 'pending') IN ('handled', 'completed', 'resolved'))
+            AND timestamp > ?
+            AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
+        outcomeWindowStart,
+      );
       record(
-        "evaluator.success-candidates-24h",
-        count(
-          "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.success_candidate' AND timestamp > ?",
-          twentyFourH,
-        ),
+        "evaluator.project-finding-delivery-rate-24h",
+        feedbackTotal > 0
+          ? parseFloat((feedbackDelivered / feedbackTotal).toFixed(4))
+          : 1,
+        feedbackTotal,
       );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring evaluator.success-candidates-24h: ${e}`,
-      );
-    }
 
-    try {
+      const oldestPending = (
+        db
+          .prepare(
+            `SELECT MIN(timestamp) AS timestamp
+               FROM events
+              WHERE event_type = 'project.planning.requested'
+                AND source = 'evaluation.app'
+                AND accepted_at IS NULL
+                AND COALESCE(status, 'pending') NOT IN ('handled', 'completed', 'resolved')
+                AND timestamp > ?
+                AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
+          )
+          .get(outcomeWindowStart) as { timestamp?: number | null }
+      )?.timestamp;
       record(
-        "evaluator.success-learnings-24h",
-        count(
-          "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.learning_created' AND timestamp > ?",
-          twentyFourH,
-        ),
+        "evaluator.project-feedback-pending-age-h",
+        oldestPending
+          ? parseFloat(((now - oldestPending) / 3_600_000).toFixed(2))
+          : 0,
+        feedbackTotal - feedbackDelivered,
       );
     } catch (e) {
       ctx.sdk.log(
         "info",
-        `[metrics-snapshot] Error measuring evaluator.success-learnings-24h: ${e}`,
+        `[metrics-snapshot] Error measuring evaluator finding delivery: ${e}`,
       );
     }
 
@@ -2378,10 +2424,18 @@ export const create: HandlerModule["create"] = (
     // checkpoint. PASSIVE is safe (doesn't block writers) and sufficient to merge
     // committed WAL frames so page_count reflects the real logical size.
     try {
-      try { db.exec("PRAGMA wal_checkpoint(PASSIVE)"); } catch { /* ok if readers block */ }
-      const pageCount = (db.prepare("PRAGMA page_count").get() as any)?.page_count ?? 0;
-      const pageSize = (db.prepare("PRAGMA page_size").get() as any)?.page_size ?? 4096;
-      const sizeMb = parseFloat(((pageCount * pageSize) / (1024 * 1024)).toFixed(2));
+      try {
+        db.exec("PRAGMA wal_checkpoint(PASSIVE)");
+      } catch {
+        /* ok if readers block */
+      }
+      const pageCount =
+        (db.prepare("PRAGMA page_count").get() as any)?.page_count ?? 0;
+      const pageSize =
+        (db.prepare("PRAGMA page_size").get() as any)?.page_size ?? 4096;
+      const sizeMb = parseFloat(
+        ((pageCount * pageSize) / (1024 * 1024)).toFixed(2),
+      );
       if (sizeMb > 0) {
         record("infra.persist.db-size-mb", sizeMb);
       }
@@ -2505,7 +2559,12 @@ export const create: HandlerModule["create"] = (
             // but returns a primitive, not an object with .value
             if (typeof parsed === "number" && Number.isFinite(parsed)) {
               value = parsed;
-            } else if (parsed && typeof parsed === "object" && typeof parsed.value === "number" && Number.isFinite(parsed.value)) {
+            } else if (
+              parsed &&
+              typeof parsed === "object" &&
+              typeof parsed.value === "number" &&
+              Number.isFinite(parsed.value)
+            ) {
               value = parsed.value;
               if (
                 typeof parsed.sampleSize === "number" &&
@@ -2598,204 +2657,211 @@ export const create: HandlerModule["create"] = (
     // evals 7d (~6 MB), event_pairs 3d (~2 MB). Expected steady-state: ~1050 MB.
     // Runs every snapshot cycle (every ~5 min) — batched deletes are lightweight.
     try {
-        const EVENT_RETENTION_MS = 1 * 86400000; // 1 day (reduced from 2d; events avg 525 MB/day)
-        const SESSION_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; sessions avg 90 MB/day)
-        const WORKFLOW_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; workflows avg 60 MB/day)
-        const DIGEST_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; digests avg 14 MB/day)
-        const EVAL_RETENTION_MS = 7 * 86400000; // 7 days (reduced from 14d; evals ~0.8 MB/day)
+      const EVENT_RETENTION_MS = 1 * 86400000; // 1 day (reduced from 2d; events avg 525 MB/day)
+      const SESSION_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; sessions avg 90 MB/day)
+      const WORKFLOW_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; workflows avg 60 MB/day)
+      const DIGEST_RETENTION_MS = 3 * 86400000; // 3 days (reduced from 7d; digests avg 14 MB/day)
+      const EVAL_RETENTION_MS = 7 * 86400000; // 7 days (reduced from 14d; evals ~0.8 MB/day)
 
-        const eventCutoff = now - EVENT_RETENTION_MS;
-        const sessionCutoff = now - SESSION_RETENTION_MS;
-        const workflowCutoff = now - WORKFLOW_RETENTION_MS;
-        const digestCutoff = now - DIGEST_RETENTION_MS;
-        const evalCutoff = now - EVAL_RETENTION_MS;
+      const eventCutoff = now - EVENT_RETENTION_MS;
+      const sessionCutoff = now - SESSION_RETENTION_MS;
+      const workflowCutoff = now - WORKFLOW_RETENTION_MS;
+      const digestCutoff = now - DIGEST_RETENTION_MS;
+      const evalCutoff = now - EVAL_RETENTION_MS;
 
-        // Delete in batches of 5000 to avoid long write-locks
-        const BATCH = 5000;
-        let totalDeleted = 0;
+      // Delete in batches of 5000 to avoid long write-locks
+      const BATCH = 5000;
+      let totalDeleted = 0;
 
-        // Events: largest table, 1-day retention
-        let batch: any;
-        do {
-          batch = db.run(
-            `DELETE FROM events WHERE rowid IN (
+      // Events: largest table, 1-day retention
+      let batch: any;
+      do {
+        batch = db.run(
+          `DELETE FROM events WHERE rowid IN (
               SELECT rowid FROM events WHERE timestamp < ? LIMIT ?
             )`,
-            [eventCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
-        try {
-          db.run("DELETE FROM event_traces WHERE event_id NOT IN (SELECT id FROM events)");
-          db.run(
-            `UPDATE event_traces
+          [eventCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
+      try {
+        db.run(
+          "DELETE FROM event_traces WHERE event_id NOT IN (SELECT id FROM events)",
+        );
+        db.run(
+          `UPDATE event_traces
              SET parent_event_id = NULL
              WHERE parent_event_id IS NOT NULL
                AND parent_event_id NOT IN (SELECT id FROM events)`,
-          );
-          db.run(
-            `DELETE FROM event_trace_links
+        );
+        db.run(
+          `DELETE FROM event_trace_links
              WHERE from_event_id NOT IN (SELECT id FROM events)
                 OR to_event_id NOT IN (SELECT id FROM events)`,
-          );
-        } catch (e) {
-          ctx.sdk.log("info", `[metrics-snapshot] Error cleaning event trace projection: ${e}`);
-        }
+        );
+      } catch (e) {
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] Error cleaning event trace projection: ${e}`,
+        );
+      }
 
-        // Sessions: 3-day retention
-        do {
-          batch = db.run(
-            `DELETE FROM sessions WHERE rowid IN (
+      // Sessions: 3-day retention
+      do {
+        batch = db.run(
+          `DELETE FROM sessions WHERE rowid IN (
               SELECT rowid FROM sessions WHERE startedAt < ? LIMIT ?
             )`,
-            [sessionCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
+          [sessionCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Workflow runs: 3-day retention
-        do {
-          batch = db.run(
-            `DELETE FROM workflow_runs WHERE rowid IN (
+      // Workflow runs: 3-day retention
+      do {
+        batch = db.run(
+          `DELETE FROM workflow_runs WHERE rowid IN (
               SELECT rowid FROM workflow_runs WHERE startedAt < ? LIMIT ?
             )`,
-            [workflowCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
+          [workflowCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Session digests: 3-day retention
-        do {
-          batch = db.run(
-            `DELETE FROM session_digests WHERE rowid IN (
+      // Session digests: 3-day retention
+      do {
+        batch = db.run(
+          `DELETE FROM session_digests WHERE rowid IN (
               SELECT rowid FROM session_digests WHERE created_at < ? LIMIT ?
             )`,
-            [digestCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
+          [digestCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Evaluations: 7-day retention
-        do {
-          batch = db.run(
-            `DELETE FROM evaluations WHERE rowid IN (
+      // Evaluations: 7-day retention
+      do {
+        batch = db.run(
+          `DELETE FROM evaluations WHERE rowid IN (
               SELECT rowid FROM evaluations WHERE createdAt < ? LIMIT ?
             )`,
-            [evalCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
+          [evalCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        // Event pair runs: 3-day retention (reduced from 7d; ~2 MB total)
-        const EVENT_PAIR_RETENTION_MS = 3 * 86400000; // 3 days
-        const eventPairCutoff = now - EVENT_PAIR_RETENTION_MS;
-        do {
-          batch = db.run(
-            `DELETE FROM event_pair_runs WHERE rowid IN (
+      // Event pair runs: 3-day retention (reduced from 7d; ~2 MB total)
+      const EVENT_PAIR_RETENTION_MS = 3 * 86400000; // 3 days
+      const eventPairCutoff = now - EVENT_PAIR_RETENTION_MS;
+      do {
+        batch = db.run(
+          `DELETE FROM event_pair_runs WHERE rowid IN (
               SELECT rowid FROM event_pair_runs WHERE opened_at < ? LIMIT ?
             )`,
-            [eventPairCutoff, BATCH],
-          );
-          totalDeleted += (batch as any)?.changes ?? 0;
-        } while (((batch as any)?.changes ?? 0) >= BATCH);
+          [eventPairCutoff, BATCH],
+        );
+        totalDeleted += (batch as any)?.changes ?? 0;
+      } while (((batch as any)?.changes ?? 0) >= BATCH);
 
-        if (totalDeleted > 0) {
-          ctx.sdk.log(
-            "info",
-            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:1d, sessions/workflows/digests/event_pairs:3d, evals:7d)`,
-          );
-        }
+      if (totalDeleted > 0) {
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:1d, sessions/workflows/digests/event_pairs:3d, evals:7d)`,
+        );
+      }
 
-        // Reclaim disk space from deleted rows.
-        // `PRAGMA auto_vacuum = INCREMENTAL` only takes effect AFTER a full VACUUM
-        // on databases created with auto_vacuum=NONE (the SQLite default).
-        // Strategy: use total on-disk footprint (DB + WAL + SHM) as the trigger,
-        // not just main DB size. The WAL can grow as large as the DB itself after
-        // bulk deletes, so checking only the main file misses the real problem.
-        // First checkpoint WAL to merge it back, then VACUUM if still oversized.
-        // Guard: only VACUUM if enough disk free space exists (need ~DB size for temp).
-        try {
-          const dbFilePath = join(ctx.sdk.paths.root, ".state", "may.db");
-          const walPath = dbFilePath + "-wal";
-          const shmPath = dbFilePath + "-shm";
-          const getOnDiskMb = () => {
-            let total = 0;
-            if (existsSync(dbFilePath)) total += statSync(dbFilePath).size;
-            if (existsSync(walPath)) total += statSync(walPath).size;
-            if (existsSync(shmPath)) total += statSync(shmPath).size;
-            return total / (1024 * 1024);
-          };
-          let onDiskMb = getOnDiskMb();
+      // Reclaim disk space from deleted rows.
+      // `PRAGMA auto_vacuum = INCREMENTAL` only takes effect AFTER a full VACUUM
+      // on databases created with auto_vacuum=NONE (the SQLite default).
+      // Strategy: use total on-disk footprint (DB + WAL + SHM) as the trigger,
+      // not just main DB size. The WAL can grow as large as the DB itself after
+      // bulk deletes, so checking only the main file misses the real problem.
+      // First checkpoint WAL to merge it back, then VACUUM if still oversized.
+      // Guard: only VACUUM if enough disk free space exists (need ~DB size for temp).
+      try {
+        const dbFilePath = join(ctx.sdk.paths.root, ".state", "may.db");
+        const walPath = dbFilePath + "-wal";
+        const shmPath = dbFilePath + "-shm";
+        const getOnDiskMb = () => {
+          let total = 0;
+          if (existsSync(dbFilePath)) total += statSync(dbFilePath).size;
+          if (existsSync(walPath)) total += statSync(walPath).size;
+          if (existsSync(shmPath)) total += statSync(shmPath).size;
+          return total / (1024 * 1024);
+        };
+        let onDiskMb = getOnDiskMb();
 
-          // Trigger on total on-disk footprint > 1500 MB, regardless of how many
-          // rows were deleted this cycle. Prior retention runs may have deleted rows
-          // but VACUUM never fired (e.g., code deployed after the retention window).
-          if (onDiskMb > 1500) {
-            // Step 1: checkpoint WAL to merge it back into the main DB file.
-            // This alone can dramatically shrink total footprint when WAL is large.
+        // Trigger on total on-disk footprint > 1500 MB, regardless of how many
+        // rows were deleted this cycle. Prior retention runs may have deleted rows
+        // but VACUUM never fired (e.g., code deployed after the retention window).
+        if (onDiskMb > 1500) {
+          // Step 1: checkpoint WAL to merge it back into the main DB file.
+          // This alone can dramatically shrink total footprint when WAL is large.
+          try {
+            db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+            const postCheckpointMb = getOnDiskMb();
+            ctx.sdk.log(
+              "info",
+              `[metrics-snapshot] WAL checkpoint complete. On-disk: ${onDiskMb.toFixed(0)}MB → ${postCheckpointMb.toFixed(0)}MB`,
+            );
+            onDiskMb = postCheckpointMb;
+          } catch (cpErr) {
+            ctx.sdk.log(
+              "info",
+              `[metrics-snapshot] WAL checkpoint failed (readers active?): ${cpErr}`,
+            );
+          }
+
+          // Step 2: if still oversized after checkpoint, run full VACUUM.
+          const currentDbMb = existsSync(dbFilePath)
+            ? statSync(dbFilePath).size / (1024 * 1024)
+            : 0;
+          if (currentDbMb > 1500) {
             try {
-              db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-              const postCheckpointMb = getOnDiskMb();
-              ctx.sdk.log(
-                "info",
-                `[metrics-snapshot] WAL checkpoint complete. On-disk: ${onDiskMb.toFixed(0)}MB → ${postCheckpointMb.toFixed(0)}MB`,
+              const { stdout: dfOut } = await execAsync(
+                `df -m "${join(ctx.sdk.paths.root, ".state")}" | tail -1 | awk '{print $4}'`,
+                { timeout: 5000 },
               );
-              onDiskMb = postCheckpointMb;
-            } catch (cpErr) {
-              ctx.sdk.log(
-                "info",
-                `[metrics-snapshot] WAL checkpoint failed (readers active?): ${cpErr}`,
-              );
-            }
-
-            // Step 2: if still oversized after checkpoint, run full VACUUM.
-            const currentDbMb = existsSync(dbFilePath) ? statSync(dbFilePath).size / (1024 * 1024) : 0;
-            if (currentDbMb > 1500) {
-              try {
-                const { stdout: dfOut } = await execAsync(
-                  `df -m "${join(ctx.sdk.paths.root, ".state")}" | tail -1 | awk '{print $4}'`,
-                  { timeout: 5000 },
-                );
-                const freeMb = parseInt(dfOut.trim(), 10);
-                // Need at least current DB size + 500 MB headroom for safe VACUUM
-                if (!isNaN(freeMb) && freeMb > currentDbMb + 500) {
-                  ctx.sdk.log(
-                    "info",
-                    `[metrics-snapshot] Running full VACUUM (DB=${currentDbMb.toFixed(0)}MB, free=${freeMb}MB, deleted=${totalDeleted} rows)`,
-                  );
-                  db.exec("VACUUM");
-                  const newMb = getOnDiskMb();
-                  ctx.sdk.log(
-                    "info",
-                    `[metrics-snapshot] VACUUM complete. On-disk: ${currentDbMb.toFixed(0)}MB → ${newMb.toFixed(0)}MB`,
-                  );
-                } else {
-                  ctx.sdk.log(
-                    "info",
-                    `[metrics-snapshot] Skipping VACUUM: insufficient free space (free=${freeMb}MB, need>${currentDbMb.toFixed(0)}MB+500MB)`,
-                  );
-                }
-              } catch (dfErr) {
+              const freeMb = parseInt(dfOut.trim(), 10);
+              // Need at least current DB size + 500 MB headroom for safe VACUUM
+              if (!isNaN(freeMb) && freeMb > currentDbMb + 500) {
                 ctx.sdk.log(
                   "info",
-                  `[metrics-snapshot] Skipping VACUUM: could not determine free space: ${dfErr}`,
+                  `[metrics-snapshot] Running full VACUUM (DB=${currentDbMb.toFixed(0)}MB, free=${freeMb}MB, deleted=${totalDeleted} rows)`,
+                );
+                db.exec("VACUUM");
+                const newMb = getOnDiskMb();
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] VACUUM complete. On-disk: ${currentDbMb.toFixed(0)}MB → ${newMb.toFixed(0)}MB`,
+                );
+              } else {
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] Skipping VACUUM: insufficient free space (free=${freeMb}MB, need>${currentDbMb.toFixed(0)}MB+500MB)`,
                 );
               }
+            } catch (dfErr) {
+              ctx.sdk.log(
+                "info",
+                `[metrics-snapshot] Skipping VACUUM: could not determine free space: ${dfErr}`,
+              );
             }
           }
-          // After a successful VACUUM, set incremental mode for future lightweight reclaim
-          try {
-            db.exec("PRAGMA auto_vacuum = INCREMENTAL");
-            db.exec("PRAGMA incremental_vacuum(2000)");
-          } catch {
-            /* incremental vacuum best-effort */
-          }
-        } catch (vacErr) {
-          ctx.sdk.log(
-            "info",
-            `[metrics-snapshot] Error during VACUUM: ${vacErr}`,
-          );
         }
+        // After a successful VACUUM, set incremental mode for future lightweight reclaim
+        try {
+          db.exec("PRAGMA auto_vacuum = INCREMENTAL");
+          db.exec("PRAGMA incremental_vacuum(2000)");
+        } catch {
+          /* incremental vacuum best-effort */
+        }
+      } catch (vacErr) {
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] Error during VACUUM: ${vacErr}`,
+        );
+      }
     } catch (e) {
       ctx.sdk.log(
         "info",
@@ -2816,7 +2882,11 @@ export const create: HandlerModule["create"] = (
       const minuteOfHour = new Date(now).getMinutes();
       // Run only during the first 5-minute window of each hour
       if (minuteOfHour < 5) {
-        const histDir = join(ctx.sdk.paths.persist ?? ctx.sdk.paths.root, "sessions", "history");
+        const histDir = join(
+          ctx.sdk.paths.persist ?? ctx.sdk.paths.root,
+          "sessions",
+          "history",
+        );
         if (existsSync(histDir)) {
           const cutoffMs = now - SESSION_HISTORY_RETENTION_MS;
           const entries = readdirSync(histDir, { withFileTypes: true });
@@ -2868,7 +2938,11 @@ export const create: HandlerModule["create"] = (
         let tmpPruned = 0;
         for (const entry of tmpEntries) {
           if (!entry.isFile()) continue;
-          if (!entry.name.startsWith("pi-bash-") || !entry.name.endsWith(".log")) continue;
+          if (
+            !entry.name.startsWith("pi-bash-") ||
+            !entry.name.endsWith(".log")
+          )
+            continue;
           const filePath = join("/tmp", entry.name);
           try {
             const fstat = statSync(filePath);
