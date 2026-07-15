@@ -635,13 +635,11 @@ async function addProjectComment() {
     const data = await res.json();
     if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
     input.value = '';
-    if (data.workflowStarted) {
-      statusEl.textContent = `✅ Comment added — project workflow started${data.workflowRunId ? ' (' + data.workflowRunId + ')' : ''}`;
+    if (data.accepted) {
+      statusEl.textContent = '✅ Comment accepted — project owner will process the event';
       statusEl.style.color = 'var(--green)';
     } else if (data.triggered) {
-      statusEl.textContent = data.fallbackTriggered
-        ? '⚠️ Comment added — fallback trigger sent, workflow start not confirmed yet'
-        : '⚠️ Comment added — trigger sent, workflow start not confirmed yet';
+      statusEl.textContent = '⚠️ Comment event sent, acceptance not confirmed';
       statusEl.style.color = 'var(--orange)';
     } else {
       statusEl.textContent = '⚠️ Comment added — trigger not confirmed';

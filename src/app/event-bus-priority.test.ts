@@ -41,13 +41,56 @@ describe("EventBus subscriber priority", () => {
     const bus = new EventBus();
     const order: string[] = [];
 
-    bus.subscribe((event) => { if (event.type === "info") throw new Error("boom"); }, { priority: "first" });
-    bus.subscribe((event) => { if (event.type === "info") order.push("first-after-throw"); }, { priority: "first" });
-    bus.subscribe((event) => { if (event.type === "info") order.push("normal"); });
+    bus.subscribe(
+      (event) => {
+        if (event.type === "info") throw new Error("boom");
+      },
+      { priority: "first" },
+    );
+    bus.subscribe(
+      (event) => {
+        if (event.type === "info") order.push("first-after-throw");
+      },
+      { priority: "first" },
+    );
+    bus.subscribe((event) => {
+      if (event.type === "info") order.push("normal");
+    });
 
     bus.emit({ type: "info", message: "y" });
 
     expect(order).toEqual(["first-after-throw", "normal"]);
+  });
+
+  it("does not run side-effect subscribers when required persistence fails", () => {
+    const bus = new EventBus();
+    const order: string[] = [];
+
+    bus.setPersistenceSubscriber(() => {
+      order.push("persist");
+      throw new Error("disk unavailable");
+    });
+    bus.subscribe(() => order.push("first"), { priority: "first" });
+    bus.subscribe(() => order.push("normal"));
+
+    expect(() => bus.emit({ type: "info", message: "must be durable" })).toThrow("disk unavailable");
+    expect(order).toEqual(["persist"]);
+  });
+
+  it("routes an extensible persisted envelope when producer input is frozen", () => {
+    const bus = new EventBus();
+    const observed: any[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 73, configurable: true });
+    });
+    bus.subscribe((event) => observed.push(event));
+
+    const input = Object.freeze({ type: "info", message: "frozen" }) as any;
+    const emitted = bus.emit(input);
+
+    expect(emitted).not.toBe(input);
+    expect((emitted as any)[EVENT_ROW_ID]).toBe(73);
+    expect(observed[0]).toBe(emitted);
   });
 
   it("emits a durable subscriber.failed signal after subscriber exceptions", () => {
@@ -111,10 +154,13 @@ describe("EventBus subscriber priority", () => {
     const events: any[] = [];
     let nextId = 40;
 
-    bus.subscribe((event) => {
-      Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
-      events.push(event);
-    }, { priority: "first" });
+    bus.subscribe(
+      (event) => {
+        Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
+        events.push(event);
+      },
+      { priority: "first" },
+    );
     bus.subscribe((event) => {
       if (event.type !== "info") return;
       bus.emit({
@@ -136,12 +182,17 @@ describe("EventBus subscriber priority", () => {
     const events: any[] = [];
     let nextId = 90;
     let resolveChild!: () => void;
-    const childEmitted = new Promise<void>((resolve) => { resolveChild = resolve; });
+    const childEmitted = new Promise<void>((resolve) => {
+      resolveChild = resolve;
+    });
 
-    bus.subscribe((event) => {
-      Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
-      events.push(event);
-    }, { priority: "first" });
+    bus.subscribe(
+      (event) => {
+        Object.defineProperty(event, EVENT_ROW_ID, { value: ++nextId, configurable: true });
+        events.push(event);
+      },
+      { priority: "first" },
+    );
     bus.subscribe((event) => {
       if (event.type !== "info") return;
       void Promise.resolve().then(() => {

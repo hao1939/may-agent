@@ -40,21 +40,33 @@ describe("runtime integration", () => {
   it("persists canonical escalation events and delivers the same envelope to cron subscribers", async () => {
     const { root, stateDir } = makeRoot("may-runtime-integration-");
     const configPath = join(root, "cron.json");
-    writeFileSync(configPath, JSON.stringify([
-      {
-        name: "escalation-reactor",
-        enabled: true,
-        handler: "escalation-reactor",
-        on: ["escalation.created"],
-      },
-    ]), "utf-8");
+    writeFileSync(
+      configPath,
+      JSON.stringify([
+        {
+          name: "escalation-reactor",
+          enabled: true,
+          handler: "escalation-reactor",
+          on: ["escalation.created"],
+        },
+      ]),
+      "utf-8",
+    );
 
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
     const handled: unknown[] = [];
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
-    const cron = new Cron(configPath, {} as never, () => "", undefined, root, undefined, (event) => bus.emit(event as never));
+    const cron = new Cron(
+      configPath,
+      {} as never,
+      () => "",
+      undefined,
+      root,
+      undefined,
+      (event) => bus.emit(event as never),
+    );
     cron.load();
     cron.registerHandler("escalation-reactor", async (event) => {
       handled.push(event);
@@ -78,9 +90,9 @@ describe("runtime integration", () => {
     cron.stop();
 
     const db = getDb(stateDir);
-    const row = db.prepare(
-      "SELECT event_type, source, owner, urgency, data FROM events WHERE event_type = ?",
-    ).get("escalation.created") as {
+    const row = db
+      .prepare("SELECT event_type, source, owner, urgency, data FROM events WHERE event_type = ?")
+      .get("escalation.created") as {
       event_type: string;
       source: string;
       owner: string;
@@ -119,7 +131,7 @@ describe("runtime integration", () => {
     const { root, stateDir } = makeRoot("may-sdk-runtime-");
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
     const deps: SDKDeps = {
       bus,
@@ -141,9 +153,9 @@ describe("runtime integration", () => {
     sdk.message("reviewer", "Please inspect the migration.");
 
     const db = getDb(stateDir);
-    const escalation = db.prepare(
-      "SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1",
-    ).get("escalation.created") as { source: string; owner: string; urgency: string; data: string };
+    const escalation = db
+      .prepare("SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
+      .get("escalation.created") as { source: string; owner: string; urgency: string; data: string };
     const escalationData = JSON.parse(escalation.data);
     expect(escalation).toMatchObject({
       source: "agent:dev",
@@ -158,9 +170,9 @@ describe("runtime integration", () => {
     });
     expect(escalationData).not.toHaveProperty("owner");
 
-    const messages = db.prepare(
-      "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC",
-    ).all("message.created") as Array<{ source: string; owner: string; data: string }>;
+    const messages = db
+      .prepare("SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC")
+      .all("message.created") as Array<{ source: string; owner: string; data: string }>;
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({ source: "agent:dev", owner: "agent:reviewer" });
     expect(JSON.parse(messages[0].data)).toMatchObject({
@@ -174,7 +186,7 @@ describe("runtime integration", () => {
     const { root, stateDir } = makeRoot("may-sdk-metrics-");
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
     const sdk = buildAgentSDK({
       bus,
@@ -201,9 +213,9 @@ describe("runtime integration", () => {
     sdk.metrics.record("reviewer.queue-depth", 2);
     sdk.metrics.evaluate("reviewer.queue-depth");
 
-    const breach = getDb(stateDir).prepare(
-      "SELECT source, owner, urgency, data FROM events WHERE event_type = ?",
-    ).get("metric.breach") as { source: string; owner: string; urgency: string; data: string };
+    const breach = getDb(stateDir)
+      .prepare("SELECT source, owner, urgency, data FROM events WHERE event_type = ?")
+      .get("metric.breach") as { source: string; owner: string; urgency: string; data: string };
     expect(breach).toMatchObject({
       source: "agent:dev",
       owner: "agent:reviewer",
@@ -220,7 +232,9 @@ describe("runtime integration", () => {
     const { root, stateDir } = makeRoot("may-workflow-boundary-");
     const workflowDir = join(root, "agents", "dev", "workflows");
     mkdirSync(workflowDir, { recursive: true });
-    writeFileSync(join(workflowDir, "blocked.ts"), `
+    writeFileSync(
+      join(workflowDir, "blocked.ts"),
+      `
       export const name = "blocked";
       export const description = "Blocks locally until the caller promotes the ownership boundary";
       export async function execute(ctx) {
@@ -230,12 +244,14 @@ describe("runtime integration", () => {
           evidence: { change: "database migration" },
         });
       }
-    `, "utf-8");
+    `,
+      "utf-8",
+    );
 
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
     const runtimeEvents: RuntimeEvent[] = [];
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
     bus.subscribe((event) => runtimeEvents.push(event as RuntimeEvent));
 
     const manager = new SubagentManager({ persistDir: stateDir });
@@ -268,9 +284,9 @@ describe("runtime integration", () => {
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
-    const beforePromotion = getDb(stateDir).prepare(
-      "SELECT COUNT(*) AS count FROM events WHERE event_type = ?",
-    ).get("escalation.created") as { count: number };
+    const beforePromotion = getDb(stateDir)
+      .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?")
+      .get("escalation.created") as { count: number };
     expect(beforePromotion.count).toBe(0);
 
     const sdk = buildAgentSDK({
@@ -291,9 +307,9 @@ describe("runtime integration", () => {
       sdk.escalate(parsed.reason, parsed.context as never);
     }
 
-    const escalation = getDb(stateDir).prepare(
-      "SELECT owner, data FROM events WHERE event_type = ?",
-    ).get("escalation.created") as { owner: string; data: string };
+    const escalation = getDb(stateDir)
+      .prepare("SELECT owner, data FROM events WHERE event_type = ?")
+      .get("escalation.created") as { owner: string; data: string };
     expect(escalation.owner).toBe("human:operator");
     expect(JSON.parse(escalation.data)).toMatchObject({
       sourceAgent: "dev",

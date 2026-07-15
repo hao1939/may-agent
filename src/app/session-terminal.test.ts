@@ -182,24 +182,17 @@ describe("canonical session terminal event", () => {
     expect(data._truncated.originalLength).toBeGreaterThan(200_000);
   });
 
-  it("still escalates an explicit blocked finish from session.end", () => {
+  it("does not promote an explicit blocked finish across ownership automatically", () => {
     const sessionId = emitSessionEnd({
       status: "blocked",
       summary: "Needs approval",
       blockers: [{ reason: "Human approval required", context: "deployment" }],
     });
     const db = getDb(persistDir);
-    const escalation = db.prepare(
-      "SELECT data FROM events WHERE event_type = 'escalation.created' AND json_extract(data, '$.sourceSessionId') = ?",
-    ).get(sessionId) as { data: string };
-
-    expect(JSON.parse(escalation.data)).toMatchObject({
-      sourceSessionId: sessionId,
-      reason: "Needs approval",
-      blockedOn: "Human approval required",
-      evidence: {
-        finishParams: { status: "blocked" },
-      },
-    });
+    expect(
+      db.prepare(
+        "SELECT COUNT(*) AS count FROM events WHERE event_type = 'escalation.created' AND json_extract(data, '$.sourceSessionId') = ?",
+      ).get(sessionId),
+    ).toEqual({ count: 0 });
   });
 });

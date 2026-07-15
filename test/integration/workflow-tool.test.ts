@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import { createWorkflowRunner, createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
 
@@ -233,9 +233,10 @@ describe("workflow tool: typed execution", () => {
     `,
     );
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const runner = createWorkflowRunner({ manager, workflowDir });
     const tool = createWorkflowTool({ manager, workflowDir });
 
-    const typed = await tool.run("typed", "run typed workflow");
+    const typed = await runner.run("typed", "run typed workflow");
     expect(typed).toMatchObject({
       type: "done",
       workflow: "typed",

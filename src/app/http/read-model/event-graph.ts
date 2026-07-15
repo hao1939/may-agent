@@ -89,13 +89,14 @@ export type EventGraphResponse = {
   revision: string;
   nodes: EventGraphDisplayNode[];
   edges: EventGraphDisplayEdge[];
-  eventNodes: EventGraphNode[];
-  eventEdges: EventGraphEdge[];
-  eventList?: EventGraphNode[];
-  eventListScope?: {
+  events: EventGraphNode[];
+  relations: EventGraphEdge[];
+  scope: {
     kind: "session" | "workflow" | "task" | "graph";
     ids: string[];
     label: string;
+    graphEventIds: number[];
+    timelineEventIds: number[];
   };
   diagnostics: string[];
   detailNodeCount?: number;
@@ -817,12 +818,12 @@ function loadTraceRows(db: SqliteDb, traceId: string): Row[] {
   );
 }
 
-function loadEventListRows(
+function loadTimelineRows(
   db: SqliteDb,
   focus: Row,
   rowsById: Map<number, Row>,
   relationKeys: RelationKey[],
-): { rows: Row[]; scope: NonNullable<EventGraphResponse["eventListScope"]> } {
+): { rows: Row[]; scope: Pick<EventGraphResponse["scope"], "kind" | "ids" | "label"> } {
   const focusData = parseData(focus);
   const focusSessionId = dataValue(focusData, ["sessionId", "session_id"]);
   const focusWorkflowRunId = dataValue(focusData, ["workflowRunId", "workflow_run_id"]);
@@ -831,7 +832,7 @@ function loadEventListRows(
   const relationWorkflowIds = relationKeys.filter((key) => key.kind === "workflow").map((key) => key.value);
   const relationTaskIds = relationKeys.filter((key) => key.kind === "task").map((key) => key.value);
 
-  let kind: NonNullable<EventGraphResponse["eventListScope"]>["kind"] = "graph";
+  let kind: EventGraphResponse["scope"]["kind"] = "graph";
   let ids: string[] = [];
   let paths: string[] = [];
 
@@ -936,7 +937,7 @@ function buildDisplayGraph(
   focusEventId: number,
   nodes: EventGraphNode[],
   edges: EventGraphEdge[],
-  eventList: EventGraphNode[],
+  timelineEvents: EventGraphNode[],
 ): { displayNodes: EventGraphDisplayNode[]; displayEdges: EventGraphDisplayEdge[] } {
   const displayNodes = new Map<string, EventGraphDisplayNode>();
   const displayEdges = new Map<string, EventGraphDisplayEdge>();
@@ -973,7 +974,7 @@ function buildDisplayGraph(
     displayEdges.set(displayEdge.key, displayEdge);
   }
 
-  for (const node of eventList) {
+  for (const node of timelineEvents) {
     if (primaryIds.has(node.id)) continue;
     const parentKey = detailParentKeyForNode(node, nodes, focusEventId);
     const detailNode = displayNodeFromEventNode(node, {
@@ -1058,8 +1059,15 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphR
       revision: `missing:${focusEventId}`,
       nodes: [],
       edges: [],
-      eventNodes: [],
-      eventEdges: [],
+      events: [],
+      relations: [],
+      scope: {
+        kind: "graph",
+        ids: [],
+        label: "visible graph events",
+        graphEventIds: [],
+        timelineEventIds: [],
+      },
       diagnostics: [`event ${focusEventId} not found`],
     };
   }
@@ -1161,12 +1169,14 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphR
   const graphEdges = allEdges
     .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => a.source - b.source || a.target - b.target || a.type.localeCompare(b.type));
-  const eventListProjection = loadEventListRows(db, focus, rowsById, relationKeys);
-  const eventList = eventListProjection.rows
+  const timelineProjection = loadTimelineRows(db, focus, rowsById, relationKeys);
+  const timelineEvents = timelineProjection.rows
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-  const displayGraph = buildDisplayGraph(focusEventId, graphNodes, graphEdges, eventList);
+  const events = [...new Map([...graphNodes, ...timelineEvents].map((node) => [node.id, node])).values()]
+    .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+  const displayGraph = buildDisplayGraph(focusEventId, graphNodes, graphEdges, timelineEvents);
   const latestTimestamp = graphNodes.reduce((latest, node) => Math.max(latest, node.timestamp), 0);
   const revision = `${focusEventId}:${latestTimestamp}:${graphNodes.length}:${allEdges.length}`;
 
@@ -1192,10 +1202,13 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphR
     revision,
     nodes: displayGraph.displayNodes,
     edges: displayGraph.displayEdges,
-    eventNodes: graphNodes,
-    eventEdges: graphEdges,
-    eventList,
-    eventListScope: eventListProjection.scope,
+    events,
+    relations: graphEdges,
+    scope: {
+      ...timelineProjection.scope,
+      graphEventIds: graphNodes.map((node) => node.id),
+      timelineEventIds: timelineEvents.map((node) => node.id),
+    },
     diagnostics,
     detailNodeCount,
     review: buildEventReview(focusEventId, focus, rowsById, relatedPairs, relationKeys),

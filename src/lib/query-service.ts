@@ -1,5 +1,4 @@
 import type { SqliteDb } from "./db.js";
-import { persistEventTrace } from "./db/event-traces.js";
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -197,26 +196,6 @@ export interface QueryAPI {
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
-
-  /**
-   * Record that an owner review acted on inbox-routed events.
-   * Emits follow-up events and closes owner-inbox pairs.
-   * Returns the number of review events emitted.
-   */
-  reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-
-  /**
-   * Retire stale message work by orphaning its open owner-inbox pair.
-   * Returns the number of pairs retired.
-   */
-  expireStaleMessages(olderThanMs: number): number;
-
-  /**
-   * Retire stale signal work by orphaning its open owner-inbox pair.
-   * These are non-actionable historical noise once their window passes.
-   * Returns the number of rows expired.
-   */
-  expireStaleSignalEvents(olderThanMs: number): number;
 }
 
 export interface QueryServiceOptions {
@@ -236,105 +215,6 @@ function normalizeSql(input: string): string {
   if (sql.endsWith(";")) sql = sql.slice(0, -1).trim();
   if (sql.includes(";")) throw new Error("query.sql accepts one statement at a time");
   return sql;
-}
-
-function reviewedEventType(openEventType: unknown): string {
-  if (openEventType === "message.created") return "message.reviewed";
-  if (openEventType === "project.feedback.created") return "project.feedback.reviewed";
-  if (openEventType === "project.owner.requested") return "project.owner.reviewed";
-  return "owner.inbox.reviewed";
-}
-
-function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string): number {
-  if (!eventIds.length) return 0;
-  const now = Date.now();
-  const agent = reviewedBy ?? "system";
-  let reviewed = 0;
-  const rows = eventIds.map((id) => db.prepare(
-    `SELECT id, event_type, owner, data
-     FROM events
-     WHERE id = ?`,
-  ).get(id) as { id: number; event_type: string; owner: string | null; data: string | null } | null);
-  const insertFollowup = db.prepare(
-    `INSERT INTO events
-     (event_type, source, owner, data, timestamp, urgency, delivery_status, accepted_by, accepted_at, delivery_route, delivery_note)
-     VALUES (?, ?, ?, ?, ?, 'normal', 'accepted', ?, ?, 'direct', ?)`,
-  );
-  const closePair = db.prepare(
-    `UPDATE event_pair_runs
-     SET status = 'closed',
-         close_event_id = ?,
-         closed_at = ?,
-         note = COALESCE(note, 'closed by inbox review')
-     WHERE open_event_id = ?
-       AND status = 'open'`,
-  );
-  const existingFollowup = db.prepare(
-    `SELECT id
-     FROM events
-     WHERE json_extract(data, '$.openEventId') = ?
-     LIMIT 1`,
-  );
-  for (const row of rows) {
-    if (!row?.id || existingFollowup.get(row.id)) continue;
-    const type = reviewedEventType(row.event_type);
-    const payload = JSON.stringify({
-      openEventId: row.id,
-      openEventType: row.event_type,
-      reviewedBy: agent,
-    });
-    const info = insertFollowup.run(
-      type,
-      `inbox:${agent}`,
-      row.owner,
-      payload,
-      now,
-      `inbox:${agent}`,
-      now,
-      `reviewInboxEvents emitted ${type}`,
-    ) as { lastInsertRowid?: number | bigint };
-    const closeEventId = Number(info.lastInsertRowid);
-    if (Number.isFinite(closeEventId) && closeEventId > 0) {
-      reviewed++;
-      persistEventTrace(
-        db,
-        {
-          trace: {
-            traceId: `event:${row.id}`,
-            parentEventId: row.id,
-            links: [{ eventId: row.id, type: "closure", label: type }],
-          },
-        },
-        closeEventId,
-        now,
-      );
-      closePair.run(closeEventId, now, row.id);
-    }
-  }
-  return reviewed;
-}
-
-function retireStaleInboxPairs(
-  db: SqliteDb,
-  eventTypes: string[],
-  cutoff: number,
-  note: string,
-): number {
-  const placeholders = eventTypes.map(() => "?").join(", ");
-  const info = db.prepare(
-    `UPDATE event_pair_runs
-     SET status = 'orphan',
-         note = ?
-     WHERE pair_name = 'owner_inbox'
-       AND status = 'open'
-       AND open_event_id IN (
-         SELECT id
-         FROM events
-         WHERE event_type IN (${placeholders})
-           AND timestamp < ?
-       )`,
-  ).run(note, ...eventTypes, cutoff) as { changes?: number };
-  return info.changes ?? 0;
 }
 
 function assertReadOnlySql(sql: string): void {
@@ -1064,32 +944,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       return result(rows, limit);
     },
 
-    reviewInboxEvents(eventIds, reviewedBy) {
-      return reviewInboxRows(opts.getDb(), eventIds, reviewedBy);
-    },
-
-    expireStaleMessages(olderThanMs) {
-      const db = opts.getDb();
-      const cutoff = Date.now() - olderThanMs;
-      return retireStaleInboxPairs(db, ["message.created"], cutoff, "stale message inbox work retired");
-    },
-
-    expireStaleSignalEvents(olderThanMs) {
-      const db = opts.getDb();
-      const cutoff = Date.now() - olderThanMs;
-      const signalTypes = [
-        'session.resume_failed',
-        'session.recovery_failed',
-        'metric.breach',
-        'metric.recovered',
-        'metric.stalled',
-        'handler.failed',
-        'agent.config_invalid',
-        'message.delivery_failed',
-        'subscriber.failed',
-      ];
-      return retireStaleInboxPairs(db, signalTypes, cutoff, "stale signal inbox work retired");
-    },
   };
 }
 
@@ -1133,8 +987,5 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
     evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,
-    reviewInboxEvents: () => { throw new Error(reason); },
-    expireStaleMessages: () => { throw new Error(reason); },
-    expireStaleSignalEvents: () => { throw new Error(reason); },
   };
 }

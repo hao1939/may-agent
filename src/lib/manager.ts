@@ -4,15 +4,25 @@
  * Design: pi-agent-core's Agent handles LLM loop, retry, overflow recovery.
  * We handle: persistence, event bridging, timeout, guards, session state.
  *
- * No zombie cleanup, no call depth tracking, no API gating, no health audits.
- * Sessions timeout. Metrics cover health. Pi-agent-core retries.
+ * Pi-agent-core owns the model loop and retry behavior. This coordinator owns
+ * durable session state, recovery, guards, event bridging, and bounded calls.
  *
  * See: shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
 import { Agent } from "@earendil-works/pi-agent-core";
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {
   generateId,
@@ -65,12 +75,7 @@ import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.j
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import {
-  formatBoundedSkillCatalog,
-  invokeCatalogSkill,
-  parseExplicitSkill,
-  type MaySkill,
-} from "./skills.js";
+import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -590,9 +595,22 @@ export class SubagentManager {
       orderId: opts?.orderId ?? existingMeta?.orderId,
     });
 
-    // Event bridge
-    this.bridgeEvents(session);
-    if (activation) this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+    // Register before publishing session.start so synchronous subscribers see
+    // the same live state as the durable event. Roll back the in-memory and
+    // registry state if the required persistence boundary rejects the event.
+    this._sessions.set(sessionId, session);
+    try {
+      this.bridgeEvents(session);
+      if (activation) this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+    } catch (err) {
+      this._sessions.delete(sessionId);
+      const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
+      this._registry.updateSessionStatus(sessionId, "error", reason);
+      try {
+        unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+      } catch {}
+      throw err;
+    }
 
     // Timeout
     const timeoutMs = opts?.timeoutMs ?? def.timeoutMs;
@@ -602,8 +620,6 @@ export class SubagentManager {
         agent.abort();
       }, timeoutMs);
     }
-
-    this._sessions.set(sessionId, session);
 
     // Run agent. Persistent chat sessions complete a turn by going idle;
     // task/call sessions complete by emitting session.end and leaving memory.
@@ -1443,7 +1459,10 @@ export class SubagentManager {
       const catalog = formatBoundedSkillCatalog(def.skillCatalog);
       if (catalog.text) sections.push(catalog.text);
       if (catalog.omitted.length > 0) {
-        log("warn", `[skills] ${def.name}: omitted ${catalog.omitted.length} skill(s) from prompt budget: ${catalog.omitted.join(", ")}`);
+        log(
+          "warn",
+          `[skills] ${def.name}: omitted ${catalog.omitted.length} skill(s) from prompt budget: ${catalog.omitted.join(", ")}`,
+        );
       }
     }
 
@@ -1618,7 +1637,8 @@ export class SubagentManager {
   // ── Private ──
 
   private buildGuards(def: SubagentDefinition): BeforeToolCallHook[] {
-    const named = (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
+    const named =
+      (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
       async (context, signal) => {
         const result = await guard(context, signal);
         return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
@@ -2118,7 +2138,7 @@ export class SubagentManager {
         filePath: skill.filePath,
         contentHash: skill.contentHash,
       },
-      ...(trace ?? session.trace ? { trace: trace ?? session.trace } : {}),
+      ...((trace ?? session.trace) ? { trace: trace ?? session.trace } : {}),
     });
   }
 
@@ -2158,11 +2178,11 @@ export class SubagentManager {
       },
       ...(session.trace ? { trace: session.trace } : {}),
     } as any;
-    bus.emit(startEvent);
-    const startEventId = startEvent[EVENT_ROW_ID];
+    const persistedStartEvent = bus.emit(startEvent);
+    const startEventId = persistedStartEvent[EVENT_ROW_ID];
     if (Number.isInteger(startEventId) && Number(startEventId) > 0) {
       session.trace = {
-        traceId: startEvent.trace?.traceId ?? `event:${startEventId}`,
+        traceId: persistedStartEvent.trace?.traceId ?? `event:${startEventId}`,
         parentEventId: startEventId,
       };
     }
@@ -2190,7 +2210,9 @@ export class SubagentManager {
             if (path && def?.skillCatalog && args?.offset === undefined && args?.limit === undefined) {
               try {
                 const canonicalPath = realpathSync(resolve(def.projectRoot ?? process.cwd(), path));
-                const skill = [...def.skillCatalog.skills.values()].find((candidate) => candidate.canonicalPath === canonicalPath);
+                const skill = [...def.skillCatalog.skills.values()].find(
+                  (candidate) => candidate.canonicalPath === canonicalPath,
+                );
                 if (skill && statSync(canonicalPath).size <= 50_000 && skill.content.split("\n").length <= 2_000) {
                   pendingSkillReads.set((event as any).toolCallId, skill);
                 }

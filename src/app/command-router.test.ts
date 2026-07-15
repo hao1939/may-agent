@@ -13,7 +13,7 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
   const writer = new DbWriter(root);
-  bus.subscribe(writer.handler, { priority: "first" });
+  bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];

@@ -528,7 +528,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const limit = params.limit ?? 50;
               const db = getDb(persistDir);
 
-              // Query sessions table (replaces removed requests table)
+              // Query canonical session state.
               let whereClause = "";
               const queryParams: any[] = [];
 

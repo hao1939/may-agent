@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { getDb as defaultGetDb, closeDb as defaultCloseDb } from "../../../src/lib/requests.js";
 import { createMetricService as defaultCreateMetricService } from "../../../src/lib/metrics.js";
 import { createQueryService as defaultCreateQueryService } from "../../../src/lib/query-service.js";
+import { createCommandService as defaultCreateCommandService } from "../../../src/lib/command-service.js";
 import type {
   AgentSDK,
   CronEntry,
@@ -168,6 +169,28 @@ export function createTestRuntime(options: TestRuntimeOptions = {}): TestRuntime
     emit,
     getDb: () => db,
     query: infra.createQueryService({ getDb: () => db }),
+    commands: defaultCreateCommandService({
+      getDb: () => db,
+      emit: (event) => {
+        const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
+          ? event.data as Record<string, unknown>
+          : {};
+        emit(String(event.type), data, {
+          ...(typeof event.owner === "string" ? { owner: event.owner } : {}),
+          ...(typeof event.source === "string" ? { source: event.source } : {}),
+          ...(event.target && typeof event.target === "object" && !Array.isArray(event.target)
+            ? { target: event.target as Record<string, unknown> }
+            : {}),
+          ...(event.urgency === "low" || event.urgency === "normal" || event.urgency === "high" || event.urgency === "immediate"
+            ? { urgency: event.urgency }
+            : {}),
+          ...(typeof event.ttl_ms === "number" ? { ttl_ms: event.ttl_ms } : {}),
+          ...(event.trace && typeof event.trace === "object" && !Array.isArray(event.trace)
+            ? { trace: event.trace as { traceId: string; parentEventId?: number; links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }> } }
+            : {}),
+        });
+      },
+    }),
     metrics: infra.createMetricService({
       getDb: () => db,
       emit,
@@ -266,6 +289,7 @@ export function createTestWorkflowContext(options: TestWorkflowContextOptions = 
     dispatchEvent: fn(),
     getDb: () => runtime.db,
     query: runtime.sdk.query,
+    commands: runtime.sdk.commands,
     log: fn(),
     notify: fn(),
     metrics: runtime.sdk.metrics,

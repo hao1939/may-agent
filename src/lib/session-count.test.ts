@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { SubagentManager } from "./manager.js";
+import { eventData, EventBus } from "../app/event-bus.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -33,6 +34,34 @@ function registerAgent(manager: SubagentManager, name: string) {
 }
 
 describe("SubagentManager.getSessionCount()", () => {
+  it("registers live state before publishing session.start", () => {
+    const bus = new EventBus();
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), bus });
+    registerAgent(manager, "alpha");
+    let activeAtStart = false;
+    bus.subscribe((event) => {
+      if (event.type === "session.start") {
+        activeAtStart = manager.hasActiveSession(String(eventData(event).sessionId));
+      }
+    });
+
+    const sessionId = manager.run("alpha", "do something");
+    expect(activeAtStart).toBe(true);
+    manager.cancel(sessionId);
+  });
+
+  it("rolls back live state when durable session.start persistence fails", () => {
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber((event) => {
+      if (event.type === "session.start") throw new Error("disk unavailable");
+    });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), bus });
+    registerAgent(manager, "alpha");
+
+    expect(() => manager.run("alpha", "do something")).toThrow("disk unavailable");
+    expect(manager.getSessionCount()).toBe(0);
+  });
+
   it("returns 0 when no sessions have been created", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.getSessionCount()).toBe(0);

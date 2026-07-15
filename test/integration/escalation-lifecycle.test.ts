@@ -33,7 +33,7 @@ function setup() {
     },
   };
 
-  bus.subscribe(writer.handler, { priority: "first" });
+  bus.setPersistenceSubscriber(writer.handler);
   bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }));
   return { persistDir, bus, resumed, sent, activeSessions };
 }
@@ -74,13 +74,12 @@ describe("escalation lifecycle", () => {
     expect(resumed[0].message).toContain("Outcome: answered.");
     expect(resumed[0].message).toContain("Instruction: Continue with option B");
 
-    const rows = getDb(persistDir).prepare(
-      "SELECT event_type, source, owner, data FROM events WHERE event_type LIKE 'escalation.resume_%' ORDER BY id",
-    ).all() as Array<{ event_type: string; source: string; owner: string; data: string }>;
-    expect(rows.map((row) => row.event_type)).toEqual([
-      "escalation.resume_attempted",
-      "escalation.resume_started",
-    ]);
+    const rows = getDb(persistDir)
+      .prepare(
+        "SELECT event_type, source, owner, data FROM events WHERE event_type LIKE 'escalation.resume_%' ORDER BY id",
+      )
+      .all() as Array<{ event_type: string; source: string; owner: string; data: string }>;
+    expect(rows.map((row) => row.event_type)).toEqual(["escalation.resume_attempted", "escalation.resume_started"]);
     expect(rows[0]).toMatchObject({
       source: "escalation-lifecycle",
       owner: "agent:dev",
@@ -126,6 +125,32 @@ describe("escalation lifecycle", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].sessionId).toBe("s_live");
     expect(sent[0].message).toContain("Summary: Fixed upstream");
+  });
+
+  it("never treats a checkpoint label as the source session id", () => {
+    const { bus, resumed } = setup();
+    bus.emit({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "human:operator",
+      data: {
+        escalationId: "esc_checkpoint",
+        sourceAgent: "dev",
+        sourceSessionId: "s_real_source",
+        reason: "approval required",
+        requestedAction: "approve",
+        resume: { kind: "session", checkpointRef: "before-production-rollout" },
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.resolved",
+      source: "human:operator",
+      owner: "agent:dev",
+      data: { escalationId: "esc_checkpoint", outcome: "approved" },
+    } as never);
+
+    expect(resumed).toHaveLength(1);
+    expect(resumed[0].sessionId).toBe("s_real_source");
   });
 
   it("cold resumes project-linked workflow sessions after fixed escalation closure", () => {
@@ -189,9 +214,9 @@ describe("escalation lifecycle", () => {
     expect(resumed[0].message).toContain("Escalation esc_project_stale resolved.");
     expect(resumed[0].message).toContain("Outcome: fixed.");
 
-    const resumeEvents = getDb(persistDir).prepare(
-      "SELECT event_type, data FROM events WHERE event_type LIKE 'escalation.resume_%' ORDER BY id",
-    ).all() as Array<{ event_type: string; data: string }>;
+    const resumeEvents = getDb(persistDir)
+      .prepare("SELECT event_type, data FROM events WHERE event_type LIKE 'escalation.resume_%' ORDER BY id")
+      .all() as Array<{ event_type: string; data: string }>;
     expect(resumeEvents.map((row) => row.event_type)).toEqual([
       "escalation.resume_attempted",
       "escalation.resume_started",
@@ -260,9 +285,7 @@ describe("escalation lifecycle", () => {
     expect(sent).toHaveLength(0);
     expect(
       getDb(persistDir)
-        .prepare(
-          "SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'",
-        )
+        .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'")
         .get(),
     ).toEqual({ count: 0 });
   });
@@ -323,9 +346,7 @@ describe("escalation lifecycle", () => {
     expect(sent).toHaveLength(0);
     expect(
       getDb(persistDir)
-        .prepare(
-          "SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'",
-        )
+        .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'")
         .get(),
     ).toEqual({ count: 0 });
   });
@@ -361,9 +382,9 @@ describe("escalation lifecycle", () => {
     expect(resumed[0]).toMatchObject({ sessionId: "s_workflow_task" });
     expect(resumed[0].message).toContain("Workflow run: wr_blocked");
 
-    const started = getDb(persistDir).prepare(
-      "SELECT data FROM events WHERE event_type = 'escalation.resume_started'",
-    ).get() as { data: string };
+    const started = getDb(persistDir)
+      .prepare("SELECT data FROM events WHERE event_type = 'escalation.resume_started'")
+      .get() as { data: string };
     expect(JSON.parse(started.data)).toMatchObject({
       escalationId: "esc_workflow",
       sourceKind: "session",
@@ -373,7 +394,7 @@ describe("escalation lifecycle", () => {
     });
   });
 
-  it("does not resume a workflow without a source task session", () => {
+  it("wakes the workflow owner when no source task session exists", () => {
     const { persistDir, bus, resumed } = setup();
 
     bus.emit({
@@ -401,15 +422,25 @@ describe("escalation lifecycle", () => {
 
     expect(resumed).toHaveLength(0);
 
-    const failed = getDb(persistDir).prepare(
-      "SELECT data FROM events WHERE event_type = 'escalation.resume_failed'",
-    ).get() as { data: string };
-    expect(JSON.parse(failed.data)).toMatchObject({
+    const wake = getDb(persistDir)
+      .prepare("SELECT owner, data FROM events WHERE event_type = 'workflow.owner.requested'")
+      .get() as { owner: string; data: string };
+    expect(wake).toMatchObject({ owner: "agent:dev" });
+    expect(JSON.parse(wake.data)).toMatchObject({
       escalationId: "esc_no_task",
       workflowRunId: "wr_orphan",
-      sourceKind: "unknown",
-      category: "missing_resume_target",
-      recoverable: false,
+      reason: "escalation-resolved",
+    });
+    expect(
+      getDb(persistDir).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'escalation.resume_failed'").get(),
+    ).toEqual({ count: 0 });
+    const started = getDb(persistDir)
+      .prepare("SELECT data FROM events WHERE event_type = 'escalation.resume_started'")
+      .get() as { data: string };
+    expect(JSON.parse(started.data)).toMatchObject({
+      escalationId: "esc_no_task",
+      sourceKind: "workflow",
+      sourceRef: "wr_orphan",
     });
   });
 
@@ -453,9 +484,11 @@ describe("escalation lifecycle", () => {
     } as never);
 
     expect(resumed).toHaveLength(0);
-    expect(getDb(persistDir).prepare(
-      "SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'",
-    ).get()).toEqual({ count: 0 });
+    expect(
+      getDb(persistDir)
+        .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'")
+        .get(),
+    ).toEqual({ count: 0 });
 
     bus.emit({
       type: "escalation.resolved",
@@ -472,9 +505,9 @@ describe("escalation lifecycle", () => {
     expect(resumed).toHaveLength(1);
     expect(resumed[0]).toMatchObject({ sessionId: "s_source" });
 
-    const started = getDb(persistDir).prepare(
-      "SELECT data FROM events WHERE event_type = 'escalation.resume_started'",
-    ).get() as { data: string };
+    const started = getDb(persistDir)
+      .prepare("SELECT data FROM events WHERE event_type = 'escalation.resume_started'")
+      .get() as { data: string };
     expect(JSON.parse(started.data)).toMatchObject({
       escalationId: "esc_parent",
       resolvedEscalationId: "esc_child",
