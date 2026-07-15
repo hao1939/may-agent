@@ -220,11 +220,11 @@ export interface QueryAPI {
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
-  /** Record that inbox-routed events were reviewed. Emits follow-up events and closes pairs. */
+}
+
+export interface CommandAPI {
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-  /** Retire stale message owner-inbox pairs. Returns count retired. */
   expireStaleMessages(olderThanMs: number): number;
-  /** Retire stale signal owner-inbox pairs. Returns count retired. */
   expireStaleSignalEvents(olderThanMs: number): number;
 }
 
@@ -348,6 +348,7 @@ export interface AgentSDK {
   emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
   getDb(): SqliteDb;
   query: QueryAPI;
+  commands: CommandAPI;
   metrics: MetricService;
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
@@ -836,6 +837,7 @@ export interface WorkflowContext {
   dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
   getDb(): unknown;
   query: QueryAPI;
+  commands: CommandAPI;
   log(msg: string): void;
   notify(msg: string): void;
   metrics: MetricService;

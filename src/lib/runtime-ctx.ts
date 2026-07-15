@@ -11,6 +11,7 @@ import { getDb } from "./requests.js";
 import { log as globalLog } from "./log.js";
 import { createMetricService, type MetricService } from "./metrics.js";
 import { createQueryService, type QueryAPI } from "./query-service.js";
+import { createCommandService, type CommandAPI } from "./command-service.js";
 import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
 import {
@@ -32,6 +33,7 @@ export interface RuntimeCtx {
   dispatchEvent(eventType: string, data?: Record<string, unknown>): void;
   getDb(): SqliteDb;
   query: QueryAPI;
+  commands: CommandAPI;
   log(msg: string): void;
   notify(msg: string): void;
   metrics: MetricService;
@@ -80,6 +82,10 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     getDb: () => getDb(opts.persistDir),
     query: createQueryService({
       getDb: () => getDb(opts.persistDir),
+    }),
+    commands: createCommandService({
+      getDb: () => getDb(opts.persistDir),
+      emit: (event) => opts.bus.emit(event as any),
     }),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {

@@ -62,6 +62,7 @@ import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import { createUnavailableQueryService } from "./query-service.js";
+import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/event-bus.js";
@@ -564,6 +565,13 @@ export interface WorkflowTool extends AgentTool {
   readonly activeWorkflow: string | null;
 }
 
+export interface WorkflowRunner {
+  run(name: string, task: string): Promise<WorkflowToolResult>;
+  steer(message: string): boolean;
+  readonly isRunning: boolean;
+  readonly activeWorkflow: string | null;
+}
+
 // ── runWorkflowDirect — for system-level callers (handlers) ───────────
 
 export interface RunWorkflowDirectOpts {
@@ -592,7 +600,7 @@ export interface RunWorkflowDirectOpts {
 export async function runWorkflowDirect(
   opts: RunWorkflowDirectOpts,
 ): Promise<{ result: WorkflowResult; runId: string }> {
-  const tool = createWorkflowTool({
+  const runner = createWorkflowRunner({
     manager: opts.manager,
     workflowDir: opts.workflowDir ?? "",
     projectWorkflowDir: opts.projectWorkflowDir,
@@ -607,7 +615,7 @@ export async function runWorkflowDirect(
     runtimeCtx: opts.runtimeCtx,
   });
 
-  const parsed = await tool.run(opts.workflowName, opts.task);
+  const parsed = await runner.run(opts.workflowName, opts.task);
 
   if (parsed.type === "done") {
     return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId };
@@ -618,11 +626,10 @@ export async function runWorkflowDirect(
   if (parsed.type === "blocked") {
     return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId };
   }
-  // interrupted or unknown
-  return {
-    result: { type: "blocked", reason: `Workflow result: ${parsed.type}` },
-    runId: (parsed as any).workflowRunId ?? "unknown",
-  };
+  if (parsed.type === "interrupted") {
+    throw new Error(`Workflow "${opts.workflowName}" interrupted: ${parsed.steeringMessage}`);
+  }
+  throw new Error(`Workflow "${opts.workflowName}" returned unknown result: ${(parsed as any).type ?? "unknown"}`);
 }
 
 // ── createWorkflowTool ─────────────────────────────────────────────────
@@ -663,7 +670,9 @@ export interface WorkflowToolOptions {
   callerTrace?: () => EventTrace | undefined;
 }
 
-export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
+function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: false): WorkflowRunner;
+function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
+function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
   const { manager, workflowDir, projectWorkflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
   const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
@@ -1209,6 +1218,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           throw new Error("No runtimeCtx — getDb unavailable");
         },
         query: createUnavailableQueryService("No runtimeCtx - query unavailable"),
+        commands: createUnavailableCommandService("No runtimeCtx - commands unavailable"),
         log: (_msg: string) => {},
         notify: (_msg: string) => {},
         metrics: createUnavailableMetricService("No runtimeCtx - metrics unavailable"),
@@ -1243,13 +1253,17 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         let output: string;
         let hadError = false;
         let errorMsg: string | undefined;
+        let timer: ReturnType<typeof setTimeout> | undefined;
         try {
           const timeout = 30_000;
           output = await Promise.race([
             fn(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`runFunction("${label}") timed out after ${timeout}ms`)), timeout),
-            ),
+            new Promise<never>((_, reject) => {
+              timer = setTimeout(
+                () => reject(new Error(`runFunction("${label}") timed out after ${timeout}ms`)),
+                timeout,
+              );
+            }),
           ]);
           // Truncate output to 50KB
           if (output.length > 50_000) {
@@ -1259,6 +1273,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           hadError = true;
           errorMsg = err instanceof Error ? err.message : String(err);
           output = `ERROR: ${errorMsg}`;
+        } finally {
+          if (timer) clearTimeout(timer);
         }
         const duration = `${((Date.now() - start) / 1000).toFixed(1)}s`;
         const taskResult: TaskResult = {
@@ -1690,16 +1706,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId);
   }
 
-  const tool: WorkflowTool = {
-    name: "workflow",
-    label: "Workflow",
-    description:
-      "List available workflows or run a workflow by name. " +
-      "Workflows are predefined step sequences that coordinate sub-agents efficiently. " +
-      "Use 'list' to see what's available, 'run' to execute one. " +
-      "Results include workflowRunId — use subagents.trace(workflowRunId) to see the full session tree.",
-    parameters: WorkflowToolParams,
-
+  const runner: WorkflowRunner = {
     run: runTyped,
 
     steer(message: string): boolean {
@@ -1714,6 +1721,27 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     get activeWorkflow(): string | null {
       return activeWorkflowName;
+    },
+  };
+
+  if (!includeModelTool) return runner;
+
+  const tool: WorkflowTool = {
+    name: "workflow",
+    label: "Workflow",
+    description:
+      "List available workflows or run a workflow by name. " +
+      "Workflows are predefined step sequences that coordinate sub-agents efficiently. " +
+      "Use 'list' to see what's available, 'run' to execute one. " +
+      "Results include workflowRunId — use subagents.trace(workflowRunId) to see the full session tree.",
+    parameters: WorkflowToolParams,
+    run: runner.run,
+    steer: runner.steer,
+    get isRunning(): boolean {
+      return runner.isRunning;
+    },
+    get activeWorkflow(): string | null {
+      return runner.activeWorkflow;
     },
 
     execute: async (_toolCallId, _params) => {
@@ -1875,4 +1903,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   };
 
   return tool;
+}
+
+/** Typed workflow execution for SDK, handlers, and other system callers. */
+export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner {
+  return createWorkflowRuntime(opts, false);
+}
+
+/** Model-facing JSON/schema adapter around the typed workflow runner. */
+export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
+  return createWorkflowRuntime(opts, true);
 }

@@ -15,7 +15,7 @@ function makeSdk() {
   const events: EmittedEvent[] = [];
   const bus = new EventBus();
   const writer = new DbWriter(root);
-  bus.subscribe(writer.handler, { priority: "first" });
+  bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   bus.subscribe((event) => events.push(event as EmittedEvent));
   const deps: SDKDeps = {
@@ -69,7 +69,11 @@ describe("AgentSDK escalation", () => {
     const { sdk, events, root } = makeSdk();
     roots.push(root);
 
-    sdk.emit("metric.breach", { metricId: "system.health", message: "check" }, { owner: "human:operator", urgency: "high" });
+    sdk.emit(
+      "metric.breach",
+      { metricId: "system.health", message: "check" },
+      { owner: "human:operator", urgency: "high" },
+    );
 
     expect(events).toContainEqual({
       type: "metric.breach",

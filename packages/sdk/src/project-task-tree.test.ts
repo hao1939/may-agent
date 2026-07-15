@@ -10,6 +10,7 @@ import {
   confirmRunnableBacklogLeaves,
   createTask,
   dependenciesSatisfied,
+  drainTaskAssignments,
   listRunnableBacklogTaskIds,
   markTaskDone,
   summarizeTaskTree,
@@ -20,6 +21,7 @@ import {
   rejectTaskReview,
   repairTaskTreeRollups,
   rollupParent,
+  saveTaskTree,
   taskTreeConfig,
   unblockTask,
   updateTaskText,
@@ -88,7 +90,7 @@ describe("project task tree SDK", () => {
     expect(tree.tasks["done-leaf"].status).toBe("done");
     expect(dependenciesSatisfied(tree, tree.tasks["blocked-by-done"])).toBe(true);
 
-    repairTaskTreeRollups(config(appDir));
+    saveTaskTree(config(appDir), tree);
     const persisted = JSON.parse(await readFile(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
     expect(persisted.tasks["done-leaf"].state).toBe("done");
     expect(persisted.tasks["done-leaf"].status).toBeUndefined();
@@ -163,7 +165,16 @@ describe("project task tree SDK", () => {
 
     const assignment = assignTask(config(appDir), { taskId: "leaf" });
     expect(assignment.sessionId).toContain("s_task_leaf_");
-    expect(peekTaskAssignments(config(appDir))).toHaveLength(1);
+    expect(assignment).toEqual({
+      taskId: "leaf",
+      attemptId: assignment.attemptId,
+      sessionId: assignment.sessionId,
+      worker: "owner-agent",
+      assignedAt: assignment.assignedAt,
+    });
+    expect(peekTaskAssignments(config(appDir))).toEqual([assignment]);
+    expect(drainTaskAssignments(config(appDir))).toEqual([assignment]);
+    expect(peekTaskAssignments(config(appDir))).toEqual([]);
 
     completeTask(config(appDir), {
       taskId: "leaf",
@@ -176,8 +187,8 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.leaf.status).toBe("review");
     expect(tree.tasks.leaf.result).toBe("worker completed the artifact");
     expect(tree.tasks.leaf.evidence).toEqual(["artifact"]);
-    expect(tree.tasks.project.status).toBe("review");
-    expect(tree.tasks.project.result).toBe("Child review pending: leaf.");
+    expect(tree.tasks.project.status).toBe("backlog");
+    expect(tree.tasks.project.result).toBeUndefined();
 
     markTaskDone(config(appDir), {
       taskId: "leaf",
@@ -186,8 +197,42 @@ describe("project task tree SDK", () => {
 
     tree = readTaskTree(config(appDir));
     expect(tree.tasks.leaf.status).toBe("done");
-    expect(tree.tasks.project.status).toBe("done");
+    expect(tree.tasks.project.status).toBe("backlog");
     expect(tree.active_task_ids).toEqual([]);
+  });
+
+  test("drops write-ahead assignments that were not committed to the tree", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      tasks: {
+        project: { id: "project", state: "backlog", children: ["leaf"] },
+        leaf: {
+          id: "leaf",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "work",
+          outputs: ["artifact"],
+          acceptance: ["done"],
+        },
+      },
+    });
+    await writeFile(
+      join(appDir, ".state", "task-assignments.jsonl"),
+      `${JSON.stringify({
+        taskId: "leaf",
+        attemptId: "attempt-before-crash",
+        sessionId: "session-before-crash",
+        worker: "owner-agent",
+        assignedAt: new Date().toISOString(),
+      })}\n`,
+      "utf8",
+    );
+
+    expect(drainTaskAssignments(config(appDir))).toEqual([]);
+    expect(peekTaskAssignments(config(appDir))).toEqual([]);
+    expect(readTaskTree(config(appDir)).tasks.leaf.status).toBe("backlog");
   });
 
   test("uses a fresh session when an archived task id is created again", async () => {
@@ -244,7 +289,7 @@ describe("project task tree SDK", () => {
     expect(second.sessionId).toContain("attempt-second");
   });
 
-  test("rolls blocked parents with a structured blocker condition", async () => {
+  test("returns blocked parent hints without mutating owner judgment", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
       root_task_id: "project",
@@ -283,24 +328,14 @@ describe("project task tree SDK", () => {
       },
     });
 
-    repairTaskTreeRollups(config(appDir));
+    const hints = repairTaskTreeRollups(config(appDir));
+    expect(hints.repaired).toEqual(
+      expect.arrayContaining([expect.objectContaining({ taskId: "lane", from: "active", to: "blocked" })]),
+    );
 
     const tree = readTaskTree(config(appDir));
-    expect(tree.tasks.lane.status).toBe("blocked");
-    expect(tree.tasks.lane.blocker).toMatchObject({
-      condition: "Child blocked: blocked-leaf.",
-      category: "child-blocked",
-      waiting_for: {
-        type: "child.task.blocked",
-        taskId: "lane",
-        childTaskIds: ["blocked-leaf"],
-      },
-      observed_by: {
-        trigger: "task_tree_rollup_repaired",
-      },
-    });
-    expect((tree.tasks.lane.blocker as Record<string, unknown>).next_check_at).toBeTruthy();
-    expect((tree.tasks.lane.blocker as Record<string, unknown>).fallback_at).toBeTruthy();
+    expect(tree.tasks.lane.status).toBe("active");
+    expect(tree.tasks.lane.blocker).toBeUndefined();
   });
 
   test("unblocks a blocked leaf back to backlog", async () => {
@@ -2147,7 +2182,7 @@ describe("project task tree SDK", () => {
     expect(confirmRunnableBacklogLeaves(config(appDir), 10)).toEqual([]);
   });
 
-  test("rolls durable workflow controller to blocked when only blocked wait children remain", async () => {
+  test("suggests blocked workflow-controller rollup without applying it", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
       root_task_id: "project",
@@ -2241,16 +2276,14 @@ describe("project task tree SDK", () => {
     const summary = summarizeTaskTree(config(appDir));
     expect(summary.frontier.runnable).toEqual([]);
     expect(summary.frontier.active).toEqual([]);
-    expect(summary.frontier.blocked).toContain("aks-spec-verification-loop");
+    expect(summary.frontier.blocked).not.toContain("aks-spec-verification-loop");
 
     const tree = readTaskTree(config(appDir));
-    expect(tree.tasks["aks-spec-verification-loop"].status).toBe("blocked");
-    expect(tree.tasks["aks-spec-verification-loop"].blocker).toMatchObject({
-      category: "child-blocked",
-    });
+    expect(tree.tasks["aks-spec-verification-loop"].status).toBe("backlog");
+    expect(tree.tasks["aks-spec-verification-loop"].blocker).toBeUndefined();
   });
 
-  test("rolls durable workflow controller to blocked when only blocked waits plus done review residues remain", async () => {
+  test("suggests blocked workflow-controller rollup with done residues without applying it", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
       root_task_id: "project",
@@ -2331,18 +2364,16 @@ describe("project task tree SDK", () => {
     );
 
     const summary = summarizeTaskTree(config(appDir));
-    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.runnable).toContain("aks-feature-compact-loop");
     expect(summary.frontier.active).toEqual([]);
-    expect(summary.frontier.blocked).toContain("aks-feature-compact-loop");
+    expect(summary.frontier.blocked).not.toContain("aks-feature-compact-loop");
 
     const tree = readTaskTree(config(appDir));
-    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("blocked");
-    expect(tree.tasks["aks-feature-compact-loop"].blocker).toMatchObject({
-      category: "child-blocked",
-    });
+    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("backlog");
+    expect(tree.tasks["aks-feature-compact-loop"].blocker).toBeUndefined();
   });
 
-  test("does not roll durable workflow controller to blocked when dispatch hold still leaves unrepresented residue", async () => {
+  test("suggests reopening a blocked controller without mutating it", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
       root_task_id: "project",
@@ -2422,12 +2453,12 @@ describe("project task tree SDK", () => {
     );
 
     const summary = summarizeTaskTree(config(appDir));
-    expect(summary.frontier.runnable).toContain("aks-feature-compact-loop");
-    expect(summary.frontier.blocked).not.toContain("aks-feature-compact-loop");
+    expect(summary.frontier.runnable).not.toContain("aks-feature-compact-loop");
+    expect(summary.frontier.blocked).toContain("aks-feature-compact-loop");
 
     const tree = readTaskTree(config(appDir));
-    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("backlog");
-    expect(tree.tasks["aks-feature-compact-loop"].blocker).toBeUndefined();
+    expect(tree.tasks["aks-feature-compact-loop"].status).toBe("blocked");
+    expect(tree.tasks["aks-feature-compact-loop"].blocker).toMatchObject({ category: "child-blocked" });
   });
 
   test("rollup parent refuses to archive unfinished child leaves", async () => {

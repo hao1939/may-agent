@@ -15,6 +15,88 @@ function tick(): Promise<void> {
 }
 
 describe("Cron event dispatch", () => {
+  it("uses typed heartbeat category instead of entry-name inference", async () => {
+    const root = tempRoot();
+    const bus = new EventBus();
+    const observed: any[] = [];
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      undefined,
+      (event) => bus.emit(event as any),
+    );
+    try {
+      bus.subscribe((event) => observed.push(event));
+      cron.registerHandler("agent-pulse", async () => {});
+      cron.addSyntheticEntry({
+        name: "agent-pulse",
+        category: "heartbeat",
+        agent: "dev",
+        enabled: true,
+        handler: "agent-pulse",
+      });
+
+      expect(cron.triggerNow("agent-pulse", { force: true })).toBe(true);
+      await tick();
+      expect(observed).toContainEqual(expect.objectContaining({ type: "heartbeat", agent: "dev", entry: "agent-pulse" }));
+      const started = observed.find((event) => event.type === "handler.started");
+      const completed = observed.find((event) => event.type === "handler.completed");
+      expect(started?.data.handlerRunId).toMatch(/^handler:agent-pulse:/);
+      expect(completed?.data.handlerRunId).toBe(started?.data.handlerRunId);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps timed-out handlers in flight until they actually stop", async () => {
+    const root = tempRoot();
+    const failures: any[] = [];
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      undefined,
+      (event) => failures.push(event),
+    );
+    let release!: () => void;
+    let receivedSignal: AbortSignal | undefined;
+    let calls = 0;
+    try {
+      cron.registerHandler("slow-handler", async (_event, signal) => {
+        calls += 1;
+        receivedSignal = signal;
+        await new Promise<void>((resolve) => { release = resolve; });
+      });
+      cron.addSyntheticEntry({
+        name: "slow-handler",
+        enabled: true,
+        handler: "slow-handler",
+        timeoutMs: 5,
+      });
+
+      expect(cron.triggerNow("slow-handler", { force: true })).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+
+      expect(receivedSignal?.aborted).toBe(true);
+      expect(calls).toBe(1);
+      expect(cron.triggerNow("slow-handler", { force: true })).toBe(false);
+      expect(failures.filter((event) => event.type === "handler.failed")).toHaveLength(1);
+
+      release();
+      await tick();
+      expect((cron as any).inflightJobs.get("slow-handler") ?? []).toHaveLength(0);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not fire project-scoped workflow handlers for untargeted project events", async () => {
     const root = tempRoot();
     const bus = new EventBus();

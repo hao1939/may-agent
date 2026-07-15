@@ -5,18 +5,37 @@ import { join } from "node:path";
 
 import { EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
-import { addSessionTranscriptToEventGraph, buildEventGraph } from "./http/read-model/event-graph.js";
+import {
+  addSessionTranscriptToEventGraph,
+  buildEventGraph,
+  type EventGraphNode,
+  type EventGraphResponse,
+} from "./http/read-model/event-graph.js";
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createQueryService } from "../lib/query-service.js";
+import { createCommandService } from "../lib/command-service.js";
 
 function tempRoot(): string {
   return mkdtempSync(join(tmpdir(), "may-event-delivery-"));
 }
 
+function selectedEvents(graph: EventGraphResponse, ids: number[]): EventGraphNode[] {
+  const selected = new Set(ids);
+  return graph.events.filter((event) => selected.has(event.id));
+}
+
+function graphEvents(graph: EventGraphResponse): EventGraphNode[] {
+  return selectedEvents(graph, graph.scope.graphEventIds);
+}
+
+function timelineEvents(graph: EventGraphResponse): EventGraphNode[] {
+  return selectedEvents(graph, graph.scope.timelineEventIds);
+}
+
 function attachPersistence(bus: EventBus, root: string): void {
   const writer = new DbWriter(root);
-  bus.subscribe(writer.handler, { priority: "first" });
+  bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
 }
 
@@ -30,12 +49,7 @@ describe("event delivery metadata", () => {
       const traceIndexes = db.prepare("PRAGMA index_list(event_traces)").all();
       const linkIndexes = db.prepare("PRAGMA index_list(event_trace_links)").all();
 
-      expect(traceCols.map((row) => row.name)).toEqual([
-        "event_id",
-        "trace_id",
-        "parent_event_id",
-        "visibility",
-      ]);
+      expect(traceCols.map((row) => row.name)).toEqual(["event_id", "trace_id", "parent_event_id", "visibility"]);
       expect(linkCols.map((row) => row.name)).toEqual([
         "id",
         "from_event_id",
@@ -72,11 +86,13 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const row = db.prepare(
-        `SELECT delivery_status, accepted_by, delivery_route
+      const row = db
+        .prepare(
+          `SELECT delivery_status, accepted_by, delivery_route
          FROM events
          WHERE event_type = 'project.feedback.created'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(row).toMatchObject({
         delivery_status: "accepted",
         accepted_by: "test:handler",
@@ -165,7 +181,7 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const graph = buildEventGraph(db, event.id);
-      const node = graph.eventNodes.find((item) => item.id === event.id);
+      const node = graphEvents(graph).find((item) => item.id === event.id);
 
       expect(node?.dataPreview).toMatchObject({
         projectId: "sample",
@@ -200,7 +216,13 @@ describe("event delivery metadata", () => {
       db.run(
         `INSERT INTO events (event_type, source, owner, data, timestamp)
          VALUES (?, ?, ?, ?, ?)`,
-        ["guard.triggered", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", reason: "tool guard detail" }), now + 1],
+        [
+          "guard.triggered",
+          "test",
+          "agent:owner",
+          JSON.stringify({ sessionId: "s_detail", reason: "tool guard detail" }),
+          now + 1,
+        ],
       );
       db.run(
         `INSERT INTO events (event_type, source, owner, data, timestamp)
@@ -212,13 +234,9 @@ describe("event delivery metadata", () => {
       };
       const graph = buildEventGraph(db, Number(startRow.lastInsertRowid ?? start.id));
 
-      expect(graph.eventListScope).toMatchObject({ kind: "session", ids: ["s_detail"] });
-      expect(graph.eventList?.map((node) => node.type)).toEqual([
-        "session.start",
-        "guard.triggered",
-        "session.end",
-      ]);
-      expect(graph.eventList?.find((node) => node.type === "guard.triggered")?.visibility).toBe("detail");
+      expect(graph.scope).toMatchObject({ kind: "session", ids: ["s_detail"] });
+      expect(timelineEvents(graph).map((node) => node.type)).toEqual(["session.start", "guard.triggered", "session.end"]);
+      expect(timelineEvents(graph).find((node) => node.type === "guard.triggered")?.visibility).toBe("detail");
       const startKey = `event:${Number(startRow.lastInsertRowid ?? start.id)}`;
       const guardDisplayNode = graph.nodes.find((node) => node.type === "guard.triggered");
       expect(guardDisplayNode).toMatchObject({
@@ -228,17 +246,15 @@ describe("event delivery metadata", () => {
         level: 1,
         visibility: "detail",
       });
-      expect(graph.edges).toContainEqual(expect.objectContaining({
-        sourceKey: startKey,
-        targetKey: guardDisplayNode?.key,
-        kind: "detail",
-        provenance: "projection",
-      }));
-      expect(graph.nodes.map((node) => node.type)).toEqual([
-        "session.start",
-        "guard.triggered",
-        "session.end",
-      ]);
+      expect(graph.edges).toContainEqual(
+        expect.objectContaining({
+          sourceKey: startKey,
+          targetKey: guardDisplayNode?.key,
+          kind: "detail",
+          provenance: "projection",
+        }),
+      );
+      expect(graph.nodes.map((node) => node.type)).toEqual(["session.start", "guard.triggered", "session.end"]);
       expect(graph.nodes.map((node) => node.order)).toEqual([0, 1, 2]);
     } finally {
       closeDb(root);
@@ -251,25 +267,50 @@ describe("event delivery metadata", () => {
     try {
       const db = getDb(root);
       const now = Date.now();
-      const start = Number((db.run(
-        `INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`,
-        ["session.start", "test", "agent:owner", JSON.stringify({ sessionId: "s_transcript" }), now],
-      ) as { lastInsertRowid?: number | bigint }).lastInsertRowid);
-      db.run(
-        `INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`,
-        ["session.end", "test", "agent:owner", JSON.stringify({ sessionId: "s_transcript" }), now + 100],
+      const start = Number(
+        (
+          db.run(`INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`, [
+            "session.start",
+            "test",
+            "agent:owner",
+            JSON.stringify({ sessionId: "s_transcript" }),
+            now,
+          ]) as { lastInsertRowid?: number | bigint }
+        ).lastInsertRowid,
       );
+      db.run(`INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`, [
+        "session.end",
+        "test",
+        "agent:owner",
+        JSON.stringify({ sessionId: "s_transcript" }),
+        now + 100,
+      ]);
       const graph = addSessionTranscriptToEventGraph(buildEventGraph(db, start), "s_transcript", {
         sessionId: "s_transcript",
         source: ".state/sessions/history/s_transcript/session.jsonl",
         messages: [
           { role: "user", text: "Investigate the issue", rawLine: 1 },
-          { role: "assistant", text: "Checking", rawLine: 2, timestamp: now + 20, toolCalls: [{ id: "call-1", tool: "read", args: { path: "a.ts" } }] },
-          { role: "tool_result", toolCallId: "call-1", toolName: "read", content: "ok", rawLine: 3, timestamp: now + 30 },
+          {
+            role: "assistant",
+            text: "Checking",
+            rawLine: 2,
+            timestamp: now + 20,
+            toolCalls: [{ id: "call-1", tool: "read", args: { path: "a.ts" } }],
+          },
+          {
+            role: "tool_result",
+            toolCallId: "call-1",
+            toolName: "read",
+            content: "ok",
+            rawLine: 3,
+            timestamp: now + 30,
+          },
         ],
       });
 
-      expect(graph.nodes.map((node) => node.kind)).toEqual(expect.arrayContaining(["turn", "tool_call", "tool_result"]));
+      expect(graph.nodes.map((node) => node.kind)).toEqual(
+        expect.arrayContaining(["turn", "tool_call", "tool_result"]),
+      );
       const user = graph.nodes.find((node) => node.type === "llm.user")!;
       const assistant = graph.nodes.find((node) => node.type === "llm.assistant")!;
       const toolCall = graph.nodes.find((node) => node.kind === "tool_call")!;
@@ -282,11 +323,13 @@ describe("event delivery metadata", () => {
       expect(graph.nodes.map((node) => node.timestamp)).toEqual(
         [...graph.nodes.map((node) => node.timestamp)].sort((a, b) => Number(a) - Number(b)),
       );
-      expect(graph.edges).toEqual(expect.arrayContaining([
-        expect.objectContaining({ kind: "sequence", provenance: "transcript" }),
-        expect.objectContaining({ kind: "tool_call", provenance: "transcript" }),
-        expect.objectContaining({ kind: "tool_result", provenance: "transcript" }),
-      ]));
+      expect(graph.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: "sequence", provenance: "transcript" }),
+          expect.objectContaining({ kind: "tool_call", provenance: "transcript" }),
+          expect.objectContaining({ kind: "tool_result", provenance: "transcript" }),
+        ]),
+      );
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -320,9 +363,11 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, start1);
 
-      expect(graph.eventNodes.map((node) => node.id)).toEqual([start1, end1, start2, end2]);
-      expect(graph.eventEdges).toContainEqual(expect.objectContaining({ source: start1, target: end1, type: "closure" }));
-      expect(graph.eventEdges).toContainEqual(
+      expect(graphEvents(graph).map((node) => node.id)).toEqual([start1, end1, start2, end2]);
+      expect(graph.relations).toContainEqual(
+        expect.objectContaining({ source: start1, target: end1, type: "closure" }),
+      );
+      expect(graph.relations).toContainEqual(
         expect.objectContaining({ source: end1, target: start2, type: "reference", label: "same workflow" }),
       );
     } finally {
@@ -351,8 +396,8 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, end);
 
-      expect(graph.eventNodes.map((node) => node.id)).toContain(completed);
-      expect(graph.eventEdges).toContainEqual(
+      expect(graphEvents(graph).map((node) => node.id)).toContain(completed);
+      expect(graph.relations).toContainEqual(
         expect.objectContaining({ source: end, target: completed, type: "reference", label: "completed" }),
       );
     } finally {
@@ -400,8 +445,16 @@ describe("event delivery metadata", () => {
 
       const graph = buildEventGraph(db, selected);
 
-      expect(graph.eventNodes.map((node) => node.id)).toEqual([start, owner, workflow, session, sibling, selected, directChild]);
-      expect(graph.eventEdges).toEqual(
+      expect(graphEvents(graph).map((node) => node.id)).toEqual([
+        start,
+        owner,
+        workflow,
+        session,
+        sibling,
+        selected,
+        directChild,
+      ]);
+      expect(graph.relations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ source: start, target: owner, type: "parent" }),
           expect.objectContaining({ source: owner, target: workflow, type: "parent" }),
@@ -505,15 +558,17 @@ describe("event delivery metadata", () => {
       });
 
       const defaultGraph = buildEventGraph(db, rootEvent.id);
-      expect(defaultGraph.eventNodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(defaultGraph.edges).toContainEqual(expect.objectContaining({
-        sourceKey: `event:${rootEvent.id}`,
-        targetKey: `event:${closeEvent.id}`,
-        kind: "detail",
-      }));
+      expect(graphEvents(defaultGraph).map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
+      expect(defaultGraph.edges).toContainEqual(
+        expect.objectContaining({
+          sourceKey: `event:${rootEvent.id}`,
+          targetKey: `event:${closeEvent.id}`,
+          kind: "detail",
+        }),
+      );
 
       expect(defaultGraph.traceId).toBe(`event:${rootEvent.id}`);
-      expect(defaultGraph.eventEdges).toEqual([
+      expect(defaultGraph.relations).toEqual([
         expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
       ]);
     } finally {
@@ -568,8 +623,8 @@ describe("event delivery metadata", () => {
       });
 
       const graph = buildEventGraph(db, rootEvent.id);
-      expect(graph.eventNodes.map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(graph.eventEdges).toEqual([
+      expect(graphEvents(graph).map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
+      expect(graph.relations).toEqual([
         expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
       ]);
     } finally {
@@ -631,8 +686,8 @@ describe("event delivery metadata", () => {
       });
 
       const graph = buildEventGraph(db, created.id);
-      expect(graph.eventNodes.map((node) => node.id)).toEqual([created.id, resolved.id]);
-      expect(graph.eventEdges).toEqual([
+      expect(graphEvents(graph).map((node) => node.id)).toEqual([created.id, resolved.id]);
+      expect(graph.relations).toEqual([
         expect.objectContaining({ source: created.id, target: resolved.id, type: "closure" }),
       ]);
     } finally {
@@ -706,16 +761,18 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const pair = db.prepare(
-        `SELECT open_event_id, close_event_id
+      const pair = db
+        .prepare(
+          `SELECT open_event_id, close_event_id
          FROM event_pair_runs
          WHERE pair_name = 'project.task'`,
-      ).get() as { open_event_id: number; close_event_id: number };
+        )
+        .get() as { open_event_id: number; close_event_id: number };
 
       const fallbackGraph = buildEventGraph(db, pair.open_event_id);
       expect(fallbackGraph.diagnostics).not.toContain("graph includes event_pair_runs fallback edges");
-      expect(fallbackGraph.eventNodes.map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
-      expect(fallbackGraph.eventEdges).toEqual(
+      expect(graphEvents(fallbackGraph).map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
+      expect(fallbackGraph.relations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
         ]),
@@ -739,8 +796,8 @@ describe("event delivery metadata", () => {
       });
 
       const graph = buildEventGraph(db, pair.open_event_id);
-      expect(graph.eventNodes.map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
-      expect(graph.eventEdges).toEqual([
+      expect(graphEvents(graph).map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
+      expect(graph.relations).toEqual([
         expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
       ]);
     } finally {
@@ -766,10 +823,13 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const detail = Number(
-        db.run(
-          "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-          ["audit.detail", "test", null, "{}", 1],
-        ).lastInsertRowid,
+        db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+          "audit.detail",
+          "test",
+          null,
+          "{}",
+          1,
+        ]).lastInsertRowid,
       );
 
       db.run("DELETE FROM events WHERE id IN (?, ?)", [opened.id, detail]);
@@ -809,13 +869,7 @@ describe("event delivery metadata", () => {
       const close = db.run(
         `INSERT INTO events (event_type, source, owner, data, timestamp)
          VALUES (?, ?, ?, ?, ?)`,
-        [
-          "message.reviewed",
-          "test",
-          "agent:owner",
-          JSON.stringify({ openEventId, reviewedBy: "test" }),
-          now + 1,
-        ],
+        ["message.reviewed", "test", "agent:owner", JSON.stringify({ openEventId, reviewedBy: "test" }), now + 1],
       ) as { lastInsertRowid?: number | bigint };
       const closeEventId = Number(close.lastInsertRowid);
       const created = db.run(
@@ -855,7 +909,11 @@ describe("event delivery metadata", () => {
         trace_id: `event:${openEventId}`,
         parent_event_id: openEventId,
       });
-      expect(db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?").get(closeEventId, openEventId)).toMatchObject({
+      expect(
+        db
+          .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
+          .get(closeEventId, openEventId),
+      ).toMatchObject({
         from_event_id: closeEventId,
         to_event_id: openEventId,
         type: "closure",
@@ -866,7 +924,11 @@ describe("event delivery metadata", () => {
         trace_id: `event:${createdEventId}`,
         parent_event_id: createdEventId,
       });
-      expect(db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?").get(resolvedEventId, createdEventId)).toMatchObject({
+      expect(
+        db
+          .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
+          .get(resolvedEventId, createdEventId),
+      ).toMatchObject({
         from_event_id: resolvedEventId,
         to_event_id: createdEventId,
         type: "closure",
@@ -874,9 +936,9 @@ describe("event delivery metadata", () => {
       });
 
       const messageGraph = buildEventGraph(db, openEventId);
-      expect(messageGraph.eventNodes.map((node) => node.id)).toEqual([openEventId, closeEventId]);
+      expect(graphEvents(messageGraph).map((node) => node.id)).toEqual([openEventId, closeEventId]);
       const escalationGraph = buildEventGraph(db, createdEventId);
-      expect(escalationGraph.eventNodes.map((node) => node.id)).toEqual([createdEventId, resolvedEventId]);
+      expect(graphEvents(escalationGraph).map((node) => node.id)).toEqual([createdEventId, resolvedEventId]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -985,22 +1047,26 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const event = db.prepare(
-        `SELECT id, delivery_status, accepted_by, delivery_route
+      const event = db
+        .prepare(
+          `SELECT id, delivery_status, accepted_by, delivery_route
          FROM events
          WHERE event_type = 'message.created'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(event).toMatchObject({
         delivery_status: "accepted",
         accepted_by: "owner-inbox:agent:dev",
         delivery_route: "owner_inbox",
       });
 
-      const pair = db.prepare(
-        `SELECT pair_name, open_event_id, status
+      const pair = db
+        .prepare(
+          `SELECT pair_name, open_event_id, status
          FROM event_pair_runs
          WHERE open_event_id = ?`,
-      ).get(event.id) as Record<string, unknown>;
+        )
+        .get(event.id) as Record<string, unknown>;
       expect(pair).toMatchObject({
         pair_name: "owner_inbox",
         open_event_id: event.id,
@@ -1026,21 +1092,25 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const event = db.prepare(
-        `SELECT id, delivery_status, accepted_by, delivery_route
+      const event = db
+        .prepare(
+          `SELECT id, delivery_status, accepted_by, delivery_route
          FROM events
          WHERE event_type = 'handler.started'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(event).toMatchObject({
         delivery_status: "accepted",
         accepted_by: "event-pair-tracker",
         delivery_route: "direct",
       });
-      const pair = db.prepare(
-        `SELECT pair_name, status
+      const pair = db
+        .prepare(
+          `SELECT pair_name, status
          FROM event_pair_runs
          WHERE open_event_id = ?`,
-      ).get(event.id) as Record<string, unknown>;
+        )
+        .get(event.id) as Record<string, unknown>;
       expect(pair).toMatchObject({
         pair_name: "handler",
         status: "open",
@@ -1086,12 +1156,14 @@ describe("event delivery metadata", () => {
       });
 
       const db = getDb(root);
-      const rows = db.prepare(
-        `SELECT event_type, delivery_status, accepted_by, delivery_route
+      const rows = db
+        .prepare(
+          `SELECT event_type, delivery_status, accepted_by, delivery_route
          FROM events
          WHERE event_type IN ('skill.loaded', 'guard.triggered')
          ORDER BY id`,
-      ).all() as Array<Record<string, unknown>>;
+        )
+        .all() as Array<Record<string, unknown>>;
       expect(rows).toEqual([
         expect.objectContaining({
           event_type: "skill.loaded",
@@ -1107,11 +1179,13 @@ describe("event delivery metadata", () => {
         }),
       ]);
       expect(
-        db.prepare(
-          `SELECT COUNT(*) AS count
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count
            FROM event_pair_runs
            WHERE pair_name = 'owner_inbox'`,
-        ).get(),
+          )
+          .get(),
       ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
@@ -1144,11 +1218,13 @@ describe("event delivery metadata", () => {
 
       const db = getDb(root);
       for (const eventType of ["runtime.daemon.heartbeat", "metric.feedback.routed"]) {
-        const event = db.prepare(
-          `SELECT delivery_status, accepted_by, delivery_route
+        const event = db
+          .prepare(
+            `SELECT delivery_status, accepted_by, delivery_route
            FROM events
            WHERE event_type = ?`,
-        ).get(eventType) as Record<string, unknown>;
+          )
+          .get(eventType) as Record<string, unknown>;
         expect(event).toMatchObject({
           delivery_status: "accepted",
           accepted_by: "owner-inbox:agent:may",
@@ -1181,14 +1257,79 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const pair = db.prepare(
-        `SELECT status, close_event_id
+      const pair = db
+        .prepare(
+          `SELECT status, close_event_id
          FROM event_pair_runs
          WHERE pair_name = 'handler'
            AND correlation_key = 'sample'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(pair.status).toBe("closed");
       expect(typeof pair.close_event_id).toBe("number");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("closes only the matching concurrent handler run", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      for (const handlerRunId of ["handler:sample:1", "handler:sample:2"]) {
+        bus.emit({
+          type: "handler.started",
+          source: "cron",
+          owner: "agent:may",
+          data: { handler: "sample", handlerRunId, agent: "may" },
+        } as any);
+      }
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "sample", handlerRunId: "handler:sample:1", agent: "may", durationMs: 5 },
+      } as any);
+
+      const pairs = getDb(root)
+        .prepare(
+          `SELECT correlation_key, status
+           FROM event_pair_runs
+           WHERE pair_name = 'handler'
+           ORDER BY correlation_key`,
+        )
+        .all() as Array<{ correlation_key: string; status: string }>;
+      expect(pairs).toEqual([
+        { correlation_key: "handler:sample:1", status: "closed" },
+        { correlation_key: "handler:sample:2", status: "open" },
+      ]);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not infer lifecycle pairs from unknown event-name suffixes", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "example.created",
+        source: "test",
+        owner: "agent:dev",
+        data: { requestId: "legacy-request-shape" },
+      } as any);
+
+      const db = getDb(root);
+      const inferred = db.prepare("SELECT id FROM event_pair_runs WHERE pair_name = 'example'").get();
+      expect(inferred).toBeNull();
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get(),
+      ).toMatchObject({ status: "open" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -1251,11 +1392,13 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const row = db.prepare(
-        `SELECT delivery_status
+      const row = db
+        .prepare(
+          `SELECT delivery_status
          FROM events
          WHERE event_type = 'reload'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(row.delivery_status).toBe("unhandled");
 
       const query = createQueryService({ getDb: () => db });
@@ -1305,11 +1448,13 @@ describe("event delivery metadata", () => {
         data: { handler: "sample", agent: "may", durationMs: 5 },
       } as any);
 
-      const row = db.prepare(
-        `SELECT delivery_status, accepted_by, delivery_route
+      const row = db
+        .prepare(
+          `SELECT delivery_status, accepted_by, delivery_route
          FROM events
          WHERE event_type = 'session.end'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(row).toMatchObject({
         delivery_status: "accepted",
         accepted_by: "terminal-noop",
@@ -1373,9 +1518,10 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const event = db.prepare(
-        `SELECT id FROM events WHERE event_type = 'message.created'`,
-      ).get() as Record<string, unknown>;
+      const event = db.prepare(`SELECT id FROM events WHERE event_type = 'message.created'`).get() as Record<
+        string,
+        unknown
+      >;
 
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
@@ -1387,9 +1533,10 @@ describe("event delivery metadata", () => {
 
       expect(
         (
-          db.prepare(
-            `SELECT status FROM event_pair_runs WHERE open_event_id = ?`,
-          ).get(event.id) as Record<string, unknown>
+          db.prepare(`SELECT status FROM event_pair_runs WHERE open_event_id = ?`).get(event.id) as Record<
+            string,
+            unknown
+          >
         ).status,
       ).toBe("orphan");
 
@@ -1402,9 +1549,10 @@ describe("event delivery metadata", () => {
 
       expect(
         (
-          db.prepare(
-            `SELECT status FROM event_pair_runs WHERE open_event_id = ?`,
-          ).get(event.id) as Record<string, unknown>
+          db.prepare(`SELECT status FROM event_pair_runs WHERE open_event_id = ?`).get(event.id) as Record<
+            string,
+            unknown
+          >
         ).status,
       ).toBe("closed");
     } finally {
@@ -1588,17 +1736,20 @@ describe("event delivery metadata", () => {
 
       const db = getDb(root);
       const query = createQueryService({ getDb: () => db });
+      const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
       const inbox = query.heartbeatContext({ agent: "dev" }).inbox;
       expect(inbox).toHaveLength(1);
       const id = inbox[0]!.id as number;
 
-      expect(query.reviewInboxEvents([id], "dev")).toBe(1);
+      expect(commands.reviewInboxEvents([id], "dev")).toBe(1);
 
-      const followup = db.prepare(
-        `SELECT id, event_type, data, delivery_status, delivery_route
+      const followup = db
+        .prepare(
+          `SELECT id, event_type, data, delivery_status, delivery_route
          FROM events
          WHERE event_type = 'message.reviewed'`,
-      ).get() as Record<string, unknown>;
+        )
+        .get() as Record<string, unknown>;
       expect(followup).toMatchObject({
         event_type: "message.reviewed",
         delivery_status: "accepted",
@@ -1624,11 +1775,13 @@ describe("event delivery metadata", () => {
         label: "message.reviewed",
       });
 
-      const pair = db.prepare(
-        `SELECT status
+      const pair = db
+        .prepare(
+          `SELECT status
          FROM event_pair_runs
          WHERE open_event_id = ?`,
-      ).get(id) as Record<string, unknown>;
+        )
+        .get(id) as Record<string, unknown>;
       expect(pair.status).toBe("closed");
       expect(query.heartbeatContext({ agent: "dev" }).inbox).toHaveLength(0);
     } finally {
@@ -1650,28 +1803,76 @@ describe("event delivery metadata", () => {
       });
 
       const db = getDb(root);
-      const event = db.prepare(
-        `SELECT id
+      const event = db
+        .prepare(
+          `SELECT id
          FROM events
          WHERE event_type = 'message.created'`,
-      ).get() as { id: number };
+        )
+        .get() as { id: number };
       db.prepare("UPDATE events SET timestamp = ? WHERE id = ?").run(Date.now() - 48 * 60 * 60_000, event.id);
 
-      const query = createQueryService({ getDb: () => db });
-      expect(query.expireStaleMessages(24 * 60 * 60_000)).toBe(1);
+      const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
+      expect(commands.expireStaleMessages(24 * 60 * 60_000)).toBe(1);
+      expect(db.prepare("SELECT status, handled_by, result FROM events WHERE id = ?").get(event.id)).toMatchObject({
+        status: "pending",
+        handled_by: null,
+        result: null,
+      });
       expect(
-        db.prepare("SELECT status, handled_by, result FROM events WHERE id = ?").get(event.id),
-      ).toMatchObject({ status: "pending", handled_by: null, result: null });
-      expect(
-        db.prepare(
-          `SELECT status, note
+        db
+          .prepare(
+            `SELECT status, note
            FROM event_pair_runs
            WHERE open_event_id = ? AND pair_name = 'owner_inbox'`,
-        ).get(event.id),
+          )
+          .get(event.id),
       ).toMatchObject({
-        status: "orphan",
-        note: "stale message inbox work retired",
+        status: "closed",
       });
+      const expired = db.prepare("SELECT data FROM events WHERE event_type = 'message.expired'").get() as {
+        data: string;
+      };
+      expect(JSON.parse(expired.data)).toMatchObject({
+        openEventId: event.id,
+        openEventType: "message.created",
+        reason: "stale message inbox work retired",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("retains orphan lifecycle evidence across later event sweeps", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "handler.started",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "lost-handler", agent: "may" },
+      } as any);
+
+      const db = getDb(root);
+      db.prepare(
+        "UPDATE event_pair_runs SET status = 'orphan', expected_close_at = ? WHERE pair_name = 'handler'",
+      ).run(Date.now() - 24 * 60 * 60_000);
+
+      bus.emit({
+        type: "handler.completed",
+        source: "cron",
+        owner: "agent:may",
+        data: { handler: "another-handler", agent: "may", durationMs: 1 },
+      } as any);
+
+      expect(
+        db.prepare(
+          "SELECT status FROM event_pair_runs WHERE pair_name = 'handler' AND correlation_key = 'lost-handler'",
+        ).get(),
+      ).toMatchObject({ status: "orphan" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

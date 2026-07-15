@@ -84,6 +84,9 @@ interface QueryAPI {
   evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;
   evaluatorAftermathContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
+}
+
+interface CommandAPI {
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
   expireStaleMessages(olderThanMs: number): number;
   expireStaleSignalEvents(olderThanMs: number): number;
@@ -111,6 +114,9 @@ interface WorkflowContext {
 
   /** Read bounded runtime facts without opening SQLite directly. */
   query: QueryAPI;
+
+  /** Execute typed state changes through durable events. */
+  commands: CommandAPI;
 
   /** Log a diagnostic message. */
   log(msg: string): void;

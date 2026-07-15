@@ -259,18 +259,23 @@ export type SystemEvent =
       owner: "agent:may";
       data: { pid: number; interfaceAgent: string; socketEnabled: boolean };
     }
-  | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
+  | {
+      type: "handler.started";
+      source: "cron";
+      owner: string;
+      data: { handler: string; handlerRunId?: string; agent: string };
+    }
   | {
       type: "handler.completed";
       source: "cron";
       owner: string;
-      data: { handler: string; agent: string; durationMs: number };
+      data: { handler: string; handlerRunId?: string; agent: string; durationMs: number };
     }
   | {
       type: "handler.failed";
       source: "cron";
       owner: string;
-      data: { handler: string; agent: string; error: string; durationMs: number };
+      data: { handler: string; handlerRunId?: string; agent: string; error: string; durationMs: number };
     }
   | {
       type: "handler.load-failed";
@@ -309,6 +314,18 @@ export type SystemEvent =
       source?: string;
       owner: string;
       data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
+    }
+  | {
+      type: "project.owner.requested";
+      source?: string;
+      owner: string;
+      data: {
+        project?: string;
+        projectId?: string;
+        projectPath?: string;
+        reason: string;
+        [key: string]: unknown;
+      };
     }
   | {
       type: "project.owner.reviewed";
@@ -405,9 +422,10 @@ export type SystemEvent =
         resolvedEscalationId?: string;
         parentEscalationId?: string;
         outcome: string;
-        sourceKind: "session";
-        sourceRef: string;
-        sourceSessionId: string;
+        sourceKind: "session" | "project" | "workflow" | "unknown";
+        sourceRef?: string;
+        sourceSessionId?: string;
+        workflowRunId?: string;
         resumeInstruction: string;
       };
     }
@@ -420,10 +438,11 @@ export type SystemEvent =
         resolvedEscalationId?: string;
         parentEscalationId?: string;
         outcome: string;
-        sourceKind: "session";
+        sourceKind: "session" | "project" | "workflow";
         sourceRef: string;
-        sourceSessionId: string;
-        resumedSessionId: string;
+        sourceSessionId?: string;
+        resumedSessionId?: string;
+        workflowRunId?: string;
         summary: string;
       };
     }
@@ -746,20 +765,22 @@ export type SystemEvent =
     }
   | {
       type: "workflow.owner.requested";
-      source: "workflow-tool";
+      source: string;
       owner: string;
       timestamp?: number;
       data: {
-        reason: "workflow-blocked";
+        reason: string;
         workflowRunId: string;
-        workflow: string;
-        workflowOwner: string;
+        workflow?: string;
+        workflowOwner?: string;
         projectId?: string;
         parentSessionId?: string;
         parentWorkflowRunId?: string;
         task?: string;
-        blockerReason: string;
+        blockerReason?: string;
+        resumeInstruction?: string;
         context?: unknown;
+        [key: string]: unknown;
       };
     }
   | {
@@ -787,16 +808,15 @@ export type SystemEvent =
     };
 
 /** All typed event types — commands + observations + system */
-export type AgentEvent =
-  (
-    | AgentCommand
-    | ManagementCommand
-    | SessionEvent
-    | SystemEvent
-    | { type: "info"; message: string; channel?: string }
-    | { type: "prompt"; message: string; channel?: string }
-  ) &
-    EventTraceMetadata;
+export type AgentEvent = (
+  | AgentCommand
+  | ManagementCommand
+  | SessionEvent
+  | SystemEvent
+  | { type: "info"; message: string; channel?: string }
+  | { type: "prompt"; message: string; channel?: string }
+) &
+  EventTraceMetadata;
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -857,14 +877,14 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  * EventBus — typed pub/sub.
  *
  * Subscriber priority semantics:
- *   - "first" subscribers always run before "normal" subscribers, in registration order.
- *   - Persistence (DB writer) MUST be registered with priority "first" so events become
- *     durable before any side-effect handler runs. This is a v2 invariant: if a handler
- *     triggers work, the originating event is already on disk.
+ *   - The required persistence subscriber runs first and fails closed.
+ *   - "first" subscribers then run before "normal" subscribers, in registration order.
+ * This guarantees that if a handler triggers work, the originating event is already on disk.
  *
  * See: shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
  */
 export class EventBus {
+  private persistenceSubscriber: Subscriber | undefined;
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
   private deliveryRecorder: DeliveryRecorder | undefined;
@@ -882,22 +902,42 @@ export class EventBus {
     };
   }
 
+  /**
+   * Install the single required durability boundary.
+   *
+   * Unlike ordinary subscribers, an exception from this handler aborts the
+   * emission before any side-effect subscriber runs. Replacing the handler is
+   * intentional so daemon reload/bootstrap code can reattach persistence
+   * without accumulating duplicate writers.
+   */
+  setPersistenceSubscriber(fn: Subscriber): void {
+    this.persistenceSubscriber = fn;
+  }
+
   setDeliveryRecorder(fn: DeliveryRecorder): void {
     this.deliveryRecorder = fn;
   }
 
-  /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI).
+  /** Emit an event. Persists first, then runs "first" and "normal" subscribers.
    *
    *  IMPORTANT: All subscribers are always invoked regardless of delivery status.
    *  The delivery result records which subscriber "claimed" the event for persistence
    *  tracking, but does NOT gate execution of subsequent subscribers. Multiple cron
    *  instances (e.g. May's session-recovery + evaluator's evaluation-aftermath) must
    *  all see bus events even when one claims delivery first. */
-  emit(input: AgentEvent): void {
-    const event = inheritedEventTrace(input, eventContext.getStore());
+  emit(input: AgentEvent): AgentEvent & { [EVENT_ROW_ID]?: number } {
+    const tracedEvent = inheritedEventTrace(input, eventContext.getStore());
+    // DbWriter attaches the durable row id to the routed envelope. Frozen
+    // producer input must not silently lose delivery and child-trace metadata.
+    const event = Object.isExtensible(tracedEvent) ? tracedEvent : ({ ...tracedEvent } as AgentEvent);
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
     try {
+      // Required durability is deliberately outside subscriber error
+      // isolation. If persistence fails, no side-effect handler may run.
+      if (this.persistenceSubscriber) {
+        delivery = normalizeDeliveryResult(eventContext.run(event, () => this.persistenceSubscriber!(event)));
+      }
       for (const fn of this.firstSubscribers) {
         try {
           const result = normalizeDeliveryResult(eventContext.run(event, () => fn(event)));
@@ -924,11 +964,12 @@ export class EventBus {
       this.emitDepth--;
       if (this.emitDepth === 0) this.flushFailureEvents();
     }
+    return event as AgentEvent & { [EVENT_ROW_ID]?: number };
   }
 
   /** Number of subscribers. */
   get listenerCount(): number {
-    return this.firstSubscribers.length + this.normalSubscribers.length;
+    return this.firstSubscribers.length + this.normalSubscribers.length + (this.persistenceSubscriber ? 1 : 0);
   }
 
   private reportSubscriberFailure(event: AgentEvent, priority: "first" | "normal", err: unknown): void {
@@ -987,7 +1028,6 @@ function ownerInboxFallback(event: AgentEvent): DeliveryResult | undefined {
 }
 
 function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
-  if (!isInfraLifecycleEvent(event.type)) return undefined;
   if (!isPairTrackedEvent(event.type)) return undefined;
   if (!hasPairCorrelationKey(event)) return undefined;
   return {
@@ -1025,35 +1065,34 @@ function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefin
   };
 }
 
-function isInfraLifecycleEvent(eventType: string): boolean {
-  return (
-    eventType.startsWith("session.") ||
-    eventType.startsWith("workflow.") ||
-    eventType.startsWith("handler.") ||
-    eventType.startsWith("cli.task.")
-  );
-}
-
 function isPairTrackedEvent(eventType: string): boolean {
-  if (eventType === "session.start" || eventType === "session.end" || eventType === "session.idle") return true;
-  return [
-    ".started",
-    ".completed",
-    ".failed",
-    ".requested",
-    ".accepted",
-    ".rejected",
-    ".created",
-    ".resolved",
-    ".dismissed",
-    ".closed",
-    ".assigned",
-    ".blocked",
-  ].some((suffix) => eventType.endsWith(suffix));
+  return new Set([
+    "session.start",
+    "session.end",
+    "session.idle",
+    "workflow.started",
+    "workflow.completed",
+    "workflow.failed",
+    "workflow.blocked",
+    "handler.started",
+    "handler.completed",
+    "handler.failed",
+    "cli.task.requested",
+    "cli.task.started",
+    "cli.task.completed",
+    "cli.task.failed",
+    "cli.task.orphaned",
+    "message.reviewed",
+    "message.expired",
+    "project.feedback.reviewed",
+    "owner.inbox.reviewed",
+    "owner.inbox.expired",
+  ]).has(eventType);
 }
 
 function hasPairCorrelationKey(event: AgentEvent): boolean {
   const data = eventData(event);
+  const eventType = String(event.type);
   if (event.type.startsWith("session.")) return hasKey(data.sessionId);
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
   if (event.type.startsWith("handler."))
@@ -1061,7 +1100,15 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
   if (event.type.startsWith("escalation.")) return hasKey(data.openEventId) || hasKey(data.escalationId);
   if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
   if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
-  return hasKey(data.requestId);
+  if (
+    eventType === "message.reviewed" ||
+    eventType === "message.expired" ||
+    eventType === "project.feedback.reviewed" ||
+    eventType === "project.owner.reviewed" ||
+    eventType === "owner.inbox.reviewed" ||
+    eventType === "owner.inbox.expired"
+  ) return hasKey(data.openEventId);
+  return false;
 }
 
 function hasKey(value: unknown): boolean {
@@ -1076,5 +1123,5 @@ function isOwnerInboxCandidate(eventType: string): boolean {
     return true;
   if (eventType === "project.feedback.created" || eventType === "project.comment.created") return true;
   if (eventType === "project.owner.requested") return true;
-  return eventType.endsWith(".requested");
+  return eventType === "workflow.owner.requested" || eventType === "evaluation.session.requested";
 }

@@ -8,7 +8,7 @@
  * - Focus tasks and todo parsing
  * - Output formatting
  *
- * Note: Job history comes from SQLite (requests table) which requires bun:sqlite.
+ * Note: Job history comes from SQLite and requires bun:sqlite.
  * Under the test runner, job queries return empty results gracefully.
  */
 
@@ -133,7 +133,7 @@ function createTestState() {
   ];
   writeFileSync(join(stateDir, "delegations.jsonl"), delegations.join("\n") + "\n");
 
-  // Note: job history now comes from SQLite (requests table), not JSONL.
+  // Note: job history now comes from SQLite, not JSONL.
   // No job-history.jsonl fixture needed.
 
   // Create focus-tasks.md
@@ -252,7 +252,7 @@ describe("system-status tool", () => {
     const result = await tool.execute("test-call-6", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    // Job data comes from SQLite (requests table) which isn't available in this test environment.
+    // Job data comes from SQLite, which isn't available in this test environment.
     // The tool handles this gracefully by returning empty results.
     expect(text).toContain("⏱️ Cron/Jobs");
   });

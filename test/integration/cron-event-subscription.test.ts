@@ -251,12 +251,17 @@ describe("Cron event subscriptions", () => {
 
     const emitted: SystemEvent[] = [];
     let handledEvent: any;
+    let resolveHandled: (() => void) | undefined;
+    const handled = new Promise<void>((resolve) => {
+      resolveHandled = resolve;
+    });
     const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, undefined, (event) => {
       emitted.push(event);
     });
     cron.load();
     cron.registerHandler("metric-reactor", async (event) => {
       handledEvent = event;
+      resolveHandled?.();
     });
 
     const triggered = cron.dispatchEvent("metric.breach", {
@@ -267,6 +272,7 @@ describe("Cron event subscriptions", () => {
     });
 
     expect(triggered).toBe(1);
+    await handled;
     expect(emitted[0]).toEqual({
       type: "metric.breach",
       source: "cron",

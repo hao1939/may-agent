@@ -21,6 +21,7 @@ function makeHeartbeatCtx(agentsRoot: string): WorkflowContext & { events: any[]
       heartbeatContext: () => ({ metrics: [], projects: [], alerts: [], inbox: [] }),
       events: () => ({ rows: [] }),
     } as any,
+    commands: {} as any,
     log: () => {},
     notify: () => {},
     metrics: {} as any,
