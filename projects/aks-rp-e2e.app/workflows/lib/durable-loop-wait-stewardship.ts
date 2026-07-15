@@ -25,34 +25,70 @@ function inferredUnrepresentedNonTerminalCount(
   );
 }
 
+function incompleteFrontierCounts(
+  progress: Record<string, unknown>,
+): {
+  running: number;
+  openChildren: number;
+  openSupportChildren: number;
+  activeChildren: number;
+  reviewChildren: number;
+  waitingChildren: number;
+  backlogChildren: number;
+  openFollowups: number;
+  openSpecVerifierChildren: number;
+  blockedWaitChildren: number;
+  unrepresentedNonTerminalCount: number;
+  noRefillNow: boolean;
+  dispatchHeld: boolean;
+  backendBlocked: boolean;
+} {
+  return {
+    running: numericProgressField(progress, "running") ?? 0,
+    openChildren: numericProgressField(progress, "openChildren") ?? 0,
+    openSupportChildren:
+      numericProgressField(progress, "openSupportChildren") ?? 0,
+    activeChildren: numericProgressField(progress, "activeChildren") ?? 0,
+    reviewChildren: numericProgressField(progress, "reviewChildren") ?? 0,
+    waitingChildren: numericProgressField(progress, "waitingChildren") ?? 0,
+    backlogChildren: numericProgressField(progress, "backlogChildren") ?? 0,
+    openFollowups: numericProgressField(progress, "openFollowups") ?? 0,
+    openSpecVerifierChildren:
+      numericProgressField(progress, "openSpecVerifierChildren") ?? 0,
+    blockedWaitChildren:
+      numericProgressField(progress, "blockedWaitChildren") ?? 0,
+    unrepresentedNonTerminalCount:
+      numericProgressField(progress, "unrepresentedNonTerminalCount") ??
+      inferredUnrepresentedNonTerminalCount(progress),
+    noRefillNow: progress.noRefillNow === true,
+    dispatchHeld: progress.dispatchHeld === true,
+    backendBlocked: progress.backendBlocked === true,
+  };
+}
+
 export function exactBlockedWaitStewardshipProgress(
   progress: Record<string, unknown> | null | undefined,
 ): boolean {
   if (!progress || progress.completionReady !== false) return false;
 
-  const running = numericProgressField(progress, "running") ?? 0;
-  const openChildren = numericProgressField(progress, "openChildren") ?? 0;
-  const openSupportChildren =
-    numericProgressField(progress, "openSupportChildren") ?? 0;
-  const activeChildren = numericProgressField(progress, "activeChildren") ?? 0;
-  const reviewChildren = numericProgressField(progress, "reviewChildren") ?? 0;
-  const waitingChildren =
-    numericProgressField(progress, "waitingChildren") ?? 0;
-  const backlogChildren =
-    numericProgressField(progress, "backlogChildren") ?? 0;
-  const openFollowups = numericProgressField(progress, "openFollowups") ?? 0;
-  const openSpecVerifierChildren =
-    numericProgressField(progress, "openSpecVerifierChildren") ?? 0;
-  const noRefillNow = progress.noRefillNow === true;
-  const dispatchHeld = progress.dispatchHeld === true;
-  const backendBlocked = progress.backendBlocked === true;
-  const unrepresentedNonTerminalCount =
-    numericProgressField(progress, "unrepresentedNonTerminalCount") ??
-    inferredUnrepresentedNonTerminalCount(progress);
+  const {
+    running,
+    openChildren,
+    openSupportChildren,
+    activeChildren,
+    reviewChildren,
+    waitingChildren,
+    backlogChildren,
+    openFollowups,
+    openSpecVerifierChildren,
+    blockedWaitChildren,
+    unrepresentedNonTerminalCount,
+    noRefillNow,
+    dispatchHeld,
+    backendBlocked,
+  } = incompleteFrontierCounts(progress);
   const holdMode =
     typeof progress.holdMode === "string" && progress.holdMode.trim();
-  const blockedWaitChildren =
-    numericProgressField(progress, "blockedWaitChildren") ?? 0;
 
   const blockedOnlyFrontier =
     running === 0 &&
@@ -75,6 +111,41 @@ export function exactBlockedWaitStewardshipProgress(
     blockedOnlyFrontier &&
     unrepresentedNonTerminalCount === 0 &&
     (noRefillNow || dispatchHeld || backendBlocked)
+  );
+}
+
+export function heldDispatchRepresentedFrontierProgress(
+  progress: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!progress || progress.completionReady !== false) return false;
+  const {
+    running,
+    openChildren,
+    openSupportChildren,
+    activeChildren,
+    reviewChildren,
+    waitingChildren,
+    backlogChildren,
+    openFollowups,
+    openSpecVerifierChildren,
+    blockedWaitChildren,
+    unrepresentedNonTerminalCount,
+    dispatchHeld,
+    backendBlocked,
+  } = incompleteFrontierCounts(progress);
+
+  if (!dispatchHeld && !backendBlocked) return false;
+
+  return (
+    running === 0 &&
+    openChildren === 0 &&
+    activeChildren === 0 &&
+    waitingChildren === 0 &&
+    backlogChildren === 0 &&
+    openFollowups === 0 &&
+    openSpecVerifierChildren === 0 &&
+    unrepresentedNonTerminalCount === 0 &&
+    (openSupportChildren > 0 || reviewChildren > 0 || blockedWaitChildren > 0)
   );
 }
 

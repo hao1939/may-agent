@@ -257,7 +257,7 @@ function planningTrigger(data: Record<string, unknown> = {}) {
     "```json",
     JSON.stringify(
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         data: { project: "aks-rp-e2e", ...data },
       },
       null,
@@ -273,6 +273,7 @@ function plannerContext(input: {
   trigger: string;
   prompts?: string[];
   dispatched?: Array<{ type: string; data: unknown }>;
+  emitted?: Array<Record<string, unknown>>;
   extraTaskLines?: string[];
 }) {
   return {
@@ -287,7 +288,9 @@ function plannerContext(input: {
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }),
     escalate: (message: string) => ({ status: "escalated", message }),
-    emit() {},
+    emit(event: Record<string, unknown>) {
+      input.emitted?.push(event);
+    },
     dispatchEvent(type: string, data: unknown) {
       input.dispatched?.push({ type, data });
     },
@@ -455,22 +458,37 @@ describe("project owner workflow", () => {
     });
   });
 
-  test("applies accepted task reviews without owner-agent planning", async () => {
+  test("applies accepted task reviews without owner-agent planning when the project closes", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir);
     const prompts: string[] = [];
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+    const emitted: Array<Record<string, unknown>> = [];
 
     const result = await execute(
       plannerContext({
         appDir,
         projectDir,
         prompts,
+        dispatched,
+        emitted,
         trigger: reviewedTrigger({
           project: "aks-rp-e2e",
           taskId: "review-task",
           attemptId: "attempt-1",
           decision: "accept",
           summary: "Evidence satisfies the task.",
+          events: [
+            {
+              type: "escalation.resolved",
+              owner: "agent:aks-explorer",
+              data: {
+                escalationId: "esc-review-task",
+                outcome: "fixed",
+                summary: "The reviewed repair is verified.",
+              },
+            },
+          ],
         }),
       }),
     );
@@ -482,7 +500,251 @@ describe("project owner workflow", () => {
     expect(tree.tasks["review-task"].trace.review_summary).toBe(
       "Evidence satisfies the task.",
     );
+    expect(emitted).toContainEqual({
+      type: "escalation.resolved",
+      owner: "agent:aks-explorer",
+      data: {
+        escalationId: "esc-review-task",
+        outcome: "fixed",
+        summary: "The reviewed repair is verified.",
+      },
+    });
+    expect(result.message).toContain("Emitted 1 reviewed event transition");
     expect(prompts).toHaveLength(0);
+  });
+
+  test("requests immediate recovery when an accepted review leaves a blocked-only frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      extraTasks: {
+        "blocked-sibling": {
+          id: "blocked-sibling",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Recover an exact external blocker.",
+          outputs: ["evidence/archive/blocked-sibling.md"],
+          acceptance: ["Work is restored or the gap is terminally resolved."],
+          blocker: {
+            condition: "External condition has not changed.",
+            owner: "operator",
+            resume_condition: "Resume when stronger evidence arrives.",
+            next_check_at: "2026-07-15T00:00:00.000Z",
+            fallback_at: "2026-07-16T00:00:00.000Z",
+          },
+        },
+      },
+    });
+    const treePath = resolveTaskTreePath(appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks.project.children.push("blocked-sibling");
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        dispatched,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Evidence satisfies the task.",
+        }),
+      }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Requested immediate blocked-frontier recovery",
+    );
+    expect(dispatched).toContainEqual({
+      type: "project.owner.requested",
+      data: expect.objectContaining({
+        reason: "review-settled-blocked-only-recovery",
+        requested_by: "project-planner",
+        reviewedTaskId: "review-task",
+        blockedLeafCount: 1,
+      }),
+    });
+  });
+
+  test("recovers archived reviewed-task lineage into planner prompts for blocked-only recovery wakes", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await mkdir(join(appDir, "tasks", "archive"), { recursive: true });
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              status: "blocked",
+              children: ["blocked-sibling"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+              context: {
+                rollup_summary:
+                  "Compact accepted done leaves; preserve durable loop controllers even when their current frontier is complete or held.",
+                current_focus_proposal: {
+                  id: "focus-no-live-frontier-lineage-closure-and-holder-truth-20260714",
+                  reason:
+                    "Current non-repair frontier is active=[none], review=[none], waiting=[none], runnable=[none], blocked=1. Current live focus is blocked-frontier recovery.",
+                  evidence_path:
+                    "evidence/archive/focus-no-live-frontier-lineage-closure.md",
+                },
+                rollup_archives: [
+                  {
+                    archive:
+                      ".state/tasks/archive/done-leaves-20260714225642775.json",
+                    at: "2026-07-14T22:56:42.776Z",
+                    reason: "planner task-tree maintenance",
+                    summary:
+                      "Compact accepted done leaves; preserve durable loop controllers even when their current frontier is complete or held.",
+                    task_ids: [
+                      "ops/reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714",
+                    ],
+                  },
+                ],
+              },
+            },
+            "blocked-sibling": {
+              id: "blocked-sibling",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Recover an exact external blocker.",
+              outputs: ["evidence/archive/blocked-sibling.md"],
+              acceptance: ["Work is restored or the gap is terminally resolved."],
+              blocker: {
+                condition: "External condition has not changed.",
+                owner: "operator",
+                resume_condition: "Resume when stronger evidence arrives.",
+                next_check_at: "2026-07-15T00:00:00.000Z",
+                fallback_at: "2026-07-16T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await mkdir(projectRuntimePaths(appDir).taskArchiveDir, { recursive: true });
+    await writeFile(
+      join(
+        projectRuntimePaths(appDir).taskArchiveDir,
+        "done-leaves-20260714225642775.json",
+      ),
+      `${JSON.stringify(
+        {
+          version: 1,
+          generated_at: "2026-07-14T22:56:42.775Z",
+          reason: "planner task-tree maintenance",
+          parent_id: "project",
+          summary:
+            "Compact accepted done leaves; preserve durable loop controllers even when their current frontier is complete or held.",
+          archived: 1,
+          tasks: [
+            {
+              id: "ops/reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal:
+                "Reconcile the seven unpublished model/knowledge-map files in /app/projects/aks-rp-e2e to one truthful process outcome: either a coherent checkpoint-ready done slice or one exact holder that explains why the repo drift must remain uncommitted.",
+              outputs: [
+                "evidence/archive/ops-reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714.md",
+              ],
+              evidence: [
+                "evidence/archive/ops-reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714.md",
+              ],
+              acceptance: [
+                "Use the current git diff and checkpoint helper output to map the seven dirty model/knowledge-map files to accepted versus active lineage, explain why domain:checkpoint currently returns hold, and leave exactly one actionable next state: checkpoint-ready slice with the commit boundary spelled out, or a sharper task/wait that truthfully owns the remaining unpublished drift.",
+              ],
+              context: {
+                acceptance_note:
+                  "Accepted: the memo satisfies the reconciliation acceptance by mapping the seven dirty knowledge-map files to accepted lineage, explaining unbounded hold versus bounded candidate helper behavior, and spelling one exact checkpoint boundary; subsequent git state shows that exact seven-file checkpoint was applied.",
+              },
+              trace: {
+                review_summary:
+                  "Accepted: the memo satisfies the reconciliation acceptance by mapping the seven dirty knowledge-map files to accepted lineage, explaining unbounded hold versus bounded candidate helper behavior, and spelling one exact checkpoint boundary; subsequent git state shows that exact seven-file checkpoint was applied.",
+                last_worker_summary:
+                  "Refreshed `/app/projects/aks-rp-e2e.app/evidence/archive/ops-reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714.md` against current live git, task-tree, archive, and checkpoint-helper state. The memo now directly addresses the rejected review and leaves one truthful next state: checkpoint the exact seven model/knowledge-map files only.",
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        trigger: planningTrigger({
+          reason: "review-settled-blocked-only-recovery",
+          reviewedTaskId:
+            "ops/reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714",
+          blockedLeafCount: 1,
+        }),
+      }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    for (const prompt of prompts) {
+      expect(prompt).toContain("Recovered reviewed-task lineage for this wake");
+      expect(prompt).toContain(
+        '"reviewedTaskId": "ops/reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714"',
+      );
+      expect(prompt).toContain('"source": "archive"');
+      expect(prompt).toContain(
+        "treat that accepted lineage as settled history for the blocked-only refill decision instead of as missing live work",
+      );
+      expect(prompt).toContain(
+        '"archiveFile": ".state/tasks/archive/done-leaves-20260714225642775.json"',
+      );
+      expect(prompt).toContain(
+        '"archivedReviewSummary": "Accepted: the memo satisfies the reconciliation acceptance by mapping the seven dirty knowledge-map files to accepted lineage, explaining unbounded hold versus bounded candidate helper behavior, and spelling one exact checkpoint boundary; subsequent git state shows that exact seven-file checkpoint was applied."',
+      );
+      expect(prompt).toContain(
+        '"archivedAcceptanceNote": "Accepted: the memo satisfies the reconciliation acceptance by mapping the seven dirty knowledge-map files to accepted lineage, explaining unbounded hold versus bounded candidate helper behavior, and spelling one exact checkpoint boundary; subsequent git state shows that exact seven-file checkpoint was applied."',
+      );
+      expect(prompt).toContain(
+        '"archivedLastWorkerSummary": "Refreshed `/app/projects/aks-rp-e2e.app/evidence/archive/ops-reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714.md` against current live git, task-tree, archive, and checkpoint-helper state. The memo now directly addresses the rejected review and leaves one truthful next state: checkpoint the exact seven model/knowledge-map files only."',
+      );
+      expect(prompt).toContain(
+        '"projectCurrentFocusId": "focus-no-live-frontier-lineage-closure-and-holder-truth-20260714"',
+      );
+    }
   });
 
   test("does not apply accepted reviews with missing durable evidence validation note", async () => {
@@ -511,6 +773,243 @@ describe("project owner workflow", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("Did not apply accept review");
     expect(tree.tasks["review-task"].state).toBe("review");
+  });
+
+  test("applies accepted reviews with supported project.task.completed repair events", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer proposed a bounded task-completion recovery event.",
+          events: [
+            {
+              type: "project.task.completed",
+              owner: "agent:app-ops",
+              data: {
+                target: { project: "aks-rp-e2e", taskId: "another-task" },
+                project: "aks-rp-e2e",
+                taskId: "another-task",
+                task_id: "another-task",
+                attemptId: "attempt-2",
+                attempt_id: "attempt-2",
+                result: "blocked",
+                claim: "blocked",
+                summary: "Replay a fresh review cycle for the exact current wait.",
+                review: {
+                  required: true,
+                  reason: "watchdog-recovered-terminal-pipeline-wait-review",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Applied accept review for review-task");
+    expect(result.message).toContain("Emitted 1 reviewed event transition");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(emitted).toContainEqual({
+      type: "project.task.completed",
+      owner: "agent:app-ops",
+      target: { project: "aks-rp-e2e", taskId: "another-task" },
+      data: expect.objectContaining({
+        taskId: "another-task",
+        attemptId: "attempt-2",
+        result: "blocked",
+        summary: "Replay a fresh review cycle for the exact current wait.",
+      }),
+    });
+  });
+
+  test("replays accepted project.task.completed repair events when the reviewed source task was already closed", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "source-review-task",
+      extraTasks: {
+        "hold-task": {
+          id: "hold-task",
+          parent_id: "project",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Hold task awaiting replay.",
+          outputs: ["evidence/archive/hold.md"],
+          acceptance: ["replayed"],
+          trace: {
+            current_attempt_id: "old-hold-attempt",
+          },
+        },
+      },
+    });
+    const tree = await readTaskTreeJson(appDir);
+    delete tree.tasks["source-review-task"];
+    tree.tasks.project.children = ["hold-task"];
+    await writeFile(resolveTaskTreePath(appDir), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const emitted: Array<Record<string, unknown>> = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "source-review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Replay the current hold-review lineage even though the source repair task already closed.",
+          events: [
+            {
+              type: "project.task.completed",
+              owner: "agent:app-ops",
+              data: {
+                target: { project: "aks-rp-e2e", taskId: "hold-task" },
+                project: "aks-rp-e2e",
+                taskId: "hold-task",
+                task_id: "hold-task",
+                attemptId: "new-hold-attempt",
+                attempt_id: "new-hold-attempt",
+                result: "blocked",
+                claim: "blocked",
+                summary: "Replay the fresh hold review attempt.",
+                review: {
+                  required: true,
+                  reason: "watchdog-recovered-terminal-pipeline-wait-review",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const postTree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain(
+      "Recovered accepted reviewed replay for missing task source-review-task",
+    );
+    expect(result.message).toContain("Emitted 1 reviewed event transition");
+    expect(postTree.tasks["hold-task"].state).toBe("review");
+    expect(postTree.tasks["hold-task"].trace.current_attempt_id).toBe(
+      "old-hold-attempt",
+    );
+    expect(emitted).toContainEqual({
+      type: "project.task.completed",
+      owner: "agent:app-ops",
+      target: { project: "aks-rp-e2e", taskId: "hold-task" },
+      data: expect.objectContaining({
+        taskId: "hold-task",
+        attemptId: "new-hold-attempt",
+        result: "blocked",
+        summary: "Replay the fresh hold review attempt.",
+      }),
+    });
+  });
+
+  test("does not apply accepted reviews with unsupported event transitions", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        dispatched,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer proposed an unsupported event.",
+          events: [
+            {
+              type: "project.task.assigned",
+              owner: "agent:aks-explorer",
+              data: { taskId: "another-task" },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("invalid event transitions");
+    expect(tree.tasks["review-task"].state).toBe("review");
+    expect(dispatched).toHaveLength(0);
+  });
+
+  test("applies accepted canonical loop ticks with selector fields on the event envelope", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "The compact-loop repair is ready for a bounded pulse.",
+          events: [
+            {
+              type: "project.task.tick",
+              owner: "agent:aks-explorer",
+              data: {
+                project: "aks-rp-e2e",
+                action: "feature-compact-loop",
+                taskId: "aks-feature-compact-loop",
+                target: {
+                  project: "aks-rp-e2e",
+                  taskId: "aks-feature-compact-loop",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Applied accept review for review-task");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(emitted).toContainEqual({
+      type: "project.task.tick",
+      owner: "agent:aks-explorer",
+      action: "feature-compact-loop",
+      target: {
+        project: "aks-rp-e2e",
+        taskId: "aks-feature-compact-loop",
+      },
+      data: {
+        project: "aks-rp-e2e",
+        action: "feature-compact-loop",
+        taskId: "aks-feature-compact-loop",
+        target: {
+          project: "aks-rp-e2e",
+          taskId: "aks-feature-compact-loop",
+        },
+      },
+    });
   });
 
   test("accepted task review creates structured Azure DevOps wait for queued rerun", async () => {
@@ -1020,7 +1519,13 @@ describe("project owner workflow", () => {
           attemptId: "attempt-1",
           decision: "redo",
           summary: "The output is incomplete.",
+          findings: ["The cited result does not contain a live run id."],
           feedback: ["Add the missing live-test proof."],
+          suggestedFollowups: ["Reuse the existing single-spec workflow."],
+          artifacts: ["features/example/specs/example.json"],
+          verification: [
+            "The same spec has a live passing result with a run id.",
+          ],
         }),
       }),
     );
@@ -1033,6 +1538,17 @@ describe("project owner workflow", () => {
     expect(tree.tasks["review-task"].trace.previous_attempt_id).toBe(
       "attempt-1",
     );
+    expect(tree.tasks["review-task"].trace.review_reject).toEqual({
+      taskId: "review-task",
+      attemptId: "attempt-1",
+      decision: "redo",
+      summary: "The output is incomplete.",
+      findings: ["The cited result does not contain a live run id."],
+      feedback: ["Add the missing live-test proof."],
+      suggestedFollowups: ["Reuse the existing single-spec workflow."],
+      artifacts: ["features/example/specs/example.json"],
+      verification: ["The same spec has a live passing result with a run id."],
+    });
     expect(dispatched.map((event) => event.type)).toContain(
       "project.task.assigned",
     );
@@ -1060,6 +1576,8 @@ describe("project owner workflow", () => {
           decision: "followup",
           summary: "The work is useful but needs one more check.",
           suggestedFollowups: ["Run the compacted feature test on GitHub."],
+          artifacts: ["features/defender-profile/compact.json"],
+          verification: ["The compact feature test passes live."],
         }),
       }),
     );
@@ -1083,6 +1601,8 @@ describe("project owner workflow", () => {
         taskId: "review-task",
         attemptId: "attempt-1",
         decision: "followup",
+        artifacts: ["features/defender-profile/compact.json"],
+        verification: ["The compact feature test passes live."],
       },
     });
   });
@@ -1316,9 +1836,9 @@ describe("project owner workflow", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("Did not apply accept review");
     expect(result.message).toContain("Overdue-wait accept cannot close");
-    expect(
-      tree.tasks["ops-maintain-overdue-fallback-only-refresh"].state,
-    ).toBe("review");
+    expect(tree.tasks["ops-maintain-overdue-fallback-only-refresh"].state).toBe(
+      "review",
+    );
   });
 
   test("accepted overdue-wait audits treat metric offenderTaskIds as structured blocked task ids", async () => {
@@ -1669,6 +2189,468 @@ describe("project owner workflow", () => {
     expect(followup.context.workflow).toBeUndefined();
   });
 
+  test("requeues guarded app-state-repair reviews in place instead of nesting another ops-apply successor", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "ops-apply-repair-assignment-state-mismatch-open-archived-private-cluster-pair-20260715-state-repair";
+    const priorAttemptId =
+      "a_ops-apply-repair-assignment-state-mismatch-open-archived-private-cluster-pair-20260715-state-repair_20260715042027";
+    await writeReviewTree(appDir, {
+      taskId,
+      attemptId: priorAttemptId,
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: [taskId],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        [taskId]: {
+          id: taskId,
+          parent_id: "project",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "app-ops",
+          children: [],
+          goal: "Manually reconcile the guarded review from the existing worker evidence and either accept it, reject it, or create one exact successor without duplicating passive waits.",
+          outputs: [
+            "task tree",
+            ".state/feature-compact-loop/state.json",
+            ".state/spec-loop/state.json",
+            "evidence/archive/",
+          ],
+          acceptance: [
+            "The app-owned task-tree or loop-state repair is applied through supported app mechanisms.",
+            "The affected branch records the exact restored holder, state pointer, or refreshed wait with evidence.",
+          ],
+          conflict_scope: ["ops:assignment-state-mismatch"],
+          context: {
+            reviewedTask: {
+              taskId:
+                "ops/repair-assignment-state-mismatch-open-archived-private-cluster-pair-20260715",
+              attemptId:
+                "a_ops_repair-assignment-state-mismatch-open-archived-private-cluster-pair-20260715_20260715041634",
+              decision: "escalate",
+              reviewAction: {
+                actionKind: "app-state-repair",
+                owner: "app-ops",
+                parentId: "project",
+              },
+            },
+          },
+          session_id: "s_task_review_task",
+          result: "worker result",
+          trace: {
+            current_attempt_id: priorAttemptId,
+            last_worker_result: "done",
+            last_worker_summary: "worker says done",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId: priorAttemptId,
+          decision: "escalate",
+          summary:
+            "Task reviewer was halted by the no-secret-leak guard; planner should route a bounded app-ops manual reconciliation from the existing worker evidence.",
+          findings: [
+            "reviewer-output-not-structured",
+            "reviewer-guard-no-secret-leak",
+          ],
+          feedback: [
+            'Workflow blocked by guard: 🚨 Secret leak detected in step "aks-reviewer": Telegram bot token found (2026...ed). Workflow halted to prevent exposure.',
+          ],
+          suggestedFollowups: [
+            "App-ops should inspect the existing worker evidence, accept or reject the reviewed task, or create one exact successor without duplicating passive waits.",
+          ],
+          reviewAction: {
+            actionKind: "app-state-repair",
+            owner: "app-ops",
+            parentId: "project",
+            goal:
+              "Manually reconcile the guarded review from the existing worker evidence and either accept it, reject it, or create one exact successor without duplicating passive waits.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task = tree.tasks[taskId] as any;
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Requeued guarded app-state-repair review for",
+    );
+    expect(new Set(Object.keys(tree.tasks))).toEqual(new Set(["project", taskId]));
+    expect(task.state).toBe("active");
+    expect(task.owner).toBe("app-ops");
+    expect(task.trace.previous_attempt_id).toBe(priorAttemptId);
+    expect(task.trace.review_reject).toMatchObject({
+      taskId,
+      attemptId: priorAttemptId,
+      decision: "escalate",
+      findings: expect.arrayContaining(["reviewer-guard-no-secret-leak"]),
+      reviewAction: {
+        actionKind: "app-state-repair",
+      },
+    });
+    expect(task.trace.current_attempt_id).not.toBe(priorAttemptId);
+    expect(task.context.reviewedTask).toMatchObject({
+      taskId:
+        "ops/repair-assignment-state-mismatch-open-archived-private-cluster-pair-20260715",
+      reviewAction: {
+        actionKind: "app-state-repair",
+      },
+    });
+  });
+
+  test("routes repeated app-owned followup decisions to the project owner instead of nesting successors", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "ops-apply-windows-gpu-vm-prerelease-task-tree-followup";
+    const attemptId = "a_ops_apply_windows_gpu_20260715053105";
+    await writeReviewTree(appDir, {
+      taskId,
+      attemptId,
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: [taskId],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        [taskId]: {
+          id: taskId,
+          parent_id: "project",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "app-ops",
+          children: [],
+          goal: "Apply the reviewed task-tree mutation.",
+          outputs: ["task tree"],
+          acceptance: ["The reviewed mutation is applied."],
+          context: {
+            reviewedTask: {
+              taskId: "domain/windows-gpu-source-review",
+              attemptId: "a_domain_windows_gpu_source_review",
+              decision: "followup",
+              reviewAction: {
+                actionKind: "task-tree-followup",
+              },
+            },
+          },
+          trace: {
+            current_attempt_id: attemptId,
+            last_worker_result: "done",
+          },
+        },
+      },
+    });
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        dispatched,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId,
+          decision: "followup",
+          summary:
+            "The current app-owned work is accepted, but the project owner must decide the remaining tree mutation.",
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            goal: "Apply or reject the exact reviewed Windows GPU tree mutation.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "routed the remaining app-owned action to the project owner",
+    );
+    expect(new Set(Object.keys(tree.tasks))).toEqual(new Set(["project", taskId]));
+    expect(tree.tasks[taskId].state).toBe("done");
+    expect(dispatched).toContainEqual({
+      type: "project.owner.requested",
+      data: expect.objectContaining({
+        reason: "reviewed-app-action",
+        reviewedTaskId: taskId,
+        decision: "followup",
+        reviewAction: expect.objectContaining({
+          actionKind: "task-tree-followup",
+        }),
+      }),
+    });
+  });
+
+  test("turns task-tree-followup reviews into runnable app-ops apply work instead of memo-only domain retries", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+      conflictScope: ["feature-compact:storage-csi"],
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: ["aks-feature-compact-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          kind: "domain_root",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [
+            "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+          ],
+          goal: "feature compact loop",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["done"],
+        },
+        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-": {
+          id: "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+          parent_id: "aks-feature-compact-loop",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Review me",
+          outputs: ["runs/test-results/review-task.json"],
+          acceptance: ["review accepted"],
+          conflict_scope: ["feature-compact:storage-csi"],
+          session_id: "s_task_review_task",
+          result: "worker result",
+          trace: {
+            current_attempt_id: "attempt-1",
+            last_worker_result: "done",
+            last_worker_summary: "worker says done",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "The worker refreshed useful evidence and preserved the exact planner/app-ops add command, but the reviewed task's required successor task still does not exist in the live task tree, so the follow-up is not resolved.",
+          feedback: [
+            "Planner/app-ops must either apply the recorded task-tree add command and verify the successor exists under `aks-feature-compact-loop`, or explicitly reject that mutation with evidence-backed reasoning.",
+          ],
+          suggestedFollowups: [
+            "Planner/app-ops: create `domain/restore-storage-csi-file-nfs-unmount-boundary-executable-split-20260715` under `aks-feature-compact-loop` using the exact add command recorded in `evidence/archive/domain-reconcile-storage-csi-holder-vs-model-20260715.md`, then verify it with `bun run task-tree show domain/restore-storage-csi-file-nfs-unmount-boundary-executable-split-20260715`.",
+          ],
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            goal: "Create `domain/restore-storage-csi-file-nfs-unmount-boundary-executable-split-20260715` under `aks-feature-compact-loop` using the exact add command recorded in `evidence/archive/domain-reconcile-storage-csi-holder-vs-model-20260715.md`, then verify the new task exists and carries the storage-csi file NFS/SMB unmount boundary split-or-replacement-carrier work.",
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup = Object.values(tree.tasks).find(
+      (task: any) =>
+        task?.context?.reviewedTask?.taskId ===
+          "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-" &&
+        task?.id !==
+          "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+    ) as any;
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks[
+        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-"
+      ].state,
+    ).toBe("done");
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.id).toContain("ops-apply-");
+    expect(followup.owner).toBe("app-ops");
+    expect(followup.parent_id).toBe("project");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain(
+      "domain/restore-storage-csi-file-nfs-unmount-boundary-executable-split-20260715",
+    );
+    expect(followup.outputs).toContain("task tree");
+    expect(followup.acceptance).toContain(
+      "The exact planner-owned task-tree mutation is applied through supported app mechanisms, or an explicit evidence-backed rejection is recorded.",
+    );
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId:
+        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+      attemptId: "attempt-1",
+      decision: "followup",
+      reviewAction: {
+        actionKind: "task-tree-followup",
+      },
+    });
+  });
+
+  test("turns create-domain-followup reviews into direct domain successor tasks", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+      conflictScope: ["feature-compact:traffic"],
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: ["aks-feature-compact-loop"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          kind: "domain_root",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [
+            "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+          ],
+          goal: "feature compact loop",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["done"],
+        },
+        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo": {
+          id: "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+          parent_id: "aks-feature-compact-loop",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Review me",
+          outputs: ["runs/test-results/review-task.json"],
+          acceptance: ["review accepted"],
+          conflict_scope: ["feature-compact:traffic"],
+          session_id: "s_task_review_task",
+          result: "worker result",
+          trace: {
+            current_attempt_id: "attempt-1",
+            last_worker_result: "done",
+            last_worker_summary: "worker says done",
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["domainWorker: aks-explorer", "opsWorker: app-ops"],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "The worker re-verified and documented the missing ALB ready-pair child with an exact add command, but the task goal required that child to be created or explicitly rejected; live task-tree inspection still shows it does not exist.",
+          suggestedFollowups: [
+            "Create `domain/verify-traffic-alb-ready-datapath-pair-20260715` under `aks-feature-compact-loop` with conflict scope `feature-compact:traffic`, inputs from `evidence/archive/domain-reconcile-traffic-draft-frontier-vs-model-20260715.md`, `features/traffic-alb-controller/compact/staging.summary.md`, and `features/traffic-alb-controller/compact/staging.plan.json`, and output `evidence/archive/verify-traffic-alb-ready-datapath-pair-20260715.md`.",
+          ],
+          reviewAction: {
+            actionKind: "create-domain-followup",
+            goal: "Create `domain/verify-traffic-alb-ready-datapath-pair-20260715` under `aks-feature-compact-loop`, scoped only to `spec.traffic-alb-controller.ingress-routing` and `spec.traffic-alb-controller.upgrade-survival`, with conflict scope `feature-compact:traffic`, inputs from the reconciliation memo plus ALB compact summary and plan, output `evidence/archive/verify-traffic-alb-ready-datapath-pair-20260715.md`, and no reopening of `spec.traffic-alb-controller.enable-lifecycle`.",
+            owner: "aks-explorer",
+            parentId: "aks-feature-compact-loop",
+            idBase: "domain/verify-traffic-alb-ready-datapath-pair-20260715",
+            kind: "domain_leaf",
+            outputs: [
+              "evidence/archive/verify-traffic-alb-ready-datapath-pair-20260715.md",
+            ],
+            acceptance: [
+              "The verification result is limited to `spec.traffic-alb-controller.ingress-routing` and `spec.traffic-alb-controller.upgrade-survival`.",
+              "The task uses the current ALB compact summary and plan plus the reconciliation memo as inputs.",
+              "The task does not reopen or require verification of `spec.traffic-alb-controller.enable-lifecycle`.",
+              "The output memo records the concrete verification outcome and any next exact repair or wait.",
+            ],
+            conflictScopes: ["feature-compact:traffic"],
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup =
+      tree.tasks["domain/verify-traffic-alb-ready-datapath-pair-20260715"];
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks[
+        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo"
+      ].state,
+    ).toBe("done");
+    expect(followup).toBeTruthy();
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.owner).toBe("aks-explorer");
+    expect(followup.parent_id).toBe("aks-feature-compact-loop");
+    expect(followup.blocker).toBeUndefined();
+    expect(followup.goal).toContain(
+      "spec.traffic-alb-controller.ingress-routing",
+    );
+    expect(followup.outputs).toContain(
+      "evidence/archive/verify-traffic-alb-ready-datapath-pair-20260715.md",
+    );
+    expect(followup.acceptance).toContain(
+      "The task does not reopen or require verification of `spec.traffic-alb-controller.enable-lifecycle`.",
+    );
+    expect(followup.conflict_scope).toContain("feature-compact:traffic");
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId:
+        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+      attemptId: "attempt-1",
+      decision: "followup",
+      reviewAction: {
+        actionKind: "create-domain-followup",
+      },
+    });
+  });
+
   test("turns accepted reviews with structured app-state repair actions into runnable app-ops work", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -1696,8 +2678,7 @@ describe("project owner workflow", () => {
           ],
           reviewAction: {
             actionKind: "app-state-repair",
-            goal:
-              "Create the recommended bounded publish-state reconciliation successor task for the ahead-1/behind-1 publication divergence before checkpointing or cleanup.",
+            goal: "Create the recommended bounded publish-state reconciliation successor task for the ahead-1/behind-1 publication divergence before checkpointing or cleanup.",
           },
           suggestedFollowups: [
             "Create a bounded publish-state reconciliation task to reconcile local dev with origin/dev, integrate upstream commit 363cda41f, and reassess the unpublished-change metric before any mixed checkpoint.",
@@ -1742,7 +2723,8 @@ describe("project owner workflow", () => {
       status: "blocked",
       context: {
         reviewedTask: {
-          taskId: "ops/repair-azure-devops-guard-halt-secret-leak-lineage-20260712",
+          taskId:
+            "ops/repair-azure-devops-guard-halt-secret-leak-lineage-20260712",
           attemptId:
             "a_ops_repair-azure-devops-guard-halt-secret-leak-lineage-20260712_20260712095559",
           decision: "followup",
@@ -1760,7 +2742,9 @@ describe("project owner workflow", () => {
           pathId: "shared-azure-devops-auth-capable-runtime-20260709",
         },
       },
-      conflictScope: ["auth-capability-family:azure-devops-auth-capable-runtime"],
+      conflictScope: [
+        "auth-capability-family:azure-devops-auth-capable-runtime",
+      ],
     });
     const treeBefore = await readTaskTreeJson(appDir);
     treeBefore.tasks[
@@ -1770,7 +2754,8 @@ describe("project owner workflow", () => {
     treeBefore.tasks[
       "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
     ].blocker = {
-      condition: "Blocked on returned owner/runtime decision for the exact publication/auth lineage.",
+      condition:
+        "Blocked on returned owner/runtime decision for the exact publication/auth lineage.",
       category: "external-wait",
       owner: "human",
       blocked_at: "2026-07-12T10:02:10.172Z",
@@ -1781,11 +2766,14 @@ describe("project owner workflow", () => {
         workflow: "project-planner",
         trigger: "project.approval.submitted",
       },
-      observation_method: "Reconcile returned approval or reviewed publication proof into this exact wait.",
+      observation_method:
+        "Reconcile returned approval or reviewed publication proof into this exact wait.",
       next_check_at: "2026-07-12T20:40:00Z",
-      resume_condition: "Resume when the approval return or reviewed publication proof lands.",
+      resume_condition:
+        "Resume when the approval return or reviewed publication proof lands.",
       fallback_at: "2026-07-13T20:40:00Z",
-      fallback_action: "Refresh or escalate the same lineage instead of reactivating the wait as runnable work.",
+      fallback_action:
+        "Refresh or escalate the same lineage instead of reactivating the wait as runnable work.",
     };
     treeBefore.tasks[
       "ops-apply-repair-azure-devops-guard-halt-secret-leak-lineage-20260712-st"
@@ -1796,7 +2784,11 @@ describe("project owner workflow", () => {
       blocked_wait_refresh_summary:
         "Restored the unpublished ahead-5 Azure DevOps publication blocker as its own exact approval-return wait on the 2026-07-12 send lineage.",
     };
-    await writeFile(resolveTaskTreePath(appDir), `${JSON.stringify(treeBefore, null, 2)}\n`, "utf8");
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(treeBefore, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(
       plannerContext({
@@ -1815,7 +2807,9 @@ describe("project owner workflow", () => {
     expect(task.state).toBe("blocked");
     expect(task.goal).toContain("exact returned owner/runtime wait");
     expect(task.blocker?.waiting_for?.type).toBe("project.approval.submitted");
-    expect(task.trace.blocked_wait_refreshed_at).toBe("2026-07-12T10:02:10.172Z");
+    expect(task.trace.blocked_wait_refreshed_at).toBe(
+      "2026-07-12T10:02:10.172Z",
+    );
     expect(task.trace.requeued_by).toBeUndefined();
   });
 
@@ -1870,15 +2864,314 @@ describe("project owner workflow", () => {
     expect(task.trace.requeued_by).toBe("project-planner");
   });
 
+  test("restores reviewed terminal pipeline waits in place when the run is still a real external wait", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-feature-compact-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "standing_task",
+              children: [
+                "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
+              ],
+              goal: "compact loop",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["loop represented"],
+            },
+            "wait-net-integration-multinic-dualstack-ado-run-172275388-result": {
+              id: "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
+              parent_id: "aks-feature-compact-loop",
+              state: "review",
+              status: "review",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Inspect run 172275388 when it is terminal.",
+              outputs: ["runs/test-results/"],
+              acceptance: ["exact result inspected"],
+              conflict_scope: [
+                "feature-compact:net-integration",
+                "feature:net-integration",
+                "spec:spec.net-integration.multinic-dualstack",
+                "spec:spec.net-integration.multinic-mixed",
+                "ado-run:172275388",
+              ],
+              context: {
+                acceptedQueuedPipelineRun: {
+                  runId: "172275388",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                  specIds: [
+                    "spec.net-integration.multinic-dualstack",
+                    "spec.net-integration.multinic-mixed",
+                  ],
+                },
+                terminalPipelineWaitReview: {
+                  runId: "172275388",
+                  runStatus: "inProgress",
+                  runConclusion: null,
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                  namedSpecIds: [
+                    "spec.net-integration.multinic-dualstack",
+                    "spec.net-integration.multinic-mixed",
+                  ],
+                },
+              },
+              result:
+                "Azure DevOps pipeline run 172275388 is terminal; inspect the returned artifacts.",
+              trace: {
+                current_attempt_id: "attempt-1",
+                last_worker_result: "blocked",
+                last_worker_summary:
+                  "Run 172275388 is still inProgress with no published artifacts.",
+                previous_blocker_before_terminal_pipeline_wait_review: {
+                  condition:
+                    "Wait for Azure DevOps run 172275388 for spec.net-integration.multinic-dualstack, spec.net-integration.multinic-mixed queued by accepted task fix-net-integration-multinic-mixed-run-172268432.",
+                  category: "external-wait",
+                  owner: "aks-explorer",
+                  blocked_at: "2026-07-15T01:59:32.232Z",
+                  waiting_for: {
+                    type: "ado.pipeline_run.completed",
+                    runId: "172275388",
+                    runUrl:
+                      "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                    specIds: [
+                      "spec.net-integration.multinic-dualstack",
+                      "spec.net-integration.multinic-mixed",
+                    ],
+                  },
+                  observed_by: {
+                    workflow: "project-execution-watchdog",
+                    trigger: "project.task.reviewed",
+                  },
+                  observation_method:
+                    "Watchdog checks the named Azure DevOps run and moves this wait to review when the run is terminal; the reviewer then consumes artifacts and records the exact result.",
+                  next_check_at: "2026-07-15T02:14:13Z",
+                  resume_condition:
+                    "Resume when Azure DevOps run 172275388 is terminal and its artifacts are available for exact result inspection.",
+                  fallback_at: "2026-07-15T04:04:13Z",
+                  fallback_action:
+                    "If run 172275388 is still not terminal or artifacts remain unavailable at fallback, refresh this exact wait with current Azure DevOps queue evidence or escalate the queue/artifact issue without creating duplicate same-scope waits.",
+                },
+              },
+              session_id: "s_task_wait_run_172275388",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "The reviewed run is still inProgress with no artifacts, so this remains a real external wait.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "blocked",
+              subject: {
+                kind: "task",
+                id: "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
+              },
+              details: {
+                runId: "172275388",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                reason:
+                  "Azure DevOps run 172275388 is currently status=inProgress with result=null and artifact list=[], so no terminal same-spec result artifact exists yet.",
+                specResults: [
+                  {
+                    specId: "spec.net-integration.multinic-dualstack",
+                    runId: "172275388",
+                    specStatus: "error",
+                    reason:
+                      "Run 172275388 is still inProgress and artifact list is empty.",
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks[
+        "wait-net-integration-multinic-dualstack-ado-run-172275388-result"
+      ];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Restored exact blocked wait wait-net-integration-multinic-dualstack-ado-run-172275388-result in place",
+    );
+    expect(task.state).toBe("blocked");
+    expect(task.parent_id).toBe("aks-feature-compact-loop");
+    expect(task.blocker?.waiting_for?.runId).toBe("172275388");
+    expect(task.blocker?.condition).toContain(
+      "Preserve this same task id as the live carrier",
+    );
+    expect(task.conflict_scope).toContain("feature-compact:net-integration");
+    expect(task.context.acceptedQueuedPipelineRun.runId).toBe("172275388");
+    expect(task.context.terminalPipelineWaitReview).toBeUndefined();
+    expect(
+      task.trace.previous_blocker_before_terminal_pipeline_wait_review,
+    ).toBeUndefined();
+    expect(task.done_at).toBeUndefined();
+    expect(
+      tree.tasks[
+        "wait-net-integration-multinic-dualstack-ado-run-172275388-result-blocked"
+      ],
+    ).toBeUndefined();
+  });
+
+  test("turns reviewed fix-forward exact waits into one in-place pipeline carrier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "fix-spec-one-domain-followup",
+      context: {
+        workflow: "fix-forward",
+        specId: "spec.one",
+        reviewedTask: {
+          decision: "followup",
+          suggestedFollowups: ["Inspect the queued run when it finishes."],
+          reviewAction: {
+            actionKind: "create-domain-followup",
+            goal: "Inspect the queued run when it finishes.",
+          },
+        },
+        acceptedQueuedPipelineRun: {
+          runId: "171-old",
+          specIds: ["spec.one", "spec.two"],
+        },
+      },
+      conflictScope: [
+        "feature-compact:example",
+        "spec:spec.one",
+        "spec:spec.two",
+        "ado-run:171-old",
+      ],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "fix-spec-one-domain-followup",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary: "Run 172-new is still queued with no artifacts.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "fix-forward",
+              status: "partial",
+              subject: { kind: "task", id: "fix-spec-one-domain-followup" },
+              details: {
+                specId: "spec.one",
+                runId: "172-new",
+                runUrl:
+                  "https://dev.azure.com/example/_build/results?buildId=172-new",
+                reason: "The run is notStarted and artifacts are empty.",
+                fixForward: {
+                  workflow: "fix-forward",
+                  subject: { kind: "spec", id: "spec.one" },
+                  classification: "missing-result-artifact",
+                  diagnosis: "The exact rerun has not started.",
+                  minimumDiagnosisPacket: { runId: "172-new" },
+                  verification: { runId: "172-new", status: "not-run" },
+                  nextAction: "exact-wait",
+                  nextActionReason:
+                    "Wait for the already queued rerun and inspect its exact artifact.",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task = tree.tasks["fix-spec-one-domain-followup"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Restored exact blocked wait fix-spec-one-domain-followup in place for run 172-new",
+    );
+    expect(task.state).toBe("blocked");
+    expect(task.blocker.owner).toBe("ado");
+    expect(task.blocker.waiting_for).toMatchObject({
+      type: "ado.pipeline_run.completed",
+      runId: "172-new",
+      specIds: ["spec.one"],
+    });
+    expect(task.context.acceptedQueuedPipelineRun.runId).toBe("172-new");
+    expect(task.conflict_scope).toContain("ado-run:172-new");
+    expect(task.conflict_scope).not.toContain("ado-run:171-old");
+    expect(task.conflict_scope).not.toContain("spec:spec.two");
+    expect(tree.tasks["fix-spec-one-domain-followup-domain-followup"]).toBeUndefined();
+
+    await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "verify-exact-wait-stability" }),
+      }),
+    );
+    const stableTree = await readTaskTreeJson(appDir);
+    expect(stableTree.tasks["fix-spec-one-domain-followup"].state).toBe(
+      "blocked",
+    );
+    expect(
+      stableTree.tasks["fix-spec-one-domain-followup"].blocker.waiting_for.runId,
+    ).toBe("172-new");
+  });
+
   test("keeps future-window reviewed blocked successors blocked until their resume window", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
-      taskId: "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops--2",
+      taskId:
+        "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops--2",
       status: "blocked",
       owner: "app-ops",
       context: {
         reviewedTask: {
-          taskId: "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops-",
+          taskId:
+            "ops-execute-1230-ccp-underlay-vpa-compact-placement-review-wave-app-ops-",
           attemptId: "attempt-1",
           decision: "blocked",
           summary:
@@ -2017,10 +3310,9 @@ describe("project owner workflow", () => {
           taskId: "review-window-followup",
           attemptId: "attempt-1",
           decision: "blocked",
-          summary: "The fallback review must wait until the named future window opens.",
-          feedback: [
-            "Do not start before the exact fallback window opens.",
-          ],
+          summary:
+            "The fallback review must wait until the named future window opens.",
+          feedback: ["Do not start before the exact fallback window opens."],
           suggestedFollowups: [
             "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
           ],
@@ -2078,7 +3370,8 @@ describe("project owner workflow", () => {
           taskId: "review-window-followup-followup",
           attemptId: "attempt-1",
           decision: "followup",
-          summary: "The reviewed work should continue only when the future fallback window opens.",
+          summary:
+            "The reviewed work should continue only when the future fallback window opens.",
           suggestedFollowups: [
             "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
           ],
@@ -2140,7 +3433,8 @@ describe("project owner workflow", () => {
           taskId: "ops/execute-owner-return-fallback-window",
           attemptId: "attempt-1",
           decision: "blocked",
-          summary: "The fallback review must wait until the named future window opens.",
+          summary:
+            "The fallback review must wait until the named future window opens.",
           suggestedFollowups: [
             "At or after 2026-07-12T16:00:00Z, re-check the exact owner-return lineage and route only the prepared same-lineage fallback packet if still unanswered.",
           ],
@@ -2554,7 +3848,12 @@ describe("project owner workflow", () => {
 
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(2);
-    expect(prompts[1]).toContain("Worker output is progress");
+    expect(prompts[1]).toContain(
+      "mutate a review leaf; wait for its structured",
+    );
+    expect(prompts[1]).toMatch(
+      /do not emit lifecycle events copied from a\s+review leaf/,
+    );
     expect(prompts[1]).toContain('"review"');
     expect(prompts[1]).toContain("review-task");
     expect(
@@ -2745,7 +4044,10 @@ describe("project owner workflow", () => {
       type: "project.task.assigned",
       payload: {
         taskId: "backlog-task",
-        sessionId: "s_task_backlog-task",
+        attemptId: expect.stringMatching(/^a_backlog-task_/),
+        sessionId: expect.stringMatching(
+          /^s_task_backlog-task_a_backlog-task_/,
+        ),
       },
     });
 
@@ -2755,6 +4057,88 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["quick-refill"]');
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("quick refill respects canonical state-only active capacity", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Continue active work.",
+              outputs: ["evidence/archive/active.md"],
+              acceptance: ["done"],
+              conflict_scope: ["active"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Wait for capacity.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{ type: string; payload: unknown }> = [];
+    await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({ status: "success", message: "no-op" }),
+      summarize: () => "",
+    } as any);
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(tree.tasks["active-task"].state).toBe("active");
+    expect(tree.tasks["backlog-task"].state).toBe("backlog");
+    expect(
+      dispatched.filter((event) => event.type === "project.task.assigned"),
+    ).toHaveLength(0);
   });
 
   test("does not quick-refill no-op when overdue blocked owner action needs planning", async () => {
@@ -2835,7 +4219,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -3336,7 +4720,7 @@ describe("project owner workflow", () => {
       expect(dispatched).toHaveLength(1);
       expect(dispatched[0].payload.taskId).toBe("backlog-task");
       expect(String(dispatched[0].payload.sessionId)).toStartWith(
-        "s_task_backlog-task_retry_",
+        "s_task_backlog-task_a_backlog-task_",
       );
       expect(dispatched[0].payload.sessionId).not.toBe("s_task_backlog-task");
 
@@ -3410,7 +4794,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "task-completed",
@@ -3445,7 +4829,10 @@ describe("project owner workflow", () => {
       type: "project.task.assigned",
       payload: {
         taskId: "backlog-task",
-        sessionId: "s_task_backlog-task",
+        attemptId: expect.stringMatching(/^a_backlog-task_/),
+        sessionId: expect.stringMatching(
+          /^s_task_backlog-task_a_backlog-task_/,
+        ),
       },
     });
 
@@ -3515,7 +4902,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-capacity-underfilled",
@@ -3625,7 +5012,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -3747,7 +5134,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-capacity-underfilled",
@@ -3855,7 +5242,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -3996,7 +5383,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -4132,7 +5519,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -4245,7 +5632,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -4341,7 +5728,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-blocked-frontier-review",
@@ -4418,7 +5805,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-open-work-reconcile",
@@ -4512,7 +5899,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-stale-active-review",
@@ -4626,7 +6013,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-stale-active-review",
@@ -4750,7 +6137,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-stale-active-review",
@@ -4802,6 +6189,136 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain(
       "settled/non-active after live-tree revalidation",
     );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for false-positive stale-active watchdog review even when unrelated review work remains", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "review-task", "already-done-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "review-task": {
+              id: "review-task",
+              parent_id: "project",
+              state: "review",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Unrelated review work.",
+              outputs: ["evidence/archive/review-task.md"],
+              acceptance: ["done"],
+            },
+            "already-done-task": {
+              id: "already-done-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              children: [],
+              goal: "Already complete.",
+              outputs: ["evidence/archive/done-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-stale-active-review",
+            staleActiveTasks: [
+              { taskId: "missing-task", reason: "session-not-running" },
+              { taskId: "already-done-task", reason: "session-not-running" },
+            ],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("false positive");
+    expect(result.message).toContain("retired ids");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const updated = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+    expect(updated.tasks["review-task"].state).toBe("review");
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Watchdog stale-active review was a false positive",
+    );
+    expect(plannerRuns).toContain("retired ids");
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
@@ -4908,7 +6425,7 @@ describe("project owner workflow", () => {
           "## Trigger Event",
           "```json",
           JSON.stringify({
-            type: "project.planning.requested",
+            type: "project.owner.requested",
             data: {
               project: "aks-rp-e2e",
               reason: "watchdog-stale-active-review",
@@ -5042,7 +6559,8 @@ describe("project owner workflow", () => {
               owner: "human",
               children: [],
               blocker: {
-                condition: "Do not start before the future review window opens.",
+                condition:
+                  "Do not start before the future review window opens.",
                 category: "external-wait",
                 owner: "human",
                 resume_at: "2099-06-26T12:00:00.000Z",
@@ -5103,7 +6621,9 @@ describe("project owner workflow", () => {
       } as any);
 
       expect(result.status).toBe("done");
-      expect(result.message).toContain("No-work metric wake is already covered by currently running active work");
+      expect(result.message).toContain(
+        "No-work metric wake is already covered by currently running active work",
+      );
       expect(result.message).toContain("active-task");
       expect(prompts).toHaveLength(0);
       expect(dispatched).toHaveLength(0);
@@ -5194,7 +6714,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-runnable-backlog",
@@ -5312,7 +6832,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-review-pending",
@@ -5442,7 +6962,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-review-pending",
@@ -5619,7 +7139,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-runnable-backlog",
@@ -5732,7 +7252,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "task-completed",
@@ -5833,7 +7353,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "regular-learning-tick",
@@ -5934,7 +7454,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "task-completed",
@@ -6063,6 +7583,116 @@ describe("project owner workflow", () => {
       "Blocked-overdue metric wake is already under active app-ops repair",
     );
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips blocked-overdue metric wake when active ops repair shares offender wait lineage pathId", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-shared-auth-family",
+          active_task_ids: ["ops/repair-shared-auth-family"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "ops/repair-shared-auth-family",
+                "shared-auth-wait",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-shared-auth-family": {
+              id: "ops/repair-shared-auth-family",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              session_id: "s_task_ops_repair_shared_auth_family",
+              children: [],
+              goal: "Repair the shared auth family.",
+              outputs: ["evidence/archive/ops-repair-shared-auth-family.md"],
+              acceptance: ["done"],
+              conflict_scope: [
+                "shared-authenticated-artifact-result-recovery-family-20260712",
+              ],
+            },
+            "shared-auth-wait": {
+              id: "shared-auth-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Shared auth wait.",
+              outputs: ["evidence/archive/shared-auth-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Waiting for shared auth recovery.",
+                waiting_for: {
+                  type: "project.approval.submitted",
+                  pathId: "shared-authenticated-artifact-result-recovery-family-20260712",
+                },
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "metric.breach",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "open-alert-updated",
+            metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+            offenderTaskIds: ["shared-auth-wait"],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(result.message).toContain("ops/repair-shared-auth-family");
+    expect(prompts).toHaveLength(0);
   });
 
   test("does not skip blocked-overdue metric wake when active ops repair covers different offenders", async () => {
@@ -6206,7 +7836,8 @@ describe("project owner workflow", () => {
           project_lifecycle: "active",
           root_task_id: "project",
           updated_at: new Date().toISOString(),
-          active_task_id: "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
+          active_task_id:
+            "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
           active_task_ids: [
             "ops/repair-all-blocked-frontier-planner-slow-wakes-20260711",
           ],
@@ -6238,7 +7869,9 @@ describe("project owner workflow", () => {
                 "evidence/archive/ops-repair-all-blocked-frontier-planner-slow-wakes-20260711.md",
               ],
               acceptance: ["done"],
-              conflict_scope: ["ops:planner-slow-all-blocked-frontier-20260711"],
+              conflict_scope: [
+                "ops:planner-slow-all-blocked-frontier-20260711",
+              ],
             },
             "blocked-a": {
               id: "blocked-a",
@@ -6292,7 +7925,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "scheduled-blocked-frontier-review",
@@ -6406,7 +8039,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "task-completed",
@@ -6568,7 +8201,10 @@ describe("project owner workflow", () => {
         type: "project.task.assigned",
         payload: {
           taskId: "backlog-task",
-          sessionId: "s_task_backlog-task",
+          attemptId: expect.stringMatching(/^a_backlog-task_/),
+          sessionId: expect.stringMatching(
+            /^s_task_backlog-task_a_backlog-task_/,
+          ),
         },
       });
 
@@ -6641,7 +8277,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "planner-timeout-underfilled-frontier",
@@ -6921,7 +8557,7 @@ describe("project owner workflow", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           source: "agent:aks-explorer",
           owner: "agent:aks-explorer",
           data: {
@@ -6941,7 +8577,7 @@ describe("project owner workflow", () => {
           rows: [
             {
               id: 42,
-              event_type: "project.planning.requested",
+              event_type: "project.owner.requested",
               source: "codex",
               owner: "agent:aks-explorer",
               urgency: "high",

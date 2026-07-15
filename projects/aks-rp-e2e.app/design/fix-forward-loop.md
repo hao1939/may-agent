@@ -29,6 +29,12 @@ target, assertions, and cleanup pattern worked. A failure teaches what not to
 repeat. Both should update the project knowledge used by future spec generation,
 compact planning, and repair decisions.
 
+The correction must land in the artifact that controls the failed outcome.
+Diagnosis-only evidence is useful input, but it does not close fix-forward.
+When several failures share a cause, fix the shared generator, fixture,
+workflow, prompt, or model and verify both the original case and at least one
+representative sibling. That is how one repair improves later outputs.
+
 ## Scope
 
 Fix-forward is a reusable domain workflow pattern, not a fourth durable loop and
@@ -480,7 +486,7 @@ The watchdog does not fix. It observes and escalates.
 The watchdog should scan blocked tasks for:
 
 1. **Expired fallback**: `fallbackAt` is in the past, no active repair work
-   exists. Action: create a review task or emit `project.planning.requested`
+   exists. Action: create a review task or emit `project.owner.requested`
    with the expired blocker as context.
 
 2. **Stale owner-human wait**: blocked with `owner: human` for >48h and the

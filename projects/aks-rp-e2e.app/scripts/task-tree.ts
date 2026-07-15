@@ -239,6 +239,19 @@ function objectField(
   return null;
 }
 
+function surfacedTask(task: TaskNode): TaskNode {
+  const context = recordValue(task.context);
+  const rollupSummary =
+    typeof context?.rollup_summary === "string" && context.rollup_summary.trim()
+      ? context.rollup_summary.trim()
+      : "";
+  if (!rollupSummary || task.rollup_summary === rollupSummary) return task;
+  return {
+    ...task,
+    rollup_summary: rollupSummary,
+  };
+}
+
 function taskTrace(task: TaskNode): Record<string, unknown> | null {
   return recordValue((task as { trace?: unknown }).trace);
 }
@@ -368,7 +381,7 @@ function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
     ]) ?? {
       workflow: "project-planner",
       schedule: "blocked-frontier-app-ops-review",
-      trigger: "project.planning.requested",
+      trigger: "project.owner.requested",
     },
     observation_method:
       stringField(blockerForContract, [
@@ -529,7 +542,7 @@ if (command === "summary") {
     console.error(`Task not found: ${taskId}`);
     process.exit(1);
   }
-  console.log(JSON.stringify(task, null, 2));
+  console.log(JSON.stringify(surfacedTask(task), null, 2));
 } else if (command === "assign") {
   const taskId = process.argv[3];
   if (!taskId) usage();

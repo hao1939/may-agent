@@ -218,6 +218,44 @@ function compactHolderProjectedWatchFields(
   return { nextCheckAt, fallbackAt };
 }
 
+function normalizedCompactHolderWatchFields(input: {
+  feature: FeatureCompactLoopState["features"][string];
+  liveTask: TaskNode;
+}): {
+  nextCheckAt: string;
+  fallbackAt: string;
+} {
+  const nowMs = Date.now();
+  const holderWatch = compactHolderWatchFields(input.liveTask);
+  const futureCandidate = (
+    candidates: Array<string | null | undefined>,
+    minimumMs: number,
+  ): string | null => {
+    const parsed = candidates
+      .map((value) => stringValue(value))
+      .map((value) => ({ value, ms: Date.parse(value) }))
+      .filter(
+        (candidate): candidate is { value: string; ms: number } =>
+          Number.isFinite(candidate.ms) && candidate.ms > minimumMs,
+      )
+      .sort((left, right) => left.ms - right.ms);
+    return parsed[0]?.value ?? null;
+  };
+
+  const nextCheckAt =
+    futureCandidate(
+      [holderWatch.nextCheckAt, input.feature.nextCheckAt],
+      nowMs,
+    ) ?? new Date(nowMs + 10 * 60_000).toISOString();
+  const nextCheckMs = Date.parse(nextCheckAt);
+  const fallbackAt =
+    futureCandidate(
+      [holderWatch.fallbackAt, input.feature.fallbackAt],
+      nextCheckMs,
+    ) ?? new Date(Math.max(nowMs + 24 * 60 * 60_000, nextCheckMs + 60_000)).toISOString();
+  return { nextCheckAt, fallbackAt };
+}
+
 function taskIdSet(values: unknown): Set<string> {
   const ids = new Set<string>();
   if (!Array.isArray(values)) return ids;
@@ -257,6 +295,7 @@ function isFeatureCompactExactWaitHolder(
 ): task is TaskNode {
   if (!task) return false;
   if (taskContext(task).featureCompactExactWait === true) return true;
+  if (familyFeatureKeys(task).length > 0) return true;
   const scopes = taskConflictScopes(task);
   const waitingForType = stringValue(blockerWaitingFor(task)?.type);
   if (
@@ -279,6 +318,20 @@ function isPipelineRunCompactWait(task: TaskNode | undefined): boolean {
   return (
     waitingForType === "ado.pipeline_run.completed" ||
     waitingForType === "pipeline.result.or.artifact.available"
+  );
+}
+
+function isConcretePipelineRunCompactWait(
+  task: TaskNode | undefined,
+): boolean {
+  if (!task) return false;
+  const waitingFor = blockerWaitingFor(task);
+  const type = stringValue(waitingFor?.type);
+  const runId = stringValue(waitingFor?.runId ?? waitingFor?.run_id);
+  return (
+    (type === "ado.pipeline_run.completed" ||
+      type === "github.workflow_run.completed") &&
+    Boolean(runId)
   );
 }
 
@@ -584,6 +637,77 @@ function staleMissingCompactHolderText(text: string): boolean {
   return /restore the missing compact blocked holder/i.test(text);
 }
 
+function familyFeatureKeys(task: TaskNode | undefined): string[] {
+  return uniqueSorted(stringArrayValue(taskContext(task).familyFeatureKeys));
+}
+
+function sharedWaitDisplayText(featureKeys: string[]): string {
+  if (featureKeys.length === 0) return "the represented compact family";
+  if (featureKeys.length === 1) return featureKeys[0];
+  if (featureKeys.length === 2) return `${featureKeys[0]} and ${featureKeys[1]}`;
+  return `${featureKeys.slice(0, -1).join(", ")}, and ${featureKeys.at(-1)}`;
+}
+
+function sharedWaitGoalText(taskId: string, featureKeys: string[]): string {
+  const familyText = sharedWaitDisplayText(featureKeys);
+  if (/reviewed-exception-live-ready-policy-family/i.test(taskId)) {
+    return `Represent the shared residual reviewed-exception/live-ready policy wait for ${familyText} until accepted member reclassification or an intentional compact live-ready policy change occurs.`;
+  }
+  return `Represent the shared compact blocked wait for ${familyText} until the named family frontier materially changes.`;
+}
+
+function sharedWaitConditionText(taskId: string, featureKeys: string[]): string {
+  const familyText = sharedWaitDisplayText(featureKeys);
+  if (/reviewed-exception-live-ready-policy-family/i.test(taskId)) {
+    return `Blocked only while the residual reviewed-exception members across ${familyText} remain intentionally excluded from the compact live-ready subset.`;
+  }
+  return `Blocked only while the represented compact family frontier remains unchanged for ${familyText}.`;
+}
+
+function sharedWaitResumeConditionText(input: {
+  taskId: string;
+  featureKeys: string[];
+  features: FeatureCompactLoopState["features"];
+}): string {
+  const reasons = uniqueSorted(
+    input.featureKeys
+      .map((featureKey) => preciseFeatureResumeCondition(input.features[featureKey]))
+      .filter(Boolean),
+  );
+  if (reasons.length > 0) return reasons[0];
+  if (/reviewed-exception-live-ready-policy-family/i.test(input.taskId)) {
+    return "Resume only on accepted reviewed-exception member reclassification or an intentional compact live-ready policy change; do not blind-rerun this family.";
+  }
+  return "Resume only when accepted evidence materially changes the represented compact family frontier.";
+}
+
+function sharedWaitWatchFields(input: {
+  featureKeys: string[];
+  features: FeatureCompactLoopState["features"];
+}): {
+  nextCheckAt: string;
+  fallbackAt: string;
+} {
+  const nowMs = Date.now();
+  const nextCandidates = input.featureKeys
+    .map((featureKey) => stringValue(input.features[featureKey]?.nextCheckAt))
+    .map((value) => ({ value, ms: Date.parse(value) }))
+    .filter((candidate) => Number.isFinite(candidate.ms) && candidate.ms > nowMs)
+    .sort((left, right) => left.ms - right.ms);
+  const nextCheckAt =
+    nextCandidates[0]?.value ?? new Date(nowMs + 10 * 60_000).toISOString();
+  const nextMs = Date.parse(nextCheckAt);
+  const fallbackCandidates = input.featureKeys
+    .map((featureKey) => stringValue(input.features[featureKey]?.fallbackAt))
+    .map((value) => ({ value, ms: Date.parse(value) }))
+    .filter((candidate) => Number.isFinite(candidate.ms) && candidate.ms > nextMs)
+    .sort((left, right) => left.ms - right.ms);
+  const fallbackAt =
+    fallbackCandidates[0]?.value ??
+    new Date(Math.max(nowMs + 24 * 60 * 60_000, nextMs + 60_000)).toISOString();
+  return { nextCheckAt, fallbackAt };
+}
+
 function shouldRefreshExistingExactProjection(input: {
   feature: FeatureCompactLoopState["features"][string];
   exactTask: TaskNode;
@@ -687,6 +811,120 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
   if (!input.loopTask) return { taskRepairs, stateRepairs };
 
   const replacedOrphanHolderIds = new Set<string>();
+
+  const missingSharedWaitFeatureKeys = new Map<string, string[]>();
+  for (const [featureKey, feature] of Object.entries(input.state.features)) {
+    if (feature.status !== "blocked" && feature.status !== "error") continue;
+    const taskId = stringValue(feature.taskId);
+    if (!taskId || input.tasks[taskId]) continue;
+    if (!taskId.startsWith("wait-compact-")) continue;
+    const current = missingSharedWaitFeatureKeys.get(taskId) ?? [];
+    current.push(featureKey);
+    missingSharedWaitFeatureKeys.set(taskId, current);
+  }
+
+  for (const [taskId, rawFeatureKeys] of missingSharedWaitFeatureKeys) {
+    const featureKeys = uniqueSorted(rawFeatureKeys);
+    if (
+      featureKeys.length === 0 ||
+      (featureKeys.length === 1 && !taskId.includes("-family-"))
+    ) {
+      continue;
+    }
+    const liveReplacementExists = featureKeys.every((featureKey) => {
+      const feature = input.state.features[featureKey];
+      return Boolean(
+        feature &&
+          compatibleSharedReplacementTaskId({
+            featureKey,
+            feature,
+            tasks: input.tasks,
+            excludeTaskId: taskId,
+          }),
+      );
+    });
+    if (liveReplacementExists) continue;
+
+    const waitingFor = {
+      type: "compact.frontier.changed",
+      scope: "feature-compact",
+      featureKeys,
+    };
+    const owner = compactWaitOwner({ waitingFor });
+    const watch = sharedWaitWatchFields({
+      featureKeys,
+      features: input.state.features,
+    });
+    const blockedAt =
+      featureKeys
+        .map((featureKey) => stringValue(input.state.features[featureKey]?.blockedAt))
+        .find(Boolean) ?? new Date().toISOString();
+    input.tasks[taskId] = {
+      id: taskId,
+      parent_id: input.loopTask.id,
+      state: "blocked",
+      status: "blocked",
+      kind: "domain_leaf",
+      priority: "P2",
+      owner,
+      children: [],
+      goal: sharedWaitGoalText(taskId, featureKeys),
+      inputs: [],
+      outputs: [".state/feature-compact-loop/state.json"],
+      acceptance: [
+        `The shared compact family wait remains visible while ${sharedWaitDisplayText(featureKeys)} still share the same blocked frontier.`,
+        sharedWaitResumeConditionText({
+          taskId,
+          featureKeys,
+          features: input.state.features,
+        }),
+      ],
+      conflict_scope: uniqueSorted(featureKeys.map((featureKey) => `feature:${featureKey}`)),
+      context: {
+        featureCompactExactWait: true,
+        familyFeatureKeys: featureKeys,
+        target: "staging",
+      },
+      blocker: {
+        condition: sharedWaitConditionText(taskId, featureKeys),
+        category: "external-wait",
+        owner,
+        blocked_at: blockedAt,
+        waiting_for: waitingFor,
+        observed_by: {
+          workflow: "feature-compact-loop-controller",
+          trigger: "project.task.tick",
+        },
+        observation_method:
+          "On each compact-loop tick, verify the shared blocked holder still represents the same compact family frontier.",
+        next_check_at: watch.nextCheckAt,
+        resume_condition: sharedWaitResumeConditionText({
+          taskId,
+          featureKeys,
+          features: input.state.features,
+        }),
+        fallback_at: watch.fallbackAt,
+        fallback_action:
+          "If the same family wait remains true, refresh evidence or replace it with a narrower exact compact wait.",
+      },
+      trace: {
+        created_at: new Date().toISOString(),
+        created_by: "feature-compact-loop-controller",
+        missing_shared_compact_holder_recreated_at: new Date().toISOString(),
+      },
+    } as TaskNode;
+    if (!input.loopTask.children?.includes(taskId)) {
+      input.loopTask.children = [...(input.loopTask.children ?? []), taskId];
+    }
+    taskRepairs.push({
+      taskId,
+      featureKey: featureKeys[0],
+      field: "task.reopen",
+      before: null,
+      after: { state: "blocked", status: "blocked" },
+      reason: `Recreated missing shared compact holder ${taskId} for ${featureKeys.join(", ")}.`,
+    });
+  }
 
   for (const [featureKey, feature] of Object.entries(input.state.features)) {
     if (feature.status !== "blocked") continue;
@@ -874,6 +1112,7 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
     const child = input.tasks[childId];
     if (!isFeatureCompactExactWaitHolder(child)) continue;
     if (taskStatus(child) !== "blocked") continue;
+    if (isConcretePipelineRunCompactWait(child)) continue;
     const featureKey = exactWaitFeatureKey(child);
     const feature = input.state.features[featureKey];
     if (!feature) continue;
@@ -949,6 +1188,7 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
     const child = input.tasks[childId];
     if (!isCompactHolderProjectionTask(child)) continue;
     if (taskStatus(child) !== "blocked") continue;
+    if (isConcretePipelineRunCompactWait(child)) continue;
     const featureKey = exactWaitFeatureKey(child);
     const feature = input.state.features[featureKey];
     if (
@@ -1065,18 +1305,20 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
         featureKey && input.state.features[featureKey]
           ? input.state.features[featureKey]
           : null;
-      const desiredWaitingFor =
-        (featureForChild
-          ? structuredFeatureWaitingFor(featureForChild)
-          : null) ??
-        blockerWaitingFor(child) ??
-        compactWaitingForProjection({
-          featureKey,
-          target: exactWaitTarget(child),
-          errorClass: exactWaitErrorClass(child),
-          reason: blockerCondition(child),
-        });
       const existingWaitingFor = blockerWaitingFor(child);
+      const desiredWaitingFor =
+        isConcretePipelineRunCompactWait(child) && existingWaitingFor
+          ? existingWaitingFor
+          : ((featureForChild
+                ? structuredFeatureWaitingFor(featureForChild)
+                : null) ??
+              existingWaitingFor ??
+              compactWaitingForProjection({
+                featureKey,
+                target: exactWaitTarget(child),
+                errorClass: exactWaitErrorClass(child),
+                reason: blockerCondition(child),
+              }));
       if (!jsonEqual(existingWaitingFor, desiredWaitingFor)) {
         blocker.waiting_for = desiredWaitingFor;
         taskRepairs.push({
@@ -1187,6 +1429,7 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
       } else if (
         liveTask &&
         isExactBlockedWaitTask(liveTask) &&
+        !isConcretePipelineRunCompactWait(liveTask) &&
         shouldRefreshExistingExactProjection({ feature, exactTask: liveTask })
       ) {
         const blocker = taskBlocker(liveTask);
@@ -1250,7 +1493,45 @@ export function reconcileFeatureCompactRuntimeProjection(input: {
       }
 
       if (liveTask && isExactBlockedWaitTask(liveTask)) {
-        const holderWatch = compactHolderWatchFields(liveTask);
+        const blocker = taskBlocker(liveTask);
+        const holderWatch =
+          blocker && !isConcretePipelineRunCompactWait(liveTask)
+            ? normalizedCompactHolderWatchFields({ feature, liveTask })
+            : compactHolderWatchFields(liveTask);
+        if (blocker) {
+          const existingNextCheckAt = stringValue(blocker.next_check_at);
+          if (
+            !isConcretePipelineRunCompactWait(liveTask) &&
+            holderWatch.nextCheckAt &&
+            existingNextCheckAt !== holderWatch.nextCheckAt
+          ) {
+            blocker.next_check_at = holderWatch.nextCheckAt;
+            taskRepairs.push({
+              taskId: liveTask.id,
+              featureKey,
+              field: "blocker.next_check_at",
+              before: existingNextCheckAt || null,
+              after: holderWatch.nextCheckAt,
+              reason: `Refreshed stale exact compact holder next_check_at on ${liveTask.id} to a future review window.`,
+            });
+          }
+          const existingFallbackAt = stringValue(blocker.fallback_at);
+          if (
+            !isConcretePipelineRunCompactWait(liveTask) &&
+            holderWatch.fallbackAt &&
+            existingFallbackAt !== holderWatch.fallbackAt
+          ) {
+            blocker.fallback_at = holderWatch.fallbackAt;
+            taskRepairs.push({
+              taskId: liveTask.id,
+              featureKey,
+              field: "blocker.fallback_at",
+              before: existingFallbackAt || null,
+              after: holderWatch.fallbackAt,
+              reason: `Refreshed stale exact compact holder fallback_at on ${liveTask.id} to preserve a bounded review window.`,
+            });
+          }
+        }
         if (
           holderWatch.nextCheckAt &&
           feature.nextCheckAt !== holderWatch.nextCheckAt

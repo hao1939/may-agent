@@ -6,14 +6,13 @@ Status: current operating model
 
 `aks-rp-e2e.app` is an event-driven project organizer.
 
+It operates two nested loops. The work loop advances AKS outcomes; the feedback
+loop restores abnormal work to the work loop or turns exhausted gaps into
+evidence-backed terminal dispositions. See `two-loop-operating-model.md`.
+
 ```text
-events wake workflows
-workflows collect facts or run one bounded job
-the task tree records durable work state
-project.task.assigned dispatches runnable work
-task-worker runs the scoped agent/workflow
-task-reviewer judges completed output
-project-planner/app-ops applies the next task-tree decision
+work:     goal gap -> plan -> execute -> review -> evidence/model -> next gap
+feedback: abnormal -> diagnose -> repair -> verify -> restored work
 ```
 
 The critical parties are deliberately few:
@@ -89,6 +88,10 @@ logs, source links, review notes, or test results.
   workflow and task context convention.
 - Existing workflows should learn from real good and bad runs. Repeated lessons
   become workflow, test, prompt, doc, metric, or domain-artifact changes.
+- Feedback returns to the artifact that controls the outcome. A review or
+  evaluation is not closed merely because its report was delivered; the owner
+  must apply or evidence-backed reject the correction, and verification must
+  judge the resulting output.
 - Add workflow before adding event. Add event only when a new durable command
   or fact cannot be expressed by the existing vocabulary.
 - App-ops may route domain work but must not decide AKS correctness.
@@ -96,27 +99,34 @@ logs, source links, review notes, or test results.
 - Aks-reviewer stays read-only; the planner mutates the task tree.
 - Blocked is not done. It must name what we wait for, who checks it, how it is
   checked, and what happens when waiting expires.
+- A valid blocked record is truthful representation, not successful recovery.
+  Feedback succeeds only by restoring work or explicitly pausing the project
+  after all remaining external handoffs were sent and tracked.
+- The root project goal comes from `project.json`; temporary focus and ops work
+  must not replace it.
 - Metrics and watchdog are fallback. Repeated fallback becomes ops repair work.
 - Git tracks source and design. `.state/` tracks runtime.
 
 ## Reading Order
 
-1. `project-knowledge-layers.md` - domain versus ops and one-tree/two-root
+1. `two-loop-operating-model.md` - work-loop progress and feedback-loop
+   restoration invariants.
+2. `project-knowledge-layers.md` - domain versus ops and one-tree/two-root
    model.
-2. `project-app-event-contract.md` - event vocabulary and dispatch semantics.
-3. `project-planner-contract.md` - how app-ops/planner keeps the task tree
+3. `project-app-event-contract.md` - event vocabulary and dispatch semantics.
+4. `project-planner-contract.md` - how app-ops/planner keeps the task tree
    closed and moving.
-4. `reusable-task-workflows.md` - how the same workflows are used by direct
+5. `reusable-task-workflows.md` - how the same workflows are used by direct
    agent requests and app-tracked tasks, and how one-off work graduates into
    reusable workflows/routes.
-5. `fix-forward-loop.md` - how failed specs and compact plans become fixes
+6. `fix-forward-loop.md` - how failed specs and compact plans become fixes
    instead of blind reruns.
-6. `project-observability.md` - how to see whether the process is working.
-7. Loop-specific docs:
+7. `project-observability.md` - how to see whether the process is working.
+8. Loop-specific docs:
    - `spec-verification-loop.md`
    - `feature-reference-loop.md`
    - `feature-compact-loop.md`
-8. `runtime-state-separation.md` - source files versus `.state/` runtime data.
+9. `runtime-state-separation.md` - source files versus `.state/` runtime data.
 
 ## Source Of Truth
 

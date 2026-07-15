@@ -414,16 +414,22 @@ describe("project stall review", () => {
       "project.stall.reviewed (exact-external-wait, fallback)",
     );
     expect(dispatched.map((event) => event.type)).toEqual([
+      "project.task.tick",
       "project.stall.reviewed",
     ]);
-    const reviewed = dispatched[0];
+    const reviewed = dispatched[1];
     expect(reviewed).toMatchObject({
       type: "project.stall.reviewed",
       payload: {
         reason: "watchdog-durable-loop-stall",
         mode: "fallback",
         judgment: "exact-external-wait",
-        dispatchedTicks: [],
+        dispatchedTicks: [
+          {
+            action: "spec-loop",
+            taskId: "aks-spec-verification-loop",
+          },
+        ],
       },
     });
     const specLoopSummary = (
@@ -433,8 +439,8 @@ describe("project stall review", () => {
       taskId: "aks-spec-verification-loop",
       nonTerminalCount: 1,
       unrepresentedNonTerminalCount: 0,
-      exactBlockedWaitStewardship: true,
-      needsAttention: false,
+      exactBlockedWaitStewardship: false,
+      needsAttention: true,
     });
   });
 

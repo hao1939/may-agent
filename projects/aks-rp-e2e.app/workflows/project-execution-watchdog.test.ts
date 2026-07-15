@@ -407,11 +407,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-runnable-backlog.",
+      "Watchdog emitted project.owner.requested: watchdog-runnable-backlog.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -450,11 +450,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+      "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
     );
     expect(dispatched).toMatchObject([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -717,7 +717,7 @@ describe("project execution watchdog", () => {
       }),
     });
     expect(dispatched[1]).toEqual({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: expect.objectContaining({
         reason: "watchdog-runnable-backlog",
         runnableBacklogTaskIds: ["aks-feature-compact-loop"],
@@ -743,11 +743,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+        "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
     });
     expect(dispatched).toMatchObject([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -798,11 +798,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -994,11 +994,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -1054,7 +1054,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [{ taskId: "active-task", reason: "session-error" }],
@@ -1103,7 +1103,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -1154,7 +1154,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -1194,11 +1194,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -1255,11 +1255,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -1307,10 +1307,10 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
     );
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: { reason: "watchdog-capacity-underfilled" },
     });
   });
@@ -1361,7 +1361,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -1417,7 +1417,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -1473,7 +1473,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: { reason: "watchdog-capacity-underfilled" },
     });
   });
@@ -1514,10 +1514,10 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
     );
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: { reason: "watchdog-capacity-underfilled" },
     });
   });
@@ -1568,7 +1568,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-stale-active-review",
         staleActiveTasks: [
@@ -1601,7 +1601,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: { reason: "watchdog-open-work-reconcile" },
     });
   });
@@ -1622,11 +1622,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+      "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
     );
     expect(dispatched).toMatchObject([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },
@@ -1707,7 +1707,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         waitingBacklogCount: 1,
@@ -1757,7 +1757,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         blockedCount: 2,
@@ -1813,7 +1813,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 1,
@@ -1862,7 +1862,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         blockedOverdueCount: 1,
@@ -1912,7 +1912,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 1,
@@ -1973,7 +1973,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 0,
@@ -2027,7 +2027,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 0,
@@ -2077,7 +2077,54 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 0,
+        overdueOwnerActions: [],
+      },
+    });
+  });
+
+  test("treats matching wait lineage pathId conflict scope as active recovery work", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_shared_auth_repair", "running");
+    await writeTree(projectDir, {
+      "shared-auth-repair": task("shared-auth-repair", "active", {
+        goal: "Repair the shared auth family.",
+        session_id: "s_shared_auth_repair",
+        conflict_scope: [
+          "shared-authenticated-artifact-result-recovery-family-20260712",
+        ],
+      }),
+      "shared-auth-wait": task("shared-auth-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for shared auth recovery.",
+          waiting_for: {
+            type: "project.approval.submitted",
+            pathId: "shared-authenticated-artifact-result-recovery-family-20260712",
+          },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the shared auth owner return arrives.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Refresh the shared auth family.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 0,
@@ -2126,7 +2173,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 1,
@@ -2173,7 +2220,7 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 1,
@@ -2236,6 +2283,50 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("does not duplicate a fresh completion while its reviewer can still be running", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_running", "running");
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_running",
+        }),
+        "review-task": task("review-task", "review", {
+          trace: {
+            current_attempt_id: "a_review-task_1",
+            last_worker_result: "done",
+            last_worker_summary: "Worker completed useful review output.",
+            last_worker_completed_at: new Date().toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, maxConcurrent: 1, dispatched }),
+    );
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog skipped: 1 active task(s) still have running attempts.",
+    });
+    expect(
+      dispatched.some((event) => event.type === "project.task.completed"),
+    ).toBe(false);
+    expect(dispatched).toHaveLength(0);
+  });
+
   test("wakes overdue blocked recovery before ordinary review work", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
@@ -2267,10 +2358,10 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+        "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
     });
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         reviewCount: 1,
@@ -2366,11 +2457,29 @@ describe("project execution watchdog", () => {
       }),
     });
     try {
-      const result = await execute(context({ projectDir }));
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(context({ projectDir, dispatched }));
       expect(result).toEqual({
         status: "done",
         message:
-          "Watchdog moved terminal Azure DevOps wait(s) to review: wait-dev-infra-core-ado-run-123456789-result.",
+          "Watchdog moved terminal Azure DevOps wait(s) to review: wait-dev-infra-core-ado-run-123456789-result. Re-emitted completion for reviewer handoff: wait-dev-infra-core-ado-run-123456789-result.",
+      });
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0]).toMatchObject({
+        type: "project.task.completed",
+        payload: {
+          taskId: "wait-dev-infra-core-ado-run-123456789-result",
+          attemptId:
+            "a_wait-dev-infra-core-ado-run-123456789-result_123456789_terminal_wait_review",
+          result: "blocked",
+          review: {
+            required: true,
+            reason: "watchdog-recovered-review-completion-trigger",
+          },
+        },
       });
       const tree = JSON.parse(
         await readFile(
@@ -2385,9 +2494,194 @@ describe("project execution watchdog", () => {
         runStatus: "completed",
         runConclusion: "failure",
       });
+      expect(task.trace.current_attempt_id).toBe(
+        "a_wait-dev-infra-core-ado-run-123456789-result_123456789_terminal_wait_review",
+      );
+      expect(task.trace.terminal_wait_review_attempt_created_by).toBe(
+        "project-execution-watchdog",
+      );
       expect(task.result).toContain(
         "Azure DevOps pipeline run 123456789 is terminal",
       );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("refreshes an overdue exact pipeline check in code while the run is nonterminal", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "wait-running-ado-run-123456789-result": task(
+        "wait-running-ado-run-123456789-result",
+        "blocked",
+        {
+          parent_id: "aks-feature-compact-loop",
+          blocker: {
+            condition: "Waiting for Azure DevOps run 123456789.",
+            category: "external-wait",
+            owner: "ado",
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId: "123456789",
+            },
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2099-01-01T00:00:00.000Z",
+            fallback_action:
+              "Inspect the queue if the run is still nonterminal at fallback.",
+          },
+        },
+      ),
+    });
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "notStarted",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+      }),
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const before = Date.now();
+      const result = await execute(context({ projectDir, dispatched }));
+      expect(result).toEqual({
+        status: "done",
+        message:
+          "Watchdog refreshed nonterminal Azure DevOps wait check(s): wait-running-ado-run-123456789-result.",
+      });
+      expect(dispatched).toHaveLength(0);
+
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      const task = tree.tasks["wait-running-ado-run-123456789-result"];
+      expect(task.state).toBe("blocked");
+      expect(Date.parse(task.blocker.next_check_at)).toBeGreaterThan(before);
+      expect(task.blocker.last_observed_status).toBe("notStarted");
+      expect(task.trace.pipeline_wait_last_run_id).toBe("123456789");
+      expect(task.context?.terminalPipelineWaitReview).toBeUndefined();
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("watchdog refresh advances fallback when the preserved wait would otherwise end before the next check", async () => {
+    const projectDir = await makeProject();
+    const initialFallbackAt = new Date(Date.now() + 2 * 60_000).toISOString();
+    await writeTree(projectDir, {
+      "wait-running-ado-run-123456789-result": task(
+        "wait-running-ado-run-123456789-result",
+        "blocked",
+        {
+          parent_id: "aks-feature-compact-loop",
+          blocker: {
+            condition: "Waiting for Azure DevOps run 123456789.",
+            category: "external-wait",
+            owner: "ado",
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId: "123456789",
+            },
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: initialFallbackAt,
+            resume_at: "2001-01-01T00:00:00.000Z",
+            fallback_action:
+              "Inspect the queue if the run is still nonterminal at fallback.",
+          },
+        },
+      ),
+    });
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "notStarted",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+      }),
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(context({ projectDir, dispatched }));
+      expect(result).toEqual({
+        status: "done",
+        message:
+          "Watchdog refreshed nonterminal Azure DevOps wait check(s): wait-running-ado-run-123456789-result.",
+      });
+
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      const task = tree.tasks["wait-running-ado-run-123456789-result"];
+      expect(Date.parse(task.blocker.next_check_at)).toBeLessThan(
+        Date.parse(task.blocker.fallback_at),
+      );
+      expect(task.blocker.resume_at).toBe(task.blocker.next_check_at);
+      expect(Date.parse(task.blocker.fallback_at)).toBeGreaterThan(
+        Date.parse(initialFallbackAt),
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("escalates a nonterminal exact pipeline wait after its fallback expires", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "wait-stalled-ado-run-123456789-result": task(
+        "wait-stalled-ado-run-123456789-result",
+        "blocked",
+        {
+          parent_id: "aks-feature-compact-loop",
+          blocker: {
+            condition: "Waiting for Azure DevOps run 123456789.",
+            category: "external-wait",
+            owner: "ado",
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId: "123456789",
+            },
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2001-01-02T00:00:00.000Z",
+            fallback_action:
+              "Inspect the queue because the run exceeded its fallback.",
+          },
+        },
+      ),
+    });
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({ status: "notStarted" }),
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(context({ projectDir, dispatched }));
+      expect(result).toEqual({
+        status: "done",
+        message:
+          "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
+      });
+      expect(dispatched[0]).toMatchObject({
+        type: "project.owner.requested",
+        payload: {
+          reason: "watchdog-blocked-frontier-review",
+          overdueOwnerActions: [
+            { taskId: "wait-stalled-ado-run-123456789-result" },
+          ],
+        },
+      });
     } finally {
       setPipelineBackendForTests(null);
     }
@@ -2426,7 +2720,7 @@ describe("project execution watchdog", () => {
       expect(result).toEqual({
         status: "done",
         message:
-          "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+          "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
       });
       expect(pipelineReadCount).toBe(0);
       const tree = JSON.parse(
@@ -2437,7 +2731,7 @@ describe("project execution watchdog", () => {
       );
       expect(tree.tasks["wait-prose-only-run"].state).toBe("blocked");
       expect(dispatched[0]).toMatchObject({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           reason: "watchdog-blocked-frontier-review",
         },
@@ -2563,10 +2857,10 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-blocked-frontier-review.",
+        "Watchdog emitted project.owner.requested: watchdog-blocked-frontier-review.",
     });
     expect(dispatched[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       payload: {
         reason: "watchdog-blocked-frontier-review",
         blockedCount: 1,
@@ -2654,11 +2948,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+        "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
     });
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           target: { project: "aks-rp-e2e" },

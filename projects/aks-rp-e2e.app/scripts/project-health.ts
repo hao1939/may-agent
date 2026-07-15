@@ -24,7 +24,12 @@ type JsonLine = JsonObject & {
 };
 
 type SignalSeverity = "info" | "warn" | "critical";
-type HealthStatus = "complete" | "moving" | "attention" | "stalled";
+type HealthStatus =
+  | "complete"
+  | "moving"
+  | "recovering"
+  | "attention"
+  | "stalled";
 
 type EventSelector =
   | string
@@ -42,14 +47,12 @@ type WorkflowRoute = {
   name?: string;
   enabled?: boolean;
   accepts?: unknown;
-  on?: unknown;
   emits?: unknown;
 };
 
 type Schedule = {
   id?: string;
   emits?: Array<Record<string, unknown>>;
-  event?: Record<string, unknown>;
 };
 
 type ProjectAction = {
@@ -137,6 +140,8 @@ export type ProjectHealthReport = {
     journal: Record<string, number>;
     plannerRuns: number;
     reviewerRuns: number;
+    domainOutcomesAccepted: number;
+    opsOutcomesAccepted: number;
     tasksMarkedDone24h: number;
     workerCompleted24h: number;
     reviewDecisions24h: Record<string, number>;
@@ -264,6 +269,28 @@ function isLeafTask(task: TaskNode): boolean {
   return Array.isArray(task.children) ? task.children.length === 0 : true;
 }
 
+function isOpsTaskId(taskId: string): boolean {
+  return (
+    taskId === "ops" || taskId.startsWith("ops/") || taskId.startsWith("ops-")
+  );
+}
+
+function isOpsTask(tree: TaskTree, taskId: string): boolean {
+  const visited = new Set<string>();
+  let currentId: string | undefined = taskId;
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    if (isOpsTaskId(currentId)) return true;
+    const task = tree.tasks[currentId];
+    if (task?.owner === "app-ops") return true;
+    currentId =
+      typeof task?.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id
+        : undefined;
+  }
+  return false;
+}
+
 function objectValue(value: unknown): JsonObject {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as JsonObject)
@@ -286,8 +313,9 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
 }
 
 function routeSelectors(route: WorkflowRoute): EventSelector[] {
-  const raw = route.accepts ?? route.on;
-  return Array.isArray(raw) ? (raw as EventSelector[]) : [];
+  return Array.isArray(route.accepts)
+    ? (route.accepts as EventSelector[])
+    : [];
 }
 
 function routeInputEvents(route: WorkflowRoute): string[] {
@@ -360,11 +388,7 @@ function selectorConsumesEventType(
 }
 
 function scheduleEvents(schedule: Schedule): Array<Record<string, unknown>> {
-  return Array.isArray(schedule.emits)
-    ? schedule.emits
-    : schedule.event
-      ? [schedule.event]
-      : [];
+  return Array.isArray(schedule.emits) ? schedule.emits : [];
 }
 
 function addMapValue(map: Map<string, string[]>, key: string, value: string) {
@@ -801,6 +825,10 @@ function buildSignals(input: {
   incompleteLoops: string[];
   blockedStewardshipLoops: string[];
   recentMovementCount: number;
+  projectLifecycle: string;
+  recoveryOnly: boolean;
+  recoveryTaskIds: string[];
+  recentDomainOutcomeCount: number;
 }): ProjectHealthSignal[] {
   const signals: ProjectHealthSignal[] = [];
   const frontier = input.report.frontier;
@@ -811,6 +839,23 @@ function buildSignals(input: {
       code: "frontier.active",
       message: `${frontier.counts.active} active frontier item(s) are currently being worked.`,
       taskIds: sample(frontier.active),
+    });
+  }
+
+  if (input.recoveryOnly) {
+    signals.push({
+      severity: "info",
+      code: "feedback-loop.recovery-only",
+      message: `${input.recoveryTaskIds.length} recovery task(s) are active, reviewable, or runnable, but no domain work is moving yet. Recovery must restore domain work or resolve a gap terminally before it counts as project progress.`,
+      taskIds: sample(input.recoveryTaskIds),
+    });
+  }
+
+  if (input.recentDomainOutcomeCount > 0) {
+    signals.push({
+      severity: "info",
+      code: "work-loop.domain-outcome",
+      message: `${input.recentDomainOutcomeCount} domain outcome(s) were accepted in the last ${input.report.movement.lookbackMinutes} minute(s).`,
     });
   }
 
@@ -957,6 +1002,23 @@ function buildSignals(input: {
     });
   }
 
+  if (
+    input.projectLifecycle !== "closed" &&
+    frontier.counts.runnable === 0 &&
+    frontier.counts.active === 0 &&
+    frontier.counts.review === 0 &&
+    frontier.counts.waiting === 0 &&
+    frontier.counts.blocked > 0
+  ) {
+    signals.push({
+      severity: "critical",
+      code: "work-loop.active-lifecycle-starved",
+      message:
+        "Project lifecycle is active, but the work loop has no executable frontier. Enter bounded blocked-frontier recovery and restore work or resolve a gap with terminal evidence.",
+      taskIds: sample(frontier.blockedSample),
+    });
+  }
+
   return signals;
 }
 
@@ -975,6 +1037,7 @@ function chooseStatus(input: {
   signals: ProjectHealthSignal[];
   incompleteLoopCount: number;
   total: number;
+  recoveryOnly: boolean;
 }): HealthStatus {
   if (
     input.total > 0 &&
@@ -989,6 +1052,9 @@ function chooseStatus(input: {
   }
   if (input.signals.some((signal) => signal.severity === "critical")) {
     return "stalled";
+  }
+  if (input.recoveryOnly) {
+    return "recovering";
   }
   if (
     input.signals.some((signal) => signal.severity === "warn") ||
@@ -1029,6 +1095,14 @@ function buildNextActions(report: Omit<ProjectHealthReport, "nextActions">) {
   if (report.frontier.counts.review > 0) {
     actions.push(
       `Review ${report.frontier.counts.review} pending task claim(s): ${sample(report.frontier.review, 5).join(", ")}.`,
+    );
+  }
+  const recoveryOnly = report.signals.find(
+    (signal) => signal.code === "feedback-loop.recovery-only",
+  );
+  if (recoveryOnly) {
+    actions.push(
+      `Require the active recovery slice to restore runnable/active domain work or close a gap with terminal evidence: ${sample(recoveryOnly.taskIds ?? [], 5).join(", ")}.`,
     );
   }
   if (report.frontier.counts.active > 0) {
@@ -1111,10 +1185,8 @@ export function buildProjectHealth(
     journalRows,
     nowMs,
     staleActiveMs: staleActiveMinutes * 60 * 1000,
-    representedCompactPipelineFeatureKeys: representedCompactPipelineFeatureKeys(
-      loops,
-      nowMs,
-    ),
+    representedCompactPipelineFeatureKeys:
+      representedCompactPipelineFeatureKeys(loops, nowMs),
   });
   const processGraph =
     appDir === defaultAppDir
@@ -1149,6 +1221,18 @@ export function buildProjectHealth(
     journal: journalCounts,
     plannerRuns: recentPlanner.length,
     reviewerRuns: recentReviewer.length,
+    domainOutcomesAccepted: recentReviewer.filter(
+      (row) =>
+        row.decision === "accept" &&
+        typeof row.task_id === "string" &&
+        !isOpsTask(tree, row.task_id),
+    ).length,
+    opsOutcomesAccepted: recentReviewer.filter(
+      (row) =>
+        row.decision === "accept" &&
+        typeof row.task_id === "string" &&
+        isOpsTask(tree, row.task_id),
+    ).length,
     tasksMarkedDone24h: dayJournal.filter(
       (row) => row.kind === "task_marked_done",
     ).length,
@@ -1164,7 +1248,7 @@ export function buildProjectHealth(
     appDir,
     projectDir,
     flow: [
-      "project.planning.requested wakes the planner",
+      "project.owner.requested wakes the planner",
       "planner assigns runnable task-tree leaves or pulses durable loop roots",
       "task-worker runs the task workflow and writes a structured completion claim",
       "task-reviewer judges the claim",
@@ -1182,17 +1266,36 @@ export function buildProjectHealth(
   };
   const recentMovementCount =
     recentJournal.length + recentPlanner.length + recentReviewer.length;
+  const domainExecutableTaskIds = [
+    ...frontier.runnable,
+    ...frontier.active,
+    ...frontier.review,
+  ].filter((taskId) => !isOpsTask(tree, taskId));
+  const recoveryTaskIds = [
+    ...frontier.runnable,
+    ...frontier.active,
+    ...frontier.review,
+  ].filter((taskId) => isOpsTask(tree, taskId));
+  const recoveryOnly =
+    recoveryTaskIds.length > 0 &&
+    domainExecutableTaskIds.length === 0 &&
+    movement.domainOutcomesAccepted === 0;
   const signals = buildSignals({
     report: baseReport,
     incompleteLoops,
     blockedStewardshipLoops,
     recentMovementCount,
+    projectLifecycle: tree.project_lifecycle ?? "active",
+    recoveryOnly,
+    recoveryTaskIds,
+    recentDomainOutcomeCount: movement.domainOutcomesAccepted,
   });
   const status = chooseStatus({
     frontier,
     signals,
     incompleteLoopCount: incompleteLoops.length,
     total: frontier.counts.total,
+    recoveryOnly,
   });
   const reportWithoutActions = {
     ...baseReport,
@@ -1236,6 +1339,9 @@ export function formatProjectHealth(report: ProjectHealthReport): string {
   );
   lines.push(
     `- last ${report.movement.lookbackMinutes}m: planner runs=${report.movement.plannerRuns}, reviewer runs=${report.movement.reviewerRuns}, journal events=${Object.values(report.movement.journal).reduce((sum, count) => sum + count, 0)}`,
+  );
+  lines.push(
+    `- accepted outcomes in window: domain=${report.movement.domainOutcomesAccepted}, ops=${report.movement.opsOutcomesAccepted}`,
   );
   lines.push(
     `- last 24h: marked done=${report.movement.tasksMarkedDone24h}, worker completed=${report.movement.workerCompleted24h}`,

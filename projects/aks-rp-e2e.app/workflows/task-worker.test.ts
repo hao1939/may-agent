@@ -119,6 +119,13 @@ describe("task worker", () => {
               session_id: "s_task_ops-task",
               trace: {
                 current_attempt_id: "attempt-ops-app-output",
+                review_reject: {
+                  summary: "The prior audit did not update its named artifact.",
+                  findings: ["The evidence file still contains stale data."],
+                  feedback: ["Update the evidence from current app state."],
+                  artifacts: ["evidence/archive/ops/ops-task.md"],
+                  verification: ["The evidence cites the current app state."],
+                },
               },
             },
           },
@@ -167,6 +174,22 @@ describe("task worker", () => {
     );
     expect(observedPrompt).toContain(`rooted at ${appDir}`);
     expect(observedPrompt).toContain("evidence/archive/ops/ops-task.md");
+    expect(observedPrompt).toContain("Previous review requiring correction");
+    expect(observedPrompt).toContain(
+      "The prior audit did not update its named artifact.",
+    );
+    expect(observedPrompt).toContain(
+      "The evidence cites the current app state.",
+    );
+    expect(observedPrompt).toContain(
+      "Do not emit project or runtime events through the CLI, HTTP API, SDK, or direct",
+    );
+    expect(observedPrompt).toContain(
+      "independent reviewer judges it and the planner validates and emits it.",
+    );
+    expect(observedPrompt).toContain(
+      "Completing that proposal is the normal worker/reviewer boundary",
+    );
   });
 
   test("runs assigned task sessions under the event worker when it differs from the handler default", async () => {
@@ -451,7 +474,7 @@ describe("task worker", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(observedSessionId).toBe("s_task_spec-task");
+    expect(observedSessionId).toBe(assignment.sessionId);
     expect(observedPrompt).toContain("task-tree set-outputs");
     expect(observedPrompt).toContain(
       "Never edit the runtime task tree file directly",
@@ -477,9 +500,9 @@ describe("task worker", () => {
     const updated = JSON.parse(
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
-    expect(updated.tasks["spec-task"].session_id).toBe("s_task_spec-task");
+    expect(updated.tasks["spec-task"].session_id).toBe(assignment.sessionId);
     expect(updated.tasks["spec-task"].session_history).toContain(
-      "s_task_spec-task",
+      assignment.sessionId,
     );
     expect(updated.tasks["spec-task"].state).toBe("review");
     expect(updated.tasks["spec-task"].status).toBeUndefined();
@@ -489,7 +512,7 @@ describe("task worker", () => {
       type: "project.task.completed",
       payload: {
         taskId: "spec-task",
-        status: "review",
+        state: "review",
         attemptId: assignment.attemptId,
         result: "done",
       },
@@ -793,6 +816,7 @@ FIX_FORWARD_RESULT:
     expect(observedPrompt).toContain("FIX_FORWARD_RESULT");
     expect(observedPrompt).toContain("minimumDiagnosisPacket");
     expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].payload.workflowResult.workflow).toBe("fix-forward");
     expect(
       dispatched[0].payload.workflowResult.details.fixForward,
     ).toMatchObject({
@@ -1852,7 +1876,7 @@ SPEC_RESULT_REVIEW:
       type: "project.task.completed",
       payload: {
         taskId: "spec-task",
-        status: "review",
+        state: "review",
         attemptId: assignment.attemptId,
         result: "blocked",
       },
@@ -1944,7 +1968,7 @@ SPEC_RESULT_REVIEW:
       type: "project.task.completed",
       payload: {
         taskId: "spec-task",
-        status: "review",
+        state: "review",
         attemptId: assignment.attemptId,
         result: "partial",
       },
@@ -2661,7 +2685,7 @@ SPEC_RESULT_REVIEW:
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "routed inline to workflow feature-reference-collector under session s_task_collector-task",
+      `routed inline to workflow feature-reference-collector under session ${assignment.sessionId}`,
     );
     expect(agentCalls).toBe(0);
     expect(workflowCalls).toBe(0);
@@ -2670,7 +2694,7 @@ SPEC_RESULT_REVIEW:
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(updated.tasks["collector-task"].session_id).toBe(
-      "s_task_collector-task",
+      assignment.sessionId,
     );
     expect(updated.tasks["collector-task"].trace.last_worker_result).toBe(
       "partial",

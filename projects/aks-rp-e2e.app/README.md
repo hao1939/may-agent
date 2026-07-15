@@ -40,6 +40,18 @@ Workflow code collects facts and writes scoped artifacts. The agent/reviewer
 judges whether the result satisfies the goal. The planner owns task-tree
 mutation. See `design/project-knowledge-layers.md` for the full picture.
 
+The project-control contract has two nested loops:
+
+```text
+work:     goal gap -> plan -> execute -> review -> evidence/model -> next gap
+feedback: abnormal -> diagnose -> repair -> verify -> restored work
+```
+
+Feedback activity is not domain progress by itself. It succeeds only when it
+restores affected work or reaches an evidence-backed terminal disposition. A
+blocked-only frontier remains an active recovery incident. See
+`design/two-loop-operating-model.md`.
+
 ## Workspace Binding
 
 The app declaration in `app.ts` points at the sibling domain repo:
@@ -121,7 +133,7 @@ task.
 The active execution model is deliberately small. See
 `design/project-app-event-contract.md` for the canonical event names.
 
-- The project planning workflow handles `project.planning.requested`.
+- The project planning workflow handles `project.owner.requested`.
   It sends the owner a compact planning packet, runs event review, then runs
   the task-tree update/assignment step.
   Its detailed contract is in `design/project-planner-contract.md`: workflow
@@ -135,10 +147,9 @@ The active execution model is deliberately small. See
 - `task-worker` handles `project.task.assigned`.
 - `project-execution-watchdog` observes task/session liveness and wakes the
   project owner when review is needed.
-- `app.ts` uses `onEvent: workflowHandlers([...])` as the event surface. The
-  helper is sugar for generated workflow-backed event handlers; it is not a
-  second router.
-- Each generated handler declares the event types it consumes in `on` and the
+- `app.ts` uses `workflowHandlers: [...]` as its declarative workflow event
+  surface.
+- Each handler declares the event selectors it consumes in `accepts` and the
   event types it may produce in `emits`. There is no top-level `events` list for
   generated handlers.
 - `eventGraph` is audit metadata only: external event outputs, intentional
@@ -232,7 +243,9 @@ stop reviewing.
 
 Use `bun run health` for the canonical operator readout. It joins the live task
 tree, assignment queue, journal, planner/reviewer traces, and durable loop
-progress into one status: `complete`, `moving`, `attention`, or `stalled`.
+progress into one status: `complete`, `moving`, `recovering`, `attention`, or
+`stalled`. Ops-only activity is `recovering`; it becomes `moving` only when
+domain work resumes or a domain outcome is accepted.
 `bun run health --json` exposes the same facts as structured data for metrics,
 workflow triage, or UI surfaces.
 
@@ -283,7 +296,7 @@ verification evidence. Otherwise a retry can still run the old code path and
 repeat stale fallback summaries such as `Agent ended with an empty assistant turn`.
 
 To add or update a project workflow handler, add or edit the workflow file under
-`workflows/`, update the `onEvent: workflowHandlers([...])` entry in `app.ts`,
+`workflows/`, update the `workflowHandlers: [...]` entry in `app.ts`,
 then let the watcher reload it or issue `/reload`. Existing running sessions are
 not cancelled by this reload; new triggers use the updated manifest.
 

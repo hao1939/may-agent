@@ -2472,7 +2472,7 @@ async function sendSteering(
       },
     };
     const body = {
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       source: "web-ui",
       owner: "agent:aks-explorer",
       urgency: "high",

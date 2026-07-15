@@ -11,12 +11,12 @@
       "kind": "project",
       "priority": "P1",
       "owner": "aks-explorer",
-      "goal": "Keep the project source of truth aligned to the real frontier: preserve one exact blocked wait per live blocker family across the compact loop, spec-verification loop, and external-proof focus branch, while actively owning repo hygiene when unpublished local changes accumulate without a truthful checkpoint slice.",
+      "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
       "inputs": [
         "project.json",
         "model/knowledge-map/model.json",
         "model/knowledge-map/views/path-summary.json",
-        "specs/index.json"
+        "features/"
       ],
       "outputs": [
         "aks-rp-e2e.app/tasks/tree.json",
@@ -28,9 +28,9 @@
         "evidence/archive/"
       ],
       "acceptance": [
-        "Each top-level lane is either a concrete executable leaf or one exact blocked family wait with owner, resume condition, and affected scope preserved in tree state.",
-        "Do not refill or dispatch from loop residue counts alone when the frontier is 0 runnable, 0 active, 0 review, and only exact blocked waits remain.",
-        "Any new repo-local leaf must name the exact source, spec, replay, evidence, or model gap it closes and must replace or narrow an existing wait rather than duplicate it."
+        "The work loop continuously selects a non-terminal knowledge, spec, replay, execution, or model gap and produces reviewed outcome evidence while runnable work exists.",
+        "The feedback loop restores failed local work to runnable or verified state; an exact external wait is acceptable only with a sent, tracked handoff and an explicit project lifecycle decision when no independent work remains.",
+        "Operational repair, blocked-wait stewardship, and temporary focus work remain under ops/* or focus tasks and never replace this project goal."
       ],
       "forbidden": [
         "Do not run cloud mutation unless a task has an explicit gate and that gate passes."

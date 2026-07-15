@@ -19,7 +19,7 @@ import {
   parseTriggerEvent,
   triggerString,
 } from "../workflows/lib/workflow-input.ts";
-import { auditFocusMetadataIssues } from "./lib/focus-metadata-audit.ts";
+import { loadSpecs } from "../workflows/lib/spec-loop-store.ts";
 
 type ModelStatus = {
   features?: {
@@ -65,14 +65,23 @@ type TaskReviewerRun = {
   decision?: string;
 };
 
+type ReviewApplyCoverage = {
+  coveringTaskId: string;
+  state: string;
+  source: "live" | "archive";
+  reason:
+    | "reviewed-task-link"
+    | "reviewed-source-link"
+    | "reviewed-task-input"
+    | "review-goal-reference";
+  archivePath?: string;
+};
+
 type SpecIndexEntry = {
   id?: string;
   status?: string;
   specState?: string;
-};
-
-type SpecIndex = {
-  specs?: SpecIndexEntry[];
+  terminalDisposition?: boolean;
 };
 
 type SpecMetrics = {
@@ -111,6 +120,12 @@ type BlockedFrontierActionability = {
   motionStarved: boolean;
 };
 
+type ApprovalGatedBlockedDisposition = {
+  covered: boolean;
+  focusTaskIds: string[];
+  governingWaitTaskIds: string[];
+};
+
 type StaleActiveTaskInfo = {
   taskId: string;
   sessionId: string | null;
@@ -128,6 +143,13 @@ type AssignmentStateMismatchInfo = {
   taskId: string;
   attemptId: string | null;
   taskState: string | null;
+  reason: "task-missing" | "task-not-active";
+  sessionId: string | null;
+  sessionStatus: string | null;
+  sessionOutcome: string | null;
+  sessionStartedAt: number | null;
+  sessionLastActivityAt: number | null;
+  sessionEndedAt: number | null;
 };
 
 type SpecLoopState = {
@@ -181,7 +203,7 @@ const staleActiveNoActivityMs = Number.parseInt(
   10,
 );
 const sessionStartGraceMs = Number.parseInt(
-  process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "60000",
+  process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "300000",
   10,
 );
 const reviewApplyGraceMs = Number.parseInt(
@@ -282,6 +304,56 @@ function taskState(task: TaskNode): string {
 
 function isLeaf(task: TaskNode): boolean {
   return (task.children ?? []).length === 0;
+}
+
+function runtimeTreeTaskIds(tree: TaskTree): Set<string> {
+  const taskMap = tree.tasks ?? {};
+  const rootId =
+    typeof tree.root_task_id === "string" ? tree.root_task_id.trim() : "";
+  const taskIds = Object.values(taskMap)
+    .map((task) => (typeof task.id === "string" ? task.id.trim() : ""))
+    .filter(Boolean);
+  if (!rootId || !taskMap[rootId]) {
+    return new Set(taskIds);
+  }
+
+  const childrenByParent = new Map<string, string[]>();
+  for (const task of Object.values(taskMap)) {
+    const parentId =
+      typeof task.parent_id === "string" ? task.parent_id.trim() : "";
+    const taskId = typeof task.id === "string" ? task.id.trim() : "";
+    if (!parentId || !taskId) continue;
+    const existing = childrenByParent.get(parentId) ?? [];
+    existing.push(taskId);
+    childrenByParent.set(parentId, existing);
+  }
+
+  const seen = new Set<string>();
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const taskId = queue.shift();
+    if (!taskId || seen.has(taskId) || !taskMap[taskId]) continue;
+    seen.add(taskId);
+    const task = taskMap[taskId];
+    for (const childId of task.children ?? []) {
+      if (typeof childId === "string" && childId.trim()) {
+        queue.push(childId.trim());
+      }
+    }
+    for (const childId of childrenByParent.get(taskId) ?? []) {
+      queue.push(childId);
+    }
+  }
+  return seen;
+}
+
+function runtimeTreeTasks(tree: TaskTree): TaskNode[] {
+  const taskMap = tree.tasks ?? {};
+  const connectedTaskIds = runtimeTreeTaskIds(tree);
+  return Object.values(taskMap).filter((task) => {
+    const taskId = typeof task.id === "string" ? task.id.trim() : "";
+    return taskId ? connectedTaskIds.has(taskId) : false;
+  });
 }
 
 function recordValue(value: unknown): Record<string, unknown> | null {
@@ -407,6 +479,15 @@ function blockedOverdueScopeAliases(scope: string): string[] {
   return [...aliases];
 }
 
+function blockedWaitLineageKeys(task: TaskNode): string[] {
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker.waiting_for);
+  return [
+    stringRecordField(waitingFor, ["pathId", "path_id"]),
+    stringRecordField(waitingFor, ["approvalPathId", "approval_path_id"]),
+  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+}
+
 function taskCoversBlockedOverdueWait(
   candidate: TaskNode,
   blockedTask: TaskNode,
@@ -424,6 +505,16 @@ function taskCoversBlockedOverdueWait(
   if (
     blockedTaskId &&
     structuredBlockedTaskIds(candidate).includes(blockedTaskId)
+  ) {
+    return true;
+  }
+
+  const blockedLineageKeys = blockedWaitLineageKeys(blockedTask);
+  if (
+    blockedLineageKeys.length > 0 &&
+    taskConflictScopes(candidate).some((scope) =>
+      blockedLineageKeys.includes(scope.trim()),
+    )
   ) {
     return true;
   }
@@ -585,10 +676,128 @@ function blockedFrontierActionability(): BlockedFrontierActionability {
   }
 }
 
+function approvalGatedBlockedDisposition(
+  tree: TaskTree,
+  runtimeTasks = runtimeTreeTasks(tree),
+): ApprovalGatedBlockedDisposition {
+  const blockedLeaves = runtimeTasks
+    .filter((task) => isLeaf(task) && taskState(task) === "blocked")
+    .sort((a, b) => (a.id ?? "").localeCompare(b.id ?? ""));
+  const focusTaskIds = new Set<string>();
+  const governingWaitTaskIds = new Set<string>();
+
+  for (const task of blockedLeaves) {
+    if (task.kind !== "focus_plan") continue;
+    const context = taskContext(task);
+    if (context.needs_approval !== true) continue;
+
+    const observations = objectRecordField(context, ["observations"]);
+    const blockedOnlyFrontier = [
+      numberRecordField(observations, ["frontier_active_leaf_count"]),
+      numberRecordField(observations, ["frontier_review_leaf_count"]),
+      numberRecordField(observations, ["frontier_waiting_leaf_count"]),
+      numberRecordField(observations, ["frontier_runnable_leaf_count"]),
+    ].every((value) => value === 0);
+    if (!blockedOnlyFrontier) continue;
+
+    const progressReview = objectRecordField(context, [
+      "progress_review",
+      "progressReview",
+    ]);
+    const progressStatus = stringRecordField(progressReview, ["status"]);
+    if (progressStatus && progressStatus !== "needs_approval") continue;
+
+    const blocker = recordValue(task.blocker);
+    if (
+      stringRecordField(blocker, ["category"]).toLowerCase() !==
+        "external-wait" ||
+      stringRecordField(blocker, ["owner"]).toLowerCase() !== "human"
+    ) {
+      continue;
+    }
+
+    const waitingFor = objectRecordField(blocker, ["waiting_for", "waitingFor"]);
+    if (stringRecordField(waitingFor, ["type"]).toLowerCase() !== "owner.decision") {
+      continue;
+    }
+
+    const governingWaitTaskId = stringRecordField(waitingFor, [
+      "governingWaitTaskId",
+      "governing_wait_task_id",
+      "taskId",
+      "task_id",
+    ]);
+    if (!governingWaitTaskId) continue;
+
+    const governingTask = tree.tasks?.[governingWaitTaskId];
+    if (!governingTask || !isLeaf(governingTask)) continue;
+    if (taskState(governingTask) !== "blocked") continue;
+
+    const governingBlocker = recordValue(governingTask.blocker);
+    if (
+      stringRecordField(governingBlocker, ["category"]).toLowerCase() !==
+        "external-wait" ||
+      stringRecordField(governingBlocker, ["owner"]).toLowerCase() !==
+        "human"
+    ) {
+      continue;
+    }
+
+    const governingWaitingFor = objectRecordField(governingBlocker, [
+      "waiting_for",
+      "waitingFor",
+    ]);
+    if (
+      stringRecordField(governingWaitingFor, ["type"]).toLowerCase() !==
+      "project.approval.submitted"
+    ) {
+      continue;
+    }
+
+    if (typeof task.id === "string" && task.id.trim()) {
+      focusTaskIds.add(task.id.trim());
+    }
+    governingWaitTaskIds.add(governingWaitTaskId);
+  }
+
+  return {
+    covered: focusTaskIds.size > 0 && governingWaitTaskIds.size > 0,
+    focusTaskIds: [...focusTaskIds].sort((a, b) => a.localeCompare(b)),
+    governingWaitTaskIds: [...governingWaitTaskIds].sort((a, b) =>
+      a.localeCompare(b),
+    ),
+  };
+}
+
+function isOpsTaskId(taskId: string): boolean {
+  return (
+    taskId === "ops" || taskId.startsWith("ops/") || taskId.startsWith("ops-")
+  );
+}
+
+function isOpsTask(tree: TaskTree, taskId: string): boolean {
+  const visited = new Set<string>();
+  let currentId: string | undefined = taskId;
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    if (isOpsTaskId(currentId)) return true;
+    const task = tree.tasks?.[currentId];
+    if (typeof task?.owner === "string" && task.owner === "app-ops") {
+      return true;
+    }
+    currentId =
+      typeof task?.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id.trim()
+        : undefined;
+  }
+  return false;
+}
+
 function taskCounts() {
   const tree = loadTaskTree();
   const taskMap = tree.tasks ?? {};
   const tasks = Object.values(tree.tasks ?? {});
+  const runtimeTasks = runtimeTreeTasks(tree);
   const taskIdOrFallback = (task: TaskNode, index: number): string =>
     typeof task.id === "string" && task.id.trim()
       ? task.id.trim()
@@ -626,11 +835,28 @@ function taskCounts() {
   const completed24h = completed24hTaskIds.size;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
+  const activeTaskIds =
+    frontier?.active ??
+    runtimeTasks
+      .filter((task) => isLeaf(task) && taskState(task) === "active")
+      .flatMap((task) =>
+        typeof task.id === "string" && task.id.trim() ? [task.id.trim()] : [],
+      );
+  const activeOpsTaskIds = activeTaskIds.filter((taskId) =>
+    isOpsTask(tree, taskId),
+  );
+  const activeDomainTaskIds = activeTaskIds.filter(
+    (taskId) => !isOpsTask(tree, taskId),
+  );
   const assignmentStateMismatch = openTaskAssignmentStateMismatchCount(tree);
-  const blockedLeafTasks = tasks.filter(
+  const blockedLeafTasks = runtimeTasks.filter(
     (task) => isLeaf(task) && taskState(task) === "blocked",
   );
   const blockedLeaves = blockedLeafTasks.length;
+  const approvalBlockedDisposition = approvalGatedBlockedDisposition(
+    tree,
+    runtimeTasks,
+  );
   const blockedMissingWaitingForTaskIds = blockedLeafTasks.flatMap(
     (task, index) => {
       const blocker = recordValue(task.blocker);
@@ -719,13 +945,15 @@ function taskCounts() {
   const roots = tasks.filter(
     (task) => task.id && !childRefs.has(task.id),
   ).length;
-  const focusMetadataProblems = auditFocusMetadataIssues(tree).length;
   return {
     total: tasks.length,
     runnable:
       frontier?.runnable.length ??
       tasks.filter(isWorkerExecutableBacklogLeaf).length,
     active: frontier?.active.length ?? byStatus.get("active") ?? 0,
+    activeTaskIds,
+    activeOpsTaskIds,
+    activeDomainTaskIds,
     activeRunning,
     activeStale,
     assignmentStateMismatch,
@@ -746,19 +974,166 @@ function taskCounts() {
     blockedOverdueUnworkedTaskIds,
     done: byStatus.get("done") ?? 0,
     completed24h,
-    taskTreeProblemCount:
-      (roots === 1 ? 0 : 1) + assignmentStateMismatch + focusMetadataProblems,
-    projectClosed:
-      tree.project_lifecycle === "closed" ||
-      tree.project_lifecycle === "review" ||
-      tree.project_lifecycle === "blocked" ||
-      // Suppress no-work/capacity alerts when the whole project is explicitly
-      // non-executable (closed/reviewed/blocked) at the root.
-      (tree.tasks?.project != null &&
-        ["review", "done", "accepted", "blocked"].includes(
-          tree.tasks.project.state ?? tree.tasks.project.status ?? "",
-        )),
+    taskTreeProblemCount: (roots === 1 ? 0 : 1) + assignmentStateMismatch,
+    projectClosed: tree.project_lifecycle === "closed",
+    approvalBlockedDisposition,
   };
+}
+
+function taskReferencesReviewedLineage(input: {
+  task: TaskNode | Record<string, unknown>;
+  taskId: string;
+  attemptId: string;
+}): ReviewApplyCoverage | null {
+  const task = input.task;
+  const id =
+    typeof task.id === "string"
+      ? task.id.trim()
+      : typeof (task as Record<string, unknown>).id === "string"
+        ? String((task as Record<string, unknown>).id).trim()
+        : "";
+  if (!id || id === input.taskId) return null;
+
+  const state =
+    typeof (task as Record<string, unknown>).status === "string"
+      ? String((task as Record<string, unknown>).status).trim()
+      : typeof (task as Record<string, unknown>).state === "string"
+        ? String((task as Record<string, unknown>).state).trim()
+        : "backlog";
+  if (state === "review") return null;
+
+  const conflictScopes = Array.isArray((task as Record<string, unknown>).conflict_scope)
+    ? ((task as Record<string, unknown>).conflict_scope as unknown[])
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .filter(Boolean)
+    : [];
+  if (
+    id.includes("review-not-applied") ||
+    conflictScopes.includes("ops:review-not-applied-metric")
+  ) {
+    return null;
+  }
+
+  const context = recordValue((task as Record<string, unknown>).context);
+  const reviewedTask = recordValue(context?.reviewedTask);
+  const reviewedTaskId =
+    stringRecordField(reviewedTask, ["taskId", "task_id"]) || "";
+  const reviewedAttemptId =
+    stringRecordField(reviewedTask, ["attemptId", "attempt_id"]) || "";
+  if (
+    reviewedTaskId === input.taskId &&
+    (!reviewedAttemptId || reviewedAttemptId === input.attemptId)
+  ) {
+    return {
+      coveringTaskId: id,
+      state,
+      source: "live",
+      reason: "reviewed-task-link",
+    };
+  }
+
+  const trace = recordValue((task as Record<string, unknown>).trace);
+  const reviewedSourceTaskId =
+    stringRecordField(trace, ["reviewed_source_task_id"]) || "";
+  const reviewedSourceAttemptId =
+    stringRecordField(trace, ["reviewed_source_attempt_id"]) || "";
+  if (
+    reviewedSourceTaskId === input.taskId &&
+    (!reviewedSourceAttemptId || reviewedSourceAttemptId === input.attemptId)
+  ) {
+    return {
+      coveringTaskId: id,
+      state,
+      source: "live",
+      reason: "reviewed-source-link",
+    };
+  }
+
+  const inputs = Array.isArray((task as Record<string, unknown>).inputs)
+    ? ((task as Record<string, unknown>).inputs as unknown[])
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .filter(Boolean)
+    : [];
+  if (
+    inputs.some(
+      (value) =>
+        value.includes(`Reviewed task: ${input.taskId}`) ||
+        value.includes(input.attemptId),
+    )
+  ) {
+    return {
+      coveringTaskId: id,
+      state,
+      source: "live",
+      reason: "reviewed-task-input",
+    };
+  }
+
+  const goal =
+    typeof (task as Record<string, unknown>).goal === "string"
+      ? String((task as Record<string, unknown>).goal)
+      : "";
+  if (goal.includes(input.taskId)) {
+    return {
+      coveringTaskId: id,
+      state,
+      source: "live",
+      reason: "review-goal-reference",
+    };
+  }
+
+  return null;
+}
+
+function archivedDoneLeafTasks(): Array<{
+  archivePath: string;
+  task: Record<string, unknown>;
+}> {
+  const archiveDir = join(effectiveAppDir, ".state", "tasks", "archive");
+  return listFiles(archiveDir, (path) => path.endsWith(".json")).flatMap(
+    (path) => {
+      const archive = readJson<{ tasks?: Record<string, unknown>[] }>(path, {});
+      return Array.isArray(archive.tasks)
+        ? archive.tasks
+            .filter(
+              (task): task is Record<string, unknown> =>
+                !!task && typeof task === "object" && !Array.isArray(task),
+            )
+            .map((task) => ({ archivePath: path, task }))
+        : [];
+    },
+  );
+}
+
+function reviewApplyCoverage(input: {
+  tree: TaskTree;
+  taskId: string;
+  attemptId: string;
+}): ReviewApplyCoverage | null {
+  for (const task of Object.values(input.tree.tasks ?? {})) {
+    const coverage = taskReferencesReviewedLineage({
+      task,
+      taskId: input.taskId,
+      attemptId: input.attemptId,
+    });
+    if (coverage) return coverage;
+  }
+
+  for (const entry of archivedDoneLeafTasks()) {
+    const coverage = taskReferencesReviewedLineage({
+      task: entry.task,
+      taskId: input.taskId,
+      attemptId: input.attemptId,
+    });
+    if (!coverage) continue;
+    return {
+      ...coverage,
+      source: "archive",
+      archivePath: entry.archivePath,
+    };
+  }
+
+  return null;
 }
 
 function taskReviewNotAppliedDetails(): Array<{
@@ -766,6 +1141,7 @@ function taskReviewNotAppliedDetails(): Array<{
   attemptId: string;
   decision: string;
   reviewedAt: string;
+  coverage?: ReviewApplyCoverage;
 }> {
   const tree = loadTaskTree();
   const latestReviewByAttempt = new Map<string, TaskReviewerRun>();
@@ -793,6 +1169,7 @@ function taskReviewNotAppliedDetails(): Array<{
     attemptId: string;
     decision: string;
     reviewedAt: string;
+    coverage?: ReviewApplyCoverage;
   }> = [];
   for (const task of Object.values(tree.tasks ?? {})) {
     if (taskState(task) !== "review") continue;
@@ -804,6 +1181,8 @@ function taskReviewNotAppliedDetails(): Array<{
     if (!taskId || !attemptId) continue;
     const review = latestReviewByAttempt.get(`${taskId}:${attemptId}`);
     if (!review) continue;
+    const coverage = reviewApplyCoverage({ tree, taskId, attemptId });
+    if (coverage) continue;
     offenders.push({
       taskId,
       attemptId,
@@ -816,6 +1195,78 @@ function taskReviewNotAppliedDetails(): Array<{
       ? left.attemptId.localeCompare(right.attemptId)
       : left.taskId.localeCompare(right.taskId),
   );
+}
+
+function archivedTaskAttemptId(task: TaskNode): string {
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : null;
+  const attemptId = trace?.current_attempt_id;
+  return typeof attemptId === "string" ? attemptId.trim() : "";
+}
+
+function archivedDoneTaskForAttempt(
+  taskId: string,
+  attemptId: string | null,
+  sessionId: string | null,
+): TaskNode | null {
+  if (!taskId || (!attemptId && !sessionId)) return null;
+  const archiveDir = join(effectiveAppDir, ".state", "tasks", "archive");
+  const archiveFiles = listFiles(
+    archiveDir,
+    (candidate) =>
+      extname(candidate) === ".json" && candidate.includes("done-leaves-"),
+  ).sort((left, right) => right.localeCompare(left));
+  for (const path of archiveFiles) {
+    const archive = readJson<{ tasks?: TaskNode[] }>(path, {});
+    for (const task of archive.tasks ?? []) {
+      if (task.id !== taskId) continue;
+      if (taskState(task) !== "done") continue;
+      const archivedAttemptId = archivedTaskAttemptId(task);
+      const archivedSessionId =
+        typeof task.session_id === "string" ? task.session_id.trim() : "";
+      if (attemptId && archivedAttemptId === attemptId) return task;
+      if (sessionId && archivedSessionId === sessionId) return task;
+    }
+  }
+  return null;
+}
+
+function representedArchivedDoneAssignmentMismatch(
+  taskId: string,
+  attemptId: string | null,
+  sessionInfo: Pick<
+    AssignmentStateMismatchInfo,
+    | "sessionId"
+    | "sessionStatus"
+    | "sessionOutcome"
+    | "sessionStartedAt"
+    | "sessionLastActivityAt"
+    | "sessionEndedAt"
+  >,
+): boolean {
+  if (sessionInfo.sessionStatus !== "done") return false;
+  if (sessionInfo.sessionOutcome !== "done") return false;
+  if (sessionInfo.sessionEndedAt == null) return false;
+  const archivedTask = archivedDoneTaskForAttempt(
+    taskId,
+    attemptId,
+    sessionInfo.sessionId,
+  );
+  if (!archivedTask) return false;
+  const archivedSessionId =
+    typeof archivedTask.session_id === "string"
+      ? archivedTask.session_id.trim()
+      : "";
+  if (
+    archivedSessionId &&
+    sessionInfo.sessionId &&
+    archivedSessionId !== sessionInfo.sessionId
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function openTaskAssignmentStateMismatchDetails(
@@ -846,11 +1297,29 @@ function openTaskAssignmentStateMismatchDetails(
       const task = tree.tasks?.[taskId];
       const currentTaskState = task ? taskState(task) : null;
       if (!task || currentTaskState !== "active") {
+        const sessionInfo = assignmentStateMismatchSessionInfo(
+          taskId,
+          attemptId,
+          typeof task?.session_id === "string" ? task.session_id : null,
+        );
+        const reason = task ? "task-not-active" : "task-missing";
+        if (
+          reason === "task-missing" &&
+          representedArchivedDoneAssignmentMismatch(
+            taskId,
+            attemptId,
+            sessionInfo,
+          )
+        ) {
+          continue;
+        }
         mismatches.push({
           correlationKey: key,
           taskId,
           attemptId,
           taskState: currentTaskState,
+          reason,
+          ...sessionInfo,
         });
       }
     }
@@ -973,6 +1442,7 @@ function isVerifiedSpec(spec: SpecIndexEntry): boolean {
 }
 
 function isReviewedExceptionSpec(spec: SpecIndexEntry): boolean {
+  if (spec.terminalDisposition === true) return true;
   const statuses = [
     normalizeSpecStatus(spec.status),
     normalizeSpecStatus(spec.specState),
@@ -984,6 +1454,9 @@ function isReviewedExceptionSpec(spec: SpecIndexEntry): boolean {
       "environment",
       "environment-blocked",
       "blocked-infra",
+      "deprecated",
+      "product-deprecated",
+      "reviewed-exception",
       "superseded",
       "out-of-scope",
     ].includes(status),
@@ -991,10 +1464,11 @@ function isReviewedExceptionSpec(spec: SpecIndexEntry): boolean {
 }
 
 function specMetrics(): SpecMetrics {
-  const index = readJson<SpecIndex>(join(projectDir, "specs", "index.json"), {
-    specs: [],
-  });
-  const specs = index.specs ?? [];
+  // Keep observability on the same catalog as the execution loop. The domain
+  // workspace now owns specs under features/*/specs, with a legacy index only
+  // when one is still present.
+  const specs = loadSpecs(projectDir);
+  const loopSpecs = loadSpecLoopState().specs ?? {};
   const metrics: SpecMetrics = {
     total: specs.length,
     verified: 0,
@@ -1008,16 +1482,21 @@ function specMetrics(): SpecMetrics {
   };
 
   for (const spec of specs) {
+    const loopStatus = loopSpecs[spec.id]?.status;
     const status = normalizeSpecStatus(spec.status);
     const state = normalizeSpecStatus(spec.specState);
     const values = new Set([status, state]);
-    const verified = isVerifiedSpec(spec);
+    if (loopStatus) values.add(normalizeSpecStatus(loopStatus));
+    const verified = loopStatus === "pass" || isVerifiedSpec(spec);
     const reviewedException = !verified && isReviewedExceptionSpec(spec);
 
     if (verified) metrics.verified++;
     if (reviewedException) metrics.reviewedException++;
     if (!verified && !reviewedException) metrics.unverified++;
-    if ([...values].some((value) => value.startsWith("fail"))) metrics.failed++;
+    if (
+      [...values].some((value) => value.startsWith("fail") || value === "error")
+    )
+      metrics.failed++;
     if ([...values].some((value) => value.startsWith("blocked")))
       metrics.blocked++;
     if (values.has("ready")) metrics.ready++;
@@ -1641,7 +2120,7 @@ function activeTaskWorkerSessionRow(
     const rows = db
       .query(
         `
-      select sessionId, status, outcome, opCount, startedAt, lastActivityAt, task
+      select sessionId, status, outcome, opCount, startedAt, lastActivityAt, endedAt, task
       from sessions
       where source = 'workflow:task-worker'
       order by startedAt desc
@@ -1672,6 +2151,38 @@ function activeTaskWorkerSessionRow(
   } finally {
     db.close();
   }
+}
+
+function assignmentStateMismatchSessionInfo(
+  taskId: string,
+  attemptId: string | null,
+  sessionId?: string | null,
+): Pick<
+  AssignmentStateMismatchInfo,
+  | "sessionId"
+  | "sessionStatus"
+  | "sessionOutcome"
+  | "sessionStartedAt"
+  | "sessionLastActivityAt"
+  | "sessionEndedAt"
+> {
+  const row = activeTaskWorkerSessionRow(taskId, attemptId, sessionId);
+  const numberField = (key: string): number | null => {
+    const value = row?.[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  };
+  const stringField = (key: string): string | null => {
+    const value = row?.[key];
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  };
+  return {
+    sessionId: stringField("sessionId"),
+    sessionStatus: stringField("status"),
+    sessionOutcome: stringField("outcome"),
+    sessionStartedAt: numberField("startedAt"),
+    sessionLastActivityAt: numberField("lastActivityAt"),
+    sessionEndedAt: numberField("endedAt"),
+  };
 }
 
 function activeTaskFeatureReferenceSessionRow(
@@ -1904,7 +2415,11 @@ function assignmentNotConsumedDetails(): Array<{
                 assignment.session_id.trim()
               ? assignment.session_id.trim()
               : null;
-      const workerRow = activeTaskWorkerSessionRow(taskId, attemptId, sessionId);
+      const workerRow = activeTaskWorkerSessionRow(
+        taskId,
+        attemptId,
+        sessionId,
+      );
       if (sessionRestartReasonFromRow(workerRow) === null) return [];
 
       return [{ taskId, attemptId, assignedAt, taskState: state }];
@@ -2274,8 +2789,46 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
       : Math.max(0, tasks.active - tasks.activeStale);
   const blockedActionability = blockedFrontierActionability();
   const loopUnrepresented = loopUnrepresentedRecordDetails();
+  const assignmentMismatches =
+    openTaskAssignmentStateMismatchDetails(loadTaskTree());
   const assignmentNotConsumed = assignmentNotConsumedDetails();
   const reviewNotApplied = taskReviewNotAppliedDetails();
+  const approvalBlockedSuppression =
+    !tasks.projectClosed &&
+    tasks.runnable === 0 &&
+    healthyActive === 0 &&
+    tasks.review === 0 &&
+    openGaps > 0 &&
+    tasks.approvalBlockedDisposition.covered;
+  const approvalBlockedNote = approvalBlockedSuppression
+    ? JSON.stringify({
+        disposition: "approval-gated-blocked-only",
+        focusTaskIds: tasks.approvalBlockedDisposition.focusTaskIds,
+        governingWaitTaskIds: tasks.approvalBlockedDisposition.governingWaitTaskIds,
+      })
+    : undefined;
+  const fragileActiveOnlyRecovery =
+    !approvalBlockedSuppression &&
+    !tasks.projectClosed &&
+    tasks.runnable === 0 &&
+    tasks.review === 0 &&
+    healthyActive > 0 &&
+    openGaps > 0 &&
+    tasks.blocked > 0 &&
+    tasks.activeDomainTaskIds.length === 0 &&
+    tasks.activeOpsTaskIds.length === tasks.activeTaskIds.length &&
+    tasks.activeOpsTaskIds.length > 0;
+  const fragileActiveOnlyRecoveryNote = fragileActiveOnlyRecovery
+    ? JSON.stringify({
+        disposition: "fragile-active-only-recovery",
+        activeTaskIds: tasks.activeTaskIds,
+        activeOpsTaskIds: tasks.activeOpsTaskIds,
+        activeDomainTaskIds: tasks.activeDomainTaskIds,
+        blockedLeafCount: tasks.blocked,
+        openGapCount: openGaps,
+        healthyActiveCount: healthyActive,
+      })
+    : undefined;
 
   const values: Record<string, () => MetricSampleOutput> = {
     "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
@@ -2297,15 +2850,24 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     "aks-rp-e2e.task.completed-24h": () => ({ value: tasks.completed24h }),
     "aks-rp-e2e.task.no-work-with-gaps": () => ({
       value:
+        !approvalBlockedSuppression &&
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
         healthyActive === 0 &&
         openGaps > 0
           ? 1
           : 0,
+      sampleSize: approvalBlockedSuppression
+        ? tasks.approvalBlockedDisposition.focusTaskIds.length +
+          tasks.approvalBlockedDisposition.governingWaitTaskIds.length
+        : fragileActiveOnlyRecovery
+          ? tasks.activeTaskIds.length
+          : undefined,
+      note: approvalBlockedNote ?? fragileActiveOnlyRecoveryNote,
     }),
     "aks-rp-e2e.task.ready-starvation-with-gaps": () => ({
       value:
+        !approvalBlockedSuppression &&
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
         healthyActive === 0 &&
@@ -2313,6 +2875,13 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
         openGaps > 0
           ? 1
           : 0,
+      sampleSize: approvalBlockedSuppression
+        ? tasks.approvalBlockedDisposition.focusTaskIds.length +
+          tasks.approvalBlockedDisposition.governingWaitTaskIds.length
+        : fragileActiveOnlyRecovery
+          ? tasks.activeTaskIds.length
+          : undefined,
+      note: approvalBlockedNote ?? fragileActiveOnlyRecoveryNote,
     }),
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () => ({
       value:
@@ -2330,8 +2899,6 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     "aks-rp-e2e.process.unowned-work-count": () => {
       const staleActiveTasks = staleActiveTaskDetails();
       const staleWorkflowRuns = staleRunningWorkflowRunDetails();
-      const assignmentMismatches =
-        openTaskAssignmentStateMismatchDetails(loadTaskTree());
       const value = tasks.projectClosed
         ? 0
         : staleActiveTasks.length +
@@ -2364,6 +2931,10 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     },
     "aks-rp-e2e.process.assignment-state-mismatch-count": () => ({
       value: tasks.projectClosed ? 0 : tasks.assignmentStateMismatch,
+      sampleSize: tasks.projectClosed ? 0 : assignmentMismatches.length,
+      note: JSON.stringify({
+        mismatches: tasks.projectClosed ? [] : assignmentMismatches,
+      }),
     }),
     "aks-rp-e2e.process.assignment.not-consumed-count": () => ({
       value: tasks.projectClosed ? 0 : assignmentNotConsumed.length,

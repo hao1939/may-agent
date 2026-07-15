@@ -369,7 +369,7 @@ folder does not keep a parallel task event log.
   and emits `project.task.reviewed`; the planner validates the task state and
   attempt id, applies the reviewer decision, then refills runnable work. The
   timer is only a safety net for missed events or stale sessions.
-- Task lifecycle events have explicit ownership. `project.planning.requested`
+- Task lifecycle events have explicit ownership. `project.owner.requested`
   is handled by the planner workflow. `project.task.assigned` is handled by the
   worker workflow. `project.task.completed` is handled by the task-reviewer
   workflow, which is read-only and emits `project.task.reviewed`.

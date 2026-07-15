@@ -252,7 +252,7 @@ Start with:
 - `project.task.completed`;
 - `project.task.reviewed`;
 - `project.task.tick`;
-- `project.planning.requested`;
+- `project.owner.requested`;
 - `metric.breach`.
 
 Each closure check needs a time window. Use the most specific deadline already
@@ -432,20 +432,11 @@ Decision rule:
   or app-process defect, create or dispatch the smallest fix-forward task that
   can diagnose, repair, rerun, or record an exact wait.
 
-### 10. Add SDK Route Aliases Later
+### 10. Keep One SDK Vocabulary
 
-Do not do a breaking SDK rename now.
-
-Later, add aliases while keeping old names compatible:
-
-```text
-eventRoutes([...])      -> workflowHandlers([...])
-maxRoutesPerEvent       -> maxHandlersPerEvent
-eventGraph.routes       -> eventGraph.handlers
-```
-
-The implementation can keep using current fields internally while docs,
-checks, and generated diagnostics speak in route terms.
+Use the runtime contract names directly: `workflowHandlers[].accepts`,
+`eventGraph.handlers`, and `maxHandlersPerEvent`. Do not add route aliases;
+aliases would create a second manifest language without adding capability.
 
 ## Suggested Order
 
@@ -462,7 +453,7 @@ For compact-loop reliability, keep the order narrow:
      without one representation from the immediate compact-loop bar above.
 2. Make route closure visible.
    - Confirm `project.task.assigned`, `project.task.completed`,
-     `project.task.reviewed`, `project.task.tick`, `project.planning.requested`,
+     `project.task.reviewed`, `project.task.tick`, `project.owner.requested`,
      and `metric.breach` reach a route, owner decision, task state change,
      terminal output, or accepted no-op within the right window.
    - Prefer extending `bun run health --json` over adding another command.

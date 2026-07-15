@@ -7,15 +7,15 @@ Status: current process model with planned UI and metric refinements
 `aks-rp-e2e.app` needs observability that can answer two different questions in
 the right order:
 
-1. Is the project process connected and moving correctly?
-2. Are the AKS work results correct?
+1. Is the work loop advancing AKS outcomes toward the project goal?
+2. When it is not, is the feedback loop materially restoring it or resolving
+   exhausted gaps into evidence-backed terminal dispositions?
 
-Do not start by judging AKS results. First prove that events, workflow routes,
-task state transitions, reviews, loop controllers, and planner decisions are
-connected. If the process has a black hole, the right fix is routing,
-scheduling, task-state, or workflow-contract repair. Only after the process is
-sound should we judge whether specs, compact plans, live tests, or reference
-collection are correct.
+Judge outcome motion and process closure separately. A connected event graph
+can still spend all of its effort refreshing waits or repairing its own state.
+An exact external wait is truthful representation, but the project remains in
+active recovery until work is restored or the affected gap becomes terminal.
+The canonical contract is in `two-loop-operating-model.md`.
 
 Read this file in two layers:
 
@@ -81,10 +81,19 @@ Nothing is allowed to disappear. Every abnormal condition must clear, become
 owned work, become an exact wait, create an escalation, or reach an accepted
 terminal disposition.
 
+That closure rule prevents lost work, but it is not the feedback success rule.
+An exact wait closes representation only. Feedback succeeds when it restores
+the affected slice to the work loop or reaches an accepted, evidence-backed
+terminal disposition.
+
+Task rollup and lifecycle must remain separate. A root task automatically
+rolled up to `blocked` does not suppress starvation or gap signals while
+`project_lifecycle` remains `active`.
+
 The normal work loop is one instance of that model:
 
 ```text
-project.planning.requested
+project.owner.requested
   -> project-planner
   -> project.task.assigned
   -> task-worker
@@ -813,7 +822,7 @@ allowed outcomes is observed.
 
 | Input event                                      | Expected route target               | Closed when                                                                   |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------- |
-| `project.planning.requested`                     | `project-planner`                   | planner run row records dispatched work, pulse, accepted no-op, or exact wait |
+| `project.owner.requested`                     | `project-planner`                   | planner run row records dispatched work, pulse, accepted no-op, or exact wait |
 | `project.task.assigned`                          | `task-worker`                       | task starts worker and reaches `review`, `done`, `blocked`, or stale-noop     |
 | `project.task.completed`                         | `task-reviewer`                     | reviewer emits `project.task.reviewed` or records structured escalation       |
 | `project.task.reviewed`                          | `project-planner`                   | planner applies decision or records structured stale-noop                     |
@@ -917,7 +926,7 @@ Owner-routed row:
   "emittedEventIds": ["evt_planning_requested"],
   "ownerDecision": {
     "decision": "dispatch-event",
-    "eventType": "project.planning.requested",
+    "eventType": "project.owner.requested",
     "reason": "metric breach needs project reconciliation"
   },
   "stateWrites": [],
@@ -1267,12 +1276,23 @@ The planner consumes `escalation.resolved` and `escalation.dismissed`. On either
 event, it should reconcile the owning wait: unblock, reopen, mark terminal, or
 create the next bounded task.
 
+When a task review proves that an escalation is already resolved or
+superseded, the read-only reviewer returns the exact canonical closure in
+`project.task.reviewed.data.events`. The planner validates the type, owner,
+original `escalationId`, and required outcome/summary or dismissal reason before
+emitting it. An evidence memo or accepted task without that linked closure
+event does not close the escalation and must remain visible to evaluation.
+
 Allowed escalation closure states:
 
 - `waiting`: the linked blocked task is exact and `fallback_at` has not passed.
 - `resolved`: a returned answer satisfies the resume condition and work can
   continue or close.
 - `dismissed`: the ask is duplicate, wrong, superseded, or no longer needed.
+- `superseded`: use `escalation.resolved` with this outcome when newer work
+  replaced the ask and the original source session must not resume. Reserve
+  `fixed` and `answered` outcomes for closures that satisfy the original resume
+  condition and should continue that source session.
 - `expired`: `fallback_at` passed without an answer; planner/watchdog must
   recheck, send one bounded follow-up, reroute, or create repair work.
 
@@ -1506,13 +1526,13 @@ The intended graph is:
 
 ```text
 regular-learning schedule
-  -> project.planning.requested
+  -> project.owner.requested
   -> project-planner
 
 project-execution-watchdog schedule
   -> project.watchdog.check.requested
   -> project-execution-watchdog
-  -> project.planning.requested | project.stall.review.requested | project.task.tick
+  -> project.owner.requested | project.stall.review.requested | project.task.tick
 
 durable-loop-pulse schedule
   -> project.task.tick + action=spec-loop
@@ -1551,7 +1571,7 @@ project.problem.investigation.requested
 
 project.focus.review.requested
   -> focus-plan
-  -> project.planning.requested | message.created
+  -> project.owner.requested | message.created
 
 project.approval.requested
   -> approval-dispatch
@@ -1971,7 +1991,7 @@ Buttons on process cards should not be mystery controls. A card action such as
 `Prepare Review` should fill a complete planner request in the project action
 box and explain that the user may send it as-is or add context. The button does
 not mean "chat with the agent here"; it means "post a
-`project.planning.requested` event with this raw fact and requested
+`project.owner.requested` event with this raw fact and requested
 classification." Follow-up appears through the normal project surfaces after
 refresh: updated task-tree state, review rows, exact waits, escalations, or
 human-facing messages. If the planner needs human input, it must create a

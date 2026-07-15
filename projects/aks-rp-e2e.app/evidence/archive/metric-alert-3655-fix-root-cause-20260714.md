@@ -85,3 +85,15 @@ Output:
 ## Why this is root-cause repair
 
 The breach was not stale and was not a metric-threshold problem. The metric was correctly reporting one feature (`secops`) with no live compact-facing representation. The safe owner action was to restore truthful compact representation for that exact frontier. After that repair, the same metric source returned `value=0` immediately.
+
+## Post-triage validation
+
+Follow-up metric and alert state now show the repair landed all the way through the persisted runtime:
+
+- `metrics.current = 0`
+- `metrics.updated_at = 2026-07-14T11:05:32.840Z`
+- alert `3655.resolved_at = 2026-07-14T11:05:38.250Z`
+
+The follow-up audit memo at `evidence/archive/ops-repair-unrepresented-loop-record-integrity-drift-20260714.md` confirms there was no second live residue by the time the repair task started: the only remaining drift was snapshot lag between the bounded secops compact-holder repair and the next normal `metrics-snapshot` refresh.
+
+Final alert judgment remains `fix_root_cause`: a real app-process representation defect existed, it was safely repaired through supported app-owned task-tree / compact-state mechanisms, and the persisted metric and alert lifecycle both recovered afterward.

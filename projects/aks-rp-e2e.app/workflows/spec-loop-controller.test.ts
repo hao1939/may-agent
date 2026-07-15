@@ -1724,18 +1724,9 @@ describe("spec-loop-controller", () => {
       unrepresentedNonTerminalCount: 0,
     });
     expect(tree.tasks["aks-spec-verification-loop"].state).toBe("blocked");
-    expect(tree.tasks["aks-spec-verification-loop"].blocker).toMatchObject({
-      category: "child-blocked",
-      observed_by: {
-        workflow: "spec-loop-controller",
-      },
-    });
     expect(
-      tree.tasks["aks-spec-verification-loop"].blocker.fallback_at,
-    ).toBeTruthy();
-    expect(
-      tree.tasks["aks-spec-verification-loop"].blocker.fallback_action,
-    ).toContain("fallback time");
+      tree.tasks["aks-spec-verification-loop"].blocker,
+    ).toBeUndefined();
   });
 
   test("does not policy-preflight reviewed pending specs that are already represented by an exact wait", async () => {

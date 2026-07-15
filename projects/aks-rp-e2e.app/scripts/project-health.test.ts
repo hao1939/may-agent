@@ -30,6 +30,7 @@ async function writeTree(
   appDir: string,
   tasks: Record<string, Record<string, unknown>>,
   rootChildren: string[],
+  projectLifecycle = "active",
 ) {
   await writeFile(
     resolveTaskTreePath(appDir),
@@ -37,7 +38,7 @@ async function writeTree(
       {
         version: 1,
         project: "aks-rp-e2e",
-        project_lifecycle: "active",
+        project_lifecycle: projectLifecycle,
         root_task_id: "project",
         active_task_ids: rootChildren.filter(
           (id) => tasks[id]?.state === "active",
@@ -115,6 +116,116 @@ describe("project health", () => {
     );
   });
 
+  test("reports recovering when the executable frontier is ops-only", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      {
+        "ops/recover-auth": {
+          id: "ops/recover-auth",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          owner: "app-ops",
+          children: [],
+          goal: "Restore worker authentication.",
+          trace: {
+            assigned_at: "2026-07-03T11:59:00.000Z",
+            worker_started_at: "2026-07-03T11:59:10.000Z",
+          },
+        },
+        "blocked-domain": {
+          id: "blocked-domain",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Verify a blocked domain path.",
+          blocker: {
+            condition: "Worker authentication is unavailable.",
+            owner: "app-ops",
+            resume_condition: "Resume after authentication recovery.",
+            next_check_at: "2026-07-03T12:10:00.000Z",
+            fallback_at: "2026-07-03T13:00:00.000Z",
+          },
+        },
+      },
+      ["ops/recover-auth", "blocked-domain"],
+    );
+    await writeJsonl(fixture.appDir, "journal.jsonl", [
+      {
+        ts: "2026-07-03T11:59:10.000Z",
+        kind: "task_worker_started",
+        task_id: "ops/recover-auth",
+      },
+    ]);
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    expect(report.status).toBe("recovering");
+    expect(report.movement.domainOutcomesAccepted).toBe(0);
+    expect(report.signals.map((signal) => signal.code)).toContain(
+      "feedback-loop.recovery-only",
+    );
+  });
+
+  test("reports moving when recovery restores an active domain frontier", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      {
+        "ops/recover-auth": {
+          id: "ops/recover-auth",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          owner: "app-ops",
+          children: [],
+          goal: "Finish recovery verification.",
+          trace: { worker_started_at: "2026-07-03T11:59:10.000Z" },
+        },
+        "domain/retry-spec": {
+          id: "domain/retry-spec",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Retry the affected domain spec.",
+          trace: { worker_started_at: "2026-07-03T11:59:20.000Z" },
+        },
+      },
+      ["ops/recover-auth", "domain/retry-spec"],
+    );
+    await writeJsonl(fixture.appDir, "journal.jsonl", [
+      {
+        ts: "2026-07-03T11:59:20.000Z",
+        kind: "task_worker_started",
+        task_id: "domain/retry-spec",
+      },
+    ]);
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    expect(report.status).toBe("moving");
+    expect(report.signals.map((signal) => signal.code)).not.toContain(
+      "feedback-loop.recovery-only",
+    );
+  });
+
   test("flags an incomplete durable loop with no executable frontier", async () => {
     const fixture = await makeFixture();
     await mkdir(join(fixture.appDir, ".state", "spec-loop"), {
@@ -175,7 +286,7 @@ describe("project health", () => {
     expect(report.loops[0].stateCounts).toMatchObject({ error: 1 });
   });
 
-  test("treats represented blocked-wait durable loop as attention, not critical stall", async () => {
+  test("treats represented blocked waits as stalled while project lifecycle remains active", async () => {
     const fixture = await makeFixture();
     await mkdir(join(fixture.appDir, ".state", "spec-loop"), {
       recursive: true,
@@ -252,9 +363,49 @@ describe("project health", () => {
     });
 
     const codes = report.signals.map((signal) => signal.code);
-    expect(report.status).toBe("attention");
+    expect(report.status).toBe("stalled");
     expect(codes).toContain("loop.blocked-wait-stewardship");
+    expect(codes).toContain("work-loop.active-lifecycle-starved");
     expect(codes).not.toContain("loop.incomplete-without-frontier");
+  });
+
+  test("does not allow a blocked lifecycle value to hide a blocked-only stall", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      {
+        "external-wait": {
+          id: "external-wait",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          children: [],
+          goal: "Wait for a sent external handoff.",
+          blocker: {
+            condition: "sent owner decision is pending",
+            owner: "human",
+            resume_condition: "resume when owner returns",
+            next_check_at: "2026-07-12T00:00:00.000Z",
+            fallback_at: "2026-07-13T00:00:00.000Z",
+          },
+        },
+      },
+      ["external-wait"],
+      "blocked",
+    );
+
+    const report = buildProjectHealth({
+      appDir: fixture.appDir,
+      projectDir: fixture.projectDir,
+      nowMs,
+      lookbackMinutes: 30,
+      staleActiveMinutes: 30,
+    });
+
+    expect(report.status).toBe("stalled");
+    expect(report.signals.map((signal) => signal.code)).toContain(
+      "work-loop.active-lifecycle-starved",
+    );
   });
 
   test("shows active compact pipeline feature keys in loop health", async () => {
@@ -583,8 +734,8 @@ describe("project health", () => {
     });
 
     expect(report.status).toBe("attention");
-    expect(report.assignments.queued).toBe(1);
-    expect(report.signals.map((signal) => signal.code)).toContain(
+    expect(report.assignments.queued).toBe(0);
+    expect(report.signals.map((signal) => signal.code)).not.toContain(
       "assignment.queue-not-empty",
     );
   });

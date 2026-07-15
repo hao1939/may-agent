@@ -470,7 +470,7 @@ function dispatchOwnerRequested(
   },
 ): void {
   try {
-    ctx.dispatchEvent("project.planning.requested", {
+    ctx.dispatchEvent("project.owner.requested", {
       target: { project: "aks-rp-e2e" },
       project: "aks-rp-e2e",
       reason: `focus-plan-${input.kind}`,

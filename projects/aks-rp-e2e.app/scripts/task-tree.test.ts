@@ -223,6 +223,38 @@ describe("task-tree CLI", () => {
     expect(focus.context.needs_approval).toBe(true);
   });
 
+  test("show surfaces context rollup_summary when the root task field is stale", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks.project.rollup_summary =
+      "stale repo-local VM prerelease parity sweep";
+    tree.tasks.project.context = {
+      rollup_summary:
+        "truthful blocked-only approval wait stewardship summary",
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const shown = await runTaskTree(["show", "project"], {
+      ...process.env,
+      APP_DIR: fixture.appDir,
+      PROJECT_DIR: fixture.projectDir,
+      WORKER: "aks-explorer",
+    });
+
+    expect(shown.exitCode).toBe(0);
+    const parsed = JSON.parse(shown.stdout) as {
+      rollup_summary?: string;
+      context?: { rollup_summary?: string };
+    };
+    expect(parsed.rollup_summary).toBe(
+      "truthful blocked-only approval wait stewardship summary",
+    );
+    expect(parsed.context?.rollup_summary).toBe(
+      "truthful blocked-only approval wait stewardship summary",
+    );
+  });
+
   test("mark-done refuses to close an active started attempt", async () => {
     const fixture = await makeFixture();
     const treePath = resolveTaskTreePath(fixture.appDir);
@@ -349,7 +381,7 @@ describe("task-tree CLI", () => {
       observed_by: {
         workflow: "project-planner",
         schedule: "blocked-frontier-app-ops-review",
-        trigger: "project.planning.requested",
+        trigger: "project.owner.requested",
       },
       observation_method:
         "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
@@ -448,7 +480,7 @@ describe("task-tree CLI", () => {
         "--state",
         "blocked",
         "--blocker-json",
-        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait","sourceRunId":"28676489009"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.planning.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
+        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait","sourceRunId":"28676489009"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.owner.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
       ],
       {
         ...process.env,
@@ -470,7 +502,7 @@ describe("task-tree CLI", () => {
         "update-text",
         "capacity-wait",
         "--blocker-json",
-        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.planning.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
+        '{"condition":"Blocked only while exact westus2 capacity members remain unchanged.","category":"external-wait","owner":"human","resume_condition":"Resume only when reviewed westus2 capacity recovery arrives.","resume_at":"2026-07-10T18:00:00Z","blocked_at":"2026-07-03T02:47:04.593Z","waiting_for":{"type":"azure.capacity.available","taskId":"capacity-wait"},"observed_by":{"workflow":"project-planner","schedule":"blocked-frontier-owner-review","trigger":"project.owner.requested"},"observation_method":"Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.","next_check_at":"2026-07-10T18:00:00Z","fallback_at":"2026-07-11T18:00:00Z","fallback_action":"Refresh with reviewed evidence or escalate."}',
       ],
       {
         ...process.env,
@@ -742,7 +774,7 @@ describe("task-tree CLI", () => {
         observed_by: {
           workflow: "project-planner",
           schedule: "blocked-frontier-app-ops-review",
-          trigger: "project.planning.requested",
+          trigger: "project.owner.requested",
         },
         observation_method:
           "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
@@ -852,7 +884,7 @@ describe("task-tree CLI", () => {
         observed_by: {
           workflow: "project-planner",
           schedule: "blocked-frontier-app-ops-review",
-          trigger: "project.planning.requested",
+          trigger: "project.owner.requested",
         },
         observation_method:
           "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
@@ -925,7 +957,7 @@ describe("task-tree CLI", () => {
         },
         observed_by: {
           workflow: "project-planner",
-          trigger: "project.planning.requested",
+          trigger: "project.owner.requested",
         },
         observation_method:
           "Scheduled blocked-frontier owner review checks the stated wait condition.",
@@ -992,7 +1024,7 @@ describe("task-tree CLI", () => {
         },
         observed_by: {
           workflow: "project-planner",
-          trigger: "project.planning.requested",
+          trigger: "project.owner.requested",
         },
         observation_method:
           "Scheduled blocked-frontier owner review checks the stated wait condition.",
@@ -1055,7 +1087,7 @@ describe("task-tree CLI", () => {
         },
         observed_by: {
           workflow: "project-planner",
-          trigger: "project.planning.requested",
+          trigger: "project.owner.requested",
         },
         observation_method:
           "Scheduled blocked-frontier owner review checks the stated wait condition.",

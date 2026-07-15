@@ -774,11 +774,28 @@ type TerminalGitHubWaitHarvest = {
   checkedRunIds: string[];
 };
 
+function safeAttemptSegment(value: string): string {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
+}
+
+function isPipelineCompletionWaitType(value: string): boolean {
+  return ["ado.pipeline_run.completed", "github.workflow_run.completed"].includes(
+    value,
+  );
+}
+
 function runIdFromWaitTask(task: TaskNode): string {
   const blocker = recordValue(task.blocker);
   const waitingFor = recordValue(blocker?.waiting_for);
+  const waitingForType = stringField(waitingFor, "type");
   const structuredRunId = stringField(waitingFor, "runId");
-  if (structuredRunId) return structuredRunId;
+  if (isPipelineCompletionWaitType(waitingForType) && structuredRunId) {
+    return structuredRunId;
+  }
   const context = taskContext(task);
   for (const key of [
     "runId",
@@ -933,6 +950,9 @@ export function harvestTerminalGitHubWaits(input: {
       };
       child.trace = {
         ...(child.trace ?? {}),
+        current_attempt_id: `a_${safeAttemptSegment(child.id)}_${safeAttemptSegment(candidate.runId)}_terminal_wait_review`,
+        terminal_wait_review_attempt_created_at: now,
+        terminal_wait_review_attempt_created_by: name,
         terminal_pipeline_wait_observed_at: now,
         terminal_pipeline_wait_run_id: candidate.runId,
         terminal_pipeline_wait_run_status: run.status ?? null,

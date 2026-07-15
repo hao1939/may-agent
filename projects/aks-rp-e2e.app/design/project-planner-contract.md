@@ -13,7 +13,7 @@ task-tree tools, drains explicit task dispatches, and records the wake result.
 Planning is invoked by event:
 
 ```text
-project.planning.requested -> project-planner workflow
+project.owner.requested -> project-planner workflow
 ```
 
 The workflow may call the `app-ops` agent when judgment is needed. The agent
@@ -60,12 +60,53 @@ Task completion review is split from general planning:
    alias.
 3. `task-reviewer` emits `project.task.reviewed` with structured judgment. If
    reviewer output is malformed, it emits `decision=escalate` and
-   `confidence=low` rather than letting prose drive control flow.
+   `confidence=low` rather than letting prose drive control flow. Transient
+   provider failures (`401` expired token, `429` cooldown, or `5xx`) receive one
+   delayed retry in a fresh reviewer session before this fallback.
 4. `project-planner` consumes `project.task.reviewed`, validates the task is
-   still in live `review` state for the same attempt, then applies the decision
-   through task-tree tools.
+   still in live `review` state for the same attempt, validates any canonical
+   events proposed by the reviewer, then applies the decision through
+   task-tree tools and emits the approved events.
 5. Only after pending reviewed decisions are applied should the planner refill
    or widen work.
+
+The app registers `project.task.reviewed` on a dedicated fast handler that runs
+the same `project-planner` workflow. General planning requests use a separate
+handler queue because their agent sessions can be long-running. This preserves
+one planner implementation and one task-tree writer while preventing reviewed
+decisions from waiting behind unrelated planning sessions.
+
+If an accepted review arrives after the reviewed source task was already
+closed/replaced and compacted, the planner may still emit reviewer-returned
+bounded replay events when every proposed event is a validated
+`project.task.completed` transition targeting a currently live review task.
+That recovery path preserves the exact current leaf without reopening the
+archived source task.
+
+For `redo`, the planner must preserve the complete review packet on the task:
+summary, findings, feedback, suggested follow-ups, affected artifacts, and
+required verification. The next worker attempt receives that packet alongside
+the original task. Reducing review to one reason string breaks the correction
+path because the worker loses what to change and how acceptance will be judged.
+
+For `followup`, the successor carries the same artifact and verification
+context. For `accept`, any suggested reusable improvement is separate follow-up
+work; acceptance of the current artifact does not silently claim that broader
+learning was applied.
+
+If acceptance requires a durable event transition, the reviewer returns the
+exact canonical event in `project.task.reviewed.data.events`; the planner owns
+validation and emission. A memo that says an escalation, wait, or other event
+"should" close is evidence, not closure. For escalation cleanup, the accepted
+review must either observe an existing linked `escalation.resolved` or
+`escalation.dismissed` event, or propose that exact event for the planner to
+emit.
+
+A reviewed result may also request one canonical durable-loop pulse with
+`project.task.tick`. The planner accepts it only when `action` is one of
+`spec-loop`, `feature-reference-loop`, or `feature-compact-loop` and the target
+is the matching durable loop root. The planner normalizes `action` onto the
+event envelope before emission so the app selector routes the pulse directly.
 
 For overdue blocked-wait audits, accepted evidence is not enough by itself if
 the live wait remains stale. Before accepting the reviewed task as done, the
@@ -173,6 +214,12 @@ emit a structured fact for the planner instead.
 - Stall-review collects a liveness packet and asks the agent to judge process
   stalls; planner applies the result.
 - Focus-plan keeps mission-level state readable; child tasks do the work.
+
+Worker session identity is attempt-scoped. The assignment session id is derived
+from both task id and attempt id: duplicate delivery of the same attempt may
+reattach, while a retry or a task id recreated after archival must start a fresh
+session. Task id alone is not a safe session key because completed ids may be
+compacted and later reused.
 
 Scoped workflows should not generally know task-tree mechanics. They should
 receive scoped input and return structured output. Task-tree lookup, assignment
@@ -326,6 +373,13 @@ planner/worker/reviewer loop should drive the child work; the focus branch only
 keeps the mission, success criteria, current evidence, and remaining blockers
 readable.
 
+The live frontier is derived from the task tree. Lists captured in focus
+observations or progress-review prose are historical snapshots, not structural
+relations and not integrity constraints. Stable relations use task children,
+`depends_on`, and the structured blocker/wait fields. Normal child completion
+must not create a P0 integrity incident merely because an older focus snapshot
+still names that child as active or under review.
+
 The lifecycle is:
 
 ```text
@@ -362,10 +416,15 @@ If any child is still `active`, `review`, `backlog`, `waiting`, or `blocked`,
 the focus workflow must suppress terminal language and keep planner/app-ops
 moving.
 
-The planner should not be the default first-pass reviewer for fresh
-`project.task.completed` events once `task-reviewer` is enabled. Its role is to
-own the decision and task-tree mutation after the independent reviewer has
-provided a structured judgment.
+The planner must not act as the first-pass reviewer for live `review` tasks once
+`task-reviewer` is enabled. General planner wakes leave those tasks unchanged.
+Its role is to apply the structured `project.task.reviewed` judgment for the
+same task and attempt, then own the resulting task-tree mutation and approved
+event emission. The review watchdog handles missing or stuck review delivery;
+a concurrent planner session must not race the reviewer by manually accepting
+or rejecting the task, or by emitting event proposals copied from the pending
+review. Only the deterministic handler for that exact reviewed event may apply
+those transitions.
 
 The reviewer owns independent completion judgment only:
 
@@ -593,13 +652,28 @@ Examples:
 - Use `project.task.reviewed.data.feedback` when rejecting/retrying work.
 - Use `project.task.reviewed.data.suggestedFollowups` as proposals, not direct
   task-tree mutations.
+- Use `project.task.reviewed.data.events` for canonical state transitions that
+  the reviewer has judged and the planner can validate. The current planner
+  accepts complete `escalation.resolved` / `escalation.dismissed` proposals,
+  plus bounded `project.task.completed` replay proposals that carry a concrete
+  current task/attempt/result/summary packet for a fresh review cycle, and
+  strictly targeted `project.task.tick` proposals for the three durable loop
+  roots.
+  Arbitrary reviewer-generated events are rejected.
 - If a blocked/follow-up review says the next step is project-side work, the
   reviewer must use `project.task.reviewed.data.reviewAction`. The planner uses
   `reviewAction.actionKind`, not prose, to route that work.
 - Supported `reviewAction.actionKind` values:
-  `app-state-repair` and `publish-domain-repair-and-rerun`. Add a new action
-  kind only when the planner can validate and apply it as a bounded task-tree
-  operation.
+  `app-state-repair`, `publish-domain-repair-and-rerun`,
+  `create-domain-followup`, and `task-tree-followup`.
+  - `create-domain-followup` means the review already names one bounded domain
+    successor shape, so the planner should create that concrete child directly
+    instead of spawning another memo-only worker reminder.
+  - `task-tree-followup` means the remaining work is a planner/app-owned
+    task-tree mutation; the planner should either apply the bounded mutation or
+    create one app-owned apply task, not another domain memo loop.
+  Add a new action kind only when the planner can validate and apply it as a
+  bounded task-tree operation.
 - `summary`, `findings`, `feedback`, and `suggestedFollowups` explain the
   judgment and proposed work. They are not a routing protocol.
 - Use `blockedTasks[].resumeAt` for future-dated external waits.

@@ -394,7 +394,7 @@ const metrics: MetricDef[] = [
     alertOp: "<",
     priority: "P3",
     description:
-      "Dashboard counter for specs/index.json entries, the canonical verification catalog.",
+      "Dashboard counter for the canonical feature-owned spec catalog used by the spec verification loop; a legacy specs/index.json is used only when present.",
   },
   {
     id: "aks-rp-e2e.spec.verified-count",
@@ -449,12 +449,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked specs",
     type: "gauge",
     target: 0,
-    threshold: 10,
+    threshold: 999999,
     unit: "count",
     alertOp: ">",
-    priority: "P2",
+    priority: "P3",
     description:
-      "Specs with blocked status. High count means unblock, prerequisite, or exception review work is needed.",
+      "Dashboard-only blocked-spec inventory signal: keeps truthful visibility on specs whose catalog/loop state is still blocked, including represented exact waits, reviewed-exception/frontier stewardship, and source/evidence ceilings. Keep this visible as raw spec inventory, but route interrupting blocked-spec actionability through existing companion metrics: aks-rp-e2e.task.blocked-actionable-count for malformed/overblocked wait families, aks-rp-e2e.process.blocked.overdue-unworked-count for missed resume/fallback coverage, and aks-rp-e2e.spec.unverified-without-work or aks-rp-e2e.task.no-work-with-gaps when blocked/unverified specs remain without active recovery work.",
   },
   {
     id: "aks-rp-e2e.spec.ready-count",

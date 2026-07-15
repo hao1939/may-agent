@@ -3,7 +3,6 @@ import app from "../app.ts";
 
 type WorkflowHandler = {
   name?: string;
-  on?: string[];
   accepts?: EventSelector[];
   handler?: {
     workflow?: string;
@@ -26,7 +25,6 @@ type ProjectAction = {
 type Schedule = {
   id?: string;
   emits?: Array<Record<string, unknown>>;
-  event?: Record<string, unknown>;
 };
 
 const projectId = "aks-rp-e2e";
@@ -37,10 +35,7 @@ const appManifest = app as {
     externalEvents?: string[];
   };
   actions?: Record<string, ProjectAction>;
-  onEvent?: {
-    kind?: string;
-    handlers?: WorkflowHandler[];
-  };
+  onEvent?: unknown;
 };
 
 function handler(name: string): WorkflowHandler {
@@ -67,19 +62,11 @@ function handlersForEvent(eventType: string): string[] {
 }
 
 function handlerSelectors(entry: WorkflowHandler): EventSelector[] {
-  return Array.isArray(entry.accepts)
-    ? entry.accepts
-    : Array.isArray(entry.on)
-      ? entry.on
-      : [];
+  return Array.isArray(entry.accepts) ? entry.accepts : [];
 }
 
 function scheduleEvents(schedule: Schedule): Array<Record<string, unknown>> {
-  return Array.isArray(schedule.emits)
-    ? schedule.emits
-    : schedule.event
-      ? [schedule.event]
-      : [];
+  return Array.isArray(schedule.emits) ? schedule.emits : [];
 }
 
 function allHandlerSelectors(): EventSelector[] {
@@ -184,24 +171,35 @@ describe("app event contract", () => {
     expect(failures).toEqual([]);
   });
 
-  test("onEvent is the event surface and workflowHandlers is generated sugar", () => {
-    expect(appManifest.onEvent).toMatchObject({
-      kind: "generated-workflow-handlers",
-    });
-    expect(appManifest.workflowHandlers).toBe(appManifest.onEvent?.handlers);
+  test("workflow handlers use the direct canonical event surface", () => {
+    expect(appManifest.workflowHandlers).toBeArray();
+    expect(appManifest.onEvent).toBeUndefined();
   });
 
-  test("owner workflow directly subscribes to review and wake events", () => {
+  test("owner workflow and fast review applier use the planner workflow", () => {
     expect(handler("aks-rp-e2e-project-planner").handler?.workflow).toBe(
       "project-planner",
     );
+    expect(handler("aks-rp-e2e-reviewed-task-applier").handler?.workflow).toBe(
+      "project-planner",
+    );
+    expect(handlerEvents("aks-rp-e2e-reviewed-task-applier")).toEqual([
+      "project.task.reviewed",
+    ]);
+    expect(handler("aks-rp-e2e-reviewed-task-applier")).toMatchObject({
+      emits: expect.arrayContaining([
+        "project.task.completed",
+        "project.task.assigned",
+        "escalation.resolved",
+        "escalation.dismissed",
+      ]),
+    });
 
     expect(handlerEvents("aks-rp-e2e-project-planner")).toEqual(
       expect.arrayContaining([
-        "project.planning.requested",
+        "project.owner.requested",
         "project.comment.created",
         "project.approval.submitted",
-        "project.task.reviewed",
         "project.test_run.completed",
         "project.stall.reviewed",
         "project.problem.resolved",
@@ -291,7 +289,7 @@ describe("app event contract", () => {
       "aks-rp-e2e-task-reviewer",
     ]);
     expect(handlersForEvent("project.task.reviewed")).toEqual([
-      "aks-rp-e2e-project-planner",
+      "aks-rp-e2e-reviewed-task-applier",
     ]);
     expect(handlersForEvent("project.stall.reviewed")).toEqual([
       "aks-rp-e2e-project-planner",
@@ -324,7 +322,7 @@ describe("app event contract", () => {
       intervalMs: 7_200_000,
       emits: [
         {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,

@@ -4,7 +4,10 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute as executePlanner } from "./project-planner.ts";
-import { execute } from "./task-reviewer.ts";
+import {
+  execute,
+  isTransientReviewerFailure,
+} from "./task-reviewer.ts";
 
 async function makeWorkspace() {
   const root = await mkdtemp(join(tmpdir(), "aks-task-reviewer-"));
@@ -126,6 +129,9 @@ function reviewMessage(input: {
   findings?: string[];
   feedback?: string[];
   suggestedFollowups?: string[];
+  artifacts?: string[];
+  verification?: string[];
+  events?: Array<Record<string, unknown>>;
   reviewAction?: Record<string, unknown>;
 }): string {
   return `TASK_REVIEW_JSON:
@@ -138,6 +144,9 @@ ${JSON.stringify(
     findings: input.findings ?? [],
     feedback: input.feedback ?? [],
     suggestedFollowups: input.suggestedFollowups ?? [],
+    ...(input.artifacts ? { artifacts: input.artifacts } : {}),
+    ...(input.verification ? { verification: input.verification } : {}),
+    ...(input.events ? { events: input.events } : {}),
     ...(input.reviewAction ? { reviewAction: input.reviewAction } : {}),
   },
   null,
@@ -179,6 +188,17 @@ describe("task reviewer", () => {
             decision: "accept",
             summary: "Live GitHub proof satisfies the task.",
             findings: ["artifact includes passing live run"],
+            events: [
+              {
+                type: "escalation.resolved",
+                owner: "agent:aks-explorer",
+                data: {
+                  escalationId: "esc-review-task",
+                  outcome: "fixed",
+                  summary: "The reviewed repair is verified.",
+                },
+              },
+            ],
             reviewAction: {
               actionKind: "app-state-repair",
               goal: "Apply the app-owned repair with structured routing.",
@@ -193,6 +213,14 @@ describe("task reviewer", () => {
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("Task Review Mode");
     expect(prompts[0]).toContain("Do not mutate the task tree");
+    expect(prompts[0]).toContain(
+      "Use `escalation.dismissed` when the ask is duplicate, wrong, obsolete",
+    );
+    expect(prompts[0]).toContain('Use `outcome: "fixed"` or `"answered"` only');
+    expect(prompts[0]).toContain("resume failure and must not be recorded");
+    expect(prompts[0]).toContain(
+      "planner validates and emits accepted reviewed events",
+    );
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
       type: "project.task.reviewed",
@@ -203,6 +231,19 @@ describe("task reviewer", () => {
         confidence: "high",
         summary: "Live GitHub proof satisfies the task.",
         findings: ["artifact includes passing live run"],
+        artifacts: ["runs/test-results/"],
+        verification: ["GitHub live test passes"],
+        events: [
+          {
+            type: "escalation.resolved",
+            owner: "agent:aks-explorer",
+            data: {
+              escalationId: "esc-review-task",
+              outcome: "fixed",
+              summary: "The reviewed repair is verified.",
+            },
+          },
+        ],
         reviewAction: {
           actionKind: "app-state-repair",
           goal: "Apply the app-owned repair with structured routing.",
@@ -1193,7 +1234,10 @@ describe("task reviewer", () => {
           runId: "171342018",
           runStatus: "completed",
           runConclusion: "failed",
-          namedSpecIds: [],
+          namedSpecIds: [
+            "spec.network-acns.cilium-observability",
+            "spec.network-acns.retina-enterprise",
+          ],
         },
       },
     });
@@ -1233,18 +1277,28 @@ describe("task reviewer", () => {
                 specResults: [
                   {
                     specId: "spec.network-acns.cilium-observability",
-                    status: "error",
+                    runId: "171342018",
+                    resultPath:
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-cilium-observability/spec-runner/result.json",
+                    specStatus: "error",
                     reason:
                       'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    liveVerified: false,
+                    liveClusterObserved: true,
                     artifactRefs: [
                       "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-cilium-observability/spec-runner/result.json",
                     ],
                   },
                   {
                     specId: "spec.network-acns.retina-enterprise",
-                    status: "error",
+                    runId: "171342018",
+                    resultPath:
+                      "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-retina-enterprise/spec-runner/result.json",
+                    specStatus: "error",
                     reason:
                       'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    liveVerified: false,
+                    liveClusterObserved: true,
                     artifactRefs: [
                       "runs/test-results/test_20260708083338198_o5hx8d_500854/artifacts/network-acns-retina-enterprise/spec-runner/result.json",
                     ],
@@ -1293,6 +1347,106 @@ describe("task reviewer", () => {
     );
     expect(dispatched[0].payload.findings).toContain(
       "spec:spec.network-acns.retina-enterprise:error",
+    );
+  });
+
+  test("adds validation note when grouped terminal wait omits per-spec exact result paths", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "171342018",
+          runStatus: "completed",
+          runConclusion: "failed",
+          namedSpecIds: [
+            "spec.network-acns.cilium-observability",
+            "spec.network-acns.retina-enterprise",
+          ],
+        },
+      },
+    });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            result: "partial",
+            summary: "Grouped network-acns run returned two error results.",
+            evidenceRefs: [
+              "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+            ],
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "partial",
+              subject: {
+                kind: "spec-group",
+                id: "network-acns",
+              },
+              artifacts: [
+                "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+              ],
+              details: {
+                runId: "171342018",
+                resultPath:
+                  "runs/test-results/test_20260708083338198_o5hx8d_500854/result.json",
+                specResults: [
+                  {
+                    specId: "spec.network-acns.cilium-observability",
+                    specStatus: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [],
+                  },
+                  {
+                    specId: "spec.network-acns.retina-enterprise",
+                    specStatus: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [],
+                  },
+                ],
+              },
+            },
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "redo",
+          summary: "Grouped terminal wait result is missing per-spec exact artifact paths.",
+          findings: [],
+        }),
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].payload.findings).toEqual(
+      expect.arrayContaining([
+        "validation-note:structured-spec-verification-result-incomplete",
+        "terminal-pipeline-missing-result-path:spec.network-acns.cilium-observability",
+        "terminal-pipeline-missing-artifact-refs:spec.network-acns.cilium-observability",
+        "terminal-pipeline-missing-result-path:spec.network-acns.retina-enterprise",
+        "terminal-pipeline-missing-artifact-refs:spec.network-acns.retina-enterprise",
+      ]),
     );
   });
 
@@ -1772,6 +1926,25 @@ describe("task reviewer", () => {
     });
   });
 
+  test("retries transient reviewer provider failures", () => {
+    expect(
+      isTransientReviewerFailure(
+        "OpenAI API error (401): IDE token expired: unauthorized: token expired",
+      ),
+    ).toBe(true);
+    expect(
+      isTransientReviewerFailure(
+        "OpenAI API error (429): No deployments available; try again in 5 seconds; cooldown",
+      ),
+    ).toBe(true);
+    expect(
+      isTransientReviewerFailure("OpenAI API error (503): upstream unavailable"),
+    ).toBe(true);
+    expect(isTransientReviewerFailure("looks fine but missing JSON")).toBe(
+      false,
+    );
+  });
+
   test("falls back to escalate review when reviewer output is malformed", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeTree(appDir);
@@ -1886,7 +2059,10 @@ describe("task reviewer", () => {
       escalate: (message: string) => ({ status: "escalated", message }),
       emit() {},
       dispatchEvent() {},
-      runAgent: async () => ({ status: "success", message: "owner should not run" }),
+      runAgent: async () => ({
+        status: "success",
+        message: "owner should not run",
+      }),
       runAgentSession: async () => ({
         status: "success",
         message: "owner should not run",

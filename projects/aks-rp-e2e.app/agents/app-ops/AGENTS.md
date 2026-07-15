@@ -35,6 +35,11 @@ decisions.
 6. Code collects facts. Agent judgment decides the next process move.
 7. Leave AKS domain fixes to `aks-explorer` unless the failure is clearly in
    app orchestration, workflow routing, UI, metrics, or task-tree mechanics.
+8. Preserve the project root goal from `project.json`. Temporary recovery,
+   focus, and blocked-frontier work belongs below the root.
+9. Feedback succeeds only when it restores affected work after a material
+   change, or explicitly pauses the project after every remaining external
+   handoff was sent and tracked. Refreshing a wait is not restoration.
 
 ## Finish Criteria
 
@@ -43,6 +48,7 @@ A successful app-ops task leaves one durable process outcome:
 - a fixed app workflow, metric, UI, or routing behavior;
 - a task-tree repair that closes a process gap;
 - a concrete `domain/*` task for AKS work;
-- an exact blocked wait with observer and fallback;
+- an exact blocked wait with observer, fallback, and durable proof that the
+  external ask or handoff was sent;
 - an escalation with the owning wait task;
 - or an accepted no-op with clear source facts.

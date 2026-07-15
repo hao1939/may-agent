@@ -368,7 +368,7 @@ action must trigger the workflow directly. Prefer existing events first:
 project.task.assigned
 project.task.completed
 project.task.reviewed
-project.planning.requested
+project.owner.requested
 project.task.tick
 project.problem.investigation.requested
 project.watchdog.check.requested

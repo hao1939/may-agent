@@ -19,6 +19,8 @@ const scriptPath = resolve(
   "check-integrity.ts",
 );
 
+const fixtureProjectGoal = "Deliver durable AKS verification outcomes.";
+
 async function runIntegrity(appDir: string) {
   const proc = Bun.spawn(["bun", scriptPath], {
     cwd: appDir,
@@ -90,6 +92,7 @@ async function makeFixture() {
         id: "aks-rp-e2e.app",
         owner: "aks-explorer",
         type: "project-app",
+        goal: fixtureProjectGoal,
         domainProject: {
           id: "aks-rp-e2e.app",
           path: "../aks-rp-e2e",
@@ -153,109 +156,112 @@ async function makeFixture() {
     "utf8",
   );
 
-  await writeFile(
-    resolveTaskTreePath(appDir),
-    `${JSON.stringify(
-      {
-        version: 1,
-        project: "aks-rp-e2e",
-        project_lifecycle: "active",
-        root_task_id: "project",
-        active_task_id:
-          "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
-        active_task_ids: [
+  const initialTree = {
+    version: 1,
+    project: "aks-rp-e2e",
+    project_lifecycle: "active",
+    root_task_id: "project",
+    active_task_id:
+      "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
+    active_task_ids: [
+      "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
+    ],
+    tasks: {
+      project: {
+        id: "project",
+        state: "active",
+        children: [
+          "aks-spec-verification-loop",
+          "aks-feature-reference-loop",
+          "aks-feature-compact-loop",
+        ],
+        goal: fixtureProjectGoal,
+        outputs: ["tasks/tree.json"],
+        acceptance: ["done"],
+      },
+      "aks-spec-verification-loop": {
+        id: "aks-spec-verification-loop",
+        parent_id: "project",
+        state: "done",
+        workflow: "spec-loop-controller",
+        children: [],
+        goal: "Verify specs.",
+        outputs: [".state/spec-loop/state.json"],
+        acceptance: ["Loop is current"],
+      },
+      "aks-feature-reference-loop": {
+        id: "aks-feature-reference-loop",
+        parent_id: "project",
+        state: "active",
+        workflow: "feature-reference-loop-controller",
+        children: [
           "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
         ],
-        tasks: {
-          project: {
-            id: "project",
-            state: "active",
-            children: [
-              "aks-spec-verification-loop",
-              "aks-feature-reference-loop",
-              "aks-feature-compact-loop",
-            ],
-            goal: "project",
-            outputs: ["tasks/tree.json"],
-            acceptance: ["done"],
+        goal: "Collect official references.",
+        outputs: [".state/feature-reference-loop/state.json"],
+        acceptance: ["Loop is current"],
+        forbidden: [],
+        conflict_scope: ["feature-reference-loop"],
+        depends_on: [],
+        context: {
+          stateRef: ".state/feature-reference-loop/state.json",
+          workflowProgress: {
+            completionReady: true,
+            reason:
+              "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path",
+            pending: 0,
+            running: 0,
+            done: 204,
+            blocked: 0,
+            error: 0,
+            dormant: 76,
+            stale: 24,
+            holdMode: "dormant-backlog-preserved",
+            noRefillNow: true,
+            openChildren: 1,
+            lastPulseCreated: 0,
+            lastPulseAssigned: 0,
+            updatedAt: new Date().toISOString(),
           },
-          "aks-spec-verification-loop": {
-            id: "aks-spec-verification-loop",
-            parent_id: "project",
-            state: "done",
-            workflow: "spec-loop-controller",
-            children: [],
-            goal: "Verify specs.",
-            outputs: [".state/spec-loop/state.json"],
-            acceptance: ["Loop is current"],
-          },
-          "aks-feature-reference-loop": {
-            id: "aks-feature-reference-loop",
-            parent_id: "project",
-            state: "active",
-            workflow: "feature-reference-loop-controller",
-            children: [
-              "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
-            ],
-            goal: "Collect official references.",
-            outputs: [".state/feature-reference-loop/state.json"],
-            acceptance: ["Loop is current"],
-            forbidden: [],
-            conflict_scope: ["feature-reference-loop"],
-            depends_on: [],
-            context: {
-              stateRef: ".state/feature-reference-loop/state.json",
-              workflowProgress: {
-                completionReady: true,
-                reason:
-                  "feature-reference loop has no active refill work; dormant backlog is preserved outside the workflow guard path",
-                pending: 0,
-                running: 0,
-                done: 204,
-                blocked: 0,
-                error: 0,
-                dormant: 76,
-                stale: 24,
-                holdMode: "dormant-backlog-preserved",
-                noRefillNow: true,
-                openChildren: 1,
-                lastPulseCreated: 0,
-                lastPulseAssigned: 0,
-                updatedAt: new Date().toISOString(),
-              },
-            },
-          },
-          "aks-feature-compact-loop": {
-            id: "aks-feature-compact-loop",
-            parent_id: "project",
-            state: "done",
-            workflow: "feature-compact-loop-controller",
-            children: [],
-            goal: "Compact feature tests.",
-            outputs: [".state/feature-compact-loop/state.json"],
-            acceptance: ["Loop is current"],
-          },
-          "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628":
-            {
-              id: "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
-              parent_id: "aks-feature-reference-loop",
-              state: "active",
-              kind: "domain_leaf",
-              priority: "P2",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Repair metadata contract.",
-              outputs: ["evidence/archive/repair.md"],
-              acceptance: ["done"],
-              forbidden: [],
-              conflict_scope: ["feature-reference-loop-state-truth"],
-              depends_on: [],
-            },
         },
       },
-      null,
-      2,
-    )}\n`,
+      "aks-feature-compact-loop": {
+        id: "aks-feature-compact-loop",
+        parent_id: "project",
+        state: "done",
+        workflow: "feature-compact-loop-controller",
+        children: [],
+        goal: "Compact feature tests.",
+        outputs: [".state/feature-compact-loop/state.json"],
+        acceptance: ["Loop is current"],
+      },
+      "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628":
+        {
+          id: "repair-feature-reference-loop-dormant-backlog-metadata-contract-20260628",
+          parent_id: "aks-feature-reference-loop",
+          state: "active",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Repair metadata contract.",
+          outputs: ["evidence/archive/repair.md"],
+          acceptance: ["done"],
+          forbidden: [],
+          conflict_scope: ["feature-reference-loop-state-truth"],
+          depends_on: [],
+        },
+    },
+  };
+
+  await writeFile(
+    resolveTaskTreePath(appDir),
+    `${JSON.stringify(initialTree, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    join(appDir, "tasks", "seed.json"),
+    `${JSON.stringify(initialTree, null, 2)}\n`,
     "utf8",
   );
 
@@ -324,6 +330,34 @@ describe("check-integrity durable loop contracts", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
+  test("rejects a runtime root goal that replaces the configured project goal", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      join(fixture.appDir, "project.json"),
+      `${JSON.stringify(
+        {
+          id: "aks-rp-e2e.app",
+          owner: "aks-explorer",
+          type: "project-app",
+          goal: "Refresh blocked-wait bookkeeping forever.",
+          domainProject: {
+            id: "aks-rp-e2e.app",
+            path: "../aks-rp-e2e",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await runIntegrity(fixture.appDir);
+    expect(result.exitCode).toBe(1);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "runtime task tree project root goal must match project.json goal",
+    );
+  });
+
   test("accepts durable loop roots blocked on child waits even when progress open counters are stale", async () => {
     const fixture = await makeFixture();
     await writeFile(
@@ -345,7 +379,7 @@ describe("check-integrity durable loop contracts", () => {
                 "aks-feature-reference-loop",
                 "aks-feature-compact-loop",
               ],
-              goal: "project",
+              goal: fixtureProjectGoal,
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
             },
@@ -419,7 +453,7 @@ describe("check-integrity durable loop contracts", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
-  test("rejects stale focus owner-return metadata that still points at archived waits", async () => {
+  test("does not treat focus observation prose as task-tree structure", async () => {
     const fixture = await makeFixture();
     const treePath = resolveTaskTreePath(fixture.appDir);
     const tree = JSON.parse(await Bun.file(treePath).text());
@@ -479,11 +513,8 @@ describe("check-integrity durable loop contracts", () => {
 
     const result = await runIntegrity(fixture.appDir);
 
-    expect(result.exitCode).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toContain("focus metadata drift");
-    expect(`${result.stdout}${result.stderr}`).toContain(
-      "wait-rp-nodepool-multi-agentpool-runner-ado-run-172009175",
-    );
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
   test("rejects git-tracked project-app runtime files", async () => {

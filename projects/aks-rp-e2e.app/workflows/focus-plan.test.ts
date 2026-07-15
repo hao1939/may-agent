@@ -210,7 +210,7 @@ describe("focus-plan workflow", () => {
     expect(result.message).toContain("counts.blocked=0");
     expect(result.message).toContain("counts.backlog=0");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",
@@ -386,7 +386,7 @@ describe("focus-plan workflow", () => {
     expect(sessionIds[0]).not.toBe("s_focus_plan_strategy");
     expect(dispatched.map((event) => event.type)).toEqual([
       "message.created",
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       from: "aks-explorer",
@@ -471,7 +471,7 @@ describe("focus-plan workflow", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",
@@ -517,7 +517,7 @@ describe("focus-plan workflow", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("result on_track");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",
@@ -565,7 +565,7 @@ describe("focus-plan workflow", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("result blocked");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",
@@ -612,7 +612,7 @@ describe("focus-plan workflow", () => {
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
       "message.created",
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       intent: "focus-plan-approval",
@@ -700,7 +700,7 @@ describe("focus-plan workflow", () => {
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",

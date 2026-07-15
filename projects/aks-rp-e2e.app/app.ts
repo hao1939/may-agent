@@ -1,4 +1,4 @@
-import { defineProjectApp, workflowHandlers } from "@may-agent/sdk";
+import { defineProjectApp } from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
@@ -41,7 +41,7 @@ export default defineProjectApp({
       intervalMs: 3_600_000,
       emits: [
         {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -106,7 +106,7 @@ export default defineProjectApp({
       intervalMs: 14_400_000,
       emits: [
         {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -133,7 +133,7 @@ export default defineProjectApp({
       intervalMs: 7_200_000,
       emits: [
         {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           urgency: "high",
           data: {
@@ -189,7 +189,7 @@ export default defineProjectApp({
     },
   ],
 
-  onEvent: workflowHandlers([
+  workflowHandlers: [
     {
       name: "aks-rp-e2e-project-planner",
       type: "job",
@@ -203,13 +203,12 @@ export default defineProjectApp({
         timeoutMs: 3_600_000,
       },
       accepts: [
-        { type: "project.planning.requested", target: { project: projectId } },
+        { type: "project.owner.requested", target: { project: projectId } },
         { type: "project.comment.created", target: { project: projectId } },
         {
           type: "project.approval.submitted",
           target: { project: projectId },
         },
-        { type: "project.task.reviewed", target: { project: projectId } },
         { type: "project.test_run.completed", target: { project: projectId } },
         { type: "project.stall.reviewed", target: { project: projectId } },
         { type: "project.problem.resolved", target: { project: projectId } },
@@ -229,6 +228,31 @@ export default defineProjectApp({
       emits: [
         "project.task.assigned",
         "project.problem.investigation.requested",
+      ],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-reviewed-task-applier",
+      type: "job",
+      enabled: true,
+      description:
+        "Applies one structured task-review decision without waiting behind general planner sessions.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "project-planner",
+        includeEvent: true,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        timeoutMs: 120_000,
+      },
+      accepts: [
+        { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+      emits: [
+        "project.task.completed",
+        "project.task.assigned",
+        "project.problem.investigation.requested",
+        "escalation.resolved",
+        "escalation.dismissed",
       ],
       context: taskTreeContext,
     },
@@ -314,7 +338,7 @@ export default defineProjectApp({
         timeoutMs: 1_800_000,
       },
       emits: [
-        "project.planning.requested",
+        "project.owner.requested",
         "project.stall.review.requested",
         "project.task.tick",
       ],
@@ -445,7 +469,7 @@ export default defineProjectApp({
           target: { project: projectId },
         },
       ],
-      emits: ["project.planning.requested", "message.created"],
+      emits: ["project.owner.requested", "message.created"],
       context: [
         ...taskTreeContext,
         "projects/aks-rp-e2e.app/project.json",
@@ -478,7 +502,7 @@ export default defineProjectApp({
         "projects/aks-rp-e2e/runs/test-results/",
       ],
     },
-  ]),
+  ],
 
   eventGraph: {
     externalEvents: [
@@ -497,7 +521,7 @@ export default defineProjectApp({
       {
         id: "app-ops-worker-review-loop",
         events: [
-          "project.planning.requested",
+          "project.owner.requested",
           "project.task.assigned",
           "project.task.completed",
           "project.task.reviewed",
@@ -508,6 +532,8 @@ export default defineProjectApp({
           "project.problem.resolved",
           "project.problem.escalated",
           "project.problem.inconclusive",
+          "escalation.resolved",
+          "escalation.dismissed",
           "project.focus.review.requested",
         ],
         reason:
@@ -525,7 +551,7 @@ export default defineProjectApp({
       description: "Request live execution for selected replanned paths.",
       event(params) {
         return {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -549,7 +575,7 @@ export default defineProjectApp({
             ? (params as Record<string, unknown>)
             : {};
         return {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,
@@ -571,7 +597,7 @@ export default defineProjectApp({
             ? (params as Record<string, unknown>)
             : {};
         return {
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           target: { project: projectId },
           data: {
             project: projectId,

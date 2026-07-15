@@ -44,6 +44,7 @@ export type FeatureCompactItemState = FeatureCompactRecord & {
   rootCauseClassification?: string | null;
   inputFingerprint?: string | null;
   errorFingerprint?: string | null;
+  lastSupportWorkFingerprint?: string | null;
   ownerReason?: string | null;
   attemptedFixes?: string[] | null;
   nextStepClassification?: string | null;
@@ -371,6 +372,10 @@ export function loadFeatureCompactLoopState(input: {
       heartbeatAt: existing?.heartbeatAt ?? null,
       lastSummary: existing?.lastSummary ?? null,
       rootCauseClassification: existing?.rootCauseClassification ?? null,
+      inputFingerprint: existing?.inputFingerprint ?? null,
+      errorFingerprint: existing?.errorFingerprint ?? null,
+      lastSupportWorkFingerprint:
+        existing?.lastSupportWorkFingerprint ?? null,
       ownerReason: existing?.ownerReason ?? null,
       attemptedFixes: existing?.attemptedFixes ?? null,
       nextStepClassification: existing?.nextStepClassification ?? null,

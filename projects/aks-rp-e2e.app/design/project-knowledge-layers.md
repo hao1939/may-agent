@@ -311,7 +311,7 @@ reasons.
 ### Normal Task Loop
 
 ```text
-project.planning.requested
+project.owner.requested
   -> project-planner
   -> project.task.assigned
   -> task-worker routes to task.workflow

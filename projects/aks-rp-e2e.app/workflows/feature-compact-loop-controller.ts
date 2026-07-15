@@ -3,6 +3,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import {
   workflowResultVersion,
@@ -15,6 +16,7 @@ import {
   assignTask,
   createTask,
   markTaskDone,
+  refreshBlockedWait,
   saveTaskTreeWithKanbanSnapshot,
 } from "./lib/task-tree-tools.ts";
 import {
@@ -410,6 +412,20 @@ function specIdsNamedByTask(
   knownSpecIds: Iterable<string>,
 ): string[] {
   if (!task) return [];
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker?.waiting_for);
+  if (
+    isPipelineCompletionWaitType(stringField(waitingFor, "type")) &&
+    Array.isArray(waitingFor?.specIds)
+  ) {
+    const exactSpecIds = waitingFor.specIds
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (exactSpecIds.length > 0) {
+      return [...new Set(exactSpecIds)].sort((a, b) => a.localeCompare(b));
+    }
+  }
   const named = new Set<string>();
   for (const scope of taskConflictScopes(task)) {
     const specId = scope.trim().replace(/^spec:/, "");
@@ -424,7 +440,16 @@ function specIdsNamedByTask(
 
 function isFeatureCompactExactWaitHolder(task: TaskNode | undefined): boolean {
   if (!task) return false;
-  if (taskContext(task).featureCompactExactWait === true) return true;
+  const context = taskContext(task);
+  if (context.featureCompactExactWait === true) return true;
+  if (
+    Array.isArray(context.familyFeatureKeys) &&
+    context.familyFeatureKeys.some(
+      (item) => typeof item === "string" && item.trim().length > 0,
+    )
+  ) {
+    return true;
+  }
   const scopes = taskConflictScopes(task);
   if (scopes.some((scope) => scope.startsWith("feature-compact-wait:"))) {
     return true;
@@ -439,6 +464,7 @@ function closeStalePassedSpecBlockedWaitChildren(
   input: {
     appDir: string;
     loopTaskId: string;
+    activeWorkflowRunIds: Set<string>;
   },
 ): string[] {
   const specStatuses = readSpecStatuses(input.appDir);
@@ -452,6 +478,8 @@ function closeStalePassedSpecBlockedWaitChildren(
     for (const childId of loopTask.children ?? []) {
       const child = tree.tasks[childId];
       if (!child || taskStatus(child) !== "blocked") continue;
+      const runId = runIdFromCompactWaitTask(child);
+      if (runId && input.activeWorkflowRunIds.has(runId)) continue;
       if (isFeatureCompactExactWaitHolder(child)) continue;
       const namedSpecIds = specIdsNamedByTask(child, specStatuses.keys());
       if (namedSpecIds.length === 0) continue;
@@ -500,16 +528,37 @@ type TerminalCompactGitHubWaitCandidate = {
 
 type TerminalCompactGitHubWaitHarvest = {
   harvestedTaskIds: string[];
+  refreshedTaskIds: string[];
   terminalRunIds: string[];
   lookupMissRunIds: string[];
   checkedRunIds: string[];
 };
 
+function safeAttemptSegment(value: string): string {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
+}
+
+function isPipelineCompletionWaitType(value: string): boolean {
+  return ["ado.pipeline_run.completed", "github.workflow_run.completed"].includes(
+    value,
+  );
+}
+
 function runIdFromCompactWaitTask(task: TaskNode): string {
   const blocker = recordValue(task.blocker);
   const waitingFor = recordValue(blocker?.waiting_for);
+  const waitingForType = stringField(waitingFor, "type");
   const structuredRunId = stringField(waitingFor, "runId");
-  if (/^\d{6,}$/.test(structuredRunId)) return structuredRunId;
+  if (
+    isPipelineCompletionWaitType(waitingForType) &&
+    /^\d{6,}$/.test(structuredRunId)
+  ) {
+    return structuredRunId;
+  }
 
   const context = taskContext(task);
   for (const key of [
@@ -610,7 +659,7 @@ export function harvestTerminalCompactGitHubWaits(input: {
   });
   const checkedRunIds: string[] = [];
   const lookupMissRunIds: string[] = [];
-  const terminalByTaskId = new Map<string, PipelineRun>();
+  const runByTaskId = new Map<string, PipelineRun>();
 
   for (const candidate of candidates) {
     checkedRunIds.push(candidate.runId);
@@ -625,15 +674,16 @@ export function harvestTerminalCompactGitHubWaits(input: {
       lookupMissRunIds.push(candidate.runId);
       continue;
     }
-    if (run.status !== "completed") continue;
-    terminalByTaskId.set(candidate.taskId, run);
+    runByTaskId.set(candidate.taskId, run);
   }
 
   const harvestedTaskIds: string[] = [];
+  const refreshedTaskIds: string[] = [];
   const terminalRunIds: string[] = [];
-  if (terminalByTaskId.size === 0) {
+  if (runByTaskId.size === 0) {
     return {
       harvestedTaskIds,
+      refreshedTaskIds,
       terminalRunIds,
       lookupMissRunIds,
       checkedRunIds,
@@ -644,8 +694,8 @@ export function harvestTerminalCompactGitHubWaits(input: {
     const tree = readTaskTree(input.config);
     const now = new Date().toISOString();
     for (const candidate of candidates) {
-      const run = terminalByTaskId.get(candidate.taskId);
-      if (!run) continue;
+      const run = runByTaskId.get(candidate.taskId);
+      if (!run || run.status !== "completed") continue;
       const child = tree.tasks[candidate.taskId];
       if (!child) continue;
       const status = taskStatus(child);
@@ -683,6 +733,9 @@ export function harvestTerminalCompactGitHubWaits(input: {
       };
       child.trace = {
         ...(child.trace ?? {}),
+        current_attempt_id: `a_${safeAttemptSegment(child.id)}_${safeAttemptSegment(candidate.runId)}_terminal_wait_review`,
+        terminal_wait_review_attempt_created_at: now,
+        terminal_wait_review_attempt_created_by: name,
         terminal_pipeline_wait_observed_at: now,
         terminal_pipeline_wait_run_id: candidate.runId,
         terminal_pipeline_wait_run_status: run.status ?? null,
@@ -729,15 +782,78 @@ export function harvestTerminalCompactGitHubWaits(input: {
     }
   });
 
-  if (harvestedTaskIds.length > 0) {
+  const nowMs = Date.now();
+  for (const candidate of candidates) {
+    const run = runByTaskId.get(candidate.taskId);
+    if (!run || run.status === "completed") continue;
+    const task = readTaskTree(input.config).tasks[candidate.taskId];
+    if (!task) continue;
+    const status = taskStatus(task);
+    if (status !== "blocked" && status !== "waiting") continue;
+    if (runIdFromCompactWaitTask(task) !== candidate.runId) continue;
+    const blocker = recordValue(task.blocker);
+    if (!blocker) continue;
+    const nextCheckAt = stringField(blocker, "next_check_at");
+    const fallbackAt = stringField(blocker, "fallback_at");
+    const nextCheckMs = Date.parse(nextCheckAt);
+    const fallbackMs = Date.parse(fallbackAt);
+    const nextCheckIsDue = Number.isFinite(nextCheckMs) && nextCheckMs <= nowMs;
+    const fallbackIsDue = Number.isFinite(fallbackMs) && fallbackMs <= nowMs;
+    if (!nextCheckIsDue || fallbackIsDue) continue;
+
+    const runStatus = run.status?.trim() || "unknown";
+    const specText = candidate.namedSpecIds.length
+      ? ` for ${candidate.namedSpecIds.join(", ")}`
+      : "";
+    const featureText = candidate.featureKeys.length
+      ? ` (${candidate.featureKeys.join(", ")})`
+      : "";
+    refreshBlockedWait(input.config, {
+      taskId: task.id,
+      condition:
+        `Azure DevOps pipeline run ${candidate.runId}${specText}${featureText} remains nonterminal with status=${runStatus}. ` +
+        "Keep this same compact wait holder until the run becomes terminal and exact result artifacts can be inspected, or until a narrower exact blocker is proven.",
+      resumeCondition:
+        stringField(blocker, "resume_condition") ||
+        `Resume when Azure DevOps run ${candidate.runId} is terminal and its artifacts are available for exact compact result inspection.`,
+      summary:
+        `Feature compact controller refreshed nonterminal Azure DevOps wait ${task.id} after observing run ${candidate.runId} still status=${runStatus}.`,
+      category: stringField(blocker, "category") || "external-wait",
+      owner: stringField(blocker, "owner") || task.owner,
+      waitingFor: recordValue(blocker.waiting_for) ?? undefined,
+      observedBy: {
+        ...(recordValue(blocker.observed_by) ?? {}),
+        workflow: name,
+        trigger: "project.task.tick",
+      },
+      observationMethod:
+        stringField(blocker, "observation_method") ||
+        "The compact controller polls the named Azure DevOps run and keeps the same exact wait holder fresh until the run becomes terminal.",
+      nextCheckAt: new Date(nowMs + 10 * 60 * 1000).toISOString(),
+      fallbackAt: fallbackAt || undefined,
+      fallbackAction:
+        stringField(blocker, "fallback_action") ||
+        "If the run is still nonterminal at fallback, inspect the exact ADO queue/timeline state and refresh or escalate this same wait without dispatching a duplicate run.",
+    });
+    refreshedTaskIds.push(task.id);
+  }
+
+  if (harvestedTaskIds.length > 0 || refreshedTaskIds.length > 0) {
     appendToolJournal(input.config, {
       kind: "feature_compact_loop_terminal_github_waits_harvested",
       task_id: input.loopTaskId,
       harvested_task_ids: harvestedTaskIds,
+      refreshed_task_ids: refreshedTaskIds,
       terminal_run_ids: terminalRunIds,
     });
   }
-  return { harvestedTaskIds, terminalRunIds, lookupMissRunIds, checkedRunIds };
+  return {
+    harvestedTaskIds,
+    refreshedTaskIds,
+    terminalRunIds,
+    lookupMissRunIds,
+    checkedRunIds,
+  };
 }
 
 function featureKeysRepresentedByTask(input: {
@@ -752,11 +868,19 @@ function featureKeysRepresentedByTask(input: {
     keys.add(explicitFeatureKey.trim());
   }
 
-  const sampledFeatureKeys = context.sampledFeatureKeys;
-  if (Array.isArray(sampledFeatureKeys)) {
-    for (const sampledFeatureKey of sampledFeatureKeys) {
-      if (typeof sampledFeatureKey === "string" && sampledFeatureKey.trim()) {
-        keys.add(sampledFeatureKey.trim());
+  for (const contextKey of [
+    "featureKeys",
+    "familyFeatureKeys",
+    "sampledFeatureKeys",
+  ]) {
+    const explicitFeatureKeys = context[contextKey];
+    if (!Array.isArray(explicitFeatureKeys)) continue;
+    for (const explicitFeatureKey of explicitFeatureKeys) {
+      if (
+        typeof explicitFeatureKey === "string" &&
+        explicitFeatureKey.trim()
+      ) {
+        keys.add(explicitFeatureKey.trim());
       }
     }
   }
@@ -861,6 +985,10 @@ type CompactFollowupGroup = {
   lastFeatureUpdatedAt: string;
   inputFingerprints: string[];
   errorFingerprints: string[];
+  sourceStates: string[];
+  rerunReadySpecIdsByFeature: Record<string, string[]>;
+  featureWorkFingerprints: Record<string, string>;
+  workFingerprint: string;
 };
 
 function compactErrorNeedsFollowup(
@@ -876,25 +1004,140 @@ function compactErrorNeedsFollowup(
   );
 }
 
+function rerunReadySpecIdsFromCompactDiagnostics(input: {
+  projectDir: string;
+  featureKey: string;
+  item: FeatureCompactItemState;
+  target: string;
+}): string[] {
+  if (input.item.status !== "blocked") return [];
+  if (compactErrorClass(input.item) !== "package-partial") return [];
+  const diagnosticsPath = join(
+    input.projectDir,
+    input.item.lastDiagnosticsPath ||
+      `features/${input.item.capabilityId || input.featureKey}/compact/${input.target}.diagnostics.json`,
+  );
+  try {
+    const diagnostics = JSON.parse(readFileSync(diagnosticsPath, "utf8")) as {
+      compactLiveReadiness?: { readySpecIds?: unknown };
+    };
+    const readySpecIds = diagnostics.compactLiveReadiness?.readySpecIds;
+    if (!Array.isArray(readySpecIds)) return [];
+    return [
+      ...new Set(
+        readySpecIds
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
+}
+
+function compactFollowupWorkFingerprint(
+  group: Omit<CompactFollowupGroup, "workFingerprint">,
+): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        errorClass: group.errorClass,
+        featureKeys: [...group.featureKeys].sort(),
+        inputFingerprints: [...group.inputFingerprints].sort(),
+        errorFingerprints: [...group.errorFingerprints].sort(),
+        sourceStates: [...group.sourceStates].sort(),
+        rerunReadySpecIdsByFeature: Object.fromEntries(
+          Object.entries(group.rerunReadySpecIdsByFeature)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([featureKey, specIds]) => [featureKey, [...specIds].sort()]),
+        ),
+        featureWorkFingerprints: Object.fromEntries(
+          Object.entries(group.featureWorkFingerprints).sort(([a], [b]) =>
+            a.localeCompare(b),
+          ),
+        ),
+      }),
+    )
+    .digest("hex");
+}
+
 function compactFollowupGroups(
   state: FeatureCompactLoopState,
   input: {
+    projectDir: string;
     maxDirectAttemptsPerFeature: number;
     maxGroups: number;
     representedFeatureKeys?: Set<string>;
+    actionableFeatureKeys?: Set<string>;
     target: string;
     branch: string;
   },
 ): CompactFollowupGroup[] {
   const groups = new Map<string, CompactFollowupGroup>();
   for (const [featureKey, item] of Object.entries(state.features)) {
+    const errorNeedsFollowup = compactErrorNeedsFollowup(
+      item,
+      input.maxDirectAttemptsPerFeature,
+    );
+    const rerunReadySpecIds = rerunReadySpecIdsFromCompactDiagnostics({
+      projectDir: input.projectDir,
+      featureKey,
+      item,
+      target: input.target,
+    });
+    const blockedNeedsFollowup = rerunReadySpecIds.length > 0;
+    const inputFingerprint =
+      item.inputFingerprint ||
+      fixForwardInputFingerprint({
+        featureKey,
+        target: input.target,
+        branch: input.branch,
+        planPath: item.lastPlanPath,
+        diagnosticsPath: item.lastDiagnosticsPath,
+      });
+    const errorClass = compactErrorClass(item);
+    const errorFingerprint =
+      item.errorFingerprint ||
+      fixForwardErrorFingerprint({
+        status: item.status,
+        failureClass: errorClass,
+        reason: item.retryReason || item.lastSummary || "",
+        resultPath: item.lastResultPath,
+      });
+    const featureWorkFingerprint = createHash("sha256")
+      .update(
+        JSON.stringify({
+          featureKey,
+          status: item.status,
+          errorClass,
+          inputFingerprint,
+          errorFingerprint,
+          rerunReadySpecIds,
+        }),
+      )
+      .digest("hex");
+    if (!errorNeedsFollowup && !blockedNeedsFollowup) {
+      continue;
+    }
     if (
-      !compactErrorNeedsFollowup(item, input.maxDirectAttemptsPerFeature) ||
-      input.representedFeatureKeys?.has(featureKey)
+      blockedNeedsFollowup &&
+      item.lastSupportWorkFingerprint === featureWorkFingerprint
     ) {
       continue;
     }
-    const errorClass = compactErrorClass(item);
+    if (
+      blockedNeedsFollowup &&
+      input.actionableFeatureKeys?.has(featureKey)
+    ) {
+      updateFeatureCompactItem(state, featureKey, {
+        lastSupportWorkFingerprint: featureWorkFingerprint,
+      });
+      continue;
+    }
+    if (errorNeedsFollowup && input.representedFeatureKeys?.has(featureKey)) {
+      continue;
+    }
     if (
       errorClass === "reviewed-exception" ||
       errorClass === "runtime-product-lineage"
@@ -908,29 +1151,23 @@ function compactFollowupGroups(
       lastFeatureUpdatedAt: "",
       inputFingerprints: [],
       errorFingerprints: [],
+      sourceStates: [],
+      rerunReadySpecIdsByFeature: {},
+      featureWorkFingerprints: {},
+      workFingerprint: "",
     };
     group.count += 1;
     if (group.featureKeys.length < 20) group.featureKeys.push(featureKey);
     if (item.updatedAt && item.updatedAt > group.lastFeatureUpdatedAt) {
       group.lastFeatureUpdatedAt = item.updatedAt;
     }
-    const inputFingerprint =
-      item.inputFingerprint ||
-      fixForwardInputFingerprint({
-        featureKey,
-        target: input.target,
-        branch: input.branch,
-        planPath: item.lastPlanPath,
-        diagnosticsPath: item.lastDiagnosticsPath,
-      });
-    const errorFingerprint =
-      item.errorFingerprint ||
-      fixForwardErrorFingerprint({
-        status: item.status,
-        failureClass: errorClass,
-        reason: item.retryReason || item.lastSummary || "",
-        resultPath: item.lastResultPath,
-      });
+    if (item.status && !group.sourceStates.includes(item.status)) {
+      group.sourceStates.push(item.status);
+    }
+    if (rerunReadySpecIds.length > 0) {
+      group.rerunReadySpecIdsByFeature[featureKey] = rerunReadySpecIds;
+    }
+    group.featureWorkFingerprints[featureKey] = featureWorkFingerprint;
     if (!group.inputFingerprints.includes(inputFingerprint)) {
       group.inputFingerprints.push(inputFingerprint);
     }
@@ -940,6 +1177,10 @@ function compactFollowupGroups(
     groups.set(errorClass, group);
   }
   return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      workFingerprint: compactFollowupWorkFingerprint(group),
+    }))
     .sort(
       (a, b) => b.count - a.count || a.errorClass.localeCompare(b.errorClass),
     )
@@ -1604,6 +1845,18 @@ function nextCompactFollowupTaskId(
   group: CompactFollowupGroup,
 ): string | null {
   if (existingOpenCompactFollowupTaskId(tasks, group)) return null;
+  if (
+    Object.values(tasks).some((task) => {
+      const context = taskContext(task);
+      return (
+        context.featureCompactFollowup === true &&
+        context.errorClass === group.errorClass &&
+        context.workFingerprint === group.workFingerprint
+      );
+    })
+  ) {
+    return null;
+  }
 
   const base = compactFollowupTaskId(group);
   const existing = tasks[base];
@@ -1637,6 +1890,7 @@ function nextCompactFollowupTaskId(
 function materializeFeatureCompactFollowups(
   config: ReturnType<typeof buildTaskTreeConfig>,
   input: {
+    projectDir: string;
     loopTask: TaskNode;
     state: FeatureCompactLoopState;
     stateRef: string;
@@ -1645,12 +1899,15 @@ function materializeFeatureCompactFollowups(
     maxDirectAttemptsPerFeature: number;
     maxGroups: number;
     representedFeatureKeys?: Set<string>;
+    actionableFeatureKeys?: Set<string>;
   },
 ): string[] {
   const groups = compactFollowupGroups(input.state, {
+    projectDir: input.projectDir,
     maxDirectAttemptsPerFeature: input.maxDirectAttemptsPerFeature,
     maxGroups: input.maxGroups,
     representedFeatureKeys: input.representedFeatureKeys,
+    actionableFeatureKeys: input.actionableFeatureKeys,
     target: input.target,
     branch: input.branch,
   });
@@ -1661,13 +1918,16 @@ function materializeFeatureCompactFollowups(
     if (!taskId) continue;
     if (latestTree.tasks[taskId]) continue;
     const isCapacityWait = group.errorClass === "staging-capacity";
+    const includesBlockedFrontier = group.sourceStates.includes("blocked");
     createTask(config, {
       id: taskId,
       parentId: input.loopTask.id,
       priority: isCapacityWait ? "P2" : "P1",
       goal: isCapacityWait
         ? `Hold ${group.count} feature compact package(s) on exact ${input.target} capacity wait until managed-cluster headroom returns or quota changes.`
-        : `Reconcile ${group.count} retry-drained feature compact error(s) in the ${group.errorClass} family, repair what is fixable, and requeue live proof only after a meaningful package/runtime change.`,
+        : includesBlockedFrontier
+          ? `Restore truthful executable backlog for ${group.count} feature compact ${group.errorClass} frontier(s) by preserving exact blocked waits, reviewing the current rerun-ready member sets, and requeueing only the bounded work that is still dependency-clear.`
+          : `Reconcile ${group.count} retry-drained feature compact error(s) in the ${group.errorClass} family, repair what is fixable, and requeue live proof only after a meaningful package/runtime change.`,
       inputs: [
         `errorClass:${group.errorClass}`,
         `target:${input.target}`,
@@ -1682,13 +1942,21 @@ function materializeFeatureCompactFollowups(
             "Resume only after managed-cluster headroom returns, quota changes, or an explicit reroute target is accepted.",
             "Do not reset retry budget or dispatch live proof while this wait condition remains true.",
           ]
-        : [
-            "Every sampled compact feature has a concrete root-cause classification.",
-            "Before any rerun, compare inputFingerprint and errorFingerprint; rerun only after the compact package, generated test, runner, target config, diagnosis, or external fact changed.",
-            "Every fixable package, planner, generated-test, or workflow issue was repaired and the affected feature was requeued for a meaningful live run.",
-            "If no bounded repo-local fix remains, an exact escalation or wait records owner/environment/product reason, affected features, attempted fixes, and resume condition.",
-            "Feature compact state was updated to match the repair, requeue, or escalation decision; feature-owned compact artifacts were updated only for material reusable package/spec changes.",
-          ],
+        : includesBlockedFrontier
+          ? [
+              "Structured compact diagnostics still advertise a non-empty compactLiveReadiness.readySpecIds set while exact blocked waits remain preserved for the same feature family.",
+              "Before any rerun, compare inputFingerprint and errorFingerprint; requeue only the bounded member set that is still dependency-clear under the current compact authority.",
+              "Existing exact blocked waits are preserved or narrowed; they are not refreshed into a broader family placeholder.",
+              "If no bounded repo-local rerun or repair remains truthful, record the exact wait, owner, or rejection reason that keeps the backlog blocked.",
+              "Feature compact state was updated to match the repair, requeue, or preserved-wait decision; reusable compact artifacts change only when the bounded carrier truly changes.",
+            ]
+          : [
+              "Every sampled compact feature has a concrete root-cause classification.",
+              "Before any rerun, compare inputFingerprint and errorFingerprint; rerun only after the compact package, generated test, runner, target config, diagnosis, or external fact changed.",
+              "Every fixable package, planner, generated-test, or workflow issue was repaired and the affected feature was requeued for a meaningful live run.",
+              "If no bounded repo-local fix remains, an exact escalation or wait records owner/environment/product reason, affected features, attempted fixes, and resume condition.",
+              "Feature compact state was updated to match the repair, requeue, or escalation decision; feature-owned compact artifacts were updated only for material reusable package/spec changes.",
+            ],
       forbidden: compactRuntimeWriteForbid,
       conflict_scope: [
         `feature-compact-followup:${group.errorClass}`,
@@ -1706,10 +1974,14 @@ function materializeFeatureCompactFollowups(
         workflow: "fix-forward",
         subjectKind: "compact-feature-family",
         errorClass: group.errorClass,
+        sourceStates: group.sourceStates,
         totalFeatureCount: group.count,
         sampledFeatureKeys: group.featureKeys,
         inputFingerprints: group.inputFingerprints,
         errorFingerprints: group.errorFingerprints,
+        rerunReadySpecIdsByFeature: group.rerunReadySpecIdsByFeature,
+        featureWorkFingerprints: group.featureWorkFingerprints,
+        workFingerprint: group.workFingerprint,
         stateRef: input.stateRef,
         target: input.target,
         branch: input.branch,
@@ -1717,6 +1989,15 @@ function materializeFeatureCompactFollowups(
     });
     const createdTree = readTaskTree(config);
     if (!createdTree.tasks[taskId]) continue;
+    for (const [featureKey, workFingerprint] of Object.entries(
+      group.featureWorkFingerprints,
+    )) {
+      const item = input.state.features[featureKey];
+      if (item?.status !== "blocked") continue;
+      updateFeatureCompactItem(input.state, featureKey, {
+        lastSupportWorkFingerprint: workFingerprint,
+      });
+    }
     if (isCapacityWait) {
       const tree = createdTree;
       const task = tree.tasks[taskId];
@@ -2129,6 +2410,26 @@ function openFeatureScopedChildKeys(
   return keys;
 }
 
+function openActionableFeatureScopedChildKeys(
+  loopTask: TaskNode | undefined,
+  tasks: Record<string, TaskNode>,
+): Set<string> {
+  const keys = new Set<string>();
+  if (!loopTask) return keys;
+  for (const childId of loopTask.children ?? []) {
+    const child = tasks[childId];
+    if (!child) continue;
+    const status = taskStatus(child);
+    if (status === "done" || status === "cancelled" || status === "blocked") {
+      continue;
+    }
+    for (const featureKey of featureKeysRepresentedByTask({ task: child })) {
+      keys.add(featureKey);
+    }
+  }
+  return keys;
+}
+
 function hasOpenProjectedFeatureRepresentation(input: {
   featureKey: string;
   item: FeatureCompactItemState;
@@ -2488,8 +2789,18 @@ function supportChildRequiresPipelineRun(task: TaskNode | undefined): boolean {
   return (
     context.requiresPipelineRun === true ||
     context.requiresGitHubRun === true ||
-    task.workflow === "single-spec-verifier"
+    task.workflow === "single-spec-verifier" ||
+    taskConflictScopes(task).some((scope) =>
+      scope.startsWith("feature-compact-ready-subset:"),
+    )
   );
+}
+
+function activeLeafCount(tasks: Record<string, TaskNode>): number {
+  return Object.values(tasks).filter(
+    (task) =>
+      taskStatus(task) === "active" && (task.children?.length ?? 0) === 0,
+  ).length;
 }
 
 function supportChildAssignmentPriority(task: TaskNode | undefined): number {
@@ -3210,6 +3521,275 @@ function activePipelineWaits(input: {
   return waits;
 }
 
+function pipelineRunTitleMetadata(
+  run: PipelineRun,
+): Record<string, unknown> | null {
+  const title = run.displayTitle ?? "";
+  const start = title.indexOf("{");
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < title.length; index += 1) {
+    const char = title[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char !== "}") continue;
+    depth -= 1;
+    if (depth !== 0) continue;
+    try {
+      return recordValue(JSON.parse(title.slice(start, index + 1)));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function compactFeatureKeyFromRunMetadata(
+  metadata: Record<string, unknown>,
+  state: FeatureCompactLoopState,
+): string {
+  const explicit =
+    typeof metadata.feature_id === "string"
+      ? metadata.feature_id.trim()
+      : typeof metadata.featureKey === "string"
+        ? metadata.featureKey.trim()
+        : "";
+  if (explicit && state.features[explicit]) return explicit;
+
+  const taskId =
+    typeof metadata.task_id === "string"
+      ? metadata.task_id
+      : typeof metadata.taskId === "string"
+        ? metadata.taskId
+        : "";
+  if (!taskId.startsWith("domain/compact-")) return "";
+  return (
+    Object.keys(state.features)
+      .sort((left, right) => right.length - left.length)
+      .find((featureKey) => taskId.includes(`compact-${featureKey}-`)) ?? ""
+  );
+}
+
+function selectedSpecIdsFromRunMetadata(
+  metadata: Record<string, unknown>,
+): string[] {
+  const value = metadata.selected_specs ?? metadata.selectedSpecs;
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : [];
+  return [
+    ...new Set(
+      values
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter((item) => item.startsWith("spec.")),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function taskIsCanonicalPipelineWait(
+  task: TaskNode,
+  runId: string,
+  loopTaskId: string,
+): boolean {
+  if (task.parent_id !== loopTaskId) return false;
+  const status = taskStatus(task);
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker?.waiting_for);
+  const waitingType =
+    typeof waitingFor?.type === "string" ? waitingFor.type : "";
+  const waitingRunId = String(
+    waitingFor?.runId ?? waitingFor?.run_id ?? "",
+  );
+  if (
+    (status === "blocked" || status === "waiting") &&
+    waitingRunId === runId &&
+    /(?:ado|azure-devops).*pipeline_run\.completed/i.test(waitingType)
+  ) {
+    return true;
+  }
+
+  const terminalReview = recordValue(
+    taskContext(task).terminalPipelineWaitReview,
+  );
+  return (
+    (status === "active" || status === "review") &&
+    String(terminalReview?.runId ?? terminalReview?.run_id ?? "") === runId
+  );
+}
+
+function reconcileActiveReadySubsetPipelineWaits(input: {
+  config: ReturnType<typeof buildTaskTreeConfig>;
+  loopTaskId: string;
+  state: FeatureCompactLoopState;
+  activeWorkflowRuns: PipelineRun[];
+  waitTimeoutMinutes: number;
+}): string[] {
+  const createdTaskIds: string[] = [];
+  for (const run of input.activeWorkflowRuns) {
+    if (typeof run.databaseId !== "number") continue;
+    const metadata = pipelineRunTitleMetadata(run);
+    if (!metadata) continue;
+    const featureKey = compactFeatureKeyFromRunMetadata(metadata, input.state);
+    if (!featureKey) continue;
+    const runId = String(run.databaseId);
+    let tree = readTaskTree(input.config);
+    let carrier = Object.values(tree.tasks).find((task) =>
+      taskIsCanonicalPipelineWait(task, runId, input.loopTaskId),
+    );
+    if (!carrier) {
+      const now = new Date();
+      const sourceTaskId =
+        typeof metadata.task_id === "string"
+          ? metadata.task_id
+          : typeof metadata.taskId === "string"
+            ? metadata.taskId
+            : "";
+      const specIds = selectedSpecIdsFromRunMetadata(metadata);
+      const waitTaskId = `wait-${featureKey}-ready-subset-ado-run-${runId}-result`;
+      const runUrl =
+        run.url ??
+        `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`;
+      const condition = `Wait for Azure DevOps run ${runId} for the ${featureKey} compact ready subset to become terminal and publish result artifacts.`;
+      const blocker = {
+        condition,
+        category: "external-wait",
+        owner: "ado",
+        blocked_at: now.toISOString(),
+        waiting_for: {
+          type: "ado.pipeline_run.completed",
+          runId,
+          runUrl,
+          specIds,
+          sourceTaskId: sourceTaskId || null,
+        },
+        observed_by: {
+          workflow: name,
+          trigger: "active-pipeline-reconciliation",
+        },
+        observation_method:
+          "The compact controller polls the structured ADO run id and moves this exact wait to review when the run becomes terminal.",
+        next_check_at: new Date(
+          now.getTime() + 10 * 60 * 1000,
+        ).toISOString(),
+        resume_condition: `Resume when Azure DevOps run ${runId} is terminal and its artifacts are available.`,
+        fallback_at: new Date(
+          now.getTime() + input.waitTimeoutMinutes * 60 * 1000,
+        ).toISOString(),
+        fallback_action:
+          "If the run remains non-terminal at fallback, inspect the exact ADO queue/timeline state and refresh or escalate this same wait without dispatching a duplicate run.",
+      };
+      const context = {
+        featureKey,
+        featureCompactExactWait: true,
+        readySubsetPipelineRun: true,
+        acceptedQueuedPipelineRun: {
+          sourceTaskId: sourceTaskId || null,
+          runId,
+          runUrl,
+          specIds,
+        },
+      };
+      const conflictScope = [
+        `feature:${featureKey}`,
+        `feature-compact:${featureKey}`,
+        `feature-compact-ready-subset:${featureKey}`,
+        `ado-run:${runId}`,
+        ...specIds.map((specId) => `spec:${specId}`),
+      ];
+      const goal = `${condition} Then inspect the exact returned pass/fail/error facts without broadening the feature scope.`;
+      const inputs = [
+        ...(sourceTaskId ? [`Source task: ${sourceTaskId}`] : []),
+        `ADO run: ${runId}`,
+        ...specIds.map((specId) => `Spec: ${specId}`),
+      ];
+      const acceptance = [
+        `Azure DevOps run ${runId} reaches terminal status and its returned artifacts are inspected.`,
+        `The ${featureKey} compact branch records exact pass/fail/error facts or one narrower evidence-backed blocker.`,
+      ];
+      try {
+        carrier = createTask(input.config, {
+          id: waitTaskId,
+          parentId: input.loopTaskId,
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          goal,
+          inputs,
+          outputs: ["runs/test-results/"],
+          acceptance,
+          conflict_scope: conflictScope,
+          context,
+          blocker,
+        });
+        createdTaskIds.push(waitTaskId);
+      } catch (error) {
+        if (!(error instanceof Error) || !error.message.includes("already exists")) {
+          throw error;
+        }
+        tree = readTaskTree(input.config);
+        carrier = tree.tasks[waitTaskId];
+        if (carrier && !taskIsCanonicalPipelineWait(carrier, runId, input.loopTaskId)) {
+          withTreeLock(input.config, () => {
+            const repairTree = readTaskTree(input.config);
+            const staleCarrier = repairTree.tasks[waitTaskId];
+            if (!staleCarrier) return;
+            staleCarrier.state = "blocked";
+            staleCarrier.status = "blocked";
+            staleCarrier.goal = goal;
+            staleCarrier.inputs = inputs;
+            staleCarrier.outputs = ["runs/test-results/"];
+            staleCarrier.acceptance = acceptance;
+            staleCarrier.conflict_scope = conflictScope;
+            staleCarrier.context = {
+              ...taskContext(staleCarrier),
+              ...context,
+            };
+            staleCarrier.blocker = blocker;
+            staleCarrier.done_at = undefined;
+            staleCarrier.done_by = undefined;
+            staleCarrier.resolution = undefined;
+            staleCarrier.result = undefined;
+            staleCarrier.trace = {
+              ...(staleCarrier.trace ?? {}),
+              active_pipeline_wait_reopened_at: now.toISOString(),
+              active_pipeline_wait_reopened_by: name,
+            };
+            saveTaskTreeWithKanbanSnapshot(input.config, repairTree);
+          });
+          carrier = readTaskTree(input.config).tasks[waitTaskId];
+          createdTaskIds.push(waitTaskId);
+        }
+      }
+    }
+    if (!carrier) continue;
+  }
+
+  if (createdTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "feature_compact_active_pipeline_waits_reconciled",
+      task_id: input.loopTaskId,
+      created_task_ids: createdTaskIds,
+    });
+  }
+  return createdTaskIds;
+}
+
 function normalizeActivePipelineWaitSchedules(input: {
   state: FeatureCompactLoopState;
   waitTimeoutMinutes: number;
@@ -3485,8 +4065,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     {
       appDir,
       loopTaskId: loopTask.id,
+      activeWorkflowRunIds: activeGithubRunIds,
     },
   );
+  const createdActivePipelineWaitTaskIds =
+    reconcileActiveReadySubsetPipelineWaits({
+      config,
+      loopTaskId: loopTask.id,
+      state,
+      activeWorkflowRuns: activeGithubRunList,
+      waitTimeoutMinutes: githubWaitTimeoutMinutes,
+    });
+  if (createdActivePipelineWaitTaskIds.length > 0) {
+    saveFeatureCompactLoopState(statePath, state);
+  }
   const terminalGitHubWaitHarvest = githubAccess.client
     ? harvestTerminalCompactGitHubWaits({
         config,
@@ -3499,6 +4091,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       })
     : {
         harvestedTaskIds: [],
+        refreshedTaskIds: [],
         terminalRunIds: [],
         lookupMissRunIds: [],
         checkedRunIds: [],
@@ -3748,27 +4341,31 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ? readTaskTree(config)
     : postAcceptTree;
   const postFocusLoopTask = postFocusTree.tasks[loopTask.id];
-  const createdExactWaitTaskIds = postFocusLoopTask
-    ? materializeExactFeatureCompactWaits(config, {
-        loopTask: postFocusLoopTask,
-        state,
-        stateRef,
-        target,
-        branch,
-        maxDirectAttemptsPerFeature,
-        maxTasks: numberContext(loopTask, "maxCompactExactWaitTasks", 12),
-        representedFeatureKeys: openFeatureScopedChildKeys(
-          postFocusLoopTask,
-          postFocusTree.tasks,
-        ),
-      })
-    : [];
+  const createdExactWaitTaskIds = [
+    ...createdActivePipelineWaitTaskIds,
+    ...(postFocusLoopTask
+      ? materializeExactFeatureCompactWaits(config, {
+          loopTask: postFocusLoopTask,
+          state,
+          stateRef,
+          target,
+          branch,
+          maxDirectAttemptsPerFeature,
+          maxTasks: numberContext(loopTask, "maxCompactExactWaitTasks", 12),
+          representedFeatureKeys: openFeatureScopedChildKeys(
+            postFocusLoopTask,
+            postFocusTree.tasks,
+          ),
+        })
+      : []),
+  ];
   const postExactWaitTree = createdExactWaitTaskIds.length
     ? readTaskTree(config)
     : postFocusTree;
   const postExactWaitLoopTask = postExactWaitTree.tasks[loopTask.id];
   const createdSupportTaskIds = postExactWaitLoopTask
     ? materializeFeatureCompactFollowups(config, {
+        projectDir,
         loopTask: postExactWaitLoopTask,
         state,
         stateRef,
@@ -3777,6 +4374,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         maxDirectAttemptsPerFeature,
         maxGroups: maxCompactFollowupGroups,
         representedFeatureKeys: openFeatureScopedChildKeys(
+          postExactWaitLoopTask,
+          postExactWaitTree.tasks,
+        ),
+        actionableFeatureKeys: openActionableFeatureScopedChildKeys(
           postExactWaitLoopTask,
           postExactWaitTree.tasks,
         ),
@@ -3809,7 +4410,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const activeChildren = assignableLoopTask
     ? activeFeatureChildCount(assignableLoopTask, assignableTree.tasks)
     : 0;
-  const assignableSlots = Math.max(0, plannerSlotLimit - activeChildren);
+  const activeWorkers = activeLeafCount(assignableTree.tasks);
+  const workerSlots = Math.max(0, config.maxConcurrent - activeWorkers);
+  const assignableSlots = Math.max(
+    0,
+    Math.min(plannerSlotLimit - activeChildren, workerSlots),
+  );
   for (const taskId of assignmentCandidateIds.slice(0, assignableSlots)) {
     try {
       const assignment = assignTask(config, { taskId });
@@ -3820,22 +4426,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   }
   let assignedSupportChildren = 0;
+  let remainingWorkerSlots = Math.max(0, workerSlots - assignments.length);
+  let remainingPipelineSlots = Math.max(
+    0,
+    githubActiveRunLimit - activeGithubRuns,
+  );
   const assignableSupportCandidateIds = orderedSupportCandidateIds(
-    supportCandidateIds.filter(
-      (taskId) =>
-        !supportChildRequiresPipelineRun(assignableTree.tasks[taskId]) ||
-        !dispatchHold,
-    ),
+    supportCandidateIds,
     assignableTree.tasks,
   );
-  for (const taskId of assignableSupportCandidateIds.slice(
-    0,
-    maxCompactSupportAssignments,
-  )) {
+  for (const taskId of assignableSupportCandidateIds) {
+    if (remainingWorkerSlots <= 0) break;
+    if (assignedSupportChildren >= maxCompactSupportAssignments) break;
+    const requiresPipelineRun = supportChildRequiresPipelineRun(
+      assignableTree.tasks[taskId],
+    );
+    if (requiresPipelineRun && remainingPipelineSlots <= 0) continue;
     try {
       const assignment = assignTask(config, { taskId });
       assignments.push(assignment);
       assignedSupportChildren += 1;
+      remainingWorkerSlots -= 1;
+      if (requiresPipelineRun) remainingPipelineSlots -= 1;
       dispatchAssignment(ctx, assignment);
     } catch {
       break;
@@ -4020,6 +4632,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     terminalGitHubWaitHarvest.harvestedTaskIds.length
       ? `Moved ${terminalGitHubWaitHarvest.harvestedTaskIds.length} terminal pipeline wait child task(s) to review: ${terminalGitHubWaitHarvest.terminalRunIds.slice(0, 5).join(", ")}.`
       : "",
+    terminalGitHubWaitHarvest.refreshedTaskIds.length
+      ? `Refreshed ${terminalGitHubWaitHarvest.refreshedTaskIds.length} nonterminal pipeline wait child task(s): ${terminalGitHubWaitHarvest.refreshedTaskIds.slice(0, 5).join(", ")}.`
+      : "",
     `Tracked features: ${Object.keys(state.features).length}.`,
   ]
     .filter(Boolean)
@@ -4041,6 +4656,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     closed_stale_blocked_wait_task_ids: closedStaleBlockedWaitTaskIds,
     terminal_github_wait_harvested_task_ids:
       terminalGitHubWaitHarvest.harvestedTaskIds,
+    terminal_github_wait_refreshed_task_ids:
+      terminalGitHubWaitHarvest.refreshedTaskIds,
     terminal_github_wait_terminal_run_ids:
       terminalGitHubWaitHarvest.terminalRunIds,
     terminal_github_wait_checked_run_ids:

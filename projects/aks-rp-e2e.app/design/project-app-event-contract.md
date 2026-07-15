@@ -29,10 +29,9 @@ talk about event routes and route targets:
 event -> event route -> target
 ```
 
-An event route lives in `app.ts` through `onEvent`. Most routes are generated
-with `workflowHandlers([...])`; that helper name is implementation history, not
-the conceptual model. A route matches an event selector and delivers the event
-to the right target. The target is inferred by convention: a route with a
+An event route lives in `app.ts` through `workflowHandlers[].accepts` or the
+optional imperative `onEvent` router. A route matches an event selector and
+delivers the event to the right target. The target is inferred by convention: a route with a
 workflow runs that workflow; a route or event with an owner and no workflow is
 an owner handoff; an unmatched event follows the runtime ownership fallback.
 The responsible actor is the agent, project, or task owner named by the
@@ -48,7 +47,7 @@ Example owner route:
 metric.breach
   -> project owner/app-ops
   -> structured decision
-  -> project.planning.requested, project.stall.review.requested,
+  -> project.owner.requested, project.stall.review.requested,
      accepted no-op, exact wait, or escalation
 ```
 
@@ -83,7 +82,7 @@ their business purpose is project orchestration.
 
 Prefer the existing event vocabulary before adding a new event:
 
-- Use `project.planning.requested` when the planner should decide what happens
+- Use `project.owner.requested` when the planner should decide what happens
   next.
 - Use `project.task.tick` plus top-level `action` for durable loop pulses.
 - Use `project.task.assigned`, `project.task.completed`, and
@@ -113,13 +112,13 @@ schedule, metric, external input, or UI action must start it directly.
 
 ### Planning
 
-`project.planning.requested`
+`project.owner.requested`
 
 Wakes the planner workflow. The planner reviews current state, reconciles
 results, repairs task-tree meaning, and creates, blocks, or dispatches the next
 concrete work.
 
-Planning is invoked by event. Emit `project.planning.requested`; do not call an
+Planning is invoked by event. Emit `project.owner.requested`; do not call an
 agent directly as the planner. The `project-planner` workflow is the executable
 adapter that packages state, calls `app-ops` when judgment is needed, validates
 structured decisions, and applies task-tree changes. `app-ops` supplies
@@ -151,7 +150,7 @@ project interpretation, and generic project advancement.
 
 ```json
 {
-  "type": "project.planning.requested",
+  "type": "project.owner.requested",
   "target": { "project": "aks-rp-e2e" },
   "data": {
     "reason": "watchdog-capacity-underfilled",
@@ -186,6 +185,17 @@ with the project-available `gpt-5.5` model alias. The separate model/agent gives
 completion review a second perspective while preserving a single task-tree
 writer.
 
+Task workers do not emit project/runtime state-transition events directly. They
+verify facts and return exact event proposals as review material. The reviewer
+judges those proposals, and the planner validates and emits supported canonical
+events. This prevents a worker from changing lifecycle state before independent
+acceptance or replaying stale work while trying to clean it up.
+
+The lack of worker mutation authority is not a blocker. When the evidence and
+exact proposal are complete, the worker returns success for review; it does not
+return blocked and trigger a new escalation merely because the reviewer/planner
+must apply the transition.
+
 ```json
 {
   "type": "project.task.reviewed",
@@ -202,6 +212,17 @@ writer.
     "findings": [],
     "feedback": [],
     "suggestedFollowups": [],
+    "events": [
+      {
+        "type": "escalation.resolved",
+        "owner": "agent:aks-explorer",
+        "data": {
+          "escalationId": "esc_...",
+          "outcome": "fixed",
+          "summary": "Verified repair evidence"
+        }
+      }
+    ],
     "reviewAction": {
       "actionKind": "app-state-repair",
       "goal": "Optional exact planner/app-ops successor goal"
@@ -229,6 +250,20 @@ Required review rules:
 - When the review needs planner-owned follow-up routing, it must use
   `reviewAction.actionKind`; summaries/findings/feedback are not routing
   protocol.
+- Supported planner follow-up action kinds are `app-state-repair`,
+  `publish-domain-repair-and-rerun`, `create-domain-followup`, and
+  `task-tree-followup`.
+  - `create-domain-followup` asks the planner to create one bounded domain child
+    directly from the reviewed packet.
+- `task-tree-followup` asks the planner to apply one bounded planner/app-owned
+  task-tree mutation or create one app-owned apply task for it.
+- `reviewAction` means more work is required. Omit it when the reviewed task
+  should close with no successor; optional ideas belong in
+  `suggestedFollowups`.
+- When an app-owned apply task receives another `app-state-repair` or
+  `task-tree-followup` decision, the deterministic review path closes that
+  apply task and emits `project.owner.requested` with the structured review
+  packet. It must not create recursively nested `ops-apply-*` workers.
 - The planner must validate the review event against live task state before
   applying it because event delivery is at least once.
 - If the reviewer cannot emit valid structured output, it must emit
@@ -273,7 +308,7 @@ but event routes must not depend on payload-only routing metadata.
 
 Asks the watchdog workflow to inspect liveness, stale active work, blocked
 frontier, review backlog, and capacity underfill. The watchdog emits
-`project.planning.requested` when planner review is needed. When it sees a
+`project.owner.requested` when planner review is needed. When it sees a
 project-level liveness contradiction, such as durable loop state with unfinished
 work but no useful runnable/review/active frontier, it emits
 `project.stall.review.requested` instead of another generic planner wake.
@@ -447,7 +482,7 @@ does not replace `project.task.completed` when a task owns the run.
 
 | Event                                                 | Destination                                   | Purpose                                                 |
 | ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
-| `project.planning.requested`                          | workflow: `project-planner`                   | App-ops planner wake/reconciliation.                    |
+| `project.owner.requested`                          | workflow: `project-planner`                   | App-ops planner wake/reconciliation.                    |
 | `project.task.assigned`                               | workflow: `task-worker`                       | Execute one dispatched leaf.                            |
 | `project.task.completed`                              | workflow: `task-reviewer`                     | Independently judge completed worker output.            |
 | `project.task.reviewed`                               | workflow: `project-planner`                   | Apply reviewer judgment to the task tree.               |
@@ -502,7 +537,7 @@ Project events are coordination hints, not the durable state store.
 - Event routes and workflows must be idempotent. Before mutating the task tree
   or loop state, read the durable source of truth and check whether the
   requested transition already happened.
-- Commands such as `project.planning.requested`, `project.task.tick`,
+- Commands such as `project.owner.requested`, `project.task.tick`,
   `project.watchdog.check.requested`, and
   `project.problem.investigation.requested` must be safe to retry.
   `project.stall.review.requested` must also be safe to retry; `risk-review`
@@ -616,8 +651,8 @@ canonical names above.
 
 | Old Event                             | Canonical Event                                                  |
 | ------------------------------------- | ---------------------------------------------------------------- |
-| `project.owner.requested`             | `project.planning.requested`                                     |
-| `project.tick`                        | `project.planning.requested`                                     |
+| `project.planning.requested`          | `project.owner.requested`                                        |
+| `project.tick`                        | `project.owner.requested`                                     |
 | `project.watchdog.tick`               | `project.watchdog.check.requested`                               |
 | `project.problem.requested`           | `project.problem.investigation.requested`                        |
 | `project.problem.unknown`             | `project.problem.inconclusive`                                   |
@@ -625,7 +660,7 @@ canonical names above.
 | `project.focus.approval.submitted`    | `project.approval.submitted` with `data.approvalKind=focus-plan` |
 | `project.approval.dispatch.requested` | `project.approval.requested`                                     |
 | `project.approval.dispatch.submitted` | `project.approval.submitted`                                     |
-| `task.requeued`                       | `project.planning.requested` with `data.reason=task-requeued`    |
+| `task.requeued`                       | `project.owner.requested` with `data.reason=task-requeued`    |
 
 `project.task.tick` is not a compatibility alias. It is the canonical targeted
 task wake event.

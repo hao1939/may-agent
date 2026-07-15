@@ -312,7 +312,9 @@ function isOpsOwnedTask(task: TaskNode): boolean {
   return owner === "app-ops" || id.startsWith("ops/");
 }
 
-function shouldIncludeLivePipelineDispatchInstructions(task: TaskNode): boolean {
+function shouldIncludeLivePipelineDispatchInstructions(
+  task: TaskNode,
+): boolean {
   if (hasTerminalPipelineWaitReview(task)) return false;
   if (isOpsOwnedTask(task) && !isFixForwardTask(task)) return false;
   return true;
@@ -322,7 +324,10 @@ function shouldIncludeTerminalPipelineReviewInstructions(
   task: TaskNode,
 ): boolean {
   if (hasTerminalPipelineWaitReview(task)) return true;
-  if (typeof task.workflow === "string" && task.workflow.trim() === "spec-runner")
+  if (
+    typeof task.workflow === "string" &&
+    task.workflow.trim() === "spec-runner"
+  )
     return true;
   const text = [
     task.id,
@@ -344,7 +349,8 @@ function compactPromptValue(value: unknown, depth = 0): unknown {
     return `${value.slice(0, 4000)}\n...[truncated ${value.length - 4000} chars; inspect task-tree state/evidence for full text]`;
   }
   if (value == null || typeof value !== "object") return value;
-  if (depth >= 8) return "[truncated nested object; inspect task-tree state/evidence for full details]";
+  if (depth >= 8)
+    return "[truncated nested object; inspect task-tree state/evidence for full details]";
 
   if (Array.isArray(value)) {
     if (value.length <= 40) {
@@ -373,7 +379,9 @@ function compactPromptValue(value: unknown, depth = 0): unknown {
       nested.length > 25
     ) {
       output[key] = [
-        ...nested.slice(0, 15).map((item) => compactPromptValue(item, depth + 1)),
+        ...nested
+          .slice(0, 15)
+          .map((item) => compactPromptValue(item, depth + 1)),
         `[truncated ${nested.length - 20} middle item(s)]`,
         ...nested.slice(-5).map((item) => compactPromptValue(item, depth + 1)),
       ];
@@ -645,6 +653,20 @@ function buildWorkerPrompt(input: {
   attemptId: string;
 }): string {
   const task = input.task as TaskNode;
+  const previousReview = recordValue(taskTrace(task).review_reject);
+  const previousReviewInstructions = previousReview
+    ? `
+Previous review requiring correction:
+\`\`\`json
+${JSON.stringify(previousReview, null, 2)}
+\`\`\`
+
+This is not background commentary. Address the named findings and affected
+artifacts in this attempt, then produce the stated verification. If a finding
+is incorrect or already resolved, prove that from current artifacts instead of
+silently ignoring it.
+`
+    : "";
   const livePipelineDispatchInstructions =
     shouldIncludeLivePipelineDispatchInstructions(task)
       ? `
@@ -737,8 +759,11 @@ SPEC_RESULT_REVIEW:
 
 For a passing spec, liveVerified must be true and must come from the exact
 artifact/result. For a non-passing spec, still include runId, resultPath,
-specStatus, reason, and artifactRefs. For grouped review, put per-spec entries
-in specResults with the same field names.
+specStatus, reason, and artifactRefs. For grouped review, put one entry per
+spec in specResults and include the same per-spec fields there too: specId,
+runId, resultPath, specStatus, reason, liveVerified, liveClusterObserved,
+resourceGroup, clusterName, and artifactRefs. Aggregate-only status is not
+enough for a terminal wait review.
 `
       : "";
   const fixForwardInstructions = isFixForwardTask(task)
@@ -874,6 +899,14 @@ names supported task-tree commands such as \`task-tree set-outputs\` or
 \`task-tree update-text\`, you may run only those exact commands against the
 named existing task ids. Never edit the runtime task tree file directly, and do not
 add/reassign/accept/reject tasks from this session.
+Do not emit project or runtime events through the CLI, HTTP API, SDK, or direct
+database writes. If the task requires an event transition, verify the facts and
+record the exact canonical event proposal in the evidence/result. The
+independent reviewer judges it and the planner validates and emits it.
+Completing that proposal is the normal worker/reviewer boundary, not a blocker.
+Return success when the requested investigation/evidence and exact proposal are
+complete, or partial when bounded work remains. Do not return blocked merely
+because this worker is correctly not authorized to emit the proposed event.
 
 Use the task as the context container. Read the relevant domain files, do the
 task body, write the requested output/evidence, then finish with a structured
@@ -934,6 +967,7 @@ set and the post-action represented set when they differ.
 ${appOpsStateRepairInstructions}
 ${fixForwardInstructions}
 ${compactFixForwardInstructions}
+${previousReviewInstructions}
 
 Assigned task:
 \`\`\`json
@@ -1225,7 +1259,8 @@ export function completeStartedAttempt(
     workflowResult?: StructuredWorkflowResult;
   },
 ):
-  { ok: true; task: TaskNode; late?: boolean } | { ok: false; reason: string } {
+  | { ok: true; task: TaskNode; late?: boolean }
+  | { ok: false; reason: string } {
   const completionState = withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
@@ -1480,7 +1515,9 @@ async function runAssignedMode(
       ...(queuedPipelineRunDetails ?? {}),
     },
     workflow:
-      terminalPipelineWaitReview || specResultReview
+      fixForwardResult
+        ? "fix-forward"
+        : terminalPipelineWaitReview || specResultReview
         ? "spec-result-review"
         : undefined,
   });

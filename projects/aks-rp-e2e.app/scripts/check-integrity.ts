@@ -5,7 +5,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { exactBlockedWaitStewardshipProgress } from "../workflows/lib/durable-loop-wait-stewardship.ts";
 import { resolveTaskTreePath } from "@may-agent/sdk";
-import { auditFocusMetadataIssues } from "./lib/focus-metadata-audit.ts";
 
 type AgentConfig = {
   name?: string;
@@ -15,6 +14,7 @@ type AgentConfig = {
 type ProjectJson = {
   id?: string;
   owner?: string;
+  goal?: string;
   status?: string;
   type?: string;
   domainProject?: {
@@ -29,7 +29,6 @@ type WorkflowHandler = {
   name?: string;
   enabled?: boolean;
   accepts?: unknown;
-  on?: unknown;
   emits?: unknown;
   intervalMs?: number;
   offsetMs?: number;
@@ -50,10 +49,6 @@ type Schedule = {
     type?: string;
     [key: string]: unknown;
   }>;
-  event?: {
-    type?: string;
-    [key: string]: unknown;
-  };
 };
 
 type EventSelector =
@@ -105,6 +100,7 @@ type ProjectApp = {
 
 type TaskNode = {
   id?: string;
+  goal?: string;
   parent_id?: string | null;
   state?: string;
   status?: string;
@@ -424,6 +420,21 @@ function validateProjectAndApp(
   }
 }
 
+function validateProjectRootGoal(
+  projectJson: ProjectJson | null,
+  tree: TaskTree | null,
+  surface: string,
+): void {
+  const configuredGoal = projectJson?.goal?.trim();
+  if (!configuredGoal || !tree?.root_task_id) return;
+  const rootGoal = tree.tasks?.[tree.root_task_id]?.goal?.trim();
+  if (rootGoal !== configuredGoal) {
+    fail(
+      `${surface} project root goal must match project.json goal; temporary focus, recovery, and blocked-frontier work belongs under focus or ops/* tasks`,
+    );
+  }
+}
+
 function validateWorkflowHandlers(
   projectApp: ProjectApp,
   workflowNames: Set<string>,
@@ -452,7 +463,7 @@ function validateWorkflowHandlers(
       );
 
     const inputs = workflowHandlerInputEvents(handler);
-    if (!Array.isArray(handler.accepts) && !Array.isArray(handler.on))
+    if (!Array.isArray(handler.accepts))
       fail(`workflow handler ${handler.name} must declare accepts[]`);
     else if (handler.enabled !== false && inputs.length === 0)
       fail(`workflow handler ${handler.name} must be triggered by an event`);
@@ -497,8 +508,9 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
 }
 
 function workflowHandlerSelectors(handler: WorkflowHandler): EventSelector[] {
-  const raw = handler.accepts ?? handler.on;
-  return Array.isArray(raw) ? (raw as EventSelector[]) : [];
+  return Array.isArray(handler.accepts)
+    ? (handler.accepts as EventSelector[])
+    : [];
 }
 
 function workflowHandlerInputEvents(handler: WorkflowHandler): string[] {
@@ -526,11 +538,7 @@ function selectorConflictKey(selector: EventSelector): string | null {
 }
 
 function scheduleEvents(schedule: Schedule): Array<{ type?: string }> {
-  return Array.isArray(schedule.emits)
-    ? schedule.emits
-    : schedule.event
-      ? [schedule.event]
-      : [];
+  return Array.isArray(schedule.emits) ? schedule.emits : [];
 }
 
 function addMapValue(map: Map<string, string[]>, key: string, value: string) {
@@ -1056,6 +1064,7 @@ validatePackageJson();
 const projectApp = await loadProjectApp();
 const projectJson = readJson<ProjectJson>("project.json");
 const taskTree = readJson<TaskTree>(resolveTaskTreePath(appDir));
+const taskSeed = readJson<TaskTree>("tasks/seed.json");
 const owner = inferOwner(projectJson);
 const workflowNames = listWorkflowNames();
 
@@ -1064,11 +1073,8 @@ validateWorkflowHandlers(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);
 validateTaskTree(taskTree, workflowNames);
-for (const issue of auditFocusMetadataIssues(taskTree ?? {})) {
-  fail(
-    `focus metadata drift: ${issue.reason} (owner=${issue.ownerTaskId}, expected=${issue.expectedState}, actual=${issue.actualState})`,
-  );
-}
+validateProjectRootGoal(projectJson, taskTree, "runtime task tree");
+validateProjectRootGoal(projectJson, taskSeed, "task seed");
 validateDurableLoopTasks(taskTree);
 
 for (const message of warnings) {
