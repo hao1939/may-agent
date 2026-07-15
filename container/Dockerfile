@@ -112,7 +112,8 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/code
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
 COPY --from=builder --chown=mayagent:mayagent /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
-COPY --from=builder /build/node_modules/node-pty /app/node_modules/node-pty
+COPY --from=builder /build/packages/terminal/node_modules/node-pty /app/node_modules/node-pty
+RUN node -e "const p = require('/app/node_modules/node-pty'); if (typeof p.spawn !== 'function') process.exit(1)"
 COPY packages/terminal/bin/terminal-bridge.cjs /app/packages/terminal/bin/terminal-bridge.cjs
 
 # Copy the default May Agent project UI for image-only runs. Local compose

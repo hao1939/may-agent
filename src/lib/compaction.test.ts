@@ -376,6 +376,39 @@ describe("createCompactionTransform", () => {
     expect((result[0].content as any[])[0].text).toContain("COMPACTED CONTEXT");
   });
 
+  it("counts Pi-native thinking content when deciding to compact", async () => {
+    const model = fakeModel(1000);
+    const transform = createCompactionTransform(model, { threshold: 0.5, keepRatio: 0.2 });
+    const messages = [
+      userMsg("Investigate the failure"),
+      {
+        ...assistantMsg("short answer"),
+        content: [{ type: "thinking", thinking: "x".repeat(2400) }, { type: "text", text: "short answer" }],
+      } as AgentMessage,
+      userMsg("Continue"),
+    ];
+
+    const result = await transform(messages);
+    expect(result).not.toBe(messages);
+    expect((result[0].content as any[])[0].text).toContain("COMPACTED CONTEXT");
+  });
+
+  it("retains recent context by token budget rather than message count", async () => {
+    const model = fakeModel(2000);
+    const transform = createCompactionTransform(model, { threshold: 0.4, keepRatio: 0.25 });
+    const largeRecentMessage = assistantMsg(longText(900));
+    const messages = [
+      userMsg(longText(300)),
+      assistantMsg("old response"),
+      userMsg("recent request"),
+      largeRecentMessage,
+    ];
+
+    const result = await transform(messages);
+    expect(result).toHaveLength(2);
+    expect(result[1]).toBe(largeRecentMessage);
+  });
+
   // ── Last reasoning preservation tests ────────────────────────────────
 
   it("preserves last substantial assistant reasoning in summary", async () => {

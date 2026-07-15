@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getModel } from "@earendil-works/pi-ai";
+import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { ChatSession } from "../../src/app/chat-session.js";
 import { EventBus } from "../../src/app/event-bus.js";
@@ -34,7 +34,7 @@ function echoTool(): AgentTool {
 }
 
 function mockModel() {
-  return getModel("anthropic", "claude-sonnet-4-20250514");
+  return getBuiltinModel("anthropic", "claude-opus-4-6");
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────

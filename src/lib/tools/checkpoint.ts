@@ -21,9 +21,7 @@ import { createCheckpointDigest } from "../session-digest.js";
 
 export interface CheckpointToolOptions {
   /** Session ID for namespacing checkpoint files.
-   *  Can be a string (fixed) or a function (resolved at call time).
-   *  When used with wrapToolsWithReceipts, the manager injects
-   *  the session ID dynamically. */
+   *  Can be a string (fixed) or a function (resolved at call time). */
   sessionId: string | (() => string);
   /** Agent name — used for the per-agent latest-checkpoint pointer.
    *  Can be a string (fixed) or a function (resolved at call time).

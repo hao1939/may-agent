@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { createContextUpdater, createLastSessionWriter } from "./session-subscribers.js";
-import { getModel } from "@earendil-works/pi-ai";
+import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 
 let tmpDir: string;
 let persistDir: string;
@@ -14,7 +14,7 @@ let contextPath: string;
 
 // Minimal model for testing (won't actually call LLM)
 const testModel = {
-  ...getModel("anthropic", "claude-sonnet-4-20250514"),
+  ...getBuiltinModel("anthropic", "claude-opus-4-6"),
   id: "test-model",
 };
 

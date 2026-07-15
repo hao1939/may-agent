@@ -107,7 +107,7 @@ Three persistence mechanisms work together:
 
 Long-running sessions hit context window limits. Two mechanisms handle this:
 
-**Compaction** triggers when token usage exceeds a configurable threshold (default 70% of context window). It structurally summarizes old messages — no LLM calls, fast and deterministic. Preserved across compaction rounds: the original task, key facts (files read/written, commands executed), and the agent's most recent reasoning block. Multiple rounds accumulate; oldest sections are trimmed first. Summary budget is capped at 15% of the context window.
+**Compaction** triggers when estimated usage exceeds 60% of the configured context window. May combines Pi's message-aware token estimate with a conservative prose estimate, retains the newest 35% by estimated tokens, and structurally summarizes the older prefix without another LLM call. It preserves the original task, key facts (files read/written, commands executed and agent calls), and the latest substantial reasoning. Multiple rounds accumulate; oldest summary sections are trimmed first. The compact snapshot is stored separately while the append-only transcript remains the source of truth.
 
 **Overflow recovery** handles the case where compaction wasn't enough (or isn't enabled). When a session hits the context window hard limit, the system extracts structured progress (task, actions taken, files touched, last reasoning) into a markdown document that a new session can pick up from.
 
