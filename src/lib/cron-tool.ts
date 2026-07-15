@@ -41,6 +41,8 @@ export type CronHandlerSpec = string | WorkflowBackedHandler;
 
 export interface CronEntry {
   name: string;
+  /** Typed operational role. Legacy heartbeat names are normalized at config ingress. */
+  category?: "handler" | "heartbeat";
   intervalMs?: number;
   /** Deprecated config field. Scheduler does not treat message as a trigger mode. */
   message?: string;

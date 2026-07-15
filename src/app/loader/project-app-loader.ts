@@ -17,7 +17,7 @@ import {
   type ProjectAppEventTarget as EventTarget,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
-import { childEventTrace, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type EventBus } from "../event-bus.js";
 
 type ProjectReadModel = {
   id: string;
@@ -442,8 +442,7 @@ function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: s
 function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
   if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
   if (hasExplicitWorkflowHandler(app, event, appId)) return true;
-  if (isOwnerMetricFeedbackForApp(event, appOwner)) return true;
-  return typeof event.type === "string" && event.type.startsWith("project.") && isProjectScopedForApp(event, appId);
+  return isOwnerMetricFeedbackForApp(event, appOwner);
 }
 
 function hasExplicitWorkflowHandler(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
@@ -754,9 +753,8 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.subscribe((rawEvent): DeliveryResult | void => {
+  opts.bus.subscribe((rawEvent): void => {
     const event = flattenEvent(rawEvent);
-    let accepted: DeliveryResult | undefined;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
@@ -781,29 +779,30 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         } as AgentEvent);
       }
       if (hasWorkflowHandler) continue;
-      const shouldOwnerFallback =
-        !hasWorkflowHandler && (isProjectScopedForApp(event, descriptor.id) || ownerMetricFeedback);
-      if (hasAppEventHandler) {
-        accepted ??= {
-          accepted: true,
-          by: `project-app:${descriptor.id}`,
-          route: "direct",
-          note: "project app onEvent accepted",
-        };
-      } else if (shouldOwnerFallback) {
-        accepted ??= {
-          accepted: true,
-          by: `project-app:${descriptor.id}:owner-fallback`,
-          route: "direct",
-          note: "project app owner fallback session queued",
-        };
-      }
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
           const result =
             typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
-          if (result !== undefined) return;
+          const closeInbox = (route: string): void => {
+            const openEventId = (rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+            if (!Number.isInteger(openEventId) || Number(openEventId) <= 0) return;
+            opts.bus.emit({
+              type: "owner.inbox.reviewed",
+              source: `project-app:${descriptor.id}`,
+              owner: `agent:${descriptor.owner}`,
+              data: { openEventId, openEventType: event.type, reviewedBy: descriptor.owner, route },
+              trace: {
+                traceId: rawEvent.trace?.traceId ?? `event:${openEventId}`,
+                parentEventId: openEventId,
+                links: [{ eventId: openEventId, type: "closure", label: "owner.inbox.reviewed" }],
+              },
+            } as any);
+          };
+          if (result !== undefined) {
+            closeInbox("app-onEvent");
+            return;
+          }
           if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
           const sessionId = opts.manager.runAgent(descriptor.owner, ownerFallbackTask(descriptor, event), {
@@ -827,6 +826,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             },
             ...(trace ? { trace } : {}),
           } as AgentEvent);
+          closeInbox("owner-fallback-session");
         })
         .catch((err) => {
           opts.bus.emit({
@@ -842,7 +842,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           });
         });
     }
-    return accepted;
   });
 }
 

@@ -89,10 +89,8 @@ export function taskEventSnapshot(task: TaskNode): Record<string, unknown> {
   const trace = task.trace && typeof task.trace === "object" && !Array.isArray(task.trace) ? task.trace : {};
   return {
     taskId: task.id,
-    task_id: task.id,
     parent_id: task.parent_id,
     state: taskState(task),
-    status: taskState(task),
     kind: task.kind,
     priority: task.priority,
     owner: task.owner,
@@ -130,9 +128,23 @@ export function rawTaskState(task: TaskNode | undefined): string {
   return String(task?.state ?? task?.status ?? "");
 }
 
+function installLegacyStatusAlias(task: TaskNode): void {
+  const descriptor = Object.getOwnPropertyDescriptor(task, "status");
+  if (descriptor?.get && descriptor?.set && descriptor.enumerable === false) return;
+  delete task.status;
+  Object.defineProperty(task, "status", {
+    configurable: true,
+    enumerable: false,
+    get: () => task.state,
+    set: (value: string | undefined) => {
+      task.state = value;
+    },
+  });
+}
+
 export function setTaskState(task: TaskNode, state: string): void {
   task.state = state;
-  task.status = state;
+  installLegacyStatusAlias(task);
 }
 
 export function normalizeStringArray(value: unknown): string[] {
@@ -253,10 +265,10 @@ export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
     tree.tasks = tasks;
   }
   for (const task of Object.values(tree.tasks ?? {})) {
-    const raw = String(task.status ?? task.state ?? "");
+    const raw = String(task.state ?? task.status ?? "");
     const state = normalizeLegacyState(raw);
     task.state = state;
-    task.status = state;
+    installLegacyStatusAlias(task);
     if (raw === "accepted") {
       task.resolution = task.resolution ?? "completed";
       const record = task as Record<string, unknown>;

@@ -10,6 +10,7 @@
 import type { SqliteDb } from "./db.js";
 import type { MetricService } from "./metrics.js";
 import type { QueryAPI } from "./query-service.js";
+import type { CommandAPI } from "./command-service.js";
 
 // ── Core SDK ──────────────────────────────────────────────────────────
 
@@ -28,6 +29,9 @@ export interface AgentSDK {
 
   /** Read bounded runtime facts without opening SQLite directly. */
   query: QueryAPI;
+
+  /** Execute typed state changes through durable events. */
+  commands: CommandAPI;
 
   /** Define, record, evaluate, and inspect system metrics. */
   metrics: MetricService;

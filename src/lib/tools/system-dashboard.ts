@@ -1,5 +1,5 @@
 /**
- * request-status.ts — CLI status dashboard for may-agent
+ * system-dashboard.ts — CLI status dashboard for may-agent
  *
  * Enhanced `--status` output: single pane of glass showing system health,
  * agent performance, process health, and progress trends.
@@ -54,36 +54,12 @@ interface ProcessInfo {
   name: string;
   lastFire: number | null;
   lastStatus: string | null;
-  expectedIntervalMs: number;
 }
 
 interface AttentionItem {
   level: "red" | "yellow" | "green";
   message: string;
 }
-
-// ── Key processes to track ───────────────────────────────────────────
-// NOTE: This list should eventually be dynamic (read from cron.json).
-// For now, manually add critical handlers here.
-
-const KEY_PROCESSES: Array<{ name: string; intervalMs: number; label: string }> = [
-  { name: "evaluate-sessions", intervalMs: 30 * 60_000, label: "evaluate-sessions" },
-  { name: "error-log-scanner", intervalMs: 4 * HOUR, label: "error-log-scanner" },
-  { name: "system-status", intervalMs: 4 * HOUR, label: "system-status" },
-  { name: "watchdog", intervalMs: 10 * 60_000, label: "watchdog" },
-  { name: "coaching-report", intervalMs: DAY, label: "coaching-report" },
-  { name: "reflect", intervalMs: 6 * HOUR, label: "reflect" },
-  { name: "training-sprint", intervalMs: 12 * HOUR, label: "training-sprint" },
-  { name: "lessons-graduation", intervalMs: DAY, label: "lessons-graduation" },
-  { name: "agents-auto-commit", intervalMs: 10 * 60_000, label: "agents-auto-commit" },
-  { name: "convention-check", intervalMs: 30 * 60_000, label: "convention-check" },
-  { name: "project-resume", intervalMs: 5 * 60_000, label: "project-resume" },
-  { name: "standing-orders-check", intervalMs: 30 * 60_000, label: "standing-orders-check" },
-  { name: "metrics-snapshot", intervalMs: HOUR, label: "metrics-snapshot" },
-  { name: "heartbeat-context", intervalMs: 30 * 60_000, label: "heartbeat-context" },
-  { name: "session-sync", intervalMs: 5 * 60_000, label: "session-sync" },
-  { name: "evaluation-sync", intervalMs: 10 * 60_000, label: "evaluation-sync" },
-];
 
 // ── Data loading ─────────────────────────────────────────────────────
 
@@ -139,49 +115,34 @@ function loadHumanInputCounts(persistDir: string, days: number): number[] {
 /** Load process last-fire times from events table (handler.started events). */
 function loadProcessHealth(persistDir: string): ProcessInfo[] {
   const db = getDb(persistDir);
-  const results: ProcessInfo[] = [];
-
-  for (const proc of KEY_PROCESSES) {
-    try {
-      const row = db
-        .prepare(
-          `SELECT MAX(timestamp) as lastFire FROM events
-           WHERE event_type = 'handler.started'
-             AND json_extract(data, '$.handler') = ?`,
-        )
-        .get(proc.name) as { lastFire: number | null } | null;
-
-      // Check if last run succeeded or failed
-      let lastStatus: string | null = null;
-      if (row?.lastFire) {
-        const statusRow = db
-          .prepare(
-            `SELECT event_type FROM events
-             WHERE event_type IN ('handler.completed', 'handler.failed')
-               AND json_extract(data, '$.handler') = ?
-             ORDER BY timestamp DESC LIMIT 1`,
-          )
-          .get(proc.name) as { event_type: string } | null;
-        lastStatus = statusRow?.event_type === 'handler.completed' ? 'COMPLETED' : statusRow?.event_type === 'handler.failed' ? 'FAILED' : null;
-      }
-
-      results.push({
-        name: proc.label,
-        lastFire: row?.lastFire ?? null,
-        lastStatus,
-        expectedIntervalMs: proc.intervalMs,
-      });
-    } catch {
-      results.push({
-        name: proc.label,
-        lastFire: null,
-        lastStatus: null,
-        expectedIntervalMs: proc.intervalMs,
-      });
-    }
+  try {
+    return db.prepare(
+      `WITH handlers AS (
+         SELECT json_extract(data, '$.handler') AS name, MAX(timestamp) AS lastFire
+         FROM events
+         WHERE event_type = 'handler.started'
+           AND json_extract(data, '$.handler') IS NOT NULL
+         GROUP BY json_extract(data, '$.handler')
+       )
+       SELECT h.name, h.lastFire,
+         CASE latest.event_type
+           WHEN 'handler.completed' THEN 'COMPLETED'
+           WHEN 'handler.failed' THEN 'FAILED'
+           ELSE NULL
+         END AS lastStatus
+       FROM handlers h
+       LEFT JOIN events latest ON latest.id = (
+         SELECT e.id FROM events e
+         WHERE e.event_type IN ('handler.completed', 'handler.failed')
+           AND json_extract(e.data, '$.handler') = h.name
+         ORDER BY e.timestamp DESC, e.id DESC LIMIT 1
+       )
+       ORDER BY h.lastFire DESC
+       LIMIT 30`,
+    ).all() as unknown as ProcessInfo[];
+  } catch {
+    return [];
   }
-
-  return results;
 }
 
 /** Load convention compliance summary if it exists. */
@@ -198,41 +159,25 @@ function loadConventionSummary(persistDir: string): Record<string, unknown> | nu
 // ── Triage logic ─────────────────────────────────────────────────────
 
 function triageItems(
-  persistDir: string,
   processes: ProcessInfo[],
   agentCompletionRates: Map<string, AgentStats>,
   evals24h: EvalRecord[],
   humanCounts: number[],
 ): AttentionItem[] {
   const items: AttentionItem[] = [];
-  const now = Date.now();
 
-  // 1. Stale human requests (>30min) — deprecated. The `requests` table was
-  // removed in favor of event-native tracking. Skip until reimplemented over
-  // the events table (event_type='message.created', source='human').
-
-  // 2. Process failures — overdue by 2x expected interval
+  // Process failures are reported from observed handler lifecycle events.
+  // Schedule freshness belongs to cron/handler metrics, not a duplicated list.
   for (const proc of processes) {
-    if (proc.lastFire === null) {
-      items.push({ level: "yellow", message: `${proc.name}: never run` });
-      continue;
-    }
-    const overdue = now - proc.lastFire > proc.expectedIntervalMs * 2;
-    if (overdue) {
-      items.push({
-        level: "yellow",
-        message: `${proc.name}: overdue (last run ${ago(proc.lastFire)}, expected every ${Math.round(proc.expectedIntervalMs / 60_000)}min)`,
-      });
-    }
     if (proc.lastStatus === "FAILED") {
       items.push({
         level: "yellow",
-        message: `${proc.name}: last run FAILED (${ago(proc.lastFire)})`,
+        message: `${proc.name}: last run FAILED (${proc.lastFire ? ago(proc.lastFire) : "time unknown"})`,
       });
     }
   }
 
-  // 3. Agent failures — any agent with >10% failure rate in 24h
+  // Agent failures — any agent with >10% failure rate in 24h
   for (const [agent, stats] of agentCompletionRates) {
     if (stats.total < 5) continue; // Too few to judge
     const failRate = stats.failed / stats.total;
@@ -244,7 +189,7 @@ function triageItems(
     }
   }
 
-  // 4. Quality decline — any agent with avg quality < 0.3 in last 24h
+  // Quality decline — any agent with avg quality < 0.3 in last 24h
   //    Scale is 0.0-1.0. Exclude interrupted sessions (not the agent's fault).
   const agentQuality = new Map<string, { total: number; count: number }>();
   for (const e of evals24h) {
@@ -265,7 +210,7 @@ function triageItems(
     }
   }
 
-  // 5. Human correction trend — increasing over 3+ days
+  // Human correction trend — increasing over 3+ days
   if (humanCounts.length >= 3) {
     const recent3 = humanCounts.slice(-3);
     if (recent3[0] < recent3[1] && recent3[1] < recent3[2] && recent3[2] > 5) {
@@ -336,7 +281,7 @@ export interface StatusOptions {
  * Generate the full status dashboard.
  * Used by `--status` CLI flag.
  */
-export function printRequestStatus(persistDir: string, opts?: Partial<StatusOptions>): string {
+export function printSystemStatus(persistDir: string, opts?: Partial<StatusOptions>): string {
   const includeProcessHealth = opts?.includeProcessHealth ?? true;
   const includeEvals = opts?.includeEvals ?? true;
 
@@ -400,7 +345,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
 
   // ── Triage ─────────────────────────────────────────────────────────
 
-  const attention = triageItems(persistDir, processes, agentCompletionRates, evals24hScored, humanCounts);
+  const attention = triageItems(processes, agentCompletionRates, evals24hScored, humanCounts);
 
   const reds = attention.filter((i) => i.level === "red");
   const yellows = attention.filter((i) => i.level === "yellow");
@@ -463,7 +408,7 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
       );
     }
   } else {
-    lines.push("  No requests in the last 24h.");
+    lines.push("  No sessions in the last 24h.");
   }
 
   // ── Process health ─────────────────────────────────────────────────
@@ -481,11 +426,8 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
       if (proc.lastFire === null) {
         status = "⚠ new";
       } else {
-        const overdue = now - proc.lastFire > proc.expectedIntervalMs * 2;
         if (proc.lastStatus === "FAILED") {
           status = "✗ failed";
-        } else if (overdue) {
-          status = "⚠ overdue";
         } else if (proc.lastStatus === "IN_PROGRESS") {
           status = "⏳ running";
         } else {
@@ -600,16 +542,6 @@ export function printRequestStatus(persistDir: string, opts?: Partial<StatusOpti
     }
   }
 
-  // ── Active requests ────────────────────────────────────────────────
-
-  // (Active/stale request sections deprecated — the requests table was
-  // replaced by sessions + events. Use stuck_session_age metric instead.)
-  lines.push("");
-  lines.push("─".repeat(62));
-  lines.push(" ACTIVE REQUESTS");
-  lines.push("─".repeat(62));
-  lines.push("  None (work tracked via sessions + events tables)");
-
   lines.push("");
   return lines.join("\n");
 }
@@ -629,7 +561,7 @@ export async function notifyStatus(persistDir: string): Promise<void> {
     return;
   }
 
-  const status = printRequestStatus(persistDir);
+  const status = printSystemStatus(persistDir);
   // Telegram max message length is 4096 chars
   const MAX_LEN = 4000;
   const chunks: string[] = [];

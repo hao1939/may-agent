@@ -71,7 +71,7 @@ function sourceSessionId(escalation: EscalationCreated): string | undefined {
     ? data.resume as Record<string, unknown>
     : {};
   if (resume.kind === "session") {
-    return nonEmptyString(resume.checkpointRef) ?? nonEmptyString(resume.sessionId);
+    return nonEmptyString(resume.sessionId) ?? nonEmptyString(data.sourceSessionId);
   }
   return nonEmptyString(data.sourceSessionId);
 }
@@ -82,7 +82,7 @@ function workflowRunIdContext(escalation: EscalationCreated): string | undefined
     ? data.resume as Record<string, unknown>
     : {};
   if (resume.kind === "workflow") {
-    return nonEmptyString(resume.workflowRunId) ?? nonEmptyString(resume.checkpointRef);
+    return nonEmptyString(resume.workflowRunId) ?? nonEmptyString(data.workflowRunId);
   }
   return nonEmptyString(data.workflowRunId);
 }
@@ -129,6 +129,60 @@ function emitResumeFailed(bus: EventBus, owner: string, data: Record<string, unk
     owner,
     data,
   } as AgentEvent);
+}
+
+function sourceOwner(escalation: EscalationCreated, fallback: string): string {
+  const agent = nonEmptyString(escalation.data.sourceAgent);
+  if (!agent) return fallback;
+  return agent.includes(":") ? agent : `agent:${agent}`;
+}
+
+function projectIdOrWorkflowKind(escalation: EscalationCreated): "project" | "workflow" | "unknown" {
+  if (nonEmptyString(escalation.data.projectId) ?? nonEmptyString(escalation.data.project)) return "project";
+  if (workflowRunIdContext(escalation)) return "workflow";
+  return "unknown";
+}
+
+function wakeSourceOwner(
+  bus: EventBus,
+  escalation: EscalationCreated,
+  owner: string,
+  baseData: Record<string, unknown>,
+  resumeText: string,
+): { sourceKind: "project" | "workflow"; sourceRef: string } | null {
+  const projectId = nonEmptyString(escalation.data.projectId) ?? nonEmptyString(escalation.data.project);
+  if (projectId) {
+    bus.emit({
+      type: "project.owner.requested",
+      source: "escalation-lifecycle",
+      owner: sourceOwner(escalation, owner),
+      data: {
+        projectId,
+        project: projectId,
+        reason: "escalation-resolved",
+        resumeInstruction: resumeText,
+        ...baseData,
+      },
+    } as AgentEvent);
+    return { sourceKind: "project", sourceRef: projectId };
+  }
+
+  const workflowRunId = workflowRunIdContext(escalation);
+  if (workflowRunId) {
+    bus.emit({
+      type: "workflow.owner.requested",
+      source: "escalation-lifecycle",
+      owner: sourceOwner(escalation, owner),
+      data: {
+        workflowRunId,
+        reason: "escalation-resolved",
+        resumeInstruction: resumeText,
+        ...baseData,
+      },
+    } as AgentEvent);
+    return { sourceKind: "workflow", sourceRef: workflowRunId };
+  }
+  return null;
 }
 
 export function createEscalationLifecycleSubscriber(opts: {
@@ -195,13 +249,28 @@ export function createEscalationLifecycleSubscriber(opts: {
     const resumeText = resumeInstruction(event, outcome, sourceEscalationId, workflowRunId);
 
     if (!sessionId) {
-      emitResumeFailed(opts.bus, owner, {
+      const attemptedData = {
         ...baseData,
-        sourceKind: "unknown",
-        reason: "escalation has no source session resume target",
-        category: "missing_resume_target",
-        recoverable: false,
-      });
+        sourceKind: projectIdOrWorkflowKind(sourceCreated),
+        resumeInstruction: resumeText,
+      };
+      emitResumeAttempted(opts.bus, owner, attemptedData);
+      const wake = wakeSourceOwner(opts.bus, sourceCreated, owner, baseData, resumeText);
+      if (wake) {
+        emitResumeStarted(opts.bus, owner, {
+          ...baseData,
+          ...wake,
+          summary: nonEmptyString(resolvedData.summary) ?? "source owner woken after escalation resolution",
+        });
+      } else {
+        emitResumeFailed(opts.bus, owner, {
+          ...baseData,
+          sourceKind: "unknown",
+          reason: "escalation has no source session, project, or workflow follow-up target",
+          category: "missing_resume_target",
+          recoverable: false,
+        });
+      }
       return;
     }
 

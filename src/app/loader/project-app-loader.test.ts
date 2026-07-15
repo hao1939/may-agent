@@ -267,6 +267,7 @@ describe("project app loader", () => {
           id: "sample-lib",
           owner: "scout",
           workspace: { localPath: "../sample-lib" },
+          events: ["project.path.check", "project.path.observed"],
           async onEvent(ctx, event) {
             if (event.type === "project.path.check") {
               return ctx.emit({
@@ -372,7 +373,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("routes unhandled project-scoped events to the inferred owner", async () => {
+  it("does not route undeclared project-scoped events", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
@@ -410,10 +411,7 @@ describe("project app loader", () => {
       } as any);
       await waitForMicrotasks();
 
-      expect(calls).toHaveLength(1);
-      expect(calls[0]!.agent).toBe("sample-owner");
-      expect(calls[0]!.opts?.projectId).toBe("sample");
-      expect(calls[0]!.task).toContain("project.unhandled");
+      expect(calls).toHaveLength(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -720,7 +718,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("falls back when event type has a workflow handler but selector does not match", async () => {
+  it("does not fall back when a workflow selector does not match", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
@@ -766,10 +764,7 @@ describe("project app loader", () => {
       } as any);
       await waitForMicrotasks();
 
-      expect(calls).toHaveLength(1);
-      expect(calls[0]!.agent).toBe("sample-owner");
-      expect(calls[0]!.task).toContain("project.task.tick");
-      expect(calls[0]!.task).toContain("unknown-loop");
+      expect(calls).toHaveLength(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1255,6 +1250,7 @@ export async function execute(ctx: any) {
         appDir,
         `{
         id: "sample",
+        events: ["project.work"],
         onEvent() { return undefined; }
       }`,
       );

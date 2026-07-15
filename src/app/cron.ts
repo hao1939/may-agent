@@ -27,7 +27,7 @@ import type { EventEnvelope } from "../lib/handler-context.js";
 // ── Types ─────────────────────────────────────────────────────────────
 
 /** A JS function that replaces the LLM for a specific cron job. */
-type CronHandler = (event?: EventEnvelope) => Promise<void>;
+type CronHandler = (event?: EventEnvelope, signal?: AbortSignal) => Promise<void>;
 
 /** Callback when a job fires (for notifications). */
 type CronJobCallback = (entry: CronEntry) => void;
@@ -63,10 +63,16 @@ function heartbeatTriggerAgent(event: unknown): string | undefined {
 function entryAgent(entry: CronEntry): string | undefined {
   const fromHandler = workflowHandler(entry.handler)?.agent?.trim() ?? "";
   const fromEntry = typeof entry.agent === "string" ? entry.agent.trim() : "";
-  if (fromHandler || fromEntry) return fromHandler || fromEntry;
-  if (entry.name === "heartbeat") return "may";
-  if (entry.name.startsWith("heartbeat-")) return entry.name.slice("heartbeat-".length);
-  return undefined;
+  return fromHandler || fromEntry || undefined;
+}
+
+function normalizeCronEntry(entry: CronEntry): CronEntry {
+  if (entry.category) return entry;
+  if (entry.name === "heartbeat") return { ...entry, category: "heartbeat", agent: entry.agent ?? "may" };
+  if (entry.name.startsWith("heartbeat-")) {
+    return { ...entry, category: "heartbeat", agent: entry.agent ?? entry.name.slice("heartbeat-".length) };
+  }
+  return { ...entry, category: "handler" };
 }
 
 function projectIdFromRecord(record: Record<string, unknown> | undefined): string {
@@ -170,8 +176,11 @@ export class Cron {
 
   private persistDir: string;
 
-  /** In-flight jobs: entry name → start timestamps. Replaces requests table overlap check. */
+  /** In-flight jobs: entry name → start timestamps. */
   private inflightJobs = new Map<string, number[]>();
+
+  /** Process-local sequence used to distinguish concurrent runs of one handler. */
+  private handlerRunSequence = 0;
 
   /** Last fire time per entry. */
   private lastFireTimes = new Map<string, number>();
@@ -301,7 +310,7 @@ export class Cron {
           return false;
         }
         return true;
-      });
+      }).map(normalizeCronEntry);
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
@@ -313,6 +322,7 @@ export class Cron {
 
   /** Add a synthetic (auto-generated) entry not from cron.json. Starts it if cron is running. */
   addSyntheticEntry(entry: CronEntry): void {
+    entry = normalizeCronEntry(entry);
     // Don't override a real cron.json entry with the same name.
     if (this.entries.some((e) => e.name === entry.name) && !this.syntheticEntries.has(entry.name)) return;
 
@@ -503,10 +513,13 @@ export class Cron {
         return;
       }
 
-      // Heartbeat event -> trigger the matching entry.
+      // Compatibility heartbeat signal -> trigger the typed heartbeat entry.
       if (event.type === "heartbeat" && "agent" in event) {
         const agent = (event as any).agent as string;
-        const entryName = agent === "may" ? "heartbeat" : `heartbeat-${agent}`;
+        const entryName = this.entries.find(
+          (entry) => entry.category === "heartbeat" && entryAgent(entry) === agent,
+        )?.name;
+        if (!entryName) return;
         // Only trigger if it wasn't fired by us (avoid loop: fireHandler emits → bus → triggerNow)
         if (!this.isRunning(entryName)) {
           const triggered = this.triggerNow(entryName, { force: true });
@@ -585,6 +598,7 @@ export class Cron {
           old.maxConcurrentTriggers !== entry.maxConcurrentTriggers ||
           old.maxQueueDepth !== entry.maxQueueDepth ||
           old.message !== entry.message ||
+          old.category !== entry.category ||
           old.agent !== entry.agent ||
           JSON.stringify(old.handler ?? null) !== JSON.stringify(entry.handler ?? null) ||
           JSON.stringify(old.on ?? []) !== JSON.stringify(entry.on ?? []) ||
@@ -1000,9 +1014,10 @@ export class Cron {
     this.addInflight(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
     const agent = entryAgent(entry) || "may";
+    const handlerRunId = `handler:${entry.name}:${startMs}:${++this.handlerRunSequence}`;
 
-    // Emit heartbeat event on bus for heartbeat entries (event-driven: anything can trigger via bus)
-    if (entry.name.startsWith("heartbeat")) {
+    // Emit heartbeat event on bus for typed heartbeat entries.
+    if (entry.category === "heartbeat") {
       this.emitEvent?.({ type: "heartbeat", agent, entry: entry.name, ...(trace ? { trace } : {}) });
     }
 
@@ -1010,45 +1025,61 @@ export class Cron {
       type: "handler.started",
       source: "cron",
       owner: `agent:${agent}`,
-      data: { handler: entry.name, agent },
+      data: { handler: entry.name, handlerRunId, agent },
       ...(trace ? { trace } : {}),
     });
 
     const workflowTimeout = workflowHandler(entry.handler)?.timeoutMs;
     const HANDLER_TIMEOUT_MS = Number(entry.timeoutMs ?? workflowTimeout) || 5 * 60_000; // per-handler or 5min default
 
-    const handlerPromise = handler(triggerEvent);
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`Handler "${entry.name}" timed out after ${HANDLER_TIMEOUT_MS / 1000}s`)),
-        HANDLER_TIMEOUT_MS,
-      ),
-    );
+    const abortController = new AbortController();
+    let timedOut = false;
+    let failureReported = false;
+    const reportFailure = (err: unknown): void => {
+      if (failureReported) return;
+      failureReported = true;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.emitEvent?.({
+        type: "handler.failed",
+        source: "cron",
+        owner: `agent:${agent}`,
+        data: { handler: entry.name, handlerRunId, agent, error: errMsg, durationMs: Date.now() - startMs },
+        ...(trace ? { trace } : {}),
+      });
+      this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
+      this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
+    };
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      abortController.abort(new Error(`Handler "${entry.name}" timed out`));
+      reportFailure(new Error(`Handler "${entry.name}" timed out after ${HANDLER_TIMEOUT_MS / 1000}s`));
+      // Keep the entry in-flight until the handler actually settles. Starting
+      // queued work here would overlap the still-running side effects.
+    }, HANDLER_TIMEOUT_MS);
+    timeoutTimer.unref?.();
 
-    Promise.race([handlerPromise, timeoutPromise])
+    Promise.resolve()
+      .then(() => handler(triggerEvent, abortController.signal))
       .then(() => {
+        clearTimeout(timeoutTimer);
         this.removeInflight(entry.name, startMs);
+        if (timedOut) {
+          this.drainQueuedEventTrigger(entry.name, { afterError: true });
+          return;
+        }
         this.emitEvent?.({
           type: "handler.completed",
           source: "cron",
           owner: `agent:${agent}`,
-          data: { handler: entry.name, agent, durationMs: Date.now() - startMs },
+          data: { handler: entry.name, handlerRunId, agent, durationMs: Date.now() - startMs },
           ...(trace ? { trace } : {}),
         });
         this.drainQueuedEventTrigger(entry.name);
       })
       .catch((err) => {
+        clearTimeout(timeoutTimer);
         this.removeInflight(entry.name, startMs);
-        const errMsg = err instanceof Error ? err.message : String(err);
-        this.emitEvent?.({
-          type: "handler.failed",
-          source: "cron",
-          owner: `agent:${agent}`,
-          data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs },
-          ...(trace ? { trace } : {}),
-        });
-        this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
-        this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
+        reportFailure(err);
         this.drainQueuedEventTrigger(entry.name, { afterError: true });
       });
   }

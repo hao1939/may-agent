@@ -88,7 +88,7 @@ describe("control routing e2e", () => {
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
     const emitted: ControlEvent[] = [];
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
     const core = createControlSocketCore({
       getSessionId: () => "",
@@ -142,9 +142,9 @@ describe("control routing e2e", () => {
     });
 
     const db = getDb(stateDir);
-    const row = db.prepare(
-      "SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1",
-    ).get("message.created") as { source: string; owner: string; urgency: string; data: string };
+    const row = db
+      .prepare("SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
+      .get("message.created") as { source: string; owner: string; urgency: string; data: string };
     expect(row).toMatchObject({
       source: "agent:may",
       owner: "agent:dev",
@@ -170,7 +170,7 @@ describe("control routing e2e", () => {
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
     const emitted: ControlEvent[] = [];
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
     const core = createControlSocketCore({
       getSessionId: () => "",
@@ -199,9 +199,9 @@ describe("control routing e2e", () => {
 
     expect(emitted).toEqual([]);
     const db = getDb(stateDir);
-    const count = db.prepare(
-      "SELECT COUNT(*) AS count FROM events WHERE event_type = ?",
-    ).get("message.created") as { count: number };
+    const count = db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get("message.created") as {
+      count: number;
+    };
     expect(count.count).toBe(0);
   });
 
@@ -210,7 +210,7 @@ describe("control routing e2e", () => {
     const bus = new EventBus();
     const writer = new DbWriter(stateDir);
     const runCalls: RunCall[] = [];
-    bus.subscribe(writer.handler, { priority: "first" });
+    bus.setPersistenceSubscriber(writer.handler);
 
     const router = attachCommandRouter({
       bus,
@@ -261,9 +261,9 @@ describe("control routing e2e", () => {
       ]);
 
       const db = getDb(stateDir);
-      const row = db.prepare(
-        "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1",
-      ).get("message.created") as { source: string; owner: string; data: string };
+      const row = db
+        .prepare("SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1")
+        .get("message.created") as { source: string; owner: string; data: string };
       expect(row).toMatchObject({
         source: "socket",
         owner: "agent:dev",

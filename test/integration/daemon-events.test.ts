@@ -37,7 +37,7 @@ describe("daemon event subscribers", () => {
     }
   });
 
-  it("translates blocked session.end into a canonical escalation without copying the terminal event", () => {
+  it("keeps blocked session.end local until an owner explicitly escalates", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-"));
     const bus = new EventBus();
     const events: any[] = [];
@@ -70,22 +70,7 @@ describe("daemon event subscribers", () => {
         },
       });
 
-      const escalation = events.find((event) => event.type === "escalation.created");
-      expect(escalation).toMatchObject({
-        type: "escalation.created",
-        source: "runtime:session-finish",
-        owner: "agent:may",
-        urgency: "normal",
-        data: expect.objectContaining({
-          sourceAgent: "scout",
-          sourceSessionId: "s_1",
-          reason: "need input",
-          requestedAction: "Ask May to route the approval request.",
-          severity: "P2",
-          blockedOn: "missing deployment approval",
-        }),
-      });
-      expect(escalation.data).not.toHaveProperty("owner");
+      expect(events.some((event) => event.type === "escalation.created")).toBe(false);
       expect(events.some((event) => event.type === "session.escalated")).toBe(false);
       expect(events.some((event) => event.type === "session.completed")).toBe(false);
       expect(events.some((event) => event.type === "session.receipt")).toBe(false);
@@ -182,6 +167,8 @@ describe("daemon event subscribers", () => {
           sourceSessionId: "s_retry",
           reason: expect.stringContaining("Interrupted 3x"),
           severity: "P1",
+          dedupKey: "runtime:resume_exhausted:s_retry",
+          resume: expect.objectContaining({ kind: "session", sessionId: "s_retry" }),
         }),
       });
       expect(events.some((event) => event.type === "message.created" && event.owner === "human:operator")).toBe(false);
@@ -240,6 +227,8 @@ describe("daemon event subscribers", () => {
           reason: expect.stringContaining("Stuck: 6 consecutive error-only turns"),
           requestedAction: expect.stringContaining("Investigate the root cause"),
           severity: "P1",
+          dedupKey: "runtime:circuit_break:s_stuck",
+          resume: expect.objectContaining({ kind: "session", sessionId: "s_stuck" }),
         }),
       });
       expect(escalation.data).not.toHaveProperty("owner");

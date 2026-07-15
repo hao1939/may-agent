@@ -2,6 +2,7 @@ import type { TaskResult } from "./types.js";
 import type { HandoffOptions } from "./handoff.js";
 import type { MetricService } from "./metrics.js";
 import type { QueryAPI } from "./query-service.js";
+import type { CommandAPI } from "./command-service.js";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
 // These are local workflow-tool callbacks for logs/guards. They are not
@@ -124,6 +125,9 @@ export interface WorkflowContext {
 
   /** Read bounded runtime facts without opening SQLite directly. */
   query: QueryAPI;
+
+  /** Execute typed state changes through durable events. */
+  commands: CommandAPI;
 
   /** Log a diagnostic message. */
   log(msg: string): void;

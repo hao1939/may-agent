@@ -2,7 +2,7 @@
  * Tests for the event-native migration:
  * - loadInbox uses time-window (no status field)
  * - system-status queries events table for handler history
- * - request-status queries events/sessions for handler health & agent stats
+ * - system-dashboard queries events/sessions for handler health & agent stats
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
@@ -87,7 +87,7 @@ describe("event-native: events table", () => {
     db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?,?,?,?,?)",
       ["s3", "may", "heartbeat", "done", now - 10000]);
 
-    // Agent stats query (replaces requests table)
+    // Agent stats query reads canonical session state.
     const stats = db.prepare(
       `SELECT agent, COUNT(*) as total,
               SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,

@@ -214,8 +214,8 @@ async function loadEventGraph(eventId, opts = {}) {
     const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/graph`);
     const graph = await res.json();
     if (!res.ok) throw new Error(graph.error || 'failed');
-    if (detail && graph.eventListScope?.kind === 'session' && Array.isArray(graph.eventListScope.ids) && graph.eventListScope.ids.length === 1) {
-      graph.sessionTranscript = await loadEventGraphSessionTranscript(graph.eventListScope.ids[0]);
+    if (detail && graph.scope?.kind === 'session' && Array.isArray(graph.scope.ids) && graph.scope.ids.length === 1) {
+      graph.sessionTranscript = await loadEventGraphSessionTranscript(graph.scope.ids[0]);
     }
     el.innerHTML = renderEventGraph(graph);
     if (typeof scrollToHashAnchor === 'function') scrollToHashAnchor();
@@ -339,7 +339,7 @@ function findSessionLifecycle(nodes) {
   return { start, end };
 }
 
-function eventListScopeTitle(scope) {
+function timelineScopeTitle(scope) {
   if (scope?.kind === 'session') return 'Focused Session Timeline';
   if (scope?.kind === 'workflow') return 'Workflow Timeline';
   if (scope?.kind === 'trace') return 'Trace Timeline';
@@ -397,7 +397,7 @@ function renderEventReviewPanel(review, nodes, edges = [], scope = null) {
   }
 
   if (timeline.length) {
-    const title = eventListScopeTitle(scope);
+    const title = timelineScopeTitle(scope);
     const label = scope?.label || (Array.isArray(scope?.ids) && scope.ids.length === 1 ? scope.ids[0] : '');
     html += `<div id="event-timeline" style="border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:8px;scroll-margin-top:14px">`;
     html += `<div style="font-size:12px;font-weight:600;margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">`;
@@ -424,7 +424,7 @@ function renderEventReviewPanel(review, nodes, edges = [], scope = null) {
 }
 
 function renderEventGraphSummary(graph, nodes, edges, focus, eventRows = nodes) {
-  if (graph.review) return renderEventReviewPanel(graph.review, eventRows, edges, graph.eventListScope);
+  if (graph.review) return renderEventReviewPanel(graph.review, eventRows, edges, graph.scope);
   const enrichedNodes = nodes.map((node) => ({ ...node, isFocus: Number(node.id) === Number(graph.focusEventId) }));
   const session = findSessionLifecycle(enrichedNodes);
   const closureCount = edges.filter((edge) => edge.type === 'closure').length;
@@ -540,7 +540,7 @@ function renderCanonicalEventGraphMap(graph, rootEventId) {
   let svg = `<div id="event-overview-graph" style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);margin-bottom:12px;scroll-margin-top:14px">`;
   svg += eventOverviewGraphHeader(rootEventId);
   if (_eventOverviewGraphView === 'raw') {
-    svg += `<pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;color:var(--fg2);margin:0;padding:10px;max-height:620px;overflow:auto">${esc(JSON.stringify({ revision: graph.revision, focusEvent: graph.focusEvent, nodes: graph.nodes, edges: graph.edges, eventNodes: graph.eventNodes, eventEdges: graph.eventEdges }, null, 2))}</pre>`;
+    svg += `<pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;color:var(--fg2);margin:0;padding:10px;max-height:620px;overflow:auto">${esc(JSON.stringify({ revision: graph.revision, focusEvent: graph.focusEvent, nodes: graph.nodes, edges: graph.edges, events: graph.events, relations: graph.relations, scope: graph.scope }, null, 2))}</pre>`;
     return `${svg}</div>`;
   }
   svg += `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="event graph" style="display:block;min-width:100%">`;
@@ -794,9 +794,12 @@ function renderEventDetails(nodes, edges, focusEventId, scope, eventId, transcri
 }
 
 function renderEventGraph(graph) {
-  const nodes = chronologicalNodes(graph.eventNodes || []);
-  const edges = graph.eventEdges || [];
-  const eventRows = chronologicalNodes(Array.isArray(graph.eventList) ? graph.eventList : nodes);
+  const events = chronologicalNodes(graph.events || []);
+  const graphIds = new Set(Array.isArray(graph.scope?.graphEventIds) ? graph.scope.graphEventIds.map(Number) : []);
+  const timelineIds = new Set(Array.isArray(graph.scope?.timelineEventIds) ? graph.scope.timelineEventIds.map(Number) : []);
+  const nodes = graphIds.size ? events.filter((node) => graphIds.has(Number(node.id))) : events;
+  const edges = graph.relations || [];
+  const eventRows = timelineIds.size ? events.filter((node) => timelineIds.has(Number(node.id))) : nodes;
   const diagnostics = graph.diagnostics || [];
   const focus = nodes.find((node) => Number(node.id) === Number(graph.focusEventId));
   const eventId = Number(graph.focusEventId);
@@ -836,7 +839,7 @@ function renderEventGraph(graph) {
   }
 
   if (_eventGraphView === 'list') {
-    html += renderEventDetails(eventRows, edges, graph.focusEventId, graph.eventListScope, eventId, graph.sessionTranscript);
+    html += renderEventDetails(eventRows, edges, graph.focusEventId, graph.scope, eventId, graph.sessionTranscript);
     html += `</div>`;
     return html;
   }
