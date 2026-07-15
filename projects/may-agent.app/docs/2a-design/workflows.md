@@ -3,10 +3,11 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented for validated per-invocation catalog
 snapshots, project-over-agent precedence, entry-file provenance, durable
-lifecycle events, guards, nesting, and revision/task-safe resume. Full imported
-dependency fingerprints and registration-time catalog reloads remain follow-up.
-Workflows remain ordered synchronous blocks; durable waits split across
-event-linked runs.
+lifecycle events, guards, nesting, revision/task-safe resume, skill-bearing
+agent steps, and workflow-authored structured agent results. Full imported
+dependency fingerprints and registration-time catalog reloads remain
+follow-up. Workflows remain ordered synchronous blocks; durable waits split
+across event-linked runs.
 
 ## Purpose
 
@@ -309,10 +310,48 @@ task closure. Entry-hash comparisons are useful today; use the future
 executable hash for rigorous revision comparisons. Do not let a workflow
 declare its own effectiveness merely because it returned `done`.
 
+## Structured Agent Step Results
+
+Every agent step inside a workflow completes through the structured `finish()`
+contract. A prose-only response is an error after one bounded corrective
+prompt. Direct chat and non-workflow agent sessions keep their existing
+completion behavior.
+
+When later workflow code needs domain data, the workflow author declares a
+TypeBox schema:
+
+```ts
+import { Type } from "@earendil-works/pi-ai";
+
+const ReviewResult = Type.Object({
+  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
+  findings: Type.Array(Type.String()),
+});
+
+const review = await ctx.runAgent("qa", reviewTask, {
+  schema: ReviewResult,
+});
+
+if (review.status === "done") {
+  review.structuredResult.verdict; // typed as "pass" | "fail"
+}
+```
+
+The runtime composes the standard finish schema with a required `result` field
+using the workflow's schema. The agent sees one terminal tool, not separate
+`submit_result` and `finish` tools. Existing finish validation and lifecycle
+side effects remain in force, and a successful schema-backed result always has
+`structuredResult`.
+
+The schema belongs to the workflow source or an imported TypeScript contract.
+External callers provide workflow input; they do not replace the output schema
+at runtime. This keeps one workflow revision stable for persistence, resume,
+evaluation, and downstream consumers.
+
 ## Composing Skills Into Workflows
 
 A workflow may invoke an agent with a named skill when a step needs a reusable
-judgment method. The target SDK shape is:
+judgment method:
 
 ```ts
 ctx.runAgent("qa", reviewTask, { skill: "verify-change" });
@@ -320,8 +359,7 @@ ctx.runAgent("qa", reviewTask, { skill: "verify-change" });
 
 The receiving agent's skill catalog resolves the name, and the resulting
 `skill.loaded` evidence remains within that step session's trace. The workflow
-stores only the skill name, not a copied skill body. This option is a gap until
-the skill invocation contract and workflow SDK both support it.
+stores only the skill name, not a copied skill body.
 
 Use the composition in this direction:
 
@@ -358,9 +396,7 @@ Preserve the current workflow runtime and close these gaps incrementally:
    keep the entry hash for direct source evidence.
 2. If performance requires it, move catalog construction to registration and
    reload without losing next-dispatch freshness or snapshot safety.
-3. Add the optional `skill` field to workflow agent steps and trace it through
-   the receiving session.
-4. Add an integration fixture for a durable wait: phase A persists state and
+3. Add an integration fixture for a durable wait: phase A persists state and
    emits the continuation, phase B starts from a later event with a distinct
    run ID in the same trace, and phase-A completion does not close the project
    task.

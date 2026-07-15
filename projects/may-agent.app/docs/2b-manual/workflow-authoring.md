@@ -96,7 +96,7 @@ Available via `ctx`:
 |--------|-------------|
 | `ctx.task` | The original task string |
 | `ctx.agent` | The agent that invoked this workflow |
-| `ctx.runAgent(name, task)` | Run a sub-agent, wait for result |
+| `ctx.runAgent(name, task, opts?)` | Run a sub-agent to structured `finish()` completion; `opts.schema` defines typed `structuredResult` |
 | `ctx.runWorkflow(name, task)` | Run a sub-workflow, wait for result |
 | `ctx.runFunction(label, fn)` | Run a JS function as a step (no LLM cost) |
 | `ctx.summarize(result)` | Build rich context from a TaskResult for handoff |
@@ -112,10 +112,34 @@ Available via `ctx`:
 ## Termination
 
 Every workflow must end with either:
+
 - `return ctx.done(summary)` — success
 - `return ctx.blocked(reason)` — locally blocked
 
 Never return without calling one of these.
+
+Every agent step inside the workflow must likewise end through `finish()`.
+The runtime sends one corrective prompt and then returns an error result if the
+agent answers only with prose.
+
+When workflow code needs a domain value, define its schema in the workflow:
+
+```typescript
+import { Type } from "@earendil-works/pi-ai";
+
+const ReviewResult = Type.Object({
+  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
+  findings: Type.Array(Type.String()),
+});
+
+const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
+if (review.status === "done" && review.structuredResult.verdict === "fail") {
+  return ctx.blocked("Review failed", { findings: review.structuredResult.findings });
+}
+```
+
+The workflow author owns the schema. Callers provide workflow inputs; they do
+not inject or replace its output contract.
 
 `ctx.blocked(...)` is synchronous and terminal. The workflow stops immediately;
 the caller receives `{ type: "blocked", reason, context }`. This is local to the
@@ -185,13 +209,24 @@ return ctx.done("Implemented and verified");
 ### Implement → Review (agent gate)
 
 ```typescript
+import { Type } from "@earendil-works/pi-ai";
+
+const ReviewResult = Type.Object({
+  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
+  findings: Type.Array(Type.String()),
+});
+
 const dev = await ctx.runAgent("dev", task);
 const reviewTask = `Review this:\n\n${ctx.summarize(dev)}`;
-const review = await ctx.runAgent("qa", reviewTask);
+const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
 
-if (review.lastAssistantText.includes("FAIL")) {
+if (review.status === "error") {
+  return ctx.blocked("Review did not return a valid result", { error: review.error });
+}
+
+if (review.structuredResult.verdict === "fail") {
   // Retry with feedback
-  const fixTask = `Fix based on review:\n${review.lastAssistantText}\n\nOriginal: ${task}`;
+  const fixTask = `Fix based on review:\n${review.structuredResult.findings.join("\n")}\n\nOriginal: ${task}`;
   await ctx.runAgent("dev", fixTask);
 }
 return ctx.done("Implemented and reviewed");
