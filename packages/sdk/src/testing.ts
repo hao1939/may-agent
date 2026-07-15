@@ -288,7 +288,6 @@ export function createTestWorkflowContext(options: TestWorkflowContextOptions = 
     summarize: fn(() => "summary"),
     done: (summary: string) => ({ type: "done", summary }),
     blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
-    escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
     createSession: fn(async () => ({
       prompt: fn(async () => undefined),
       lastText: () => "",

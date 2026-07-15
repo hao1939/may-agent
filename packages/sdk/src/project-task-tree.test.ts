@@ -162,7 +162,7 @@ describe("project task tree SDK", () => {
     });
 
     const assignment = assignTask(config(appDir), { taskId: "leaf" });
-    expect(assignment.sessionId).toBe("s_task_leaf");
+    expect(assignment.sessionId).toContain("s_task_leaf_");
     expect(peekTaskAssignments(config(appDir))).toHaveLength(1);
 
     completeTask(config(appDir), {
@@ -188,6 +188,60 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.leaf.status).toBe("done");
     expect(tree.tasks.project.status).toBe("done");
     expect(tree.active_task_ids).toEqual([]);
+  });
+
+  test("uses a fresh session when an archived task id is created again", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: [],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    createTask(config(appDir), {
+      id: "reused-leaf",
+      parentId: "project",
+      goal: "first incarnation",
+      outputs: ["first"],
+      acceptance: ["first complete"],
+    });
+    const first = assignTask(config(appDir), {
+      taskId: "reused-leaf",
+      attemptId: "attempt-first",
+    });
+
+    const archivedTree = readTaskTree(config(appDir));
+    delete archivedTree.tasks["reused-leaf"];
+    archivedTree.tasks.project.children = [];
+    archivedTree.active_task_id = null;
+    archivedTree.active_task_ids = [];
+    await writeTree(appDir, archivedTree);
+
+    createTask(config(appDir), {
+      id: "reused-leaf",
+      parentId: "project",
+      goal: "second incarnation",
+      outputs: ["second"],
+      acceptance: ["second complete"],
+    });
+    const second = assignTask(config(appDir), {
+      taskId: "reused-leaf",
+      attemptId: "attempt-second",
+    });
+
+    expect(second.sessionId).not.toBe(first.sessionId);
+    expect(first.sessionId).toContain("attempt-first");
+    expect(second.sessionId).toContain("attempt-second");
   });
 
   test("rolls blocked parents with a structured blocker condition", async () => {
@@ -291,6 +345,53 @@ describe("project task tree SDK", () => {
     expect(tree.tasks["blocked-leaf"].state).toBe("backlog");
   });
 
+  test("refuses to unblock a future-window blocked leaf before resume_at unless forced", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "blocked",
+          children: ["future-window-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "future-window-leaf": {
+          id: "future-window-leaf",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          blocker: {
+            condition: "Do not start before the review window opens.",
+            resume_at: "2099-06-26T12:00:00.000Z",
+          },
+          goal: "rerun after the future review window",
+          outputs: ["artifact"],
+          acceptance: ["rerun completed"],
+        },
+      },
+    });
+
+    expect(() =>
+      unblockTask(config(appDir), {
+        taskId: "future-window-leaf",
+        reason: "resume window passed",
+      }),
+    ).toThrow(/remains time-gated until 2099-06-26T12:00:00.000Z/);
+
+    const forced = unblockTask(config(appDir), {
+      taskId: "future-window-leaf",
+      reason: "explicit operator override",
+      force: true,
+    });
+    expect(forced.state).toBe("backlog");
+    expect(forced.trace?.unblock_reason).toBe("explicit operator override");
+  });
+
   test("rejects a review leaf back to backlog with review context", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
@@ -316,7 +417,7 @@ describe("project task tree SDK", () => {
       outputs: ["artifact"],
       acceptance: ["artifact has evidence"],
     });
-    assignTask(config(appDir), {
+    const assignment = assignTask(config(appDir), {
       taskId: "leaf",
       attemptId: "attempt-1",
     });
@@ -330,13 +431,27 @@ describe("project task tree SDK", () => {
       taskId: "leaf",
       reason: "acceptance not met: no evidence",
       freshSession: true,
+      review: {
+        summary: "The artifact has no verification evidence.",
+        findings: ["artifact exists but no test result was cited"],
+        feedback: ["Run the artifact verification and cite its result."],
+        artifacts: ["artifact"],
+        verification: ["artifact has evidence"],
+      },
     });
 
     const tree = readTaskTree(config(appDir));
     expect(tree.tasks.leaf.status).toBe("backlog");
     expect(tree.tasks.leaf.session_id).toBeUndefined();
-    expect(tree.tasks.leaf.session_history).toEqual(["s_task_leaf"]);
+    expect(tree.tasks.leaf.session_history).toEqual([assignment.sessionId]);
     expect(tree.tasks.leaf.trace?.review_reject_reason).toBe("acceptance not met: no evidence");
+    expect(tree.tasks.leaf.trace?.review_reject).toEqual({
+      summary: "The artifact has no verification evidence.",
+      findings: ["artifact exists but no test result was cited"],
+      feedback: ["Run the artifact verification and cite its result."],
+      artifacts: ["artifact"],
+      verification: ["artifact has evidence"],
+    });
     expect(tree.tasks.leaf.trace?.review_reject_fresh_session).toBe(true);
     expect(tree.tasks.leaf.trace?.previous_attempt_id).toBe("attempt-1");
     expect(tree.tasks.leaf.trace?.current_attempt_id).toBeUndefined();
@@ -346,11 +461,14 @@ describe("project task tree SDK", () => {
       taskId: "leaf",
       attemptId: "attempt-2",
     });
-    expect(retry.sessionId).not.toBe("s_task_leaf");
-    expect(retry.sessionId.startsWith("s_task_leaf_retry_")).toBe(true);
+    expect(retry.sessionId).not.toBe(assignment.sessionId);
+    expect(retry.sessionId).toContain("attempt-2");
 
     const retryTree = readTaskTree(config(appDir));
-    expect(retryTree.tasks.leaf.session_history).toEqual(["s_task_leaf", retry.sessionId]);
+    expect(retryTree.tasks.leaf.session_history).toEqual([
+      assignment.sessionId,
+      retry.sessionId,
+    ]);
     expect(retryTree.tasks.leaf.trace?.current_attempt_id).toBe("attempt-2");
   });
 
@@ -379,7 +497,7 @@ describe("project task tree SDK", () => {
       outputs: ["artifact"],
       acceptance: ["artifact has evidence"],
     });
-    assignTask(config(appDir), {
+    const assignment = assignTask(config(appDir), {
       taskId: "leaf",
       attemptId: "attempt-1",
     });
@@ -399,11 +517,14 @@ describe("project task tree SDK", () => {
       attemptId: "attempt-2",
     });
 
-    expect(retry.sessionId).not.toBe("s_task_leaf");
-    expect(retry.sessionId.startsWith("s_task_leaf_retry_")).toBe(true);
+    expect(retry.sessionId).not.toBe(assignment.sessionId);
+    expect(retry.sessionId).toContain("attempt-2");
 
     const retryTree = readTaskTree(config(appDir));
-    expect(retryTree.tasks.leaf.session_history).toEqual(["s_task_leaf", retry.sessionId]);
+    expect(retryTree.tasks.leaf.session_history).toEqual([
+      assignment.sessionId,
+      retry.sessionId,
+    ]);
     expect(retryTree.tasks.leaf.trace?.review_reject_fresh_session).toBe(false);
     expect(retryTree.tasks.leaf.trace?.last_session).toBe(retry.sessionId);
   });
@@ -875,6 +996,66 @@ describe("project task tree SDK", () => {
     });
   });
 
+  test("planningPacket excludes durable loop roots from compaction candidates even when done and completion-ready", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["aks-feature-reference-loop", "ordinary-open"],
+          goal: "project root",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+          context: {
+            archived_done_leaf_count: 7,
+            rollup_summary: "Parent already summarizes retained durable loop context.",
+          },
+        },
+        "aks-feature-reference-loop": {
+          id: "aks-feature-reference-loop",
+          parent_id: "project",
+          state: "done",
+          status: "done",
+          workflow: "feature-reference-loop-controller",
+          children: [],
+          goal: "Keep feature references current.",
+          outputs: [".state/feature-reference-loop/state.json"],
+          acceptance: ["Loop remains present until explicitly retired."],
+          context: {
+            workflowProgress: {
+              completionReady: true,
+              reason: "feature-reference loop state has no pending, running, or error features",
+              pending: 0,
+              running: 0,
+              done: 305,
+              error: 0,
+              openChildren: 0,
+            },
+          },
+        },
+        "ordinary-open": {
+          id: "ordinary-open",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          children: [],
+          goal: "Wait for exact external return.",
+          outputs: ["evidence/archive/ordinary-open.md"],
+          acceptance: ["resume when proof returns"],
+          blocker: "external proof pending",
+        },
+      },
+    });
+
+    const packet = planningPacket(config(appDir));
+
+    expect(packet.task_tree_hygiene).toBeUndefined();
+  });
+
   test("planningPacket exposes blocked frontier groups beyond capped samples", async () => {
     const appDir = await makeApp();
     const blockedTasks = Object.fromEntries(
@@ -1233,6 +1414,151 @@ describe("project task tree SDK", () => {
     expect(packet.frontier_details.blocked[0].blocker).toContain("Waiting for returned operator proof.");
     expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-27T00:00:00.000Z");
     expect(packet.frontier_details.blocked[0].blocker).toContain("2099-06-28T00:00:00.000Z");
+  });
+
+  test("structured blocker updates ignore null wait-target patches and preserve the existing structured wait metadata", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["blocked-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "blocked-leaf": {
+          id: "blocked-leaf",
+          parent_id: "project",
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "keep the exact approval wait",
+          outputs: ["evidence/archive/blocked.md"],
+          acceptance: ["approval return reviewed"],
+          blocker: {
+            condition: "Waiting for returned approval.",
+            category: "external-wait",
+            owner: "human",
+            waiting_for: {
+              type: "project.approval.submitted",
+              taskId: "blocked-leaf",
+              pathId: "focus-review-off_track-approval-refresh-20260712",
+            },
+            observed_by: {
+              workflow: "project-planner",
+              trigger: "project.approval.submitted",
+            },
+            resume_condition: "Resume when the returned approval lands.",
+          },
+        },
+      },
+    });
+
+    const updated = updateTaskText(config(appDir), {
+      taskId: "blocked-leaf",
+      blocker: {
+        condition: "Still waiting for returned approval after a same-lineage refresh.",
+        waiting_for: null,
+        observed_by: null,
+      },
+      nextCheckAt: "2099-06-27T12:00:00.000Z",
+      fallbackAt: "2099-06-28T00:00:00.000Z",
+    });
+
+    expect(updated.blocker).toMatchObject({
+      condition:
+        "Still waiting for returned approval after a same-lineage refresh.",
+      waiting_for: {
+        type: "project.approval.submitted",
+        taskId: "blocked-leaf",
+        pathId: "focus-review-off_track-approval-refresh-20260712",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.approval.submitted",
+      },
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+    });
+  });
+
+  test("string blocker edits preserve existing structured wait metadata on blocked tasks", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["blocked-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "blocked-leaf": {
+          id: "blocked-leaf",
+          parent_id: "project",
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "keep the exact approval wait",
+          outputs: ["evidence/archive/blocked.md"],
+          acceptance: ["approval return reviewed"],
+          blocker: {
+            condition: "Waiting for returned approval.",
+            category: "external-wait",
+            owner: "human",
+            waiting_for: {
+              type: "project.approval.submitted",
+              taskId: "blocked-leaf",
+              pathId: "focus-terminal-frontier-finality-reconciliation-20260714",
+            },
+            observed_by: {
+              workflow: "project-planner",
+              trigger: "project.approval.submitted",
+            },
+            resume_condition: "Resume when the returned approval lands.",
+            next_check_at: "2099-06-27T12:00:00.000Z",
+            fallback_at: "2099-06-28T00:00:00.000Z",
+          },
+        },
+      },
+    });
+
+    const updated = updateTaskText(config(appDir), {
+      taskId: "blocked-leaf",
+      blocker: "Waiting for the same returned approval after a readout refresh.",
+    });
+
+    expect(updated.blocker).toMatchObject({
+      condition:
+        "Waiting for the same returned approval after a readout refresh.",
+      category: "external-wait",
+      owner: "human",
+      waiting_for: {
+        type: "project.approval.submitted",
+        taskId: "blocked-leaf",
+        pathId: "focus-terminal-frontier-finality-reconciliation-20260714",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.approval.submitted",
+      },
+      resume_condition: "Resume when the returned approval lands.",
+      next_check_at: "2099-06-27T12:00:00.000Z",
+      fallback_at: "2099-06-28T00:00:00.000Z",
+    });
   });
 
   test("refreshing next check without explicit resume moves resume watch time", async () => {

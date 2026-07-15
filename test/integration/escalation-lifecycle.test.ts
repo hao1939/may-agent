@@ -128,6 +128,208 @@ describe("escalation lifecycle", () => {
     expect(sent[0].message).toContain("Summary: Fixed upstream");
   });
 
+  it("cold resumes project-linked workflow sessions after fixed escalation closure", () => {
+    const { persistDir, bus, resumed, sent } = setup();
+    const sessionId = "s_task_stale_project_session";
+
+    bus.emit({
+      type: "session.start",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        task: "Task Worker Mode\n\nHistorical blocked task.",
+        projectId: "aks-rp-e2e",
+      },
+    } as never);
+    bus.emit({
+      type: "session.end",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        status: "done",
+        outcome: "done",
+        summary: "Historical blocked task remained blocked.",
+        durationMs: 5,
+      },
+    } as never);
+
+    bus.emit({
+      type: "escalation.created",
+      source: "runtime:session-finish",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_project_stale",
+        sourceAgent: "dev",
+        sourceSessionId: sessionId,
+        reason: "historical blocked task",
+        requestedAction: "decide",
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.resolved",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        escalationId: "esc_project_stale",
+        outcome: "fixed",
+        summary: "Current project state already resolved this lineage.",
+      },
+    } as never);
+
+    expect(sent).toHaveLength(0);
+    expect(resumed).toHaveLength(1);
+    expect(resumed[0]).toMatchObject({
+      sessionId,
+      source: "escalation-resolution",
+    });
+    expect(resumed[0].message).toContain("Escalation esc_project_stale resolved.");
+    expect(resumed[0].message).toContain("Outcome: fixed.");
+
+    const resumeEvents = getDb(persistDir).prepare(
+      "SELECT event_type, data FROM events WHERE event_type LIKE 'escalation.resume_%' ORDER BY id",
+    ).all() as Array<{ event_type: string; data: string }>;
+    expect(resumeEvents.map((row) => row.event_type)).toEqual([
+      "escalation.resume_attempted",
+      "escalation.resume_started",
+    ]);
+    expect(JSON.parse(resumeEvents[0].data)).toMatchObject({
+      escalationId: "esc_project_stale",
+      outcome: "fixed",
+      sourceKind: "session",
+      sourceRef: sessionId,
+      sourceSessionId: sessionId,
+    });
+  });
+
+  it("does not emit resume failure when a dismissed project-linked stale session is intentionally not resumed", () => {
+    const { persistDir, bus, resumed, sent } = setup();
+    const sessionId = "s_obsolete";
+
+    bus.emit({
+      type: "session.start",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        task: "Task Worker Mode\n\nStale non-approval task.",
+        projectId: "aks-rp-e2e",
+      },
+    } as never);
+    bus.emit({
+      type: "session.end",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        status: "done",
+        outcome: "done",
+        summary: "Historical task is obsolete.",
+        durationMs: 5,
+      },
+    } as never);
+
+    bus.emit({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_superseded",
+        sourceAgent: "dev",
+        sourceSessionId: sessionId,
+        reason: "old blocker",
+        requestedAction: "retry old work",
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.dismissed",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        escalationId: "esc_superseded",
+        reason: "The old request was superseded by verified current state.",
+      },
+    } as never);
+
+    expect(resumed).toHaveLength(0);
+    expect(sent).toHaveLength(0);
+    expect(
+      getDb(persistDir)
+        .prepare(
+          "SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'",
+        )
+        .get(),
+    ).toEqual({ count: 0 });
+  });
+
+  it("does not emit resume failure when a superseded project-linked stale session is intentionally not resumed", () => {
+    const { persistDir, bus, resumed, sent } = setup();
+    const sessionId = "s_replaced";
+
+    bus.emit({
+      type: "session.start",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        task: "Task Worker Mode\n\nSuperseded stale task.",
+        projectId: "aks-rp-e2e",
+      },
+    } as never);
+    bus.emit({
+      type: "session.end",
+      source: "workflow:task-worker",
+      owner: "agent:dev",
+      data: {
+        sessionId,
+        agent: "dev",
+        status: "done",
+        outcome: "done",
+        summary: "Historical task was replaced by current work.",
+        durationMs: 5,
+      },
+    } as never);
+
+    bus.emit({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_replaced",
+        sourceAgent: "dev",
+        sourceSessionId: sessionId,
+        reason: "old request",
+        requestedAction: "continue old request",
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.resolved",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        escalationId: "esc_replaced",
+        outcome: "superseded",
+        summary: "Current work replaced the old request.",
+      },
+    } as never);
+
+    expect(resumed).toHaveLength(0);
+    expect(sent).toHaveLength(0);
+    expect(
+      getDb(persistDir)
+        .prepare(
+          "SELECT COUNT(*) AS count FROM events WHERE event_type LIKE 'escalation.resume_%'",
+        )
+        .get(),
+    ).toEqual({ count: 0 });
+  });
+
   it("treats workflowRunId as task context instead of a separate resume target", () => {
     const { persistDir, bus, resumed } = setup();
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 
 import { Cron } from "../cron.ts";
 import { EVENT_ROW_ID, EventBus } from "../event-bus.ts";
@@ -164,20 +163,17 @@ describe("project app loader", () => {
     }
   });
 
-  it("expands onEvent workflowHandlers sugar into installable workflow handlers", async () => {
+  it("installs workflowHandlers alongside an imperative onEvent router", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "sample.app");
-      const sdkUrl = pathToFileURL(join(process.cwd(), "packages/sdk/src/project-app.ts")).href;
       writeAgent(appDir, "owner", "sample-owner");
       writeAppModule(
         appDir,
-        `import { defineProjectApp, workflowHandlers } from "${sdkUrl}";
-
-export default defineProjectApp({
+        `export default {
   id: "sample",
-  onEvent: workflowHandlers([
+  workflowHandlers: [
     {
       name: "sample-worker",
       type: "job",
@@ -187,8 +183,10 @@ export default defineProjectApp({
       handler: { workflow: "worker", task: "work", timeoutMs: 60000 },
       context: []
     }
-  ])
-});
+  ],
+  events: ["project.custom"],
+  onEvent: async (ctx, event) => ctx.noop(String(event.type))
+};
 `,
       );
 
@@ -233,7 +231,7 @@ export default defineProjectApp({
         workflowHandlers: [{
           name: "sample-lib-planner",
           enabled: true,
-          on: ["project.owner.requested"],
+          accepts: ["project.owner.requested"],
           handler: { workflow: "planner", task: "plan" }
         }]
       }`,
@@ -503,6 +501,70 @@ export default defineProjectApp({
     }
   });
 
+  it("records metric feedback routed to an explicit app workflow handler", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-metric-owner",
+          enabled: true,
+          accepts: [{ type: "metric.breach", owner: "agent:app-ops" }],
+          handler: { workflow: "metric-owner", agent: "app-ops", task: "handle metric" }
+        }]
+      }`,
+      );
+
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => name === "sample-owner" || name === "app-ops" } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "metric.breach",
+        source: "test",
+        owner: "agent:app-ops",
+        data: {
+          metricId: "sample.task.no-work",
+          project: "sample",
+          alertId: 7,
+          current: 1,
+          threshold: 0,
+          priority: "P0",
+        },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "metric.feedback.routed",
+          owner: "agent:app-ops",
+          data: expect.objectContaining({
+            metricId: "sample.task.no-work",
+            alertId: 7,
+            project: "sample",
+            appId: "sample",
+            route: "owner-app",
+            eventType: "metric.breach",
+          }),
+        }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("falls back to the owner session when metric feedback is not handled by the app", async () => {
     const root = tempRoot();
     try {
@@ -624,7 +686,7 @@ export default defineProjectApp({
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker", task: "work" }
         }],
         onEvent() { return undefined; }
@@ -845,7 +907,7 @@ export default defineProjectApp({
         workflowHandlers: [{
           name: "sample-planner",
           enabled: true,
-          on: ["project.planning.requested"],
+          accepts: ["project.owner.requested"],
           handler: { workflow: "planner", task: "plan", includeEvent: true }
         }],
         onEvent() { return undefined; }
@@ -865,7 +927,7 @@ export default defineProjectApp({
 
       const cron = agentCrons.get("sample-owner")!;
       expect(cron.getEventSubscriptions()).toMatchObject({
-        "project.planning.requested": ["sample-planner"],
+        "project.owner.requested": ["sample-planner"],
       });
       cron.registerHandler("sample-planner", async () => {
         fired.push("sample-planner");
@@ -874,7 +936,7 @@ export default defineProjectApp({
       cron.start();
 
       bus.emit({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         source: "test",
         owner: "human:test",
         data: { project: "sample" },
@@ -902,7 +964,7 @@ export default defineProjectApp({
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker", task: "work", includeEvent: true }
         }]
       }`,
@@ -993,9 +1055,7 @@ export async function execute(ctx: any) {
         parentEventId: 41,
       });
       expect(
-        events.find(
-          (event) => event.type === "handler.workflow_dispatched" && event.data?.status === "done",
-        )?.trace,
+        events.find((event) => event.type === "handler.workflow_dispatched" && event.data?.status === "done")?.trace,
       ).toEqual({ traceId: "event:41", parentEventId: 41 });
       expect(spawnedSessionTrace).toEqual({ traceId: "event:41", parentEventId: 41 });
     } finally {
@@ -1020,7 +1080,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker", agent: "sample-owner", task: "work" }
         }]
       }`,
@@ -1089,7 +1149,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-planner",
           enabled: true,
-          on: ["project.planning.requested"],
+          accepts: ["project.owner.requested"],
           handler: { workflow: "planner", agent: "sample-ops", task: "plan" }
         }]
       }`,
@@ -1142,7 +1202,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker-v1", task: "work v1" }
         }],
         onEvent() { return undefined; }
@@ -1173,7 +1233,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker-v2", task: "work v2" }
         }],
         onEvent() { return undefined; }
@@ -1235,7 +1295,7 @@ export async function execute(ctx: any) {
           id: "wake",
           enabled: true,
           intervalMs: 60000,
-          event: { type: "project.owner.requested", project: "sample" }
+          emits: [{ type: "project.owner.requested", project: "sample" }]
         }]
       }`,
       );
@@ -1266,7 +1326,7 @@ export async function execute(ctx: any) {
           id: "review",
           enabled: true,
           intervalMs: 60000,
-          event: { type: "project.watchdog.tick", project: "sample" }
+          emits: [{ type: "project.watchdog.tick", project: "sample" }]
         }]
       }`,
       );
@@ -1451,7 +1511,7 @@ export async function execute(ctx: any) {
           id: "review",
           enabled: true,
           intervalMs: 60000,
-          event: { type: "project.focus.review.requested", project: "sample" }
+          emits: [{ type: "project.focus.review.requested", project: "sample" }]
         }]
       }`,
       );
@@ -1486,12 +1546,12 @@ export async function execute(ctx: any) {
           id: "worker",
           enabled: true,
           intervalMs: 60000,
-          event: { type: "project.work", project: "sample" }
+          emits: [{ type: "project.work", project: "sample" }]
         }],
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker", task: "work" }
         }]
       }`,
@@ -1553,7 +1613,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker-v1", task: "work v1" }
         }]
       }`,
@@ -1580,7 +1640,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker-v2", task: "work v2" }
         }]
       }`,
@@ -1611,7 +1671,7 @@ export async function execute(ctx: any) {
         workflowHandlers: [{
           name: "sample-worker",
           enabled: true,
-          on: ["project.work"],
+          accepts: ["project.work"],
           handler: { workflow: "worker", agent: "sample-ops", task: "work" }
         }]
       }`,

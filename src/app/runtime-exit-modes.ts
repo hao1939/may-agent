@@ -57,8 +57,6 @@ export async function runRequestedExitMode(opts: {
         persistDir: opts.persistDir,
         bus: opts.bus,
         manager: opts.manager,
-        models: opts.models,
-        apiKey: opts.litellmApiKey,
       });
       process.exit(0);
     } catch (err) {

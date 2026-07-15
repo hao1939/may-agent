@@ -37,7 +37,7 @@ function makeHeartbeatCtx(agentsRoot: string): WorkflowContext & { events: any[]
     runFunction: async () => ({ status: "success", summary: "ok" } as any),
     summarize: () => "",
     done: (summary) => ({ type: "done", summary }),
-    escalate: (reason) => ({ type: "escalate", reason }),
+    blocked: (reason) => ({ type: "blocked", reason }),
     createSession: async () => ({ prompt: async () => {}, lastText: () => "", close: () => {} }),
     events,
     runAgentCalls,

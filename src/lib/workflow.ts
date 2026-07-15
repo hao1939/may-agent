@@ -13,8 +13,6 @@ export type WorkflowEvent =
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
   | { type: "workflow.blocked"; reason: string }
-  /** @deprecated Use workflow.blocked. */
-  | { type: "workflow.escalated"; reason: string }
   | {
       type: "workflow.resume_failed";
       source: string;
@@ -100,9 +98,7 @@ export interface GuardModule {
 /** The outcome of a workflow execution. */
 export type WorkflowResult =
   | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown }
-  /** @deprecated Use { type: "blocked" } / ctx.blocked(). */
-  | { type: "escalate"; reason: string; context?: unknown };
+  | { type: "blocked"; reason: string; context?: unknown };
 
 // ── Workflow Context ───────────────────────────────────────────────────
 
@@ -201,9 +197,6 @@ export interface WorkflowContext {
 
   /** Mark workflow as locally blocked. Does not emit escalation.created. */
   blocked(reason: string, context?: unknown): WorkflowResult;
-
-  /** @deprecated Use blocked(). This is a local blocked result, not escalation.created. */
-  escalate(reason: string, context?: unknown): WorkflowResult;
 
   /** Create a persistent agent session that stays alive across prompt() calls.
    *  Each prompt() call creates a new agent session with accumulated history,
@@ -307,15 +300,6 @@ export interface SessionTrace {
 
 export type WorkflowToolResult =
   | { type: "done"; workflow: string; workflowRunId: string; summary: string; steps: WorkflowStepSummary[] }
-  | {
-      /** @deprecated Legacy result name. New workflow-local blockers return "blocked". */
-      type: "escalated";
-      workflow: string;
-      workflowRunId: string;
-      reason: string;
-      context?: unknown;
-      steps: WorkflowStepSummary[];
-    }
   | {
       type: "blocked";
       workflow: string;

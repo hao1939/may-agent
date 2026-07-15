@@ -222,6 +222,39 @@ describe("workflow tool: list", () => {
   });
 });
 
+describe("workflow tool: typed execution", () => {
+  it("shares one typed runner with the serialized tool boundary", async () => {
+    writeWorkflow(
+      "typed.ts",
+      `
+      export const name = "typed";
+      export const description = "Typed runner fixture";
+      export async function execute(ctx) { return ctx.done("typed result"); }
+    `,
+    );
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const typed = await tool.run("typed", "run typed workflow");
+    expect(typed).toMatchObject({
+      type: "done",
+      workflow: "typed",
+      summary: "typed result",
+    });
+
+    const serialized = await tool.execute("tc1", {
+      action: "run",
+      name: "typed",
+      task: "run typed workflow",
+    });
+    expect(JSON.parse(serialized.content[0].text)).toMatchObject({
+      type: "done",
+      workflow: "typed",
+      summary: "typed result",
+    });
+  });
+});
+
 describe("workflow tool: run", () => {
   it("returns error when workflow not found", async () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -274,7 +307,7 @@ describe("workflow tool: run", () => {
       "escalating.ts",
       `
       export const name = "escalating";
-      export const description = "Always escalates";
+      export const description = "Always blocks";
       export async function execute(ctx) {
         return ctx.blocked("can't handle this", { reason: "too complex" });
       }
@@ -394,14 +427,14 @@ describe("workflow tool: run", () => {
     expect(events[1].type).toBe("workflow.blocked");
   });
 
-  it("keeps ctx.escalate local and does not emit escalation.created", async () => {
+  it("keeps ctx.blocked local and does not emit escalation.created", async () => {
     writeWorkflow(
       "local-escalation.ts",
       `
       export const name = "local-escalation";
       export const description = "Escalates locally";
       export async function execute(ctx) {
-        return ctx.escalate("missing sessionId", {
+        return ctx.blocked("missing sessionId", {
           owner: "agent:may",
           requestedAction: "Fix the event producer",
           evidence: { triggerType: "session.end" },

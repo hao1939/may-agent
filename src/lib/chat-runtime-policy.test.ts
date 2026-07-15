@@ -47,9 +47,6 @@ function registerMay(manager: SubagentManager): void {
       "message",
       "read",
       "run_cli_agent",
-      "cc_worker",
-      "codex_worker",
-      "dual_review",
       "bash",
       "edit",
       "write",
@@ -161,7 +158,7 @@ describe("chat runtime policy", () => {
       expect(toolNames).toContain("bash");
       expect(toolNames).toContain("write");
       expect(toolNames).toContain("finish");
-      expect(toolNames).toContain("cc_worker");
+      expect(toolNames).toContain("run_cli_agent");
     } finally {
       manager.cancel(sessionId);
       rmSync(persistDir, { recursive: true, force: true });

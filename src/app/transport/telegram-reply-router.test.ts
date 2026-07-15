@@ -165,7 +165,7 @@ describe("telegram reply router helpers", () => {
             eventType: "evaluation.project.reviewed",
             targetProject: "aks-rp-e2e.app",
           },
-          expectedClosure: ["project.planning.requested"],
+          expectedClosure: ["project.owner.requested"],
           actionHints: ["accepted", "assign <owner>"],
           escalationId: "esc_1",
           sourceAgent: "evaluator",

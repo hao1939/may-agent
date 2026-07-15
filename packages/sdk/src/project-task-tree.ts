@@ -268,12 +268,14 @@ export type UpdateTaskTextInput = {
 export type UnblockTaskInput = {
   taskId: string;
   reason: string;
+  force?: boolean;
 };
 
 export type RejectTaskReviewInput = {
   taskId: string;
   reason: string;
   freshSession?: boolean;
+  review?: Record<string, unknown>;
 };
 
 export function taskTreeConfig(input: TaskTreeToolConfig): ToolConfig {
@@ -749,9 +751,22 @@ function taskDepth(tree: TaskTree, task: TaskNode): number {
   return depth;
 }
 
+function isDurableLoopRetirementProtected(task: TaskNode | undefined): boolean {
+  if (!task) return false;
+  const acceptance = normalizeStringArray(task.acceptance).map((value) => value.toLowerCase());
+  return acceptance.some((value) =>
+    value.includes("loop remains present until explicitly retired"),
+  );
+}
+
 function isSafeDoneLeaf(tree: TaskTree, task: TaskNode | undefined, dependencyRefs: Set<string>): task is TaskNode {
   return Boolean(
-    task && task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && !dependencyRefs.has(task.id),
+    task &&
+      task.id !== tree.root_task_id &&
+      isLeaf(task) &&
+      task.status === "done" &&
+      !dependencyRefs.has(task.id) &&
+      !isDurableLoopRetirementProtected(task),
   );
 }
 
@@ -1224,13 +1239,28 @@ function blockerCondition(blocker: TaskBlocker | undefined): string | undefined 
   return blockerTextField(blocker, "condition");
 }
 
+function sanitizeStructuredBlockerPatch(inputRecord: Record<string, unknown>): Record<string, unknown> {
+  const patch = { ...inputRecord };
+  const waitingFor = blockerObjectField(patch, "waiting_for", "waitingFor");
+  if (("waiting_for" in patch || "waitingFor" in patch) && !waitingFor) {
+    delete patch.waiting_for;
+    delete patch.waitingFor;
+  }
+  const observedBy = blockerObjectField(patch, "observed_by", "observedBy");
+  if (("observed_by" in patch || "observedBy" in patch) && !observedBy) {
+    delete patch.observed_by;
+    delete patch.observedBy;
+  }
+  return patch;
+}
+
 function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
   const blockerValue = input.blocker;
   if (!hasStructuredBlockerInput(input)) {
     return typeof blockerValue === "string" ? trimmed(blockerValue) : blockerValue;
   }
 
-  const existingRecord = blockerRecord(blockerValue) ?? {};
+  const existingRecord = sanitizeStructuredBlockerPatch(blockerRecord(blockerValue) ?? {});
   const condition =
     typeof blockerValue === "string"
       ? trimmed(blockerValue)
@@ -1253,20 +1283,25 @@ function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
 }
 
 function mergeBlocker(existing: TaskBlocker | undefined, input: TaskBlockerInput): TaskBlocker | undefined {
+  const blockerValue = input.blocker;
+  const existingRecord = blockerRecord(existing);
+
   if (!hasStructuredBlockerInput(input)) {
-    const blockerValue = input.blocker;
+    if (existingRecord && typeof blockerValue === "string") {
+      const condition = trimmed(blockerValue);
+      return condition ? { ...existingRecord, condition } : existing;
+    }
     return typeof blockerValue === "string" ? trimmed(blockerValue) : blockerValue;
   }
-  const existingRecord = blockerRecord(existing) ?? {};
-  const inputRecord = blockerRecord(input.blocker) ?? {};
-  const blockerValue = input.blocker;
+
+  const inputRecord = sanitizeStructuredBlockerPatch(blockerRecord(blockerValue) ?? {});
   const condition =
     (typeof blockerValue === "string" ? trimmed(blockerValue) : blockerCondition(blockerValue)) ??
     blockerCondition(existing);
   const nextCheckAt = trimmed(input.nextCheckAt);
   const resumeAt = trimmed(input.resumeAt) ?? nextCheckAt;
   return {
-    ...existingRecord,
+    ...(existingRecord ?? {}),
     ...inputRecord,
     ...(condition ? { condition } : {}),
     ...(trimmed(input.blockerCategory) ? { category: trimmed(input.blockerCategory) } : {}),
@@ -1750,6 +1785,15 @@ function stableTaskSessionId(task: TaskNode): string {
   return `s_task_${slug}`;
 }
 
+function taskAttemptSessionId(task: TaskNode, attemptId: string): string {
+  const attemptSlug =
+    attemptId
+      .replace(/[^A-Za-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(-64) || "attempt";
+  return `${stableTaskSessionId(task)}_${attemptSlug}`;
+}
+
 function nonEmptyTrimmedString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -1765,20 +1809,7 @@ function createAssignmentForTask(
 ): TaskAssignment {
   const attemptId =
     input.attemptId ?? `a_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}_${now.replace(/\D/g, "").slice(0, 14)}`;
-  const trace = task.trace ?? {};
-  const previousWorkerErrored =
-    typeof trace.review_rejected_at === "string" &&
-    typeof trace.last_worker_summary === "string" &&
-    trace.last_worker_summary.trim().toLowerCase() === "error";
-  const wantsFreshSession =
-    trace.review_reject_fresh_session === true || trace.stale_active_fresh_session === true || previousWorkerErrored;
-  const defaultSessionId = wantsFreshSession
-    ? `${stableTaskSessionId(task)}_retry_${now.replace(/\D/g, "").slice(0, 14)}`
-    : stableTaskSessionId(task);
-  const sessionId =
-    !wantsFreshSession && typeof task.session_id === "string" && task.session_id.trim()
-      ? task.session_id.trim()
-      : defaultSessionId;
+  const sessionId = taskAttemptSessionId(task, attemptId);
   const worker =
     nonEmptyTrimmedString(input.worker) ||
     nonEmptyTrimmedString(task.owner) ||
@@ -2233,6 +2264,25 @@ export function unblockTask(config: ToolConfig, input: UnblockTaskInput): TaskNo
     const reason = input.reason.trim();
     if (!reason) throw new Error("Unblock reason cannot be empty");
 
+    const blocker =
+      task.blocker && typeof task.blocker === "object" && !Array.isArray(task.blocker)
+        ? (task.blocker as Record<string, unknown>)
+        : null;
+    const resumeAt =
+      typeof blocker?.resume_at === "string"
+        ? blocker.resume_at.trim()
+        : typeof blocker?.resumeAt === "string"
+          ? blocker.resumeAt.trim()
+          : "";
+    if (!input.force && resumeAt) {
+      const resumeAtMs = Date.parse(resumeAt);
+      if (Number.isFinite(resumeAtMs) && resumeAtMs > Date.now()) {
+        throw new Error(
+          `Task ${task.id} remains time-gated until ${resumeAt}; pass force=true only when intentionally overriding the review window.`,
+        );
+      }
+    }
+
     const now = new Date().toISOString();
     task.status = "backlog";
     task.state = "backlog";
@@ -2274,6 +2324,7 @@ export function rejectTaskReview(config: ToolConfig, input: RejectTaskReviewInpu
       review_rejected_at: now,
       review_rejected_by: "task-tree-tool",
       review_reject_reason: input.reason,
+      review_reject: input.review,
       review_reject_fresh_session: input.freshSession === true,
       previous_attempt_id: previousAttemptId,
       current_attempt_id: undefined,
@@ -2286,6 +2337,7 @@ export function rejectTaskReview(config: ToolConfig, input: RejectTaskReviewInpu
       kind: "task_review_rejected",
       task_id: task.id,
       reason: input.reason,
+      review: input.review,
     });
     return task;
   });

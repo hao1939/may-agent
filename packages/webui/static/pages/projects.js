@@ -401,7 +401,7 @@ async function renderProjectFunctions(el) {
       <button class="function-card" onclick="emitProjectPlanningRequest()">
         <b>Request Planning</b>
         <span>Emit a project planning event for the project owner agent.</span>
-        <code>project.planning.requested</code>
+        <code>project.owner.requested</code>
       </button>
     </div>`;
 
@@ -435,7 +435,7 @@ function selectProjectAction(actionId) {
 }
 
 async function emitProjectPlanningRequest() {
-  await emitProjectActionEvent('project.planning.requested', 'manual-functions-page', {});
+  await emitProjectActionEvent('project.owner.requested', 'manual-functions-page', {});
 }
 
 async function emitProjectAction() {

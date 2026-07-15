@@ -163,7 +163,7 @@ describe("Cron event triggers", () => {
       cron.addSyntheticEntry({
         name: "may-agent-project-planner",
         enabled: true,
-        on: ["project.planning.requested"],
+        on: ["project.owner.requested"],
         handler: {
           workflow: "verify-wrap",
           agent: "may",
@@ -174,7 +174,7 @@ describe("Cron event triggers", () => {
       cron.subscribeToBus(bus);
 
       bus.emit({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         source: "agent:aks-explorer",
         owner: "agent:aks-explorer",
         data: { project: "aks-rp-e2e" },
@@ -197,7 +197,7 @@ describe("Cron event triggers", () => {
       cron.addSyntheticEntry({
         name: "may-agent-project-planner",
         enabled: true,
-        on: ["project.planning.requested"],
+        on: ["project.owner.requested"],
         handler: {
           workflow: "verify-wrap",
           agent: "may",
@@ -208,7 +208,7 @@ describe("Cron event triggers", () => {
       cron.subscribeToBus(bus);
 
       bus.emit({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         source: "agent:may",
         owner: "agent:may",
         data: { project: "may-agent" },

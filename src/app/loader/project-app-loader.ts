@@ -8,97 +8,16 @@ import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { runWorkflowDirect } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
-import { loadProjectReadModel } from "@may-agent/sdk";
+import {
+  loadProjectReadModel,
+  type EventSelector,
+  type ProjectApp,
+  type ProjectAppContext,
+  type ProjectAppEvent as AppEvent,
+  type ProjectAppEventTarget as EventTarget,
+} from "@may-agent/sdk";
 import { Cron } from "../cron.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
-
-type EventUrgency = "low" | "normal" | "high" | "immediate";
-
-type EventTarget = {
-  project?: string;
-  taskId?: string;
-  owner?: string;
-  sessionId?: string;
-  human?: boolean;
-};
-
-type AppEvent = {
-  type?: string;
-  target?: EventTarget;
-  source?: string;
-  owner?: string;
-  urgency?: EventUrgency;
-  ttlMs?: number;
-  ttl_ms?: number;
-  timestamp?: number;
-  visibility?: "default" | "detail";
-  trace?: EventEnvelope["trace"];
-  data?: Record<string, unknown>;
-  params?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-
-type EventSelector =
-  | string
-  | {
-      type: string;
-      target?: EventTarget;
-      project?: string;
-      owner?: string;
-      urgency?: EventUrgency;
-      actions?: string[];
-      metricIds?: string[];
-    };
-
-type ProjectAppContext = {
-  workspacePath(path: string): string;
-  workspaceCwd(): string;
-  /** @deprecated Use workspacePath(). */
-  projectPath(path: string): string;
-  appPath(path: string): string;
-  readJson<T = unknown>(path: string): Promise<T>;
-  importModule<T = Record<string, unknown>>(path: string): Promise<T>;
-  startSession(input: { agent: string; task: string; timeoutMs?: number }): unknown;
-  emit(event: Record<string, unknown>): unknown;
-  noop(reason: string): unknown;
-};
-
-type ProjectApp = {
-  id?: string;
-  version?: number;
-  owner?: string;
-  workspace?: {
-    localPath?: string;
-  };
-  schedules?: Array<{
-    id: string;
-    enabled?: boolean;
-    intervalMs?: number;
-    emits?: AppEvent[];
-    event?: AppEvent;
-  }>;
-  workflowHandlers?: Array<{
-    name: string;
-    enabled?: boolean;
-    description?: string;
-    maxConcurrentTriggers?: number;
-    accepts?: EventSelector[];
-    on?: string[];
-    handler: {
-      workflow: string;
-      agent?: string;
-      projectId?: string;
-      includeEvent?: boolean;
-      task: string;
-      timeoutMs?: number;
-    };
-    context?: string[];
-  }>;
-  events?: EventSelector[];
-  onEvent?:
-    | ((ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown> | unknown)
-    | { kind: "generated-workflow-handlers"; handlers?: unknown[] };
-};
+import { childEventTrace, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
 
 type ProjectReadModel = {
   id: string;
@@ -315,7 +234,7 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
     typeof event.ttl_ms === "number" ? event.ttl_ms : typeof event.ttlMs === "number" ? event.ttlMs : undefined;
   const target = isRecord(event.target) ? (event.target as EventTarget) : undefined;
   const visibility = event.visibility === "detail" ? "detail" : event.visibility === "default" ? "default" : undefined;
-  const trace = isRecord(event.trace) ? event.trace as EventEnvelope["trace"] : undefined;
+  const trace = isRecord(event.trace) ? (event.trace as EventEnvelope["trace"]) : undefined;
   const flatPayload = Object.fromEntries(Object.entries(event).filter(([key]) => !envelopeFieldNames.has(key)));
   const data = {
     ...(isRecord(event.data) ? event.data : {}),
@@ -477,7 +396,7 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
 }
 
 function handlerAccepts(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): EventSelector[] {
-  return handler.accepts ?? handler.on ?? [];
+  return handler.accepts;
 }
 
 function handlerAcceptedEventTypes(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): string[] {
@@ -522,6 +441,7 @@ function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: s
 
 function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
   if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
+  if (hasExplicitWorkflowHandler(app, event, appId)) return true;
   if (isOwnerMetricFeedbackForApp(event, appOwner)) return true;
   return typeof event.type === "string" && event.type.startsWith("project.") && isProjectScopedForApp(event, appId);
 }
@@ -775,13 +695,12 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
         },
         ...(trace ? { trace } : {}),
       } as AgentEvent);
-      // When the workflow did not complete successfully (blocked, escalated,
-      // interrupted), throw so cron's .catch() path fires. This triggers
+      // When the workflow is blocked, throw so cron's .catch() path fires. This triggers
       // handler.failed + exponential backoff in drainQueuedEventTrigger,
       // preventing tight error→drain→error cascades for opCount=0 session
       // errors that runWorkflowDirect resolves instead of rejecting.
       if (result.type !== "done") {
-        const reason = result.type === "blocked" ? (result as { reason?: string }).reason : result.type;
+        const reason = result.reason;
         throw new Error(
           `Workflow "${workflowName}" did not complete: type=${result.type}${reason ? `, reason=${reason}` : ""}`,
         );
@@ -810,8 +729,7 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
       handler: "__project_app_schedule__",
     };
     cron.registerHandler(entryName, async () => {
-      const events = schedule.emits ?? (schedule.event ? [schedule.event] : []);
-      for (const event of events) {
+      for (const event of schedule.emits) {
         const envelope = normalizeEvent(event, {
           source: `project-app:${descriptor.id}:schedule:${schedule.id}`,
           owner: `agent:${descriptor.owner}`,
@@ -827,22 +745,6 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
-
-/** Mark a bus event row as handled in the DB (best-effort). */
-function markEventHandled(opts: ProjectAppLoaderOptions, event: Record<string, unknown>, handlerName: string): void {
-  if (!opts.persistDir) return;
-  const rowId = (event as any)[EVENT_ROW_ID];
-  if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
-  try {
-    const db = getDb(opts.persistDir);
-    db.run(
-      `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed' WHERE id = ? AND status = 'pending'`,
-      [handlerName, rowId],
-    );
-  } catch {
-    /* best-effort — don't fail the handler for bookkeeping */
-  }
-}
 
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
   const existing = appRouterDescriptorsByBus.get(opts.bus);
@@ -860,6 +762,24 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
       const hasAppEventHandler = typeof descriptor.app.onEvent === "function";
       const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event, descriptor.id);
+      const routedMetricFeedback = isMetricFeedbackEvent(event) && (ownerMetricFeedback || hasWorkflowHandler);
+      if (routedMetricFeedback) {
+        const eventOwner = ownerValue(event);
+        opts.bus.emit({
+          type: "metric.feedback.routed",
+          source: "project-app-loader",
+          owner: `agent:${eventOwner || descriptor.owner}`,
+          data: {
+            metricId: metricEventId(event),
+            alertId: metricAlertId(event),
+            project: projectValue(event) || null,
+            appId: descriptor.id,
+            appPath: descriptor.appDir,
+            route: "owner-app",
+            eventType: event.type,
+          },
+        } as AgentEvent);
+      }
       if (hasWorkflowHandler) continue;
       const shouldOwnerFallback =
         !hasWorkflowHandler && (isProjectScopedForApp(event, descriptor.id) || ownerMetricFeedback);
@@ -878,29 +798,11 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           note: "project app owner fallback session queued",
         };
       }
-      if (ownerMetricFeedback) {
-        opts.bus.emit({
-          type: "metric.feedback.routed",
-          source: "project-app-loader",
-          owner: `agent:${descriptor.owner}`,
-          data: {
-            metricId: metricEventId(event),
-            alertId: metricAlertId(event),
-            project: projectValue(event) || null,
-            appId: descriptor.id,
-            appPath: descriptor.appDir,
-            route: "owner-app",
-            eventType: event.type,
-          },
-        } as AgentEvent);
-      }
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
           const result =
             typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
-          // Mark the trigger event as handled after onEvent completes successfully.
-          markEventHandled(opts, event, `project-app:${descriptor.id}`);
           if (result !== undefined) return;
           if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
