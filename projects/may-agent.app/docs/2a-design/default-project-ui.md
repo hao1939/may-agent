@@ -319,8 +319,7 @@ no-op. Preserve the raw fact in the task tree or discussion.
 Send behavior:
 
 - project-wide steering emits `project.owner.requested` with selected project
-  context; `project.planning.requested` is a legacy ingress alias and must not
-  be emitted by new UI code;
+  context;
 - task-specific steering includes task id, parent chain, state, and local row
   context;
 - declared project actions emit canonical project action events;
@@ -379,43 +378,32 @@ Extension rules:
 
 ## Source Ownership
 
-Do not deepen the current static copy drift.
-
-Observed copies:
+The only editable source is:
 
 ```text
 /app/projects/may-agent/packages/webui/static
-/app/projects/may-agent/ui
-/app/ui
+```
+
+The HTTP server reads one generated deployment target:
+
+```text
 /app/projects/platform/ui
-/app/projects/may-agent.app/ui
 ```
 
-The source of truth is:
+`bun run ui:sync` in `/app/projects/may-agent` refreshes vendor assets and
+replaces that served target. The sync also removes the retired `/app/ui`,
+`projects/may-agent/ui`, and `projects/may-agent.app/ui` copies so stale assets
+cannot masquerade as another source. Project-specific UI directories remain
+independent overrides and are never generated from the default source.
 
-```text
-/app/projects/may-agent/packages/webui/static
-```
+## Current Implementation
 
-`bun run ui:sync` in `/app/projects/may-agent` syncs that source into the
-generated and served copies. A design or code change to the default project UI
-should not require editing unrelated static trees by hand.
-
-## Implementation Plan
-
-1. Add `/api/projects/readout` with only generic task tree and metric facts.
-2. Render the compact control readout above the current task board. Done in
-   phase 1.
-3. Add coverage rows and issue rows inside collapsed diagnostics, even if some
-   rows are `missing`. Done in phase 1 for browser-side task-tree facts.
-4. Add structured steering from bottleneck, coverage, loop, issue, and task
-   rows.
-5. Add project-declared loop metadata and loop state loading.
-6. Move browser-side inference into the readout endpoint once the shape proves
-   useful.
-7. Keep default UI source ownership and sync targets explicit.
-8. Keep `aks-rp-e2e.app` domain UI as a proving ground for richer extensions,
-   not as copied platform code.
+- Shipped: compact control readout, task-tree facts, coverage/issue diagnostics,
+  one editable default source, and one served deployment target.
+- Remaining: stable server-side `/api/projects/readout`, structured steering
+  from every diagnostic/task row, and project-declared loop metadata.
+- Keep `aks-rp-e2e.app` as the proving ground for domain extensions, not as
+  copied platform code.
 
 ## Acceptance
 

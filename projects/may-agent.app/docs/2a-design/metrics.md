@@ -406,7 +406,7 @@ A metric at target is a signal the bar is too low. Never coast.
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others
 
-## Proposal: Default Metric Feedback Routing (2026-06-14)
+## Default Metric Feedback Routing
 
 ### Problem
 

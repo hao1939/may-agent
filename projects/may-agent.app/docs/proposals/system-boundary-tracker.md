@@ -1,4 +1,4 @@
-# Infra Surface Refactor Plan
+# Infra Surface Refactor Plan (Historical)
 
 **Design status:** Historical tracker.
 **Implementation status:** Historical evidence only; not an active implementation contract.

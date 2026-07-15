@@ -128,13 +128,10 @@ Higher-level learning artifacts should be derived from many eval rows, not repla
 
 ## Evolution Model
 
-Practice is the source of learning. Evolution is the controlled promotion of that learning into stronger system behavior.
-
-The ladder from `evolution.md` still applies:
-
-```text
-experience -> lesson -> skill -> workflow -> guard -> tool/handler
-```
+Practice is the source of learning. Evolution turns that learning into stronger
+system behavior through two independent choices: how to encode the knowledge,
+and which runtime mechanism—if any—matches the control need. Skills, workflows,
+guards, tools, and handlers compose; they are not maturity stages.
 
 But the missing control loop is:
 

@@ -1,368 +1,231 @@
-# Agent Evolution: How to Extend Your Abilities
+# Agent Evolution
 
-**Design status**: Draft. This document defines a promotion heuristic, not a
-runtime lifecycle. Operational interfaces remain authoritative in
-[`agent-convention.md`](../2b-manual/agent-convention.md),
-[`skills.md`](../2a-design/skills.md),
-[`workflows.md`](../2a-design/workflows.md),
-[`workflow-authoring.md`](../2b-manual/workflow-authoring.md),
-[`guards.md`](../2a-design/guards.md), and [`sdk.md`](../2a-design/sdk.md).
+**Design status:** Draft promotion heuristic.
 
-## The Progression
+Evolution is evidence-backed improvement of an owner's behavior. It is not one
+linear ladder from lesson to handler. Two independent decisions are involved:
 
-Every agent capability follows the same arc:
+1. How should knowledge be encoded?
+2. Which runtime mechanism, if any, should execute or enforce it?
 
-```
-Experience → Lesson → Skill → Automation → Enforcement
-```
+Operational contracts remain authoritative in `skills.md`, `workflows.md`,
+`guards.md`, `agent-convention.md`, and the SDK/manual documentation.
 
-Each level is a stronger encoding of knowledge. You move right as confidence grows.
+## Knowledge Encoding
 
----
+Knowledge becomes stronger only when evidence justifies a more durable form:
 
-## Level 0: Experience (ephemeral)
-
-You do work. Something goes wrong, or you discover a better way.
-
-**Where it lives:** In your session memory. Disappears when the session ends.
-
-**Signal to level up:** You've hit the same pattern 2-3 times.
-
----
-
-## Level 1: Lesson (persistent knowledge)
-
-Write it down so you don't forget.
-
-**Where it lives:** `agents/<you>/LESSONS.md` or `agents/<you>/knowledge/`.
-Lessons are not auto-loaded. Promote only durable always-on behavior into
-`AGENTS.md`.
-
-**Format:**
-```markdown
-- Always run `bun run bundle` before claiming a fix works — TypeScript compiles but Bun bundling catches more
-- When editing project.md, preserve the exact field format `**Field**: value`
+```text
+experience -> lesson/context -> skill
 ```
 
-**Signal to level up:** The lesson is so important that violating it always causes problems.
+| Form | Use when | Location |
+| --- | --- | --- |
+| Experience | One session discovered something; durability is not yet justified | Session evidence |
+| Context/fact | Environment-specific truth should be available later | `context.md` or owned knowledge |
+| Lesson | A repeated mistake or useful rule should be reviewed for promotion | `LESSONS.md` or owned knowledge |
+| Skill | A reusable judgment-heavy method has stable triggers and useful guidance | Scoped `skills/<name>/SKILL.md` package |
 
----
+Frequency alone does not justify automation. A recurring judgment-heavy method
+may remain a skill used by scheduled sessions.
 
-## Level 2: Skill (structured behavioral pattern)
+## Runtime Mechanisms
 
-A skill is a lesson with structure: context, principles, actions, anti-patterns.
+Runtime mechanisms are selected by control need, not maturity level:
 
-**Where it lives:** `shared/skills/<name>/SKILL.md`,
-`agents/<owner>/skills/<name>/SKILL.md`, or
-`projects/<id>.app/agents/<owner>/skills/<name>/SKILL.md`, depending on scope.
+| Need | Mechanism | Controller |
+| --- | --- | --- |
+| One bounded judgment/action | Agent session | Model |
+| Situational method for one turn | Skill | Model |
+| Repeatable ordered sequence, branch, retry, or verification | Workflow | TypeScript workflow runtime |
+| Mechanically detectable risk around execution | Guard | Guard hook/runtime |
+| New action or external integration | Tool | Tool implementation |
+| Timer/event bridge or mechanical projection | Handler/app schedule | Runtime callback |
+| Durable multi-session goal and state | Project app | Project owner through events/workflows |
+| Cross-owner blocker | Escalation | Receiving owner |
 
-**Format:**
-```yaml
----
-name: verification
-description: Use when work products must be verified with tool evidence before completion is claimed.
----
+These mechanisms compose. They do not supersede one another. A handler may
+start a workflow; a workflow may call an agent with a skill; a guard may observe
+the workflow; a tool may supply a deterministic capability.
+
+## Promotion Tests
+
+Before strengthening an encoding or mechanism, answer:
+
+1. What repeated evidence shows the current form fails?
+2. Is the failure about missing knowledge, variable judgment, sequence,
+   mechanical detection, missing capability, triggering, or durable ownership?
+3. What is the smallest mechanism that addresses that cause?
+4. What evidence will show the change helped?
+5. How can the mechanism be retired if it adds noise or cost?
+
+Do not respond to every mistake by adding prompt text, a guard, or another
+workflow. Debug what the model actually received first.
+
+## Skills
+
+A skill is scoped reusable guidance, loaded only for a matching turn.
+
+```text
+<scope>/skills/verify-change/
+  SKILL.md
+  references/       # optional
+  scripts/          # optional JS/TS helpers
+  assets/            # optional
 ```
 
-Then structured sections: Context, Core Principles, Actions, Anti-patterns.
+The model remains the controller. A bundled script runs through normal tools
+and permissions; it does not give the skill a workflow lifecycle.
 
-**How agents access it:** The runtime discovers compact metadata and loads the
-full body only for a matching turn; see
-[`skills.md`](../2a-design/skills.md). A caller may also select one explicit
-primary skill for a turn. Do not copy the full skill into always-on prompt
-files.
+Promote a method to a skill when:
 
-**Signal to level up:** Repeated evidence shows that the sequence must be
-consistent, missing or reordered steps create meaningful risk, and inputs,
-outputs, and terminal conditions can be made explicit. Frequency alone is not
-enough; a schedule may invoke a skill-bearing session without making the skill
-a workflow.
+- its trigger conditions are recognizable;
+- context determines how the method should be applied;
+- loading it permanently would waste context;
+- repeated use shows the guidance is useful.
 
----
+## Workflows
 
-## Level 3: Workflow (automated multi-step pattern)
+A workflow is TypeScript-controlled ordered execution. Promote a practice to a
+workflow when evidence shows that missing, reordering, or inconsistently
+handling steps creates meaningful risk and the sequence has explicit inputs,
+outputs, bounds, and terminal conditions.
 
-A workflow codifies a stable practice into executable orchestration. It may
-have evolved from a skill, but promotion is not automatic: the workflow runtime
-must have a repeatable sequence worth enforcing. Agents do not need to remember
-the steps because the workflow handles sequencing.
-
-Skills and workflows share discovery, provenance, and evaluation conventions,
-but not execution semantics. `SKILL.md` is interpreted per turn; a workflow's
-TypeScript module controls a durable run. See
-[`workflows.md`](../2a-design/workflows.md).
-
-Workflow execution is synchronous by design. A workflow step waits for its
-agent/function/sub-workflow result before the next step runs; this keeps
-orchestration simple and auditable.
-
-**Where it lives:** `agents/<agent>/workflows/<name>.ts` or
-`projects/<id>.app/workflows/<name>.ts`.
-
-**Interface:**
-```typescript
+```ts
 export const name = "implement-and-verify";
-export const description = "Code then verify with tests";
+export const description = "Implement one bounded change and verify it.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const code = await ctx.runAgent(ctx.agent, ctx.task);
-  const verify = await ctx.runFunction("verify", async () => {
+  const implementation = await ctx.runAgent("dev", ctx.task);
+  if (implementation.status === "error") {
+    return ctx.blocked("Implementation failed", {
+      sessionId: implementation.sessionId,
+    });
+  }
+  const verification = await ctx.runFunction("verify", async () => {
     const { execSync } = await import("node:child_process");
-    return execSync("bun test", { encoding: "utf-8" });
+    return execSync("bun test", { encoding: "utf8" });
   });
-  if (verify.status === "error") return ctx.blocked("Tests failed");
+  if (verification.status === "error") {
+    return ctx.blocked("Verification failed");
+  }
   return ctx.done("Implemented and verified");
 }
 ```
 
-**Invoke from handler:** `ctx.sdk.runWorkflow("implement-and-verify", task)`
-**Invoke from agent:** `workflow({ action: "run", name: "implement-and-verify", task })`
+Workflows are synchronous ordered blocks. Durable waits cross an event boundary
+into a later workflow run.
 
-**Signal to level up:** Repeated evidence shows a mechanically detectable risk
-needs an observable intervention. Judgment-heavy quality rules should remain in
-owner context or workflows.
+## Guards
 
----
+A guard observes mechanically identifiable execution risk. Start with
+observation or warning. Hard blocking requires high-confidence detection and
+high impact.
 
-## Level 4: Guard (workflow-level detection/intervention)
+Use a guard when:
 
-> **Note:** Guards are a workflow-level pattern, not an infra primitive. The infra runs guard hooks, but workflows choose which guards apply and what intervention mode is appropriate.
+- the signal is mechanically detectable from tool/workflow context;
+- the intervention point is clear;
+- false positives are measurable;
+- the same risk occurs across enough work to justify shared enforcement.
 
-A guard runs on workflow step events. It detects mechanical risks, emits
-observable signals, and may intervene when justified.
+Do not use a guard to encode subjective quality, project strategy, or an
+owner's acceptance judgment.
 
-**Where it lives:** Inline in workflow definitions, or `shared/guards/<name>.ts`
+Every intervention should emit observable `guard.triggered` evidence with the
+session/workflow/step context needed for later evaluation.
 
-**Interface:**
-```typescript
-export const guard: WorkflowGuard = {
-  name: "build-check",
-  events: ["step_done"],
-  handle(event) {
-    if (event.result?.lastAssistantText?.includes("wrote")) {
-      return [{ type: "run_step", step: { agent: "qa", task: "Run bun run bundle", label: "build-check" }, reason: "verify build" }];
-    }
-    return [];
-  },
-};
+## Tools
+
+A tool supplies an action the agent otherwise cannot take cleanly. Prefer an
+existing preset or SDK capability before creating a local tool.
+
+Canonical tool presets are defined by `agent.json` and the runtime loader; the
+manual is the human reference. Important examples include:
+
+- `coding` for read/write/edit/bash;
+- `agents` for call/fork/list/peek/cancel;
+- `message` for durable notifications;
+- `workflow` for list/run/resume;
+- `cli-delegation` for durable `run_cli_agent` tasks;
+- `system-status`, `cron`, `checkpoint`, `scrape`, and `finish` where needed.
+
+Local domain tools live under the owning global or app-local agent's `tools/`
+directory. Discovery of a file is not proof of a supported contract; verify the
+tool appears in the actual runtime tool list.
+
+## Handlers And Schedules
+
+Handlers and schedules answer “when should existing behavior run?” They are not
+the highest level of learned knowledge.
+
+Use them for:
+
+- timer/event-to-workflow bridging;
+- bounded normalization and preflight;
+- metric snapshots and projections;
+- recovery/reconciliation mechanics;
+- explicit skip/no-op decisions.
+
+Project-specific triggers belong in `projects/<id>.app/app.ts`. Standalone
+agent triggers belong in the agent's runtime declaration. Keep judgment and
+multi-step orchestration in the owning workflow/agent.
+
+## Projects
+
+Create or extend a project app when the improvement is a durable goal requiring
+ownership, state, decomposition, multiple executions, and later validation.
+Do not create a project merely because a timer repeats.
+
+A project can own a skill experiment, workflow rollout, guard calibration,
+tool integration, or handler migration. The project remains the durable goal;
+the mechanism remains an implementation choice.
+
+## Escalation
+
+Escalate only when the next required action crosses an ownership boundary and
+cannot be resolved locally.
+
+```ts
+// Workflow: local terminal blocker; caller/runtime decides routing.
+return ctx.blocked("Approval is required", { evidence });
+
+// Handler/agent SDK: explicit external ownership handoff.
+sdk.escalate("Production decision required", {
+  owner: "human:operator",
+  requestedAction: "Approve, adjust, or reject the rollout.",
+  evidence,
+});
 ```
 
-**Current demand types:**
-- `warn` — inject a warning into the next step's task
-- `run_step` — inject an additional step
-- `block` — stop the workflow immediately; reserve for high-confidence, high-impact risks
+Ordinary local retries, weak evidence, and unclear thinking are not external
+escalations. Preserve the blocker, requested action, evidence, source context,
+resume path, and a stable deduplication key.
 
-**Target guard mode:** `observe` should mean "record a guard signal without
-interrupting work." Until the runtime exposes that as a first-class demand,
-use no hard block for uncertain detectors and rely on guard-trigger events or
-metrics to review the pattern later.
+## Examples
 
-**Default observability:** every guard trigger should emit `guard.triggered`.
-A default guard handler should record a small set of guard metrics and attach
-trace fields (`sessionId`, `workflowRunId`, `step`) so later review can find
-the exact failure chain. Guard-specific logging should be unnecessary unless
-the guard needs an exception to the default convention.
+| Observation | Smallest justified response |
+| --- | --- |
+| One agent forgot a command once | Record evidence; do not build yet |
+| Environment path repeatedly surprises one owner | Add owned context/knowledge |
+| A judgment method is useful across varied tasks | Add a scoped skill |
+| Implement-then-verify ordering repeatedly fails | Add a workflow |
+| High-confidence secret pattern appears in writes | Add an observable guard, then validate blocking |
+| Required API/action does not exist | Add or extend a tool/SDK capability |
+| Existing workflow should run daily | Add an app schedule/handler bridge |
+| Improvement needs rollout, calibration, and later outcome review | Track it as project work |
 
----
+## Retirement
 
-## Level 5: Tool (new capability)
+Evolution also removes mechanisms. Retire or simplify when evidence shows:
 
-A tool gives an agent a new action it can take. Two ways to add tools:
+- a lesson became stale;
+- a skill is never selected or does not improve outcomes;
+- a workflow adds ceremony without reducing failure;
+- a guard is noisy or duplicates another check;
+- a tool duplicates the SDK/runtime;
+- a handler has no live trigger or owner;
+- a project no longer needs an ownership loop.
 
-### Tool Presets (agent.json)
-
-Declare standard tool bundles in your agent config:
-
-```json
-{
-  "tools": ["coding", "agents", "workflow", "scrape", "finish"]
-}
-```
-
-Common presets are shown below only as examples; `agent.json` and the running
-tool loader are authoritative:
-
-| Preset | What it gives |
-|--------|---------------|
-| `coding` | read + write + edit + bash |
-| `agents` | call, fork, list, peek, and cancel agent sessions |
-| `workflow` | list/run/resume workflows from within a session |
-| `message` | send messages to humans or agents (lightweight) |
-| `scrape` | web scraping |
-| `cron` | manage cron schedules |
-| `checkpoint` | save progress mid-session |
-| `system-status` | inspect system health |
-| ~~`agent-growth`~~ | *(removed — growth is agent-scope, not infra)* |
-| `background-exec` | run long processes in background |
-| `claude-code` / `gemini-cli` / `codex` | delegate to external coding agents |
-| `finish` | structured session completion |
-| `query_db` | Core read-only DB query tool. Loaded for every agent and backed by runtime `getDb()` path resolution. |
-
-### Custom Local Tools (agents/<name>/tools/)
-
-For domain-specific capabilities, create a tool file under the owning global or
-app-local agent:
-
-**Where it lives:** `agents/<name>/tools/<name>.ts` or
-`projects/<id>.app/agents/<name>/tools/<name>.ts`.
-
-**Interface:**
-```typescript
-// Default export must be a factory function
-export default async function(opts: { projectRoot: string; agentRoot: string; persistDir: string }) {
-  return {
-    name: "my-custom-tool",
-    label: "My Tool",
-    description: "Does something domain-specific",
-    parameters: { /* JSON Schema */ },
-    async execute(toolCallId: string, params: any) {
-      // ... your logic ...
-      return { content: [{ type: "text", text: "result" }] };
-    },
-  };
-}
-```
-
-Tool discovery and reload behavior are runtime contracts; verify the tool is
-present in the agent's actual tool list before relying on it.
-
----
-
-## Level 6: Handler (reactive scheduled behavior)
-
-A handler is a stateless function that runs on a schedule or in response to events. The cron system calls it — the handler does its work and returns.
-
-**Where it lives:** `agents/<name>/handlers/<name>.ts`
-
-**Interface:**
-```typescript
-export const create: HandlerModule["create"] = (ctx, entry) => {
-  return async (event?) => {
-    // Access everything via SDK
-    const db = ctx.sdk.getDb();
-    const result = await ctx.sdk.runWorkflow("my-workflow", task);
-    ctx.sdk.emit("handler.completed", { result }, { owner: "agent:may" });
-  };
-};
-```
-
-**Triggers:** Timer (`intervalMs`), events (`on: ["metric.breach", "session.end"]`), or manual.
-
----
-
-## The Full SDK + Tool Surface
-
-See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
-
-### Agent Tools (for LLM sessions — the agent's action surface)
-
-| Tool | What |
-|------|------|
-| `bash(command)` | Execute shell commands |
-| `read(path)` | Read files |
-| `write(path, content)` | Create/overwrite files |
-| `edit(path, old, new)` | Surgical text replacement |
-| `agents` with `action: "call"` | Delegate to another agent and wait |
-| `agents` with `action: "fork"` | Start bounded background delegation |
-| `message({ to, content })` | Send an asynchronous human or agent message |
-| `workflow(action, name, task)` | Run a multi-step workflow |
-| `checkpoint(summary)` | Save progress mid-session |
-| `finish(summary, deliverables)` | End session with structured output |
-
----
-
-## Decision Guide: Which Level?
-
-| Situation | Level | Action |
-|-----------|-------|--------|
-| "I keep forgetting to check X" | 1 Lesson | Add to LESSONS.md |
-| "This pattern has 5 steps I always do" | 2 Skill | Write SKILL.md |
-| "The runtime must enforce this stable sequence and terminal result" | 3 Workflow | Write workflow .ts |
-| "A repeated mechanical risk needs observable intervention" | 4 Guard | Start with observe/warn; block only after validation |
-| "I need a new action type that doesn't exist" | 5 Tool | Write `tools/<name>.ts` |
-| "This should happen every N minutes / on every event" | 6 Handler | Write handler .ts |
-| "I don't know how to handle this" | — Escalate | `sdk.escalate(reason)` |
-
----
-
-## The Exit Path: Escalate When Stuck
-
-**You always have a way out.** If you don't know what to do, don't guess — escalate.
-
-```typescript
-// From a workflow: local terminal result; caller/boundary decides whether to route it.
-return ctx.blocked("Can't determine correct approach — need human guidance");
-
-// From handler/agent code: external owner-routed escalation.
-ctx.sdk.escalate("Metric breached but fix unclear — need direction");
-
-// From an agent session (via finish tool)
-finish({ status: "blocked", reason: "Requirements ambiguous, need clarification" });
-```
-
-**When to escalate:**
-- You've tried 2+ approaches and all failed
-- The task requires information you don't have
-- You're unsure whether an action is safe (destructive, irreversible)
-- A guard blocked your workflow and you don't understand why
-- The project has been waiting >2h with no resolution path
-
-**What happens:** Escalation triggers notification to the target owner (human or
-coordinating agent), records the event, and stops the current work cleanly.
-The owning project app or owner route is responsible for noticing unresolved
-blocked state and following up.
-
-**The principle:** Escalate when the next action crosses an ownership boundary
-and cannot be resolved locally. Preserve the blocked evidence and resume
-context; do not create escalation noise for ordinary local retries.
-
----
-
-## Growth: Agent-Scope Concern
-
-Growth (experimentation, iteration, improvement) is an agent's responsibility, not an infra primitive. The infra provides the fundamentals (files, events, metrics) — agents build growth patterns on top.
-
----
-
-## Project System: Sustained Work
-
-For work that spans multiple sessions, see [projects.md](../2a-design/projects.md).
-
-Project status, task-tree state, and session lifecycle are separate. See
-[projects.md](../2a-design/projects.md) and
-[task-tree-engine.md](../2a-design/task-tree-engine.md) for the canonical
-vocabularies.
-
----
-
-## Concrete Examples
-
-### "I want agents to always run tests after code changes"
-
-**Level 3 (Workflow):** put the test and evidence gate in the owning coding
-workflow. Use a guard only to detect a repeated, mechanically identifiable
-omission.
-
-### "I want a daily research scan"
-
-**Level 6 (Handler or app schedule):** an owning app schedule emits a canonical
-event to its workflow handler. A standalone global agent may use an agent-owned
-handler when no project app owns the behavior.
-
-### "Implement then verify is our default flow"
-
-**Level 3 (Workflow):** `agents/dev/workflows/implement-and-verify.ts` or
-`projects/<id>.app/workflows/implement-and-verify.ts`. Each workflow has one
-owner; copy and diverge when another owner needs different policy.
-
-### "Never commit secrets to git"
-
-**Level 4 (Guard):** a high-confidence secret detector emits
-`guard.triggered`; blocking is justified only at a boundary where the match is
-reliable and the impact is severe.
-
-### "Check if project is stalled and re-launch"
-
-**Project owner loop:** the app emits `project.owner.requested`; the owner
-reviews current project/task state and either assigns work, records an exact
-wait, escalates across an owner boundary, or emits `project.owner.reviewed`.
+Deletion and consolidation are successful evolution when they restore a clear
+boundary.

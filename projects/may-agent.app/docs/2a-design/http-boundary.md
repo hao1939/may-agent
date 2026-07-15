@@ -19,13 +19,20 @@ Those are infra adapter responsibilities. Project UIs should remain first-class 
 
 ## Decision
 
-Move the HTTP adapter into the May Agent root application under `projects/may-agent/src/app/http`. Keep browser UI source in the private `@may-agent/webui` package, then generate/sync project-owned static `ui/` directories under `PROJECTS_ROOT`.
+Move the HTTP adapter into the May Agent root application under
+`projects/may-agent/src/app/http`. Keep the default browser UI source in the
+private `@may-agent/webui` package and generate one served deployment target at
+`PROJECTS_ROOT/platform/ui`. Project-owned UIs remain independent static
+resources rather than copies of the default UI.
 
 The HTTP adapter is the Web-facing control/read interface for May Agent. It should align with the infra SDK and control-plane vocabulary, with extra read-model endpoints that make the WebUI efficient and understandable.
 
 There is one compiled runtime binary: `may-agent`. WebUI runs as a mode of that binary with `may-agent --web`. Supervisor may keep a separate `may-agent-web` process group for lifecycle isolation, but it should execute the same `may-agent` binary instead of a dedicated WebUI binary.
 
-Static project resources are visible under `/projects/*`, backed directly by `PROJECTS_ROOT`. The root path `/` serves the default May Agent project UI at `/projects/may-agent.app/ui/index.html` when present, otherwise it falls back to a `/projects` directory listing.
+Static project resources are visible under `/projects/*`, backed directly by
+`PROJECTS_ROOT`. The root path and browser application routes serve
+`PROJECTS_ROOT/platform/ui/index.html`; if it is absent, the root falls back to
+the `/projects` directory listing.
 
 ## Ownership
 
@@ -36,7 +43,8 @@ Static project resources are visible under `/projects/*`, backed directly by `PR
 | Daemon socket bridge | `projects/may-agent/src/app/http` + `projects/may-agent/packages/control` | HTTP adapter sends events through control package |
 | DB/file read models | `projects/may-agent/src/app/http/read-model` | Projections for UI and diagnostics |
 | WebUI source package | `packages/webui/static` | Source of truth for the default May Agent browser UI; no HTTP adapter code |
-| Generated project UI assets | `PROJECTS_ROOT/<project>/ui` | Static HTML/CSS/JS generated or synced from the owning project/package |
+| Generated default UI assets | `PROJECTS_ROOT/platform/ui` | Sole deployment copy generated from `packages/webui/static` |
+| Project-specific UI assets | `PROJECTS_ROOT/<project>/ui` or a matching `.app/ui` | Optional independent domain UI; never a generated default-UI copy |
 | Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
 | Project-local agents | `PROJECTS_ROOT/<project>/agents` | Optional agents shipped with a project; loaded by normal runtime discovery |
 | Socket protocol | `packages/control` | Transport protocol and daemon socket client/server |
@@ -254,20 +262,29 @@ projects/
       assets/...
 ```
 
+`read-model/state-db.ts` is only a cached adapter over the shared SQLite
+module. Schema creation and idempotent migrations have one owner:
+`src/lib/db/schema.ts`. HTTP/read-model code must not carry a second schema or
+migration copy.
+
 Container rule: mount one project at the same shape used for many projects, e.g. `/projects/aks-rp-e2e`, not a special `/project` path. The runtime scans `PROJECTS_ROOT/*`; one discovered project is just the one-project case of the same model.
 
-Boundary rule: browser UI source is edited in its owning package/project, then copied into the served project `ui/` directory by the build/sync step. Do not hand-edit generated `PROJECTS_ROOT/<project>/ui` files as the primary source. Project UIs are static resources and call the infra API through `/api/*`. The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are handled before static routes. Development and deployment run `may-agent --web`.
+Boundary rule: edit the default UI only in `packages/webui/static`, then run
+`bun run ui:sync` to replace `PROJECTS_ROOT/platform/ui`. Do not hand-edit that
+generated target. A project-specific UI is owned and edited by that project;
+the sync step does not touch it. All UIs call the infra API through `/api/*`.
+The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are
+handled before static routes. Development and deployment run `may-agent --web`.
 
-## Migration Plan
+## Current Implementation
 
-1. Move `packages/webui/src/server.ts` to `projects/may-agent/src/app/http/server.ts`.
-2. Move DB/read-model helpers to `projects/may-agent/src/app/http/read-model`.
-3. Remove compatibility wrappers from `packages/webui/src`; the private WebUI package should not export the HTTP adapter.
-4. Update runtime imports, bundle scripts, and Docker build so WebUI runs through `may-agent --web` from the single compiled `may-agent` binary.
-5. Keep the default UI source in `packages/webui/static` and sync it to `projects/may-agent.app/ui` for serving.
-6. Extract the large route table into focused route modules.
-7. Rename and reshape endpoints toward infra-aligned API plus `/api/views/*` read models.
-8. Keep `packages/webui` static-only unless a specific project grows its own UI package/source.
+- HTTP and read-model code lives under `src/app/http`.
+- The private `packages/webui` package is static-only.
+- Web mode runs through the single `may-agent --web` binary.
+- `packages/webui/static` syncs only to `projects/platform/ui`.
+- Route modules may be split when a concrete sub-concern changes
+  independently; endpoint names remain stable unless a migration removes more
+  complexity than it adds.
 
 ## Non-Goals
 
@@ -276,7 +293,6 @@ Boundary rule: browser UI source is edited in its owning package/project, then c
 - Do not expose raw DB schema as the stable Web API.
 - Do not move browser UI code into infra modules.
 
-## Open Questions
-
-- Which existing `/api/*` endpoints should be preserved as compatibility aliases after the infra-aligned API is introduced?
-- Should WebUI view endpoints use `/api/views/*` immediately, or migrate route-by-route as pages are touched?
+Compatibility aliases remain only while a live caller uses them. New read
+models use the existing `/api/*` namespace; do not introduce `/api/views/*`
+merely to rename working endpoints.

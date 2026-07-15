@@ -4,8 +4,8 @@
 **Implementation status:** Implemented for runtime, event, workflow, project-app, and task-tree boundaries.
 
 > **Update (2026-06-18):** The SDK now also exports project-app primitives:
-> `defineProjectApp`, `eventDetails`, `eventData`, `eventString`, and
-> `workflowHandlers`. These are used in `*.app/app.ts` declarations. See
+> `defineProjectApp`, `eventDetails`, `eventData`, and `eventString`. These are
+> used in `*.app/app.ts` declarations. See
 > [project-app-v3.md](project-app-v3.md) §Shared SDK Boundary.
 >
 > The task-tree SDK (`planningPacket`, `seedModelGapBacklog`,
@@ -174,15 +174,14 @@ interface WorkflowContext {
   agent: string;
   done(summary: string): WorkflowResult; // internal shape, no opts
   blocked(reason: string, context?: unknown): WorkflowResult; // internal shape
-  escalate(reason: string, context?: unknown): WorkflowResult; // deprecated alias for blocked()
   // ... plus runAgent, runWorkflow, emit, query, getDb, etc.
 }
 ```
 
-The external `WorkflowSDK` interface (from `sdk.ts`) extends `AgentSDK` and
-adds `done(summary, opts?: DoneOpts)` with optional deliverables/contextUpdates/
-nextSteps. This is available when using `buildWorkflowSDK()` but **not** in the
-`WorkflowContext` passed to workflow `execute()` functions (KE-1561).
+The external `WorkflowSDK` interface used by the legacy builder follows the
+same terminal vocabulary: `done(summary, opts?)` or `blocked(reason,
+context?)`. Workflow modules normally receive `WorkflowContext`; both surfaces
+must remain semantically identical.
 
 Workflow blocking is intentionally simpler than the general SDK helper because
 workflow execution is synchronous. `ctx.blocked(...)` returns a terminal
@@ -260,7 +259,8 @@ The SDK and agent tools are two sides of the same coin:
 | "Tell humans"                     | Telegram/human message            | `sdk.message("human", msg)`                                |
 | "Tell dev"                        | `message({ to: "dev", content })` | `sdk.message("dev", msg)`                                  |
 | "I'm done"                        | `finish()`                        | `workflow.done(summary)`                                   |
-| "I'm stuck"                       | `finish({ blocked })`             | `sdk.escalate(reason)`                                     |
+| "Workflow cannot continue locally" | `finish({ blocked })`           | `ctx.blocked(reason)`                                      |
+| "Another owner must act"          | route through owner/project     | `sdk.escalate(reason, opts)` from agent/handler SDK code   |
 
 ## Implementation
 
@@ -269,7 +269,7 @@ The SDK and agent tools are two sides of the same coin:
 - **Wrapper:** `projects/may-agent/src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
 - **Wiring:** `projects/may-agent/src/app/agent-loader.ts` remains the compatibility surface over `projects/may-agent/src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
 
-## Current Gaps To Close
+## Known Limits
 
 - `runAgent()` and `runWorkflow()` share the same mental model, but their return
   values are not yet mapped through the target `ExecutionResult` view.

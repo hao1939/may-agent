@@ -11,14 +11,14 @@ For project-app behavior, configure workflow-backed handlers in the app's
 ```typescript
 export default defineProjectApp({
   // ...
-  onEvent: workflowHandlers([
+  workflowHandlers: [
     {
       name: "my-project-owner",
       type: "job",
       enabled: true,
       description:
         "Owner loop. Reviews events, updates the task tree, and assigns work.",
-      on: ["project.owner.requested"],
+      accepts: ["project.owner.requested"],
       emits: ["project.task.assigned"],
       handler: {
         workflow: "project-planner",
@@ -31,7 +31,7 @@ export default defineProjectApp({
         "projects/my-project.app/tasks/tree.json",
       ],
     },
-  ]),
+  ],
 });
 ```
 
@@ -107,8 +107,8 @@ collection in the workflow.
 ## Registering Trigger Entries
 
 For V3 project-apps, add generated handler entries to
-`onEvent: workflowHandlers([...])` or add `schedules` in
-`projects/<id>.app/app.ts`. Each generated handler declares both `on` and
+`workflowHandlers: [...]` or add `schedules` in
+`projects/<id>.app/app.ts`. Each workflow handler declares both `accepts` and
 `emits`; do not add a duplicate top-level event registry or duplicate handler
 edges under `eventGraph`. The app owns the event mapping and the workflow files
 usually live in `projects/<id>.app/workflows/`.

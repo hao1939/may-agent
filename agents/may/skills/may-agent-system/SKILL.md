@@ -47,8 +47,10 @@ maintain an unsynchronized copy.
 
 ## Source Of Truth
 
-Read the relevant design doc before changing behavior:
+Start with the compact system model, then read only the subsystem contract
+relevant to the change:
 
+- Governing model: `/app/projects/may-agent.app/docs/2a-design/system-model.md`
 - Architecture: `/app/projects/may-agent.app/docs/2a-design/architecture.md`
 - Core principles: `/app/projects/may-agent.app/docs/1-principles/core-principles.md`
 - Work model: `/app/projects/may-agent.app/docs/1-principles/work-model.md`
@@ -61,6 +63,7 @@ Read the relevant design doc before changing behavior:
 - Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
 - Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
 - Project apps: `/app/projects/may-agent.app/docs/2a-design/project-app-v3.md`
+- Project posture: `/app/projects/may-agent.app/docs/2a-design/projects.md`
 - App/project integrity: `/app/projects/may-agent.app/docs/2a-design/app-project-integrity.md`
 - Task trees: `/app/projects/may-agent.app/docs/2a-design/task-tree-engine.md`
 - Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
@@ -109,11 +112,11 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - For handlers, read `event.data.*`; do not add shortcut field promotion.
 - Prefer canonical project events:
   `project.owner.requested`, `project.task.assigned`,
-  `project.task.completed`, `project.problem.requested`,
+  `project.task.completed`, `project.problem.investigation.requested`,
   `project.problem.resolved`, and `project.problem.escalated`.
-- Treat `project.planning.requested`, `project.task.dispatched`, and
-  `project.task.finished` as legacy compatibility names, not examples for new
-  code.
+- Treat `project.planning.requested`, `project.execution.requested`,
+  `project.task.dispatched`, and `project.task.finished` as retired historical
+  names, not accepted ingress aliases or examples for new code.
 - Remember retention: `events` are currently short-window operational evidence,
   not permanent history.
 
@@ -177,8 +180,11 @@ Keep domain projects portable and May-agent control planes separate.
   `app.ts` defines the event graph, `project.json` stores structured state and
   workspace binding, `tasks/tree.json` stores decomposition, `workflows/`
   stores app policy, and `agents/` stores app-local identities.
-- In `app.ts`, keep `workflowHandlers` as static event-to-handler routes,
-  `onEvent` as adapter behavior, and `eventGraph` as audit metadata.
+- In `app.ts`, use `schedules[].emits[]` and
+  `workflowHandlers[].accepts[]`. Keep `workflowHandlers` as static
+  event-to-workflow routes, optional imperative `onEvent` as bounded adapter
+  behavior, and `eventGraph` as audit metadata. Do not add singular schedule
+  `event`, handler `on`, or workflow-handler sugar under `onEvent`.
 - Follow the owner workflow pattern: `project.owner.requested` reviews the
   trigger, updates/reviews the task tree, assigns capacity, and checkpoints
   done slices; `project.task.assigned` runs one task-owned worker session and
@@ -278,6 +284,9 @@ Distinguish local blockers from ownership-boundary escalations.
 - Treat workflow TypeScript as executable orchestration. Share discovery and
   provenance conventions with skills, but keep workflow run state and terminal
   closure in the existing workflow/event trace.
+- Keep each workflow invocation synchronous and ordered. If work must wait for
+  a future event or external condition, end with `ctx.blocked(...)` and resume
+  through a second event-linked workflow; do not suspend one workflow run.
 
 ## Runtime Restart
 

@@ -82,15 +82,15 @@ questions:
 This convention keeps the system simple: heartbeat and project use the same
 mental shape. The difference is only durability and scope.
 
-## Heartbeat As Agent Project
+## Standalone Heartbeat Context
 
 > **Note (2026-06-18):** For agents owned by a project-app, the app's task tree
 > and schedules replace the heartbeat entirely. The app owns goal, signals,
 > plan, and evidence — the heartbeat concept is subsumed into the app's owner
 > workflow. This section remains valid for standalone agents without an app.
 
-Heartbeat is not a separate work mode. It is the default recurring trigger for
-an agent's standing self-maintenance context.
+For a standalone agent, heartbeat is not a separate work mode. It is the
+recurring trigger for the agent's standing self-maintenance context.
 
 That context is an implicit project for the agent itself:
 
@@ -105,8 +105,9 @@ project for routine self-maintenance. Create a real shared project when the
 heartbeat discovers a durable goal that needs cross-session tracking, ownership,
 metrics, and a journal.
 
-When in doubt: routine domain stewardship stays in heartbeat; a concrete,
-durable goal with state transitions becomes an explicit project.
+When in doubt: unowned standalone self-maintenance may use heartbeat; app-owned
+domain stewardship stays in the project owner loop. A concrete durable goal
+with state transitions belongs in a project.
 
 ## Cron vs Project
 

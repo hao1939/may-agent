@@ -32,7 +32,7 @@ Owner means: if this falls on the floor, it's your problem. Owners don't do all 
 
 Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
-**Elaborated in:** [metrics.md](../2a-design/metrics.md), [design/metrics.md](../2a-design/metrics.md)
+**Elaborated in:** [system-model.md](../2a-design/system-model.md), [metrics.md](../2a-design/metrics.md)
 
 ## 3. Events must be consumed
 
@@ -40,7 +40,7 @@ No event fires into the void. Something must consume it — a handler, a subscri
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 
-**Elaborated in:** [projects.md](../2a-design/projects.md), [design/escalation.md](../2a-design/escalation.md)
+**Elaborated in:** [projects.md](../2a-design/projects.md), [escalation.md](../2a-design/escalation.md)
 
 ## 4. Context is discovered, not dumped
 
@@ -54,7 +54,9 @@ Everything else — skills, knowledge, project history, metrics, design docs —
 
 This is deliberately minimal. Dumping context produces agents that skim. Discovery produces agents that understand.
 
-Continuity across sessions comes from project journals, heartbeat reads, and `last-session.md` — not from memory injection.
+Continuity across sessions comes from project/task state, owned knowledge,
+session evidence, and standalone heartbeat context where applicable—not from
+dumping memory into every prompt.
 
 **Elaborated in:** [sessions.md](../2a-design/sessions.md), [heartbeat.md](../2a-design/heartbeat.md)
 
@@ -114,12 +116,14 @@ Agents don't need to know they're being supervised. The gatekeeper pattern requi
 
 When behavior can be derived from a naming convention, don't build configuration for it.
 
-- Metric `coach.skill-effectiveness` → coach owns it. No registry needed.
+- Metric `coach.skill-effectiveness` conventionally suggests coach ownership;
+  an explicit registry entry validates the operational definition.
 - Event `metric.breach` with `owner: "agent:coach"` → coach is accountable. No lookup needed.
 - File under `agents/bob/` (skills/, knowledge/, workspace/) → bob owns it. No mapping needed.
-- Heartbeat workflow for `scout` → scout's heartbeat. No routing table needed.
+- App schedule under `scout-knowledge-lib.app` → that app owns the review route.
 
-(Note: shared projects at `projects/<name>/` do not encode owner in the path — ownership lives in the YAML frontmatter of `project.md`. This is the one place we accepted configuration over convention, because projects must be shareable across owners.)
+(Project ownership is explicit in `project.json`; directory names identify the
+app, not the accountable agent.)
 
 Conventions are self-documenting, zero-maintenance, and enforce consistency. Configuration is a liability — it drifts, requires code to read, and creates a single point of failure.
 
@@ -135,7 +139,7 @@ Try the simplest approach. If it works, stop.
 - One metric before a dashboard
 - One experiment before a pipeline
 - context.md before a guard
-- A fork before a workflow (for <3-op work)
+- One bounded session/fork before a workflow when no enforced sequence is needed
 
 Complexity is justified only when simplicity has been tried and failed with evidence.
 
@@ -183,11 +187,11 @@ These principles sometimes pull in opposite directions. The tensions are managed
 
 | Tension | Resolution |
 |---------|-----------|
-| Event-driven (P1) vs current poll-based cron reality | Cron is the interim trigger. Events are persisted immutably. Handlers fire on cron ticks but emit events for lifecycle tracking. |
+| Event-driven (P1) vs timer-based review | Timers are event sources. Events are persisted with mutable delivery bookkeeping; domain state remains in its owning entity. |
 | Owner accountability (P2) vs May reviews everything (P8) | May supervises system-scope. Domain owners handle domain events. May is the fallback owner for unowned things, not the primary handler for everything. |
-| Metrics drive work (P7) vs don't chase numbers (P7) | The Goodhart guardrail is built into the heartbeat: "Consider the metric. Apply judgment. Override if context says otherwise." |
+| Metrics drive work (P7) vs don't chase numbers (P7) | Metric events wake the accountable owner, who combines the measurement with project/context evidence. |
 | Evidence first (P5) vs we need to ship (pragmatism) | Evidence-first applies to system changes and new mechanisms. Known patterns (add a handler, create a metric) can proceed directly. Don't A/B test adding a database index. |
-| Simple first (P10) vs structure beats instructions (P6) | Start simple (context.md, text rule). When it fails — and you have evidence it failed — escalate to structure (workflow, guard). The escalation path is: context.md -> workflow -> guard -> code. |
+| Simple first (P10) vs structure beats instructions (P6) | Start with the smallest mechanism matching the cause. Knowledge, workflows, guards, tools, and handlers are choices, not one mandatory ladder. |
 
 ## Relationship to common-sense.md
 

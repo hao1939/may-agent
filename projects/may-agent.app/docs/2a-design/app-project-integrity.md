@@ -71,13 +71,15 @@ Use a small project event vocabulary:
 - `project.task.assigned`: owner-selected worker leaf is ready to execute
 - `project.task.completed`: worker returned a claim and evidence for owner
   review
-- `project.problem.requested`: investigate one visible problem/root cause
+- `project.problem.investigation.requested`: investigate one visible
+  problem/root cause
 - `project.problem.resolved`: problem solver returned a local resolution
 - `project.problem.escalated`: problem solver found an ownership-boundary wait
 
-Legacy names such as `project.planning.requested`,
-`project.task.dispatched`, and `project.task.finished` are compatibility
-aliases, not design examples.
+Historical names such as `project.planning.requested`,
+`project.execution.requested`, `project.task.dispatched`, and
+`project.task.finished` are read-only evidence, not accepted ingress aliases or
+design examples.
 
 Every event should have one clear outcome:
 
@@ -215,7 +217,7 @@ Problems are made visible when work fails or blocks for a shared local reason.
 
 ```text
 task completion shows failure/blocker
-  -> app emits project.problem.requested
+  -> app emits project.problem.investigation.requested
   -> problem solver investigates one root cause
   -> project.problem.resolved or project.problem.escalated
   -> owner reconciles affected task branches
@@ -273,29 +275,28 @@ rediscovering the blocker from scratch.
 Human notification is for ownership-boundary blockers or repeated owner-loop
 failure, not for routine project state.
 
-## Owner Heartbeat
+## Scheduled Owner Review
 
-The owner heartbeat is a low-frequency creative fallback. It may be triggered
-by a timer, but it is not a schedule in the project-meaning sense: schedules
-execute known work, while heartbeat wakes the owner to look around freely and
-notice what no fixed procedure or metric would trigger.
+A project app may add a low-frequency review schedule for gaps that ordinary
+events and metrics may miss. This is not a standalone agent heartbeat; the app
+schedule emits the normal owner wake and uses the same owner workflow.
 
-Three owner wake mechanisms, each with a different purpose:
+Three owner wake sources have different purposes:
 
 | Mechanism          | Purpose                                                     | Frequency                   |
 | ------------------ | ----------------------------------------------------------- | --------------------------- |
 | Schedule           | Execute known work on a cadence                             | Per-task (minutes to hours) |
 | Owner wake (event) | React to completions, problems, metrics                     | On demand                   |
-| Owner heartbeat    | Discover unknown issues, drive stuck work, creative insight | Low (every 2-4h)            |
+| Scheduled review   | Discover unknown issues, challenge stale direction          | Low (every 2-4h)            |
 
 All three write to the same task tree. None create standalone projects.
 
 App manifest contract:
 
-- declare heartbeat as a low-frequency schedule that emits
+- declare the review as a low-frequency schedule that emits
   `project.owner.requested`
-- set `reason: "owner-heartbeat"` and include a compact intent packet
-- route it through the normal owner workflow; do not add a heartbeat-specific
+- set `reason: "scheduled-owner-review"` and include a compact intent packet
+- route it through the normal owner workflow; do not add a review-specific
   controller
 - let the owner inspect deeper context through project tools
 - record explicit no-op when nothing useful is found
@@ -309,7 +310,7 @@ Runtime read-model contract:
 - owner/status drift between `project.json` and the runtime read model is a
   platform sync issue, not a project strategy decision
 
-What the heartbeat does:
+What the scheduled review does:
 
 - Notices stuck work that no metric caught
 - Finds cross-domain connections (e.g., "HN and XHS converge this week")
@@ -317,7 +318,7 @@ What the heartbeat does:
 - Challenges stale assumptions in the task tree
 - Proposes creative next steps the schedule wouldn't trigger
 
-What it does NOT do:
+What it does not do:
 
 - Execute fixed procedures (that's a schedule)
 - Create standalone projects (findings go into the task tree)
@@ -328,7 +329,7 @@ Bounded output contract:
 
 1. Read task tree + recent activity + metrics
 2. Look for: stale work, missed gaps, creative opportunities, stuck patterns
-3. Check recent heartbeat findings/tasks before creating new work
+3. Check recent review findings/tasks before creating new work
 4. If something found: create a backlog task, update context, or record finding
 5. If nothing found: no-op — don't force output
 6. Limit output to one to three task-tree actions unless severe liveness risk
@@ -336,7 +337,7 @@ Bounded output contract:
 7. Never create standalone projects
 8. Never execute multi-step domain work (create a task for that)
 
-For `aks-rp-e2e`, heartbeat should especially look for stale source or
+For `aks-rp-e2e`, scheduled review may look for stale source or
 environment assumptions, VM prerelease coverage/spec/replay gaps, underfilled
 worker capacity, blocked families that no metric sampled, task tree bloat that
 needs owner rollup, and repeated owner-loop/planner failures.

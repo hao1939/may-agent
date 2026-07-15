@@ -1,177 +1,114 @@
-# Heartbeat System
+# Heartbeat
 
 **Design status:** Accepted.
-**Implementation status:** Implemented; app-owned agents use app schedules and owner wakes.
+**Implementation status:** Implemented for standalone agents. Project-app
+owners use app schedules and owner workflows instead of standalone heartbeats.
 
-> **Status (2026-06-20):** Heartbeat auto-generation is disabled for app-owned
-> agents (scout, evaluator, arc) via `"heartbeat": false` in agent.json. Their
-> apps own deterministic schedules and event-driven owner reviews.
->
-> The owner heartbeat concept (low-frequency creative fallback) is now part of
-> the unified app model in [app-project-integrity.md](app-project-integrity.md)
-> §Owner Heartbeat. That section defines how heartbeats relate to schedules and
-> event-driven wakes within the same task tree.
->
-> `dev` still uses the global heartbeat auto-generator during migration. Arc is
-> now an app-local `may-agent.app` specialist and has no standalone heartbeat.
-> The design below applies to standalone agents without a project-app.
+## Purpose
 
-## Design Rationale
+A heartbeat is the recurring review cadence for a standalone agent's standing
+responsibility. It gives an otherwise reactive agent a bounded opportunity to
+inspect owned signals, decide whether work is needed, and record evidence.
 
-A heartbeat is not a polling interval. It is **the recurring moment when an agent has the chance to be autonomous.**
-
-Without heartbeats, agents are reactive — they only run when something happens *to* them: a metric breaches, a message arrives, a human sends an order. They are handler functions waiting to be called.
-
-With heartbeats, agents are **continuous participants**. The heartbeat is the only mechanism by which an agent can:
-
-- **Notice** something that no event fired about ("project X has been stale for 3 days")
-- **Reflect** ("the last three iterations didn't work — maybe my approach is wrong")
-- **Initiate** ("there's no metric for this, but I think I should start a project")
-- **Read its own context** (inbox, journal, the system around it)
-- **Choose** among the things it could do — by judgment, not by rule
-
-The heartbeat is the **temporal scaffolding of agency**.
-
-| Trigger | Source | Agent's task | Agency level |
-|---|---|---|---|
-| `timer.tick` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
-| `metric.breach` | Metric engine | Judge a metric signal in context | Medium for P0 |
-| `message` | Another agent or human | Judge and respond to a request/signal | Medium |
-| `order` | Human direct command | Execute the order | None |
-
-## Overview
-
-Every agent wakes up periodically via a heartbeat. A heartbeat is a
-cron-triggered reassessment of the agent's standing self-maintenance context:
-identity, learned context, inbox, owned metrics, alerts, and active projects.
-It follows the same model as projects, metrics, and events: signals arrive, the agent judges, then acts or records why no action is needed.
-
-## Data Flow
-
-```
-Cron tick → timer.tick → heartbeat handler → heartbeat workflow
-  → loads work context/signals → runs agent session → agent judges/acts/records evidence
+```text
+timer.tick -> standalone heartbeat workflow -> agent judgment -> evidence/events
 ```
 
-Heartbeat follows the same work-context convention as projects:
+A heartbeat is a trigger, not a work identity, queue, or project lifecycle.
+The workflow/session it starts is the bounded execution. Events and owner state
+remain the durable loop.
 
-| Project convention | Heartbeat source |
-|--------------------|------------------|
-| Goal | `AGENTS.md`, domain, standing responsibility |
-| Owner | the agent |
-| Signals | metrics, alerts, inbox, active projects |
-| State | `context.md`, lessons, recent sessions |
-| Plan | `heartbeat.md` and current priorities |
-| Evidence | session summary, file changes, project journal updates |
-| Validation | later metrics/events/tests/next heartbeat |
+## Scope
 
-## Skip Gates (Circuit Breaker + Dispatch Dedup)
+Use a standalone heartbeat only when an agent has a standing responsibility
+that no project app owns.
 
-Despite the "always run" aspiration above, `genericHeartbeat()` applies two
-gates **before** the LLM session starts:
+| Owner type | Recurring review mechanism |
+| --- | --- |
+| Standalone global agent | `agents/<name>/workflows/<name>-heartbeat.ts` |
+| Project-app owner/specialist | App schedule emits `project.owner.requested` or another typed app event |
+| Runtime infrastructure | Mechanical handler/schedule and ops-health routing |
 
-1. **Circuit breaker** — If the agent has ≥3 consecutive error outcomes,
-   the heartbeat is skipped and a `heartbeat.skipped` event emitted
-   (gate: `circuit_breaker`). Auto-resets after 1 hour (`AUTO_RESET_MS`).
-   Source: `@may-agent/sdk/src/circuit-breaker.ts`.
+Do not run both a standalone heartbeat and a project-app owner cadence for the
+same responsibility. App-local agents normally set `"heartbeat": false`.
 
-2. **Dispatch dedup guard** — If the agent's heartbeat accumulates ≥3 error
-   outcomes in a 7-day window (`MAX_FAILURES_BEFORE_BLOCK=3`,
-   `WINDOW_DAYS=7`), the heartbeat is permanently blocked until either a
-   success resets the counter or the 7-day window expires. Unlike the
-   circuit breaker, **there is no auto-reset timer**. State is persisted in
-   `.state/dispatch-dedup.json`. Manual escape hatch: call `unblock()` or
-   edit the JSON file. Source: `@may-agent/sdk/src/dispatch-dedup-guard.ts`.
+## Work Context
 
-**Known issue (KE-1696):** The circuit breaker counts **all** errors equally,
-including zero-op provider startup failures where the LLM was never called.
-This creates false positives: a transient provider outage can disable a
-healthy agent for up to an hour. A fix would exclude `opCount = 0` errors
-from the consecutive count; this requires a `src/` change.
+The standalone heartbeat workflow builds a compact context from:
 
-**Known issue (KE-1992):** The dispatch dedup guard's 7-day block without
-auto-reset creates a liveness trap for heartbeats. A provider blip producing
-3 rapid zero-op errors disables the heartbeat for up to 7 days, even for
-agents with >96% heartbeat success rates. The evaluator heartbeat was blocked
-for 9.7+ hours on 2026-06-15 by this mechanism. The circuit breaker's 1-hour
-auto-reset never activates because the dedup guard prevents the heartbeat
-from reaching the circuit breaker. Fix: exempt heartbeats from dedup guard,
-or add an auto-reset timer matching the circuit breaker design.
+- agent identity and `heartbeat.md` guidance;
+- owned inbox events and messages;
+- current metrics and open alerts;
+- recent sessions and unresolved outcomes;
+- any explicit standalone projects still owned by the agent.
 
-## What Gets Loaded
+The agent judges the packet. It may act, start bounded work, send a message,
+record a no-op, or escalate across an ownership boundary. A red metric is a
+signal, not an automatic task.
 
-The heartbeat workflow helper (`projects/may-agent/packages/sdk/src/heartbeat-data.ts`) loads:
+## Runtime Contract
 
-1. **Metrics** — owned metrics with current values, breaches, trends
-2. **Projects** — active projects with status, milestones, last activity
-3. **Alerts** — metric alerts requiring attention
-4. **Inbox** — recent events (time-window, last 2h) targeted at this agent
+The SDK heartbeat helper loads bounded current facts and returns a task packet.
+The auto-heartbeat loader discovers enabled standalone agents with a matching
+workflow and creates timer entries.
 
-All injected into the agent's task prompt as structured sections.
+```text
+agent.json heartbeat enabled
+  + agents/<name>/workflows/<name>-heartbeat.ts
+  -> generated timer entry
+  -> workflow run on cadence
+```
 
-## Per-Agent Workflows
+Rules:
 
-Standalone heartbeat agents have a workflow at `agents/<name>/workflows/<name>-heartbeat.ts`:
-- Imports shared data loaders
-- Builds the task prompt with loaded context
-- Calls `ctx.runAgent()` with the agent name and assembled task
+- Skip when the agent already has conflicting active work unless the heartbeat
+  explicitly owns recovery of that work.
+- Keep the cadence bounded and inexpensive.
+- Emit observable skipped/failed/completed lifecycle evidence.
+- Do not encode long-term plans in the timer prompt; durable goals belong in a
+  project app or agent-owned knowledge/context.
+- Urgent P0 signals may start immediate bounded work; lower-priority signals
+  normally wait for the next review cadence or owning project event.
 
-## Auto-Generation
+## Project Owner Review
 
-Agents don't need explicit cron.json entries for heartbeats:
-- `generateAutoHeartbeats()` scans agents with heartbeat workflows
-- Creates synthetic cron entries with hash-based offsets
-- Explicit cron.json entries override (name dedup)
-- Opt-out: `"heartbeat": false` in agent.json
+Project apps may use a low-frequency creative/health review in addition to
+event-driven owner wakes. This is a project schedule, not a standalone agent
+heartbeat:
 
-## Heartbeat.md (per-agent)
+```text
+app schedule
+  -> project.owner.requested { reason: "scheduled-owner-review" }
+  -> normal owner workflow
+```
 
-Each standalone heartbeat agent can have `agents/<name>/heartbeat.md` —
-role-specific guidance read during heartbeat. App-local specialists may keep a
-similar guide under `projects/<id>.app/agents/<name>/`, but it is only used
-when the app explicitly loads it.
+The same owner workflow reviews event-driven and scheduled input. The schedule
+does not create another planning controller or task lifecycle.
 
-## Metric Breaches and Heartbeats
+## Human Steering
 
-A metric breach updates state and emits an event. The owning agent's **next heartbeat** sees the breach in its context and decides whether to act now, queue it, escalate, or note it without action. **Direct fork on breach is reserved for urgent (P0) metrics.**
+Human steering should target the relevant chat, session, or project directly.
+“Trigger heartbeat now” is only appropriate for a standalone agent whose
+standing review context is the intended target. Project steering should emit
+`project.owner.requested`; it should not depend on an agent heartbeat.
 
-Trade-off: latency. A breach detected at minute 3 of a 20-minute cycle waits up to 17 minutes. Acceptable for P1+; unacceptable for P0.
+## Health
 
-## Projects and Heartbeats
+A standalone heartbeat is healthy when it:
 
-Heartbeats are how agents notice project signals. A project should not stay
-`active` just to prove it is alive. When a project is `active`, the default is
-intensive work until the current goal is reached, blocked, needs review, or has
-no concrete next autonomous action.
+- runs near its configured cadence;
+- reviews current owned signals rather than stale prompt text;
+- records an evidence-backed action or no-op;
+- avoids duplicate dispatch and repeated blind retries;
+- surfaces provider/runtime failures visibly.
 
-A heartbeat without an active project can still be healthy if the agent is
-watching its domain and there is no actionable signal.
-
-## What "Alive" Looks Like
-
-An agent is alive if its heartbeats:
-
-- Fire on schedule (cron health)
-- Read context (the agent looks at projects, inbox, metrics)
-- Produce a decision (the agent states what it's doing and why)
-- Result in action (work happens, output is recorded)
-- Connect across time (today's heartbeat references yesterday's journal)
-
-## Steering via Heartbeats
-
-The most powerful human steering verb: **shape what the agent considers at its next heartbeat.**
-
-- **Comment on a project** = "next time you read this project's context, factor this in"
-- **Send a message** = same, but agent-scoped
-- **Adjust a metric threshold** = the agent will see the breach (or non-breach) at the next heartbeat
-
-Steering is *change what the agent sees when it next looks*, not "make the agent do X right now."
+A project app is healthy based on project events, owner workflow runs, task
+motion, delivery, and evidence—not on standalone heartbeat coverage.
 
 ## Implementation
 
-- **Heartbeat helper:** `@may-agent/sdk` → `genericHeartbeat()` (source: `projects/may-agent/packages/sdk/src/heartbeat-data.ts`, installed at `node_modules/@may-agent/sdk/src/heartbeat-data.ts`)
-- **Auto-generation:** `projects/may-agent/src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
-- **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts` for standalone agents; app-owned schedules live in `projects/<id>.app/app.ts`
-- **Decision event:** heartbeat workflow emits `agent.decision` partway through
-
-> **Status (KE-1250):** `handler.heartbeat-coverage` metric exists. `agent.idle-rate` and `agent.self-initiated-rate` were never registered.
+- Helper: `@may-agent/sdk` heartbeat-data utilities.
+- Auto-generation: `src/app/loader/heartbeat-loader.ts`.
+- Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
+- App owner schedules: `projects/<id>.app/app.ts`.
+- Governing project loop: [app-project-integrity.md](app-project-integrity.md).

@@ -62,7 +62,7 @@ notes live under `archive/v2/` for history only.
 
 1. [design/architecture.md](2a-design/architecture.md) — current system architecture
 2. [design/system-boundary.md](2a-design/system-boundary.md) — north-star infra boundary
-3. [design/system-boundary-tracker.md](2a-design/system-boundary-tracker.md) — historical migration tracker; follow its links for remaining work
+3. [system-boundary-tracker.md](proposals/system-boundary-tracker.md) — historical migration evidence, not an active contract
 4. [design/events.md](2a-design/events.md), [design/sessions.md](2a-design/sessions.md), [design/cron.md](2a-design/cron.md) — subsystem details
 
 See [INDEX.md](INDEX.md) for complete navigation.

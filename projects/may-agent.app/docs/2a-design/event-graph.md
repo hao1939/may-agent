@@ -807,32 +807,7 @@ React Flow is a good renderer for the interactive UI, with ELK.js or a similar
 layout engine for left-to-right DAG layout. Mermaid export is useful for static
 reports.
 
-## Implementation Plan
-
-1. Add `event_traces` and `event_trace_links` storage and helpers.
-2. Teach the DB writer and direct SQL insertion paths to persist `trace`.
-3. Backfill existing traces from `event_pair_runs` and common payload fields.
-4. Teach event emitters to accept `trace`.
-5. Link direct chains first: message replies, escalation closure, workflow
-   dispatch, task completion/review.
-6. Carry trace context per human turn through chat send/resume, delegation, and
-   `session.idle` / `session.end`.
-7. Persist closure links atomically when live pair tracking closes a pair;
-   reserve backfill for historical repair.
-8. Add detail-level session/tool/LLM events as references rather than full
-   transcript duplication.
-9. Build `/api/events/:eventId/graph`.
-10. Move display hierarchy into the graph read model: return node keys,
-   `parentKey`, `level`, node kind, edge kind, and detail visibility from the
-   API instead of reconstructing session/tool hierarchy in the browser.
-11. Replace ad hoc trace UI with direct rendering of the complete graph.
-12. Update evaluation checks to look for broken trace chains rather than
-   matching strings or escalation-specific fields.
-13. Extend integrity checks with the semantic failures listed above and add
-   golden traces for new chat, existing chat, delegation, delivery, correction,
-   approval, cancellation, and failure.
-
-Implemented foundation:
+## Current Implementation
 
 - `event_traces` and `event_trace_links` are additive side tables.
 - New event rows get a default `trace_id = event:<event_id>`.

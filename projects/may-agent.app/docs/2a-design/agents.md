@@ -44,7 +44,7 @@ queryable owner inbox.
 
 | Action | Behavior | When to use |
 |--------|----------|-------------|
-| `message({ to, content })` | Fire-and-forget — queued for receiver's next heartbeat | FYI notification, not time-sensitive |
+| `message({ to, content })` | Fire-and-forget — queued in the receiver's owner inbox | FYI notification, not time-sensitive |
 
 ## SDK And Handler Equivalents
 
@@ -58,7 +58,7 @@ const [devResult, scoutResult] = await Promise.all([
   sdk.runAgent("scout", review),
 ]);
 
-// message (async notification — delivered at next heartbeat)
+// message (async notification — reviewed on the receiver's next owner pass)
 sdk.message("arc", "Review this design");
 // emits canonical message.created with owner: "agent:arc"
 // and data: { from: agent, to: "arc", content: "...", priority: "P2" }

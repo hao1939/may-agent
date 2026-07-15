@@ -191,6 +191,11 @@ A description may help an agent choose a workflow, but merely matching a
 description must not start code. Event handlers and schedules own automatic
 wake-up policy.
 
+All callers use the same typed runner. Agent-facing `workflow(...)` serializes
+the typed result only at the tool boundary; project handlers and SDK calls
+consume that result directly. Internal callers must not invoke the model tool
+and parse its JSON text to recover workflow state.
+
 ## Synchronous Execution And Durable Waits
 
 A workflow is a compact synchronous block. Synchronous describes its control
@@ -345,7 +350,7 @@ judgment dominates, or the process is still being learned. "Runs often" alone
 is not evidence that a skill should become a workflow; a schedule may simply
 invoke a skill-bearing session.
 
-## Remaining Convergence
+## Known Limits
 
 Preserve the current workflow runtime and close these gaps incrementally:
 

@@ -21,7 +21,7 @@ Docs are organized by authority level. Higher tiers govern lower tiers — when 
 | [work-model.md](1-principles/work-model.md) | Unified model: projects hold context, metrics signal, triggers wake, agents judge |
 | [evidence-first.md](1-principles/evidence-first.md) | How to validate ideas: hypothesis → evidence → build |
 | [code-vs-data.md](1-principles/code-vs-data.md) | When to use guards vs context.md vs workflows |
-| [evolution.md](1-principles/evolution.md) | Agent evolution model: lesson → skill → workflow → guard → handler *(draft)* |
+| [evolution.md](1-principles/evolution.md) | Evidence-backed knowledge encoding and mechanism selection *(draft)* |
 
 ## Tier 2 — Design
 
@@ -29,6 +29,7 @@ System architecture and subsystem designs.
 
 | Doc | What |
 |-----|------|
+| [system-model.md](2a-design/system-model.md) | Compact governing model: objects, ownership, execution, closure, and reliability. Read this before subsystem designs. |
 | [architecture.md](2a-design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
 | [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
 | [events.md](2a-design/events.md) | Event-native architecture: delivery, inbox, event types |
@@ -53,7 +54,7 @@ System architecture and subsystem designs.
 | Doc | Status | What |
 |-----|--------|------|
 | [system-boundary.md](2a-design/system-boundary.md) | Accepted / mostly implemented | North-star: infra primitives, agent patterns, SDK/control surfaces |
-| [system-boundary-tracker.md](2a-design/system-boundary-tracker.md) | Historical tracker | Completed/superseded handler-centric migration record with pointers to remaining work |
+| [system-boundary-tracker.md](proposals/system-boundary-tracker.md) | Historical tracker | Completed/superseded handler-centric migration record; retained outside the accepted design tier |
 | [guards.md](2a-design/guards.md) | Accepted / partial | Guards as detection signals with default observability |
 | [escalation.md](2a-design/escalation.md) | Accepted / partial | Owner-boundary escalation contract; terminal handling and closure health still converge |
 | [telegram-notifications.md](2a-design/telegram-notifications.md) | Accepted / partial | Channel envelope shipped; interaction refinement remains |
@@ -117,6 +118,7 @@ preserved in
 
 | Need | Read |
 |------|------|
+| Understand the whole system | [system-model.md](2a-design/system-model.md), [core-principles.md](1-principles/core-principles.md) |
 | Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [event-runtime-audit.md](2b-manual/event-runtime-audit.md), [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md), [runtime.md](2a-design/runtime.md) |
 | Handle an alert | [metric-alerts.md](2b-manual/metric-alerts.md), [metrics.md](2a-design/metrics.md), [events.md](2a-design/events.md) |
 | Write behavior | [work-model.md](1-principles/work-model.md), [skills.md](2a-design/skills.md), [workflows.md](2a-design/workflows.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |

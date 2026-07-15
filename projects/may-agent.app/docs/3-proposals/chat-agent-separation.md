@@ -533,9 +533,13 @@ Default routing:
     files?: string[],        // relevant files to focus on
     sandbox?: "read-only" | "workspace-write" | "danger-full-access", // legacy/compat; runner normalizes full-power
     timeoutMs?: number,
-    outputSchema?: string,   // JSON schema path/name for structured result
-    worktree?: string,       // required or auto-created for patch mode
-    resumeSessionId?: string // optional native Claude/Codex session id
+    expectedOutput?: {
+      format: "markdown" | "json",
+      requiredFields?: string[]
+    },
+    worktree?: string,       // optional prepared worktree for patch mode
+    worktreePolicy?: "use-existing" | "require",
+    resumeSessionId?: string, // optional native Claude/Codex session id
     reuseSession?: boolean   // resume/store May's default session for this tool
   }
 }
@@ -562,11 +566,9 @@ mutate files. The result should include the diff summary, changed files,
 verification commands, and any remaining risk. Raw stdout/stderr is supporting
 evidence, not the primary result format.
 
-Existing direct tools such as `cc_worker` and `codex_worker` may remain as
-manual/compatibility tools, but they are not the robust May chat delegation
-path. They block the caller until the subprocess exits and do not provide
-durable task records, owner-routed completion events, orphan recovery, or
-metrics. Production May delegation should use `run_cli_agent`.
+The former blocking `cc_worker`, `codex_worker`, and `dual_review` tools are
+retired. Chat and job delegation both use `run_cli_agent`; the runtime owns the
+durable task record and routes completion back through `cli.task.*` events.
 
 ## What This Is Not
 

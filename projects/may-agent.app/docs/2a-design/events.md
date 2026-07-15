@@ -1,42 +1,40 @@
-# Events & Inbox
+# Events, Delivery, And Inbox
 
 **Design status:** Accepted.
-**Implementation status:** Partial; legacy aliases and delivery/pair-tracking
-gaps are called out explicitly below.
+**Implementation status:** Implemented for canonical envelopes, delivery
+acceptance, owner inbox routing, typed follow-up review, pair tracking, trace
+closure, and bounded retention.
 
-## Core Principle
+## Purpose
 
+An event is a durable signal that another component, owner, session, workflow,
+or human can react to.
+
+```text
+emit -> persist -> target delivery -> owner fallback -> typed response/state
 ```
-Event = a durable signal that something can react to
-```
 
-Events are the primary wake-up and communication mechanism. Durable state still
-lives in tables/files when that is the clearer owner of truth. The events table
-serves as the audit trail for the **retention window** (currently a five-day
-base window; see Data Retention below), though its current mutable columns (`status`,
-`handled_by`, `result`, `reason`, `retry_count`) predate the
-delivery-acceptance model and should not be treated as reliable acceptance
-state.
+Pure history or facts with no possible reaction belong in state, logs, metrics,
+or knowledge. Events are not decorative audit rows.
 
-> **Not permanent.** The current `db-retention` handler uses a five-day base
-> age window. Lifecycle roots and events referenced by still-open work must be
-> protected from age deletion; see "Data Retention" below. Do not assume the
-> operational event table is permanent history.
+Read [system-model.md](system-model.md) for the relationship among events,
+delivery, pairs, traces, and domain entities. Read
+[event-graph.md](event-graph.md) for causal graph details.
 
-## Schema
+## Canonical Envelope
 
-Every event has the same two-layer shape:
+Every persisted event uses one two-layer shape:
 
-```typescript
-type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknown>> = {
-  id?: number;         // assigned by event store after persistence
-  type: string;        // canonical event name, e.g. "metric.breach"
-  source?: string;     // emitter identity, e.g. "agent:may" or "web-ui"
-  target?: Record<string, unknown>; // direct target when one exists
-  owner: string;       // responsible owner: "agent:<name>" or "human:<role>"
+```ts
+type EventEnvelope<TData extends Record<string, unknown>> = {
+  id?: number;
+  type: string;
+  source: string;
+  owner: string;
+  target?: Record<string, unknown>;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
-  timestamp?: number;  // assigned by infra when omitted
+  timestamp?: number;
   visibility?: "default" | "detail";
   trace?: {
     traceId: string;
@@ -47,1274 +45,262 @@ type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknow
       label?: string;
     }>;
   };
-  data: TData;         // event-specific facts for handlers/agents
+  data: TData;
 };
 ```
 
-The envelope is for infra: persistence, routing, TTL, urgency, and trace
-metadata. `data` is for the event-specific context the handler or owner needs.
-Do not put domain fields such as `sessionId`, `projectId`, `metricId`,
-`reason`, or long evidence in the envelope.
+Envelope fields belong to infra routing, ownership, urgency, retention, and
+causality. Event-specific facts belong in `data`.
 
-Trace metadata is generic. Use `trace.traceId` to group a chain,
-`trace.parentEventId` for the direct parent event, and `trace.links` for
-reference or closure links. Do not add escalation-specific relation fields when
-standard trace metadata expresses the relationship. See
-[event-graph.md](./event-graph.md).
+Authoring adapters may accept flat compatibility fields or infer source/owner,
+but they normalize before persistence. Handlers read domain fields from
+`event.data`. New external/HTTP producers send the complete envelope.
 
-`owner` always means the responsible owner. It is never duplicated as
-`data.owner`. Human owners use the same field: `owner: "human:<role>"`. Runtime
-may deliver human-owned events to May because May is the human's deputy, but the
-stored event keeps the original human owner.
+## Owner And Target
 
-## Targeting And Fallback
-
-Event firing follows one rule:
+`target` identifies the intended consumer or domain object. `owner` identifies
+who is accountable if targeted delivery fails.
 
 ```text
-event target exists -> fire the target
-no target consumer  -> follow the ownership chain
+matching target consumer -> accepts responsibility
+no matching consumer      -> queryable owner inbox accepts
+no owner route            -> unhandled and surfaced to ops health
 ```
 
-The target is the specific thing the event is about. It can be a subscribed
-handler entry, a session id, a project id, a metric id, an event id, or a
-human/agent inbox target. The target lives in the canonical envelope and `data`;
-dispatch code must not invent a second event shape.
+An owner is a backstop, not necessarily the first responder. Human ownership
+uses `human:<role>`. Agent ownership uses `agent:<name>`. Project events should
+target the project and resolve its configured owner.
+
+Identifiers used by both routing and domain handling may appear in typed
+`target` and `data`. They have different roles: `target` routes; `data` gives
+the consumer the domain context. Compatibility extraction of `projectId`,
+`project_id`, or flat fields belongs at ingress only.
+
+## Durability And Reliability
+
+“Durable” means the event and trace are persisted for audit, reconciliation,
+and owner review. The in-process bus is not a general durable queue and does not
+promise automatic exactly-once replay.
+
+The runtime guarantees:
+
+- durable recording at boundaries that require it;
+- explicit delivery acceptance;
+- queryable owner fallback for unclaimed owned work;
+- overdue delivery and missing-response detection;
+- idempotent reconciliation paths where a continuation can repeat;
+- referential retention for events linked to open work.
+
+Persistence is not proof of execution. Delivery acceptance is not proof of
+completion.
+
+## Delivery Acceptance
+
+Delivery metadata lives on the original event:
+
+```text
+delivery_status = pending | accepted | unhandled
+accepted_by
+accepted_at
+delivery_route = direct | owner_inbox | noop
+delivery_note
+```
+
+Only a component taking responsibility reports acceptance:
+
+- matching cron/app workflow handler;
+- targeted session/runtime controller;
+- receiving human/channel adapter;
+- queryable owner inbox.
+
+DbWriter, logging, passive metrics, UI tailing, graph projection, and unrelated
+broad subscribers do not count as delivery.
+
+For asynchronous work, acceptance means “queued or started responsibly,” not
+“finished.” The normal accepted path updates the event row; it does not emit an
+`event.accepted` event.
+
+## Owner Inbox
+
+The owner inbox is the durable pull route for owned events without a specialized
+consumer. Inbox acceptance means the item is visible to the owner. Owner review
+later emits a typed follow-up event and closes the inbox pair.
+
+Typical follow-ups include:
+
+- `message.reviewed` or `message.consumed`;
+- `project.owner.reviewed`;
+- a project/task/problem event;
+- `escalation.resolved` or `escalation.dismissed`;
+- an explicit evidence-backed no-op event.
+
+Stale inbox work becomes an orphaned owner-inbox pair. Do not rewrite legacy
+`events.status`, `handled_by`, or `result` to represent current review.
+
+## Typed Response And Pair Tracking
+
+Some events open a commitment with an expected typed response:
+
+```text
+opening event -> accepted work -> closing event
+              -> deadline passes -> orphan surfaced
+```
+
+`event_pair_runs` tracks whether that response arrived in time. Pair matching
+uses the opening event id when available and a stable domain correlation key
+only where an exact event relation cannot yet be carried.
 
 Examples:
 
-- `project.task.assigned` targets the project and task in `data`; the matching
-  project workflow handler should run.
-- `project.owner.requested` targets the project in `data.project`,
-  `data.projectId`, or `data.project_id`; only handlers for that project should
-  run. `project.planning.requested` is the legacy compatibility alias.
-- A top-level workflow that returns `ctx.blocked(...)` is persisted as
-  `workflow_runs.status = "blocked"` and routes by the most specific owner of
-  context. If it was triggered by `project.task.assigned`, runtime emits a
-  blocked `project.task.completed` with `taskId`, `attemptId`, workflow run id,
-  reason, and compact context so the project owner can repair the task tree. If
-  there is project context but no task, runtime emits
-  `project.owner.requested`. Only non-project workflows use
-  `workflow.owner.requested`, an owner-addressed `*.requested` event handled by
-  the default owner inbox. Nested workflow blockers return to their parent
-  workflow synchronously.
-- `session.steer.requested` targets `data.sessionId`; if that session is gone,
-  the owner handles the failed intent.
-- `metric.breach` targets `data.metricId`; the metric/project owner is the
-  accountability fallback.
-- `message.created` targets the inbox represented by `owner`.
+| Opening | Closing |
+| --- | --- |
+| `project.owner.requested` | `project.owner.reviewed` |
+| `project.task.assigned` | `project.task.completed` |
+| `escalation.created` | `escalation.resolved` or `escalation.dismissed` |
+| `cli.task.requested` | `cli.task.completed`, `failed`, or `orphaned` |
+| `runtime.restart.requested` | runtime restart result event |
 
-`owner` is not the first routing guess for every event. It is the backstop:
-when no targeted handler/session/project path consumes the event, the owner is
-responsible for judging, repairing, escalating, or explicitly recording a no-op.
+Not every event is paired. `metric.breach` uses the metric-alert entity for its
+open/resolved lifecycle. An observation/result event with no promised later
+response is normally unpaired.
 
-Persistent row mapping:
+Pair closure records a trace closure link atomically. Pair status answers
+whether the expected response arrived; the trace link answers which event
+fulfilled the earlier commitment.
 
-| Event envelope field | `events` row | Notes |
-|----------------------|--------------|-------|
-| `type` | `event_type` | |
-| `source` | `source` | |
-| `owner` | `owner` | |
-| `urgency` | `urgency` | |
-| `ttl_ms` | `ttl_ms` | |
-| `timestamp` | `timestamp` | |
-| `visibility` | `event_traces.visibility` | `default` or `detail`; detail events are hidden until expanded. |
-| `trace` | `event_traces` / `event_trace_links` | Trace id, parent event, and non-parent links. |
-| `data` | `data` JSON | |
-| *(infra only)* | `delivery_status` | `pending`, `accepted`, or `unhandled`; delivery bookkeeping |
-| *(infra only)* | `accepted_by` | Responsible consumer that accepted delivery |
-| *(infra only)* | `accepted_at` | Acceptance timestamp |
-| *(infra only)* | `delivery_route` | `direct`, `owner_inbox`, or `noop` for legacy baselines only |
-| *(infra only)* | `delivery_note` | Optional delivery detail |
-| *(legacy infra)* | `status` | Legacy inbox/expiry column; do not use for delivery acceptance |
-| *(legacy infra)* | `handled_by` | Legacy inbox/manual consumer marker; not equivalent to delivery acceptance |
-| *(legacy infra)* | `result` | Legacy inbox/manual result marker; not equivalent to work completion |
-| *(legacy infra)* | `reason` | Legacy expiry/manual reason |
-| *(legacy infra)* | `retry_count` | Default 0; legacy retry placeholder |
+## Lifecycle Separation
 
-Target query schema after delivery convergence. Runtime migrations add these
-columns for existing databases; legacy reads remain during the transition.
+| Record | Question |
+| --- | --- |
+| Event delivery | Did a responsible consumer accept the signal? |
+| Event pair | Did an expected typed response arrive before its deadline? |
+| Trace | What caused the work and which event fulfilled it? |
+| Domain entity | What is true now for the project/task/alert/escalation? |
+| Session/workflow run | How did this bounded execution attempt end? |
 
-```sql
-CREATE TABLE events (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_type   TEXT NOT NULL,       -- dot-separated: "handler.completed"
-  source       TEXT,                -- who emitted it
-  owner        TEXT,                -- responsible owner / inbox route
-  data         TEXT,                -- event-specific JSON payload
-  timestamp    INTEGER NOT NULL,
-  -- delivery metadata:
-  delivery_status    TEXT DEFAULT 'pending', -- pending | accepted | unhandled
-  accepted_by        TEXT,
-  accepted_at        INTEGER,
-  delivery_route     TEXT,                   -- direct | owner_inbox | noop (legacy baseline only)
-  delivery_note      TEXT,
-  -- legacy columns retained during migration:
-  status       TEXT DEFAULT 'pending',
-  handled_by   TEXT,
-  result       TEXT,
-  reason       TEXT,
-  retry_count  INTEGER DEFAULT 0,
-  ttl_ms       INTEGER,
-  urgency      TEXT DEFAULT 'normal'
-);
-```
+Never infer project success from pair closure or task acceptance from workflow
+completion.
 
-Event trace metadata is stored separately so traces can be queried and
-visualized as a graph:
+## Core Event Vocabulary
 
-```sql
-CREATE TABLE event_traces (
-  event_id         INTEGER PRIMARY KEY,
-  trace_id         TEXT NOT NULL,
-  parent_event_id  INTEGER,
-  visibility       TEXT DEFAULT 'default' -- default | detail
-);
+The runtime type definitions are the exhaustive executable reference. The
+design keeps the core cross-boundary vocabulary small.
 
-CREATE TABLE event_trace_links (
-  id             INTEGER PRIMARY KEY AUTOINCREMENT,
-  from_event_id  INTEGER NOT NULL,
-  to_event_id    INTEGER NOT NULL,
-  type           TEXT, -- reference | closure
-  label          TEXT,
-  created_at     INTEGER NOT NULL,
-  UNIQUE(from_event_id, to_event_id, type, label)
-);
-```
+### Human And Session
 
-> **Note on mutable columns:** `status`, `handled_by`, `result`, `reason`, and
-> `retry_count` are legacy operational columns. They may be read during
-> migration, but new runtime behavior should write `delivery_*` fields and
-> follow-up events instead. Do not assume today's `handled` rows mean delivery
-> happened or work is done.
+- `human.input.received` — transport-neutral human input root;
+- `chat.start.requested` — bind/create a conversation container;
+- `session.steer.requested` — deliver one turn to an existing session;
+- `session.cancel.requested` — targeted cancellation;
+- `session.start`, `session.idle`, `session.end` — execution/conversation facts;
+- channel delivery events — prove a result reached the human surface.
 
-## Event Types
+Exactly one semantic child intent follows each free-form human input root.
 
-This doc is the canonical event taxonomy. `projects/may-agent/src/app/event-bus.ts` should converge
-on these core events, but the implementation can temporarily persist dynamic
-event names from adapters, workflows, and handlers. When the code and this doc
-differ, treat it as an implementation gap to resolve or a design issue to
-revisit explicitly; do not silently invent a third naming scheme.
+### Project
 
-The snippets below show complete canonical envelopes. New emitters must produce
-this shape before events reach the bus, socket, or event store.
+- `project.owner.requested` / `project.owner.reviewed`;
+- `project.task.assigned` / `project.task.completed`;
+- `project.problem.investigation.requested` / `project.problem.resolved` /
+  `project.problem.escalated`;
+- `project.comment.created` and project-specific typed actions.
 
-Key categories agents encounter:
+Historical `project.planning.requested`, `project.execution.requested`,
+`project.task.dispatched`, and `project.task.finished` are not live ingress
+aliases.
 
-### Timers and triggers
-```typescript
-{
-  type: "timer.tick",
-  source: "timer",
-  owner: "agent:may",
-  data: { entry: "may-heartbeat" }
-}
-```
+### Metrics And Escalation
 
-Timers are event sources. Cron/timer code should emit timer events; handlers then
-bridge them to workflows. `trigger.<entry-name>` remains an operator/control
-shortcut for manually firing a trigger entry; it is not the heartbeat lifecycle
-event name.
+- `metric.breach`, `metric.stalled`, `metric.recovered`;
+- `metric.alert_judged` for owner judgment;
+- `escalation.created`, `escalation.resolved`, `escalation.dismissed`.
 
-### Handler lifecycle (paired)
-```typescript
-{
-  type: "handler.completed",
-  source: "cron",
-  owner: "agent:may",
-  data: { handler: "metric-alert-reactor", agent: "may", durationMs: 42 }
-}
-```
+Metrics wake judgment; they do not choose the fix. Escalation is reserved for
+cross-owner blockers.
 
-### Session lifecycle
-```typescript
-{
-  type: "session.end",
-  source: "workflow:project-planner",
-  owner: "agent:tech-lead",
-  data: {
-    sessionId: "s_123",
-    agent: "tech-lead",
-    outcome: "done",
-    status: "done",
-    summary: "Implemented and verified.",
-    durationMs: 42000,
-    finishParams: {
-      status: "success",
-      verification_evidence: ["bun test: 42 passed"],
-      deliverables: [{ path: "src/feature.ts" }]
-    }
-  }
-}
-```
+### Runtime And Execution
 
-`session.end` is the canonical terminal event for `outcome: "done" | "error" |
-"interrupted"`. It carries the structured `finishParams` result, so subscribers
-do not need a copied completion or receipt event. Runtime does not emit live
-`session.completed`, `session.receipt`, or `session.failed`. Historical copies
-remain readable in the event log.
+- timer/handler/workflow/session lifecycle facts;
+- `workflow.owner.requested` for blocked non-project top-level workflows;
+- `cli.task.requested`, `started`, `completed`, `failed`, `orphaned`;
+- `runtime.*.requested` plus typed result/failure events;
+- `guard.triggered` and `skill.loaded` as diagnostic evidence, not owner work by
+  default.
 
-### Metrics
-```typescript
-{
-  type: "metric.breach",
-  source: "metrics-snapshot",
-  owner: "agent:may",
-  urgency: "high",
-  data: {
-    metricId: "handler.success-rate",
-    metricName: "Handler success rate",
-    current: 0.5,
-    threshold: 0.8,
-    target: 0.95,
-    message: "Handler success rate is below threshold.",
-    priority: "P1"
-  }
-}
-
-{
-  type: "metric.alert_judged",
-  source: "metric-alert-triage",
-  owner: "agent:may",
-  data: { alertId: "ma_123", metricId: "handler.success-rate", verdict: "fix_root_cause", reason: "Handler throws on missing session id.", evidence: {} }
-}
-```
-
-Metrics are signals, not judgments. `metric.breach` wakes or informs the owner;
-the owner agent judges whether to fix, calibrate, downgrade, escalate, or record
-an accepted exception.
-
-### Agent communication
-```typescript
-{
-  type: "message.created",
-  source: "agent:may",
-  owner: "agent:dev",
-  data: { from: "may", to: "dev", content: "Review the failing handler.", intent: "request", priority: "P2" }
-}
-
-{
-  type: "agent.decision",
-  source: "agent:dev",
-  owner: "agent:dev",
-  data: { agent: "dev", sessionId: "s_123", decision: "Fix handler input validation.", evidence: {} }
-}
-```
-
-### Human control intents
-
-Free-form input from CLI, Telegram, Web, and May Console first becomes
-`human.input.received`. That event is the transport-neutral boundary fact and
-normally starts a new trace. It is not a request entity. The input router emits
-exactly one semantic child intent from it. A reply to a prior notification or
-result remains in the prior trace by parenting or referencing the event being
-answered.
-
-```typescript
-{
-  type: "human.input.received",
-  source: "telegram",
-  owner: "agent:may",
-  data: {
-    actor: "human:hao",
-    text: "continue from the failing test",
-    conversation: {
-      channel: "telegram",
-      channelThreadId: "hao-main",
-      channelMessageId: 701
-    },
-    target: { agent: "may" }
-  }
-}
-```
-
-Human-facing channels do not send free-floating state-changing input. The
-router targets a known session with `session.steer.requested`, explicitly
-requests creation/binding with `chat.start.requested`, or emits the appropriate
-project/runtime intent. The daemon then emits normal session/domain events such
-as `session.start`, `session.idle`, `session.end`, and
-`project.comment.created`.
-
-A persistent chat session is not the trace identity. A new standalone human
-turn starts a new trace even when it reuses that session. The input queue must
-carry trace context per turn so `session.idle` or `session.end`, delegated work,
-and outbound delivery stay causally attached to the triggering intent.
-
-```typescript
-{
-  type: "chat.start.requested",
-  source: "may-console",
-  owner: "agent:may",
-  data: {
-    agent: "may",
-    message: "hello",
-    channel: "may-console",
-    channelThreadId: "local-terminal"
-  }
-}
-
-{
-  type: "session.steer.requested",
-  source: "web-ui",
-  owner: "agent:may",
-  data: {
-    sessionId: "s_123",
-    message: "continue from the failing test"
-  }
-}
-
-{
-  type: "session.cancel.requested",
-  source: "telegram",
-  owner: "agent:may",
-  data: {
-    sessionId: "s_123"
-  }
-}
-
-{
-  type: "session.cancel_all.requested",
-  source: "may-console",
-  owner: "agent:may",
-  urgency: "high",
-  data: {
-    reason: "human requested cancel all"
-  }
-}
-
-{
-  type: "runtime.reload.requested",
-  source: "telegram",
-  owner: "agent:may",
-  data: {
-    reason: "human requested reload"
-  }
-}
-
-{
-  type: "runtime.restart.requested",
-  source: "may-console",
-  owner: "agent:may",
-  urgency: "high",
-  data: {
-    reason: "human requested restart"
-  }
-}
-
-{
-  type: "runtime.shutdown.requested",
-  source: "web-ui",
-  owner: "agent:may",
-  urgency: "high",
-  data: {
-    reason: "human requested shutdown"
-  }
-}
-```
-
-Read-only transport controls such as socket `subscribe` and `status` are not
-durable events. Existing shortcut frames such as `input`, `steer`, `fork`,
-`cancel_all`, `reload`, and `shutdown` are compatibility ingress frames and
-should normalize to canonical intent events at the socket boundary before
-events reach the bus. `session.cancel.requested` is currently treated as a
-socket command type for flat-frame compatibility; after normalization, durable
-uses of that name should use the canonical envelope shown above.
-
-Canonical routing shapes:
+## Human-Rooted Traces
 
 ```text
 human.input.received
-  -> chat.start.requested       no chat is bound
-    -> session.start
-      -> session.idle           closes the turn intent
-
-human.input.received
-  -> session.steer.requested    existing chat/session
-    -> session.idle|session.end closes the turn intent
+  -> exactly one semantic intent
+  -> session/workflow/project/runtime work
+  -> terminal evidence
+  -> channel delivery
 ```
 
-### Escalation lifecycle
+A persistent chat session is a container, not a trace. Each human turn gets a
+new trace unless it is explicitly replying within a referenced notification or
+result trace.
 
-Escalation events use the same event envelope and trace metadata as other events.
-Envelope fields are for common event transport: type, source, owner,
-urgency/TTL, timestamp, target, and trace metadata. `data` contains
-escalation-specific state and the agent-facing brief. Do not hide routing
-decisions inside agent prose, and do not put long investigation context into
-the envelope.
+## Workflow Blocking
 
-The persisted `escalation.created` event id is the escalation identity when it
-is available. Older rows may still carry `data.escalationId`; treat that as a
-compatibility key, not a new lifecycle object.
+A workflow ends with local `done` or `blocked`. Nested blockers return to the
+parent synchronously. At a top-level project boundary:
 
-When a handler subscribes to an escalation event, it receives that canonical
-event envelope directly. Handlers use envelope fields for common routing and
-read escalation-specific fields from the envelope's `data` object.
+- task workflows return blocked evidence through `project.task.completed`;
+- project workflows without task context wake `project.owner.requested`;
+- non-project workflows wake `workflow.owner.requested`.
 
-```
-{
-  type: "escalation.created",
-  source: "agent:tech-lead",
-  owner: "agent:may",
-  urgency: "high",
-  data: {
-    sourceAgent: "tech-lead",
-    sourceSessionId: "s_123",
-    projectId: "platform",
-    projectPath: "/app/projects/may-agent",
-    reason: "Blocked on missing session id.",
-    requestedAction: "Find and fix the event producer.",
-    severity: "P1",
-    blockedOn: "event payload incomplete",
-    evidence: {},
-    resume: {},
-    dedupKey: "tech-lead:may:missing-session-id"
-  }
-}
+The workflow itself does not emit an external escalation merely because it is
+blocked. The caller/owner decides whether the next action crosses an ownership
+boundary.
 
-{
-  type: "message.created",
-  source: "agent:may",
-  owner: "human:operator",
-  trace: { traceId: "event:100", parentEventId: 100 },
-  data: {
-    conversationId: "event:100",
-    originalIssue: { eventType: "escalation.created", eventId: 100 },
-    content: "Plain-language human ask."
-  }
-}
+## Retention
 
-{
-  type: "escalation.resolved",
-  source: "agent:may",
-  owner: "agent:tech-lead",
-  trace: {
-    traceId: "event:100",
-    parentEventId: 102,
-    links: [{ eventId: 100, type: "closure" }]
-  },
-  data: {
-    resolverAgent: "may",
-    outcome: "fixed",
-    summary: "The event now includes session id.",
-    evidence: {},
-    resumeInstruction: "Retry the blocked review."
-  }
-}
+Events are operational evidence, not permanent event sourcing. The base event
+window is short. Retention protects:
 
-{
-  type: "escalation.dismissed",
-  source: "agent:may",
-  owner: "agent:tech-lead",
-  trace: { traceId: "event:100", links: [{ eventId: 100, type: "closure" }] },
-  data: { dismissedBy: "may", reason: "Duplicate escalation." }
-}
+- events referenced by open pairs or owner inbox work;
+- retained trace parents and closure links;
+- human roots/results whose delivery evidence is still required;
+- other explicit open-work references.
 
-{
-  type: "escalation.resume_attempted",
-  source: "escalation-lifecycle",
-  owner: "agent:tech-lead",
-  trace: { traceId: "event:100", parentEventId: 103 },
-  data: { sourceKind: "session", sourceRef: "s_123", resumeInstruction: "Continue." }
-}
+After referential protection, old detail may be pruned before roots, delivery,
+and closure evidence. Long-term domain truth belongs in projects, tasks,
+metrics, knowledge, reports, or domain artifacts.
 
-{
-  type: "escalation.resume_started",
-  source: "escalation-lifecycle",
-  owner: "agent:tech-lead",
-  trace: { traceId: "event:100", parentEventId: 104 },
-  data: { sourceKind: "session", sourceRef: "s_123", resumedSessionId: "s_123", summary: "Resume started." }
-}
+## Compatibility
 
-{
-  type: "escalation.resume_failed",
-  source: "escalation-lifecycle",
-  owner: "agent:tech-lead",
-  trace: { traceId: "event:100", parentEventId: 104 },
-  data: { sourceKind: "session", sourceRef: "s_123", category: "resume_failed", recoverable: true, reason: "Checkpoint expired." }
-}
-```
+Historical rows may contain mutable `status`, `handled_by`, `result`, `reason`,
+and `retry_count` columns. New runtime paths do not write them for delivery or
+completion. They remain read-compatible only.
 
-Escalation routing follows the same payload rule as every other reactive
-handler: the event type and envelope route work; `data` carries the agent-facing
-facts. The cron framework must deliver the original event envelope unchanged; it
-must not add subscriber-specific shortcut fields.
+Flat socket/app events, old project names, and correlation ids normalize at
+explicit ingress/backfill boundaries. Compatibility must not leak into new
+event examples or create a second live lifecycle.
 
-For escalation events, `owner` is the responsibility label:
+## Operational Audit
 
-| `owner` | Runtime route |
-|---------|---------------|
-| `agent:<name>` | owner inbox / handler queue for `<name>` |
-| `human:<role>` | deliver to May because May is the human's deputy; preserve the human owner |
+Use `query.eventDeliveryHealth()` and the event graph to check:
 
-Infra may deliver `human:<role>` escalations to May, but it must preserve the
-original `owner` field on the event.
+- overdue `pending` or `unhandled` events;
+- owner-inbox fallback and orphaned inbox pairs;
+- overdue lifecycle pairs;
+- missing trace parents or closure links;
+- opener/closer trace splits;
+- human intents without terminal disposition or channel delivery;
+- bookkeeping-only acceptance hiding a missing domain consumer.
 
-`escalation.resolved.outcome = "needs_human"` means the resolving owner created
-or linked a child escalation whose `owner` is `human:<role>`. It is not a
-terminal unblock for the original source work by itself.
+Detailed procedures live in
+[event-runtime-audit.md](../2b-manual/event-runtime-audit.md).
 
-Allowed `escalation.resolved.outcome` values are `fixed`, `answered`,
-`rejected`, `needs_human`, and `superseded`. All are terminal for resume
-purposes except `needs_human`, which keeps the parent escalation waiting on the
-child human escalation.
+## Integrity Checklist
 
-On terminal `escalation.resolved`, infra resumes the original source session
-when one is linked. For an active source session it sends the resolution context
-into that session; otherwise it cold-resumes the source session. `workflowRunId`
-and project fields are context for the resumed task, not separate resume
-targets.
-
-### Learning feedback
-```typescript
-{
-  type: "learning.feedback",
-  source: "evaluator-aftermath",
-  owner: "human:requester",
-  data: {
-    kind: "owner_finding",
-    summary: "[high] request_quality: clarify missing request context",
-    sessionId: "s_123",
-    agent: "dev",
-    projectId: "platform",
-    workflowRunId: "wr_123",
-    evalTrailPath: ".state/sessions/history/s_123/session.eval.jsonl",
-    finding: {
-      id: "request-quality",
-      scope: "request_quality",
-      severity: "high",
-      finding: "The request missed blocker evidence.",
-      suggestedActions: ["Ask the requester for blocker evidence."]
-    }
-  }
-}
-```
-
-`learning.feedback` is emitted by the evaluator for session findings that need
-owner follow-up. It is owner-targeted inbox input, not the canonical evaluation
-record. The canonical record remains the sibling `session.eval.jsonl` trail
-beside the raw `session.jsonl`.
-
-Routing rule: set event `owner` to the responsible owner, either
-`agent:<name>` or `human:<role>`. For human-owned findings, runtime delivers the
-event to May because May is the human's deputy, while preserving the original
-human owner on the event. The human owner is enough routing context; do not add
-a separate boolean for the same decision.
-
-### Project, adapter, and guard events
-```typescript
-{
-  type: "project.task.assigned",
-  source: "agent:may",
-  owner: "agent:evaluator",
-  data: { project: "task-demo", projectId: "task-demo", taskId: "score-a", attemptId: "attempt-1", assignee: "evaluator" }
-}
-
-{
-  type: "project.task.completed",
-  source: "agent:evaluator",
-  owner: "agent:may",
-  data: { project: "task-demo", projectId: "task-demo", taskId: "score-a", attemptId: "attempt-1", sessionId: "s_123", status: "review", result: "done", summary: "Scored batch A." }
-}
-
-{
-  type: "project.action.requested",
-  source: "web-ui",
-  owner: "agent:aks-explorer",
-  data: { projectPath: "projects/aks-rp-e2e", action: "replan", params: { selectedPathIds: ["path.managedsystem.rest-add-existing.minimal-rest"] } }
-}
-
-{
-  type: "guard.triggered",
-  source: "workflow",
-  owner: "agent:may",
-  data: { guard: "verify-after-write", action: "warned", reason: "No verification evidence.", sessionId: "s_123", workflowRunId: "wr_123", projectId: "platform" }
-}
-```
-
-`project.comment.created`, `project.action.requested`, `project.iteration`,
-`project.task.assigned`, `project.task.completed`, `project.status_changed`,
-`telegram.reply`, and `guard.triggered` follow the same
-envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
-evidence for triage, metrics, and evaluator review, but it is not proof of agent
-fault. A reviewed guard outcome may later produce `learning.feedback`; raw guard
-events should not be routed as blame by themselves.
-
-Some of these are currently dynamic event-store names rather than variants in
-`SystemEvent`. The design direction is to type the stable core names while still
-allowing adapter-local evidence events when needed.
-
-For task-driven projects, the **live** task lifecycle events are
-`project.task.assigned` (owner assigns task to worker) and
-`project.task.completed` (task engine records completion). Teach these in
-handler and SDK examples. The older `project.task.dispatched` and
-`project.task.finished` pair belongs to the legacy project handler; do not use
-it as the canonical example.
-`project.iteration` remains a project-owner loop signal used by current
-health metrics and historical rows; do not use it as the general task
-lifecycle example.
-
-## Inbox (Owner Pull Route)
-
-Inbox is not a separate event lifecycle. It is one delivery route in the unified
-event model.
-
-Use inbox when an event is addressed to an owner and should be picked up by that
-owner's heartbeat/review loop instead of a direct runtime handler. The inbox
-route is useful for human feedback, project feedback, async agent messages, and
-owner-review items.
-
-```text
-event emitted
-→ direct handler accepts it
-  OR owner_inbox accepts owner-addressed inbox work
-  OR default owner fallback places it in the same queryable owner inbox
-→ owner heartbeat/review can later react by emitting a normal follow-up event
-```
-
-The states are intentionally separate:
-
-```text
-delivery_status = did a responsible route accept the event?
-delivery_route  = how was it accepted? direct | owner_inbox | noop (legacy baseline only)
-pair/work state = did the expected follow-up event arrive?
-```
-
-Example:
-
-```text
-message.created owner=agent:dev
-→ no direct handler needed
-→ owner_inbox accepts it
-→ delivery_status=accepted
-→ accepted_by=owner-inbox
-→ delivery_route=owner_inbox
-
-dev heartbeat reads it
-→ emits message.consumed or message.reviewed
-```
-
-Project feedback uses the same path:
-
-```json
-{
-  "type": "project.feedback.created",
-  "source": "human:operator",
-  "owner": "agent:aks-explorer",
-  "data": {
-    "projectId": "aks-rp-e2e.app",
-    "projectPath": "/app/projects/aks-rp-e2e.app",
-    "target": { "kind": "task", "id": "vm-pipeline-coverage" },
-    "message": "Prioritize extracting every scenario before running live tests."
-  }
-}
-```
-
-If the project app has a direct handler, it accepts the event directly. If not,
-the owner inbox accepts it and the project owner reacts from the next review
-packet by emitting a follow-up event such as
-`project.feedback.reviewed`.
-
-Agents see recent inbox-routed events in their heartbeat as context. Reading an
-event for passive context is not delivery acceptance. Acting on an inbox item is
-a normal event, not a special column update.
-
-```sql
-SELECT id, event_type, data, urgency, timestamp
-FROM events
-WHERE owner = ?
-  AND delivery_route = 'owner_inbox'
-  AND timestamp > ?              -- now - 2h
-  AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
-  AND NOT EXISTS (
-    SELECT 1 FROM event_pair_runs p
-    WHERE p.open_event_id = events.id
-      AND p.status IN ('closed', 'orphan')
-  )
-ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-         timestamp DESC
-LIMIT 20
-```
-
-After heartbeat/review acts on an inbox item, it emits a follow-up event:
-
-```text
-message.created            → message.consumed or message.reviewed
-project.feedback.created   → project.feedback.reviewed
-project.owner.requested    → project.owner.reviewed
-```
-
-Pair tracking then closes the original inbox-routed item. If no follow-up event
-arrives within the expected window, infra surfaces it as stale/orphan owner
-work. Do not add inbox-specific state columns for this; inbox follows the same
-event flow as every other delivery route.
-
-Events use the base retention window described below. `ttl_ms` can shorten a
-specific delivery or inbox reaction window. Retention must not delete an event
-that still identifies open work; open lifecycle roots and their required
-causal/closure evidence receive referential protection.
-
-## Handler Event Payloads
-
-Reactive handlers receive the canonical event envelope directly:
-
-```typescript
-type EventEnvelope = {
-  type: string;
-  source: string;
-  owner: string;
-  timestamp?: number;
-  urgency?: "low" | "normal" | "high" | "immediate";
-  ttl_ms?: number;
-  data: Record<string, unknown>;
-};
-```
-
-The framework does not promote domain fields such as `sessionId`, `projectId`,
-or `metricId` onto the event envelope. The subscribed handler reads
-event-specific fields from `event.data`.
-
-Example:
-
-```typescript
-sdk.emit("session.end",
-  { sessionId: "s_123", agent: "may", outcome: "done", status: "done", summary: "Done", durationMs: 42 },
-  { owner: "agent:may", source: "runtime" },
-);
-
-const sessionId = event?.data?.sessionId;
-```
-
-This keeps the event model simple: event type routes work, event data carries
-the facts, and handlers decide what fields matter.
-
-## Deriving State
-
-Events support queryable state alongside mutable tables:
-
-| Question | Query |
-|----------|-------|
-| Handler last fire? | `MAX(timestamp) WHERE event_type = 'handler.started' AND json_extract(data, '$.handler') = ?` |
-| Handler healthy? | `COUNT completed > COUNT failed` in window |
-| Agent work stats? | `sessions GROUP BY agent, status` |
-| Message dedup? | `EXISTS WHERE event_type = 'message.created' AND data LIKE ?` |
-
-Note: some state is maintained directly (metrics.current, sessions.status) for query efficiency. The events table serves as the audit trail and supports time-window queries that mutable tables cannot.
-
-## Agent-to-Agent Messaging
-
-Uses `message.created` — the single async communication primitive:
-
-```typescript
-sdk.message("dev", "Review the PR");
-// Emits canonical message.created with source: "agent:<sender>",
-// owner: "agent:dev", and data: { from, to, content, priority }.
-```
-
-The recipient sees it in their inbox on next heartbeat.
-
-## Socket Boundary
-
-The Unix socket is an event transport, not a second command system.
-
-- Inbound JSON lines with a string `type` are accepted as bus events when they
-  already use the event schema. Dot-named events must use the canonical
-  envelope (`type`, `source`, `owner`, `data`).
-- `subscribe` and `status` are the only socket-local protocol frames.
-- Non-dot daemon/operator frames such as `input`, `steer`, `cancel`, `resume`,
-  `reload`, `shutdown`, and the legacy `fork` shortcut are accepted into the
-  event path and handled by runtime subscribers. When a shortcut creates domain
-  work, runtime should emit canonical trace events such as `message.created`.
-- Deprecated wrapper aliases such as `emit`, `message`, `close`,
-  `cancel_task`, and `reload_agents` are rejected instead of normalized.
-- Socket `ok` means the frame was accepted into the event transport. It does
-  not mean every handler finished.
-
-This keeps socket, Telegram, web, and runtime code on the same event-first
-path: validate at the edge, persist via the bus, and let subscribers react.
-
-## Implementation
-
-- **Typed core events:** `projects/may-agent/src/app/event-bus.ts`
-- **Persistence:** `projects/may-agent/src/lib/db-writer.ts` subscribes to bus, writes all events
-- **Inbox query:** `projects/may-agent/src/lib/runtime-ctx.ts` -> `getInbox()`
-- **Heartbeat helper:** `projects/may-agent/packages/sdk/src/heartbeat-data.ts` -> `loadInbox()`
-
-## Current Gaps To Close
-
-- The typed `SystemEvent` union does not yet include every documented taxonomy
-  event.
-- Keep heartbeat bus events under the `heartbeat.*` namespace; workflow
-  lifecycle callback names are local to the workflow tool.
-- New owner workflows use `project.owner.requested` ->
-  `project.owner.reviewed`. `project.reviewed` remains read-compatible for
-  retained rows and apps not yet migrated.
-- Some historical names remain in docs, tests, or old event rows. Do not teach
-  agents multiple names; update active producers/consumers to canonical names
-  and leave old rows as historical data.
-- Event payload examples should use the envelope shape above, not flattened
-  domain fields.
-
-## Runtime Audit
-
-This design names the stable event model. It is not the live wiring report.
-Runtime row counts, dormant emitters, malformed event rows, and handler
-subscription coverage age quickly because the event table keeps only the
-retention window.
-
-Use [event-runtime-audit.md](../2b-manual/event-runtime-audit.md) to compare
-the current runtime against this design. If that audit finds a design mismatch,
-update the design or implementation directly; do not add dated row-count tables
-to this file.
-
-## Data Retention
-
-The `db-retention` handler (`agents/may/handlers/db-retention.ts`, daily cron)
-enforces these windows:
-
-| Table | Retention | Delete condition |
-|---|---|---|
-| `events` | 5-day base window | `timestamp < now - 5d` and not referentially protected |
-| `sessions` | 14 days | `startedAt < now - 14d` |
-| `session_digests` | 14 days | `created_at < now - 14d` |
-| `workflow_runs` | 14 days | `startedAt < now - 14d` |
-| `metric_snapshots` | 14 days | `measured_at < now - 14d` |
-| `evaluations` | 30 days | `createdAt < now - 30d` |
-
-After deletions exceed the handler's current 500-row threshold, a `VACUUM`
-reclaims disk space.
-
-### Referential retention
-
-Age is not sufficient to decide whether an event can be deleted. Preserve an
-event while it is:
-
-- the opener of an `event_pair_runs` row that is still open;
-- the identity of an active escalation, task, session, or approval wait;
-- referenced by a retained event's parent, reference, or closure link; or
-- the root/boundary evidence required to explain retained human-facing work.
-
-After closure, detail events may expire before the root, delivery, and closure
-evidence. If the full trace cannot remain in the operational database, archive
-a compact trace manifest before pruning. Retention cleanup must not silently
-null a live parent or delete the only closure edge for retained work.
-
-The database now prevents age cleanup from deleting open-work roots, active
-session evidence, trace parents, or link endpoints. Compact trace manifests for
-very old closed traces remain a future storage optimization; correctness no
-longer depends on dangling-trace repair after routine cleanup.
-
-### Size-based retention (added 2026-06-14, KE-1986)
-
-In addition to age-based retention, rows with oversized data blobs are deleted
-regardless of age:
-
-| Table | Column | Threshold | Rationale |
-|---|---|---|---|
-| `events` | `data` | > 1 MB | Normal events avg ~7 KB; 1 MB is 100x+ margin |
-| `sessions` | `task` | > 1 MB | Normal sessions avg ~42 KB |
-| `session_digests` | `task` | > 1 MB | Same threshold as sessions |
-| `workflow_runs` | `task` | > 1 MB | Same threshold as sessions |
-
-Always VACUUMs if any oversized rows are deleted (individual rows can be 200 MB+).
-Trigger: the `platform-owner-review` context cascade (KE-1986) created events with
-exponentially growing `data` blobs (up to 220 MB each), reaching 987.6 MB across
-22 events. Commit `a1ff9b269`.
-
-**Tables with no retention policy (low-priority — small row counts):**
-
-| Table | Rows | Notes |
-|---|---|---|
-| `file_reads` | ~6k | Low growth rate |
-| `notification_messages` | ~3k | Low growth rate |
-| `metric_alerts` | ~2k | Low growth rate |
-
-These tables total ~11k rows and are not high-growth. They can be addressed
-later if they become significant.
-
-**Implication for agents:** Any query window exceeding the retention limit returns
-incomplete data. `COUNT(*)` over `events` reflects only the surviving window, not
-lifetime totals. Session-based analytics should stay within 14 days.
-
-Approved 2026-06-04 via `shared/work-queue.md`; proposal now lives at
-`projects/may-agent.app/agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md`.
-
-### See Also
-
-- KE-454 — `handler.completed` fires on failed sessions
-- KE-455 — every event-only handler has fired zero times
-- KE-468 — `project.iteration` has two incompatible payload shapes
-
-## Event Delivery and Completion Tracking
-
-### Event Rule
-
-An event exists because something can react.
-
-If the system only needs history, UI timeline, or metrics, write
-state/log/metric records directly. Do not send that through the event bus.
-DbWriter is persistence for events that already exist; it is not the reason to
-create an event and it is not a consumer.
-
-Every event that enters the bus must have a responsible consumer. The consumer
-does not have to be a project owner; it can be an infra component or a default
-owner route. For example, `session.end` is a valid event because completion
-tracking, cleanup, evaluation, or recovery logic may react to it.
-
-Events can also be extension interfaces. A project or runtime may emit a stable
-event so optional handlers can subscribe later. That is still valid, but the
-event must not disappear into the bus: if no specialized handler is installed,
-the default owner path must place it in a queryable owner inbox so the owner can
-decide whether to ignore, record, or act. If no component or extension point
-can ever react, it should be a log/state update instead of an event.
-
-```
-event emitted → bus delivers to subscribers
-             → one or more subscribers accept responsibility → accepted
-             → no specialized subscriber accepts, event has owner → queryable owner inbox accepts
-             → no subscriber and no owner → unhandled → ops health surfaces it
-```
-
-### Two Things Infra Tracks
-
-**1. Was the event accepted?** (delivery accepted, not work done)
-
-A responsible consumer is the handler/owner/runtime component that reacts to
-the event or a queryable owner-inbox route that makes the work visible to its
-owner. DbWriter, UI tailing, logging, passive metrics readers, graph projection,
-and lifecycle bookkeeping do not count as domain delivery.
-
-Examples:
-
-- `project.owner.requested` → project owner reacts
-- `metric.breach` → metric owner or ops review reacts
-- `session.end` → session completion tracking/evaluator/recovery reacts
-- `escalation.resolved` → escalation tracker closes the open escalation
-- `runtime.restart.requested` → runtime control handler reacts
-
-**2. Was the work completed?** (done — for paired events only)
-
-Some events start work that has a defined end. Infra tracks the pair:
-
-```
-opening event → work in progress → closing event → done
-             → no closing event within timeout → orphan → surface
-```
-
-### Delivery Tracking
-
-When `bus.emit(event)` runs:
-
-1. DbWriter stores the event for recovery and audit
-2. Bus delivers to all subscribers
-3. Subscribers that actually consume the event report acceptance
-4. If at least one responsible subscriber accepted the event → update the
-   original event row with delivery metadata
-5. If no responsible subscriber accepted the event before TTL → mark the
-   original event row `unhandled`
-6. `unhandled` events → surface to the event owner, then May if there is no
-   specific owner route
-
-Acceptance is not a new event. Do not append `event.accepted` or similar for
-the normal path. Acceptance is runtime delivery bookkeeping on the original
-event:
-
-```sql
-delivery_status TEXT DEFAULT 'pending', -- pending | accepted | unhandled
-accepted_by     TEXT,                   -- cron:..., app:..., runtime:...
-accepted_at     INTEGER,
-delivery_route  TEXT,                   -- direct | owner_inbox | noop (legacy baseline only)
-delivery_note   TEXT
-```
-
-Only emit another event when the delivery state itself needs a reaction. For
-example, a sweep may emit `event.unhandled.detected` after marking an old event
-`unhandled`. The normal accepted path should stay a row update to avoid creating
-event loops.
-
-Subscriber consumption should be explicit but lightweight. A subscriber can
-observe an event and return nothing, or accept responsibility and return a
-delivery result:
-
-```typescript
-bus.subscribe((event) => {
-  if (!shouldHandle(event)) return;   // observer/irrelevant — no claim
-  // ... accept and dispatch work ...
-  return { accepted: true, by: "cron:project-owner" };
-});
-```
-
-For async work, acceptance means "I accepted responsibility and started or
-queued the work", not "the work is finished":
-
-```typescript
-bus.subscribe((event) => {
-  if (!shouldHandle(event)) return;
-  queueWorkflow(event);
-  return { accepted: true, by: "workflow:task-worker" };
-});
-```
-
-Completion is tracked separately by the work's own state or by paired events.
-
-The return value is preferred over a callback because it keeps the subscriber
-contract simple: the subscriber either ignored the event or accepted
-responsibility for it. Subscribers are distributed, and the runtime records that
-at least one responsible consumer accepted the event.
-
-Only a subscriber that is taking responsibility for the event should report
-acceptance:
-the matching project-app handler, the targeted runtime/session handler, the
-owner inbox route for addressed owner work, or the default owner fallback that
-places other owned work into that same queryable inbox. Broad subscribers such
-as DbWriter, UI tailing, logging, passive metrics readers, and graph projection
-must not satisfy delivery. The event-pair tracker may consume an infra-only
-lifecycle event whose declared purpose is bookkeeping, but it must not satisfy
-targeted domain delivery by itself; doing so would hide a missing project,
-session, workflow, or owner reaction.
-
-The default owner fallback avoids maintaining event-specific ignore lists, but
-it must be real delivery rather than an accountability label. If an event has
-an owner and no specialized handler claims it, delivery falls back to
-`accepted_by='default-owner:<owner>'` with
-`delivery_route='owner_inbox'`. Owner review can then decide whether to ignore,
-record, replan, or act. Delivery fallback does not mean a workflow completed.
-If no owner or component can ever react, the fact should be a log/state update
-instead of an event.
-
-Owner inbox acceptance is a real delivery acceptance, but it is not the same as
-owner reaction. It means "this event has been routed to the owner's pull queue."
-The owner heartbeat/review later emits a normal follow-up event after it has
-read and acted on the item.
-
-Infra does not decide the domain outcome. It only verifies that events reached a
-responsible consumer. Dead letters go to the owner path.
-
-### What Should Be An Event
-
-Use an event when crossing a boundary, waking a reaction, or exposing an
-extension point:
-
-- human or UI asks the runtime to do something
-- project app asks its owner to review/replan/act
-- metric detector asks the metric owner to investigate a breach
-- worker completion should wake project owner/problem handling
-- opening or closing work should update completion/orphan tracking, cleanup,
-  or evaluation
-- runtime command should wake a runtime component
-- stable lifecycle hooks let optional project/runtime handlers react
-
-Do not use an event just to remember that code reached a line. Use state,
-logs, traces, metrics, or entity records for that.
-
-So the rule is:
-
-```text
-no reaction needed          → write state/log/metric, do not emit an event
-reaction possible/needed    → emit event; responsible consumer must accept it
-event opens work with an end → consumer accepts it; pair tracker waits for close
-event closes existing work   → pair tracker/cleanup/evaluator consumes it
-```
-
-### Done: Convention-Based Pair Tracking
-
-Some events open lifecycle work that should later close. The runtime should
-track these with trace closure links first. The older pair tracker may continue
-as a compatibility projection, but new lifecycle integrity should be visible as:
-
-```text
-closing event trace.links includes { eventId: openingEventId, type: "closure" }
-```
-
-Convention still helps decide which events normally expect a close edge.
-
-Default opening/closing conventions:
-
-| Opening suffix | Closing suffixes |
-|----------------|------------------|
-| `.started` | `.completed`, `.failed` |
-| `.requested` | `.accepted`, `.rejected`, `.failed` |
-| `.created` | `.resolved`, `.dismissed`, `.closed` |
-| `.assigned` | `.completed`, `.blocked`, `.failed` |
-
-Default compatibility key conventions when a direct event id or close edge is
-not available:
-
-| Event family | Correlation key |
-|--------------|-----------------|
-| `session.*` | `data.sessionId` |
-| `workflow.*` | `data.workflowRunId` |
-| `handler.*` | `data.handlerRunId` |
-| `escalation.*` | opening `escalation.created` event id; legacy fallback `data.escalationId` |
-| `project.task.*` | `data.taskId` + optional `data.attemptId` |
-| `*.requested` | `data.requestId` |
-
-If an opening event matches the naming convention, the trace checker expects a
-future closing event with a `closure` link back to that opening event. If the
-closure link does not arrive within the expected window, infra marks the
-lifecycle as orphan and surfaces it for investigation. During migration, the
-pair tracker may infer closure from compatibility keys.
-
-When the live pair tracker matches a closing event, it must atomically update
-`event_pair_runs`, align the closing event to the opener's trace when needed,
-and persist the closing event's `closure` link to the opening event. Backfill is
-for historical repair; normal correctness must not depend on running it later.
-
-This is an audit signal, not proof of domain failure. An orphan can mean stuck
-work, a missing close event, a wrong key, a bad timeout, or an event naming
-design issue.
-
-```
-opening event → expect closure link by expected_close_at
-closing event → persist closure link to opening event
-sweep         → opening too long without closure link → orphan → surface
-```
-
-Suggested pair table:
-
-```sql
-event_pair_runs (
-  id                 INTEGER PRIMARY KEY,
-  pair_name          TEXT NOT NULL,
-  correlation_key    TEXT NOT NULL,
-  open_event_id      INTEGER NOT NULL,
-  close_event_id     INTEGER,
-  owner              TEXT,
-  status             TEXT DEFAULT 'open', -- open | closed | orphan
-  opened_at          INTEGER NOT NULL,
-  expected_close_at  INTEGER NOT NULL,
-  closed_at          INTEGER,
-  note               TEXT
-)
-```
-
-Most event families should need no pair configuration. Add a code-local
-exception only when the convention cannot work, for example:
-
-- the closing event names are unusual
-- the correlation key is not one of the standard fields
-- the timeout is materially different from the default
-- the event looks like an opening event but should explicitly not be paired
-
-Static hygiene should flag convention-shaped opening events that have no
-direct-close contract, compatibility correlation key, or explicit exception.
-The opening event id is authoritative when the closing path can carry it;
-correlation keys exist only for paths that cannot yet preserve that relation.
-This keeps conventions useful without forcing projects to maintain pair config
-files.
-
-`project.owner.requested` is paired with `project.owner.reviewed`. The closing
-event means the owner completed the requested judgment and records the chosen
-disposition: task/state change, escalation, evidence-backed wait, or no-op. It
-does not mean the project goal is complete; project and task entities continue
-to own that lifecycle.
-
-### What Doesn't Need Done Tracking
-
-Some events are **unpaired** — they have a consumer but no completion clock:
-
-- `metric.breach` → metric owner reacts. The `metric_alerts` entity tracks
-  open/resolved separately, so pair tracking is not needed.
-- `evaluation.reviewed` → acceptance is enough. The evaluation entity stores
-  the verdict.
-
-Don't add done tracking to these. The responsible consumer and entity tables
-already own that state.
-
-### Observability
-
-Delivery health is a normal runtime read model:
-
-- `delivery_status='unhandled'` means no responsible consumer accepted a new
-  event within its TTL.
-- `delivery_status='pending'` with an expired TTL means the row is overdue but
-  has not yet been swept.
-- `accepted_by='default-owner:<owner>'` means no specialized handler claimed
-  the event, so delivery fell back to the queryable owner inbox.
-- `delivery_route='noop'` is retained for legacy baselines where old audit rows
-  predate delivery tracking and should not become fake delivery failures.
-- `event_pair_runs.status='orphan'` means an expected closing event did not
-  arrive before the timeout.
-- `event_pair_runs.status='open'` with `expected_close_at < now` means the pair
-  is overdue but has not yet been swept.
-
-The query API exposes this as `query.eventDeliveryHealth()`. Ops health uses
-that read model as the default signal for routing gaps, stuck inbox work, and
-missing close events. The observer records the packet every run and wakes the
-project owner only when there is an actual delivery or pair failure.
-
-### What This Gives Us
-
-- **Unhandled event detection**: new event type with no subscriber and no owner
-  route → infra knows within one TTL window.
-- **Routing gap detection**: app filter too narrow → event falls back to
-  `default-owner:<owner>` → visible.
-- **Orphan detection**: opening event without closing event → stuck work
-  → visible. Generalizes what `session-recovery` already does.
-- **No per-event-type delivery logic**: infra treats all acceptance reports the
-  same.
-- **Convention-based orphan detection**: common lifecycle events are tracked
-  automatically from naming and key conventions. Exceptions stay rare and local.
-
-### Implementation
-
-1. Let bus subscribers optionally return a delivery result such as
-   `{ accepted: true, by: string }`
-2. DbWriter stores every event for recovery/audit and never reports acceptance
-3. Define direct consumers for event types or route patterns that need them;
-   owned events can always fall back to the queryable owner inbox
-4. Cron handler dispatcher accepts events it dispatches to a matching handler
-5. App event router accepts events it routes to a matching project app
-6. Owner inbox accepts owner-addressed requests/messages that no target handler
-   owns by setting `delivery_route='owner_inbox'`; the default owner fallback
-   places any remaining owned event into that same queryable route
-7. Delivery acceptance updates the original event row; it does not append an
-   accepted event
-8. Heartbeat/review emits follow-up events such as `message.consumed`,
-   `message.reviewed`, `project.feedback.reviewed`, or `project.owner.reviewed`
-9. Write-time sweep marks unaccepted events past TTL as `unhandled`; health
-   queries also report overdue pending events that have not been swept yet
-10. Pair tracker opens/closes `event_pair_runs` from naming/key conventions and
-    persists the matching closure link in the same operation
-11. Pair tracking may accept infra-only lifecycle bookkeeping, but cannot mask
-    a missing targeted domain consumer
-12. Write-time sweep marks orphan openings; health queries also report overdue
-    open pairs that have not been swept yet
-13. Ops health packet includes unhandled count + owner-inbox orphan count +
-   lifecycle orphan count
-
-### Legacy State Cleanup
-
-Current runtime code uses `events.status`, `handled_by`, and `result` for manual
-inbox draining. That should converge to delivery fields plus follow-up events:
-
-| Current behavior | Target behavior |
-|------------------|-----------------|
-| `status='pending'` for unread inbox rows | `delivery_status='accepted'`, `delivery_route='owner_inbox'` |
-| `markInboxHandled()` | `reviewInboxEvents()` emits a follow-up event and lets pair tracking close the original item; `markInboxHandled()` remains a compatibility alias during migration |
-| `status='handled'`, `handled_by=<agent>` | closing event such as `message.consumed` or `project.feedback.reviewed` |
-| `status='expired'`, `reason='stale'` for old inbox rows | pair run marked `orphan`; optional `event_pair.orphan.detected` reaction event |
-| schedule/orphan metrics infer from legacy pending rows | metrics read `delivery_status`, `delivery_route`, and `event_pair_runs` |
-
-Migration can be compatibility-first:
-
-1. Add the new columns and write them for new rows.
-2. Mark pre-delivery-tracking rows as `delivery_status='accepted'` using
-   compatibility migration markers: old rows use `accepted_by='legacy:event-store'`;
-   unclaimed owned rows use `accepted_by='default-owner:<owner>'`.
-3. Keep reading legacy `status` as a fallback while backfilling.
-4. Replace `markInboxHandled()` call sites with `reviewInboxEvents()`.
-5. Update heartbeat/review queries to prefer `delivery_route='owner_inbox'` and
-   open `event_pair_runs`.
-6. Remove metrics and code paths that infer delivery or completion from legacy
-   `status`.
-
-### What This Is Not
-
-- Not event sourcing — events are still a log, not a state store
-- Not a message queue — bus is still in-memory pub/sub
-- Not per-event-type delivery logic — acceptance is universal
-- Not a project pair-config system — pairs are convention-driven with rare
-  runtime exceptions
-- Not blocking — acceptance and pair tracking are fire-and-forget DB updates
-- Not replacing entity state — sessions, alerts, tasks still own their
-  state machines. Pair tracking just detects orphans.
+- Event has a real possible consumer and accountable owner.
+- Persisted event has canonical envelope and `data` payload.
+- Target-first routing and owner fallback are distinguishable.
+- Passive observers never satisfy delivery.
+- Typed responses close pairs and write trace closure links atomically.
+- Domain completion remains in the owning entity.
+- Continuation/reconciliation handlers are idempotent.
+- Retention protects open work and causal evidence.
+- Compatibility is isolated and read-only.

@@ -95,10 +95,10 @@ The current runtime has two layers:
 | Event schema | `src/app/event-bus.ts` | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`. |
 | Restart recovery | `src/app/daemon-events.ts` | Marks in-flight CLI tasks as orphaned after runtime restart. |
 
-Legacy direct tools such as `codex_worker` may remain for manual compatibility,
-but they are not the production delegation path because they block the caller
-and do not provide durable event state, owner-routed completion, orphan
-recovery, or metrics.
+The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
+retired. Keeping two execution paths produced different session, failure,
+recovery, and observability semantics. Native coding-agent delegation now has
+one runtime boundary: `run_cli_agent` plus `cli.task.*` events.
 
 Shipped behavior today:
 
@@ -511,11 +511,5 @@ workers are capacity, not an obligation.
 5. Metrics should track request count, completion rate, orphan count, timeout
    rate, average duration, and failed-parser/no-output rate.
 
-## Recommended Next Step
-
-Keep the existing `cli.task.*` events. Improve the adapter in place:
-
-1. Add partial-result parsing to the existing classified outcome adapter.
-2. Add UI/read-model visibility.
-3. Retire direct `codex_worker`/`cc_worker` from production guidance once
-   `run_cli_agent` covers the same convenience.
+Improve the existing adapter in place: add partial-result parsing, UI/read-model
+visibility, and task metrics without introducing another worker execution path.

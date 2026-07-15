@@ -732,7 +732,7 @@ High-value refinements:
   context and produce a delivery/result confirmation without needing a
   clarification turn.
 
-## Implementation Plan
+## Current Implementation And Remaining Refinements
 
 1. Tighten notification formatting.
    - Add a small formatter for `message.created` to human.

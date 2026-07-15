@@ -191,7 +191,7 @@ bus.on("metric.breach", (e) =>
   runWorkflow("metric-alert-triage", buildAlertTask(e), { source: "metric-alert-reactor" })
 );
 
-// Messages: persisted to events table (owner = to_agent), included in next heartbeat.
+// Messages: persisted to events table (owner = to_agent), included in the next owner review.
 // No separate messages table — events table with owner field serves as inbox.
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
@@ -414,7 +414,7 @@ interface WorkflowContext {
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
   runFunction<T>(label: string, fn: () => Promise<T>): Promise<T>;
   done(summary: string): WorkflowResult;
-  escalate(reason: string, context?: unknown): WorkflowResult;
+  blocked(reason: string, context?: unknown): WorkflowResult;
 }
 ```
 
@@ -448,7 +448,10 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
 }
 ```
 
-**Default behavior (convention over configuration):** messages are ack'd and queued for the receiver's next heartbeat. They do NOT immediately trigger a new agent session. Agents can register custom handlers to override this if urgency requires it.
+**Default behavior (convention over configuration):** messages are accepted
+into the receiver's owner inbox and reviewed on the next app-owner pass or
+standalone heartbeat. They do not immediately trigger a new agent session.
+Urgent work should use an explicit event/session route.
 
 #### Human in the Loop
 
@@ -637,7 +640,7 @@ The current direction is not "more infra logic." It is fewer execution paths:
 Mechanical infra code may still call manager/runtime internals directly, but
 new judgment/action paths should follow the handler-to-workflow convention. See
 `system-boundary.md` for the design and
-`system-boundary-tracker.md` for the implementation tracker.
+`../proposals/system-boundary-tracker.md` for historical implementation evidence.
 
 ### Runtime Code Shape
 

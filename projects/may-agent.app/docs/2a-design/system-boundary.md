@@ -174,7 +174,7 @@ Examples:
 - `timer.tick` -> heartbeat workflow builds live context -> run owner.
 - `project.comment.created` -> project app/owner route builds project context -> run owner.
 - `metric.breach` P0 -> alert workflow builds alert context -> run owner.
-- `metric.breach` P1/P2 -> persisted signal -> owner sees it in next heartbeat/project pass.
+- `metric.breach` P1/P2 -> persisted signal -> owner sees it in the next project-owner pass or standalone heartbeat.
 
 `runAgent` and `runWorkflow` should feel like the same operation:
 
@@ -661,7 +661,7 @@ Existing pieces already align with this direction:
 | Telegram adapter | `projects/may-agent/src/app/transport/telegram.ts` |
 | Telegram transport/reply/outbound helpers | `projects/may-agent/src/app/transport/telegram-client.ts`, `projects/may-agent/src/app/transport/telegram-reply-router.ts`, `projects/may-agent/src/app/transport/telegram-outbound.ts` |
 | HTTP/Web API adapter | `src/app/http/server.ts` |
-| WebUI source assets | `packages/webui/static/*` generated into project `ui/` directories |
+| WebUI source assets | `packages/webui/static/*`, generated only into the served `projects/platform/ui/` target |
 | Agent patterns | agent/project workflows, project docs, heartbeat docs |
 
 The main gap is not a missing grand architecture. The remaining work is keeping
@@ -695,7 +695,7 @@ Keep this incremental.
 
 ## Implementation Checklist
 
-See [system-boundary-tracker.md](system-boundary-tracker.md) for the
+See [system-boundary-tracker.md](../proposals/system-boundary-tracker.md) for the
 canonical implementation tracker. Do not create another parallel tracker.
 
 The target principle:

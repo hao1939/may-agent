@@ -103,7 +103,6 @@ Available via `ctx`:
 | `ctx.createSession(opts)` | Persistent multi-turn session (worker pattern) |
 | `ctx.done(summary)` | Mark workflow as successful |
 | `ctx.blocked(reason, context?)` | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
-| `ctx.escalate(reason, context?)` | Deprecated alias for `ctx.blocked(...)`. It is not `escalation.created`. |
 | `ctx.emit(event)` | Emit a typed event |
 | `ctx.dispatchEvent(type, data)` | Dispatch to handler subscribers |
 | `ctx.getDb()` | Access shared SQLite database |
