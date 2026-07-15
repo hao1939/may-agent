@@ -1258,7 +1258,7 @@ describe("project task tree SDK", () => {
         project: {
           id: "project",
           state: "active",
-          children: ["wait-node", "waiting-leaf", "runnable-leaf"],
+          children: ["wait-node", "waiting-leaf", "runnable-leaf", "standing-leaf"],
           goal: "project",
           outputs: ["tasks/tree.json"],
           acceptance: ["complete"],
@@ -1300,6 +1300,18 @@ describe("project task tree SDK", () => {
           goal: "clear runnable work",
           outputs: ["evidence/archive/runnable.md"],
           acceptance: ["done"],
+        },
+        "standing-leaf": {
+          id: "standing-leaf",
+          parent_id: "project",
+          state: "backlog",
+          kind: "standing_task",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "organize recurring work",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["recurring work remains represented"],
         },
       },
     });
