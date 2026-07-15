@@ -75,9 +75,20 @@ export async function runWorkflowMode(opts: {
     ...rtx,
     task: opts.mode.input,
     agent,
-    runAgent: async (agentName: string, prompt: string) => {
+    runAgent: async (agentName: string, prompt: string, stepOpts?: { schema?: unknown; skill?: string }) => {
       console.log(`\n${"=".repeat(60)}\nDRY RUN: ${agentName}\n${"=".repeat(60)}\n${prompt}\n${"=".repeat(60)}\n`);
-      return { sessionId: "dry-run", status: "done" as const, lastAssistantText: "(dry run)", messages: [] as any[], duration: "0s", outputDir: "", turnsUsed: 0 };
+      if (stepOpts?.skill) console.log(`Skill: ${stepOpts.skill}`);
+      if (stepOpts?.schema) console.log(`Output schema: ${JSON.stringify(stepOpts.schema, null, 2)}`);
+      return {
+        sessionId: "dry-run",
+        status: "error" as const,
+        lastAssistantText: null,
+        messages: [] as any[],
+        duration: "0s",
+        outputDir: "",
+        turnsUsed: 0,
+        error: "Dry run does not execute an agent or fabricate a structured finish result",
+      };
     },
     runFunction: async (label: string, fn: () => Promise<string>) => {
       const output = await fn();

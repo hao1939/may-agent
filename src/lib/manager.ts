@@ -11,7 +11,12 @@
  */
 
 import { Agent } from "@earendil-works/pi-agent-core";
-import type { AgentTool, AgentMessage, BeforeToolCallContext as PiBeforeToolCallContext } from "@earendil-works/pi-agent-core";
+import type {
+  AgentTool,
+  AgentMessage,
+  BeforeToolCallContext as PiBeforeToolCallContext,
+} from "@earendil-works/pi-agent-core";
+import type { TSchema } from "@earendil-works/pi-ai";
 import {
   existsSync,
   mkdirSync,
@@ -75,6 +80,8 @@ import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
+import { createFinishTool } from "./tools/lifecycle.js";
+import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -110,6 +117,10 @@ export interface RunOptions {
   trace?: EventTrace;
   /** Explicit primary skill to activate for this turn. */
   skill?: string;
+  /** Require the agent to terminate through finish(); used by workflow steps. */
+  requireFinish?: boolean;
+  /** Caller-defined schema for the required finish().result payload. */
+  outputSchema?: TSchema;
 }
 
 interface ActiveSession {
@@ -139,6 +150,8 @@ interface ActiveSession {
   /** Prompt text may include an explicitly activated skill; task remains the work identity. */
   promptTask?: string;
   loadedSkillHashes: Set<string>;
+  requireFinish: boolean;
+  outputSchema?: TSchema;
 }
 
 type DispatchDedupDb = {
@@ -163,6 +176,21 @@ function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
     reason === "Agent ended on an empty tool-use assistant turn" ||
     reason === "Agent ended with an empty assistant turn"
   );
+}
+
+function normalizePersistableSchema(schema: TSchema | undefined): TSchema | undefined {
+  if (schema === undefined) return undefined;
+  try {
+    const normalized = JSON.parse(JSON.stringify(schema));
+    if (!normalized || typeof normalized !== "object" || Array.isArray(normalized)) {
+      throw new Error("schema must serialize to a JSON object");
+    }
+    return normalized as TSchema;
+  } catch (error) {
+    throw new Error(
+      `Workflow output schema must be JSON-serializable: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 function trimTerminalEmptyAssistantTurn(messages: AgentMessage[]): boolean {
@@ -249,8 +277,23 @@ export interface SubagentManagerOptions {
 
 // ── Finish extraction ────────────────────────────────────────────────
 
-/** Extract the params from the last finish() tool call, if any. */
-function extractFinishParams(messages: any[]): {
+function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined): boolean {
+  if (!toolCallId) return true;
+  const result = messages.find((message) => message?.role === "toolResult" && message.toolCallId === toolCallId);
+  if (!result) return true; // Backward compatibility for older partial transcripts.
+  if (result.isError === true) return false;
+  const content = Array.isArray(result.content) ? result.content : [];
+  return !content.some(
+    (block: any) =>
+      block?.type === "text" &&
+      String(block.text ?? "")
+        .trimStart()
+        .startsWith("finish() error:"),
+  );
+}
+
+/** Extract the params from the last successfully executed finish() tool call, if any. */
+export function extractFinishParams(messages: any[]): {
   status: string;
   summary: string;
   blockers?: { reason: string; context: string }[];
@@ -261,6 +304,7 @@ function extractFinishParams(messages: any[]): {
   lessons?: { category: string; content: string }[];
   verification_evidence?: string[];
   context_updates?: { action: string; content: string }[];
+  result?: unknown;
 } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
@@ -268,6 +312,7 @@ function extractFinishParams(messages: any[]): {
       for (const block of msg.content) {
         const rawArgs = block?.arguments ?? block?.args;
         if (block?.type === "toolCall" && block.name === "finish" && rawArgs) {
+          if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
           try {
             const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
             return {
@@ -281,6 +326,7 @@ function extractFinishParams(messages: any[]): {
               lessons: args.lessons,
               verification_evidence: args.verification_evidence,
               context_updates: args.context_updates,
+              result: args.result,
             };
           } catch {
             return null;
@@ -382,6 +428,8 @@ export class SubagentManager {
       resetDbRow?: boolean;
       timeoutMs?: number;
       trace?: EventTrace;
+      requireFinish?: boolean;
+      outputSchema?: TSchema;
     },
   ): void {
     if (opts.unarchive) {
@@ -452,6 +500,8 @@ export class SubagentManager {
         timeoutMs: opts.timeoutMs,
         resumeMessages,
         trace: opts.trace,
+        requireFinish: opts.requireFinish ?? meta.requireFinish,
+        outputSchema: opts.outputSchema ?? meta.outputSchema,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -511,6 +561,11 @@ export class SubagentManager {
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
+    const outputSchema = normalizePersistableSchema(opts?.outputSchema);
+    const requireFinish = opts?.requireFinish === true || outputSchema !== undefined;
+    if (requireFinish && this.isPersistentChatPolicy(kind, autoClose)) {
+      throw new Error("Structured workflow completion is not supported for persistent chat sessions");
+    }
 
     // Setup persistence
     ensureSessionDir(this._persistDir, sessionId);
@@ -526,10 +581,17 @@ export class SubagentManager {
       ? (context: PiBeforeToolCallContext, signal?: AbortSignal) => guardHook(toGuardContext(context), signal)
       : undefined;
     const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
-    const sessionTools = this.resolveSessionTools(def, persistentChat);
+    const sessionTools = this.resolveSessionTools(def, persistentChat, {
+      requireFinish,
+      outputSchema,
+    });
     const agent = new Agent({
       initialState: {
-        systemPrompt: this.resolveSessionSystemPrompt(def, { kind, autoClose, sessionId, task: sessionTask }),
+        systemPrompt: this.resolveSessionSystemPrompt(
+          def,
+          { kind, autoClose, sessionId, task: sessionTask, requireFinish, outputSchema },
+          sessionTools,
+        ),
         model: def.model,
         tools: sessionTools,
       },
@@ -568,6 +630,8 @@ export class SubagentManager {
       openTurnTraces: opts?.trace ? [opts.trace] : [],
       promptTask: activation?.prompt,
       loadedSkillHashes: new Set(activation ? [activation.skill.contentHash] : []),
+      requireFinish,
+      outputSchema,
     };
 
     const existingMeta = this._registry.getSession(sessionId);
@@ -595,6 +659,8 @@ export class SubagentManager {
       kind,
       autoClose,
       orderId: opts?.orderId ?? existingMeta?.orderId,
+      requireFinish,
+      outputSchema: outputSchema ?? existingMeta?.outputSchema,
     });
 
     // Register before publishing session.start so synchronous subscribers see
@@ -822,6 +888,8 @@ export class SubagentManager {
       timeout?: number;
       trace?: EventTrace;
       skill?: string;
+      requireFinish?: boolean;
+      outputSchema?: TSchema;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
@@ -846,6 +914,8 @@ export class SubagentManager {
       timeoutMs: opts?.timeout,
       trace: opts?.trace,
       skill: opts?.skill,
+      requireFinish: opts?.requireFinish,
+      outputSchema: opts?.outputSchema,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
@@ -864,6 +934,8 @@ export class SubagentManager {
       projectId?: string;
       trace?: EventTrace;
       skill?: string;
+      requireFinish?: boolean;
+      outputSchema?: TSchema;
     },
   ): string {
     return this.run(agentName, task, {
@@ -876,6 +948,8 @@ export class SubagentManager {
       projectId: opts?.projectId,
       trace: opts?.trace,
       skill: opts?.skill,
+      requireFinish: opts?.requireFinish,
+      outputSchema: opts?.outputSchema,
     });
   }
 
@@ -1030,7 +1104,14 @@ export class SubagentManager {
   resumeSession(
     sessionId: string,
     message: string,
-    opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean; trace?: EventTrace },
+    opts?: {
+      source?: string;
+      timeoutMs?: number;
+      suppressBenignRaceEvent?: boolean;
+      trace?: EventTrace;
+      requireFinish?: boolean;
+      outputSchema?: TSchema;
+    },
   ): string {
     if (this._sessions.has(sessionId)) {
       const reason = `Session "${sessionId}" is already active — use steer/input instead`;
@@ -1080,6 +1161,8 @@ export class SubagentManager {
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
       trace: opts?.trace,
+      requireFinish: opts?.requireFinish,
+      outputSchema: opts?.outputSchema,
     });
     return sessionId;
   }
@@ -1417,15 +1500,17 @@ export class SubagentManager {
     }
     let messages = readSessionMessages(this._persistDir, sessionId);
     if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
+    const finishResult = extractFinishParams(messages as any[]);
     return {
       sessionId,
       status: persisted.status === "interrupted" ? "interrupted" : (persisted.status as "done" | "error"),
-      lastAssistantText: extractLastAssistantText(messages),
+      lastAssistantText: finishResult?.summary ?? extractLastAssistantText(messages),
       messages,
       duration: formatDuration((persisted.endedAt ?? Date.now()) - persisted.startedAt),
       outputDir: sessionOutputDir(this._persistDir, sessionId),
       error: persisted.error,
-      finishResult: extractFinishParams(messages as any[]) as any,
+      finishResult: finishResult as any,
+      structuredResult: finishResult?.result,
     };
   }
 
@@ -1462,11 +1547,25 @@ export class SubagentManager {
 
   private resolveSessionSystemPrompt(
     def: SubagentDefinition,
-    session: { kind: SessionKind; autoClose: "immediate" | "never"; sessionId: string; task: string },
+    session: {
+      kind: SessionKind;
+      autoClose: "immediate" | "never";
+      sessionId: string;
+      task: string;
+      requireFinish?: boolean;
+      outputSchema?: TSchema;
+    },
+    toolsOverride?: AgentTool[],
   ): string {
     const persistentChat = this.isPersistentChatPolicy(session.kind, session.autoClose);
-    const tools = this.resolveSessionTools(def, persistentChat);
+    const tools = toolsOverride ?? this.resolveSessionTools(def, persistentChat);
     const base = this.resolveSystemPrompt(def, tools);
+    if (session.requireFinish) {
+      const resultInstruction = session.outputSchema
+        ? "The finish() call must include the required schema-validated result payload."
+        : "Use the standard finish() fields; no caller-defined result payload is required.";
+      return `${base}\n\n<workflow_completion>\nThis is a workflow step. Complete it only by calling finish() as your final action. ${resultInstruction} A prose-only response is not a successful workflow result.\n</workflow_completion>`;
+    }
     if (!persistentChat) return base;
 
     return `${base}\n\n<chat_runtime_context>\n${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(session.sessionId, def.name, session.task)}\n</chat_runtime_context>`;
@@ -1697,6 +1796,19 @@ export class SubagentManager {
       }
       await agent.prompt(session.promptTask ?? task);
       await agent.waitForIdle();
+      if (session.requireFinish) {
+        const initialMessages = agent.state.messages as AgentMessage[];
+        const missingFinish = !extractFinishParams(initialMessages as any[]);
+        const terminalError =
+          extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
+        if (missingFinish && !terminalError) {
+          await agent.prompt(
+            "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+              (session.outputSchema ? ", including the schema-validated result payload." : "."),
+          );
+          await agent.waitForIdle();
+        }
+      }
     } catch (err) {
       errorText = err instanceof Error ? err.message : String(err);
       log("error", `[runtime] ${sessionId} failed: ${err}`);
@@ -1718,6 +1830,9 @@ export class SubagentManager {
     }
     if (!errorText && terminalAssistantFailure) {
       errorText = terminalAssistantFailure;
+    }
+    if (!errorText && session.requireFinish && !finishParams) {
+      errorText = "Workflow agent step ended without calling finish() after one corrective prompt";
     }
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
@@ -1793,6 +1908,7 @@ export class SubagentManager {
       error: errorText,
       errorMessage: assistantError,
       finishResult: finishParams as any,
+      structuredResult: finishParams?.result,
     };
   }
 
@@ -1804,9 +1920,26 @@ export class SubagentManager {
     return kind === "chat" || autoClose === "never";
   }
 
-  private resolveSessionTools(def: SubagentDefinition, persistentChat: boolean): AgentTool[] {
-    if (!persistentChat) return def.tools;
-    return def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name));
+  private resolveSessionTools(
+    def: SubagentDefinition,
+    persistentChat: boolean,
+    workflow?: { requireFinish: boolean; outputSchema?: TSchema },
+  ): AgentTool[] {
+    if (persistentChat) return def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name));
+    if (!workflow?.requireFinish) return def.tools;
+
+    const baseFinish =
+      def.tools.find((tool) => tool.name === "finish") ??
+      createFinishTool({
+        agentName: def.name,
+        projectRoot: def.projectRoot ?? this._projectRoot,
+        persistDir: this._persistDir,
+      });
+    const finish = createWorkflowFinishTool(baseFinish, workflow.outputSchema);
+
+    const finishIndex = def.tools.findIndex((tool) => tool.name === "finish");
+    if (finishIndex < 0) return [...def.tools, finish];
+    return def.tools.map((tool, index) => (index === finishIndex ? finish : tool));
   }
 
   private createSessionCompactionTransform(
@@ -1993,6 +2126,7 @@ export class SubagentManager {
         error: errorText,
         errorMessage: assistantError,
         finishResult: finishParams as any,
+        structuredResult: finishParams?.result,
       };
       this.completedResults.set(sessionId, result);
 

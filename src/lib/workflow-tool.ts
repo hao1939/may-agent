@@ -19,6 +19,7 @@ import type {
   Demand,
   SessionOptions,
   SessionHandle,
+  WorkflowAgentOptions,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
 // ── In-memory workflow types (used during execution) ────────────────────
@@ -112,6 +113,25 @@ function textResult(text: string): AgentToolResult<string> {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen) + "...";
+}
+
+function enforceStructuredWorkflowResult(result: TaskResult, expectsPayload: boolean): TaskResult {
+  if (result.status !== "done") return result;
+  if (!result.finishResult) {
+    return {
+      ...result,
+      status: "error",
+      error: "Workflow agent step completed without the required finish() result",
+    };
+  }
+  if (expectsPayload && result.structuredResult === undefined) {
+    return {
+      ...result,
+      status: "error",
+      error: "Workflow agent step completed without the required schema-backed finish().result payload",
+    };
+  }
+  return result;
 }
 
 function taskField(task: string, name: string): string | undefined {
@@ -524,6 +544,7 @@ async function resolveDemands(
           stepLabel: label,
           source: "guard",
           trace,
+          requireFinish: true,
         });
 
         const step: CompletedStep = { step: label, sessionId: taskResult.sessionId, result: taskResult };
@@ -1011,7 +1032,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       agentName: string,
       agentTask: string,
       reuseSessionId?: string,
-      stepOpts?: { timeoutMs?: number },
+      stepOpts?: WorkflowAgentOptions,
     ): Promise<TaskResult> => {
       // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
       // where they'd produce the confusing "Agent \"undefined\" not registered" error.
@@ -1032,7 +1053,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         const prevStep = previousRun.steps[currentStep];
         if (prevStep.agent === agentName && prevStep.task === agentTask) {
           try {
-            const taskResult = manager.result(prevStep.sessionId);
+            const taskResult = enforceStructuredWorkflowResult(manager.result(prevStep.sessionId), !!stepOpts?.schema);
+            if (taskResult.status === "error") throw new Error(taskResult.error);
             const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
             localSteps.push(step);
             completedSteps.push(step);
@@ -1106,6 +1128,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 source: `workflow:${workflow.name}`,
                 timeoutMs: stepOpts?.timeoutMs,
                 suppressBenignRaceEvent: true,
+                requireFinish: true,
+                outputSchema: stepOpts?.schema,
               });
             }
           }
@@ -1124,6 +1148,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               kind: "call",
               timeoutMs: stepOpts?.timeoutMs,
               trace: resolveTrace(),
+              skill: stepOpts?.skill,
+              requireFinish: true,
+              outputSchema: stepOpts?.schema,
             });
             taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
@@ -1142,10 +1169,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           stepLabel: agentName,
           timeout: stepOpts?.timeoutMs,
           trace: resolveTrace(),
+          skill: stepOpts?.skill,
+          requireFinish: true,
+          outputSchema: stepOpts?.schema,
         });
         sid = taskResult.sessionId;
       }
 
+      taskResult = enforceStructuredWorkflowResult(taskResult, !!stepOpts?.schema);
       sid = taskResult.sessionId || sid;
 
       const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
@@ -1237,14 +1268,15 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         emitRuntimeEvent({ type: eventType, data: data ?? {} });
       },
 
-      runAgent: (agentName: string, agentTask: string, stepOpts?: { timeoutMs?: number }): Promise<TaskResult> =>
-        runAgentStep(agentName, agentTask, undefined, stepOpts),
-      runAgentSession: (
+      runAgent: ((agentName: string, agentTask: string, stepOpts?: WorkflowAgentOptions): Promise<TaskResult> =>
+        runAgentStep(agentName, agentTask, undefined, stepOpts)) as WorkflowContext["runAgent"],
+      runAgentSession: ((
         agentName: string,
         agentTask: string,
         sessionId?: string,
-        stepOpts?: { timeoutMs?: number },
-      ): Promise<TaskResult> => runAgentStep(agentName, agentTask, sessionId, stepOpts),
+        stepOpts?: WorkflowAgentOptions,
+      ): Promise<TaskResult> =>
+        runAgentStep(agentName, agentTask, sessionId, stepOpts)) as WorkflowContext["runAgentSession"],
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
         const start = Date.now();
@@ -1407,6 +1439,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               stepLabel: stepName,
               source: `workflow:${label}`,
               trace: resolveTrace(),
+              requireFinish: true,
             });
 
             lastResponse = taskResult.lastAssistantText || "";

@@ -111,6 +111,8 @@ export interface TaskResult {
   instability?: InstabilityMetrics;
   /** Structured data from the agent's finish() tool call, if one was made. */
   finishResult?: FinishResult;
+  /** Caller-defined, schema-validated payload from finish().result. */
+  structuredResult?: unknown;
 }
 
 /** P20 Tainted Handoffs: signals indicating result reliability. */
@@ -128,6 +130,8 @@ export interface FinishResult {
   deliverables?: { path: string; description: string }[];
   blockers?: { reason: string; context: string }[];
   next_steps?: string;
+  /** Caller-defined payload for a schema-backed workflow step. */
+  result?: unknown;
 }
 
 /** Context passed to local tool factories in agents/<name>/tools/. */

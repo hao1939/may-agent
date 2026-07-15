@@ -6,6 +6,8 @@
  * package consumers do not depend on private src/lib/* layout.
  */
 
+import type { Static, TSchema } from "@earendil-works/pi-ai";
+
 // ── SQLite-like DB surface ────────────────────────────────────────────
 
 export interface RunResult {
@@ -601,8 +603,23 @@ export interface TaskResult {
   error?: string;
   turnsUsed?: number;
   finishResult?: Record<string, unknown>;
+  structuredResult?: unknown;
   [key: string]: unknown;
 }
+
+export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
+  timeoutMs?: number;
+  skill?: string;
+  schema?: S;
+}
+
+export type WorkflowAgentTaskResult =
+  | (TaskResult & { status: "done"; finishResult: Record<string, unknown> })
+  | (TaskResult & { status: "error" | "interrupted" });
+
+export type SchemaBackedTaskResult<S extends TSchema> =
+  | (WorkflowAgentTaskResult & { status: "done"; structuredResult: Static<S> })
+  | (TaskResult & { status: "error" | "interrupted"; structuredResult?: Static<S> });
 
 export interface CompletedStep {
   step: string;
@@ -846,8 +863,24 @@ export interface WorkflowContext {
   agentsRoot: string;
   sharedRoot: string;
   projectsRoot: string;
-  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
-  runAgentSession?(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgent<S extends TSchema>(
+    name: string,
+    task: string,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgent(name: string, task: string, opts?: WorkflowAgentOptions): Promise<WorkflowAgentTaskResult>;
+  runAgentSession?<S extends TSchema>(
+    name: string,
+    task: string,
+    sessionId: string | undefined,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgentSession?(
+    name: string,
+    task: string,
+    sessionId?: string,
+    opts?: WorkflowAgentOptions,
+  ): Promise<WorkflowAgentTaskResult>;
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
   runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
   summarize(result: TaskResult, opts?: Record<string, unknown>): string;
