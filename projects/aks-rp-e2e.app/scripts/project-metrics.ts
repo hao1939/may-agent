@@ -72,8 +72,7 @@ type ReviewApplyCoverage = {
   reason:
     | "reviewed-task-link"
     | "reviewed-source-link"
-    | "reviewed-task-input"
-    | "review-goal-reference";
+    | "reviewed-task-input";
   archivePath?: string;
 };
 
@@ -488,6 +487,15 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
 }
 
+function childBlockedLineageTaskIds(task: TaskNode): string[] {
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker.waiting_for);
+  return [
+    ...stringArrayField(waitingFor, "childTaskIds"),
+    ...stringArrayField(waitingFor, "child_task_ids"),
+  ].map((value) => value.trim()).filter(Boolean);
+}
+
 function taskCoversBlockedOverdueWait(
   candidate: TaskNode,
   blockedTask: TaskNode,
@@ -500,11 +508,19 @@ function taskCoversBlockedOverdueWait(
   ) {
     return false;
   }
+  const candidateBlockedTaskIds = structuredBlockedTaskIds(candidate);
   const blockedTaskId =
     typeof blockedTask.id === "string" ? blockedTask.id.trim() : "";
+  if (blockedTaskId && candidateBlockedTaskIds.includes(blockedTaskId)) {
+    return true;
+  }
+
+  const childLineageTaskIds = childBlockedLineageTaskIds(blockedTask);
   if (
-    blockedTaskId &&
-    structuredBlockedTaskIds(candidate).includes(blockedTaskId)
+    childLineageTaskIds.length > 0 &&
+    childLineageTaskIds.some((taskId) =>
+      candidateBlockedTaskIds.includes(taskId),
+    )
   ) {
     return true;
   }
@@ -1069,19 +1085,6 @@ function taskReferencesReviewedLineage(input: {
     };
   }
 
-  const goal =
-    typeof (task as Record<string, unknown>).goal === "string"
-      ? String((task as Record<string, unknown>).goal)
-      : "";
-  if (goal.includes(input.taskId)) {
-    return {
-      coveringTaskId: id,
-      state,
-      source: "live",
-      reason: "review-goal-reference",
-    };
-  }
-
   return null;
 }
 
@@ -1493,10 +1496,11 @@ function specMetrics(): SpecMetrics {
     if (verified) metrics.verified++;
     if (reviewedException) metrics.reviewedException++;
     if (!verified && !reviewedException) metrics.unverified++;
-    if (
-      [...values].some((value) => value.startsWith("fail") || value === "error")
-    )
-      metrics.failed++;
+    // Keep failed-spec inventory aligned with actual spec failure verdicts.
+    // Loop `error` is a broader fix-forward holding state and includes
+    // pipeline/artifact-routing gaps that the design explicitly treats as ops
+    // problems, not trustworthy spec failures.
+    if ([...values].some((value) => value.startsWith("fail"))) metrics.failed++;
     if ([...values].some((value) => value.startsWith("blocked")))
       metrics.blocked++;
     if (values.has("ready")) metrics.ready++;
