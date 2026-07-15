@@ -26,6 +26,10 @@ export type TaskBlocker =
       fallbackAt?: string;
       fallback_action?: string;
       fallbackAction?: string;
+      last_observed_at?: string;
+      lastObservedAt?: string;
+      last_observed_status?: string;
+      lastObservedStatus?: string;
     };
 
 export type TaskNode = {
@@ -48,6 +52,11 @@ export type TaskNode = {
   acceptance?: string[];
   forbidden?: string[];
   context?: Record<string, unknown>;
+  context_ref?: string;
+  summary?: string;
+  rollup_summary?: string;
+  strategy_context?: string;
+  progress?: Record<string, unknown>;
   result?: string;
   evidence?: string[];
   blocker?: TaskBlocker;
@@ -57,6 +66,11 @@ export type TaskNode = {
   replaced_by?: string[];
   done_at?: string;
   done_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  archived?: boolean;
+  archive_summary?: string;
+  tags?: string[];
 };
 
 export type TaskTree = {
