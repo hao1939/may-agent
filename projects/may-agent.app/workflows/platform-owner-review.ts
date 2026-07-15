@@ -128,7 +128,7 @@ function reviewInboxEvents(
   reviewedBy: string,
 ): number {
   if (eventIds.length === 0) return 0;
-  return ctx.query.reviewInboxEvents(eventIds, reviewedBy);
+  return ctx.commands.reviewInboxEvents(eventIds, reviewedBy);
 }
 
 function recentEvents(
@@ -378,7 +378,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Retire stale owner-inbox message work older than 24h on each review cycle.
   try {
     const STALE_MESSAGE_AGE_MS = 24 * 60 * 60_000; // 24 hours
-    const expired = ctx.query.expireStaleMessages(STALE_MESSAGE_AGE_MS);
+    const expired = ctx.commands.expireStaleMessages(STALE_MESSAGE_AGE_MS);
     if (expired > 0) {
       ctx.emit({
         type: "message.lifecycle",
@@ -395,9 +395,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // non-actionable historical noise once their review window passes.
   try {
     const STALE_SIGNAL_AGE_MS = 24 * 60 * 60_000; // 24 hours
-    if (typeof ctx.query.expireStaleSignalEvents === "function") {
+    if (typeof ctx.commands.expireStaleSignalEvents === "function") {
       const expiredSignals =
-        ctx.query.expireStaleSignalEvents(STALE_SIGNAL_AGE_MS);
+        ctx.commands.expireStaleSignalEvents(STALE_SIGNAL_AGE_MS);
       if (expiredSignals > 0) {
         ctx.emit({
           type: "signal.lifecycle",

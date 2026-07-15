@@ -1,8 +1,8 @@
 # Sessions
 
 **Design status:** Accepted.
-**Implementation status:** Per-turn chat trace propagation is implemented;
-the historical persistence issues below remain compatibility/repair work.
+**Implementation status:** Implemented, including per-turn trace propagation,
+fail-closed start persistence, and terminal error persistence.
 
 ## The Model
 
@@ -21,16 +21,16 @@ CREATE TABLE sessions (
   kind            TEXT,             -- chat | job | call
   source          TEXT,             -- what triggered it
   parentSessionId TEXT,             -- who spawned this session
-  requestId       TEXT,
+  requestId       TEXT,             -- legacy correlation metadata; not lifecycle identity
   workflowRunId   TEXT,
   projectId       TEXT,
   startedAt       INTEGER NOT NULL,
   endedAt         INTEGER,
-  error           TEXT,             -- ⚠️ almost always NULL in practice due to db-writer race (KE-1558, KE-1985); check as bonus signal but use meta.json on disk for reliable error text
+  error           TEXT,
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h/12h/24h windows, all 7 active agents, verified 2026-06-13). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤24h windows. See Known Issues for transition details.
+  lastActivityAt  INTEGER           -- last observed activity timestamp (ms)
 );
 ```
 
@@ -66,9 +66,9 @@ turn, tool emissions, calls/forks, workflows, CLI tasks, and the terminal
 adds a closure link to the opening intent. The next unrelated human turn gets a
 new trace even though the session id remains unchanged.
 
-`requestId` is a compatibility/correlation field when an exact opening event id
-is unavailable. It is not the canonical identity of human work; the persisted
-opening event id and trace are authoritative.
+`requestId` is retained only as legacy metadata. It must not open, close, or
+correlate lifecycle pairs. Persisted event ids, explicit pair contracts, and
+trace links are authoritative.
 
 ## Session Tree
 
@@ -98,81 +98,20 @@ Sessions persist to:
 
 The DB is the queryable index. Disk is the source of truth for message history.
 
-## Known Issues
+## Persistence Integrity
 
-### `status` column can contain non-canonical values (KE-2062)
+The manager registers live state before emitting `session.start`. The event is
+persisted before side-effect subscribers run; if persistence fails, manager
+state is rolled back and the registry records the start error. Consumers must
+therefore never observe a durable session start for an unregistered session.
 
-Three `may` chat sessions have `status = 'Agent ended with an empty assistant
-turn'` instead of the canonical `'error'`. The error message string leaked
-into the status column — likely during a bulk-close of stale chat sessions
-(all three share `endedAt` within 3ms). Their `outcome` column correctly
-reads `'error'`, so `WHERE outcome = 'error'` catches them but
-`WHERE status = 'error'` does not. Census 2026-06-19: 3/16,256 sessions
-(0.02%) have non-canonical status values — all are this same error string.
-Use `outcome = 'error'` when error completeness matters; `status = 'error'`
-for the common case but accept it may undercount chat failures.
+Terminal `session.end` data includes `status`, `outcome`, and `error`, and the DB
+writer persists those fields. Disk metadata remains the full transcript source,
+while SQLite is the canonical bounded read model for lifecycle queries.
 
-### `error` column is almost always NULL in practice (KE-1558, updated KE-1985)
-
-The `sessions.error` column in SQLite is **almost always NULL in practice**
-due to a write-order race between `manager.ts` (writes errorText correctly)
-and `db-writer.ts` (overwrites with NULL via `session.end` event, which
-lacks the `error` field). `updateSessionDb()` uses bare `error = ?`
-instead of `COALESCE(?, error)`.
-
-**However, as of 2026-06-14**, the race is not 100% reliable — some
-error sessions survive with non-NULL error text despite having a populated
-`endedAt`. Census (updated 2026-06-18 13:30Z): 3/641 error sessions in
-the 14d retention window (0.47%) have surviving error text. Two are may
-sessions from `telegram` source with "Agent ended with an empty assistant
-turn"; one is an aks-explorer session from `workflow:task-worker` with a
-task-moved-to-retry error. This may indicate timing differences in the
-write path depending on session source/kind — non-workflow sessions
-(telegram) and task-retry errors may write error text after the
-`session.end` event, or the event may not fire for these paths.
-
-**Guidance:** Do not rely on `sessions.error` for comprehensive error analysis
-(still NULL for ~99.7% of error sessions). But do not assume it is *always*
-NULL — check it as a bonus signal. For reliable error text, read
-`.state/sessions/history/<id>/meta.json` on disk.
-
-**Workaround:** For sessions closed through the normal `manager.ts` path, read
-`.state/sessions/history/<id>/meta.json` on disk for the actual error text.
-The `error` field in `meta.json` contains the correct value (e.g., "Agent ended
-on an empty tool-use assistant turn").
-
-**Fix pending:** Requires either adding `error` to the `session.end` bus event
-data, or changing the UPDATE to use COALESCE. Both are `src/` changes requiring
-Hao approval (ORDER-010).
-
-### `lastActivityAt` column: fully populated
-
-The `lastActivityAt` column was added via migration and is written by both
-`updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
-and `updateSessionDb()` (called at session end).
-
-**Status (updated 2026-06-14):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-14, **100% coverage across all 7 active
-agents** in 24h windows (1878/1878 sessions populated). The pre-activation
-transition period and the 2 sub-second evaluator exceptions noted in the
-2026-06-13 census have fully aged out.
-
-**The precondition for pure-SQL zombie detection is now met** for windows
-up to **24h** (≥95% coverage). The `capability.zombie-session-count`
-metric still uses JSONL file `mtime` via `statSync(path).mtimeMs` in
-`metrics-snapshot.ts` (`sessionInactiveSince()`). A `src/` change
-(ORDER-010) could switch zombie detection to
-`WHERE status='running' AND lastActivityAt <
-strftime('%s','now')*1000 - 1800000` for the 24h window without
-meaningful false negatives.
-
-Monitor ongoing coverage with:
-```sql
-SELECT agent, COUNT(*) as total,
-       SUM(CASE WHEN lastActivityAt IS NOT NULL THEN 1 ELSE 0 END) as populated
-FROM sessions WHERE startedAt > strftime('%s','now')*1000 - 86400000
-GROUP BY agent;
-```
+`lastActivityAt` is updated by progress and terminal writes. Stale-session
+checks may use it directly; historical rows created before the field existed
+remain migration data rather than a reason to weaken the current contract.
 
 ## Data Retention
 

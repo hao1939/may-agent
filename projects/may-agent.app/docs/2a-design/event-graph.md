@@ -772,23 +772,14 @@ type EventGraphResponse = {
   revision: string;
   nodes: EventGraphDisplayNode[];
   edges: EventGraphDisplayEdge[];
-  eventNodes: EventGraphNode[];
-  eventEdges: EventGraphEdge[];
-  eventList?: Array<{
-    id: number;
-    type: string;
-    visibility: "default" | "detail";
-    source?: string;
-    owner?: string;
-    timestamp: number;
-    label: string;
-    summary?: string;
-    dataPreview?: Record<string, unknown>;
-  }>;
-  eventListScope?: {
+  events: EventGraphNode[];
+  relations: EventGraphEdge[];
+  scope: {
     kind: "session" | "workflow" | "task" | "graph";
     ids: string[];
     label: string;
+    graphEventIds: number[];
+    timelineEventIds: number[];
   };
   diagnostics: string[];
 };
@@ -817,9 +808,10 @@ reports.
   trace rows and closure links.
 - `GET /api/events/:eventId/graph` returns the complete resolved graph and
   diagnostics.
-- Graph `nodes` and `edges` are the canonical display contract. Raw event
-  projections are available separately as `eventNodes`, `eventEdges`, and
-  `eventList` for inspection.
+- Graph `nodes` and `edges` are the canonical display contract. Raw facts appear
+  once as `events` and `relations`; `scope.graphEventIds` and
+  `scope.timelineEventIds` select the graph and timeline projections without
+  duplicating event objects.
 - The endpoint projects available transcript turns and tools for every session
   in the resolved graph.
 - The UI renders backend node keys, hierarchy, edge kinds, and provenance. It

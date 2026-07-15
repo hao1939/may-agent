@@ -41,6 +41,7 @@ interface AgentSDK {
   ): void;
   metrics: MetricAPI;
   query: QueryAPI;
+  commands: CommandAPI;
   getDb(): Database; // compatibility escape hatch
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
@@ -72,14 +73,15 @@ type EscalationOptions = EventEnvelopeOptions & {
 };
 ```
 
-The intended surface is small: execution, events, metrics, query, messaging,
-escalation, logging, and paths. `getDb()` remains for compatibility and
-mechanical infra handlers, but new handler/workflow code should prefer `query`
-and `metrics`.
+The intended surface is small: execution, events, metrics, read-only query,
+typed commands, messaging, escalation, logging, and paths. `getDb()` remains
+for compatibility and mechanical infra handlers, but new handler/workflow code
+should prefer `query`, `commands`, and `metrics`.
 
-Current state: `metrics` and `query` are implemented SDK surfaces. Use `getDb()`
-only where a handler/workflow needs an escape hatch for mechanical projection or
-bookkeeping, and keep those reads bounded.
+`query` is read-only. State-changing helpers belong to `commands` and emit
+canonical events; they must not hide writes behind a method named as a read.
+Use `getDb()` only where a handler/workflow needs an escape hatch for mechanical
+projection or bookkeeping, and keep those reads bounded.
 
 ## How Handlers Get It
 
@@ -104,6 +106,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `emit(type, data, envelope?)` | Emit a canonical event envelope. `data` carries event-specific facts; `envelope.owner` carries responsibility/routing.               |
 | `metrics`                     | Define, record, alert, resolve, evaluate, and list metrics.                                                                          |
 | `query`                       | Preferred bounded read surface for sessions, events, metrics, alerts, and projects.                                                  |
+| `commands`                    | Typed state changes such as owner-inbox review/expiry; mutations flow through durable events.                                        |
 | `getDb()`                     | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`.                                                              |
 | `log(level, msg)`             | Log a diagnostic message.                                                                                                            |
 | `message(target, content)`    | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox.                                                      |

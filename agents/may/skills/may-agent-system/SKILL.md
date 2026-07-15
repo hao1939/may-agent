@@ -157,6 +157,9 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Preserve events referenced by open work or retained trace links. Apply base
   age retention only after referential protection; prune detail before root,
   delivery, and closure evidence.
+- Keep event-graph reads canonical: one `events` collection, one `relations`
+  collection, and graph/timeline event-id projections in `scope`. Do not return
+  duplicate raw event arrays for each UI view.
 
 ## Project Apps And Task Trees
 
@@ -194,6 +197,9 @@ Keep domain projects portable and May-agent control planes separate.
 - Persist only these task states: `backlog`, `active`, `review`, `done`,
   `blocked`. Readiness, decomposition, acceptance, cancellation, and
   supersession are projections or metadata, not states.
+- Treat `state` as the only persisted task lifecycle field. Legacy `status`
+  access may map to `state` at runtime, but must not become a second serialized
+  value or appear in new event snapshots.
 - Workers handle exactly one owner-assigned leaf and submit evidence to
   `review`. They do not reshape siblings, roll up parents, mark done, or create
   planning/control branches.
@@ -227,6 +233,9 @@ Treat metrics as signals, not decisions.
 - Use safe runtime write paths for metric calibration, priority changes,
   exceptions, and manual alert resolution. Do not edit `.state/*.db` directly
   from shell or ad hoc scripts.
+- Keep `sdk.query` read-only. Put state-changing helpers on `sdk.commands`, and
+  have those commands emit canonical durable events instead of mutating query
+  tables behind a read-shaped API.
 
 ## Blockers And Escalations
 
@@ -284,6 +293,8 @@ Distinguish local blockers from ownership-boundary escalations.
 - Treat workflow TypeScript as executable orchestration. Share discovery and
   provenance conventions with skills, but keep workflow run state and terminal
   closure in the existing workflow/event trace.
+- System callers use the typed workflow runner directly. Only the model-facing
+  tool boundary should construct the schema/JSON adapter.
 - Keep each workflow invocation synchronous and ordered. If work must wait for
   a future event or external condition, end with `ctx.blocked(...)` and resume
   through a second event-linked workflow; do not suspend one workflow run.

@@ -21,7 +21,9 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 **Heartbeats**: discovery, reflection, catching stuck tasks. NOT for driving work.
 
 ## Human Input Tracking
-- Tracked in `requests` table: `SELECT * FROM requests WHERE fromEntity='human' ORDER BY createdAt DESC`
+- Human input is event-native. Query `message.created`, `project.feedback.created`, and
+  `project.owner.requested` events by source/owner; use their trace and owner-inbox
+  lifecycle to follow work through closure.
 
 ## Current Priorities (from Hao)
 - Autonomous/proactive agents. Evidence-first. Knowledge APPLIED not just stored.
@@ -41,7 +43,6 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 ## DB Schema Reference (avoid schema/query errors)
 - **sessions**: sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, startedAt, endedAt, error, outcome, opCount, stepLabel
 - **evaluations**: sessionId, agent, quality, efficiency, productiveCalls, wastedCalls, verdict, issues, overall, usage, failureChains, evaluatedByHeuristic, skippedByJs, createdAt
-- **requests**: requestId, parentRequestId, fromEntity, toAgent, method, task, status, sessionId, source, createdAt, updatedAt, completedAt, durationMs, summary, error, errorClass, retryable, artifact, context, expectations, notify, source_finding
 - **projects**: id, path, name, owner, status, type, workflow, iteration, priority, milestones_done, milestones_total, updated_at
 - **notification_messages**: telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at
 - **events**: use PRAGMA table_info(events) if needed

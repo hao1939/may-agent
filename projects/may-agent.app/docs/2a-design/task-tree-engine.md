@@ -1,7 +1,8 @@
 # Task Tree Engine Design
 
 **Design status:** Accepted.
-**Implementation status:** Implemented with canonical runtime state and compatibility mirroring.
+**Implementation status:** Implemented with canonical persisted `state` and a
+non-enumerable `status` compatibility accessor for legacy workflow code.
 
 ## Purpose
 
@@ -51,7 +52,8 @@ Only these five values are valid persisted states.
 
 The word `state` is canonical. Older files may still use `status` during
 migration; tools may read `status` as compatibility input, but new writes should
-write `state`.
+write `state`. Runtime normalization exposes `status` only as an accessor backed
+by `state`; it is not a second stored value and is omitted from serialization.
 
 ## Not States
 
@@ -690,7 +692,7 @@ Mapping:
 
 | Old field/value            | New representation                                                                                                                   |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `status`                   | Rename to `state`. Keep read compatibility temporarily.                                                                              |
+| `status`                   | Rename to `state`. Legacy runtime access maps to the same value and is never persisted.                                               |
 | `accepted`                 | `state: "done"`, preserve `accepted_at/by` or migrate to `done_at/by`.                                                               |
 | `done`                     | Keep `state: "done"`.                                                                                                                |
 | `ready`                    | `state: "backlog"`; readiness is computed.                                                                                           |
