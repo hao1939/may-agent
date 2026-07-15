@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readSessionMeta } from "../../src/lib/persistence.js";
-import type { Model } from "@earendil-works/pi-ai";
+import { Type, type Model } from "@earendil-works/pi-ai";
 
 // Minimal fake model that satisfies the Model interface
 function fakeModel(): Model<any> {
@@ -167,6 +167,29 @@ describe("Registry persistence", () => {
     expect(metaAfter).toBeDefined();
     expect(["done", "error"]).toContain(metaAfter!.status);
     expect(metaAfter!.endedAt).toBeDefined();
+  });
+
+  it("persists the workflow finish requirement and output schema for recovery", async () => {
+    const manager = new SubagentManager({ persistDir });
+    manager.register({
+      name: "workflow-worker",
+      description: "Runs structured workflow steps",
+      domain: "workflow",
+      systemPrompt: "Complete the workflow step.",
+      model: fakeModel(),
+      tools: [],
+      apiKey: "fake-key",
+    });
+    const outputSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) });
+
+    const sessionId = manager.run("workflow-worker", "review", { requireFinish: true, outputSchema });
+    const meta = readSessionMeta(persistDir, sessionId);
+
+    expect(meta?.requireFinish).toBe(true);
+    expect(meta?.outputSchema).toMatchObject({ type: "object" });
+
+    manager.cancel(sessionId);
+    await manager.waitFor(sessionId);
   });
 
   it("works with a fresh persistDir (no prior state)", () => {

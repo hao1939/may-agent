@@ -32,8 +32,32 @@ interface TaskResult {
     deliverables?: { path: string; description: string }[];
     blockers?: { reason: string; context: string }[];
     next_steps?: string;
+    result?: unknown;
   };
+  /** Caller-defined, schema-validated payload from finish().result. */
+  structuredResult?: unknown;
 }
+
+type WorkflowAgentOptions<S extends import("@earendil-works/pi-ai").TSchema = import("@earendil-works/pi-ai").TSchema> =
+  {
+    timeoutMs?: number;
+    skill?: string;
+    schema?: S;
+  };
+
+type WorkflowAgentTaskResult =
+  | (TaskResult & { status: "done"; finishResult: NonNullable<TaskResult["finishResult"]> })
+  | (TaskResult & { status: "error" | "interrupted" });
+
+type SchemaBackedTaskResult<S extends import("@earendil-works/pi-ai").TSchema> =
+  | (WorkflowAgentTaskResult & {
+      status: "done";
+      structuredResult: import("@earendil-works/pi-ai").Static<S>;
+    })
+  | (TaskResult & {
+      status: "error" | "interrupted";
+      structuredResult?: import("@earendil-works/pi-ai").Static<S>;
+    });
 
 /** Local workflow lifecycle callback events for observability. These are not SystemEvent bus envelopes. */
 type WorkflowEvent =
@@ -142,10 +166,26 @@ interface WorkflowContext {
   // ── Workflow-specific ──────────────────────────────────────────────
 
   /** Run a sub-agent, wait for it to finish, return result. */
-  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgent<S extends import("@earendil-works/pi-ai").TSchema>(
+    name: string,
+    task: string,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgent(name: string, task: string, opts?: WorkflowAgentOptions): Promise<WorkflowAgentTaskResult>;
 
   /** Run work in a durable agent session. */
-  runAgentSession(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgentSession<S extends import("@earendil-works/pi-ai").TSchema>(
+    name: string,
+    task: string,
+    sessionId: string | undefined,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgentSession(
+    name: string,
+    task: string,
+    sessionId?: string,
+    opts?: WorkflowAgentOptions,
+  ): Promise<WorkflowAgentTaskResult>;
 
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
