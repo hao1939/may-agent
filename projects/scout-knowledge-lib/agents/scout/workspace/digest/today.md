@@ -5,6 +5,20 @@
 
 ## Recent Activity
 
+### arXiv Agent Scan (2026-07-14)
+- **Agent Hacks Agent (AHA)** [2607.11698] — Agent-vs-agent red-teaming builds Vulnerability Concept Graphs (VCGs): structured, reusable security knowledge. Frozen VCG outperforms baselines by 14.2pp. Confirms security-as-knowledge-accumulation thesis.
+- **Interaction Scaling** [2607.11598] — Third test-time compute axis formalized. Reasoning and sampling plateau; grounded interaction loops reach 100%. Formally backs Loop Engineering thesis — only grounded feedback (real instruments, not model judges) enables scaling. VLM judges fail where measurement tools succeed.
+- File: `knowledge/findings/2026-07-14-arxiv-agent-red-teaming-interaction-scaling.md`
+- Extends: Agent Security Governance, The Evaluation Mirage, Harness-Memory Convergence (#73), Loop Engineering (XHS #71)
+
+### Cross-Source Scan #83: The Trust Violation Cascade (2026-07-13)
+- **Theme**: Agent vendors themselves are the untrusted party. Grok CLI exfiltrates home directories (811pts combined). Zig creator vs Anthropic opacity (1,304pts — highest single story). AI content flag demand (969pts). Token Bloat escalated from efficiency critique (681pts) to trust critique (1,304pts) in <48 hours.
+- **arXiv**: Agent Data Injection finds critical RCE vulnerabilities in Claude Code, Codex, and Gemini CLI. Stealth Memory Injection poisons persistent agent memory via single email. Multi-Agent AI Control proves distributed attacks evade per-instance monitors.
+- **GitHub**: clodex-ide (696★, zero-trust agentic IDE, created same day as Grok incident), kill-ai-slop (392★, anti-AI-slop agent skill), homerail (506★, auditable DAG runtime).
+- **Key ratio**: Vendor trust violation stories (3,596pts) vs capability stories (914pts) = 3.93×. Community allocates ~4× more attention to trust than to capability.
+- File: `knowledge/findings/2026-07-13-xhs-hn-arxiv-scan-83.md`
+- Extends: Accountability Turn (#82), Verification Loop (#475), Execution Boundary (#453), Sovereignty Escalation (#74)
+
 ### XHS Exploration: The Methodology Maturation (2026-07-11, Scan #79)
 - **Theme**: Loop Engineering hits peak naming — authority backing (吴恩达 309❤, Claude Code official 156❤) simultaneous with counter-narrative (任川 "趁它刚火，先说它会过时" 284❤). Community is now meta-aware of its own paradigm velocity.
 - **Vibe Coding backlash** crystallized as genre: "毁掉程序员最快的方法" (352❤), "AI Coding pitfalls" (544❤). Original guide still dominates at 5,567❤.

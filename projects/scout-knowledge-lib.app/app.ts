@@ -46,8 +46,7 @@ async function routeScoutEvent(
     event.type === "scout.explore" ||
     event.type === "scout.digest" ||
     event.type === "project.library_health.tick" ||
-    event.type === "project.owner.requested" ||
-    event.type === "project.planning.requested"
+    event.type === "project.owner.requested"
   ) {
     return ctx.noop(`${event.type} is handled by workflowHandlers`);
   }
@@ -103,16 +102,16 @@ export default defineProjectApp({
       id: "scout-heartbeat",
       enabled: false, // disabled 2026-06-14: app-driven model replaces blind heartbeat. Cross-source synthesis becomes a task, not a timer.
       intervalMs: 1_800_000, // 30min
-      event: {
+      emits: [{
         type: "scout.heartbeat",
         project: projectId,
-      },
+      }],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
-      event: ownerRequested("owner-heartbeat", {
+      emits: [ownerRequested("owner-heartbeat", {
         instruction:
           "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
         reviewChecklist: [
@@ -122,65 +121,65 @@ export default defineProjectApp({
           "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
           "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
         ],
-      }),
+      })],
     },
     {
       id: "scout-explore-arxiv",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      event: {
+      emits: [{
         type: "scout.explore",
         project: projectId,
         source: "arxiv",
-      },
+      }],
     },
     {
       id: "scout-explore-hn",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      event: {
+      emits: [{
         type: "scout.explore",
         project: projectId,
         source: "hn",
-      },
+      }],
     },
     {
       id: "scout-explore-xhs",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      event: {
+      emits: [{
         type: "scout.explore",
         project: projectId,
         source: "xhs",
-      },
+      }],
     },
     {
       id: "scout-explore-github",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      event: {
+      emits: [{
         type: "scout.explore",
         project: projectId,
         source: "github",
-      },
+      }],
     },
     {
       id: "scout-daily-digest",
       enabled: true,
       intervalMs: 86_400_000, // 24h
-      event: {
+      emits: [{
         type: "scout.digest",
         project: projectId,
-      },
+      }],
     },
     {
       id: "library-health",
       enabled: true,
       intervalMs: 21_600_000, // 6h
-      event: {
+      emits: [{
         type: "project.library_health.tick",
         project: projectId,
-      },
+      }],
     },
   ],
 
@@ -190,7 +189,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description: "Scout creative heartbeat — synthesize, connect, discover.",
-      on: ["scout.heartbeat"],
+      accepts: ["scout.heartbeat"],
       handler: {
         workflow: "scout-heartbeat",
         agent: "scout",
@@ -207,7 +206,7 @@ export default defineProjectApp({
       maxConcurrentTriggers: 2,
       description:
         "Scout routine discovery — explore a source (arXiv, HN, XHS, GitHub) for new findings.",
-      on: ["scout.explore"],
+      accepts: ["scout.explore"],
       handler: {
         workflow: "scout-explore",
         agent: "scout",
@@ -223,7 +222,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Scout daily digest — compile findings and send to human via Telegram.",
-      on: ["scout.digest"],
+      accepts: ["scout.digest"],
       handler: {
         workflow: "scout-daily-digest",
         agent: "scout",
@@ -239,7 +238,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Wakes Scout as project owner to review the knowledge-library task tree and perform the smallest useful maintenance step.",
-      on: ["project.owner.requested", "project.planning.requested"],
+      accepts: ["project.owner.requested"],
       handler: {
         workflow: "knowledge-planner",
         includeEvent: true,
@@ -254,7 +253,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Deterministically scans the Scout knowledge library shape and wakes Scout only for owner-judgment signals.",
-      on: ["project.library_health.tick"],
+      accepts: ["project.library_health.tick"],
       handler: {
         workflow: "library-health",
         includeEvent: true,
@@ -282,7 +281,6 @@ export default defineProjectApp({
     { type: "project.library_health.tick", project: projectId },
     { type: "project.library_health.observed", project: projectId },
     { type: "project.owner.requested", project: projectId },
-    { type: "project.planning.requested", project: projectId },
     { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },
   ],
 

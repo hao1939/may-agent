@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
 triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
-last_updated: "2026-07-05"
+last_updated: "2026-11-20"
 source_basis: "Hacker News discussions on agent architectures, arXiv 2606.20512 (Probe-and-Refine guidance tuning), arXiv 2607.00685 (M2Note mistake notebooks), arXiv 2607.00910 (SIVE instrument validation), GitHub brain.md/agent-memory-wiki"
 companion_notes: ["hn-comprehension-cliff-discourse.md"]
 extraction_log: "2026-09-12: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines."
@@ -161,6 +161,20 @@ This hierarchy validates our system design:
 - Manager agents keep strategic context, delegate to workers (level 2)
 - Workers finish with structured lessons, not raw output (level 3)
 - Context.md is curated facts, not raw history (avoids level 5)
+
+### Empirical Confirmation: Selective Memory > Full History (Nov 2026)
+
+arXiv 2607.09493 provides quantitative proof of the hierarchy above:
+- Shared **selective** persistent memory achieves 96% task completion
+- Full history memory achieves only 71% — a 25-point degradation
+- Full memory *actively harms* performance vs. selective forgetting
+- Confirms level 5 ("memory-as-noise") is not just risky but measurably destructive
+
+This validates our system's approach of curated `context_updates` over raw
+session history, and strengthens the case for role-typed memory (see also
+arXiv 2606.25361 on memory role differentiation in [findings/2026-09-30-hn-scan-159.md]).
+
+*(Source: arXiv 2607.09493, surfaced 2026-11-20)*
 
 ### Counter-Data: Large Context Can Work
 

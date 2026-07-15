@@ -253,3 +253,28 @@ the collaboration graph exceeds a critical density.
 - **Source**: [2606.18413] Human-AI Synergy, arXiv June 2026. Categories: cs.AI.
 - **Connects to**: Brooks's Law (§above), multi-agent-coordination.md
   (compositional incoherence), the-impedance-mismatch.md (loops growing).
+
+---
+
+## Empirical Measurement: RCWT — Task-Budget Displacement (arXiv, July 2026)
+
+[2607.12216] provides the first controlled empirical protocol for measuring
+coordination tax inside the context window. The Roundtable Context Window Test
+(RCWT) varies coordination content volume while controlling total budget,
+position, and task family.
+
+**Key finding**: The cliff is *displacement*, not interference. When coordination
+tokens grow by expanding the total prompt (task evidence stays intact), models
+show zero degradation up to a 95% coordination ratio. But under fixed-budget
+conditions (W=4096), performance collapses once residual task evidence drops to
+a few hundred tokens. This proves the tax mechanism is budget competition, not
+semantic confusion from coordination presence.
+
+**Practical implication**: Track residual task budget, not coordination volume.
+Context window expansion is a valid mitigation; coordination content
+compression is another. The RCWT protocol is reusable as a diagnostic for any
+multi-agent prompt assembly pipeline.
+
+- **Source**: [2607.12216] RCWT, arXiv July 2026. Categories: cs.CL, cs.AI, cs.MA.
+- **Connects to**: the-token-economics-trap.md, the-prompt-mass-problem.md,
+  findings/2026-07-15-arxiv-scan-289.md.

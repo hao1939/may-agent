@@ -487,6 +487,107 @@ is non-cooperative evaluation of agent behavior.
 > Turn (AgentX, JERP), Evaluation Decomposition (7 papers), Hard Boundary
 > Requirement (compression metric, semantic early-stopping).
 
+### Reflection Gap Calibration — RefGRPO (arXiv, June 2026)
+
+LLM agents systematically mis-assess their own outputs even after observing
+environment feedback. The "reflection gap" is directional: agents are more
+often **underconfident** than overconfident (44.4% underconfidence rate).
+RefGRPO ([2606.14211]) adds a free calibration bonus by contrasting the agent's
+self-reflection with actual outcomes — no reward model, judge, or annotation.
+
+**Key numbers:**
+- Underconfidence: 44.4% → 7.7%
+- Task accuracy: 75.1% → 76.5% (text-to-SQL, 5 benchmarks)
+- Cost: zero additional inference — computed from existing rollout data
+
+**Implication**: Self-assessment-based evaluation systems systematically
+undervalue acceptable work. Calibrating against downstream outcomes (did the
+negative verdict correlate with actual system degradation?) would expose the
+inflation in false-negative evaluations.
+
+- **Source**: [2606.14211] RefGRPO: Closing the Reflection Gap, arXiv June 2026. Categories: cs.CL, cs.AI.
+- **Connects to**: MemTrace evidence-use gap (§above), Evaluation Mirage
+  (pooled metrics hide directional biases), Intelligence Entropy (α-rate as
+  calibration target).
+
+### Trajectory-Level Risk Control — ToolChain-CRC (arXiv, June 2026)
+
+Post-hoc evaluation (judging sessions after completion) misses failures visible
+in the **trajectory** of actions and observations. ToolChain-CRC ([2606.18467])
+builds step-level risk scores, aggregates them into trajectory risk, calibrates
+an accept-or-intervene rule via conformal prediction, and adds an anytime alarm
+that stops risky runs before the final answer.
+
+**Key contributions:**
+- Step-level conformal risk + trajectory-level aggregation
+- Anytime alarm: intervene mid-trajectory when cumulative risk exceeds threshold
+- Formal coverage guarantees (conformal prediction, distribution-free)
+
+**Implication**: Evaluation should move from "after the session" to "during the
+session." Trajectory-level calibration catches failures that final-output checks
+cannot. Generalizes speed-based risk signals into multi-dimensional trajectory
+risk.
+
+- **Source**: [2606.18467] ToolChain-CRC: Conformal Risk Control for Agent Trajectories, arXiv June 2026. Categories: cs.AI.
+- **Connects to**: Agent Runtime Hardening (execution boundaries), Agent Security
+  Governance (guardrail governance), Evaluation Mirage (post-hoc blindspot).
+
+### Capability Boundary Detection — RODS (arXiv, June 2026)
+
+Multi-turn tool-use RL is bottlenecked by rapid depletion of informative samples
+in static datasets. Gradient signal concentrates at the agent's capability
+boundary (where successes and failures balance). As training progresses, this
+boundary shifts, depleting informative samples. RODS continuously identifies
+boundary samples via reward variance, synthesizes new variants, and maintains a
+co-evolving replay buffer.
+
+**Key numbers:**
+- Starting from 400 human seeds, maintains ~800 active samples
+- Matches performance of 17K-sample offline pipeline
+- 20× fewer trajectories needed
+
+**Critical insight**: The Popoviciu upper bound means informative training signal
+concentrates at the capability boundary. Static evaluation datasets go stale as
+the agent improves — old tasks become trivially solvable while new failure modes
+are unrepresented. Reward variance across similar tasks identifies where
+improvement is still possible, replacing binary pass/fail with a gradient signal.
+
+- **Source**: [2606.19047] RODS: Reward-Driven Online Data Synthesis, arXiv June 2026. Categories: cs.CL, cs.AI.
+- **Connects to**: RefGRPO reflection gap calibration (§above, another free evaluation signal),
+  ToolChain-CRC trajectory risk (§above), agent-runtime-hardening.md (capability boundary
+  as harness design input).
+
+### Credit Resolution Revolution — Step-Level Credit Assignment (arXiv, June 2026)
+
+Six independent papers converge on **step-level credit assignment as THE binding
+constraint** in agent RL post-training. The field is migrating from
+trajectory-level binary (success/failure → uniform credit) to graph-structured,
+semantically-aware step credit. Key results:
+
+- **Progress Advantage** ([2606.26080]): log-probability ratio between RL-trained
+  and reference policy recovers optimal advantage FREE — no PRM needed.
+- **SCPO** ([2606.25852]): semantic credit inconsistency fixed via sibling
+  trajectories; +93.7% ALFWorld at 1.5B params.
+- **BiPACE** ([2606.25556]): bisimulation-guided counterfactual baselines;
+  97.1% ALFWorld/7B (vs GiGPO 90.8%).
+- **G2PO** ([2606.22995]): graph-structured credit over state-transition graphs;
+  +22.2% over GRPO on WebShop/ALFWorld/AppWorld.
+- **Tool-RL Collapse** ([2606.26027]): RL collapses structured output format
+  while capability remains intact — format ⊥ capability in credit space.
+- **PACT** ([2606.16215]): privileged expert traces guide optimization at
+  training time without constraining inference.
+
+**Meta-pattern**: The "reward model problem" for agents is dissolved, not solved.
+Credit signal is already present in trained policies, recoverable from rollout
+structure, or estimable from model representations. What's needed is better
+*resolution* — finer temporal/semantic granularity. This is an instrumentation
+problem, not a labeling problem.
+
+- **Source**: 6 arXiv papers (2606.26080, 2606.25852, 2606.25556, 2606.22995, 2606.26027, 2606.16215), June 2026.
+- **Connects to**: RefGRPO reflection gap (§above, free calibration), ToolChain-CRC
+  trajectory risk (§above, step-level signals), RODS capability boundary (§above),
+  agent-runtime-hardening.md (harness as credit substrate).
+
 ## Related Notes
 - [Agent Evaluation Research Patterns](./agent-evaluation-research.md) ← companion note (§12–§35, arXiv research frontier)
 - [Agent Self-Correction Trends 2026](./agent-self-correction-trends-2026.md)

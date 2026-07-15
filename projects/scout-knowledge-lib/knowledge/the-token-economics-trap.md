@@ -341,6 +341,30 @@ write operations require commit barriers.
 - **Connects to**: The Harness Effect (§above, harness as cost lever), ToolPro compilation
   (the-discovery-dominance.md, another approach to reducing stepwise overhead).
 
+## Trace-Economic Underwriting — When Agent Automation Becomes Profitable (arXiv, June 2026)
+
+Formalizes the decision: when does autonomous AI deployment become economically
+acceptable despite failure risk? Answer: quantify risk at the
+customer-task-trace episode level and transfer through insurance-like
+underwriting. Uses deterministic economic labels (not LLM judges) to map
+tool-use traces to customer exposure and claimable loss.
+
+**Key numbers:**
+- Trace-economic pricing: MAE from $17.7K → $569
+- 300-trace expert audit: 295/300 labels accepted unchanged
+- Trace-conditioned controls: CVaR95 reduced by 72%
+
+**Critical insight**: Deterministic economic labels outperform LLM judges for
+risk assessment. The 295/300 audit acceptance means labeling is practically
+human-equivalent. This provides a formal answer to "when should we let agents
+run unsupervised": when expected benefit exceeds premium + control cost +
+residual risk, with bounded-permission roles and comparable traces.
+
+- **Source**: [2606.16465] Trace-Economic Underwriting, arXiv June 2026. Categories: cs.AI, cs.SE.
+- **Connects to**: Cost-Aware Speculative Execution (§above, another economic decision frame),
+  The Harness Effect (cost control via harness), agent-evaluation.md (replacing binary verdicts
+  with continuous economic signals).
+
 ---
 
 *Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof.*

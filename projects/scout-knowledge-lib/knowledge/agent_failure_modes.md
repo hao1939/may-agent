@@ -104,3 +104,21 @@ ToolBench-X introduces a benchmark specifically targeting **recoverable reliabil
   - Circuit breaker extension: not just "stop after N failures" but "diagnose and switch strategy after 1 failure"
 
 Source: https://arxiv.org/abs/2606.25819
+
+### 6. Early-Seeded, Late-Detected Failure (July 2026)
+
+Two papers converge on the same temporal pattern:
+
+**Failure as a Process** [2607.09510]: 1,794 CLI coding agent trajectories (63K+ steps, 7 frontier models, 3 scaffolds). Failures are predominantly **epistemic** (wrong beliefs about codebase), begin within the **first few execution steps**, and remain hidden until recovery is impossible. This is not a retry problem — it's a wrong-model-of-the-world problem.
+
+**AgentLocate** [2607.07989]: First systematic failure localization framework for multi-agent systems. Identifies both the responsible agent and the "earliest decisive step" — the point after which the trajectory is irreversibly misdirected. Uses multi-perspective LLM verification with confidence-aware aggregation.
+
+- **Symptom**: Agent appears to be making progress but has committed to a wrong path in early steps
+- **Cause**: Epistemic errors (wrong assumptions about environment) are invisible to outcome-based monitoring
+- **Root pattern**: The detection-repair gap is *temporal* — the error occurs early, detection occurs late, and by then the gap is unbridgeable
+- **Proposed Solutions**:
+  - Early-step validation checkpoints (verify assumptions, not just outputs)
+  - Multi-perspective verification at trajectory branching points
+  - "Point of no return" detection — monitor for irreversible commitment signals
+
+Source: arXiv [2607.09510], [2607.07989], triage 2026-07-14.

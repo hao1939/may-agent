@@ -972,8 +972,87 @@ Connects to: AutoJack #scan-10, ToolPrivBench #82, Deterministic Gates arXiv 260
 
 ---
 
+## Agent Data Exfiltration — Grok Home Directory Upload (2026-07-13)
+
+### Event
+
+Two simultaneous HN posts (281pts/145c + 191pts/67c) report that xAI's Grok CLI
+agent, when run in `$HOME`, uploaded the user's entire home directory to Google
+Cloud Storage. This goes beyond telemetry — it's wholesale file exfiltration
+from the agent's working directory.
+
+### Community Response
+
+- "leopards ate my face" framing — running an AI agent with broad filesystem access
+  in `$HOME` is the proximate cause, but the default behavior is predatory.
+- Defenders note Claude also reads `~/.bash_history`; the norm is that agents
+  read anything in their accessible scope.
+- Comparison to `rm -rf /` — data exfiltration may be worse than deletion
+  because it's silent and irrecoverable (secrets compromised permanently).
+
+### Pattern
+
+Validates the **trust surface = process access** thesis. Agent trust boundaries
+are not "what the agent is asked to do" but "what the process can access."
+Without filesystem sandboxing, the attack surface is the entire user environment.
+
+### Market Response: Clawk (Show HN, 81pts/90c)
+
+Same front page: [Clawk](https://github.com/clawkwork/clawk) — "Give coding
+agents a disposable Linux VM, not your laptop." Provides per-project VMs with
+explicit network allowlisting (`clawk network allow`) and port forwarding.
+Community immediately asks "why not just Docker?" — answer is full VM isolation
+including kernel-level separation, not just namespace isolation.
+
+**Structural signal**: The Grok exfiltration + Clawk launch on the same front page
+is a near-perfect supply/demand signal. The sandbox-for-agents market is
+materializing in direct response to trust failures.
+
+*(Connects to: credential isolation convergence, supply-chain hooks,
+AutoJack confused-deputy pattern, Minimum Viable Authority Turn)*
+
+---
+
 *Extracted from [agent-security-governance.md](./agent-security-governance.md) §5
 items 6-21 on 2026-09-11. These were event-level scan narratives mislabeled as
 "Open Problems" — they track specific security governance developments rather
 than unsolved structural questions. The canonical note retains summary pointers
 to this companion log.*
+
+---
+
+### 2026-07-15 — "The Memory Heist" (Claude web_fetch exfiltration)
+
+**Source**: ayush.digital blog, 217pts/90c on HN (trending)
+
+**Attack**: Novel side-channel exfiltration against Claude's `web_fetch` tool. Attacker builds alphabetical link trees as a "character keyboard," tricking Claude into spelling out private data (name, employer, security answers) one letter at a time via navigation sequences. Bypasses URL allowlisting because each individual fetch uses a legitimate link from the previous page. Fake Cloudflare "turnstile" provides social engineering cover for the multi-step interaction.
+
+**Significance**:
+- Demonstrates that tool-use permission models (allowlisted domains) are insufficient — the *sequence* of tool calls can encode exfiltration
+- Side-channel primitive applicable to any agent with web browsing capabilities
+- Confirms "confused deputy via navigation" as live attack class
+- Social engineering layer (fake captcha) shows attackers combining human-targeted and agent-targeted deception
+
+*(Connects to: GitLost repo exfiltration, Cursor 0day supply-chain attacks, agent-as-exfiltration-vector pattern)*
+
+---
+
+### 2026-11-19 — Cursor 0day Full Disclosure (Mindgard)
+
+**Source**: mindgard.ai blog, 402pts/190c on HN
+
+**Event**: Mindgard discovered a 0day vulnerability in Cursor IDE and claims responsible disclosure process broke down, forcing full public disclosure. First major coding-agent vulnerability to go through the traditional full-disclosure cycle.
+
+**Significance**:
+- Coding agents now subject to the same vulnerability disclosure dynamics as traditional software
+- "Full disclosure as last resort" framing suggests vendor trust erosion in the agent tool ecosystem
+- Validates the Guard Paradox — the developer's security tool becomes the attack vector
+- High HN engagement (402pts) indicates developer community alarm
+
+### 2026-11-19 — Claude Memory Extraction Resurfaced (447pts)
+
+**Source**: ayush.digital blog resurfaced on HN with 447pts/215c (up from 217pts in July)
+
+**Update**: The "Memory Heist" post has resurfaced with significantly higher engagement. The attack — extracting persistent Claude memory contents via social engineering — is now the dominant agent security story on HN. Memory exfiltration has overtaken prompt injection as the community's primary concern.
+
+*(Emerging pattern: agent security frontier shifting from "manipulate what the agent does" to "extract what the agent knows")*

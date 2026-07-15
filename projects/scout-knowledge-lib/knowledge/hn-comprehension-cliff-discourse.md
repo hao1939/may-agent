@@ -583,3 +583,21 @@ Agent skill ecosystem explosion (self-learning-skills 645★, +31%; 9+ new skill
 Trust:capability ratio 1.24:1 (18th consecutive >1:1, declining as discourse metabolizes into infrastructure).
 
 Source: HN front page 2026-07-02, arXiv API (2606.30774, 2606.31612, 2606.30668), GitHub API (api.github.com)
+
+---
+
+## Update 2026-07-14: Cognitive Offloading Discourse Resurfaces
+
+**"Are we offloading too much of our thinking to AI?"** (95→366pts, 362 comments, comment ratio 0.99) — artfish.ai essay generating explosive engagement. The discourse has shifted register: no longer about *review capacity* (can humans keep up?) but about *cognitive dependency* (should humans keep trying?). This is the Comprehension Cliff internalized — from organizational/workflow concern to personal epistemics.
+
+Key discursive move: framing AI use as *atrophy risk* rather than *throughput bottleneck*. Suggests the discourse is entering a self-help/practice phase (lifecycle stage: personal operationalization).
+
+Companion signal: "What will be left for us to work on?" (84pts, 87c earlier same day) — the labor displacement angle running in parallel.
+
+**Update 2026-07-15 (score check)**: Post reached 366pts/362c — confirmed breakout. Key comment themes at scale:
+- Junior dev couldn't explain own AI-generated code during design review (anecdote spreading as canonical example)
+- Counter-narrative: "dive deeper technically" rather than "become a manager" — rejecting the delegation-as-promotion frame
+- Calculator analogy heavily contested: critics argue calculation ≠ reasoning, delegation of *judgment* is qualitatively different
+- The discourse has *not* produced architectural proposals (unlike Tower/Cliff arcs) — remains in the personal-practice register
+
+Source: https://www.artfish.ai/p/offloading-thinking-to-ai, https://news.ycombinator.com/item?id=48908178

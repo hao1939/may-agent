@@ -134,6 +134,36 @@ pattern prevents irreversible mutations from escaping before commit.
   before state commitment).
 - **Source**: [2606.17573] Cordon, arXiv June 2026. Categories: cs.OS, cs.CR.
 
+## Agentic Transaction Processing — Deterministic Admission (Mnemosyne, arXiv June 2026)
+
+Mnemosyne (2607.00269v2) unifies semantic transactions, effect containment, and
+verified enforcement into a single constructive architecture: **Agentic
+Transaction Processing (ATP)**. Every agent-generated action is an untrusted
+proposal until it passes deterministic admission under a declared constraint
+set C. Correctness of committed state becomes independent of proposer
+competence, honesty, or learning.
+
+**Four proven safety properties:**
+1. Authority separation — only the runtime admits/commits; anything may propose
+2. Serial-equivalent generative admission — proposals evaluated as if serialized
+3. Evidence-preserving repair — compensation preserves triggering evidence
+4. Obligation containment — committed obligations are bounded and tracked
+
+**Empirical results (80 live-proposer trials, 4 heterogeneous LLMs):**
+- Zero invalid commits; gate rejected 16/40 repair proposals (4 safety rejections)
+- Under 6% overhead; local repair edits order-of-magnitude fewer ops than global recompute
+
+- **Key implication**: ATP is the formal realization of Cordon's semantic
+  transactions (above) with proven guarantees. The admission gate pattern —
+  proposals are untrusted until deterministic verification — is the structural
+  primitive underlying the Write Contract, Execution Boundary, and
+  Claim-Verification Surface. This is the 33rd layer of the Oversight Inversion.
+- **Connects to**: Semantic Transactions/Cordon (ATP subsumes staged effects),
+  Compilation Gradient (admission = compiled governance), Process Erasure
+  (append-only log defeats evidence destruction), Verified Enforcement
+  (admission gate is a constructive enforcement point).
+- **Source**: [2607.00269v2] Mnemosyne, arXiv June–July 2026.
+
 ## Advisory Concurrency — LLM-as-Conflict-Judge (CoAgent, arXiv June 2026)
 
 Classical concurrency control (locks, OCC) fits agent systems poorly:
@@ -480,3 +510,25 @@ any trial outcome actually changed downstream behavior or system design.
 - **Source**: [2605.22343] Sibyl-AutoResearch, arXiv May 2026. Categories: cs.MA, cs.AI, cs.SE.
 - **Connects to**: MOSS source-level self-rewriting (§above), Life-Harness lifecycle adaptation,
   SkillOpt agent-trainable skills (agent-architectures.md), The Evaluation Mirage.
+
+## Execution-State Capsules — Sub-Millisecond Checkpoint/Restore (arXiv, June 2026)
+
+LLM serving manages only KV cache, but interactive agents need full
+execution-state reuse (KV + recurrent state + convolution state + MTP state).
+Execution-State Capsules provide graph-bound checkpoint/restore of complete
+restorable state. FlashRT achieves sub-millisecond GPU-resident snapshot/restore.
+
+**Key numbers:**
+- Capsule restore: byte-exact at stored-state level, token-identical under greedy decode
+- KV-only ablation **diverges** — recurrent state is load-bearing
+- TTFT speedup: 3.9× at 2k tokens → 27× at 16k tokens
+
+**Critical insight**: Recurrent/convolution state is load-bearing for agent
+continuity. KV-only checkpoint (the current standard) diverges from ground truth.
+As agent sessions lengthen and multi-turn interactions grow, incomplete state
+restoration becomes a silent correctness bug, not just a latency issue.
+
+- **Source**: [2606.20537] Execution-State Capsules / FlashRT, arXiv June 2026. Categories: cs.LG, cs.DC.
+- **Connects to**: Three-Layer Co-Evolution / APEX (§above, runtime as evolved layer),
+  the-token-economics-trap.md (checkpoint as cost optimization), agent-architectures.md
+  (session state management).

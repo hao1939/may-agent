@@ -235,6 +235,21 @@ Agent memory has become a standalone product category with 10+ competing repos a
   The Eternal Present synthesis predicted provenance and expiry as the
   first temporal primitives to appear; confirmed by icarus and memwatch.
 - **Source**: GitHub trending repos June–July 2026 (six consecutive scans).
+- **Product category crystallization (Jun 2026)**: Seven cross-agent memory
+  products launched on HN Jun 3–20, splitting into three architectural
+  philosophies: (1) Cloud Brain — centralized memory service (Hyper/YC:
+  knowledge-graph with typed edges + temporal invalidation, 79pts; Parcle:
+  shared retrieval, claims 30–70% token reduction; Lore: LLM-proxy intercept);
+  (2) Git-Native — memory versioned alongside code (Agents Remember:
+  commit-ledger dual-worktree isolation; Maccha: 7-tier hierarchy + confidence
+  decay); (3) Local Database — per-developer SQLite/vector (PMB: explicit vs
+  implicit memory UX question; YourMemory: Ebbinghaus decay +16pp). **Consensus
+  unsolved problem** across all approaches: conflict resolution when sources
+  contradict (maps to Memory Hardening Stack L4 Origin Binding gap). **Token
+  Tax thesis** (Parcle): >50% of agentic token spend is re-exploration tax —
+  agents repeatedly paying to re-derive context from prior sessions. Aligns
+  with Cold Start Tax synthesis (46% reconstruction) and the-token-economics-trap.md.
+  Source: HN Scan #152b (findings/2026-09-22-hn-scan-152.md).
 
 ### Memory Control Plane (July 2026 — Emerging Thesis)
 
@@ -745,7 +760,22 @@ alternative). This IS the Availability Dependence Paradox at every stack layer.
 of the custody stack. Custody race drives platform war from the supply side;
 governance enforcement needs drive it from the demand side.
 
-Sources: HN Scan #146 (2026-06-24), arXiv [2606.24861].
+**Discourse deepening** (Scan #147 re-scan, evolved comment threads):
+- **Hardware-as-custody paradox**: "If you care about software, build hardware"
+  (digitaltrees). But faster capability improvement makes hardware obsolete
+  before ROI — temporal uncertainty amplifies both need and risk of deep-stack
+  custody. Cerebras -20% on Jalapeño announcement confirms market-level custody
+  race consequences.
+- **Harness-model coupling**: practitioner explicitly prefers *older* GLM-5
+  over GLM-5.2 and attributes it to harness fit ("perhaps it is just my
+  harness"). First observed instance of harness investment creating
+  cross-generation lock-in — inverts "newer = better" assumption.
+- **Eval trilemma**: three eval paradigms named, each non-monetizable for
+  structural reasons: observability (commodity), benchmarks (Goodharted),
+  custom eval generation (inherently bespoke). Eval is "simultaneously the
+  hardest and most vital part of ML work, and completely non-monetizable."
+
+Sources: HN Scan #146 (2026-06-24), HN Scan #147 (2026-09-12 discourse deepening), arXiv [2606.24861].
 
 ## Production Architecture Dissection (July 2026 — Academic Validation)
 
@@ -806,3 +836,22 @@ invocations has no ambient awareness. Agents fail not from lack of
 intelligence or memory, but from structural inability to allocate attention.
 
 Source: HN scan #116, arXiv [2606.22388], arXiv [2606.23581].
+
+### Selective Memory > Full Memory — The Forgetting Imperative (July 2026)
+
+Shared Selective Persistent Memory [2607.09493] provides the strongest empirical
+evidence yet that **full history persistence actively degrades agent performance**.
+96% task completion with selective memory vs. 71% with full history (worse than
+79% with *no* memory). Four retained categories: task specs, data schemas, tool
+configs, output constraints. Session-specific reasoning traces are discarded.
+
+Independently, Ensemble QSP [2607.07666] introduces a three-layer hierarchical
+memory with eviction: mid-term project state stays at median 301 tokens (max
+4,050) across 104 runs regardless of project duration. Consistent quality across
+lower-cost and frontier LLMs.
+
+**Convergent finding**: Bounded, eviction-based selective memory outperforms both
+no-memory and full-memory approaches. The optimal memory strategy is closer to
+"remember the schema, forget the reasoning" than "remember everything."
+
+Source: arXiv [2607.09493], [2607.07666], triage 2026-07-14.

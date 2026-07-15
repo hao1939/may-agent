@@ -83,7 +83,7 @@ The main routes are:
 - `scout.digest` -> daily digest workflow;
 - `project.library_health.tick` -> deterministic health observer;
 - `project.owner.requested` -> Scout owner/planner review;
-- `project.planning.requested` -> Scout owner/planner review.
+- `project.owner.requested` -> Scout owner/planner review.
 
 Observation is not completion. A health packet closes only when the signal is
 resolved, accepted with a durable reason, or represented by clear follow-up
