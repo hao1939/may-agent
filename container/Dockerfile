@@ -103,9 +103,15 @@ RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
 # Install CLI agent tools (claude-code, codex) used as worker agents. They
 # route through litellm proxy for model access; keep versions pinned so image
 # rebuilds do not silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.206
-ARG CODEX_VERSION=0.144.1
+ARG CLAUDE_CODE_VERSION=2.1.210
+ARG CODEX_VERSION=0.144.4
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} \
+    && test "$(claude --version | awk '{print $1}')" = "${CLAUDE_CODE_VERSION}" \
+    && test "$(codex --version | awk '{print $2}')" = "${CODEX_VERSION}" \
+    && claude --help | grep -q -- '--output-format' \
+    && claude --help | grep -q -- '--resume' \
+    && codex exec --help | grep -q -- '--output-last-message' \
+    && codex exec resume --help | grep -q -- '--last' \
     && npm cache clean --force
 
 # Copy compiled runtime tools from builder. The service runs from the standalone
