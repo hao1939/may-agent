@@ -7,11 +7,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-export type EventGraphOptions = {
-  depth?: number;
-  detail?: boolean;
-};
-
 export type EventGraphNode = {
   id: number;
   type: string;
@@ -45,8 +40,7 @@ export type EventGraphDisplayNode = {
     | "tool_result"
     | "metric"
     | "notification"
-    | "diagnostic"
-    | "more";
+    | "diagnostic";
   role?: "primary" | "detail" | "diagnostic";
   parentKey?: string;
   level?: number;
@@ -58,6 +52,8 @@ export type EventGraphDisplayNode = {
   toolCallId?: string;
   timestamp?: number;
   type?: string;
+  source?: string;
+  owner?: string;
   label: string;
   summary?: string;
   dataPreview?: Record<string, unknown>;
@@ -77,13 +73,24 @@ export type EventGraphDisplayEdge = {
 
 export type EventGraphResponse = {
   focusEventId: number;
+  focusEvent?: {
+    id: number;
+    type: string;
+    source?: string;
+    owner?: string;
+    timestamp: number;
+    trace?: {
+      traceId: string;
+      parentEventId?: number;
+    };
+    data: Record<string, unknown>;
+  };
   traceId?: string;
   revision: string;
   nodes: EventGraphDisplayNode[];
   edges: EventGraphDisplayEdge[];
   eventNodes: EventGraphNode[];
   eventEdges: EventGraphEdge[];
-  frontiers?: EventGraphFrontier[];
   eventList?: EventGraphNode[];
   eventListScope?: {
     kind: "session" | "workflow" | "task" | "graph";
@@ -93,23 +100,6 @@ export type EventGraphResponse = {
   diagnostics: string[];
   detailNodeCount?: number;
   review?: EventReview;
-};
-
-export type EventGraphFrontier = {
-  key: string;
-  id: string;
-  kind: "more";
-  anchorEventId: number;
-  parentEventId: number;
-  direction: "before" | "after" | "context" | "details";
-  scope: "trace" | "workflow" | "task" | "session" | "metric" | "owner";
-  count: number;
-  hiddenCount: number;
-  label: string;
-  nodes: EventGraphDisplayNode[];
-  edges: EventGraphDisplayEdge[];
-  eventNodes: EventGraphNode[];
-  eventEdges: EventGraphEdge[];
 };
 
 export type EventReviewLifecycle = {
@@ -193,11 +183,14 @@ function compact(value: unknown, max = 180): string | undefined {
 }
 
 function previewValue(value: unknown): unknown {
-  if (typeof value === "string") return compact(value, 160);
+  if (typeof value === "string") return compact(value, 220);
   if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
   if (typeof value === "bigint") return value.toString();
-  if (Array.isArray(value)) return `[${value.length} items]`;
-  return undefined;
+  try {
+    return compact(JSON.stringify(value), 220);
+  } catch {
+    return undefined;
+  }
 }
 
 function previewData(data: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -318,6 +311,8 @@ function displayNodeFromEventNode(
     ...(workflowRunId ? { workflowRunId } : {}),
     timestamp: node.timestamp,
     type: node.type,
+    ...(node.source ? { source: node.source } : {}),
+    ...(node.owner ? { owner: node.owner } : {}),
     label: node.label,
     ...(node.summary ? { summary: node.summary } : {}),
     ...(node.dataPreview ? { dataPreview: node.dataPreview } : {}),
@@ -599,198 +594,6 @@ function normalizeEdgesForReview(edges: EventGraphEdge[], rowsById: Map<number, 
     }
     return true;
   });
-}
-
-function isDefaultContextEdge(edge: EventGraphEdge): boolean {
-  return edge.type === "reference" && edge.label === "same workflow";
-}
-
-function eventIdFromTraceId(traceId: string | undefined): number | undefined {
-  const match = traceId?.match(/^event:(\d+)$/);
-  return match ? numberValue(match[1]) : undefined;
-}
-
-function parentPathIds(focusEventId: number, edges: EventGraphEdge[], rowsById: Map<number, Row>): number[] {
-  const parentByChild = new Map<number, EventGraphEdge[]>();
-  for (const edge of edges) {
-    if (edge.type !== "parent") continue;
-    parentByChild.set(edge.target, [...(parentByChild.get(edge.target) ?? []), edge]);
-  }
-  const path: number[] = [];
-  const seen = new Set<number>();
-  let current = focusEventId;
-  while (Number.isFinite(current) && !seen.has(current)) {
-    seen.add(current);
-    path.push(current);
-    const parents = parentByChild.get(current) ?? [];
-    if (!parents.length) break;
-    parents.sort((a, b) => {
-      const aTime = numberValue(rowsById.get(a.source)?.timestamp) ?? 0;
-      const bTime = numberValue(rowsById.get(b.source)?.timestamp) ?? 0;
-      return aTime - bTime || a.source - b.source;
-    });
-    current = parents[0].source;
-  }
-  return path.reverse();
-}
-
-function visibleIdsForDefaultScope(
-  focusEventId: number,
-  edges: EventGraphEdge[],
-  depth: number,
-  rowsById: Map<number, Row>,
-  traceId: string | undefined,
-): Set<number> {
-  const visible = visibleIdsFromDepth(focusEventId, edges, depth);
-  const rootEventId = eventIdFromTraceId(traceId);
-  if (rootEventId && rowsById.has(rootEventId)) visible.add(rootEventId);
-  for (const id of parentPathIds(focusEventId, edges, rowsById)) visible.add(id);
-  return visible;
-}
-
-function moreNodeScope(edge: EventGraphEdge): EventGraphFrontier["scope"] {
-  if (edge.label === "same workflow") return "workflow";
-  if (edge.label === "session") return "session";
-  if (edge.label === "review" || edge.label === "result" || edge.label === "project.task") return "task";
-  if (edge.label === "metric" || edge.label === "metric.breach") return "metric";
-  return "trace";
-}
-
-function moreNodeDirection(edge: EventGraphEdge, visibleId: number, hiddenNode: EventGraphNode): EventGraphFrontier["direction"] {
-  if (isDefaultContextEdge(edge)) return "context";
-  if (hiddenNode.visibility === "detail") return "details";
-  if (edge.type === "parent" && edge.source === hiddenNode.id && edge.target === visibleId) return "before";
-  if (edge.type === "closure" || edge.type === "reference") {
-    if (edge.source === hiddenNode.id && edge.target === visibleId) return "before";
-  }
-  return "after";
-}
-
-function moreNodeLabel(
-  direction: EventGraphFrontier["direction"],
-  scope: EventGraphFrontier["scope"],
-  count: number,
-): string {
-  const plural = count === 1 ? "" : "s";
-  if (direction === "context" && scope === "workflow") return `... ${count} same-workflow session${plural}`;
-  if (direction === "before") return `... ${count} earlier event${plural}`;
-  if (direction === "details") return `... ${count} detail event${plural}`;
-  if (direction === "context") return `... ${count} related ${scope} event${plural}`;
-  return `... ${count} later event${plural}`;
-}
-
-function buildFrontiers(
-  allNodes: EventGraphNode[],
-  allEdges: EventGraphEdge[],
-  visibleIds: Set<number>,
-): EventGraphFrontier[] {
-  const nodeById = new Map(allNodes.map((node) => [node.id, node]));
-  const adjacency = new Map<number, number[]>();
-  for (const edge of allEdges) {
-    adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]);
-    adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]);
-  }
-  const byKey = new Map<string, {
-    parentEventId: number;
-    direction: EventGraphFrontier["direction"];
-    scope: EventGraphFrontier["scope"];
-    nodes: Map<number, EventGraphNode>;
-  }>();
-
-  for (const edge of allEdges) {
-    const sourceVisible = visibleIds.has(edge.source);
-    const targetVisible = visibleIds.has(edge.target);
-    if (sourceVisible === targetVisible) continue;
-    const parentEventId = sourceVisible ? edge.source : edge.target;
-    const hiddenEventId = sourceVisible ? edge.target : edge.source;
-    const hiddenNode = nodeById.get(hiddenEventId);
-    if (!hiddenNode) continue;
-    const direction = moreNodeDirection(edge, parentEventId, hiddenNode);
-    const scope = moreNodeScope(edge);
-    const key = `more:${scope}:${direction}:${parentEventId}`;
-    const bucket = byKey.get(key) ?? {
-      parentEventId,
-      direction,
-      scope,
-      nodes: new Map<number, EventGraphNode>(),
-    };
-    bucket.nodes.set(hiddenEventId, hiddenNode);
-    byKey.set(key, bucket);
-  }
-
-  return [...byKey.entries()]
-    .sort(([, a], [, b]) => a.parentEventId - b.parentEventId || a.direction.localeCompare(b.direction) || a.scope.localeCompare(b.scope))
-    .map(([key, bucket]) => {
-      const hiddenIds = new Set<number>(bucket.nodes.keys());
-      const queue = [...hiddenIds];
-      while (queue.length) {
-        const current = queue.shift()!;
-        for (const next of adjacency.get(current) ?? []) {
-          if (visibleIds.has(next) || hiddenIds.has(next) || !nodeById.has(next)) continue;
-          hiddenIds.add(next);
-          queue.push(next);
-        }
-      }
-      const eventNodes = [...hiddenIds]
-        .flatMap((id) => nodeById.get(id) ? [nodeById.get(id)!] : [])
-        .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-      const eventEdges = allEdges.filter((edge) =>
-        (hiddenIds.has(edge.source) && hiddenIds.has(edge.target)) ||
-        (edge.source === bucket.parentEventId && hiddenIds.has(edge.target)) ||
-        (edge.target === bucket.parentEventId && hiddenIds.has(edge.source))
-      );
-      const display = buildDisplayGraph(bucket.parentEventId, eventNodes, eventEdges, eventNodes);
-      const workflowSessionCount = bucket.scope === "workflow"
-        ? new Set(eventNodes.map((node) => stringValue(node.dataPreview?.sessionId)).filter(Boolean)).size
-        : 0;
-      const count = workflowSessionCount || eventNodes.length;
-      return {
-        key,
-        id: key,
-        kind: "more" as const,
-        anchorEventId: bucket.parentEventId,
-        parentEventId: bucket.parentEventId,
-        direction: bucket.direction,
-        scope: bucket.scope,
-        count,
-        hiddenCount: count,
-        label: moreNodeLabel(bucket.direction, bucket.scope, count),
-        nodes: display.displayNodes,
-        edges: display.displayEdges,
-        eventNodes,
-        eventEdges,
-      };
-    });
-}
-
-function clampDepth(value: unknown): number {
-  const depth = Number(value);
-  if (!Number.isFinite(depth)) return 1;
-  return Math.max(0, Math.min(12, Math.floor(depth)));
-}
-
-function visibleIdsFromDepth(focusEventId: number, edges: EventGraphEdge[], maxDepth: number): Set<number> {
-  const adjacency = new Map<number, number[]>();
-  for (const edge of edges) {
-    const a = adjacency.get(edge.source) ?? [];
-    a.push(edge.target);
-    adjacency.set(edge.source, a);
-    const b = adjacency.get(edge.target) ?? [];
-    b.push(edge.source);
-    adjacency.set(edge.target, b);
-  }
-  const visible = new Set<number>([focusEventId]);
-  const queue: Array<{ id: number; depth: number }> = [{ id: focusEventId, depth: 0 }];
-  while (queue.length) {
-    const item = queue.shift()!;
-    if (item.depth >= maxDepth) continue;
-    for (const next of adjacency.get(item.id) ?? []) {
-      if (visible.has(next)) continue;
-      visible.add(next);
-      queue.push({ id: next, depth: item.depth + 1 });
-    }
-  }
-  return visible;
 }
 
 function lifecycleStatus(pair: Row, now = Date.now()): EventReviewLifecycle["status"] {
@@ -1140,7 +943,29 @@ function buildDisplayGraph(
   const primaryIds = new Set(nodes.map((node) => node.id));
 
   for (const node of nodes) {
-    displayNodes.set(eventNodeKey(node.id), displayNodeFromEventNode(node));
+    if (node.visibility !== "detail") {
+      displayNodes.set(eventNodeKey(node.id), displayNodeFromEventNode(node));
+      continue;
+    }
+    const nodeKey = eventNodeKey(node.id);
+    const candidateParentKey = detailParentKeyForNode(node, nodes, focusEventId);
+    const parentKey = candidateParentKey === nodeKey ? undefined : candidateParentKey;
+    const detailNode = displayNodeFromEventNode(node, {
+      ...(parentKey ? { parentKey, level: 1 } : {}),
+      role: nodeKindForEventType(node.type) === "diagnostic" ? "diagnostic" : "detail",
+    });
+    displayNodes.set(detailNode.key, detailNode);
+    if (parentKey) {
+      const detailEdge: EventGraphDisplayEdge = {
+        key: `detail:${parentKey}:${detailNode.key}`,
+        sourceKey: parentKey,
+        targetKey: detailNode.key,
+        kind: "detail",
+        label: "detail",
+        provenance: "projection",
+      };
+      displayEdges.set(detailEdge.key, detailEdge);
+    }
   }
 
   for (const edge of edges) {
@@ -1224,10 +1049,8 @@ function loadFallbackPairRows(db: SqliteDb, focusEventId: number): { rows: Row[]
   return { rows, edges: [...edges.values()] };
 }
 
-export function buildEventGraph(db: SqliteDb, focusEventId: number, options: EventGraphOptions = {}): EventGraphResponse {
+export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphResponse {
   const diagnostics: string[] = [];
-  const depth = clampDepth(options.depth);
-  const includeDetail = options.detail === true;
   const focus = safeGet(db, "SELECT * FROM events WHERE id = ?", focusEventId);
   if (!focus) {
     return {
@@ -1329,42 +1152,48 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number, options: Eve
   addCorrelationEdges(edges, [...rowsById.values()]);
 
   const allEdges = normalizeEdgesForReview([...edges.values()], rowsById);
-  const traversalEdges = allEdges.filter((edge) => !isDefaultContextEdge(edge));
-  const visibleIds = visibleIdsForDefaultScope(focusEventId, traversalEdges, depth, rowsById, traceId);
   const graphNodes = [...rowsById.values()]
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-  const availableNodes = graphNodes.filter((node) => includeDetail || node.visibility !== "detail");
   const detailNodeCount = graphNodes.filter((node) => node.visibility === "detail").length;
-  const nodes = availableNodes.filter((node) => visibleIds.has(node.id));
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const visibleEdges = traversalEdges
+  const nodeIds = new Set(graphNodes.map((node) => node.id));
+  const graphEdges = allEdges
     .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => a.source - b.source || a.target - b.target || a.type.localeCompare(b.type));
-  const frontiers = buildFrontiers(availableNodes, allEdges, nodeIds);
   const eventListProjection = loadEventListRows(db, focus, rowsById, relationKeys);
   const eventList = eventListProjection.rows
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-  const displayGraph = buildDisplayGraph(focusEventId, nodes, visibleEdges, eventList);
+  const displayGraph = buildDisplayGraph(focusEventId, graphNodes, graphEdges, eventList);
   const latestTimestamp = graphNodes.reduce((latest, node) => Math.max(latest, node.timestamp), 0);
-  const revision = `${focusEventId}:${latestTimestamp}:${graphNodes.length}:${allEdges.length}:${includeDetail ? 1 : 0}`;
-
-  if (!nodes.some((node) => node.id === focusEventId)) {
-    diagnostics.push("focus event is hidden by current detail filter");
-  }
+  const revision = `${focusEventId}:${latestTimestamp}:${graphNodes.length}:${allEdges.length}`;
 
   return {
     focusEventId,
+    focusEvent: {
+      id: focusEventId,
+      type: stringValue(focus.event_type) ?? "event",
+      ...(stringValue(focus.source) ? { source: stringValue(focus.source) } : {}),
+      ...(stringValue(focus.owner) ? { owner: stringValue(focus.owner) } : {}),
+      timestamp: numberValue(focus.timestamp) ?? 0,
+      ...(traceId
+        ? {
+            trace: {
+              traceId,
+              ...(numberValue(focus.parent_event_id) ? { parentEventId: numberValue(focus.parent_event_id)! } : {}),
+            },
+          }
+        : {}),
+      data: parseData(focus),
+    },
     ...(traceId ? { traceId } : {}),
     revision,
     nodes: displayGraph.displayNodes,
     edges: displayGraph.displayEdges,
-    eventNodes: nodes,
-    eventEdges: visibleEdges,
-    frontiers,
+    eventNodes: graphNodes,
+    eventEdges: graphEdges,
     eventList,
     eventListScope: eventListProjection.scope,
     diagnostics,
@@ -1387,6 +1216,49 @@ function transcriptSummary(value: unknown, fallback: string): string {
 
 function transcriptKeyPart(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+function assignTranscriptTurnTimestamps(
+  turnNodes: EventGraphDisplayNode[],
+  startTime: number | undefined,
+  endTime: number | undefined,
+): void {
+  let index = 0;
+  while (index < turnNodes.length) {
+    if (turnNodes[index].timestamp != null) {
+      index++;
+      continue;
+    }
+    const firstMissing = index;
+    while (index < turnNodes.length && turnNodes[index].timestamp == null) index++;
+    const previousTime = firstMissing > 0 ? turnNodes[firstMissing - 1].timestamp : startTime;
+    const nextTime = index < turnNodes.length ? turnNodes[index].timestamp : endTime;
+    const count = index - firstMissing;
+    for (let offset = 0; offset < count; offset++) {
+      if (previousTime != null && nextTime != null && nextTime > previousTime) {
+        turnNodes[firstMissing + offset].timestamp = previousTime + ((nextTime - previousTime) * (offset + 1)) / (count + 1);
+      } else if (previousTime != null) {
+        turnNodes[firstMissing + offset].timestamp = previousTime + offset + 1;
+      } else if (nextTime != null) {
+        turnNodes[firstMissing + offset].timestamp = nextTime - (count - offset);
+      }
+    }
+  }
+
+  const bounded = startTime != null && endTime != null && endTime > startTime;
+  const epsilon = bounded ? Math.min(1, (endTime - startTime) / (turnNodes.length + 1)) : 1;
+  let previousTime = startTime;
+  for (let turnIndex = 0; turnIndex < turnNodes.length; turnIndex++) {
+    let timestamp = turnNodes[turnIndex].timestamp;
+    if (timestamp == null) timestamp = previousTime != null ? previousTime + epsilon : turnIndex;
+    if (previousTime != null) timestamp = Math.max(timestamp, previousTime + epsilon);
+    if (bounded) {
+      const latest = endTime - epsilon * (turnNodes.length - turnIndex);
+      if (latest >= (previousTime ?? Number.NEGATIVE_INFINITY) + epsilon) timestamp = Math.min(timestamp, latest);
+    }
+    turnNodes[turnIndex].timestamp = timestamp;
+    previousTime = timestamp;
+  }
 }
 
 export function addSessionTranscriptToEventGraph(
@@ -1509,20 +1381,14 @@ export function addSessionTranscriptToEventGraph(
   const turnNodes = projectedNodes.filter((node) => node.kind === "turn");
   const startTime = start?.timestamp;
   const endTime = end?.timestamp;
-  for (let index = 0; index < turnNodes.length; index++) {
-    if (turnNodes[index].timestamp != null) continue;
-    if (startTime != null && endTime != null && endTime > startTime) {
-      turnNodes[index].timestamp = startTime + ((endTime - startTime) * (index + 1)) / (turnNodes.length + 1);
-    } else if (startTime != null) {
-      turnNodes[index].timestamp = startTime + index + 1;
-    } else if (endTime != null) {
-      turnNodes[index].timestamp = endTime - (turnNodes.length - index);
-    }
-  }
+  assignTranscriptTurnTimestamps(turnNodes, startTime, endTime);
   const projectedByKey = new Map(projectedNodes.map((node) => [node.key, node]));
   for (const node of projectedNodes) {
-    if (node.timestamp != null || !node.parentKey) continue;
-    node.timestamp = projectedByKey.get(node.parentKey)?.timestamp;
+    if (!node.parentKey) continue;
+    const parentTimestamp = projectedByKey.get(node.parentKey)?.timestamp;
+    if (node.kind === "tool_call") node.timestamp = parentTimestamp;
+    else if (node.timestamp == null) node.timestamp = parentTimestamp;
+    else if (parentTimestamp != null) node.timestamp = Math.max(node.timestamp, parentTimestamp);
   }
 
   if (turnKeys.length) {
@@ -1559,7 +1425,15 @@ export function addSessionTranscriptToEventGraph(
   for (const node of projectedNodes) nodesByKey.set(node.key, node);
   const edgesByKey = new Map(graph.edges.map((edge) => [edge.key, edge]));
   for (const edge of projectedEdges) edgesByKey.set(edge.key, edge);
-  const nodes = [...nodesByKey.values()].map((node, order) => ({ ...node, order }));
+  const nodes = [...nodesByKey.values()]
+    .sort((a, b) => {
+      const aTime = a.timestamp;
+      const bTime = b.timestamp;
+      if (aTime != null && bTime != null && aTime !== bTime) return aTime - bTime;
+      if ((aTime != null) !== (bTime != null)) return aTime != null ? -1 : 1;
+      return Number(a.order ?? 0) - Number(b.order ?? 0) || a.key.localeCompare(b.key);
+    })
+    .map((node, order) => ({ ...node, order }));
   return {
     ...graph,
     revision: `${graph.revision}:session:${cleanSessionId}:${messages.length}`,

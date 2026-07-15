@@ -222,11 +222,9 @@ export interface QueryAPI {
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
   /** Record that inbox-routed events were reviewed. Emits follow-up events and closes pairs. */
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-  /** Mark inbox events as handled after consumption. Returns count updated. */
-  markInboxHandled(eventIds: number[], handledBy?: string): number;
-  /** Expire stale pending messages older than the given age. Returns count expired. */
+  /** Retire stale message owner-inbox pairs. Returns count retired. */
   expireStaleMessages(olderThanMs: number): number;
-  /** Expire stale pending signal events (session.resume_failed, metric.breach/recovered/stalled) older than the given age. Returns count expired. */
+  /** Retire stale signal owner-inbox pairs. Returns count retired. */
   expireStaleSignalEvents(olderThanMs: number): number;
 }
 
@@ -367,7 +365,7 @@ export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
   task: string;
   agent: string;
   done(summary: string, opts?: DoneOpts): SDKWorkflowResult;
-  escalate(reason: string, opts?: EscalationOptions): SDKWorkflowResult;
+  blocked(reason: string, context?: unknown): SDKWorkflowResult;
 };
 
 export interface EventEnvelopeOptions {
@@ -812,11 +810,7 @@ export function workflowRowToExecutionResult(row: WorkflowExecutionRow): Executi
   };
 }
 
-export type WorkflowResult =
-  | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown }
-  /** @deprecated Use { type: "blocked" } / ctx.blocked(). */
-  | { type: "escalate"; reason: string; context?: unknown };
+export type WorkflowResult = { type: "done"; summary: string } | { type: "blocked"; reason: string; context?: unknown };
 
 export interface WorkflowEvent {
   type: string;
@@ -857,8 +851,6 @@ export interface WorkflowContext {
   summarize(result: TaskResult, opts?: Record<string, unknown>): string;
   done(summary: string): WorkflowResult;
   blocked(reason: string, context?: unknown): WorkflowResult;
-  /** @deprecated Use blocked(). This is a local blocked result, not escalation.created. */
-  escalate(reason: string, context?: unknown): WorkflowResult;
   createSession(opts: SessionOptions): Promise<SessionHandle>;
 }
 
@@ -934,10 +926,9 @@ export {
 } from "./heartbeat-data.js";
 
 // ── Project-app manifest/event helpers ───────────────────────────────
-export { defineProjectApp, eventData, eventDetails, eventString, workflowHandlers } from "./project-app.js";
+export { defineProjectApp, eventData, eventDetails, eventString } from "./project-app.js";
 export type {
   EventSelector,
-  GeneratedProjectEventHandlers,
   ProjectApp,
   ProjectAppAction,
   ProjectAppContext,
@@ -973,10 +964,7 @@ export {
   resolveTaskTreePath,
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
-export type {
-  EnsureTaskTreeStateResult,
-  ProjectRuntimePaths,
-} from "./project-runtime-state.js";
+export type { EnsureTaskTreeStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
 
 export {
   appendPlannerRun,

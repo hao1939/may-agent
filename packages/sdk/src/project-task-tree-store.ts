@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { projectRuntimePaths } from "./project-runtime-state.js";
 
 export type TaskBlocker =
   | string
@@ -216,10 +217,18 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   }
 
   tree.updated_at = new Date().toISOString();
+  const serialized = `${JSON.stringify(canonicalTaskTreeForWrite(tree), null, 2)}\n`;
   ensureDir(dirname(config.treePath));
   const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tempPath, `${JSON.stringify(canonicalTaskTreeForWrite(tree), null, 2)}\n`, "utf-8");
+  writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.treePath);
+
+  const runtimeTreePath = projectRuntimePaths(config.appDir).taskTreePath;
+  if (config.treePath === runtimeTreePath) {
+    const legacyPath = join(config.appDir, "tasks", "tree.json");
+    ensureDir(dirname(legacyPath));
+    writeFileSync(legacyPath, serialized, "utf-8");
+  }
 }
 
 function normalizeLegacyState(raw: string): string {

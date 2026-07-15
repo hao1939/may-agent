@@ -42,7 +42,7 @@ export type ProjectAppContext = {
   readJson<T = unknown>(path: string): Promise<T>;
   importModule<T = Record<string, unknown>>(path: string): Promise<T>;
   startSession(input: { agent: string; task: string; timeoutMs?: number }): unknown;
-  emit(event: Record<string, unknown>): unknown;
+  emit(event: ProjectAppEvent): unknown;
   noop(reason: string): unknown;
 };
 
@@ -65,17 +65,8 @@ export type ProjectWorkflowHandler = {
   enabled: boolean;
   description: string;
   maxConcurrentTriggers?: number;
-  /**
-   * Declarative selectors accepted by this generated workflow handler.
-   * Use this for new project apps. Runtime lowers these selectors to cron
-   * event-type subscriptions while preserving target intent in the manifest.
-   */
-  accepts?: EventSelector[];
-  /**
-   * Compatibility shorthand for accepts: ["event.type"].
-   * Prefer accepts[] in new manifests.
-   */
-  on?: string[];
+  /** Declarative selectors accepted by this workflow handler. */
+  accepts: EventSelector[];
   emits?: string[];
   handler: {
     workflow: string;
@@ -88,14 +79,7 @@ export type ProjectWorkflowHandler = {
   context: string[];
 };
 
-export type GeneratedProjectEventHandlers<T extends ProjectWorkflowHandler[] = ProjectWorkflowHandler[]> = {
-  kind: "generated-workflow-handlers";
-  handlers: T;
-};
-
-export type ProjectAppOnEvent =
-  | ((ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown>)
-  | GeneratedProjectEventHandlers;
+export type ProjectAppOnEvent = (ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown>;
 
 export type ProjectApp = {
   id: string;
@@ -118,20 +102,13 @@ export type ProjectApp = {
     enabled: boolean;
     intervalMs?: number;
     cron?: string;
-    emits?: ProjectAppEvent[];
-    /** Compatibility shorthand for emits: [event]. Prefer emits[]. */
-    event?: ProjectAppEvent;
+    emits: ProjectAppEvent[];
   }>;
-  /**
-   * Runtime compatibility field. Prefer declaring generated workflow-backed
-   * event handlers with `onEvent: workflowHandlers([...])`; defineProjectApp()
-   * expands that sugar into this field for the current installer.
-   */
+  /** Declarative workflow-backed event handlers. */
   workflowHandlers?: ProjectWorkflowHandler[];
   /**
-   * Extra selectors for custom imperative onEvent functions. Generated
-   * workflow handlers already declare their own event subscriptions through
-   * `onEvent: workflowHandlers([...])`.
+   * Extra selectors for the imperative onEvent function. Workflow handlers
+   * declare their own subscriptions through workflowHandlers[].accepts.
    */
   events?: EventSelector[];
   eventGraph?: {
@@ -157,21 +134,8 @@ export type ProjectApp = {
   onEvent?: ProjectAppOnEvent;
 };
 
-export function defineProjectApp(app: ProjectApp): ProjectApp {
-  if (app.onEvent && typeof app.onEvent !== "function" && app.onEvent.kind === "generated-workflow-handlers") {
-    return {
-      ...app,
-      workflowHandlers: app.workflowHandlers ?? app.onEvent.handlers,
-    };
-  }
+export function defineProjectApp<T extends ProjectApp>(app: T): T {
   return app;
-}
-
-export function workflowHandlers<T extends ProjectWorkflowHandler[]>(handlers: T): GeneratedProjectEventHandlers<T> {
-  return {
-    kind: "generated-workflow-handlers",
-    handlers,
-  };
 }
 
 export function eventData(event: Record<string, unknown>): Record<string, unknown> {

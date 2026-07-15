@@ -234,6 +234,14 @@ function closingEventTypesForBase(base: string): string[] {
   return CLOSING_SUFFIXES.map((suffix) => `${base}${suffix}`);
 }
 
+function isRuntimePairRepairProjectTaskCompletion(
+  eventType: string,
+  payload: Record<string, unknown>,
+): boolean {
+  if (eventType !== "project.task.completed") return false;
+  return payload.repair === true || payload.reason === "runtime-pair-repair";
+}
+
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
@@ -392,6 +400,10 @@ export class DbWriter {
     this.sweepUnacceptedEvents(timestamp);
     this.db.exec("BEGIN IMMEDIATE");
     try {
+      if (this.shouldSkipDuplicateRuntimePairRepair(event.type, payload)) {
+        this.db.exec("COMMIT");
+        return null;
+      }
       const info = this.db.run(
         "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [event.type, source, owner, capEventData(payload), timestamp, urgency, ttlMs],
@@ -473,6 +485,33 @@ export class DbWriter {
         `owner inbox item opened by ${event.type}`,
       ],
     );
+  }
+
+  private shouldSkipDuplicateRuntimePairRepair(
+    eventType: string,
+    payload: Record<string, unknown>,
+  ): boolean {
+    if (!isRuntimePairRepairProjectTaskCompletion(eventType, payload)) {
+      return false;
+    }
+    const key = correlationKey(eventType, payload);
+    if (!key) return false;
+    const row = this.db
+      .prepare(
+        `SELECT close_event_id
+         FROM event_pair_runs
+         WHERE pair_name = 'project.task'
+           AND correlation_key = ?
+           AND status = 'closed'
+           AND close_event_id IS NOT NULL
+         LIMIT 1`,
+      )
+      .get(key) as { close_event_id?: unknown } | undefined;
+    const closeEventId =
+      typeof row?.close_event_id === "number"
+        ? row.close_event_id
+        : Number(row?.close_event_id);
+    return Number.isFinite(closeEventId) && closeEventId > 0;
   }
 
   private openConventionPair(
@@ -617,6 +656,10 @@ export class DbWriter {
   private sweepStalePairs(now: number): void {
     try {
       this.closeReverseOrderedConventionPairs();
+    } catch {
+      /* best-effort reverse-pair close */
+    }
+    try {
       this.db.run(
         `UPDATE event_pair_runs
          SET status = 'orphan',
@@ -625,22 +668,31 @@ export class DbWriter {
            AND expected_close_at < ?`,
         [now],
       );
-      // Purge orphan pairs older than 1h — they accumulate monotonically and
-      // serve no diagnostic value once stale. Without this, the
+    } catch {
+      /* best-effort orphan marking */
+    }
+    try {
+      // Purge orphan pairs older than 15min — they accumulate monotonically
+      // and serve no diagnostic value once stale. Without this, the
       // event.pair-orphan-count metric breaches any threshold eventually.
       // Most orphans are owner_inbox pairs (messages not formally reviewed
-      // within 2h TTL) which are expected at normal volume (~40/h). 1h
-      // retention keeps the count below the alert threshold of 50 while still
-      // providing a diagnostic window for genuine pair failures.
-      const ORPHAN_RETENTION_MS = 1 * 60 * 60 * 1000;
+      // within 2h TTL) which are expected at normal volume (~40/h). 15min
+      // retention keeps the count well below the alert threshold of 100 while
+      // still providing a diagnostic window for genuine pair failures.
+      const ORPHAN_RETENTION_MS = 15 * 60 * 1000;
       this.db.run(
         `DELETE FROM event_pair_runs
-         WHERE status = 'orphan'
-           AND expected_close_at < ?`,
+         WHERE rowid IN (
+           SELECT rowid FROM event_pair_runs
+           WHERE status = 'orphan'
+             AND expected_close_at < ?
+           LIMIT 2000
+         )`,
         [now - ORPHAN_RETENTION_MS],
       );
-    } catch {
-      /* best-effort pair sweep */
+    } catch (e) {
+      /* best-effort orphan purge — log to aid debugging accumulation */
+      if (typeof console !== "undefined") console.warn("[db-writer] orphan purge failed:", e);
     }
   }
 

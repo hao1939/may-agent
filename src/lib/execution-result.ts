@@ -142,17 +142,6 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
     };
   }
 
-  if (result.type === "escalated") {
-    return {
-      id: result.workflowRunId,
-      kind: "workflow",
-      status: "blocked",
-      summary: compact(result.reason, "workflow blocked"),
-      traceId: result.workflowRunId,
-      evidence: { workflow: result.workflow, context: result.context, steps: result.steps },
-    };
-  }
-
   if (result.type === "blocked") {
     return {
       id: result.workflowRunId,

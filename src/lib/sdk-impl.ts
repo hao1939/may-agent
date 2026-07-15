@@ -320,12 +320,7 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
       return result;
     },
 
-    escalate(reason: string, opts?: EscalationOptions): WorkflowResult {
-      if (typeof (opts as unknown) === "string") {
-        throw new Error(
-          "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
-        );
-      }
+    blocked(reason: string, _context?: unknown): WorkflowResult {
       const result: WorkflowResult = { status: "blocked", summary: reason };
       deps.finish(result);
       return result;

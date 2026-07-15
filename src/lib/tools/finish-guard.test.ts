@@ -225,6 +225,46 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
+  it("allows finish(success) with deliverables when run_cli_agent was used", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "Delegated implementation through the durable CLI runner",
+        deliverables: [{ path: "src/feature.ts", description: "new feature" }],
+      },
+      [
+        assistantWithToolCall("run_cli_agent", {
+          tool: "codex",
+          mode: "patch",
+          prompt: "implement feature",
+        }),
+        assistantWithToolCall("read", { path: "src/feature.ts" }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeUndefined();
+  });
+
+  it("does not treat run_cli_agent acceptance alone as completed write evidence", async () => {
+    const ctx = makeCtx(
+      {
+        status: "success",
+        summary: "Implemented the feature through the CLI runner",
+        deliverables: [{ path: "src/feature.ts", description: "new feature" }],
+      },
+      [
+        assistantWithToolCall("run_cli_agent", {
+          tool: "codex",
+          mode: "patch",
+          prompt: "implement feature",
+        }),
+      ],
+    );
+    const result = await guard(ctx);
+    expect(result).toBeDefined();
+    expect(result!.reason).toContain("no write, edit");
+  });
+
   it("allows ghost keyword summary when workflow tool was used (no deliverables)", async () => {
     const ctx = makeCtx(
       { status: "success", summary: "Implemented the feature via auto-loop workflow" },

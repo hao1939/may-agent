@@ -41,16 +41,12 @@ type WorkflowEvent =
   | { type: "workflow.step_started"; step: string; sessionId?: string }
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
-  | { type: "workflow.blocked"; reason: string }
-  /** @deprecated Use workflow.blocked. */
-  | { type: "workflow.escalated"; reason: string };
+  | { type: "workflow.blocked"; reason: string };
 
 /** Workflow result — either done or locally blocked. */
 type WorkflowResult =
   | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown }
-  /** @deprecated Use { type: "blocked" }. */
-  | { type: "escalate"; reason: string; context?: unknown };
+  | { type: "blocked"; reason: string; context?: unknown };
 
 /** Options for customizing the handoff summary. */
 interface HandoffOptions {
@@ -89,7 +85,6 @@ interface QueryAPI {
   evaluatorAftermathContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-  markInboxHandled(eventIds: number[], handledBy?: string): number;
   expireStaleMessages(olderThanMs: number): number;
   expireStaleSignalEvents(olderThanMs: number): number;
 }
@@ -177,9 +172,6 @@ interface WorkflowContext {
 
   /** Mark workflow as locally blocked. Does not emit escalation.created. */
   blocked(reason: string, context?: unknown): WorkflowResult;
-
-  /** @deprecated Use blocked(). This is a local blocked result, not escalation.created. */
-  escalate(reason: string, context?: unknown): WorkflowResult;
 
   /** Create a persistent agent session that stays alive across prompt() calls. */
   createSession(opts: SessionOptions): Promise<SessionHandle>;

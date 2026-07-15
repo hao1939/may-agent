@@ -557,6 +557,8 @@ async function resolveDemands(
 // ── WorkflowTool type ──────────────────────────────────────────────────
 
 export interface WorkflowTool extends AgentTool {
+  /** Typed internal execution path; tool.execute() only serializes this result at the model boundary. */
+  run(name: string, task: string): Promise<WorkflowToolResult>;
   steer(message: string): boolean;
   readonly isRunning: boolean;
   readonly activeWorkflow: string | null;
@@ -582,15 +584,14 @@ export interface RunWorkflowDirectOpts {
 }
 
 /**
- * Run a workflow directly (no tool wrapper).
+ * Run a workflow through the typed runner shared with the model tool.
  * Used by system-level callers like the project handler.
  * Gets the same guards, step tracking, persistence, and createSession
  * as agent-invoked workflows.
  */
 export async function runWorkflowDirect(
   opts: RunWorkflowDirectOpts,
-): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
-  // Create a workflow tool internally and run the workflow through it
+): Promise<{ result: WorkflowResult; runId: string }> {
   const tool = createWorkflowTool({
     manager: opts.manager,
     workflowDir: opts.workflowDir ?? "",
@@ -606,37 +607,21 @@ export async function runWorkflowDirect(
     runtimeCtx: opts.runtimeCtx,
   });
 
-  // Use the tool's execute to run the workflow — parse the JSON result
-  const toolResult = await tool.execute("direct", {
-    action: "run",
-    name: opts.workflowName,
-    task: opts.task,
-  });
-
-  // Parse the result from the tool's text output
-  const text =
-    typeof toolResult === "string"
-      ? toolResult
-      : ((toolResult as any)?.content?.[0]?.text ?? JSON.stringify(toolResult));
-  const parsed = JSON.parse(text) as WorkflowToolResult;
+  const parsed = await tool.run(opts.workflowName, opts.task);
 
   if (parsed.type === "done") {
-    return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId, steps: [] };
-  }
-  if (parsed.type === "escalated") {
-    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId, steps: [] };
+    return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId };
   }
   if (parsed.type === "error") {
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
   }
   if (parsed.type === "blocked") {
-    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId, steps: [] };
+    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId };
   }
   // interrupted or unknown
   return {
     result: { type: "blocked", reason: `Workflow result: ${parsed.type}` },
     runId: (parsed as any).workflowRunId ?? "unknown",
-    steps: [],
   };
 }
 
@@ -1379,8 +1364,6 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
       done: (summary: string) => ({ type: "done" as const, summary }),
       blocked: (reason: string, context?: unknown) => ({ type: "blocked" as const, reason, context }),
-      // Deprecated compatibility alias: local workflow blocker, not escalation.created.
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
 
       createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
         const history: Array<{ role: string; text: string }> = [];
@@ -1618,7 +1601,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     parentSessionId: string | undefined,
     parentWorkflowRunId: string | undefined,
     previousRun?: WorkflowRun,
-  ): ReturnType<WorkflowTool["execute"]> {
+  ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
     const steeringQueue: string[] = [];
     activeSteeringQueue = steeringQueue;
@@ -1653,7 +1636,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           summary: result.summary,
           steps: stepSummaries,
         };
-        return textResult(JSON.stringify(toolResult, null, 2));
+        return toolResult;
       }
 
       onEvent?.({ type: "workflow.blocked", reason: result.reason });
@@ -1665,7 +1648,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         context: result.context,
         steps: stepSummaries,
       };
-      return textResult(JSON.stringify(toolResult, null, 2));
+      return toolResult;
     } catch (err) {
       activeSteeringQueue = null;
       activeWorkflowName = null;
@@ -1678,7 +1661,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           completedSteps: err.completedSteps,
           steeringMessage: err.steeringMessage,
         };
-        return textResult(JSON.stringify(toolResult, null, 2));
+        return toolResult;
       }
 
       if (err instanceof WorkflowBlocked) {
@@ -1689,13 +1672,22 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           reason: err.reason,
           completedSteps: err.completedSteps,
         };
-        return textResult(JSON.stringify(toolResult, null, 2));
+        return toolResult;
       }
 
       const msg = err instanceof Error ? err.message : String(err);
       const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
-      return textResult(JSON.stringify(toolResult, null, 2));
+      return toolResult;
     }
+  }
+
+  async function runTyped(name: string, task: string, existingCatalog?: WorkflowCatalog): Promise<WorkflowToolResult> {
+    const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir, projectWorkflowDir));
+    const { workflow, error } = findWorkflow(catalog, name);
+    if (!workflow) return { type: "error", workflow: name, error: error ?? `Workflow "${name}" not found` };
+    const callerSessionId = resolveCallerSessionId();
+    const callerMeta = getCallerSessionMeta(callerSessionId);
+    return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId);
   }
 
   const tool: WorkflowTool = {
@@ -1707,6 +1699,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       "Use 'list' to see what's available, 'run' to execute one. " +
       "Results include workflowRunId — use subagents.trace(workflowRunId) to see the full session tree.",
     parameters: WorkflowToolParams,
+
+    run: runTyped,
 
     steer(message: string): boolean {
       if (!activeSteeringQueue) return false;
@@ -1747,14 +1741,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
           }
 
-          const { workflow, error: findError } = findWorkflow(catalog, params.name);
-          if (!workflow) {
-            return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
-          }
-
-          const callerSessionId = resolveCallerSessionId();
-          const callerMeta = getCallerSessionMeta(callerSessionId);
-          return runOrResume(catalog, workflow, params.task, 1, callerSessionId, callerMeta.workflowRunId);
+          const result = await runTyped(params.name, params.task, catalog);
+          return textResult(JSON.stringify(result, null, 2));
         }
 
         case "resume": {
@@ -1867,7 +1855,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             });
           }
 
-          return runOrResume(
+          const result = await runOrResume(
             catalog,
             resumeWf,
             prevRun.task,
@@ -1876,6 +1864,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             prevRun.parentWorkflowRunId,
             prevRun,
           );
+          return textResult(JSON.stringify(result, null, 2));
         }
 
         default: {

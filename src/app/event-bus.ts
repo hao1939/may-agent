@@ -686,6 +686,20 @@ export type SystemEvent =
       };
     }
   | {
+      type: "skill.loaded";
+      source: string;
+      owner: string;
+      data: {
+        name: string;
+        agent: string;
+        sessionId: string;
+        activation: "explicit" | "model";
+        scope: string;
+        filePath: string;
+        contentHash: string;
+      };
+    }
+  | {
       type: "session.resume_failed";
       source: "manager";
       owner: string;
@@ -997,7 +1011,12 @@ function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
 }
 
 function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
-  if (!event.type.startsWith("channel.delivery.") && event.type !== "project.owner.reviewed") return undefined;
+  const isEvidence =
+    event.type.startsWith("channel.delivery.") ||
+    event.type === "project.owner.reviewed" ||
+    event.type === "guard.triggered" ||
+    event.type === "skill.loaded";
+  if (!isEvidence) return undefined;
   return {
     accepted: true,
     by: "event-store:evidence-projection",
@@ -1056,6 +1075,6 @@ function isOwnerInboxCandidate(eventType: string): boolean {
   if (eventType === "cli.task.completed" || eventType === "cli.task.failed" || eventType === "cli.task.orphaned")
     return true;
   if (eventType === "project.feedback.created" || eventType === "project.comment.created") return true;
-  if (eventType === "project.owner.requested" || eventType === "project.planning.requested") return true;
+  if (eventType === "project.owner.requested") return true;
   return eventType.endsWith(".requested");
 }

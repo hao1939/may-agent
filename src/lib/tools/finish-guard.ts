@@ -13,9 +13,6 @@
 
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
 
-/** Tool names that produce file artifacts. */
-const WRITE_TOOL_NAMES = new Set(["write", "edit"]);
-
 /** Tool names whose args may indicate file creation (e.g., bash with redirects). */
 const BASH_TOOL_NAME = "bash";
 
@@ -124,18 +121,18 @@ export function createFinishGuard(): (
       hasWriteEvidence = true;
     }
 
-    // CLI worker agents (cc_worker, codex_worker) have full filesystem
-    // access — their writes don't appear in the tool transcript.
+    // Orchestration tools delegate work to child sessions whose writes don't
+    // appear in the parent transcript. A CLI task is only evidence after the
+    // caller has also read its durable result or deliverable; acceptance alone
+    // is not completion.
     if (
       !hasWriteEvidence &&
-      (toolNames.has("cc_worker") || toolNames.has("codex_worker"))
+      (
+        toolNames.has("workflow") ||
+        toolNames.has("agents") ||
+        (toolNames.has("run_cli_agent") && toolNames.has("read"))
+      )
     ) {
-      hasWriteEvidence = true;
-    }
-
-    // Orchestration tools (workflow, agents) delegate work to child sessions
-    // whose writes don't appear in the parent transcript.
-    if (!hasWriteEvidence && (toolNames.has("workflow") || toolNames.has("agents"))) {
       hasWriteEvidence = true;
     }
 
