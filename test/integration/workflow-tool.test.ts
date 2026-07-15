@@ -1016,6 +1016,94 @@ describe("workflow tool: ctx.runAgentSession", () => {
   });
 });
 
+describe("workflow tool: structured agent results", () => {
+  it("forwards a workflow-authored schema and exposes the validated payload", async () => {
+    writeWorkflow(
+      "structured-result.ts",
+      `
+      export const name = "structured-result";
+      export const description = "Returns a schema-backed review";
+      const ReviewSchema = {
+        type: "object",
+        properties: { verdict: { enum: ["pass", "fail"] } },
+        required: ["verdict"],
+        additionalProperties: false,
+      };
+      export async function execute(ctx) {
+        const review = await ctx.runAgent("reviewer", "review it", { schema: ReviewSchema });
+        return ctx.done(review.status + ":" + review.structuredResult.verdict);
+      }
+    `,
+    );
+
+    let receivedOpts: Record<string, unknown> | undefined;
+    const manager = {
+      result: () => {
+        throw new Error("no replay");
+      },
+      callAgent: async (_agent: string, _task: string, opts: Record<string, unknown>) => {
+        receivedOpts = opts;
+        return {
+          sessionId: "s_structured",
+          status: "done" as const,
+          lastAssistantText: "Review complete",
+          messages: [],
+          duration: "0.0s",
+          outputDir: "",
+          finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
+          structuredResult: { verdict: "pass" },
+        };
+      },
+    } as unknown as SubagentManager;
+
+    const tool = createWorkflowTool({ manager, workflowDir });
+    const result = await tool.execute("tc1", { action: "run", name: "structured-result", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") expect(parsed.summary).toBe("done:pass");
+    expect(receivedOpts?.requireFinish).toBe(true);
+    expect(receivedOpts?.outputSchema).toMatchObject({ type: "object" });
+  });
+
+  it("turns prose-only workflow completion into an error result", async () => {
+    writeWorkflow(
+      "reject-prose.ts",
+      `
+      export const name = "reject-prose";
+      export const description = "Rejects a prose-only agent result";
+      export async function execute(ctx) {
+        const result = await ctx.runAgent("worker", "do it");
+        return ctx.done(result.status + ":" + result.error);
+      }
+    `,
+    );
+
+    const manager = {
+      result: () => {
+        throw new Error("no replay");
+      },
+      callAgent: async () => ({
+        sessionId: "s_prose",
+        status: "done" as const,
+        lastAssistantText: "I finished the task.",
+        messages: [],
+        duration: "0.0s",
+        outputDir: "",
+      }),
+    } as unknown as SubagentManager;
+
+    const tool = createWorkflowTool({ manager, workflowDir });
+    const result = await tool.execute("tc1", { action: "run", name: "reject-prose", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toContain("error:Workflow agent step completed without the required finish() result");
+    }
+  });
+});
+
 describe("workflow tool: steering", () => {
   it("steer() returns false when no workflow is running", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });

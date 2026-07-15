@@ -12,6 +12,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
+import type { TSchema } from "@earendil-works/pi-ai";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 
@@ -59,6 +60,10 @@ export interface PersistedSession {
   opCount?: number;
   /** Order ID linking this session to a persisted human order (P209). */
   orderId?: string;
+  /** Workflow calls require the structured finish() terminal contract. */
+  requireFinish?: boolean;
+  /** Serializable TypeBox/JSON schema for finish().result. */
+  outputSchema?: TSchema;
 }
 
 /** Shape of the registry data (in-memory view).

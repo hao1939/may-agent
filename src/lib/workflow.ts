@@ -1,8 +1,9 @@
-import type { TaskResult } from "./types.js";
+import type { FinishResult, TaskResult } from "./types.js";
 import type { HandoffOptions } from "./handoff.js";
 import type { MetricService } from "./metrics.js";
 import type { QueryAPI } from "./query-service.js";
 import type { CommandAPI } from "./command-service.js";
+import type { Static, TSchema } from "@earendil-works/pi-ai";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
 // These are local workflow-tool callbacks for logs/guards. They are not
@@ -101,6 +102,22 @@ export type WorkflowResult =
   | { type: "done"; summary: string }
   | { type: "blocked"; reason: string; context?: unknown };
 
+export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
+  timeoutMs?: number;
+  /** Explicit skill used by this workflow step. */
+  skill?: string;
+  /** Workflow-author-defined schema for finish().result. */
+  schema?: S;
+}
+
+export type WorkflowAgentTaskResult =
+  | (TaskResult & { status: "done"; finishResult: FinishResult })
+  | (TaskResult & { status: "error" | "interrupted"; finishResult?: FinishResult });
+
+export type SchemaBackedTaskResult<S extends TSchema> =
+  | (WorkflowAgentTaskResult & { status: "done"; structuredResult: Static<S> })
+  | (TaskResult & { status: "error" | "interrupted"; structuredResult?: Static<S> });
+
 // ── Workflow Context ───────────────────────────────────────────────────
 
 /** Provided to each workflow's execute() function. */
@@ -160,7 +177,12 @@ export interface WorkflowContext {
    *  is pending, throws WorkflowInterrupted.
    *  @throws {WorkflowInterrupted} If a steering signal is received while the agent is running.
    */
-  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgent<S extends TSchema>(
+    name: string,
+    task: string,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgent(name: string, task: string, opts?: WorkflowAgentOptions): Promise<WorkflowAgentTaskResult>;
 
   /** Run work in a durable agent session.
    *  If sessionId is provided and already has a terminal result, return that
@@ -168,7 +190,18 @@ export interface WorkflowContext {
    *  If it is missing or cannot be resumed, create a fresh session like
    *  runAgent().
    */
-  runAgentSession(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgentSession<S extends TSchema>(
+    name: string,
+    task: string,
+    sessionId: string | undefined,
+    opts: WorkflowAgentOptions<S> & { schema: S },
+  ): Promise<SchemaBackedTaskResult<S>>;
+  runAgentSession(
+    name: string,
+    task: string,
+    sessionId?: string,
+    opts?: WorkflowAgentOptions,
+  ): Promise<WorkflowAgentTaskResult>;
 
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;

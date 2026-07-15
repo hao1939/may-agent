@@ -112,6 +112,7 @@ function defaultWorkflowTaskResult(agent: string): TaskResult {
     messages: [],
     duration: "0s",
     outputDir: "",
+    finishResult: { status: "success", summary: "ok" },
   };
 }
 
@@ -298,7 +299,16 @@ export function createTestWorkflowContext(options: TestWorkflowContextOptions = 
     agentsRoot: runtime.agents,
     sharedRoot: runtime.shared,
     projectsRoot: runtime.projects,
-    runAgent: fn(async (agent: string) => defaultWorkflowTaskResult(agent)),
+    runAgent: fn(async (agent: string, _task: string, opts?: { schema?: unknown }) => {
+      const result = defaultWorkflowTaskResult(agent);
+      if (!opts?.schema) return result;
+      return {
+        ...result,
+        status: "error" as const,
+        finishResult: undefined,
+        error: "Test workflow context has no configured structured result",
+      };
+    }) as WorkflowContext["runAgent"],
     runWorkflow: fn(async (name: string) => ({ type: "done" as const, summary: `workflow ${name} done` })),
     runFunction: fn(async (label: string) => ({
       sessionId: `fn_${label}`,
