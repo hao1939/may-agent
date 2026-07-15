@@ -87,16 +87,6 @@ describe("session-read-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows receipts.jsonl (not session.jsonl)", async () => {
-    const guard = createSessionReadGuard();
-    const result = await guard(
-      makeCtx("read", {
-        path: ".state/sessions/history/s_123_1/receipts.jsonl",
-      }),
-    );
-    expect(result).toBeUndefined();
-  });
-
   // ──────────────────────────────────────────────────────────────
   // Guard 2: bash tool — cat/less/more
   // ──────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@
  */
 
 import { Agent } from "@earendil-works/pi-agent-core";
-import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
+import type { AgentTool, AgentMessage, BeforeToolCallContext as PiBeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import {
   existsSync,
   mkdirSync,
@@ -32,7 +32,7 @@ import {
   formatDuration,
   truncateForPrompt,
 } from "./manager-utils.js";
-import { composeGuards, type BeforeToolCallHook } from "./tools/compose-guards.js";
+import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -64,7 +64,6 @@ import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession } from "./persistence.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { signToolOutput, verifyToolOutput, createVerifyReceiptTool } from "./manager-receipts.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
 import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
@@ -520,8 +519,11 @@ export class SubagentManager {
 
     // Create Agent
     const guards = this.buildGuards(def);
-    const beforeToolCall = guards.length
+    const guardHook = guards.length
       ? this.createGuardSignalHook(composeGuards(...guards), sessionId, def.name, opts)
+      : undefined;
+    const beforeToolCall = guardHook
+      ? (context: PiBeforeToolCallContext, signal?: AbortSignal) => guardHook(toGuardContext(context), signal)
       : undefined;
     const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
     const sessionTools = this.resolveSessionTools(def, persistentChat);
@@ -1342,18 +1344,6 @@ export class SubagentManager {
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
     throw new Error(`Timeout waiting for detached session "${sessionId}" (${timeoutMs}ms)`);
-  }
-
-  signToolOutput(output: string): string {
-    return signToolOutput(output);
-  }
-
-  verifyToolOutput(content: string, signature: string): boolean {
-    return verifyToolOutput(content, signature);
-  }
-
-  createVerifyReceiptTool(): AgentTool {
-    return createVerifyReceiptTool();
   }
 
   private cleanupStaleWorkflowRuns(): void {
