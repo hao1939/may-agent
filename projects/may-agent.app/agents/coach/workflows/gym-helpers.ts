@@ -9,7 +9,7 @@
 import { execSync } from "node:child_process";
 import { readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { Database } from "bun:sqlite";
+import { Database, type SQLQueryBindings } from "bun:sqlite";
 
 export const PROJECT_ROOT = resolve(
   join(import.meta.dirname ?? ".", "../../.."),
@@ -141,7 +141,7 @@ export function recordGymResult(
     db = openGymDb();
     const durationMs = result.duration_ms ?? parseDuration(result.duration);
 
-    const insertRun = db.query<{ id: number }, unknown[]>(`
+    const insertRun = db.query<{ id: number }, SQLQueryBindings[]>(`
       INSERT INTO gym_runs (agent_name, lab_fork, scenario, passed, duration_ms,
                         score_summary, session_id, cost_usd, total_ops,
                         total_turns, method, run_tag, prompt_hash, framework_sha,

@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import {
   normalizeTaskTreeInPlace,
   resolveTaskTreePath,
+  type EventSelector,
   type TaskTree,
 } from "@may-agent/sdk";
 import app from "../app";
@@ -111,7 +112,7 @@ function checkManifest(): void {
         `${handler.name} has invalid timeoutMs.`,
       );
     }
-    for (const selector of handler.accepts) {
+    for (const selector of handler.accepts as readonly EventSelector[]) {
       const type =
         typeof selector === "string" ? selector : selector.type;
       handlerEvents.add(type);

@@ -4,7 +4,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 // Import the workflow directly from the code under test.
-import { execute, name, description } from "./investigate-and-fix.js";
+import {
+  execute as executeWorkflowUnderTest,
+  name,
+  description,
+} from "./investigate-and-fix.js";
+
+const execute: (ctx: any) => Promise<any> = executeWorkflowUnderTest;
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 
@@ -120,13 +126,13 @@ function createMockContext(opts: MockCtxOptions): {
       summary,
     }),
 
-    escalate: (reason: string, details?: Record<string, any>): WorkflowResult => ({
-      type: "escalated",
+    blocked: (reason: string, details?: Record<string, any>): any => ({
+      type: "blocked",
       reason,
-      ...(details ? { details } : {}),
+      ...(details ? { context: details } : {}),
     }),
 
-    summarize: (result: TaskResult, _opts?: any): string => {
+    summarize: (result: any, _opts?: any): string => {
       return result.lastAssistantText ?? "(no text)";
     },
   };
@@ -177,7 +183,7 @@ describe("investigate-and-fix workflow", () => {
     expect(agentCalls[1].task).toContain("Phase 2: EXECUTE THE FIX");
   });
 
-  it("escalates when Phase 1 fails", async () => {
+  it("blocks when Phase 1 fails", async () => {
     const { ctx, agentCalls } = createMockContext({
       task: "Investigate failing thing",
       agentResponses: [
@@ -187,7 +193,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("escalated");
+    expect(result.type).toBe("blocked");
     expect(result.reason).toContain("Phase 1");
     expect(agentCalls).toHaveLength(1); // Only Phase 1 was attempted
   });
@@ -213,7 +219,7 @@ describe("investigate-and-fix workflow", () => {
     expect(agentCalls).toHaveLength(1); // Only Phase 1, no Phase 2
   });
 
-  it("escalates NO_ACTION_NEEDED without a finding file", async () => {
+  it("blocks NO_ACTION_NEEDED without a finding file", async () => {
     const { ctx } = createMockContext({
       task: "Check workflow health",
       agentResponses: [
@@ -226,7 +232,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("escalated");
+    expect(result.type).toBe("blocked");
     expect(result.reason).toContain("didn't write a finding file");
   });
 
@@ -251,7 +257,7 @@ describe("investigate-and-fix workflow", () => {
     expect(agentCalls).toHaveLength(1);
   });
 
-  it("escalates when Phase 2 fails", async () => {
+  it("blocks when Phase 2 fails", async () => {
     const findingPath = join(testDir, "finding-test.md");
     writeFileSync(findingPath, "# Finding\n## Recommendations\nR1: Fix it\n");
 
@@ -268,12 +274,12 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("escalated");
+    expect(result.type).toBe("blocked");
     expect(result.reason).toContain("Phase 2");
     expect(agentCalls).toHaveLength(2);
   });
 
-  it("escalates when Phase 2 writes no new files (just more docs)", async () => {
+  it("blocks when Phase 2 writes no new files (just more docs)", async () => {
     const findingPath = join(testDir, "finding-test.md");
     writeFileSync(findingPath, "# Finding\n## Recommendations\nR1: Fix it\n");
 
@@ -293,11 +299,11 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("escalated");
+    expect(result.type).toBe("blocked");
     expect(result.reason).toContain("did not modify any files beyond");
   });
 
-  it("escalates when fix file doesn't exist on disk", async () => {
+  it("blocks when fix file doesn't exist on disk", async () => {
     const findingPath = join(testDir, "finding-test.md");
     const ghostPath = join(testDir, "ghost-file.md");
     writeFileSync(findingPath, "# Finding\n");
@@ -319,7 +325,7 @@ describe("investigate-and-fix workflow", () => {
 
     const result = await execute(ctx);
 
-    expect(result.type).toBe("escalated");
+    expect(result.type).toBe("blocked");
     expect(result.reason).toContain("missing or empty");
   });
 
