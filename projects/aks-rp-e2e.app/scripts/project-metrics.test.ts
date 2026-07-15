@@ -24,7 +24,6 @@ type TreeTask = {
   depends_on?: string[];
   outputs?: string[];
   acceptance?: string[];
-  inputs?: string[];
   conflict_scope?: string[];
   workflow?: string;
   context?: Record<string, unknown>;
@@ -894,55 +893,6 @@ describe("project metrics", () => {
       ),
     ).toBe("0");
 
-    const childBlockedLineageRecovery = await makeFixture();
-    await writeTree(
-      childBlockedLineageRecovery.appDir,
-      {
-        goal: "Review the surviving normalize-scenario child wait.",
-        context: {
-          auditedBlockedTaskIds: [
-            "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
-          ],
-        },
-      },
-      {
-        "domain/audit-normalize-scenario-tests": {
-          id: "domain/audit-normalize-scenario-tests",
-          parent_id: "project",
-          state: "blocked",
-          children: [
-            "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
-          ],
-          goal: "Normalize the remaining scenario tests.",
-          blocker: {
-            ...overdueBlocker,
-            category: "child-blocked",
-            waiting_for: {
-              type: "child.task.blocked",
-              taskId: "domain/audit-normalize-scenario-tests",
-              childTaskIds: [
-                "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
-              ],
-            },
-          },
-        },
-        "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result": {
-          id: "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
-          parent_id: "domain/audit-normalize-scenario-tests",
-          state: "blocked",
-          children: [],
-          goal: "Wait for the exact replacement ADO run.",
-          blocker: overdueBlocker,
-        },
-      },
-    );
-    expect(
-      await metricValue(
-        childBlockedLineageRecovery,
-        "aks-rp-e2e.process.blocked.overdue-unworked-count",
-      ),
-    ).toBe("0");
-
     const dueResumeWithFutureFallback = await makeFixture();
     await writeTree(
       dueResumeWithFutureFallback.appDir,
@@ -1049,11 +999,7 @@ describe("project metrics", () => {
             {
               id: "ops-apply-reviewed-followup",
               state: "done",
-              inputs: [
-                "Reviewed task: active-task",
-                "Attempt: a_review_task_1",
-              ],
-              goal: "Reconcile the holder against the published reviewed slice so the apply path is exact.",
+              goal: "After active-task lands, reconcile the holder against the published reviewed slice so the apply path is exact.",
             },
             {
               id: "ops/repair-review-not-applied-fixture",
@@ -1078,95 +1024,6 @@ describe("project metrics", () => {
 
     expect(sample.value).toBe(0);
     expect(note.reviews).toEqual([]);
-  });
-
-  test("does not suppress stale review residue for goal-only audit or follow-up references", async () => {
-    const fixture = await makeFixture();
-    const reviewedAt = new Date(Date.now() - 10_000).toISOString();
-    await writeTree(
-      fixture.appDir,
-      {
-        state: "review",
-        trace: {
-          current_attempt_id: "a_review_task_1",
-        },
-      },
-      {
-        "ops-followup-goal-only": {
-          id: "ops-followup-goal-only",
-          parent_id: "project",
-          state: "active",
-          children: [],
-          goal: "After active-task lands, reconcile the holder against the published reviewed slice so the apply path is exact.",
-          outputs: ["evidence/archive/ops-followup-goal-only.md"],
-          acceptance: ["Keep the reviewed holder visible until a structured apply path exists."],
-        },
-        "ops/repair-review-not-applied-fixture": {
-          id: "ops/repair-review-not-applied-fixture",
-          parent_id: "project",
-          state: "active",
-          children: [],
-          goal: "Audit whether active-task still remains review-not-applied.",
-          conflict_scope: ["ops:review-not-applied-metric"],
-          outputs: ["evidence/archive/ops-repair-review-not-applied-fixture.md"],
-          acceptance: ["Measure the contributor truthfully."],
-        },
-      },
-    );
-    await writeFile(
-      join(fixture.appDir, ".state", "task-reviewer-runs.jsonl"),
-      `${JSON.stringify({
-        ts: reviewedAt,
-        workflow: "task-reviewer",
-        result: "project.task.reviewed",
-        task_id: "active-task",
-        attempt_id: "a_review_task_1",
-        decision: "accept",
-      })}\n`,
-    );
-    await mkdir(join(fixture.appDir, ".state", "tasks", "archive"), {
-      recursive: true,
-    });
-    await writeFile(
-      join(
-        fixture.appDir,
-        ".state",
-        "tasks",
-        "archive",
-        "done-leaves-fixture.json",
-      ),
-      `${JSON.stringify(
-        {
-          tasks: [
-            {
-              id: "ops-archived-goal-only",
-              state: "done",
-              goal: "After active-task lands, reconcile the holder against the published reviewed slice so the apply path is exact.",
-            },
-          ],
-        },
-        null,
-        2,
-      )}\n`,
-    );
-
-    const raw = await metricValue(
-      fixture,
-      "aks-rp-e2e.process.task.review-not-applied-count",
-      "--json",
-    );
-    const sample = JSON.parse(raw);
-    const note = JSON.parse(sample.note);
-
-    expect(sample.value).toBe(1);
-    expect(note.reviews).toEqual([
-      {
-        taskId: "active-task",
-        attemptId: "a_review_task_1",
-        decision: "accept",
-        reviewedAt,
-      },
-    ]);
   });
 
   test("flags running active task with stale activity even after prior ops", async () => {

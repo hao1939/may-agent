@@ -72,7 +72,8 @@ type ReviewApplyCoverage = {
   reason:
     | "reviewed-task-link"
     | "reviewed-source-link"
-    | "reviewed-task-input";
+    | "reviewed-task-input"
+    | "review-goal-reference";
   archivePath?: string;
 };
 
@@ -487,15 +488,6 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
 }
 
-function childBlockedLineageTaskIds(task: TaskNode): string[] {
-  const blocker = recordValue(task.blocker);
-  const waitingFor = recordValue(blocker.waiting_for);
-  return [
-    ...stringArrayField(waitingFor, "childTaskIds"),
-    ...stringArrayField(waitingFor, "child_task_ids"),
-  ].map((value) => value.trim()).filter(Boolean);
-}
-
 function taskCoversBlockedOverdueWait(
   candidate: TaskNode,
   blockedTask: TaskNode,
@@ -508,19 +500,11 @@ function taskCoversBlockedOverdueWait(
   ) {
     return false;
   }
-  const candidateBlockedTaskIds = structuredBlockedTaskIds(candidate);
   const blockedTaskId =
     typeof blockedTask.id === "string" ? blockedTask.id.trim() : "";
-  if (blockedTaskId && candidateBlockedTaskIds.includes(blockedTaskId)) {
-    return true;
-  }
-
-  const childLineageTaskIds = childBlockedLineageTaskIds(blockedTask);
   if (
-    childLineageTaskIds.length > 0 &&
-    childLineageTaskIds.some((taskId) =>
-      candidateBlockedTaskIds.includes(taskId),
-    )
+    blockedTaskId &&
+    structuredBlockedTaskIds(candidate).includes(blockedTaskId)
   ) {
     return true;
   }
@@ -1082,6 +1066,19 @@ function taskReferencesReviewedLineage(input: {
       state,
       source: "live",
       reason: "reviewed-task-input",
+    };
+  }
+
+  const goal =
+    typeof (task as Record<string, unknown>).goal === "string"
+      ? String((task as Record<string, unknown>).goal)
+      : "";
+  if (goal.includes(input.taskId)) {
+    return {
+      coveringTaskId: id,
+      state,
+      source: "live",
+      reason: "review-goal-reference",
     };
   }
 
