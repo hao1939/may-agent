@@ -9,19 +9,12 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
-// TODO(pi-agent-core): Import from @earendil-works/pi-agent-core once it exports
-// BeforeToolCallContext / BeforeToolCallResult. Until then, define locally so
-// guard code compiles and is ready when the upstream hook ships.
+import type { BeforeToolCallContext as PiBeforeToolCallContext } from "@earendil-works/pi-agent-core";
 
-export interface BeforeToolCallContext {
-  toolCall: { name: string; id: string };
+export interface BeforeToolCallContext extends Omit<PiBeforeToolCallContext, "args" | "assistantMessage"> {
   args: Record<string, unknown>;
-  context: {
-    messages: Array<{
-      role: string;
-      content: unknown;
-    }>;
-  };
+  /** Present for native Pi calls; optional for synthetic guard-test contexts. */
+  assistantMessage?: PiBeforeToolCallContext["assistantMessage"];
 }
 
 export interface BeforeToolCallResult {
@@ -29,16 +22,21 @@ export interface BeforeToolCallResult {
   reason: string;
   /** Stable detector identity propagated into guard.triggered evidence. */
   guardName?: string;
-  /** Optional: suggest a workflow the agent should run instead. */
-  redirect?: { workflow: string; task: string };
-  /** Optional: inject a steering message for the agent's next turn. */
-  steer?: string;
 }
 
 export type BeforeToolCallHook = (
   context: BeforeToolCallContext,
   signal?: AbortSignal,
 ) => Promise<BeforeToolCallResult | undefined>;
+
+/** Normalize Pi's validated-but-unknown arguments at the guard boundary. */
+export function toGuardContext(context: PiBeforeToolCallContext): BeforeToolCallContext {
+  const args =
+    typeof context.args === "object" && context.args !== null && !Array.isArray(context.args)
+      ? (context.args as Record<string, unknown>)
+      : {};
+  return { ...context, args };
+}
 
 /**
  * Compose multiple beforeToolCall hooks into one.

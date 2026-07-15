@@ -408,7 +408,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const messages = manager.progress(params.sessionId, params.limit ?? 20);
               const simplified = messages.map((m) => ({
                 role: m.role,
-                content: m.content,
+                content: "content" in m ? m.content : "output" in m ? m.output : "summary" in m ? m.summary : undefined,
               }));
               return textResult(JSON.stringify(simplified, null, 2));
             } catch (err) {

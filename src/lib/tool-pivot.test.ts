@@ -93,7 +93,7 @@ describe("Tool Pivot Heuristic", () => {
   });
 
   describe("pivot integration (toolErrorHistory tracking)", () => {
-    // These tests verify the logic by simulating what wrapToolsWithReceipts does internally.
+    // These tests verify the pivot counter logic directly.
     // Full integration requires a running SubagentManager, so we test the helpers + the Map logic.
 
     it("tracks consecutive errors and resets on success", () => {

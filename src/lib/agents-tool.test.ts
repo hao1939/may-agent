@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getModel } from "@earendil-works/pi-ai";
+import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { SubagentManager } from "./manager.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
@@ -26,7 +26,7 @@ function echoTool(): AgentTool {
 }
 
 function mockModel() {
-  return getModel("anthropic", "claude-sonnet-4-20250514");
+  return getBuiltinModel("anthropic", "claude-opus-4-6");
 }
 
 async function callTool(tool: AgentTool, params: Record<string, unknown>): Promise<any> {

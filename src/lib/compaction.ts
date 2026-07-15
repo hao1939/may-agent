@@ -6,6 +6,7 @@
  * the newest messages verbatim.
  */
 
+import { estimateTokens as estimatePiMessageTokens } from "@earendil-works/pi-agent-core";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, ToolResultMessage } from "@earendil-works/pi-ai";
 
@@ -69,9 +70,15 @@ function messageText(message: AgentMessage): string {
     .join(" ");
 }
 
+function estimateMessageTokens(message: AgentMessage): number {
+  // May's /3 estimate is deliberately conservative for prose. Pi's estimator
+  // understands thinking, images, custom messages, and tool arguments. Taking
+  // the larger value preserves May's safety margin while tracking Pi formats.
+  return Math.max(Math.ceil(messageText(message).length / 3), estimatePiMessageTokens(message));
+}
+
 function estimateTokens(messages: AgentMessage[]): number {
-  const chars = messages.reduce((sum, message) => sum + messageText(message).length, 0);
-  return Math.ceil(chars / 3);
+  return messages.reduce((sum, message) => sum + estimateMessageTokens(message), 0);
 }
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
@@ -307,11 +314,18 @@ function buildSummary(messages: AgentMessage[], previousSummary: string | null):
 }
 
 function splitMessages(messages: AgentMessage[], keepRatio: number): number {
-  let splitAt = Math.max(1, Math.floor(messages.length * (1 - keepRatio)));
-  if (splitAt >= messages.length) splitAt = messages.length - 1;
+  const keepTokenBudget = Math.max(1, Math.floor(estimateTokens(messages) * keepRatio));
+  let keptTokens = 0;
+  let splitAt = messages.length - 1;
 
-  const firstKept = messages[splitAt];
-  if (firstKept?.role === "toolResult" && splitAt > 1) {
+  for (let i = messages.length - 1; i > 0; i--) {
+    keptTokens += estimateMessageTokens(messages[i]);
+    splitAt = i;
+    if (keptTokens >= keepTokenBudget) break;
+  }
+
+  // Keep the assistant tool-call message with all following tool results.
+  while (messages[splitAt]?.role === "toolResult" && splitAt > 1) {
     splitAt -= 1;
   }
 

@@ -381,13 +381,9 @@ function formatTranscriptCompact(messages: AgentMessage[]): string {
 
     if (msg.role === "assistant") {
       const content = msg.content;
-      if (typeof content === "string") {
-        lines.push(`ASSISTANT: ${content.slice(0, 500)}`);
-      } else if (Array.isArray(content)) {
+      if (Array.isArray(content)) {
         for (const block of content) {
-          if (typeof block === "string") {
-            lines.push(`ASSISTANT: ${block.slice(0, 300)}`);
-          } else if (block.type === "text") {
+          if (block.type === "text") {
             lines.push(`ASSISTANT: ${block.text.slice(0, 300)}`);
           } else if (block.type === "toolCall") {
             const args = JSON.stringify(block.arguments ?? {}).slice(0, 200);
@@ -860,4 +856,3 @@ export function createCheckpointDigest(
     log("warn", `[digest] Failed to create checkpoint digest for ${sessionId}: ${err}`);
   }
 }
-
