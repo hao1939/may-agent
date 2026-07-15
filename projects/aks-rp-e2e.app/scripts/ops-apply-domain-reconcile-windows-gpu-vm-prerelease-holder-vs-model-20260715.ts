@@ -309,11 +309,9 @@ updateFeatureCompactItem(compactState, featureKey, {
     "Windows compact remains package-partial on the same four wait-governed members plus a separately represented Windows GPU draft-gap boundary; no unchanged broad rerun is truthful. See evidence/archive/ops-apply-domain-reconcile-windows-gpu-vm-prerelease-holder-vs-model-20260715.md.",
   summary: windowsSummary,
 });
-const compactMirrorPath = resolve(projectDir, ".state/feature-compact-loop/state.json");
 saveFeatureCompactLoopState(
   compactLoaded.path,
   compactState,
-  existsSync(compactMirrorPath) ? [compactMirrorPath] : [],
 );
 
 const treeAfter = readTaskTree(config);

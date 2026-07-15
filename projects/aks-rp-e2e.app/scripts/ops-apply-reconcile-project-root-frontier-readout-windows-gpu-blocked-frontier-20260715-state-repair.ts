@@ -412,7 +412,10 @@ const afterTree = withTreeLock(config, () => {
       progress: projectTask.progress,
       currentRootReadout: asRecord(projectContext.current_root_readout),
       currentFocusProposal,
-      acceptanceNote: projectContext.acceptance_note,
+      acceptanceNote:
+        typeof projectContext.acceptance_note === "string"
+          ? projectContext.acceptance_note
+          : null,
     } satisfies ProjectBeforeAfter,
   };
 });

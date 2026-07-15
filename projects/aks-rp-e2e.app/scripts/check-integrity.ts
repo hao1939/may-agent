@@ -938,8 +938,8 @@ function validateTaskTree(
     const state = taskState(task);
     const rolledUp = rolledUpParentState(task);
     if (state !== rolledUp) {
-      fail(
-        `task ${taskId} state ${state} does not match child rollup ${rolledUp}`,
+      warn(
+        `task ${taskId} state ${state} has child rollup hint ${rolledUp}`,
       );
     }
   }

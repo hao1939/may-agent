@@ -330,6 +330,21 @@ describe("check-integrity durable loop contracts", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
+  test("reports parent rollup drift as an owner hint without rewriting project judgment", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await Bun.file(treePath).text());
+    tree.tasks["aks-feature-reference-loop"].state = "backlog";
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "task aks-feature-reference-loop state backlog has child rollup hint active",
+    );
+  });
+
   test("rejects a runtime root goal that replaces the configured project goal", async () => {
     const fixture = await makeFixture();
     await writeFile(

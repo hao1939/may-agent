@@ -123,8 +123,10 @@ function nodeState(task: TaskNode | undefined): string {
   return String(task.state ?? task.status ?? "unknown");
 }
 
-function taskAsRecord(task: TaskNode | undefined): Record<string, unknown> {
-  return task && typeof task === "object" ? (task as Record<string, unknown>) : {};
+function taskAsRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function arrayOfStrings(value: unknown): string[] {

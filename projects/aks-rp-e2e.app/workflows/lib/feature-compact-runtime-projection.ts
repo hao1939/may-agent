@@ -7,6 +7,8 @@ type RuntimeProjectionTaskRepair = {
   featureKey: string;
   field:
     | "blocker.condition"
+    | "blocker.fallback_at"
+    | "blocker.next_check_at"
     | "blocker.resume_condition"
     | "blocker.waiting_for"
     | "task.owner"

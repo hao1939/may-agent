@@ -1105,7 +1105,7 @@ async function runReviewer(input: {
   const first = await run(input.sessionId);
   if (!isTransientReviewerFailure(resultText(first))) return first;
 
-  await Bun.sleep(5_000);
+  await new Promise((resolve) => setTimeout(resolve, 5_000));
   return run(`${input.sessionId}_retry_${Date.now()}`);
 }
 

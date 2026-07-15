@@ -2341,15 +2341,11 @@ function activeTaskQueuedAssignmentMatches(task: TaskNode): boolean {
 
 function queuedAssignmentTimestampMs(assignment: {
   assignedAt?: unknown;
-  assigned_at?: unknown;
 }): number | null {
   const raw =
-    typeof assignment.assignedAt === "string" && assignment.assignedAt.trim()
+    typeof assignment.assignedAt === "string"
       ? assignment.assignedAt.trim()
-      : typeof assignment.assigned_at === "string" &&
-          assignment.assigned_at.trim()
-        ? assignment.assigned_at.trim()
-        : "";
+      : "";
   if (!raw) return null;
   const parsed = Date.parse(raw);
   return Number.isFinite(parsed) ? parsed : null;
@@ -2363,26 +2359,9 @@ function assignmentNotConsumedDetails(): Array<{
 }> {
   const tree = loadTaskTree();
   return peekTaskAssignments(runtimeTaskTreeConfig()).flatMap((assignment) => {
-    const taskId =
-      typeof assignment.taskId === "string" && assignment.taskId.trim()
-        ? assignment.taskId.trim()
-        : typeof assignment.task_id === "string" && assignment.task_id.trim()
-          ? assignment.task_id.trim()
-          : "";
-    const attemptId =
-      typeof assignment.attemptId === "string" && assignment.attemptId.trim()
-        ? assignment.attemptId.trim()
-        : typeof assignment.attempt_id === "string" &&
-            assignment.attempt_id.trim()
-          ? assignment.attempt_id.trim()
-          : "";
-    const assignedAt =
-      typeof assignment.assignedAt === "string" && assignment.assignedAt.trim()
-        ? assignment.assignedAt.trim()
-        : typeof assignment.assigned_at === "string" &&
-            assignment.assigned_at.trim()
-          ? assignment.assigned_at.trim()
-          : "";
+    const taskId = assignment.taskId.trim();
+    const attemptId = assignment.attemptId.trim();
+    const assignedAt = assignment.assignedAt.trim();
     if (!taskId || !attemptId) return [];
 
     const assignedMs = queuedAssignmentTimestampMs(assignment);
@@ -2408,13 +2387,7 @@ function assignmentNotConsumedDetails(): Array<{
       const sessionId =
         typeof task?.session_id === "string" && task.session_id.trim()
           ? task.session_id.trim()
-          : typeof assignment.sessionId === "string" &&
-              assignment.sessionId.trim()
-            ? assignment.sessionId.trim()
-            : typeof assignment.session_id === "string" &&
-                assignment.session_id.trim()
-              ? assignment.session_id.trim()
-              : null;
+          : assignment.sessionId.trim() || null;
       const workerRow = activeTaskWorkerSessionRow(
         taskId,
         attemptId,
