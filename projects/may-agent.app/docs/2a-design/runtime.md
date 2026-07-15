@@ -109,9 +109,23 @@ Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
 ... repeats ...
 ```
 
-**Compaction:** When tokens exceed context threshold, the pi-agent runtime
-handles compaction (LLM-powered summarization). Preserves: original task, key
-facts, and most recent reasoning.
+**Compaction:** May supplies Pi's `Agent.transformContext` hook. At 60% of the
+configured model context, it combines Pi's message-aware token estimator with
+May's conservative estimate, keeps the newest 35% by estimated tokens, and
+deterministically summarizes the older prefix. The summary preserves the
+original task, file/tool/agent facts, and latest substantial reasoning. The
+append-only transcript remains unchanged; a separate compact snapshot is used
+for active context and restart recovery.
+
+Pi's full harness compactor is intentionally not used here. It is an
+LLM-powered operation built around Pi session-tree entries, stable entry IDs,
+and an explicit `Models` authentication runtime. Adopting it inside May's
+low-level `Agent` path would duplicate May's persistence model, add a provider
+call during context transformation, and weaken deterministic recovery. May may
+reuse format-independent Pi helpers such as message token estimation, but owns
+the compaction decision, summary, persistence, and event evidence. Reconsider
+the full harness compactor only if May adopts the Pi harness session model as a
+whole.
 
 **Overflow recovery:** When context window is hit, extract progress into handoff document for a new session.
 

@@ -290,72 +290,62 @@ async function measure(metric: Metric): Promise<void> {
 
 ---
 
-### 3. Agent Runs — `pi-coding-agent` + Glue
+### 3. Agent Runs — `pi-agent-core` + May Runtime
 
-**Target: no custom agent runtime loop.** `pi-coding-agent` owns the LLM/tool/session loop.
+**Target: one model/tool loop.** Pi's low-level `Agent` owns provider turns,
+tool execution, queues, retry classification, and lifecycle events. May owns
+durable session policy around that loop.
 
 All execution paths should enter through the manager/SDK/workflow surfaces, not
 through adapter-local LLM calls. Handlers prefer `sdk.runWorkflow(...)`; workflows
 call `ctx.runAgent(...)` when an agent session is the next step.
 
-`pi-coding-agent` provides:
+The ownership boundary is:
 
 | Capability | Provided by |
 |-----------|-------------|
-| LLM loop + tool execution | `AgentSession` |
-| Session persistence (crash-safe) | `SessionManager` — append-only per message |
-| Auto-compaction | Built-in, triggers on context threshold |
-| Auto-retry | Built-in, handles 429/503/overloaded |
-| Overflow recovery | Built-in |
-| Coding tools | `createCodingTools(cwd)` |
-| Tool sandboxing | Built-in, scoped to `cwd` |
-| Custom tools | `customTools` option |
-| Event subscription | `session.subscribe(listener)` |
+| Provider loop, tool execution, queues | Pi `Agent` |
+| Provider retry/error normalization | Pi `Agent` + `pi-ai` |
+| Lifecycle subscription | Pi `Agent.subscribe()` |
+| Session JSONL and registry | May manager/persistence |
+| Deterministic compaction and snapshots | May `transformContext` wrapper, using Pi token estimation |
+| Overflow recovery and resume repair | May manager |
+| Tool construction, guards, receipts, sandbox paths | May runtime |
+| Event/trace bridging | May manager and EventBus |
 
-**Our glue** wires pi-coding-agent into the event/metric system. The exact
-runtime code lives behind the manager/SDK/workflow surfaces; this sketch shows
-the intended boundary, not a literal function body to copy.
+Pi's harness compactor is not mixed into this low-level path: it assumes Pi's
+session tree and `Models` auth runtime and performs an extra LLM call. If May
+later adopts the harness session model end to end, that boundary can be
+revisited. Until then, mixing the two persistence models would create two
+sources of truth.
+
+The exact runtime code lives behind manager/SDK/workflow surfaces; this sketch
+shows the ownership boundary, not a literal function body to copy.
 
 ```typescript
 async function runAgent(agentName: string, task: string, source: string): Promise<SessionResult> {
   const config = loadConfig(agentName);
   const sessionId = generateId();
 
-  const { session } = await createAgentSession({
-    cwd: config.workspace,
-    model: resolveModel(config.model),
-    tools: createCodingTools(config.workspace),
-    customTools: [
-      finishTool,
-      messageTool(bus),                 // → message.created event
-      systemStatusTool(db),             // read metrics/sessions
-      runWorkflowTool(bus, db),         // trigger workflows
-      queryDbTool(db),                  // read-only SQL
-    ],
+  const agent = new Agent({
+    initialState: {
+      systemPrompt: resolveSystemPrompt(config),
+      model: resolveModel(config.model),
+      tools: buildTools(config),
+    },
+    beforeToolCall: buildGuards(config),
+    transformContext: createSessionCompactionTransform(config, sessionId),
+    getApiKey: resolveApiKey(config),
   });
 
-  session.agent.state.systemPrompt = resolveSystemPrompt(config);
-
-  // Bridge pi-coding-agent events → system EventBus
-  // Note: tool_call and tool_result are ephemeral bus events for UI/console.
-  // They use underscores (not dots) and are NOT persisted to the events table
-  // by db-writer (which only persists events with dots in the type name).
-  session.subscribe((event) => {
-    if (event.type === "agent_end") {
-      const result = extractResult(event.messages);
-      db.insertSession({ sessionId, agent: agentName, task, source, ...result });
-      bus.emit({ type: "session.end", agent: agentName, sessionId, ...result });
-    }
-    if (event.type === "tool_execution_start") {
-      bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
-    }
-    if (event.type === "tool_execution_end") {
-      bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: event.toolName, preview: text.slice(0, 200), isError: event.isError });
-    }
+  agent.subscribe((event) => {
+    persistMessageEvents(event, sessionId);
+    bridgeRuntimeEvent(bus, event, { sessionId, agentName, source });
   });
 
-  await session.prompt(task);
-  return extractResult(session.agent.state.messages);
+  await agent.prompt(task);
+  await agent.waitForIdle();
+  return finalizeDurableSession(agent.state.messages, sessionId);
 }
 ```
 
