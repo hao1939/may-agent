@@ -2,7 +2,7 @@
   "dependencies": {
     "@may-agent/sdk": "file:projects/may-agent/packages/sdk",
     "azure-cli": "^0.10.20",
-    "puppeteer-core": "^24.42.0"
+    "puppeteer-core": "^24.43.1"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

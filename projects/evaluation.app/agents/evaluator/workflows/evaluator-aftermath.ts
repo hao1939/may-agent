@@ -2165,7 +2165,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const mode = getModeFromTrigger(trigger);
 
   if (!sessionId) {
-    return ctx.escalate("evaluator-aftermath requires a sessionId", {
+    return ctx.blocked("evaluator-aftermath requires a sessionId", {
       trigger,
     });
   }
@@ -2173,7 +2173,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const loadedData = ctx.query.evaluatorAftermathContext({ sessionId }) as any;
   const session = loadedData.session;
   const evaluation = loadedData.evaluation;
-  if (!session) return ctx.escalate(`Session ${sessionId} not found`);
+  if (!session) return ctx.blocked(`Session ${sessionId} not found`);
 
   if (session.agent === "evaluator" || session.agent === "judge") {
     return ctx.done(`Skipped self/judge session ${sessionId}.`);
@@ -2418,7 +2418,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const review = await ctx.runAgent("evaluator", reviewTask);
 
   if ((review as any).status === "error") {
-    return ctx.escalate(`Evaluator review failed for ${sessionId}`, {
+    return ctx.blocked(`Evaluator review failed for ${sessionId}`, {
       reviewSessionId: (review as any).sessionId,
     });
   }

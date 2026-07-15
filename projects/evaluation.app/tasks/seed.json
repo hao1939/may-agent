@@ -8,36 +8,70 @@
     "evaluation-system": {
       "id": "evaluation-system",
       "parent_id": null,
-      "goal": "Evaluate agent session quality, calibrate criteria, detect drift, patrol integrity, extract strategies",
+      "goal": "Independently audit May-agent sessions and project apps, identify evidence-backed risks and improvement opportunities, and report actionable findings to humans and responsible project owners.",
+      "state": "backlog",
+      "children": [
+        "session-audit",
+        "project-app-audit",
+        "finding-delivery",
+        "evaluator-reliability"
+      ]
+    },
+    "session-audit": {
+      "id": "session-audit",
+      "parent_id": "evaluation-system",
+      "goal": "Independently evaluate completed May-agent sessions and maintain trustworthy scoring evidence.",
+      "state": "backlog",
+      "children": [
+        "criteria-and-calibration",
+        "drift-detection",
+        "strategy-learning"
+      ]
+    },
+    "project-app-audit": {
+      "id": "project-app-audit",
+      "parent_id": "evaluation-system",
+      "goal": "Independently inspect project-app progress, risk, waits, and process evidence, then produce owner-facing findings.",
+      "state": "backlog",
+      "children": []
+    },
+    "finding-delivery": {
+      "id": "finding-delivery",
+      "parent_id": "evaluation-system",
+      "goal": "Deliver deduplicated audit findings to responsible project owners and notify humans only when useful.",
+      "state": "backlog",
+      "children": []
+    },
+    "evaluator-reliability": {
+      "id": "evaluator-reliability",
+      "parent_id": "evaluation-system",
+      "goal": "Keep evaluation.app's own audit pipeline reliable and efficient as ordinary project self-maintenance.",
       "state": "backlog",
       "children": [
         "pipeline-health",
-        "criteria-and-calibration",
-        "drift-detection",
         "system-integrity",
-        "strategy-learning",
         "owner-review-dedupe-and-rollup",
         "replace-heartbeat-with-owner-planner"
       ]
     },
     "pipeline-health": {
       "id": "pipeline-health",
-      "parent_id": "evaluation-system",
+      "parent_id": "evaluator-reliability",
       "goal": "Monitor evaluation pipeline: is aftermath keeping up? Are there gaps? Is LLM lane useful?",
       "state": "backlog",
       "children": []
     },
     "criteria-and-calibration": {
       "id": "criteria-and-calibration",
-      "parent_id": "evaluation-system",
-      "goal": "Maintain scoring criteria, calibrate against human reviews, version criteria changes",
+      "parent_id": "session-audit",
+      "goal": "Maintain trustworthy session-audit criteria, calibrate against human reviews, and version criteria changes.",
       "state": "backlog",
       "children": []
     },
     "drift-detection": {
       "id": "drift-detection",
-      "parent_id": "evaluation-system",
-      "goal": "Detect per-agent behavioral drift. Classify: natural evolution vs regression.",
+      "parent_id": "session-audit",
+      "goal": "Detect evidence-backed changes in session quality when a concrete agent cohort supports comparison.",
       "context": {
         "migrated_from_invalid_leaf_state": "decomposed",
         "latest_evidence": {
@@ -81,8 +115,8 @@
     },
     "system-integrity": {
       "id": "system-integrity",
-      "parent_id": "evaluation-system",
-      "goal": "Patrol system compliance. Monitor active session health. Flag anomalies.",
+      "parent_id": "evaluator-reliability",
+      "goal": "Handle concrete evaluation.app integrity and audit-runtime defects as ordinary project self-maintenance.",
       "context": {
         "migrated_from_invalid_leaf_state": "decomposed",
         "latest_evidence": {
@@ -183,17 +217,17 @@
     },
     "strategy-learning": {
       "id": "strategy-learning",
-      "parent_id": "evaluation-system",
-      "goal": "Extract successful strategies from high-scoring sessions. Feed back into agent guidance.",
+      "parent_id": "session-audit",
+      "goal": "Retired: strategy extraction and guidance adoption are not part of evaluation.app's independent audit goal.",
       "context": {
         "migrated_from_invalid_leaf_state": "decomposed"
       },
-      "state": "backlog",
+      "state": "done",
       "children": []
     },
     "owner-review-dedupe-and-rollup": {
       "id": "owner-review-dedupe-and-rollup",
-      "parent_id": "evaluation-system",
+      "parent_id": "evaluator-reliability",
       "kind": "review",
       "priority": "P2",
       "owner": "evaluator",
@@ -352,7 +386,7 @@
     },
     "replace-heartbeat-with-owner-planner": {
       "id": "replace-heartbeat-with-owner-planner",
-      "parent_id": "evaluation-system",
+      "parent_id": "evaluator-reliability",
       "kind": "work",
       "priority": "P1",
       "owner": "evaluator",

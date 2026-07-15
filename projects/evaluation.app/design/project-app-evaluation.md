@@ -10,6 +10,9 @@ Project/app evaluation answers the bigger owner-facing question:
 
 > Is this project app moving toward its goal, or does a human need to intervene?
 
+Its purpose is to produce an independent, evidence-backed finding. It does not
+take ownership of fixing the target project.
+
 ## Responsibility Boundary
 
 The simple rule is:
@@ -46,6 +49,10 @@ Each project app must:
 - notify the human only when the owner needs a concrete human decision or the
   app is not self-correcting.
 
+The target owner decides whether and how to remediate the finding. A later
+evaluation may report that the condition persists, changed, or disappeared,
+but rechecking does not transfer remediation ownership to `evaluation.app`.
+
 The same path applies when the target is `evaluation.app` itself:
 
 ```text
@@ -73,6 +80,9 @@ In practical terms:
   not as a parking lot or noise generator?";
 - `evaluation.app` reports to the human when the target app is not closing the
   loop or when a human decision is actually needed.
+
+These are audit questions, not work assigned to `evaluation.app` on the
+target's behalf.
 
 ## Escalation Evaluation
 
@@ -451,6 +461,11 @@ The evaluator reads raw facts first:
 
 The raw fact packet should be saved with the report or referenced from it. The
 human must be able to disagree with evaluator judgment by inspecting the facts.
+Metrics, breach events, task-tree snapshots, and project readouts are
+timestamped observations. The evaluator compares their capture times before
+calling a condition current: a newer direct zero metric supersedes an older
+breach event, while genuinely conflicting current sources remain explicit
+uncertainty with a verification step.
 When the report shows metrics, distinguish the target app's own readout from
 runtime DB metrics. If runtime metric query returns no rows but the target app's
 project-state readout contains counters, the report should say both facts
@@ -493,11 +508,11 @@ Evaluator judgment:
   progress
 - whether this is new, repeated, improving, or getting worse
 
-Owner feedback:
+Owner finding delivery:
 - target owner
 - recommendation
 - report path
-- what the owner should accept, reject, fix, wait on, or prove already handled
+- what the owner should review, fix, wait on, or prove already handled
 
 Notification:
 - evaluator requested notification: yes/no
@@ -542,8 +557,12 @@ should proceed with that focus. If rejected, provide the replacement focus.
 
 ## Owner Feedback And Notification Policy
 
-Every non-`ok` project/app review should send owner feedback to the target
-owner. The owner is responsible for accepting it, proving it is already handled,
+An owner finding is emitted when a review introduces a new concern family,
+increases severity, or introduces a newly actionable human decision. Repeated
+same-family `watch`/`concern` reviews remain in the retained report and do not
+re-wake the target owner. Delivery means the owner workflow received the
+finding; it does not mean the owner accepted it or completed remediation. The
+owner is responsible for judging the finding, proving it is already handled,
 turning it into work, or recording an exact wait.
 
 Notify only when a human can usefully act or should be aware that the target app
@@ -652,14 +671,34 @@ data.params.targetProject
 `evaluation.project.notification.requested` includes the same dedupe key plus a
 short human message and report path.
 
-Owner feedback to the target app uses the target owner's normal request path:
+Finding delivery to the target app uses the target owner's normal request path:
 
 ```text
-project.planning.requested(target=<target owner>)
+project.owner.requested(target=<target owner>)
 ```
 
-The owner request is the closure path. Human notification is extra visibility
+The owner request is the delivery path. Human notification is extra visibility
 when the recommendation needs human action or the owner path is not trustworthy.
+Neither delivery nor a handled transport status proves acceptance or repair.
+
+Every non-`ok` owner request must carry enough structure to return the finding
+to the output that caused it:
+
+```json
+{
+  "mainConcern": "what is wrong",
+  "affectedArtifacts": ["task, workflow, file, result, or state surface"],
+  "recommendedChange": "the concrete correction for the owner to judge",
+  "verification": ["observable conditions proving the correction worked"]
+}
+```
+
+The evaluator does not mutate the target task tree and does not decide that the
+recommendation was accepted. The target owner may create repair work, link an
+existing correction, or reject the finding with evidence. A later review may
+call the finding resolved only after the named artifact or relevant output
+changed and the verification condition was observed. An unchanged report,
+notification, task refresh, or message acknowledgement is not improvement.
 
 ## Trigger Model
 
@@ -680,8 +719,10 @@ human action
   -> evaluation.project.review.requested(reason=manual)
 ```
 
-The scheduled loop is the baseline. It catches slow-moving problems that no
-single event makes obvious.
+The scheduled loop is a deterministic sampling baseline. It catches
+slow-moving problems that no single event makes obvious, but invokes the
+evaluator LLM only when the compact input fingerprint changes or the daily
+baseline is due.
 
 Event-driven triggers provide faster review when a concrete signal appears:
 
@@ -704,9 +745,10 @@ Use a durable scheduled loop for each watched target:
 ```text
 project-health-loop
   every 2 hours
-  -> review each configured target project app
+  -> build compact facts and compare the meaningful-state fingerprint
+  -> review only on a delta or daily baseline
   -> write report
-  -> send owner feedback for non-ok findings
+  -> send owner feedback for new/severity/actionable findings
   -> notify human only if policy says notify
 ```
 
@@ -753,6 +795,11 @@ Manual review always writes a report. It should notify only if the evaluator
 judges notification is needed; otherwise it returns the report path and verdict
 to the requester.
 
+Human notification and target-owner feedback are separate. A manual review that
+still finds a non-`ok` condition sends the structured finding back to the target
+owner even when human notification is deduplicated. This makes an explicit
+review useful for recovery without repeating Telegram noise.
+
 ### Trigger Priority
 
 If several triggers arrive close together, dedupe by target and reason family:
@@ -784,6 +831,13 @@ Repeat notification only when:
 - new evidence changes the requested human action;
 - human acknowledged the prior notification but the project did not act;
 - the same fingerprint appears after it was previously marked recovered.
+
+Target-owner feedback uses a shorter safety rule. Suppress an unchanged concern
+for one hour so concurrent reviews do not create duplicate work, then send it
+again if the condition still exists. Explicit manual review bypasses this owner
+feedback delay. Dedupe prevents simultaneous duplicate work; it must not
+permanently silence a finding whose prior remediation completed without changing
+the measured condition.
 
 ## Closure
 
@@ -849,7 +903,8 @@ Phase 3.5: self-recovery coverage
 
 Phase 4: feedback loop
 
-1. Emit target-owner feedback for every non-`ok` project/app review. Done.
+1. Emit target-owner feedback for new concern families, severity increases, or
+   newly actionable human decisions. Done.
 2. Track whether the target app reacts.
 3. Notify if feedback is ignored and the issue persists.
 

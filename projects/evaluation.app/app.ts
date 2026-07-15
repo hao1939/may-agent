@@ -141,7 +141,7 @@ function isEvaluatorOwnerMessage(event: Record<string, unknown>): boolean {
   );
 }
 
-async function routeEvaluationEvent(
+export async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
@@ -149,6 +149,7 @@ async function routeEvaluationEvent(
     event.type === "session.end" ||
     event.type === "evaluation.session.requested" ||
     event.type === "evaluation.deep.requested" ||
+    event.type === "evaluation.pipeline.check" ||
     event.type === "evaluation.tick" ||
     event.type === "evaluation.project.review.requested" ||
     event.type === "evaluation.aftermath.scan" ||
@@ -178,10 +179,7 @@ async function routeEvaluationEvent(
     );
   }
 
-  if (
-    event.type === "project.owner.requested" ||
-    event.type === "project.planning.requested"
-  ) {
+  if (event.type === "project.owner.requested") {
     return ctx.emit(
       evaluationReviewRequested("owner-review", {
         ownerRequest: eventDetails(event),
@@ -195,14 +193,14 @@ async function routeEvaluationEvent(
         `ignored ${event.type} for non-evaluation metric ${metricId(event) || "<unknown>"}`,
       );
     }
-    return ctx.emit(
-      evaluationReviewRequested(
-        event.type === "metric.breach" ? "metric-breach" : "metric-recovered",
-        {
-          metric: eventDetails(event),
-        },
-      ),
-    );
+    return ctx.emit({
+      type: "evaluation.pipeline.check",
+      project: projectId,
+      params: {
+        reason: event.type,
+        metric: eventDetails(event),
+      },
+    });
   }
 
   if (event.type === "project.action.invoked") {
@@ -238,7 +236,7 @@ export default defineProjectApp({
   version: 1,
   owner: "evaluator",
   description:
-    "Evaluation app: session aftermath scoring, criteria calibration, drift detection, integrity patrol, and strategy learning.",
+    "Independent session and project-app auditing with evidence-backed owner and human reporting.",
   workspace: {
     kind: "local",
     localPath: ".",
@@ -255,87 +253,83 @@ export default defineProjectApp({
       id: "evaluation-pipeline-review",
       enabled: true,
       intervalMs: 300_000,
-      event: {
-        type: "evaluation.tick",
+      emits: [{
+        type: "evaluation.pipeline.check",
         project: projectId,
-        lane: "pipeline-health",
-      },
-    },
-    {
-      id: "drift-detection",
-      enabled: true,
-      intervalMs: 3_600_000,
-      event: {
-        type: "evaluation.tick",
-        project: projectId,
-        lane: "drift",
-      },
+      }],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
-      intervalMs: 14_400_000,
-      event: {
+      intervalMs: 86_400_000,
+      emits: [{
         type: "project.owner.requested",
         project: projectId,
         reason: "owner-heartbeat",
         params: {
           instruction:
-            "Low-frequency evaluation owner heartbeat: look for missed evaluation-system issues that fixed drift, patrol, aftermath, and metric loops did not catch. Check recent heartbeat/patrol/drift findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run session aftermath unless a concrete sessionId is present.",
+            "Daily evaluation owner review: maintain the auditing system and look for evaluator-local issues that deterministic monitoring did not catch. Prefer one to three task-tree actions or no-op with reason; do not take remediation ownership for findings about target projects, and do not run session aftermath unless a concrete sessionId is present.",
           reviewChecklist: [
             "Look for stale criteria/scoring assumptions and repeated evaluator misjudgments.",
-            "Look for missed session aftermath, deep-eval candidate gaps, or drift patterns not covered by current schedules.",
-            "Look for task-tree bloat or findings that should be rolled up into durable evaluation knowledge.",
+            "Look for missed session aftermath, deep-eval candidate gaps, or recurring findings not covered by current monitors.",
+            "Look for task-tree bloat; only evaluator-local defects belong in this task tree.",
             "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
             "No-op is valid when the existing queues already cover the useful next work.",
           ],
         },
-      },
-    },
-    {
-      id: "integrity-patrol",
-      enabled: true,
-      intervalMs: 21_600_000,
-      event: {
-        type: "evaluation.tick",
-        project: projectId,
-        lane: "patrol",
-      },
+      }],
     },
     {
       id: "session-aftermath-scan",
       enabled: true,
       intervalMs: 420_000, // 7min — backfill terminal sessions missed by session.end handling
-      event: {
+      emits: [{
         type: "evaluation.aftermath.scan",
         project: projectId,
-      },
+      }],
     },
     {
       id: "eval-llm-scan",
       enabled: false,
       intervalMs: 1_800_000, // 30min — one deep eval candidate per run
-      event: {
+      emits: [{
         type: "evaluation.deep.scan",
         project: projectId,
-      },
+      }],
     },
     ...watchedProjectTargets.map((target) => ({
       id: `project-health-loop-${target.targetProject}`,
       enabled: true,
       intervalMs: 7_200_000, // 2h owner-facing app/project review baseline
-      event: {
+      emits: [{
         type: "evaluation.project.review.requested",
         project: projectId,
         params: {
           ...target,
           reason: "scheduled",
         },
-      },
+      }],
     })),
   ],
 
   workflowHandlers: [
+    {
+      name: "evaluation-pipeline-monitor",
+      type: "job",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Deterministically checks evaluation pipeline health and wakes the owner only when anomaly state changes.",
+      accepts: ["evaluation.pipeline.check"],
+      handler: {
+        workflow: "evaluator-pipeline-monitor",
+        agent: "evaluator",
+        includeEvent: true,
+        task: `${appTaskContext}\nCheck evaluation pipeline health without invoking an agent unless anomaly state changes.`,
+        timeoutMs: 120_000,
+      },
+      context: evaluationContext,
+    },
     {
       name: "evaluation-aftermath",
       type: "job",
@@ -343,7 +337,7 @@ export default defineProjectApp({
       maxConcurrentTriggers: 5,
       description:
         "Evaluates one completed session. It must be triggered with a sessionId.",
-      on: ["session.end", "evaluation.session.requested"],
+      accepts: ["session.end", "evaluation.session.requested"],
       handler: {
         workflow: "evaluator-aftermath",
         agent: "evaluator",
@@ -357,9 +351,10 @@ export default defineProjectApp({
       name: "evaluation-heartbeat",
       type: "job",
       enabled: true,
+      maxConcurrentTriggers: 1,
       description:
-        "Reviews pipeline health, drift, patrol, and strategy-learning lanes.",
-      on: ["evaluation.tick"],
+        "Runs a bounded owner review after a changed pipeline anomaly or an explicit owner wake.",
+      accepts: ["evaluation.tick"],
       handler: {
         workflow: "evaluator-heartbeat",
         agent: "evaluator",
@@ -375,7 +370,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Runs one non-heuristic evaluator review as workflow-traced work.",
-      on: ["evaluation.deep.requested"],
+      accepts: ["evaluation.deep.requested"],
       handler: {
         workflow: "evaluator-deep-eval",
         agent: "evaluator",
@@ -391,7 +386,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Backfill safety net: evaluate terminal sessions missed by session.end handling (7min delay, limit 1).",
-      on: ["evaluation.aftermath.scan"],
+      accepts: ["evaluation.aftermath.scan"],
       handler: {
         workflow: "evaluator-aftermath",
         agent: "evaluator",
@@ -407,7 +402,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Bounded non-heuristic evaluator lane: find one candidate for deep LLM evaluation per run.",
-      on: ["evaluation.deep.scan"],
+      accepts: ["evaluation.deep.scan"],
       handler: {
         workflow: "evaluator-deep-eval",
         agent: "evaluator",
@@ -422,13 +417,13 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Owner-facing review of whether a target project app is moving and self-correcting.",
-      on: ["evaluation.project.review.requested"],
+        "Independent audit of target project progress, risk, and process evidence.",
+      accepts: ["evaluation.project.review.requested"],
       handler: {
         workflow: "project-health-evaluator",
         agent: "evaluator",
         includeEvent: true,
-        task: `${appTaskContext}\nReview the target project/app health from the trigger event. Write owner feedback and notify a human only when useful.`,
+        task: `${appTaskContext}\nIndependently audit the target project/app from the trigger event. Report evidence-backed findings to its owner and notify a human only when useful; do not own target remediation.`,
         timeoutMs: 900_000,
       },
       context: [
@@ -442,6 +437,7 @@ export default defineProjectApp({
     "session.end",
     "evaluation.session.requested",
     "evaluation.deep.requested",
+    "evaluation.pipeline.check",
     "evaluation.tick",
     "evaluation.review_failed",
     "evaluation.aftermath.scan",
@@ -454,7 +450,6 @@ export default defineProjectApp({
     { type: "metric.breach", project: projectId },
     { type: "metric.recovered", project: projectId },
     { type: "project.owner.requested", project: projectId },
-    { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
     { type: "project.tasks.ready", project: `${projectId}.app` },
   ],
@@ -477,6 +472,11 @@ export default defineProjectApp({
         description:
           "Runs a bounded evaluation.app owner review against the task tree.",
       },
+      "evaluation-pipeline-monitor": {
+        emits: ["evaluation.tick"],
+        description:
+          "Runs deterministic checks every five minutes and emits a tick only when anomaly state changes.",
+      },
       "evaluation-deep-eval": {
         emits: ["handler.workflow_dispatched"],
         description:
@@ -487,22 +487,29 @@ export default defineProjectApp({
           "evaluation.project.review_started",
           "evaluation.project.reviewed",
           "evaluation.project.notification.requested",
-          "project.planning.requested",
+          "project.owner.requested",
         ],
         description:
-          "Samples a target project app and writes an owner-facing health report.",
+          "Samples a target project app and writes an independent owner-facing audit report.",
       },
     },
     adapters: [
       {
+        event: "metric.breach",
+        emits: ["evaluation.pipeline.check"],
+        description:
+          "Evaluation metric breaches run through the deterministic anomaly gate before any owner wake.",
+      },
+      {
+        event: "metric.recovered",
+        emits: ["evaluation.pipeline.check"],
+        description:
+          "Evaluation metric recoveries run through the deterministic anomaly gate before any owner wake.",
+      },
+      {
         event: "project.owner.requested",
         emits: ["evaluation.tick"],
         description: "Generic owner review wakes evaluation heartbeat.",
-      },
-      {
-        event: "project.planning.requested",
-        emits: ["evaluation.tick"],
-        description: "Legacy planning alias wakes evaluation heartbeat.",
       },
       {
         event: "project.action.invoked",

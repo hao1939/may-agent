@@ -270,9 +270,12 @@ Review this compact owner packet and drive the app task tree forward.
 Rules:
 - Do not create standalone projects such as projects/evaluator-*.
 - Do not run session aftermath unless the trigger includes a concrete sessionId.
+- Keep this task tree limited to evaluation.app's own audit-system work. Findings about target projects must be delivered to their owners, not converted into evaluator-owned remediation tasks.
 - If the trigger is a health tick, metric breach, owner request, or task-ready signal, review the task tree and runtime packet.
 - If the trigger is an owner-message, treat it as an owner decision or instruction. Apply it to the task tree when it names a concrete task/state/resume condition.
 - Update the task tree when it needs a new leaf, clearer context, a state change, or a rollup.
+- A no-op must not write any file. Do not refresh summaries, context, evidence timestamps, or updated_at merely to record another unchanged observation.
+- Write task-tree state only when the durable task model changes: task creation/removal, state, goal, owner, dependency, exact wait, or a materially new decision that changes the next action.
 - Append projects/evaluation.app/discussion.md when you make an owner judgment that should be durable but does not need a tree edit.
 - If existing active tasks already cover the signal, say so and avoid churn.
 - Do not send direct human messages from this owner heartbeat. Human-facing project-health notifications are handled by the deduped project-health evaluator path.

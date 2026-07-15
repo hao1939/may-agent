@@ -2245,7 +2245,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `No eligible aftermath backfill candidate found for ${triggerType || "unspecified trigger"}.`,
       );
     }
-    return ctx.escalate("evaluator-aftermath requires a sessionId", {
+    return ctx.blocked("evaluator-aftermath requires a sessionId", {
       trigger,
     });
   }
@@ -2253,7 +2253,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const loadedData = ctx.query.evaluatorAftermathContext({ sessionId }) as any;
   const session = loadedData.session;
   const evaluation = loadedData.evaluation;
-  if (!session) return ctx.escalate(`Session ${sessionId} not found`);
+  if (!session) return ctx.blocked(`Session ${sessionId} not found`);
 
   if (session.agent === "evaluator" || session.agent === "judge") {
     return ctx.done(`Skipped self/judge session ${sessionId}.`);

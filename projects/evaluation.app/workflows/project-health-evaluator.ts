@@ -4,10 +4,12 @@ import {
   readdirSync,
   readFileSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { join, relative } from "node:path";
+import { createHash } from "node:crypto";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import {
   normalizeTaskTreeInPlace,
   type TaskTree,
@@ -17,7 +19,7 @@ import {
 
 export const name = "project-health-evaluator";
 export const description =
-  "Project/app health review that reports findings to the target owner.";
+  "Independent project/app audit that reports evidence-backed findings to the target owner.";
 
 const EVALUATION_APP_DIR = "/app/projects/evaluation.app";
 const WATCHED_TARGETS = [
@@ -44,6 +46,7 @@ const WATCHED_TARGETS = [
 ] as const;
 const DEFAULT_TARGET = WATCHED_TARGETS[0];
 const NOTIFY_VERDICTS = new Set(["concern", "urgent", "blocked-on-human"]);
+const OWNER_FEEDBACK_RETRY_MS = 60 * 60_000;
 const VERDICTS = new Set([
   "ok",
   "watch",
@@ -75,6 +78,9 @@ type TargetConfig = {
 type Judgment = {
   verdict: string;
   mainConcern: string;
+  affectedArtifacts?: string[];
+  recommendedChange?: string;
+  verification?: string[];
   requestedHumanAction: string;
   notify: boolean;
   dedupeKey: string;
@@ -85,11 +91,17 @@ type Judgment = {
 };
 
 type ProjectHealthState = {
+  lastReviewedAt?: string;
+  lastCheckedAt?: string;
   lastReportPath?: string;
   lastVerdict?: string;
   lastDedupeKey?: string;
   lastRequestedHumanAction?: string;
   lastNotify?: boolean;
+  lastInputFingerprint?: string;
+  lastFeedbackAt?: string;
+  lastFeedbackDedupeKey?: string;
+  lastFeedbackVerdict?: string;
 };
 
 type ContractCheck = {
@@ -118,8 +130,41 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function stringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+  }
+  return typeof value === "string" && value.trim() ? [value.trim()] : [];
+}
+
 function truncate(text: string, max = 500): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
+function compactValue(
+  value: unknown,
+  depth = 0,
+  limits = { maxDepth: 5, maxArray: 20, maxKeys: 40, maxString: 1200 },
+): unknown {
+  if (typeof value === "string") return truncate(value, limits.maxString);
+  if (value === null || typeof value !== "object") return value;
+  if (depth >= limits.maxDepth) {
+    return Array.isArray(value)
+      ? `[${value.length} item(s) omitted]`
+      : "[nested object omitted]";
+  }
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, limits.maxArray)
+      .map((item) => compactValue(item, depth + 1, limits));
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .slice(0, limits.maxKeys)
+      .map(([key, item]) => [key, compactValue(item, depth + 1, limits)]),
+  );
 }
 
 function formatCountMap(value: unknown): string {
@@ -401,7 +446,12 @@ function tailLines(path: string, count: number): unknown {
       .slice(-count);
     return lines.map((line) => {
       try {
-        return JSON.parse(line);
+        return compactValue(JSON.parse(line), 0, {
+          maxDepth: 4,
+          maxArray: 12,
+          maxKeys: 30,
+          maxString: 600,
+        });
       } catch {
         return line.slice(0, 1200);
       }
@@ -496,8 +546,14 @@ function rowMatchesTarget(
   row: Record<string, unknown>,
   target: TargetConfig,
 ): boolean {
+  const projectIds = targetProjectIds(target);
+  const sourceProject = stringFromRecord(row, [
+    "source_project_id",
+    "sourceProjectId",
+  ]);
+  if (sourceProject && projectIds.includes(sourceProject)) return true;
   const text = JSON.stringify(row);
-  return targetProjectIds(target).some((project) => text.includes(project));
+  return projectIds.some((project) => text.includes(project));
 }
 
 function compactTask(task: TaskRecord): Record<string, unknown> {
@@ -508,9 +564,14 @@ function compactTask(task: TaskRecord): Record<string, unknown> {
     owner: task.owner,
     parent: task.parent_id ?? null,
     children: task.children?.length ?? 0,
-    goal: task.goal,
-    summary: task.summary,
-    context: task.context,
+    goal: task.goal ? truncate(task.goal, 500) : undefined,
+    summary: task.summary ? truncate(task.summary, 700) : undefined,
+    context: compactValue(task.context, 0, {
+      maxDepth: 4,
+      maxArray: 10,
+      maxKeys: 24,
+      maxString: 500,
+    }),
     updated_at: task.updated_at,
   };
 }
@@ -567,13 +628,13 @@ export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
     .map(compactTask);
   const blocked = leaves
     .filter((task) => task.state === "blocked")
-    .slice(0, 30)
+    .slice(0, 12)
     .map(compactTask);
   const runnable = leaves
     .filter((task) =>
       ["backlog", "ready", "todo", "pending"].includes(task.state ?? ""),
     )
-    .slice(0, 30)
+    .slice(0, 12)
     .map(compactTask);
   const designHygiene = leaves
     .filter(isDesignHygieneTask)
@@ -682,7 +743,7 @@ function selfRecoveryContractPacket(
       "There is a path to wake the project owner/planner",
       hasOwnerWake,
       hasOwnerWake
-        ? "project.owner.requested or project.planning.requested is wired"
+        ? "project.owner.requested is wired"
         : "No owner/planner wake event is visible in app.ts",
     ),
     contractCheck(
@@ -891,7 +952,7 @@ function recentRunPacket(targetAppDir: string): Record<string, unknown> {
             ] as const,
         ),
     );
-  const files = [...topLevel, ...nested].slice(0, 20);
+  const files = [...topLevel, ...nested].slice(0, 8);
 
   if (files.length === 0) {
     return {
@@ -903,7 +964,7 @@ function recentRunPacket(targetAppDir: string): Record<string, unknown> {
   return Object.fromEntries(
     files.map(([name, relPath]) => [
       name,
-      tailLines(join(targetAppDir, relPath), 8),
+      tailLines(join(targetAppDir, relPath), 3),
     ]),
   );
 }
@@ -1122,7 +1183,7 @@ function compactEscalationRow(
   };
 }
 
-function escalationPacket(
+export function escalationPacket(
   ctx: WorkflowContext,
   target: TargetConfig,
 ): Record<string, unknown> {
@@ -1146,10 +1207,13 @@ function escalationPacket(
     "escalation-events",
     () =>
       ctx.query.sql(
-        `SELECT id, event_type, source, owner, timestamp, status, data
-         FROM events
-        WHERE timestamp >= ?
-          AND event_type IN (
+        `SELECT e.id, e.event_type, e.source, e.owner, e.timestamp, e.status,
+                e.data, s.projectId AS source_project_id
+         FROM events AS e
+         LEFT JOIN sessions AS s
+           ON s.sessionId = json_extract(e.data, '$.sourceSessionId')
+        WHERE e.timestamp >= ?
+          AND e.event_type IN (
             'escalation.created',
             'escalation.resolved',
             'escalation.dismissed',
@@ -1158,23 +1222,25 @@ function escalationPacket(
             'project.approval.submitted',
             'message.created'
           )
-        ORDER BY timestamp DESC, id DESC`,
+        ORDER BY e.timestamp DESC, e.id DESC`,
         [since],
         { limit: 1000 },
       ).rows,
   );
 
-  const eventRows = asArray(eventRowsRaw)
-    .map(objectRecord)
-    .filter((row) => rowMatchesTarget(row, target));
-  const created = eventRows.filter(
-    (row) => row.event_type === "escalation.created",
+  const allEventRows = asArray(eventRowsRaw).map(objectRecord);
+  const eventRows = allEventRows.filter((row) => rowMatchesTarget(row, target));
+  const created = allEventRows.filter(
+    (row) =>
+      row.event_type === "escalation.created" && rowMatchesTarget(row, target),
   );
-  const closed = eventRows.filter((row) =>
+  const allClosed = allEventRows.filter((row) =>
     ["escalation.resolved", "escalation.dismissed"].includes(
       String(row.event_type),
     ),
   );
+  const createdKeys = new Set(created.map(escalationKey));
+  const closed = allClosed.filter((row) => createdKeys.has(escalationKey(row)));
   const closedKeys = new Set(
     closed.map((row) => {
       const data = parseRowData(row);
@@ -1219,8 +1285,14 @@ function escalationPacket(
   if (staleOpen.length > 0) {
     warnings.push(`${staleOpen.length} open escalation(s) older than 24h`);
   }
-  if (approvalDispatches.some((row) => row.result !== "message.created")) {
-    warnings.push("some approval-dispatch attempts did not create a message");
+  if (
+    approvalDispatches.some(
+      (row) =>
+        row.result !== "message.created" &&
+        row.result !== "duplicate-suppressed",
+    )
+  ) {
+    warnings.push("some approval-dispatch attempts were ignored or failed");
   }
   if (
     Number(taskCounts.blockedLeaves ?? 0) > 0 &&
@@ -1347,11 +1419,146 @@ function runtimePacket(
             status: row.status,
             startedAt: row.startedAt ?? row.started_at,
             completedAt: row.completedAt ?? row.completed_at,
-            result: row.result_summary ?? row.summary,
+            result: truncate(
+              String(row.result_summary ?? row.summary ?? ""),
+              700,
+            ),
           })),
       ),
     ),
   };
+}
+
+function sortedValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortedValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, sortedValue(item)]),
+  );
+}
+
+function metricHealthBucket(metric: unknown): Record<string, unknown> {
+  const row = objectRecord(metric);
+  const current = Number(row.current);
+  const threshold = Number(row.threshold);
+  const op = String(row.alert_op ?? "");
+  const breached =
+    Number.isFinite(current) && Number.isFinite(threshold)
+      ? op === "<"
+        ? current < threshold
+        : op === ">"
+          ? current > threshold
+          : false
+      : false;
+  return {
+    id: row.id ?? row.name,
+    status: row.status,
+    breached,
+  };
+}
+
+export function projectHealthInputFingerprint(
+  packet: Record<string, unknown>,
+): string {
+  const taskTree = objectRecord(packet.taskTree);
+  const taskCounts = objectRecord(taskTree.counts);
+  const selfRecovery = objectRecord(packet.selfRecovery);
+  const escalations = objectRecord(packet.escalations);
+  const escalationCounts = objectRecord(escalations.counts);
+  const runtime = objectRecord(packet.runtime);
+  const projectState = objectRecord(packet.projectState);
+  const currentFocus = objectRecord(projectState.currentFocus);
+  const focusReview = objectRecord(currentFocus.focusReview);
+  const readoutMetrics = objectRecord(projectState.metrics);
+  const meaningfulReadoutKeys = [
+    "activeLeafCount",
+    "blockedLeafCount",
+    "reviewLeafCount",
+    "runnableLeafCount",
+    "waitingLeafCount",
+    "liveRunsStarted24h",
+    "liveRunsSucceeded24h",
+    "specFailedCount",
+    "specUnverifiedCount",
+    "unknownPathMetric",
+  ];
+  const workflowFailures = asArray(runtime.workflows)
+    .map(objectRecord)
+    .filter((row) =>
+      ["blocked", "error", "interrupted"].includes(String(row.status)),
+    )
+    .map((row) => `${String(row.workflow)}:${String(row.status)}`)
+    .sort();
+  const summary = {
+    tasks: {
+      counts: taskCounts,
+      activeIds: asArray(taskTree.active).map((task) => objectRecord(task).id),
+      reviewIds: asArray(taskTree.review).map((task) => objectRecord(task).id),
+      runnableIds: asArray(taskTree.runnable).map(
+        (task) => objectRecord(task).id,
+      ),
+    },
+    selfRecovery: {
+      status: selfRecovery.status,
+      missing: selfRecovery.missing,
+      criticalMissing: selfRecovery.criticalMissing,
+    },
+    loops: Object.fromEntries(
+      Object.entries(objectRecord(packet.loops)).map(([key, value]) => {
+        const loop = objectRecord(value);
+        return [key, { total: loop.total, statusCounts: loop.statusCounts }];
+      }),
+    ),
+    escalations: {
+      created: escalationCounts.created,
+      open: escalationCounts.open,
+      staleOpen: escalationCounts.staleOpen,
+      closed: escalationCounts.closed,
+      approvalRequests: escalationCounts.approvalRequests,
+      approvalSubmissions: escalationCounts.approvalSubmissions,
+      warnings: escalations.warnings,
+    },
+    focus: {
+      id: currentFocus.id ?? currentFocus.focusPlanId,
+      status: currentFocus.focusPlanStatus ?? currentFocus.status,
+      review: focusReview.result,
+    },
+    readout: Object.fromEntries(
+      meaningfulReadoutKeys
+        .filter((key) => key in readoutMetrics)
+        .map((key) => [key, readoutMetrics[key]]),
+    ),
+    runtime: {
+      metrics: asArray(runtime.metrics)
+        .map(metricHealthBucket)
+        .sort((left, right) => String(left.id).localeCompare(String(right.id))),
+      workflowFailures,
+    },
+  };
+  return createHash("sha256")
+    .update(JSON.stringify(sortedValue(summary)))
+    .digest("hex")
+    .slice(0, 20);
+}
+
+export function scheduledProjectReviewDecision(
+  reason: string,
+  previous: ProjectHealthState,
+  fingerprint: string,
+  now = Date.now(),
+): { run: boolean; reason: string } {
+  if (reason !== "scheduled") return { run: true, reason: "explicit-request" };
+  if (!previous.lastReviewedAt) return { run: true, reason: "first-review" };
+  if (previous.lastInputFingerprint !== fingerprint) {
+    return { run: true, reason: "meaningful-delta" };
+  }
+  const reviewedAt = Date.parse(previous.lastReviewedAt);
+  if (!Number.isFinite(reviewedAt) || now - reviewedAt >= 24 * 60 * 60_000) {
+    return { run: true, reason: "daily-baseline" };
+  }
+  return { run: false, reason: "unchanged-since-last-review" };
 }
 
 function targetFactPacket(
@@ -1363,8 +1570,10 @@ function targetFactPacket(
     target,
     sampledAt: new Date().toISOString(),
     previousReview: previousReviewPacket(target),
-    projectState: readJson(
-      join(target.targetAppDir, ".state/project-state.json"),
+    projectState: compactValue(
+      readJson(join(target.targetAppDir, ".state/project-state.json")),
+      0,
+      { maxDepth: 5, maxArray: 12, maxKeys: 30, maxString: 600 },
     ),
     taskTree,
     selfRecovery: selfRecoveryContractPacket(target, taskTree),
@@ -1416,6 +1625,71 @@ function extractJsonBlock(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+type ProjectHealthJudgmentSource = {
+  raw: Record<string, unknown> | null;
+  text: string;
+  source: string;
+};
+
+function safeEvaluationDeliverableText(
+  appDir: string,
+  pathValue: unknown,
+): string {
+  if (typeof pathValue !== "string" || !pathValue.trim()) return "";
+  const absolutePath = isAbsolute(pathValue)
+    ? resolve(pathValue)
+    : resolve(appDir, pathValue);
+  const relativePath = relative(appDir, absolutePath);
+  if (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) ||
+    isAbsolute(relativePath) ||
+    !existsSync(absolutePath)
+  ) {
+    return "";
+  }
+  try {
+    return readFileSync(absolutePath, "utf-8").trim();
+  } catch {
+    return "";
+  }
+}
+
+export function projectHealthJudgmentFromResult(
+  result: unknown,
+  appDir = EVALUATION_APP_DIR,
+): ProjectHealthJudgmentSource {
+  const record = objectRecord(result);
+  const finishResult = objectRecord(record.finishResult);
+  const candidates: Array<{ source: string; text: string }> = [];
+  for (const [source, value] of [
+    ["lastAssistantText", record.lastAssistantText],
+    ["message", record.message],
+    ["finishResult.summary", finishResult.summary],
+  ] as const) {
+    if (typeof value === "string" && value.trim()) {
+      candidates.push({ source, text: value.trim() });
+    }
+  }
+  for (const deliverable of asArray(finishResult.deliverables)) {
+    const item = objectRecord(deliverable);
+    const text = safeEvaluationDeliverableText(appDir, item.path);
+    if (text) {
+      candidates.push({ source: `deliverable:${String(item.path)}`, text });
+    }
+  }
+
+  for (const candidate of candidates) {
+    const raw = extractJsonBlock(candidate.text);
+    if (raw) return { raw, text: candidate.text, source: candidate.source };
+  }
+  return {
+    raw: null,
+    text: candidates[0]?.text ?? "",
+    source: candidates[0]?.source ?? "none",
+  };
 }
 
 function fallbackJudgment(
@@ -1505,7 +1779,7 @@ function fallbackJudgment(
   };
 }
 
-function normalizeJudgment(
+export function normalizeJudgment(
   raw: Record<string, unknown> | null,
   fallback: Judgment,
 ): Judgment {
@@ -1521,6 +1795,31 @@ function normalizeJudgment(
     mainConcern: String(
       raw?.mainConcern ?? raw?.main_concern ?? fallback.mainConcern,
     ),
+    affectedArtifacts: (() => {
+      const explicit = stringList(
+        raw?.affectedArtifacts ?? raw?.affected_artifacts,
+      );
+      return explicit.length > 0
+        ? explicit
+        : stringList(fallback.affectedArtifacts);
+    })(),
+    recommendedChange: String(
+      raw?.recommendedChange ??
+        raw?.recommended_change ??
+        fallback.recommendedChange ??
+        fallback.message,
+    ),
+    verification: (() => {
+      const explicit = stringList(raw?.verification);
+      const inherited = stringList(fallback.verification);
+      return explicit.length > 0
+        ? explicit
+        : inherited.length > 0
+          ? inherited
+          : [
+              "The named artifact or output changes and a later review no longer observes this concern.",
+            ];
+    })(),
     requestedHumanAction: String(
       raw?.requestedHumanAction ??
         raw?.requested_human_action ??
@@ -1735,6 +2034,11 @@ function dedupeFamily(key: string | undefined): string {
   ) {
     return `${project}:reviewer-runtime-owner-linkage`;
   }
+  if (
+    /review[-_]?failed|reviewfailed|workflow[-_]?blocked|zero[-_]?op/i.test(key)
+  ) {
+    return `${project}:review-failed-family`;
+  }
   if (key.includes("compact-loop") && key.includes("liveness")) {
     return "compact-loop-liveness";
   }
@@ -1866,6 +2170,15 @@ Notification reason: ${judgment.notificationReason ?? "not recorded"}
 
 ${judgment.humanActionDetail ?? "No action detail recorded."}
 
+Affected artifacts:
+${(judgment.affectedArtifacts ?? []).map((item) => `- ${item}`).join("\n") || "- Not identified"}
+
+Recommended change:
+${judgment.recommendedChange ?? "Not identified"}
+
+Verification:
+${(judgment.verification ?? []).map((item) => `- ${item}`).join("\n") || "- Not identified"}
+
 ## Owner Message
 
 ${judgment.message}
@@ -1876,23 +2189,50 @@ ${humanFactSummary(packet, factsRelativePath)}
 
 ## Evaluator Judgment
 
-${evaluatorText.trim()}
+${truncate(evaluatorText.trim(), 8_000)}
 `;
   writeFileSync(absolutePath, content, "utf-8");
+  pruneProjectHealthReports(reportDir);
   return { absolutePath, relativePath };
+}
+
+export function pruneProjectHealthReports(
+  reportDir: string,
+  keepReviews = 30,
+): void {
+  const reports = safeDirEntries(reportDir)
+    .filter((entry) => entry.endsWith(".md"))
+    .sort()
+    .reverse();
+  for (const report of reports.slice(keepReviews)) {
+    const id = report.slice(0, -3);
+    for (const entry of [report, `${id}.facts.json`]) {
+      const path = join(reportDir, entry);
+      if (!existsSync(path)) continue;
+      try {
+        unlinkSync(path);
+      } catch {
+        // Retention is best-effort; a report write must not fail on cleanup.
+      }
+    }
+  }
 }
 
 function writeState(
   target: TargetConfig,
   judgment: Judgment,
   reportPath: string,
+  inputFingerprint: string,
+  feedbackEmitted: boolean,
 ): void {
   const stateDir = join(EVALUATION_APP_DIR, ".state/project-health/targets");
+  const previous = readState(target);
   mkdirSync(stateDir, { recursive: true });
   writeFileSync(
     join(stateDir, `${target.targetProject}.json`),
     `${JSON.stringify(
       {
+        ...previous,
         targetProject: target.targetProject,
         targetAppDir: target.targetAppDir,
         targetDomainDir: target.targetDomainDir ?? null,
@@ -1902,6 +2242,40 @@ function writeState(
         lastDedupeKey: judgment.dedupeKey,
         lastRequestedHumanAction: judgment.requestedHumanAction,
         lastNotify: judgment.notify,
+        lastInputFingerprint: inputFingerprint,
+        lastCheckedAt: new Date().toISOString(),
+        ...(feedbackEmitted
+          ? {
+              lastFeedbackAt: new Date().toISOString(),
+              lastFeedbackDedupeKey: judgment.dedupeKey,
+              lastFeedbackVerdict: judgment.verdict,
+            }
+          : {}),
+      },
+      null,
+      2,
+    )}\n`,
+    "utf-8",
+  );
+}
+
+function writeCheckState(
+  target: TargetConfig,
+  previous: ProjectHealthState,
+  inputFingerprint: string,
+): void {
+  const stateDir = join(EVALUATION_APP_DIR, ".state/project-health/targets");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(
+    join(stateDir, `${target.targetProject}.json`),
+    `${JSON.stringify(
+      {
+        ...previous,
+        targetProject: target.targetProject,
+        targetAppDir: target.targetAppDir,
+        targetDomainDir: target.targetDomainDir ?? null,
+        lastCheckedAt: new Date().toISOString(),
+        lastInputFingerprint: inputFingerprint,
       },
       null,
       2,
@@ -1914,8 +2288,43 @@ function targetOwnerProjectId(target: TargetConfig): string {
   return target.targetProject.replace(/\.app$/, "");
 }
 
-function shouldFeedbackTargetOwner(judgment: Judgment): boolean {
-  return judgment.verdict !== "ok";
+export function shouldFeedbackTargetOwner(
+  judgment: Judgment,
+  previous: ProjectHealthState,
+  options: {
+    force?: boolean;
+    now?: number;
+    retryAfterMs?: number;
+  } = {},
+): boolean {
+  if (judgment.verdict === "ok") return false;
+  if (options.force) return true;
+  if (!previous.lastFeedbackDedupeKey) return true;
+  if (
+    dedupeFamily(previous.lastFeedbackDedupeKey) !==
+    dedupeFamily(judgment.dedupeKey)
+  ) {
+    return true;
+  }
+  if (severity(judgment.verdict) > severity(previous.lastFeedbackVerdict)) {
+    return true;
+  }
+  const lastFeedbackAt = Date.parse(previous.lastFeedbackAt ?? "");
+  const now = options.now ?? Date.now();
+  const retryAfterMs = options.retryAfterMs ?? OWNER_FEEDBACK_RETRY_MS;
+  if (Number.isFinite(lastFeedbackAt) && now - lastFeedbackAt >= retryAfterMs) {
+    return true;
+  }
+  const actionable = [
+    "approve",
+    "decide",
+    "assign-owner",
+    "provide-input",
+  ].includes(judgment.requestedHumanAction.toLowerCase());
+  return (
+    actionable &&
+    judgment.requestedHumanAction !== previous.lastRequestedHumanAction
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -1924,23 +2333,39 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const packet = targetFactPacket(ctx, target);
   const fallback = fallbackJudgment(packet, target);
   const previous = readState(target);
+  const inputFingerprint = projectHealthInputFingerprint(packet);
+  const reviewDecision = scheduledProjectReviewDecision(
+    target.reason,
+    previous,
+    inputFingerprint,
+  );
+  if (!reviewDecision.run) {
+    writeCheckState(target, previous, inputFingerprint);
+    return ctx.done(
+      `${target.targetProject} project/app review skipped: ${reviewDecision.reason}.`,
+    );
+  }
 
-  const prompt = `You are evaluating whether a project app is moving correctly.
+  const prompt = `You are independently auditing whether a project app is moving correctly.
 
 Target: ${target.targetProject}
 Reason: ${target.reason}
 
 Judge the target app from raw facts. Keep raw facts visible; do not hide uncertainty.
-Do not mutate the target app. Do not become a second planner. Write the result and recommendation for the target owner. Decide whether a human should also be notified.
+Do not mutate the target app, implement a fix for it, write report files, or send messages. Do not become a second planner. Return the judgment to this workflow; workflow code persists the report, deduplicates owner feedback, and decides human notification. A later review may observe whether the condition persists, but remediation remains with the target owner.
+Treat metrics, breach events, task-tree snapshots, and project readouts as timestamped observations. Before calling a breach current, compare their timestamps and prefer the newest direct state reading. A later zero metric reading means an older breach event is recovered history, not a current defect. When current sources still disagree, report the disagreement and verification needed instead of choosing the more alarming value.
 Check whether the target app first tried to catch and handle its own metric breaches, failures, and stalled tasks.
 Specifically judge whether the target app uses escalation correctly and efficiently: escalate only when local recovery is exhausted or human/infra action is required; include exact owner, requested action, resume condition, fallback/watch; avoid vague or duplicate escalations; close or replace escalations when resolved; and keep task state linked to the escalation.
 Use the self-recovery contract facts to say whether the shared ops pattern is already present, partially present, or missing.
 When one app shows a better recovery behavior, call out whether that lesson should be reused by other project apps.
 
-Return a markdown report, and include exactly one fenced json block with:
+Return concise reasoning followed by exactly one fenced json block with:
 {
   "verdict": "ok|watch|concern|urgent|blocked-on-human",
   "mainConcern": "one sentence",
+  "affectedArtifacts": ["task, workflow, file, result, or state surface responsible for the outcome"],
+  "recommendedChange": "concrete correction for the target owner to judge and apply",
+  "verification": ["observable output conditions proving the correction worked"],
   "requestedHumanAction": "none|watch|decide|approve|provide-input|assign-owner",
   "notify": true,
   "dedupeKey": "target:concern-family:fingerprint",
@@ -1974,13 +2399,12 @@ ${JSON.stringify(packet, null, 2)}
     });
   }
 
+  const judgmentSource = projectHealthJudgmentFromResult(result);
+
   const judgment = reconcileJudgmentWithFacts(
     target,
     packet,
-    normalizeJudgment(
-      extractJsonBlock(result.lastAssistantText ?? ""),
-      fallback,
-    ),
+    normalizeJudgment(judgmentSource.raw, fallback),
   );
   judgment.dedupeKey = stableDedupeKey(target, packet, judgment);
   const evaluatorWantedNotify = judgment.notify;
@@ -1993,23 +2417,32 @@ ${JSON.stringify(packet, null, 2)}
     finalNotify,
   );
   judgment.humanActionDetail = humanActionDetail(target, packet, judgment);
-  const report = writeReport(
+  const feedbackTargetOwner = shouldFeedbackTargetOwner(judgment, previous, {
+    force: reviewDecision.reason === "explicit-request",
+  });
+  const report = writeReport(target, packet, judgment, judgmentSource.text);
+  writeState(
     target,
-    packet,
     judgment,
-    result.lastAssistantText ?? "",
+    report.relativePath,
+    inputFingerprint,
+    feedbackTargetOwner,
   );
-  writeState(target, judgment, report.relativePath);
 
   const reviewedData = {
     targetProject: target.targetProject,
     verdict: judgment.verdict,
     reportPath: report.relativePath,
     summary: judgment.mainConcern,
+    affectedArtifacts: judgment.affectedArtifacts ?? [],
+    recommendedChange: judgment.recommendedChange ?? "",
+    verification: judgment.verification ?? [],
     requestedHumanAction: judgment.requestedHumanAction,
     notify: judgment.notify,
     dedupeKey: judgment.dedupeKey,
     sessionId: result.sessionId,
+    reviewReason: reviewDecision.reason,
+    feedbackEmitted: feedbackTargetOwner,
   };
 
   ctx.emit({
@@ -2019,10 +2452,10 @@ ${JSON.stringify(packet, null, 2)}
     data: reviewedData,
   });
 
-  if (shouldFeedbackTargetOwner(judgment)) {
+  if (feedbackTargetOwner) {
     const ownerProject = targetOwnerProjectId(target);
     ctx.emit({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       source: "evaluation.app",
       target: { project: ownerProject },
       data: {
@@ -2034,11 +2467,14 @@ ${JSON.stringify(packet, null, 2)}
           reportPath: report.relativePath,
           verdict: judgment.verdict,
           mainConcern: judgment.mainConcern,
+          affectedArtifacts: judgment.affectedArtifacts ?? [],
+          recommendedChange: judgment.recommendedChange ?? "",
+          verification: judgment.verification ?? [],
           requestedHumanAction: judgment.requestedHumanAction,
           message: judgment.message,
           dedupeKey: judgment.dedupeKey,
           instruction:
-            "Review this evaluation.app health report as owner feedback. If the finding is real, update your own task tree or workflow state; if already handled, record the evidence and do not create duplicate work.",
+            "Review this independent evaluation.app finding. You own the decision and any remediation: if valid, create or link concrete work against the named artifact and verify the resulting output; if already handled or rejected, record the evidence. Delivery alone does not resolve the finding.",
         },
       },
     } as any);
@@ -2110,7 +2546,7 @@ ${JSON.stringify(packet, null, 2)}
           dedupeKey: judgment.dedupeKey,
         },
         expectedClosure: [
-          "project.planning.requested",
+          "project.owner.requested",
           "evaluation.project.reviewed",
         ],
         actionHints: [

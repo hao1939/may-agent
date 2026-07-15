@@ -8,7 +8,7 @@ export const description =
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = await ctx.runAgent("evaluator", ctx.task);
   if (result.status === "error" || result.status === "interrupted") {
-    return ctx.escalate("Deep evaluator session failed", {
+    return ctx.blocked("Deep evaluator session failed", {
       sessionId: result.sessionId,
       status: result.status,
       summary: result.lastAssistantText,

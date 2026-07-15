@@ -8,5 +8,5 @@
     "id": "evaluation",
     "path": "."
   },
-  "goal": "Evaluate May-agent session quality, calibrate criteria, detect drift, patrol integrity, and extract reusable strategies."
+  "goal": "Independently audit May-agent sessions and project apps, identify evidence-backed risks and improvement opportunities, and report actionable findings to humans and responsible project owners."
 }
