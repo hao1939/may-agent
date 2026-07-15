@@ -5,10 +5,12 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const staticRoot = join(repoRoot, "packages", "webui", "static");
 const nodeModulesRoot = join(repoRoot, "node_modules");
-const generatedUi = join(repoRoot, "ui");
-const legacyServedUi = resolve(repoRoot, "..", "..", "ui");
 const platformServedUi = resolve(repoRoot, "..", "platform", "ui");
-const mayAgentAppServedUi = resolve(repoRoot, "..", "may-agent.app", "ui");
+const retiredUiCopies = [
+  join(repoRoot, "ui"),
+  resolve(repoRoot, "..", "..", "ui"),
+  resolve(repoRoot, "..", "may-agent.app", "ui"),
+];
 
 async function syncVendorAssets() {
   const vendorRoot = join(staticRoot, "vendor", "xterm");
@@ -26,12 +28,7 @@ async function copyStatic(target: string) {
 }
 
 await syncVendorAssets();
-await copyStatic(generatedUi);
-await copyStatic(legacyServedUi);
+await Promise.all(retiredUiCopies.map((target) => rm(target, { recursive: true, force: true })));
 await copyStatic(platformServedUi);
-await copyStatic(mayAgentAppServedUi);
 
-console.log(`generated ${generatedUi}`);
-console.log(`generated ${legacyServedUi}`);
 console.log(`generated ${platformServedUi}`);
-console.log(`generated ${mayAgentAppServedUi}`);

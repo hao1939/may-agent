@@ -18,7 +18,7 @@
 import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
-import { EVENT_ROW_ID, type DeliveryResult, type EventBus, type SystemEvent } from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus, type SystemEvent } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { getDb } from "../lib/requests.js";
 import type { CronEntry, WorkflowBackedHandler } from "../lib/cron-tool.js";
@@ -996,13 +996,14 @@ export class Cron {
 
     this.onJobFire?.(entry);
     const startMs = Date.now();
+    const trace = childEventTrace(triggerEvent);
     this.addInflight(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
     const agent = entryAgent(entry) || "may";
 
     // Emit heartbeat event on bus for heartbeat entries (event-driven: anything can trigger via bus)
     if (entry.name.startsWith("heartbeat")) {
-      this.emitEvent?.({ type: "heartbeat", agent, entry: entry.name });
+      this.emitEvent?.({ type: "heartbeat", agent, entry: entry.name, ...(trace ? { trace } : {}) });
     }
 
     this.emitEvent?.({
@@ -1010,6 +1011,7 @@ export class Cron {
       source: "cron",
       owner: `agent:${agent}`,
       data: { handler: entry.name, agent },
+      ...(trace ? { trace } : {}),
     });
 
     const workflowTimeout = workflowHandler(entry.handler)?.timeoutMs;
@@ -1031,9 +1033,8 @@ export class Cron {
           source: "cron",
           owner: `agent:${agent}`,
           data: { handler: entry.name, agent, durationMs: Date.now() - startMs },
+          ...(trace ? { trace } : {}),
         });
-        // Mark the triggering event as handled now that the handler completed successfully.
-        this.markTriggerEventHandled(triggerEvent, entry.name);
         this.drainQueuedEventTrigger(entry.name);
       })
       .catch((err) => {
@@ -1044,6 +1045,7 @@ export class Cron {
           source: "cron",
           owner: `agent:${agent}`,
           data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs },
+          ...(trace ? { trace } : {}),
         });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
         this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
@@ -1051,19 +1053,4 @@ export class Cron {
       });
   }
 
-  /** Mark the DB event row as handled after a handler completes successfully. */
-  private markTriggerEventHandled(triggerEvent: EventEnvelope | undefined, handlerName: string): void {
-    if (!triggerEvent) return;
-    const rowId = (triggerEvent as any)[EVENT_ROW_ID];
-    if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
-    try {
-      const db = getDb(this.persistDir);
-      db.run(
-        `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed' WHERE id = ? AND status = 'pending'`,
-        [`cron:${handlerName}`, rowId],
-      );
-    } catch {
-      /* best-effort — don't fail the handler for bookkeeping */
-    }
-  }
 }

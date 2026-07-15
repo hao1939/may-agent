@@ -146,10 +146,7 @@ const CHAT_TOOL_DENYLIST = new Set([
   "bash",
   "background_exec",
   "checkpoint",
-  "cc_worker",
-  "codex_worker",
   "cron",
-  "dual_review",
   "edit",
   "finish",
   "scrape_webpage",
@@ -2061,7 +2058,7 @@ export class SubagentManager {
         stepLabel: session.stepLabel,
       },
       ...(trace ? { trace } : {}),
-    } as any);
+    });
     this.clearTurnTraces(session);
   }
 
@@ -2122,7 +2119,7 @@ export class SubagentManager {
         contentHash: skill.contentHash,
       },
       ...(trace ?? session.trace ? { trace: trace ?? session.trace } : {}),
-    } as any);
+    });
   }
 
   private bridgeEvents(session: ActiveSession): void {

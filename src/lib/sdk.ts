@@ -62,7 +62,7 @@ export type WorkflowSDK = Omit<AgentSDK, "escalate"> & {
   /** Terminate the workflow successfully. */
   done(summary: string, opts?: DoneOpts): WorkflowResult;
   /** Terminate this local workflow as blocked; does not emit escalation.created. */
-  escalate(reason: string, opts?: EscalationOptions): WorkflowResult;
+  blocked(reason: string, context?: unknown): WorkflowResult;
 };
 
 // ── Supporting types ──────────────────────────────────────────────────

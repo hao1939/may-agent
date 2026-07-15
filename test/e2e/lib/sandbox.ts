@@ -70,7 +70,8 @@ export interface SandboxSpec {
   captureLogs?: boolean;
   /**
    * Include the platform UI under projects/platform/ui by copying the repo's
-   * ui/ tree into the sandbox. Required for UI-driven tests (E8). Default: false.
+   * canonical packages/webui/static tree into the sandbox. Required for
+   * UI-driven tests (E8). Default: false.
    * When true and `fixtureProjects` does not include "platform", a minimal
    * platform project.md is also synthesized so the index route resolves.
    */
@@ -188,14 +189,14 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     copyFixtureFile(join("projects", name), join(projectsRoot, name));
   }
 
-  // Optional: copy the repo's platform UI into projects/platform/ui so that
+  // Optional: copy the canonical UI source into projects/platform/ui so that
   // --web serves the real production UI for UI-driven tests (E8).
   if (spec.includePlatformUi) {
     const platformDir = join(projectsRoot, "platform");
     mkdirSync(platformDir, { recursive: true });
-    const uiSrc = resolve(REPO_ROOT, "ui");
+    const uiSrc = resolve(REPO_ROOT, "packages", "webui", "static");
     if (!existsSync(uiSrc)) {
-      throw new Error(`includePlatformUi requested but repo ui/ not found at ${uiSrc}`);
+      throw new Error(`includePlatformUi requested but canonical UI source not found at ${uiSrc}`);
     }
     cpSync(uiSrc, join(platformDir, "ui"), { recursive: true });
     // Synthesize minimal project.md + discussion.md if not already supplied.

@@ -1051,6 +1051,74 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("accepts skill and guard diagnostics as evidence without creating owner work", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "skill.loaded",
+        source: "agent:may",
+        owner: "agent:may",
+        data: {
+          name: "may-agent-system",
+          agent: "may",
+          sessionId: "s_skill",
+          activation: "explicit",
+          scope: "agent",
+          filePath: "/app/agents/may/skills/may-agent-system/SKILL.md",
+          contentHash: "abc123",
+        },
+      });
+      bus.emit({
+        type: "guard.triggered",
+        source: "tool",
+        owner: "agent:may",
+        data: {
+          sessionId: "s_skill",
+          guard: "read-after-write",
+          demandType: "warn",
+          action: "warned",
+          reason: "Read back the changed file",
+          sourceEventType: "tool.write",
+        },
+      });
+
+      const db = getDb(root);
+      const rows = db.prepare(
+        `SELECT event_type, delivery_status, accepted_by, delivery_route
+         FROM events
+         WHERE event_type IN ('skill.loaded', 'guard.triggered')
+         ORDER BY id`,
+      ).all() as Array<Record<string, unknown>>;
+      expect(rows).toEqual([
+        expect.objectContaining({
+          event_type: "skill.loaded",
+          delivery_status: "accepted",
+          accepted_by: "event-store:evidence-projection",
+          delivery_route: "direct",
+        }),
+        expect.objectContaining({
+          event_type: "guard.triggered",
+          delivery_status: "accepted",
+          accepted_by: "event-store:evidence-projection",
+          delivery_route: "direct",
+        }),
+      ]);
+      expect(
+        db.prepare(
+          `SELECT COUNT(*) AS count
+           FROM event_pair_runs
+           WHERE pair_name = 'owner_inbox'`,
+        ).get(),
+      ).toMatchObject({ count: 0 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("accepts unclaimed owned events through a queryable owner inbox", () => {
     const root = tempRoot();
     try {
@@ -1423,6 +1491,88 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("suppresses duplicate runtime pair repair completions once the task pair is already closed", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.task.assigned",
+        source: "planner",
+        owner: "project:sample",
+        data: {
+          taskId: "sample-task",
+          attemptId: "a_sample-task_1",
+          sessionId: "s_task_sample-task",
+        },
+      } as any);
+
+      bus.emit({
+        type: "project.task.completed",
+        source: "metric-alert-triage-assignment-state-mismatch-count-3772",
+        owner: "project:sample",
+        data: {
+          taskId: "sample-task",
+          attemptId: "a_sample-task_1",
+          result: "done",
+          summary: "Synthetic runtime repair completion emitted to close the stale open project.task pair.",
+          reason: "runtime-pair-repair",
+          repair: true,
+        },
+      } as any);
+
+      bus.emit({
+        type: "project.task.completed",
+        source: "metric-alert-triage-task-tree-problem-count-3771",
+        owner: "project:sample",
+        data: {
+          taskId: "sample-task",
+          attemptId: "a_sample-task_1",
+          result: "done",
+          summary: "Synthetic runtime repair completion emitted to close the stale open project.task pair.",
+          reason: "runtime-pair-repair",
+          repair: true,
+        },
+      } as any);
+
+      const db = getDb(root);
+      const completions = db
+        .prepare(
+          `SELECT id, source
+           FROM events
+           WHERE event_type = 'project.task.completed'
+             AND json_extract(data, '$.taskId') = ?
+             AND json_extract(data, '$.attemptId') = ?
+           ORDER BY id ASC`,
+        )
+        .all("sample-task", "a_sample-task_1") as Array<{
+        id: number;
+        source: string;
+      }>;
+      expect(completions).toHaveLength(1);
+      expect(completions[0]).toMatchObject({
+        source: "metric-alert-triage-assignment-state-mismatch-count-3772",
+      });
+
+      const pair = db
+        .prepare(
+          `SELECT status, close_event_id
+           FROM event_pair_runs
+           WHERE pair_name = 'project.task'
+             AND correlation_key = ?`,
+        )
+        .get("sample-task:a_sample-task_1") as Record<string, unknown>;
+      expect(pair).toMatchObject({
+        status: "closed",
+        close_event_id: completions[0]?.id,
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("owner inbox review emits a follow-up event and closes the owner-inbox pair", () => {
     const root = tempRoot();
     try {
@@ -1481,6 +1631,47 @@ describe("event delivery metadata", () => {
       ).get(id) as Record<string, unknown>;
       expect(pair.status).toBe("closed");
       expect(query.heartbeatContext({ agent: "dev" }).inbox).toHaveLength(0);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("retires stale inbox work through pair state without rewriting event status", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "message.created",
+        source: "test",
+        owner: "agent:dev",
+        data: { from: "test", to: "dev", content: "stale review" },
+      });
+
+      const db = getDb(root);
+      const event = db.prepare(
+        `SELECT id
+         FROM events
+         WHERE event_type = 'message.created'`,
+      ).get() as { id: number };
+      db.prepare("UPDATE events SET timestamp = ? WHERE id = ?").run(Date.now() - 48 * 60 * 60_000, event.id);
+
+      const query = createQueryService({ getDb: () => db });
+      expect(query.expireStaleMessages(24 * 60 * 60_000)).toBe(1);
+      expect(
+        db.prepare("SELECT status, handled_by, result FROM events WHERE id = ?").get(event.id),
+      ).toMatchObject({ status: "pending", handled_by: null, result: null });
+      expect(
+        db.prepare(
+          `SELECT status, note
+           FROM event_pair_runs
+           WHERE open_event_id = ? AND pair_name = 'owner_inbox'`,
+        ).get(event.id),
+      ).toMatchObject({
+        status: "orphan",
+        note: "stale message inbox work retired",
+      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

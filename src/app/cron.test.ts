@@ -35,7 +35,7 @@ describe("Cron event dispatch", () => {
       cron.addSyntheticEntry({
         name: "sample-planner",
         enabled: true,
-        on: ["project.planning.requested"],
+        on: ["project.owner.requested"],
         handler: {
           workflow: "planner",
           agent: "owner",
@@ -47,7 +47,7 @@ describe("Cron event dispatch", () => {
       cron.start();
 
       bus.emit({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         source: "test",
         owner: "agent:owner",
         data: { reason: "missing-project-target" },
@@ -178,7 +178,7 @@ describe("Cron event dispatch", () => {
       const entry = {
         name: "sample-planner",
         enabled: true,
-        on: ["project.planning.requested"],
+        on: ["project.owner.requested"],
         handler: {
           workflow: "planner",
           agent: "owner",
@@ -197,7 +197,7 @@ describe("Cron event dispatch", () => {
       cron.start();
 
       bus.emit({
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         source: "test",
         owner: "agent:owner",
         data: { project: "sample" },

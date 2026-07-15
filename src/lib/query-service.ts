@@ -200,28 +200,19 @@ export interface QueryAPI {
 
   /**
    * Record that an owner review acted on inbox-routed events.
-   * Emits follow-up events and closes owner-inbox pairs. During migration it
-   * also marks legacy status='pending' rows as handled.
-   * Returns the number of rows updated.
+   * Emits follow-up events and closes owner-inbox pairs.
+   * Returns the number of review events emitted.
    */
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
 
   /**
-   * Compatibility alias for reviewInboxEvents().
-   * New code should prefer reviewInboxEvents().
-   */
-  markInboxHandled(eventIds: number[], handledBy?: string): number;
-
-  /**
-   * Expire stale pending message events older than the given age.
-   * Transitions from status='pending' to status='expired'.
-   * Returns the number of rows expired.
+   * Retire stale message work by orphaning its open owner-inbox pair.
+   * Returns the number of pairs retired.
    */
   expireStaleMessages(olderThanMs: number): number;
 
   /**
-   * Expire stale pending signal events (session.resume_failed, metric.breach,
-   * metric.recovered) older than the given age.
+   * Retire stale signal work by orphaning its open owner-inbox pair.
    * These are non-actionable historical noise once their window passes.
    * Returns the number of rows expired.
    */
@@ -250,7 +241,7 @@ function normalizeSql(input: string): string {
 function reviewedEventType(openEventType: unknown): string {
   if (openEventType === "message.created") return "message.reviewed";
   if (openEventType === "project.feedback.created") return "project.feedback.reviewed";
-  if (openEventType === "project.owner.requested" || openEventType === "project.planning.requested") return "project.owner.reviewed";
+  if (openEventType === "project.owner.requested") return "project.owner.reviewed";
   return "owner.inbox.reviewed";
 }
 
@@ -258,22 +249,12 @@ function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string):
   if (!eventIds.length) return 0;
   const now = Date.now();
   const agent = reviewedBy ?? "system";
-  let updated = 0;
+  let reviewed = 0;
   const rows = eventIds.map((id) => db.prepare(
     `SELECT id, event_type, owner, data
      FROM events
      WHERE id = ?`,
   ).get(id) as { id: number; event_type: string; owner: string | null; data: string | null } | null);
-  // Keep legacy status in sync while the runtime migrates to delivery fields
-  // and follow-up events.
-  const stmt = db.prepare(
-    `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed'
-     WHERE id = ? AND status = 'pending'`,
-  );
-  for (const id of eventIds) {
-    const info = stmt.run(agent, id) as { changes?: number };
-    updated += info.changes ?? 0;
-  }
   const insertFollowup = db.prepare(
     `INSERT INTO events
      (event_type, source, owner, data, timestamp, urgency, delivery_status, accepted_by, accepted_at, delivery_route, delivery_note)
@@ -314,6 +295,7 @@ function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string):
     ) as { lastInsertRowid?: number | bigint };
     const closeEventId = Number(info.lastInsertRowid);
     if (Number.isFinite(closeEventId) && closeEventId > 0) {
+      reviewed++;
       persistEventTrace(
         db,
         {
@@ -329,7 +311,30 @@ function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string):
       closePair.run(closeEventId, now, row.id);
     }
   }
-  return updated;
+  return reviewed;
+}
+
+function retireStaleInboxPairs(
+  db: SqliteDb,
+  eventTypes: string[],
+  cutoff: number,
+  note: string,
+): number {
+  const placeholders = eventTypes.map(() => "?").join(", ");
+  const info = db.prepare(
+    `UPDATE event_pair_runs
+     SET status = 'orphan',
+         note = ?
+     WHERE pair_name = 'owner_inbox'
+       AND status = 'open'
+       AND open_event_id IN (
+         SELECT id
+         FROM events
+         WHERE event_type IN (${placeholders})
+           AND timestamp < ?
+       )`,
+  ).run(note, ...eventTypes, cutoff) as { changes?: number };
+  return info.changes ?? 0;
 }
 
 function assertReadOnlySql(sql: string): void {
@@ -1063,20 +1068,10 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       return reviewInboxRows(opts.getDb(), eventIds, reviewedBy);
     },
 
-    markInboxHandled(eventIds, handledBy) {
-      return reviewInboxRows(opts.getDb(), eventIds, handledBy);
-    },
-
     expireStaleMessages(olderThanMs) {
       const db = opts.getDb();
       const cutoff = Date.now() - olderThanMs;
-      const info = db.prepare(
-        `UPDATE events SET status = 'expired', reason = 'stale'
-         WHERE status = 'pending'
-           AND event_type = 'message.created'
-           AND timestamp < ?`,
-      ).run(cutoff) as { changes?: number };
-      return info.changes ?? 0;
+      return retireStaleInboxPairs(db, ["message.created"], cutoff, "stale message inbox work retired");
     },
 
     expireStaleSignalEvents(olderThanMs) {
@@ -1093,14 +1088,7 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         'message.delivery_failed',
         'subscriber.failed',
       ];
-      const placeholders = signalTypes.map(() => '?').join(', ');
-      const info = db.prepare(
-        `UPDATE events SET status = 'expired', reason = 'stale_signal'
-         WHERE status = 'pending'
-           AND event_type IN (${placeholders})
-           AND timestamp < ?`,
-      ).run(...signalTypes, cutoff) as { changes?: number };
-      return info.changes ?? 0;
+      return retireStaleInboxPairs(db, signalTypes, cutoff, "stale signal inbox work retired");
     },
   };
 }
@@ -1146,7 +1134,6 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,
     reviewInboxEvents: () => { throw new Error(reason); },
-    markInboxHandled: () => { throw new Error(reason); },
     expireStaleMessages: () => { throw new Error(reason); },
     expireStaleSignalEvents: () => { throw new Error(reason); },
   };

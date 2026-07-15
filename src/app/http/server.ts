@@ -2916,7 +2916,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       params,
       runnerGate,
       source: {
-        eventType: typeof body.type === "string" ? body.type : "project.execution.requested",
+        eventType: typeof body.type === "string" ? body.type : "project.owner.requested",
         reason,
         source: typeof body.source === "string" ? body.source : "web-ui",
       },
@@ -3097,7 +3097,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       blocker: objectRecord(params.blocker),
       next: typeof params.next === "string" ? params.next : null,
       source: {
-        eventType: typeof body.type === "string" ? body.type : "project.execution.requested",
+        eventType: typeof body.type === "string" ? body.type : "project.owner.requested",
         reason,
         source: typeof body.source === "string" ? body.source : "web-ui",
       },
@@ -3183,7 +3183,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
-      const workflow = type === "project.execution.requested" && projectPath
+      const workflow = type === "project.owner.requested" && projectPath
         ? await waitForProjectWorkflowStart(projectId, projectPath, sentAt, 2500)
         : null;
       const featureTestRequest = projectDir
@@ -3208,7 +3208,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         workflowStatus: workflow?.status ?? null,
         featureTestRequest,
         featureTestFeedback,
-      }, workflow || type !== "project.execution.requested" ? 200 : 202);
+      }, workflow || type !== "project.owner.requested" ? 200 : 202);
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
@@ -3245,14 +3245,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json(buildLoopTrace(_db(), target));
   }
 
-  function handleEventGraph(url: URL, eventIdText: string): Response {
+  function handleEventGraph(_url: URL, eventIdText: string): Response {
     const eventId = Number(eventIdText);
     if (!Number.isFinite(eventId)) return json({ error: "event id must be numeric" }, 400);
-    const depth = url.searchParams.has("depth") ? Number(url.searchParams.get("depth")) : undefined;
-    const detail = url.searchParams.get("detail") === "true" || url.searchParams.get("detail") === "1";
-    let graph = buildEventGraph(_db(), eventId, { depth, detail });
-    const expandedSessions = url.searchParams.getAll("session").map((value) => value.trim()).filter(Boolean);
-    for (const sessionId of expandedSessions) {
+    let graph = buildEventGraph(_db(), eventId);
+    const sessionIds = [...new Set(
+      graph.nodes
+        .map((node) => node.sessionId?.trim())
+        .filter((sessionId): sessionId is string => !!sessionId),
+    )];
+    for (const sessionId of sessionIds) {
       const transcript = readSessionTranscript(sessionId);
       if (transcript) graph = addSessionTranscriptToEventGraph(graph, sessionId, transcript);
     }

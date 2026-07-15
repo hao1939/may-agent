@@ -211,8 +211,8 @@ describe("AgentSDK escalation", () => {
   });
 });
 
-describe("WorkflowSDK escalation", () => {
-  it("keeps workflow escalate local and does not emit escalation.created", () => {
+describe("WorkflowSDK blocking", () => {
+  it("keeps workflow blocked local and does not emit escalation.created", () => {
     const root = mkdtempSync(join(tmpdir(), "may-workflow-sdk-escalation-"));
     roots.push(root);
     const events: EmittedEvent[] = [];
@@ -234,7 +234,7 @@ describe("WorkflowSDK escalation", () => {
       finish: (result) => finished.push(result),
     });
 
-    sdk.escalate("missing approval", {
+    sdk.blocked("missing approval", {
       owner: "human:operator",
       requestedAction: "Approve or reject the rollout",
       evidence: { change: "database migration" },

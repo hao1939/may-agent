@@ -249,11 +249,7 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
     try {
       const eventIds = rows.map((r: any) => r.id).filter((id: unknown) => typeof id === "number");
       if (eventIds.length > 0) {
-        if (typeof ctx.query.reviewInboxEvents === "function") {
-          ctx.query.reviewInboxEvents(eventIds, agent);
-        } else if (typeof ctx.query.markInboxHandled === "function") {
-          ctx.query.markInboxHandled(eventIds, agent);
-        }
+        ctx.query.reviewInboxEvents(eventIds, agent);
       }
     } catch { /* best-effort: don't break inbox loading if marking fails */ }
 
