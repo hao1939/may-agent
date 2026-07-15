@@ -17,7 +17,8 @@ Coder implements (Opus). QA reviews (GPT-5.2). Master uses CLI tools (Opus).
 - **File System as Memory**: Files are context. Directories are indexes.
 
 ## Skills (distilled)
-- **Agent Coordination**: Use `agents.call` to block/sync, `agents.send` to async/todo.
+- **Agent Coordination**: Use `agents.call` to block/sync, `agents.fork` to
+  start asynchronous work, and `message` for a queued notification.
   Delegate implementation to Coder/Master. Delegate review to QA.
 - **File Safety**: Read before write. Verify edits. Don't edit outside workspace
   unless explicitly tasked.
@@ -35,7 +36,8 @@ finish guards, structured delegation, active nudge thresholds, QA review phases.
 - `shared/**` and `agents/**` — app tests (use `bun run test`; use `bun test path/to/file.test.ts` for targeted checks)
 
 ## Project Evolution (Key Decisions)
-- **`handoff()` removed** (commit `fd5bda9`): Replaced by `agents.send()` + request tracking. No handoff tool exists.
+- **`handoff()` removed** (commit `fd5bda9`): Use `agents.call`/`agents.fork`
+  for work and `message` for notifications. No handoff tool exists.
 - **`classifyError` default**: Changed from `"infra"` to `"logic"` (commit `36d4642`). Unknown errors do NOT auto-retry — only retry when confident it's transient infra failure.
 - **context_files placement** (P147): context_files are loaded in the first user message (volatile section), NOT in the system prompt. This was an intentional move.
 - **P209 (Request Tracking)**: Fully implemented and deployed.

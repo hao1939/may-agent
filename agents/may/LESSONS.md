@@ -10,7 +10,7 @@ _Staging area for behavioral fixes. Graduates into heartbeat.md/DOMAIN.md/tool c
 
 - 🔴🔴🔴 **DISPATCH BEFORE HEALTH CHECKS (C29, 3x NI)**: #1 failure mode is spending all tool calls on investigation instead of dispatching. Mandatory order:
   1. Check "Injected: pending tasks"
-  2. `agents.send()`/`agents.call()` to dispatch pending items IMMEDIATELY
+  2. `agents.fork()`/`agents.call()` to dispatch pending work IMMEDIATELY
   3. Only AFTER all dispatched → check system health (max 3 tool calls)
 
 - 🔴 **No Re-Cancellation Waste (C20)**: `agents.cancel()` on idle sessions doesn't remove them from active listings.

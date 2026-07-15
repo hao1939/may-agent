@@ -229,10 +229,7 @@ async function routePlatformEvent(
     );
   }
 
-  if (
-    event.type === "project.owner.requested" ||
-    event.type === "project.planning.requested"
-  ) {
+  if (event.type === "project.owner.requested") {
     return ctx.noop("handled by may-agent owner workflow handler");
   }
 
@@ -270,17 +267,17 @@ export default defineProjectApp({
       id: "platform-review",
       enabled: true,
       intervalMs: 21_600_000, // 6h — budget-aware: 4/day from this + 2/day from heartbeat = 6/day
-      event: {
+      emits: [{
         type: "project.tick",
         project: projectId,
         lane: "platform-review",
-      },
+      }],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 43_200_000, // 12h — budget-aware: platform-review (6h, 4/day) + heartbeat (12h, 2/day) = 6/day matching sessionsPerDay budget
-      event: ownerRequested("owner-heartbeat", {
+      emits: [ownerRequested("owner-heartbeat", {
         instruction:
           "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
         reviewChecklist: [
@@ -290,27 +287,27 @@ export default defineProjectApp({
           "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
           "No-op is valid when existing tasks already cover the useful next work.",
         ],
-      }),
+      })],
     },
     {
       id: "ops-health-review",
       enabled: true,
       intervalMs: 3_600_000,
-      event: {
+      emits: [{
         type: "project.ops_health.tick",
         project: projectId,
         lane: "ops-health-review",
-      },
+      }],
     },
     {
       id: "daily-ops-digest",
       enabled: true,
       intervalMs: 86_400_000,
-      event: {
+      emits: [{
         type: "project.ops_digest.tick",
         project: projectId,
         lane: "daily-ops-digest",
-      },
+      }],
     },
   ],
 
@@ -321,7 +318,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Builds the deterministic daily platform alert digest, notifies the human, and wakes the project owner for open/noisy conditions.",
-      on: ["project.ops_digest.tick"],
+      accepts: ["project.ops_digest.tick"],
       handler: {
         workflow: "daily-ops-digest",
         includeEvent: true,
@@ -346,7 +343,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Runs a deterministic ops-health observer packet and wakes the project owner only for meaningful signals.",
-      on: ["project.ops_health.tick"],
+      accepts: ["project.ops_health.tick"],
       handler: {
         workflow: "ops-health-review",
         includeEvent: true,
@@ -370,7 +367,7 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Wakes tech-lead as project owner to review the task tree, platform signals, and project-app design work.",
-      on: ["project.owner.requested", "project.planning.requested"],
+      accepts: ["project.owner.requested"],
       handler: {
         workflow: "platform-owner-review",
         includeEvent: true,
@@ -411,7 +408,6 @@ export default defineProjectApp({
     { type: "project.ops_digest.created", project: projectId },
     { type: "project.action.invoked", project: projectId },
     { type: "project.owner.requested", project: projectId },
-    { type: "project.planning.requested", project: projectId },
     { type: "project.tasks.ready", project: projectId },
     { type: "project.owner.reviewed", project: projectId },
     { type: "metric.alerted" },

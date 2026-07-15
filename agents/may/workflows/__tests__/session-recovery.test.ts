@@ -33,7 +33,7 @@ describe("session-recovery workflow", () => {
       runAgent,
       emit,
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);

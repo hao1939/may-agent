@@ -2013,7 +2013,7 @@ export const create: HandlerModule["create"] = (
       const feedbackTotal = count(
         `SELECT COUNT(*) AS c
            FROM events
-          WHERE event_type = 'project.planning.requested'
+          WHERE event_type = 'project.owner.requested'
             AND source = 'evaluation.app'
             AND timestamp > ?
             AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
@@ -2022,7 +2022,7 @@ export const create: HandlerModule["create"] = (
       const feedbackDelivered = count(
         `SELECT COUNT(*) AS c
            FROM events
-          WHERE event_type = 'project.planning.requested'
+          WHERE event_type = 'project.owner.requested'
             AND source = 'evaluation.app'
             AND (accepted_at IS NOT NULL OR COALESCE(status, 'pending') IN ('handled', 'completed', 'resolved'))
             AND timestamp > ?
@@ -2042,7 +2042,7 @@ export const create: HandlerModule["create"] = (
           .prepare(
             `SELECT MIN(timestamp) AS timestamp
                FROM events
-              WHERE event_type = 'project.planning.requested'
+              WHERE event_type = 'project.owner.requested'
                 AND source = 'evaluation.app'
                 AND accepted_at IS NULL
                 AND COALESCE(status, 'pending') NOT IN ('handled', 'completed', 'resolved')

@@ -1,9 +1,14 @@
-import type { TaskResult, WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type {
+  TaskResult,
+  WorkflowContext,
+  WorkflowResult,
+} from "@may-agent/sdk";
 
 import { listConfiguredAgents, resolveMetricOwner } from "@may-agent/sdk";
 
 export const name = "metric-alert-triage";
-export const description = "Judge one metric alert, require a concrete operation, and emit a durable judgment event.";
+export const description =
+  "Judge one metric alert, require a concrete operation, and emit a durable judgment event.";
 
 const OPERATIONS = new Set([
   "fix_root_cause",
@@ -105,7 +110,12 @@ function triggerPayload(trigger: Trigger | null): TriggerPayload {
 
 function numberOrNull(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
+  if (
+    typeof value === "string" &&
+    value.trim() !== "" &&
+    Number.isFinite(Number(value))
+  )
+    return Number(value);
   return null;
 }
 
@@ -114,7 +124,9 @@ function finishResultText(result: TaskResult): string {
   const parts = [
     result.lastAssistantText ?? "",
     typeof finish?.summary === "string" ? finish.summary : "",
-    Array.isArray(finish?.verification_evidence) ? finish.verification_evidence.join("\n") : "",
+    Array.isArray(finish?.verification_evidence)
+      ? finish.verification_evidence.join("\n")
+      : "",
     finish ? JSON.stringify(finish) : "",
   ].filter(Boolean);
   return parts.join("\n");
@@ -124,24 +136,40 @@ function extractEvidence(text: string, result?: TaskResult): string {
   const explicit = text.match(/METRIC_ALERT_EVIDENCE:\s*([^\n]+)/)?.[1]?.trim();
   if (explicit) return explicit;
   const finish = result?.finishResult as Record<string, unknown> | undefined;
-  const summary = typeof finish?.summary === "string" ? finish.summary.trim() : "";
+  const summary =
+    typeof finish?.summary === "string" ? finish.summary.trim() : "";
   const evidence = Array.isArray(finish?.verification_evidence)
     ? finish.verification_evidence.map(String).filter(Boolean).join("; ")
     : "";
   return evidence || summary;
 }
 
-function parseOperation(text: string, result?: TaskResult): { operation: string | null; evidence: string; nextValidationAt: number | null } {
-  const explicitOperation = text.match(/METRIC_ALERT_OPERATION:\s*([a-zA-Z0-9_-]+)/)?.[1]?.trim() ?? null;
-  const exactOperation = OPERATION_LIST.find((operation) => new RegExp(`\\b${operation}\\b`).test(text)) ?? null;
+function parseOperation(
+  text: string,
+  result?: TaskResult,
+): {
+  operation: string | null;
+  evidence: string;
+  nextValidationAt: number | null;
+} {
+  const explicitOperation =
+    text.match(/METRIC_ALERT_OPERATION:\s*([a-zA-Z0-9_-]+)/)?.[1]?.trim() ??
+    null;
+  const exactOperation =
+    OPERATION_LIST.find((operation) =>
+      new RegExp(`\\b${operation}\\b`).test(text),
+    ) ?? null;
   const operation = explicitOperation ?? exactOperation;
   const evidence = extractEvidence(text, result);
-  const validation = text.match(/METRIC_ALERT_NEXT_VALIDATION:\s*([^\n]+)/)?.[1]?.trim() ?? "";
+  const validation =
+    text.match(/METRIC_ALERT_NEXT_VALIDATION:\s*([^\n]+)/)?.[1]?.trim() ?? "";
   const parsedValidation = Date.parse(validation);
   return {
     operation,
     evidence,
-    nextValidationAt: Number.isFinite(parsedValidation) ? parsedValidation : null,
+    nextValidationAt: Number.isFinite(parsedValidation)
+      ? parsedValidation
+      : null,
   };
 }
 
@@ -155,7 +183,9 @@ function compactText(value: unknown, limit = 300): string | null {
   return value.length > limit ? `${value.slice(0, limit - 3)}...` : value;
 }
 
-function compactOwnerSessions(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+function compactOwnerSessions(
+  rows: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
   return rows.map((row) => ({
     sessionId: row.sessionId,
     agent: row.agent,
@@ -173,17 +203,29 @@ function relatedEventTypes(metricId: string): string[] {
     case "project.health.finding-count":
     case "project.owner-judgment-needed-count":
     case "project.owner-incomplete-count":
-      return ["project.health.finding", "project.owner.incomplete", "project.owner.dispatched", "project.owner.finished"];
+      return [
+        "project.health.finding",
+        "project.owner.incomplete",
+        "project.owner.dispatched",
+        "project.owner.finished",
+      ];
     case "evaluator.false-good-rate-sample":
-      return ["evaluation.false_good", "evaluation.reviewed", "evaluation.success_candidate"];
+      return [
+        "evaluation.false_good",
+        "evaluation.reviewed",
+        "evaluation.success_candidate",
+      ];
     case "evaluator.meaningful-review-rate-24h":
       return ["evaluation.routed", "evaluation.reviewed"];
     case "evaluator.triage-closure-rate-24h":
-      return ["evaluation.routed", "evaluation.triage_closed", "evaluation.reviewed"];
-    case "evaluator.success-candidates-24h":
-      return ["evaluation.success_candidate"];
-    case "evaluator.success-learnings-24h":
-      return ["evaluation.success_candidate", "evaluation.learning_created"];
+      return [
+        "evaluation.routed",
+        "evaluation.triage_closed",
+        "evaluation.reviewed",
+      ];
+    case "evaluator.project-finding-delivery-rate-24h":
+    case "evaluator.project-feedback-pending-age-h":
+      return ["evaluation.project.reviewed", "project.owner.requested"];
     default:
       return [];
   }
@@ -197,22 +239,29 @@ function projectPathFromId(projectId: string): string {
 function projectFindingFromRaw(raw: unknown): ProjectMetricFinding | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
-  const projectId = typeof row.projectId === "string" && row.projectId.trim() ? row.projectId.trim() : "";
+  const projectId =
+    typeof row.projectId === "string" && row.projectId.trim()
+      ? row.projectId.trim()
+      : "";
   if (!projectId) return null;
-  const projectPath = typeof row.projectPath === "string" && row.projectPath.trim()
-    ? row.projectPath.trim()
-    : projectPathFromId(projectId);
+  const projectPath =
+    typeof row.projectPath === "string" && row.projectPath.trim()
+      ? row.projectPath.trim()
+      : projectPathFromId(projectId);
   const rawCodes = Array.isArray(row.codes) ? row.codes : [];
   const codes = rawCodes.map(String).filter(Boolean);
   return {
     projectId,
     projectPath,
     codes,
-    projectPolicy: typeof row.projectPolicy === "string" ? row.projectPolicy : undefined,
+    projectPolicy:
+      typeof row.projectPolicy === "string" ? row.projectPolicy : undefined,
   };
 }
 
-function projectFindingsFromSnapshots(snapshots: Array<Record<string, unknown>>): ProjectMetricFinding[] {
+function projectFindingsFromSnapshots(
+  snapshots: Array<Record<string, unknown>>,
+): ProjectMetricFinding[] {
   const findings = new Map<string, ProjectMetricFinding>();
   for (const snapshot of snapshots) {
     const note = typeof snapshot.note === "string" ? snapshot.note : "";
@@ -226,7 +275,8 @@ function projectFindingsFromSnapshots(snapshots: Array<Record<string, unknown>>)
     const rawFindings = Array.isArray(parsed.findings) ? parsed.findings : [];
     for (const rawFinding of rawFindings) {
       const finding = projectFindingFromRaw(rawFinding);
-      if (finding && !findings.has(finding.projectId)) findings.set(finding.projectId, finding);
+      if (finding && !findings.has(finding.projectId))
+        findings.set(finding.projectId, finding);
     }
     if (findings.size > 0) break;
   }
@@ -235,20 +285,25 @@ function projectFindingsFromSnapshots(snapshots: Array<Record<string, unknown>>)
 
 function projectMetricOperation(metricId: string): string | null {
   if (
-    metricId === "project.health.finding-count"
-    || metricId === "project.owner-judgment-needed-count"
-    || metricId === "project.owner-incomplete-count"
-  ) return "fix_root_cause";
+    metricId === "project.health.finding-count" ||
+    metricId === "project.owner-judgment-needed-count" ||
+    metricId === "project.owner-incomplete-count"
+  )
+    return "fix_root_cause";
   return null;
 }
 
-function routeProjectMetricAlert(ctx: WorkflowContext, alertContext: AlertContext): WorkflowResult | null {
+function routeProjectMetricAlert(
+  ctx: WorkflowContext,
+  alertContext: AlertContext,
+): WorkflowResult | null {
   if (!projectMetricOperation(alertContext.metricId)) return null;
 
   const findings = projectFindingsFromSnapshots(alertContext.snapshots);
-  const routable = findings.filter((finding) =>
-    alertContext.metricId !== "project.owner-judgment-needed-count"
-    || finding.codes.includes("owner_judgment_needed")
+  const routable = findings.filter(
+    (finding) =>
+      alertContext.metricId !== "project.owner-judgment-needed-count" ||
+      finding.codes.includes("owner_judgment_needed"),
   );
   if (routable.length === 0) return null;
 
@@ -265,7 +320,9 @@ function routeProjectMetricAlert(ctx: WorkflowContext, alertContext: AlertContex
     workflow: name,
   });
 
-  return ctx.done(`Project metric ${alertContext.metricId} is handled by project event routing for ${routable.length} project(s).`);
+  return ctx.done(
+    `Project metric ${alertContext.metricId} is handled by project event routing for ${routable.length} project(s).`,
+  );
 }
 
 function buildOwnerTask(ctx: AlertContext): string {
@@ -288,7 +345,7 @@ function buildOwnerTask(ctx: AlertContext): string {
     "A final operation must leave evidence that something concrete changed, was deliberately accepted, or was escalated to the right human/project context.",
     "A queued message to the same owner is not escalation; if the owner can safely change state, use fix_root_cause and do it.",
     "If you use finish(), put the exact operation token in the finish summary, for example: `Choosing upgrade_or_escalate because ...`.",
-    "NEVER use to=\"functions.message\" in the message tool — it is NOT an agent. Use real agent names: may, arc, dev, scout, coach.",
+    'NEVER use to="functions.message" in the message tool — it is NOT an agent. Use real agent names: may, arc, dev, scout, coach.',
     "",
     "## Alert",
     JSON.stringify(ctx.alert, null, 2),
@@ -321,10 +378,17 @@ function buildOwnerTask(ctx: AlertContext): string {
   ].join("\n");
 }
 
-function notifyTriageEscalation(ctx: WorkflowContext, metricId: string, reason: string, details?: Record<string, unknown>): void {
+function notifyTriageEscalation(
+  ctx: WorkflowContext,
+  metricId: string,
+  reason: string,
+  details?: Record<string, unknown>,
+): void {
   try {
     const suffix = details ? `\n${JSON.stringify(details)}` : "";
-    ctx.notify(`Metric alert triage needs attention for ${metricId}: ${reason}${suffix}`);
+    ctx.notify(
+      `Metric alert triage needs attention for ${metricId}: ${reason}${suffix}`,
+    );
   } catch {
     // Notification is best-effort; the workflow escalation remains durable.
   }
@@ -335,7 +399,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const payload = triggerPayload(trigger);
   const data = payload.data;
   const metricId = String(data.metricId ?? data.metric_id ?? "");
-  if (!metricId) return ctx.escalate("metric-alert-triage requires metricId", { trigger });
+  if (!metricId)
+    return ctx.blocked("metric-alert-triage requires metricId", { trigger });
 
   const alertId = numberOrNull(data.alertId ?? data.alert_id);
 
@@ -351,7 +416,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     const explicitOwner = String(metric?.explicitOwner ?? payload.owner ?? "");
     const projectOwner = String(metric?.projectOwner ?? "");
-    const owner = resolveMetricOwner(metricId, configuredAgents, explicitOwner, projectOwner);
+    const owner = resolveMetricOwner(
+      metricId,
+      configuredAgents,
+      explicitOwner,
+      projectOwner,
+    );
     const createdAt = Number(alert?.created_at ?? data.created_at ?? 0);
     const priority = String(metric?.priority ?? data.priority ?? "P2");
 
@@ -375,20 +445,37 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   if (loaded.status === "error") {
-    notifyTriageEscalation(ctx, metricId, "failed to load metric alert context", { error: loaded.error });
-    return ctx.escalate(`Failed to load metric alert context for ${metricId}`, { error: loaded.error });
+    notifyTriageEscalation(
+      ctx,
+      metricId,
+      "failed to load metric alert context",
+      { error: loaded.error },
+    );
+    return ctx.blocked(`Failed to load metric alert context for ${metricId}`, {
+      error: loaded.error,
+    });
   }
 
   let alertContext: AlertContext;
   try {
-    alertContext = JSON.parse(String(loaded.lastAssistantText ?? "{}")) as AlertContext;
+    alertContext = JSON.parse(
+      String(loaded.lastAssistantText ?? "{}"),
+    ) as AlertContext;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    notifyTriageEscalation(ctx, metricId, "failed to parse compact metric alert context", { error: msg });
-    return ctx.escalate(`Failed to parse metric alert context for ${metricId}`, {
-      error: msg,
-      outputPreview: String(loaded.lastAssistantText ?? "").slice(0, 1000),
-    });
+    notifyTriageEscalation(
+      ctx,
+      metricId,
+      "failed to parse compact metric alert context",
+      { error: msg },
+    );
+    return ctx.blocked(
+      `Failed to parse metric alert context for ${metricId}`,
+      {
+        error: msg,
+        outputPreview: String(loaded.lastAssistantText ?? "").slice(0, 1000),
+      },
+    );
   }
   const ownerTask = buildOwnerTask(alertContext);
   const routedProjectMetric = routeProjectMetricAlert(ctx, alertContext);
@@ -397,11 +484,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const ownerResult = await ctx.runAgent(alertContext.owner, ownerTask);
 
   if (ownerResult.status === "error" || ownerResult.status === "interrupted") {
-    notifyTriageEscalation(ctx, metricId, `owner triage session failed (${ownerResult.status})`, {
-      owner: alertContext.owner,
-      ownerSessionId: ownerResult.sessionId,
-    });
-    return ctx.escalate(`Owner triage session failed for ${metricId}`, {
+    notifyTriageEscalation(
+      ctx,
+      metricId,
+      `owner triage session failed (${ownerResult.status})`,
+      {
+        owner: alertContext.owner,
+        ownerSessionId: ownerResult.sessionId,
+      },
+    );
+    return ctx.blocked(`Owner triage session failed for ${metricId}`, {
       owner: alertContext.owner,
       ownerSessionId: ownerResult.sessionId,
       status: ownerResult.status,
@@ -411,17 +503,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const ownerResultText = finishResultText(ownerResult);
   const parsed = parseOperation(ownerResultText, ownerResult);
   if (!parsed.operation || !OPERATIONS.has(parsed.operation)) {
-    notifyTriageEscalation(ctx, metricId, "owner did not produce a valid METRIC_ALERT_OPERATION", {
-      owner: alertContext.owner,
-      ownerSessionId: ownerResult.sessionId,
-      operation: parsed.operation,
-    });
-    return ctx.escalate(`Owner triage for ${metricId} did not produce a valid METRIC_ALERT_OPERATION`, {
-      owner: alertContext.owner,
-      ownerSessionId: ownerResult.sessionId,
-      operation: parsed.operation,
-      allowed: [...OPERATIONS],
-    });
+    notifyTriageEscalation(
+      ctx,
+      metricId,
+      "owner did not produce a valid METRIC_ALERT_OPERATION",
+      {
+        owner: alertContext.owner,
+        ownerSessionId: ownerResult.sessionId,
+        operation: parsed.operation,
+      },
+    );
+    return ctx.blocked(
+      `Owner triage for ${metricId} did not produce a valid METRIC_ALERT_OPERATION`,
+      {
+        owner: alertContext.owner,
+        ownerSessionId: ownerResult.sessionId,
+        operation: parsed.operation,
+        allowed: [...OPERATIONS],
+      },
+    );
   }
 
   ctx.emit({
@@ -437,5 +537,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     workflow: name,
   });
 
-  return ctx.done(`Judged ${metricId}: ${parsed.operation} by ${alertContext.owner} (${ownerResult.sessionId}).`);
+  return ctx.done(
+    `Judged ${metricId}: ${parsed.operation} by ${alertContext.owner} (${ownerResult.sessionId}).`,
+  );
 }

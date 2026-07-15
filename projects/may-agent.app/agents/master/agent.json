@@ -1,9 +1,9 @@
 {
   "name": "master",
-  "description": "Senior engineer who leverages external CLI coding agents (Claude Code, Codex) to solve complex implementation tasks",
-  "domain": "complex implementation via external coding agents",
+  "description": "Senior engineer who delegates bounded implementation and review through durable agent runtimes",
+  "domain": "complex implementation via durable agent delegation",
   "model": "opus",
   "heartbeat": false,
-  "tools": ["finish"],
+  "tools": ["agents", "cli-delegation", "finish"],
   "context_files": ["last-eval.md"]
 }

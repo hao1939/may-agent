@@ -96,7 +96,7 @@ function buildAgentTask(request: AuditRequest): string {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const request = parseAuditRequest(ctx.task);
   if (!request) {
-    return ctx.escalate("Project creative audit request is missing project metadata", {
+    return ctx.blocked("Project creative audit request is missing project metadata", {
       taskPreview: ctx.task.slice(0, 500),
     });
   }
@@ -104,7 +104,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = await ctx.runAgent("may", buildAgentTask(request));
   const status = result.status ?? "done";
   if (status === "error") {
-    return ctx.escalate("Project creative audit session failed", {
+    return ctx.blocked("Project creative audit session failed", {
       projectId: request.projectId,
       projectPath: request.projectPath,
       sessionId: result.sessionId,

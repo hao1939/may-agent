@@ -180,7 +180,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const step1 = await ctx.runAgent("coach", step1Prompt);
   if (step1.status === "error") {
-    return ctx.escalate("step 1 failed", { error: step1.error });
+    return ctx.blocked("step 1 failed", { error: step1.error });
   }
   // Interrupted sessions may still have useful partial output — proceed
   // with whatever the agent produced before being cut off.
@@ -253,7 +253,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `The workflow manages fork lifecycle (promote/discard) automatically after testing.`,
   );
   if (patch.status === "error") {
-    return ctx.escalate("fork/patch failed", { error: patch.error });
+    return ctx.blocked("fork/patch failed", { error: patch.error });
   }
 
   // Step 3: Gym test (direct script execution — no LLM session needed)
@@ -281,7 +281,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
 
-    return ctx.escalate("No fork found in agents/.lab/ after patch step", {
+    return ctx.blocked("No fork found in agents/.lab/ after patch step", {
       labDir: LAB_DIR,
       patchOutput: patchText.slice(0, 500),
     });

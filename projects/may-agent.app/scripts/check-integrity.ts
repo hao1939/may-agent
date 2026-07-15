@@ -111,7 +111,9 @@ function checkManifest(): void {
         `${handler.name} has invalid timeoutMs.`,
       );
     }
-    for (const type of handler.on ?? []) {
+    for (const selector of handler.accepts) {
+      const type =
+        typeof selector === "string" ? selector : selector.type;
       handlerEvents.add(type);
       if (!events.has(type)) {
         addIssue(
@@ -135,18 +137,19 @@ function checkManifest(): void {
     (app.schedules ?? []).map((schedule) => schedule.id),
   );
   for (const schedule of app.schedules ?? []) {
-    const type =
-      typeof schedule.event?.type === "string" ? schedule.event.type : "";
-    if (!type)
-      addIssue(
-        "schedule.event.invalid",
-        `${schedule.id} schedule event is missing type.`,
-      );
-    else if (!events.has(type)) {
-      addIssue(
-        "schedule.event.undeclared",
-        `${schedule.id} emits undeclared event ${type}.`,
-      );
+    for (const event of schedule.emits) {
+      const type = typeof event.type === "string" ? event.type : "";
+      if (!type)
+        addIssue(
+          "schedule.emits.invalid",
+          `${schedule.id} schedule event is missing type.`,
+        );
+      else if (!events.has(type)) {
+        addIssue(
+          "schedule.emits.undeclared",
+          `${schedule.id} emits undeclared event ${type}.`,
+        );
+      }
     }
   }
 

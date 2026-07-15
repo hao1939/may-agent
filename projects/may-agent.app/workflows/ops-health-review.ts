@@ -337,10 +337,9 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
           AND event_type NOT IN (
             'project.comment.created',
             'project.tick',
-            'project.action.invoked',
-            'project.owner.requested',
-            'project.planning.requested',
-            'project.tasks.ready',
+	            'project.action.invoked',
+	            'project.owner.requested',
+	            'project.tasks.ready',
             'project.owner.reviewed',
             'project.reviewed',
             'project.ops_health.tick',
@@ -355,10 +354,12 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const pendingOwnerMessages = queryCount(
     ctx,
     `SELECT COUNT(*) as count
-       FROM events
-      WHERE event_type = 'message.created'
-        AND status = 'pending'
-        AND owner = ?`,
+	       FROM event_pair_runs p
+	       JOIN events e ON e.id = p.open_event_id
+	      WHERE p.pair_name = 'owner_inbox'
+	        AND p.status = 'open'
+	        AND e.event_type = 'message.created'
+	        AND e.owner = ?`,
     [ownerEventOwner],
   );
 

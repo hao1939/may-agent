@@ -69,7 +69,7 @@ describe("project-creative-audit workflow", () => {
       emit: (event: Record<string, unknown>) => emitted.push(event),
       dispatchEvent: (type: string, data?: Record<string, unknown>) => dispatched.push({ type, data }),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);

@@ -70,7 +70,7 @@ function recoveryPrompt(decision: RecoveryDecision): string {
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const decision = decisionFromTask(ctx.task);
-  if (!decision) return ctx.escalate("session-recovery requires a Recovery Decision block", { task: ctx.task.slice(0, 1000) });
+  if (!decision) return ctx.blocked("session-recovery requires a Recovery Decision block", { task: ctx.task.slice(0, 1000) });
 
   if (decision.action === "resume" || decision.action === "requeue") {
     if (!decision.task?.trim()) {
@@ -81,7 +81,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         agent: decision.agent,
         reason: "missing original task",
       });
-      return ctx.escalate(`Cannot recover ${decision.sessionId}: missing original task`, decision);
+      return ctx.blocked(`Cannot recover ${decision.sessionId}: missing original task`, decision);
     }
 
     const result = await ctx.runAgent(decision.agent, recoveryPrompt(decision));
@@ -97,7 +97,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
 
     if (result.status === "error") {
-      return ctx.escalate(`Recovery rerun failed for ${decision.sessionId}`, {
+      return ctx.blocked(`Recovery rerun failed for ${decision.sessionId}`, {
         originalSessionId: decision.sessionId,
         recoverySessionId: result.sessionId,
         error: result.error,
@@ -117,7 +117,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       agent: decision.agent,
       reason,
     });
-    return ctx.escalate(reason, decision);
+    return ctx.blocked(reason, decision);
   }
 
   ctx.emit({

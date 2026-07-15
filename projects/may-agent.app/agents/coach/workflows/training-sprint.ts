@@ -60,7 +60,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `8. Report the full plan.`,
   );
   if (plan.status === "error") {
-    return ctx.escalate("sprint planning failed", { error: plan.error });
+    return ctx.blocked("sprint planning failed", { error: plan.error });
   }
 
   // Check if ceiling-effect gate eliminated all experiments
@@ -99,7 +99,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "agents/coach/workspace/sprint-plan.md",
   );
   if (!existsSync(sprintPlanPath)) {
-    return ctx.escalate(
+    return ctx.blocked(
       "Sprint plan Phase 1 failed: Coach did not create projects/may-agent.app/agents/coach/workspace/sprint-plan.md. " +
         "Cannot proceed to Phase 2 (fork/patch) without the plan file.",
       { planOutput: plan.lastAssistantText?.substring(0, 500) },
@@ -125,7 +125,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `Report: list of forks created with what was changed in each.`,
   );
   if (patch.status === "error") {
-    return ctx.escalate("batch forking failed", { error: patch.error });
+    return ctx.blocked("batch forking failed", { error: patch.error });
   }
 
   // Step 3: Run all gym tests — direct JS execution (no LLM session needed)

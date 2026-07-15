@@ -188,7 +188,7 @@ describe("metrics-snapshot session health metrics", () => {
     });
   });
 
-  it("measures evaluator review and learning routing from events", async () => {
+  it("measures evaluator review quality and finding delivery from events", async () => {
     const root = join(
       tmpdir(),
       `metrics-evaluator-events-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -208,6 +208,53 @@ describe("metrics-snapshot session health metrics", () => {
         now - 60_000,
       ],
     );
+    for (const [status, project, offset] of [
+      ["handled", "alpha", 18_000],
+      ["pending", "beta", 17_000],
+    ] as const) {
+      db.run(
+        "INSERT INTO events (event_type, source, status, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+        [
+          "project.owner.requested",
+          "evaluation.app",
+          status,
+          JSON.stringify({
+            project,
+            reason: "evaluation-project-health-feedback",
+          }),
+          now - offset,
+        ],
+      );
+    }
+    for (const [status, owner, offset] of [
+      ["handled", "agent:alpha", 16_000],
+      ["pending", "agent:beta", 15_000],
+    ] as const) {
+      db.run(
+        "INSERT INTO events (event_type, owner, status, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+        [
+          "learning.feedback",
+          owner,
+          status,
+          JSON.stringify({ findingId: "weak-verification" }),
+          now - offset,
+        ],
+      );
+    }
+    for (const offset of [14_000, 13_000]) {
+      db.run(
+        "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+        [
+          "evaluation.project.reviewed",
+          JSON.stringify({
+            targetProject: "alpha.app",
+            verdict: "concern",
+            dedupeKey: "alpha.app:same-family",
+          }),
+          now - offset,
+        ],
+      );
+    }
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
       [
@@ -315,17 +362,18 @@ describe("metrics-snapshot session health metrics", () => {
       threshold: 0.6,
       priority: "P2",
     });
-    expect(metric("evaluator.success-candidates-24h")).toMatchObject({
-      current: 1,
-      target: 1,
-      threshold: 0,
-      priority: "P3",
-    });
-    expect(metric("evaluator.success-learnings-24h")).toMatchObject({
-      current: 1,
-      target: 1,
-      threshold: 0,
-      priority: "P3",
+    expect(metric("evaluator.project-finding-delivery-rate-24h")).toMatchObject(
+      {
+        current: 0.5,
+        target: 0.8,
+        threshold: 0.5,
+        priority: "P1",
+      },
+    );
+    expect(metric("evaluator.project-feedback-pending-age-h")).toMatchObject({
+      target: 0,
+      threshold: 12,
+      priority: "P1",
     });
   });
 

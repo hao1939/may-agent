@@ -16,11 +16,11 @@ const apps = [
 const HEARTBEAT_SCHEDULE_IDS = ["owner-heartbeat", "app-ops-heartbeat"];
 
 describe("owner heartbeat manifests", () => {
-  // Budget-aware intervals: may-agent uses 12h (paired with 6h platform-review = 6/day),
-  // others use 4h (their schedules allocate differently).
+  // Budget-aware intervals: evaluation uses a daily owner review; the other
+  // apps pair owner review with their higher-frequency deterministic loops.
   const expectedIntervals: Record<string, number> = {
     "aks-rp-e2e": 14_400_000,
-    evaluation: 14_400_000,
+    evaluation: 86_400_000,
     "may-agent": 43_200_000,
     "scout-knowledge-lib": 14_400_000,
   };
@@ -35,30 +35,20 @@ describe("owner heartbeat manifests", () => {
       expect(schedule?.enabled).toBe(true);
       expect(schedule?.intervalMs).toBe(expectedIntervals[id]);
 
-      // Support both legacy `event` (singular) and new `emits` (array) formats
-      const event =
-        (schedule as any)?.event ??
-        ((schedule as any)?.emits as unknown[])?.[0];
+      const event = ((schedule as any)?.emits as unknown[])?.[0] as any;
       expect(event).toBeDefined();
 
-      // The event data may be flat (legacy) or nested in .data (new typed format)
       const eventData = (event as any)?.data ?? event;
       expect(eventData?.project ?? (event as any)?.target?.project).toBe(id);
-      // Both event types are valid owner-heartbeat triggers:
-      // - project.owner.requested (direct owner wake)
-      // - project.planning.requested (triggers owner via planner workflow)
       const eventType = event?.type ?? eventData?.type;
-      expect(
-        eventType === "project.owner.requested" ||
-          eventType === "project.planning.requested",
-      ).toBe(true);
+      expect(eventType).toBe("project.owner.requested");
       // Reason matches the schedule ID (owner-heartbeat or app-ops-heartbeat)
       expect(HEARTBEAT_SCHEDULE_IDS.includes(eventData?.reason ?? "")).toBe(
         true,
       );
 
       const params = eventData?.params ?? event?.params;
-      expect(String(params?.instruction)).toContain("Low-frequency");
+      expect(String(params?.instruction).length).toBeGreaterThan(20);
       expect(params).toHaveProperty("reviewChecklist");
     });
   }

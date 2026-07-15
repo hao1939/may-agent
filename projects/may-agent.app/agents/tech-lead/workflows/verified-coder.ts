@@ -97,7 +97,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   try {
     parsed = parseInput(ctx.task);
   } catch (err: any) {
-    return ctx.escalate("Failed to parse verified-coder input", { error: err.message });
+    return ctx.blocked("Failed to parse verified-coder input", { error: err.message });
   }
 
   const { task, verifyCommand, maxAttempts } = parsed;
@@ -133,7 +133,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     const coder = await ctx.runAgent("coder", coderTask);
     if (coder.status === "error") {
-      return ctx.escalate(`Coder failed on attempt ${attempt}/${maxAttempts}`, {
+      return ctx.blocked(`Coder failed on attempt ${attempt}/${maxAttempts}`, {
         attempt,
         error: coder.error,
       });
@@ -166,7 +166,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // All attempts exhausted
-  return ctx.escalate(
+  return ctx.blocked(
     `Verification failed after ${maxAttempts} attempts`,
     {
       verifyCommand,

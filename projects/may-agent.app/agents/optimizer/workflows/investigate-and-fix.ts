@@ -189,7 +189,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const phase1 = await ctx.runAgent(ctx.agent, investigateTask);
 
   if (phase1.status === "error") {
-    return ctx.escalate("Phase 1 (investigate) failed", { error: phase1.error });
+    return ctx.blocked("Phase 1 (investigate) failed", { error: phase1.error });
   }
 
   const phase1Summary = ctx.summarize(phase1, {
@@ -208,7 +208,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (isNoActionNeeded(phase1Text)) {
     // Verify finding was actually written
     if (phase1Files.length === 0) {
-      return ctx.escalate(
+      return ctx.blocked(
         "Phase 1 claimed NO_ACTION_NEEDED but didn't write a finding file. " +
         "Even monitoring-only findings must be documented."
       );
@@ -224,7 +224,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (isDispatchReady(phase1Text)) {
     // Verify finding was written
     if (phase1Files.length === 0) {
-      return ctx.escalate(
+      return ctx.blocked(
         "Phase 1 marked DISPATCH-READY but didn't write a finding file."
       );
     }
@@ -262,7 +262,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const phase2 = await ctx.runAgent(ctx.agent, fixTask);
 
   if (phase2.status === "error") {
-    return ctx.escalate("Phase 2 (fix) failed", {
+    return ctx.blocked("Phase 2 (fix) failed", {
       error: phase2.error,
       phase1Files,
     });
@@ -286,7 +286,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // just the finding document from Phase 1
   if (fixOnlyFiles.length === 0) {
     // Phase 2 didn't produce any new file changes — it just wrote more docs
-    return ctx.escalate(
+    return ctx.blocked(
       `Phase 2 did not modify any files beyond the Phase 1 finding. ` +
       `The fix was not executed — agent likely wrote another document ` +
       `instead of making the actual change.\n\n` +
@@ -313,7 +313,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ctx.emit({ type: "step_done", step: "phase3-verify" } as any);
 
   if (hardFailed.length > 0) {
-    return ctx.escalate(
+    return ctx.blocked(
       `Fix verification failed: ${hardFailed.length} file(s) missing or empty`,
       {
         fixFiles: fixOnlyFiles,

@@ -21,6 +21,6 @@
       "coder",
       "qa"
     ],
-    "hint": "Use agents.send(\"tech-lead\", task) for code changes. Tech-lead has workflows (implement-and-review, two-phase, verified-coder) for structured execution."
+    "hint": "Use agents.fork(\"tech-lead\", task) for asynchronous code changes or agents.call(\"tech-lead\", task) when the result is needed now. Tech-lead owns structured implementation workflows."
   }
 }

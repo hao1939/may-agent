@@ -139,7 +139,7 @@ describe("metric-alert-triage workflow", () => {
       },
       emit: (event: Record<string, unknown>) => emitted.push(event),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);
@@ -199,7 +199,7 @@ describe("metric-alert-triage workflow", () => {
       }),
       emit: (event: Record<string, unknown>) => emitted.push(event),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);
@@ -244,7 +244,7 @@ describe("metric-alert-triage workflow", () => {
       },
       emit: () => {},
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     await execute(ctx);
@@ -294,7 +294,7 @@ describe("metric-alert-triage workflow", () => {
       notify: (message: string) => notifications.push(message),
       emit: (event: Record<string, unknown>) => emitted.push(event),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);
@@ -313,7 +313,7 @@ describe("metric-alert-triage workflow", () => {
     ]);
   });
 
-  it("escalates instead of recording closure when owner omits the structured operation", async () => {
+  it("blocks instead of recording closure when owner omits the structured operation", async () => {
     const emitted: Array<Record<string, unknown>> = [];
     const notifications: string[] = [];
     const ctx = {
@@ -339,12 +339,12 @@ describe("metric-alert-triage workflow", () => {
       emit: (event: Record<string, unknown>) => emitted.push(event),
       notify: (msg: string) => notifications.push(msg),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);
 
-    expect(result).toMatchObject({ type: "escalate" });
+    expect(result).toMatchObject({ type: "blocked" });
     expect(String((result as any).reason)).toContain("did not produce a valid METRIC_ALERT_OPERATION");
     expect(emitted).toEqual([]);
     expect(notifications).toHaveLength(1);
@@ -384,7 +384,7 @@ describe("metric-alert-triage workflow", () => {
       }),
       emit: (event: Record<string, unknown>) => emitted.push(event),
       done: (summary: string) => ({ type: "done", summary }),
-      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
     } as any;
 
     const result = await execute(ctx);

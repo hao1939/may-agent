@@ -362,7 +362,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
       } else {
         ctx.sdk.log("info", `[recovery] ${agent} exhausted ${MAX_RECOVERY_ATTEMPTS} recovery attempts for task — escalating`);
-        ctx.sdk.escalate(agent, `exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries`);
+        ctx.sdk.escalate(`Exhausted ${MAX_RECOVERY_ATTEMPTS} recovery retries for ${agent}`, {
+          owner: `agent:${agent}`,
+          requestedAction: "Review the failed task and choose a different recovery path.",
+          evidence: { sessionId, agent, attempts, error },
+          sourceSessionId: sessionId,
+          dedupKey: `session-recovery-exhausted:${sessionId}`,
+        });
       }
     } else if (action === "escalate") {
       const result = await ctx.sdk.runWorkflow("session-recovery", workflowTask({

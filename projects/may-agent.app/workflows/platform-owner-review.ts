@@ -21,6 +21,17 @@ const ownerEventOwner = `agent:${ownerAgent}`;
 // the platform agent (agent:may). Both land in the may-agent.app owner inbox
 // via routing, so lifecycle drain must cover both to prevent accumulation.
 const platformOwnerAliases = new Set([ownerEventOwner, "agent:may"]);
+const reviewedSignalTypes = new Set([
+  "metric.breach",
+  "metric.recovered",
+  "metric.stalled",
+  "session.resume_failed",
+  "session.recovery_failed",
+  "handler.failed",
+  "subscriber.failed",
+  "message.delivery_failed",
+  "agent.config_invalid",
+]);
 
 function field(task: string, name: string): string | undefined {
   const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
@@ -117,42 +128,20 @@ function reviewInboxEvents(
   reviewedBy: string,
 ): number {
   if (eventIds.length === 0) return 0;
-  if (typeof ctx.query.reviewInboxEvents === "function") {
-    return ctx.query.reviewInboxEvents(eventIds, reviewedBy);
-  }
-  if (typeof ctx.query.markInboxHandled === "function") {
-    return ctx.query.markInboxHandled(eventIds, reviewedBy);
-  }
-  return 0;
+  return ctx.query.reviewInboxEvents(eventIds, reviewedBy);
 }
 
 function recentEvents(
   ctx: WorkflowContext,
   types: string[],
-): { data: Record<string, unknown>; consumedMessageIds: number[] } {
+): Record<string, unknown> {
   const since = Date.now() - 60 * 60_000;
   const data: Record<string, unknown> = {};
-  const consumedMessageIds: number[] = [];
   for (const type of types) {
     try {
       const rows = ctx.query.events({ type, since, limit: 8 }).rows as Array<
         Record<string, unknown>
       >;
-      // Track message.created event IDs so the caller can record owner review.
-      // CRITICAL: only collect IDs for this app's owner aliases — otherwise we
-      // steal messages belonging to other agents (aks-explorer, scout, etc.).
-      if (type === "message.created") {
-        for (const row of rows) {
-          if (
-            typeof row.id === "number" &&
-            row.status === "pending" &&
-            typeof row.owner === "string" &&
-            platformOwnerAliases.has(row.owner)
-          ) {
-            consumedMessageIds.push(row.id);
-          }
-        }
-      }
       data[type] = compactRows(rows);
     } catch (error) {
       data[type] = {
@@ -160,7 +149,23 @@ function recentEvents(
       };
     }
   }
-  return { data, consumedMessageIds };
+  return data;
+}
+
+function openPlatformInboxRows(ctx: WorkflowContext): Array<Record<string, unknown>> {
+  const rows = new Map<number, Record<string, unknown>>();
+  for (const owner of platformOwnerAliases) {
+    const agent = owner.replace(/^agent:/, "");
+    const inbox = ctx.query.heartbeatContext({
+      agent,
+      inboxLookbackMs: 48 * 60 * 60_000,
+      inboxLimit: 200,
+    }).inbox;
+    for (const row of inbox) {
+      if (typeof row.id === "number") rows.set(row.id, row);
+    }
+  }
+  return [...rows.values()];
 }
 
 function queryRows(
@@ -214,98 +219,23 @@ function buildReviewPacket(
     "message.created",
   ]);
 
-  // Collect ALL pending message.created events for lifecycle management,
-  // not just the 1h window used for the review packet display.
-  // The review packet shows recent events (1h, limit 8) for owner context,
-  // but lifecycle needs to mark ALL pending messages as handled to prevent
-  // accumulation between the 1h lookback and 24h expiry threshold.
-  // Query both owner aliases (agent:tech-lead and agent:may) since external
-  // agents (evaluator) address messages to agent:may.
-  const allPendingMessageIds = [...abnormalEvents.consumedMessageIds];
+  // Lifecycle work comes from the canonical open owner inbox projection, not
+  // from legacy events.status values.
+  let openInboxRows: Array<Record<string, unknown>> = [];
   try {
-    const LIFECYCLE_LOOKBACK_MS = 25 * 60 * 60_000; // 25h — slightly wider than expiry to catch edge cases
-    for (const ownerAlias of platformOwnerAliases) {
-      const allPendingMessages = ctx.query.events({
-        type: "message.created",
-        owner: ownerAlias,
-        since: Date.now() - LIFECYCLE_LOOKBACK_MS,
-        limit: 200,
-      }).rows as Array<Record<string, unknown>>;
-      for (const row of allPendingMessages) {
-        if (
-          typeof row.id === "number" &&
-          row.status === "pending" &&
-          !allPendingMessageIds.includes(row.id)
-        ) {
-          allPendingMessageIds.push(row.id);
-        }
-      }
-    }
+    openInboxRows = openPlatformInboxRows(ctx);
   } catch {
-    /* best-effort: fall back to recentEvents IDs only */
+    /* best-effort: owner review can continue without lifecycle draining */
   }
-
-  // Collect pending escalation.created events owned by this app owner from
-  // project agents (aks-explorer, evaluator, scout, etc.). These are
-  // informational "waiting_with_evidence" escalations that the owner review
-  // consumes by reading the packet.
-  const pendingEscalationIds: number[] = [];
-  try {
-    const ESCALATION_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch any backlog
-    for (const ownerAlias of platformOwnerAliases) {
-      const pendingEscalations = ctx.query.events({
-        type: "escalation.created",
-        owner: ownerAlias,
-        since: Date.now() - ESCALATION_LOOKBACK_MS,
-        limit: 200,
-      }).rows as Array<Record<string, unknown>>;
-      for (const row of pendingEscalations) {
-        if (typeof row.id === "number" && row.status === "pending") {
-          pendingEscalationIds.push(row.id);
-        }
-      }
-    }
-  } catch {
-    /* best-effort: don't block review if escalation collection fails */
-  }
-
-  // Collect pending signal events owned by this app owner.
-  // These are informational signals that the owner review consumes by including
-  // them in the review packet. Without draining them, they accumulate indefinitely
-  // (the expireStaleSignalEvents helper only catches events >24h old, so recent
-  // ones pile up between creation and the 24h threshold).
-  const pendingSignalEventIds: number[] = [];
-  try {
-    const SIGNAL_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch backlog
-    const signalTypes = [
-      "metric.breach",
-      "metric.recovered",
-      "metric.stalled",
-      "session.resume_failed",
-      "session.recovery_failed",
-      "handler.failed",
-      "subscriber.failed",
-      "message.delivery_failed",
-      "agent.config_invalid",
-    ];
-    for (const type of signalTypes) {
-      for (const ownerAlias of platformOwnerAliases) {
-        const pendingSignals = ctx.query.events({
-          type,
-          owner: ownerAlias,
-          since: Date.now() - SIGNAL_LOOKBACK_MS,
-          limit: 200,
-        }).rows as Array<Record<string, unknown>>;
-        for (const row of pendingSignals) {
-          if (typeof row.id === "number" && row.status === "pending") {
-            pendingSignalEventIds.push(row.id);
-          }
-        }
-      }
-    }
-  } catch {
-    /* best-effort: don't block review if signal collection fails */
-  }
+  const inboxIds = (type: string | Set<string>): number[] =>
+    openInboxRows
+      .filter((row) =>
+        typeof type === "string"
+          ? row.eventType === type
+          : typeof row.eventType === "string" && type.has(row.eventType),
+      )
+      .map((row) => row.id)
+      .filter((id): id is number => typeof id === "number");
 
   return {
     packet: {
@@ -323,13 +253,13 @@ function buildReviewPacket(
       ),
       task_tree: taskTreePacket(appDir),
       open_alerts: openAlerts,
-      recent_abnormal_events: abnormalEvents.data,
+      recent_abnormal_events: abnormalEvents,
       owner_sessions: compactRows(ownerSessions, 10),
       active_owner_sessions: compactRows(activeOwnerSessions, 10),
     },
-    consumedMessageIds: allPendingMessageIds,
-    consumedEscalationIds: pendingEscalationIds,
-    consumedSignalEventIds: pendingSignalEventIds,
+    consumedMessageIds: inboxIds("message.created"),
+    consumedEscalationIds: inboxIds("escalation.created"),
+    consumedSignalEventIds: inboxIds(reviewedSignalTypes),
   };
 }
 
@@ -445,8 +375,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const projectDir = field(ctx.task, "project") ?? "/app/projects/may-agent";
 
-  // Expire stale pending messages older than 24h on each review cycle.
-  // This prevents unbounded growth of the pending count.
+  // Retire stale owner-inbox message work older than 24h on each review cycle.
   try {
     const STALE_MESSAGE_AGE_MS = 24 * 60 * 60_000; // 24 hours
     const expired = ctx.query.expireStaleMessages(STALE_MESSAGE_AGE_MS);
@@ -462,8 +391,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if expiry fails */
   }
 
-  // Expire stale pending signal events (session.resume_failed, metric.breach/recovered/stalled)
-  // older than 24h. These are non-actionable historical noise once reviewed.
+  // Retire stale owner-inbox signal work older than 24h. These signals are
+  // non-actionable historical noise once their review window passes.
   try {
     const STALE_SIGNAL_AGE_MS = 24 * 60 * 60_000; // 24 hours
     if (typeof ctx.query.expireStaleSignalEvents === "function") {
@@ -491,8 +420,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const packetJson = JSON.stringify(packet, null, 2);
 
   // Record reviewed message.created events so they don't reappear.
-  // The query layer emits follow-up events and closes owner-inbox pairs; it also
-  // updates legacy pending rows during migration.
+  // The query layer emits follow-up events and closes owner-inbox pairs.
   try {
     reviewInboxEvents(ctx, consumedMessageIds, ownerAgent);
   } catch {

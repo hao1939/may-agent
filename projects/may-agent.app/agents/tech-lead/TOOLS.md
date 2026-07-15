@@ -17,7 +17,7 @@ Cooperate with other agents.
 | Action | Blocking? | Use |
 |--------|-----------|-----|
 | `call(agent, task)` | **Yes** | Run agent to completion, get result. |
-| `send(agent, message)` | No | Dispatch task to agent (creates tracked request in DB, triggers heartbeat). Fire-and-forget. Include artifact paths in the message. |
+| `fork(agent, task)` | No | Start a tracked asynchronous agent session. Include artifact paths and the stop condition. |
 | `list` | No | See available agents and running sessions. |
 | `peek(sessionId)` | No | See recent activity of a running session. |
 | `cancel(sessionId)` | No | Kill a running session. |
@@ -42,4 +42,6 @@ checkpoint({ summary: "What I accomplished so far", data: { key: "value" } })
 
 ## Key Constraints
 - ❌ No `handoff` or `cron` tools.
-- For artifact transfers: write the file first, then `agents.send(target, "task. Artifact: path/to/file")`.
+- For a notification or artifact transfer, write the file first and use
+  `message({ to, content })`. Use `agents.fork` when the receiver should start
+  a work session immediately.
