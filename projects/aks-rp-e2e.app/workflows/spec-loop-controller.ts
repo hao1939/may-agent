@@ -696,6 +696,15 @@ function specIdsNamedByTask(
   return [...named].sort((a, b) => a.localeCompare(b));
 }
 
+function specHasOrdinaryLivePass(
+  state: SpecLoopState,
+  specId: string,
+): boolean {
+  const spec = state.specs[specId];
+  if (!spec || spec.status !== "pass") return false;
+  return spec.terminalDisposition !== true;
+}
+
 function closeStalePassedBlockedWaitChildren(
   config: ReturnType<typeof buildTaskTreeConfig>,
   input: {
@@ -715,8 +724,8 @@ function closeStalePassedBlockedWaitChildren(
       const namedSpecIds = specIdsNamedByTask(child, input.state);
       if (namedSpecIds.length === 0) continue;
       if (
-        !namedSpecIds.every(
-          (specId) => input.state.specs[specId]?.status === "pass",
+        !namedSpecIds.every((specId) =>
+          specHasOrdinaryLivePass(input.state, specId),
         )
       ) {
         continue;
@@ -1914,6 +1923,7 @@ function specLoopWorkflowProgress(input: {
   const residueFail = counts.fail ?? 0;
   const residuePrOpen = counts.pr_open ?? 0;
   const nonPass = residueFail + residueError + residuePrOpen + done;
+  const exactRepresentedSpecIds = input.exactRepresentedSpecIds ?? new Set<string>();
   const executionDrained = dispatchablePending === 0 && residueRunning === 0;
   const completionReady =
     residuePending === 0 && residueRunning === 0 && nonPass === 0;
@@ -1922,30 +1932,51 @@ function specLoopWorkflowProgress(input: {
     state: input.state,
     maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
   });
+  let unrepresentedDispatchablePending = 0;
+  let unrepresentedRunning = 0;
+  let unrepresentedDone = 0;
   let unrepresentedGroupedResidue = 0;
   for (const [specId, spec] of Object.entries(input.state.specs)) {
     const status = spec.status || "pending";
-    const groupedPending =
+    const directlyRunnablePending =
       status === "pending" &&
-      !canDirectlyRunSpec({
+      canDirectlyRunSpec({
         state: input.state,
         specId,
         maxDirectAttemptsPerSpec: input.maxDirectAttemptsPerSpec,
       });
-    if (
-      status !== "error" &&
-      status !== "fail" &&
-      status !== "pr_open" &&
-      !groupedPending
-    ) {
+    const groupedPending =
+      status === "pending" &&
+      !directlyRunnablePending;
+    if (exactRepresentedSpecIds.has(specId)) {
       continue;
     }
-    if (!input.exactRepresentedSpecIds?.has(specId)) {
+    if (directlyRunnablePending) {
+      unrepresentedDispatchablePending += 1;
+      continue;
+    }
+    if (status === "running") {
+      unrepresentedRunning += 1;
+      continue;
+    }
+    if (status === "done") {
+      unrepresentedDone += 1;
+      continue;
+    }
+    if (
+      status === "error" ||
+      status === "fail" ||
+      status === "pr_open" ||
+      groupedPending
+    ) {
       unrepresentedGroupedResidue += 1;
     }
   }
   const unrepresentedNonTerminalCount =
-    dispatchablePending + residueRunning + done + unrepresentedGroupedResidue;
+    unrepresentedDispatchablePending +
+    unrepresentedRunning +
+    unrepresentedDone +
+    unrepresentedGroupedResidue;
   const exactWaitOnlyFrontier =
     input.openChildren === 0 &&
     input.activeChildren === 0 &&

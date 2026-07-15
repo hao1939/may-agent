@@ -2303,6 +2303,7 @@ describe("spec-loop-controller", () => {
       running: 2,
       residuePending: 0,
       residueRunning: 2,
+      unrepresentedNonTerminalCount: 0,
       openChildren: 3,
       activeChildren: 3,
       reviewChildren: 0,
@@ -3792,6 +3793,179 @@ describe("spec-loop-controller", () => {
     ).toMatchObject({
       completionReady: true,
       blockedWaitChildren: 0,
+      pass: 1,
+    });
+  });
+
+  test("keeps blocked wait children when the named pass spec still has terminal catalog posture", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(
+        projectDir,
+        ".github",
+        "workflows",
+        "feature-sets",
+        "dev-infra-core.txt",
+      ),
+      "",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "index.json"),
+      JSON.stringify({ specFiles: ["alpha.json"] }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "specs", "alpha.json"),
+      JSON.stringify({
+        id: "spec.alpha.draft-pass",
+        status: "draft",
+        specState: "reviewed-exception",
+      }),
+      "utf8",
+    );
+    await mkdir(join(projectDir, ".state", "spec-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify(
+        {
+          loopTaskId: "aks-spec-verification-loop",
+          windowSize: 5,
+          cursor: 0,
+          prioritySpecIds: [],
+          specs: {
+            "spec.alpha.draft-pass": {
+              status: "pass",
+              taskId: "wait-alpha-draft-gap",
+              attempts: 2,
+              lastRunId: "2233445566",
+              lastRunUrl: "https://github.example/run/2233445566",
+              lastResultPath: "runs/test-results/alpha-draft/result.json",
+              lastPrUrl: null,
+              updatedAt: new Date().toISOString(),
+              catalogStatus: "draft",
+              catalogSpecState: "reviewed-exception",
+              terminalDisposition: true,
+              successorDisposition: "reviewed-exception-draft-gap",
+              resumeCondition:
+                "Resume only after exact source parity or owner-approved reframe.",
+              review: {
+                classification: "draft_gap_reviewed_exception",
+                reviewedAt: new Date().toISOString(),
+              },
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          updated_at: new Date().toISOString(),
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              status: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-alpha-draft-gap"],
+              goal: "Keep spec verification moving.",
+              inputs: [],
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                windowSize: 5,
+                targetRunning: 5,
+                stateRef: ".state/spec-loop/state.json",
+                githubWorkflow: "run-single-spec.yaml",
+                target: "staging",
+                branch: "dev",
+                maxDirectAttemptsPerSpec: 3,
+                timeoutMinutes: 60,
+              },
+            },
+            "wait-alpha-draft-gap": {
+              id: "wait-alpha-draft-gap",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Hold the draft-gap frontier for spec.alpha.draft-pass.",
+              conflict_scope: ["spec:spec.alpha.draft-pass"],
+              outputs: ["evidence/archive/alpha-draft-gap.md"],
+              acceptance: [
+                "Owner/model boundary changes or exact parity lands",
+              ],
+              blocker: {
+                condition:
+                  "Exact source parity still missing for draft-gap frontier.",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        eventBlock({
+          type: "project.task.tick",
+          action: "spec-loop",
+          project: "aks-rp-e2e",
+          taskId: "aks-spec-verification-loop",
+          target: { taskId: "aks-spec-verification-loop" },
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).not.toContain("Closed 1 stale blocked wait");
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["wait-alpha-draft-gap"]).toMatchObject({
+      state: "blocked",
+    });
+    expect(tree.tasks["wait-alpha-draft-gap"].resolution).toBeUndefined();
+    expect(
+      tree.tasks["aks-spec-verification-loop"].context.workflowProgress,
+    ).toMatchObject({
+      blockedWaitChildren: 1,
       pass: 1,
     });
   });
