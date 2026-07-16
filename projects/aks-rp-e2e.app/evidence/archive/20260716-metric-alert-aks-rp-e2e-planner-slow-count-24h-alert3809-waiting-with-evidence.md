@@ -3,74 +3,71 @@
 - Operation: `waiting_with_evidence`
 - Alert id: `3809`
 - Metric id: `aks-rp-e2e.planner.slow-count-24h`
-- Judged on: `2026-07-16`
 
-## Why this is a wait, not a stale resolve or escalation
+## Why the breach is still real
 
-The breach is still real right now, so this is **not** a stale alert:
+The runtime metric row still breaches now:
 
-- runtime metric row still shows `current=2`, `threshold=0`, `target=0`, `priority=P2`
-- direct recompute from the metric source command also returned `2`
+- `current=2`
+- `threshold=0`
+- `target=0`
+- `priority=P2`
+- `source_command=bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts aks-rp-e2e.planner.slow-count-24h`
 
-However, the current breach is coming from only **two older slow planner wakes**
-inside the rolling 24-hour window, and the planner has been healthy since the
-newest one landed. That makes the correct disposition a visible wait for decay
-or a genuinely new regression, not a manual resolve.
+A fresh direct recompute from `/app/projects/aks-rp-e2e.app` still returns `2` for the metric, matching the runtime row.
 
-## Metric definition checked
+## What is actually driving the current `2`
 
-`projects/aks-rp-e2e.app/scripts/project-metrics.ts` still defines the metric as:
+A bounded parse of `.state/planner-runs.jsonl` found exactly **two** qualifying slow planner wakes in the trailing 24-hour window:
 
-- trailing 24-hour `planner_wake` rows where `durationMs >= 180000`, or
-- rows whose result includes `timed out after`, or
-- rows whose status is `interrupted` or `cancelled`
+1. `2026-07-15T10:32:58.641Z` — `Agent step "app-ops" timed out after 360000ms`
+2. `2026-07-15T12:30:00.513Z` — `Agent step "app-ops" timed out after 360000ms`
 
-So this metric is still measuring real slow/timeout planner incidents rather
-than a known measurement bug.
+Both rows are `steps=["event-review","planning-update"]` planner wakes, so the metric is counting real owner-step planner timeout incidents rather than noise.
 
-## Current contributing slow wakes
+## Why this is not an active current-day regression
 
-A bounded parse of `projects/aks-rp-e2e.app/.state/planner-runs.jsonl` found
-exactly these two qualifying planner wakes in the current trailing 24-hour
-window:
+The same bounded parse also showed:
 
-1. `2026-07-15T10:32:58.641Z` — `status=assigned`, `steps=["event-review","planning-update"]`, `result="Agent step \"app-ops\" timed out after 360000ms"`
-2. `2026-07-15T12:30:00.513Z` — `status=assigned`, `steps=["event-review","planning-update"]`, `result="Agent step \"app-ops\" timed out after 360000ms"`
+- `recentCount=1017`
+- `slowCount=2`
+- `newestSlow=2026-07-15T12:30:00.513Z`
+- `laterCount=764`
+- `laterOwnerPlannerCount=237`
+- `laterSlowCount=0`
 
-## Evidence that the planner recovered after the last slow wake
+So there have been **764 later planner wakes with zero additional slow matches** after the newest qualifying slow wake, including **237 later owner-step wakes**.
 
-After the newest qualifying slow wake at `2026-07-15T12:30:00.513Z`:
+The later sample rows are normal successful planner activity, including recent `event-review/planning-update` and `task-reviewed-apply/quick-refill` wakes such as:
 
-- there were `619` later `planner_wake` rows
-- `laterSlowCount = 0`
-- the latest later planner wake in the same log was
-  `2026-07-16T02:45:59.231Z` with `status=settled` and
-  `steps=["event-review","planning-update"]`
+- `2026-07-16T05:20:13.187Z` — `assigned` planning update creating and dispatching a new domain task for the unpublished-change P0 breach
+- `2026-07-16T05:21:27.984Z` — `settled` planning update retiring a duplicate blocked wait
+- `2026-07-16T05:23:20.058Z` — `settled` planning update creating/assigning a replacement five-spec requeue task
 
-Recent completed owner sessions also show normal planner behavior again, for
-example:
+The sessions table agrees with that recovery posture: recent `workflow:project-planner` owner sessions after the slow rows are repeatedly `status='done'`, including:
 
-- `s_project_planner_event_review_20260716024425_8njo85` → `done`
-- `s_project_planner_planning_update_20260716024425_nrjve7` → `done`
+- `s_project_planner_planning_update_20260716052030_hzfh44`
+- `s_project_planner_planning_update_20260716051824_5fs2an`
+- `s_project_planner_planning_update_20260716051649_i8e9qn`
+- `s_project_planner_planning_update_20260716051334_68f1yq`
 
-So the alert is currently a trailing-window residue from two already-past
-planner timeouts, not evidence of an ongoing fresh burst.
+## Additional context signal
 
-## Chosen operation
+The live planner-run tail through `2026-07-16T05:23:37.717Z` contains no new qualifying slow wake after `2026-07-15T12:30:00.513Z`, so this is now a rolling-window residue signal rather than an ongoing burst.
 
-Choose `waiting_with_evidence` because the alert is still truthful and visible,
-but the latest source evidence shows no new slow planner wakes after the last
-qualifying timeout. The safe next action is to leave the alert open and validate
-on the next measurement cycle rather than force-resolving or reclassifying it.
+## Why the final operation is `waiting_with_evidence`
+
+`waiting_with_evidence` is the truthful judgment because:
+
+- the metric is still above threshold right now,
+- the two counted wakes are real,
+- but they are both older residual rows from 2026-07-15 rather than evidence of an ongoing fresh planner slowdown,
+- and the live planner has already returned to sustained normal operation with hundreds of later non-slow wakes and healthy recent owner-step completions.
+
+So the right action is not to manually resolve the alert or invent a speculative new repair. The correct action is to leave the alert visible and wait for the rolling 24-hour window to age out the last qualifying row.
 
 ## Next validation
 
-Validate on the next `metrics-snapshot` for
-`aks-rp-e2e.planner.slow-count-24h`.
+Validate on the next `metrics-snapshot` after **`2026-07-16T12:30:00.513Z`**, when the newest remaining slow wake ages out of the 24-hour window.
 
-Healthy outcome:
-
-- the metric starts dropping below `2` as those two `2026-07-15` timeouts age
-  out of the 24-hour window, and
-- no new qualifying slow planner wakes appear in `planner-runs.jsonl` before
-  that decay happens.
+If no new slow planner wakes land before then, `aks-rp-e2e.planner.slow-count-24h` should fall from `2` to `0` on the next sample after that timestamp.
