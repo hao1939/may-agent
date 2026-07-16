@@ -572,8 +572,8 @@ function buildWorkerPrompt(
   // Constraints
   prompt += `## Rules\n`;
   prompt += `- Produce a concrete deliverable when it advances the current goal. If the current blocker/precondition is still unmet, finish(blocked/partial) with evidence instead of inventing files.\n`;
-  prompt += `- For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), use the available remote tool when one exists. Prefer exact command tools such as \`ssh_exec\` for command output; use delegation tools such as \`cc_worker\` for exploratory remote work. Do not route remote commands through local bash just because they look like shell commands.\n`;
-  prompt += `- When calling \`cc_worker\`, include a compact fresh Project Operating Context block from this prompt: Goal, Current State, Context, current milestone, exact ask, and relevant Linked Context entries. Do not paste every linked file by default; tell \`cc_worker\` which linked context to read on demand. \`cc_worker\` resumes old history by design; if that old history is misleading or no longer useful, call it with \`new_session: true\` and state that the fresh project context is authoritative.\n`;
+  prompt += `- For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), use the available remote tool when one exists. Prefer exact command tools such as \`ssh_exec\` for command output; use a configured agent through the \`agents\` tool when exploratory delegated reasoning is useful. Do not route remote commands through local bash just because they look like shell commands.\n`;
+  prompt += `- When delegating through \`agents\`, include a compact fresh Project Operating Context block from this prompt: Goal, Current State, Context, current milestone, exact ask, and relevant Linked Context entries. Ask the agent to read linked context on demand; current project state remains authoritative over stale session context.\n`;
   prompt += `- A local path/guard warning means the command used the wrong local tool. It is not evidence that remote access is unavailable. Only claim remote access is blocked after trying the remote/delegation path and recording the exact result.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
   prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
@@ -666,9 +666,9 @@ function buildReviewPrompt(
   prompt += `  Format: NEXT_ACTION_UPDATE: <full replacement ## Next Action content>. Always update this when circumstances change.\n`;
   prompt += `- **Plan ↔ Next Action consistency**: Next Action must always be a step FROM the Plan. If you change direction (PIVOT, new comment, blocker resolved), update BOTH: issue PLAN_UPDATE to reflect the new strategy AND NEXT_ACTION_UPDATE to point at the right plan step. A Next Action that doesn't appear in the Plan means the Plan is stale — fix it.\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
-  prompt += `- **Worker capabilities**: The worker can read/write files, run local bash commands, call sub-agents, and use any local tools exposed by the runtime (including exact remote command tools such as \`ssh_exec\` and delegation tools such as \`cc_worker\` when present). Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
-  prompt += `- **Remote work convention**: For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), tell the worker to use the available remote tool first. Prefer exact command tools such as \`ssh_exec\` when exact stdout/stderr matters; use delegation tools such as \`cc_worker\` when the worker should reason or inspect. Do not declare remote access blocked from a local bash path-guard warning alone; that warning usually means the command was routed through the wrong local tool.\n`;
-  prompt += `- **Delegation context**: If the worker uses \`cc_worker\`, its prompt must carry the fresh project frame plus relevant Linked Context entries. The worker should ask \`cc_worker\` to read linked files only as needed. Keeping the old cc session is useful for continuity, but it must not override project.md. If the old cc session appears confused or polluted, direct the worker to use \`new_session: true\`.\n`;
+  prompt += `- **Worker capabilities**: The worker can read/write files, run local bash commands, call sub-agents, and use local tools exposed by the runtime, including exact remote command tools such as \`ssh_exec\` and the \`agents\` delegation tool when configured. Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
+  prompt += `- **Remote work convention**: For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), tell the worker to use the available remote tool first. Prefer exact command tools such as \`ssh_exec\` when exact stdout/stderr matters; use a configured agent through \`agents\` when exploratory reasoning is useful. Do not declare remote access blocked from a local bash path-guard warning alone; that warning usually means the command was routed through the wrong local tool.\n`;
+  prompt += `- **Delegation context**: A delegated agent prompt must carry the fresh project frame plus relevant Linked Context entries. Ask the agent to read linked files only as needed, and state that current project.md is authoritative over stale session context.\n`;
   prompt += `- **Iteration budget**: Iterations are finite and expensive. Don't waste them repeating failed approaches.\n\n`;
 
   if (features?.has("verify-before-stop")) {
@@ -944,7 +944,7 @@ async function handleBlockedDecision(
   const msg = isCommentIteration
     ? `Blocked by comment at iteration ${iteration}: ${cleanDetail}`
     : `Blocked at iteration ${iteration}: ${cleanDetail}`;
-  return ctx.escalate(msg);
+  return ctx.blocked(msg);
 }
 
 /**
@@ -1206,7 +1206,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectContent = updateSection(projectContent, "Current State",
           `Blocked: Worker failed ${consecutiveFailures} consecutive times.`);
         cachedWrite(config.projectPath, projectContent);
-        return ctx.escalate(`Worker failed ${consecutiveFailures}x at iteration ${iteration}.`);
+        return ctx.blocked(`Worker failed ${consecutiveFailures}x at iteration ${iteration}.`);
       }
       continue;
     }
