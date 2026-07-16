@@ -83,7 +83,6 @@ The main routes are:
 - `scout.digest` -> daily digest workflow;
 - `project.library_health.tick` -> deterministic health observer;
 - `project.owner.requested` -> Scout owner/planner review;
-- `project.owner.requested` -> Scout owner/planner review.
 
 Observation is not completion. A health packet closes only when the signal is
 resolved, accepted with a durable reason, or represented by clear follow-up
@@ -137,18 +136,15 @@ report, or no-op reason, the app should treat that as a process concern. This
 does not mean the observer should fix the content. It means the observer should
 wake Scout with enough raw facts to decide.
 
-## Active Tasks
+## Recurring Responsibilities
 
-Not every active task is supposed to close.
-
-Standing tasks can stay active because they describe ongoing work:
-
-- `project`;
-- `ongoing-research`;
-- `explore-arxiv`, `explore-hn`, `explore-xhs`, and `explore-github`;
-- `daily-digest`;
-- broad parent tasks such as `library-maintenance` while they have open
-  children.
+Recurring responsibility is durable structure, not a permanent worker
+attempt. Container nodes such as `project`, `ongoing-research`, and
+`library-maintenance` may remain open while bounded child work comes and goes.
+Leaves with `kind: work` or `kind: standing_task` remain visible but are not
+dispatched as ordinary worker backlog. Schedules and events start bounded
+explore/digest workflows; an executable leaf is `active` only while a concrete
+attempt is actually running.
 
 Finishable tasks are different. A task such as sourcing unsourced findings,
 repairing future dates, or merging a shared-knowledge batch should not sit in
