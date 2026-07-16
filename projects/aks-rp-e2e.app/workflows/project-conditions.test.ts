@@ -433,7 +433,7 @@ test("fallback delivery acknowledgement is correlated, durable, and replay-safe"
   ).toHaveLength(1);
 });
 
-test("an unacknowledged fallback is redeliverable once and then bounded", async () => {
+test("an unacknowledged fallback is redeliverable twice and then bounded", async () => {
   const appDir = await mkdtemp(
     join(tmpdir(), "project-condition-fallback-redelivery-v2-"),
   );
@@ -524,7 +524,7 @@ test("an unacknowledged fallback is redeliverable once and then bounded", async 
     }),
   ).toBe(true);
 
-  const exhausted = claimPipelineConditionFallbackV2(config, {
+  const secondRetry = claimPipelineConditionFallbackV2(config, {
     mode: "exact-ado-revisioned",
     conditionId,
     backend: "ado",
@@ -532,6 +532,27 @@ test("an unacknowledged fallback is redeliverable once and then bounded", async 
     taskId,
     taskRevision: 2,
     claimedAt: "2026-07-16T06:42:00.000Z",
+    observation: { status: "inProgress" },
+  });
+  expect(secondRetry).toMatchObject({ claimed: true, replayed: false });
+  expect(
+    finishPipelineConditionFallbackV2(config, {
+      mode: "exact-ado-revisioned",
+      conditionId,
+      claimId: secondRetry.claimId!,
+      finishedAt: "2026-07-16T06:42:01.000Z",
+      dispatched: true,
+    }),
+  ).toBe(true);
+
+  const exhausted = claimPipelineConditionFallbackV2(config, {
+    mode: "exact-ado-revisioned",
+    conditionId,
+    backend: "ado",
+    runId,
+    taskId,
+    taskRevision: 2,
+    claimedAt: "2026-07-16T06:58:00.000Z",
     observation: { status: "inProgress" },
   });
   expect(exhausted).toMatchObject({
@@ -543,5 +564,5 @@ test("an unacknowledged fallback is redeliverable once and then bounded", async 
   expect(
     (readTaskTree(config) as any).conditions[conditionId].fallbackExecution
       .attempts,
-  ).toBe(2);
+  ).toBe(3);
 });

@@ -92,7 +92,7 @@ function conditionMutationAuthority(
 }
 
 const CONDITION_FALLBACK_ACK_GRACE_MS = 15 * 60_000;
-const CONDITION_FALLBACK_MAX_DISPATCH_ATTEMPTS = 2;
+const CONDITION_FALLBACK_MAX_DISPATCH_ATTEMPTS = 3;
 
 function pipelineConditionBlockerProjection(
   condition: ProjectConditionV2,
