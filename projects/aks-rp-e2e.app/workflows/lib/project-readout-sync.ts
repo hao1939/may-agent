@@ -4,10 +4,8 @@ import {
   projectRuntimePaths,
   saveProjectRuntimeState,
 } from "@may-agent/sdk";
-import {
-  saveTaskTreeWithKanbanSnapshot,
-  summarizeTaskTree,
-} from "./task-tree-tools.ts";
+import { saveTaskTreeWithKanbanSnapshot } from "./task-tree-tools.ts";
+import { buildProjectSnapshotV2 } from "./project-snapshot-v2.ts";
 import {
   readTaskTree,
   withTreeLock,
@@ -31,6 +29,11 @@ type SyncProjectReadoutResult = {
     runnable: number;
   };
   focusPlanId: string | null;
+  snapshot: {
+    version: "project-snapshot-v2";
+    capturedAt: string;
+    treeUpdatedAt: string | null;
+  };
 };
 
 function objectValue(value: unknown): ProjectStateRecord {
@@ -66,8 +69,11 @@ function isReadoutParityRepairGoal(goal: string): boolean {
       goal,
     );
   if (!mentionsParitySurface) return false;
-  if (!/(readout|metadata|project-state|focus surfaces?)/i.test(goal)) return false;
-  return /(repair|guard|parity|align|sync|rewrite|reconcile|refresh)/i.test(goal);
+  if (!/(readout|metadata|project-state|focus surfaces?)/i.test(goal))
+    return false;
+  return /(repair|guard|parity|align|sync|rewrite|reconcile|refresh)/i.test(
+    goal,
+  );
 }
 
 function isSuppressedReadoutRepairLeaf(task: TaskNode | undefined): boolean {
@@ -82,7 +88,9 @@ function isSuppressedReadoutRepairLeaf(task: TaskNode | undefined): boolean {
   const context = objectValue(task.context);
   const reviewedTask = context.reviewedTask;
   const hasReviewedTask =
-    !!reviewedTask && typeof reviewedTask === "object" && !Array.isArray(reviewedTask);
+    !!reviewedTask &&
+    typeof reviewedTask === "object" &&
+    !Array.isArray(reviewedTask);
 
   return hasReviewedTask || /non-repair frontier/i.test(goal);
 }
@@ -91,35 +99,11 @@ function filterSuppressedReadoutRepairIds(
   tree: ReturnType<typeof readTaskTree>,
   ids: string[],
 ): string[] {
-  return ids.filter((id) => !isSuppressedReadoutRepairLeaf(tree.tasks[id]));
-}
-
-function liveLeafIdsByState(tree: ReturnType<typeof readTaskTree>): {
-  active: string[];
-  blocked: string[];
-  review: string[];
-  backlog: string[];
-} {
-  const active: string[] = [];
-  const blocked: string[] = [];
-  const review: string[] = [];
-  const backlog: string[] = [];
-  for (const task of Object.values(tree.tasks)) {
-    if (!isLeaf(task)) continue;
-    const state = nodeState(task);
-    if (state === "done") continue;
-    if (isSuppressedReadoutRepairLeaf(task)) continue;
-    if (state === "active") active.push(task.id);
-    else if (state === "blocked") blocked.push(task.id);
-    else if (state === "review") review.push(task.id);
-    else backlog.push(task.id);
-  }
-  return {
-    active: active.sort((a, b) => a.localeCompare(b)),
-    blocked: blocked.sort((a, b) => a.localeCompare(b)),
-    review: review.sort((a, b) => a.localeCompare(b)),
-    backlog: backlog.sort((a, b) => a.localeCompare(b)),
-  };
+  return ids.filter(
+    (id) =>
+      !isSuppressedReadoutRepairLeaf(tree.tasks[id]) &&
+      !isRootContractScopedRepairTask(tree.tasks[id]),
+  );
 }
 
 function liveFocusTaskIds(input: {
@@ -173,10 +157,7 @@ type BlockedOnlyDisposition = {
   governingWaitTaskId: string;
 };
 
-function stringValue(
-  record: ProjectStateRecord,
-  keys: string[],
-): string {
+function stringValue(record: ProjectStateRecord, keys: string[]): string {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) return value.trim();
@@ -207,7 +188,10 @@ function stringArrayValue(
     const value = record[key];
     if (!Array.isArray(value)) continue;
     return value
-      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+      .filter(
+        (entry): entry is string =>
+          typeof entry === "string" && entry.trim().length > 0,
+      )
       .map((entry) => entry.trim());
   }
   return [];
@@ -227,6 +211,7 @@ type RootContractReadout = {
   waitingTaskIds: string[];
   runnableTaskIds: string[];
   topLevelBlockedIds: string[];
+  blockedLineageIds: string[];
   blockedLeafCount: number;
 };
 
@@ -243,8 +228,9 @@ function isDurableLoopRootTask(taskId: string): boolean {
 }
 
 function isProjectRootReadoutScopeRepairGoal(goal: string): boolean {
-  if (!/(repair|reconcile|sync|refresh|readout|rewrite)/i.test(goal)) return false;
-  return /project root readout|current_root_readout|project-state|root-contract|scope sync/i.test(
+  if (!/(repair|reconcile|sync|refresh|readout|rewrite)/i.test(goal))
+    return false;
+  return /project[ -]root(?: frontier\/progress)? readout|current_root_readout|project-state|root-contract|scope sync/i.test(
     goal,
   );
 }
@@ -270,6 +256,7 @@ function projectRootContractReadout(
     reviewTaskIds: string[];
     waitingTaskIds: string[];
     runnableTaskIds: string[];
+    blockedTaskIds: string[];
     blockedLeafCount: number;
   },
 ): RootContractReadout | null {
@@ -282,44 +269,61 @@ function projectRootContractReadout(
 
   const projectChildren = Array.isArray(projectTask.children)
     ? projectTask.children.filter(
-        (child): child is string => typeof child === "string" && child.trim().length > 0,
+        (child): child is string =>
+          typeof child === "string" && child.trim().length > 0,
       )
     : [];
   const excludesTaskId = stringValue(rootReadout, ["excludes_task_id"]) || null;
   const followthroughChildren = projectChildren
     .map((id) => tree.tasks[id])
-    .filter((task): task is TaskNode => !!task && isRootContractFollowthroughChild(task));
+    .filter(
+      (task): task is TaskNode =>
+        !!task && isRootContractFollowthroughChild(task),
+    );
   const scopedRepairTaskIds = followthroughChildren
-    .filter((task) => nodeState(task) !== "done" && isRootContractScopedRepairTask(task))
+    .filter(
+      (task) =>
+        nodeState(task) !== "done" && isRootContractScopedRepairTask(task),
+    )
     .map((task) => task.id)
     .sort((a, b) => a.localeCompare(b));
 
-  const shouldExcludeScopedRepair = (id: string): boolean => {
-    const task = tree.tasks[id];
-    return id === excludesTaskId || isRootContractScopedRepairTask(task);
-  };
-  const activeTaskIdsExcludingSelf = unique(frontier.activeTaskIds)
-    .filter((id) => !shouldExcludeScopedRepair(id))
-    .sort((a, b) => a.localeCompare(b));
+  const currentFocusProposal = objectValue(
+    projectContext.current_focus_proposal,
+  );
+  const proposalContext = objectValue(currentFocusProposal.context);
+  const activeTaskIdsExcludingSelf = unique(frontier.activeTaskIds).sort(
+    (a, b) => a.localeCompare(b),
+  );
   const activeTaskIdsIncludingSelf = unique([
     ...activeTaskIdsExcludingSelf,
-    ...scopedRepairTaskIds.filter((id) => nodeState(tree.tasks[id]) === "active"),
+    ...scopedRepairTaskIds.filter(
+      (id) => nodeState(tree.tasks[id]) === "active",
+    ),
   ]).sort((a, b) => a.localeCompare(b));
-  const reviewTaskIds = unique(frontier.reviewTaskIds)
-    .filter((id) => !shouldExcludeScopedRepair(id))
-    .sort((a, b) => a.localeCompare(b));
-  const waitingTaskIds = unique(frontier.waitingTaskIds)
-    .filter((id) => !shouldExcludeScopedRepair(id))
-    .sort((a, b) => a.localeCompare(b));
-  const runnableTaskIds = unique(frontier.runnableTaskIds)
-    .filter((id) => !shouldExcludeScopedRepair(id))
-    .sort((a, b) => a.localeCompare(b));
+  const reviewTaskIds = unique(frontier.reviewTaskIds).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const waitingTaskIds = unique(frontier.waitingTaskIds).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const runnableTaskIds = unique(frontier.runnableTaskIds).sort((a, b) =>
+    a.localeCompare(b),
+  );
   const topLevelBlockedIds = projectChildren
     .filter(
-      (id) => isTopLevelBlockedWaitTask(id) && nodeState(tree.tasks[id]) === "blocked",
+      (id) =>
+        isTopLevelBlockedWaitTask(id) &&
+        nodeState(tree.tasks[id]) === "blocked",
     )
     .sort((a, b) => a.localeCompare(b));
-  const blockedLeafCount = frontier.blockedLeafCount;
+  const blockedTaskIdSet = new Set(frontier.blockedTaskIds);
+  const blockedLineageIds = unique([
+    ...stringArrayValue(proposalContext, ["blocked_task_ids"]),
+    ...stringArrayValue(proposalContext, ["linked_blocked_task_ids"]),
+    ...topLevelBlockedIds,
+  ]).filter((id) => blockedTaskIdSet.has(id));
+  const blockedLeafCount = frontier.blockedTaskIds.length;
   const acceptedPublicationLeafId =
     stringValue(rootReadout, ["accepted_publication_leaf_id"]) || null;
 
@@ -332,15 +336,18 @@ function projectRootContractReadout(
       ? !!tree.tasks[acceptedPublicationLeafId]
       : false,
     acceptedPublicationLeafArchiveFile:
-      stringValue(rootReadout, ["accepted_publication_leaf_archive_file"]) || null,
+      stringValue(rootReadout, ["accepted_publication_leaf_archive_file"]) ||
+      null,
     acceptedPublicationLeafArchivedAt:
-      stringValue(rootReadout, ["accepted_publication_leaf_archived_at"]) || null,
+      stringValue(rootReadout, ["accepted_publication_leaf_archived_at"]) ||
+      null,
     activeTaskIdsExcludingSelf,
     activeTaskIdsIncludingSelf,
     reviewTaskIds,
     waitingTaskIds,
     runnableTaskIds,
     topLevelBlockedIds,
+    blockedLineageIds,
     blockedLeafCount,
   };
 }
@@ -504,8 +511,13 @@ function buildFrontierVector(input: {
   waitingTaskIds: string[];
   runnableTaskIds: string[];
 }): string {
-  const { counts, activeTaskIds, reviewTaskIds, waitingTaskIds, runnableTaskIds } =
-    input;
+  const {
+    counts,
+    activeTaskIds,
+    reviewTaskIds,
+    waitingTaskIds,
+    runnableTaskIds,
+  } = input;
   return `active=[${formatFrontierIds(activeTaskIds)}], review=[${formatFrontierIds(reviewTaskIds)}], waiting=[${formatFrontierIds(waitingTaskIds)}], runnable=[${formatFrontierIds(runnableTaskIds)}], blocked=${counts.blocked}`;
 }
 
@@ -577,24 +589,40 @@ function rootContractPublicationSentence(root: RootContractReadout): string {
   return `${root.acceptedPublicationLeafId} is archived done and absent from the live task map${archiveAt}${archiveFile}.`;
 }
 
+function rootContractBlockedLineageSentence(root: RootContractReadout): string {
+  const blockedLineage = formatFrontierIds(root.blockedLineageIds);
+  const topLevelBlocked = formatFrontierIds(root.topLevelBlockedIds);
+  if (
+    root.blockedLineageIds.length === root.topLevelBlockedIds.length &&
+    root.blockedLineageIds.every(
+      (id, index) => id === root.topLevelBlockedIds[index],
+    )
+  ) {
+    return `Exact top-level blocked steward waits remain ${topLevelBlocked}.`;
+  }
+  return `Preserved blocked carrier lineage remains ${blockedLineage}. Exact top-level blocked steward waits remain ${topLevelBlocked}.`;
+}
+
 function buildRootContractCurrentStateSummary(input: {
   updatedAt: string;
   root: RootContractReadout;
   counts: SyncProjectReadoutResult["counts"];
 }): string {
   const { updatedAt, root, counts } = input;
-  return `Project-root readout at ${updatedAt} mirrors project.context.current_root_readout (${root.scope}): app-ops follow-through active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}], blocked=${counts.blocked}. ${rootContractPublicationSentence(root)} Exact top-level blocked steward waits remain ${formatFrontierIds(root.topLevelBlockedIds)}.`;
+  return `Project-root readout at ${updatedAt} mirrors project.context.current_root_readout (${root.scope}): app-ops follow-through active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}], blocked=${counts.blocked}. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
 }
 
-function buildRootContractCurrentFocusSummary(root: RootContractReadout): string {
-  return `Current root-frontier follow-through is active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}]. ${rootContractPublicationSentence(root)}`;
+function buildRootContractCurrentFocusSummary(
+  root: RootContractReadout,
+): string {
+  return `Current root-frontier follow-through is active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}]. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
 }
 
 function buildRootContractNextAction(root: RootContractReadout): string {
   if (root.reviewTaskIds.length > 0) {
-    return `Keep the root contract truthful: preserve review follow-through ${formatFrontierIds(root.reviewTaskIds)}, keep exact top-level blocked steward waits ${formatFrontierIds(root.topLevelBlockedIds)}, and do not reopen execution from bookkeeping alone.`;
+    return `Keep the root contract truthful: preserve review follow-through ${formatFrontierIds(root.reviewTaskIds)}, keep blocked carrier lineage ${formatFrontierIds(root.blockedLineageIds)}, and do not reopen execution from bookkeeping alone.`;
   }
-  return `Keep the root contract truthful: preserve exact top-level blocked steward waits ${formatFrontierIds(root.topLevelBlockedIds)} and do not reopen execution from bookkeeping alone.`;
+  return `Keep the root contract truthful: preserve blocked carrier lineage ${formatFrontierIds(root.blockedLineageIds)} and do not reopen execution from bookkeeping alone.`;
 }
 
 function buildRootContractParityBundle(input: {
@@ -602,13 +630,15 @@ function buildRootContractParityBundle(input: {
   root: RootContractReadout;
 }): ReadoutParityBundle {
   const { counts, root } = input;
-  const frontierSentence = `Current root-contract non-repair frontier is ${buildFrontierVector({
-    counts,
-    activeTaskIds: root.activeTaskIdsExcludingSelf,
-    reviewTaskIds: root.reviewTaskIds,
-    waitingTaskIds: root.waitingTaskIds,
-    runnableTaskIds: root.runnableTaskIds,
-  })}. ${rootContractPublicationSentence(root)} Exact top-level blocked steward waits remain ${formatFrontierIds(root.topLevelBlockedIds)}.`;
+  const frontierSentence = `Current root-contract non-repair frontier is ${buildFrontierVector(
+    {
+      counts,
+      activeTaskIds: root.activeTaskIdsExcludingSelf,
+      reviewTaskIds: root.reviewTaskIds,
+      waitingTaskIds: root.waitingTaskIds,
+      runnableTaskIds: root.runnableTaskIds,
+    },
+  )}. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
   return {
     frontierSentence,
     focusReviewNote: `Readout sync refreshed the current top-level root contract. ${frontierSentence}`,
@@ -637,20 +667,38 @@ export function syncProjectReadout(
 ): SyncProjectReadoutResult {
   const projectJsonPath = projectRuntimePaths(config.appDir).projectStatePath;
   const project = loadProjectReadModel(config.appDir);
-  const summary = summarizeTaskTree(config);
   const tree = readTaskTree(config);
+  const parsedNowMs = Date.parse(nowIso);
+  const projectSnapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+    nowMs: Number.isFinite(parsedNowMs) ? parsedNowMs : Date.now(),
+  });
   const currentState = objectValue(project.currentState);
   const currentFocus = objectValue(project.currentFocus);
   const currentFocusReview = objectValue(currentFocus.focusReview);
   const focusPlanState = objectValue(project.focusPlan);
-  const liveLeaves = liveLeafIdsByState(tree);
+  const liveLeaves = {
+    active: filterSuppressedReadoutRepairIds(
+      tree,
+      projectSnapshot.frontier.active,
+    ),
+    blocked: filterSuppressedReadoutRepairIds(
+      tree,
+      projectSnapshot.frontier.blocked,
+    ),
+    review: filterSuppressedReadoutRepairIds(
+      tree,
+      projectSnapshot.frontier.review,
+    ),
+  };
   const filteredRunnable = filterSuppressedReadoutRepairIds(
     tree,
-    summary.frontier.runnable,
+    projectSnapshot.frontier.runnable,
   );
   const filteredWaiting = filterSuppressedReadoutRepairIds(
     tree,
-    summary.frontier.waiting ?? [],
+    projectSnapshot.frontier.waiting,
   );
   const liveFocusIds = liveFocusTaskIds({
     active: liveLeaves.active,
@@ -671,6 +719,7 @@ export function syncProjectReadout(
     reviewTaskIds: liveLeaves.review,
     waitingTaskIds: filteredWaiting,
     runnableTaskIds: filteredRunnable,
+    blockedTaskIds: liveLeaves.blocked,
     blockedLeafCount: liveLeaves.blocked.length,
   });
   const focusPlan = liveFocusPlan(tree);
@@ -694,8 +743,12 @@ export function syncProjectReadout(
   const activeTaskIds = rootContract
     ? rootContract.activeTaskIdsExcludingSelf
     : liveLeaves.active;
-  const reviewTaskIds = rootContract ? rootContract.reviewTaskIds : liveLeaves.review;
-  const waitingTaskIds = rootContract ? rootContract.waitingTaskIds : filteredWaiting;
+  const reviewTaskIds = rootContract
+    ? rootContract.reviewTaskIds
+    : liveLeaves.review;
+  const waitingTaskIds = rootContract
+    ? rootContract.waitingTaskIds
+    : filteredWaiting;
   const runnableTaskIds = rootContract
     ? rootContract.runnableTaskIds
     : filteredRunnable;
@@ -708,24 +761,30 @@ export function syncProjectReadout(
       ])
     : liveFocusIds;
   const proposedTaskIds = rootContract
-    ? unique([...visibleFocusIds, ...rootContract.topLevelBlockedIds])
+    ? unique([...visibleFocusIds, ...rootContract.blockedLineageIds])
     : allLiveIds;
   const activeTaskId = activeTaskIds[0] ?? null;
+  const snapshotMetadata = {
+    version: projectSnapshot.version,
+    capturedAt: projectSnapshot.capturedAt,
+    treeUpdatedAt: projectSnapshot.treeUpdatedAt,
+  };
 
   const existingMetrics = objectValue(currentState.metrics);
   currentState.summary = rootContract
     ? buildRootContractCurrentStateSummary({
-        updatedAt: summary.updated_at ?? nowIso,
+        updatedAt: projectSnapshot.treeUpdatedAt ?? nowIso,
         root: rootContract,
         counts,
       })
     : buildCurrentStateSummary({
-        updatedAt: summary.updated_at ?? nowIso,
+        updatedAt: projectSnapshot.treeUpdatedAt ?? nowIso,
         counts,
         liveFocusTaskIds: liveFocusIds,
         blockedDisposition: disposition,
       });
   currentState.activeTaskId = activeTaskId;
+  currentState.snapshot = snapshotMetadata;
   currentState.metrics = {
     ...existingMetrics,
     blockedLeafCount: counts.blocked,
@@ -768,11 +827,18 @@ export function syncProjectReadout(
       });
   currentFocus.activeTaskIds = rootContract ? activeTaskIds : liveFocusIds;
   currentFocus.proposedTaskIds = proposedTaskIds;
+  currentFocus.snapshot = snapshotMetadata;
   if (rootContract) {
     const currentFocusMission = objectValue(currentFocus.focusMission);
     currentFocusMission.activeTaskIds = activeTaskIds;
     currentFocusMission.reviewTaskIds = reviewTaskIds;
-    currentFocusMission.linkedBlockedTaskIds = rootContract.topLevelBlockedIds;
+    currentFocusMission.liveReviewFrontierTaskIds = reviewTaskIds;
+    currentFocusMission.excludedReviewTaskIds = [];
+    delete currentFocusMission.exclusionRule;
+    delete currentFocusMission.exclusionReason;
+    currentFocusMission.waitingTaskIds = waitingTaskIds;
+    currentFocusMission.runnableTaskIds = runnableTaskIds;
+    currentFocusMission.linkedBlockedTaskIds = rootContract.blockedLineageIds;
     currentFocus.focusMission = currentFocusMission;
   }
   currentFocusReview.reviewedAt = nowIso;
@@ -811,7 +877,9 @@ export function syncProjectReadout(
     const projectTask = lockedTree.tasks.project;
     if (!projectTask) return;
     const projectContext = objectValue(projectTask.context);
-    const currentFocusProposal = objectValue(projectContext.current_focus_proposal);
+    const currentFocusProposal = objectValue(
+      projectContext.current_focus_proposal,
+    );
     if (Object.keys(currentFocusProposal).length === 0) return;
     const beforeProjectTask = JSON.stringify({
       summary: projectTask.summary ?? null,
@@ -825,11 +893,24 @@ export function syncProjectReadout(
       const proposalContext = objectValue(currentFocusProposal.context);
       proposalContext.active_task_ids = activeTaskIds;
       proposalContext.review_task_ids = reviewTaskIds;
-      proposalContext.linked_blocked_task_ids = rootContract.topLevelBlockedIds;
+      proposalContext.live_review_frontier_task_ids = reviewTaskIds;
+      proposalContext.excluded_review_task_ids = [];
+      delete proposalContext.exclusion_rule;
+      delete proposalContext.exclusion_reason;
+      proposalContext.waiting_task_ids = waitingTaskIds;
+      proposalContext.runnable_task_ids = runnableTaskIds;
+      proposalContext.blocked_task_ids = rootContract.blockedLineageIds;
+      proposalContext.linked_blocked_task_ids = rootContract.blockedLineageIds;
+      proposalContext.proposed_task_ids = proposedTaskIds;
       currentFocusProposal.context = proposalContext;
 
-      const currentRootReadout = objectValue(projectContext.current_root_readout);
+      const currentRootReadout = objectValue(
+        projectContext.current_root_readout,
+      );
       currentRootReadout.updated_at = nowIso;
+      currentRootReadout.snapshot_version = projectSnapshot.version;
+      currentRootReadout.snapshot_captured_at = projectSnapshot.capturedAt;
+      currentRootReadout.source_tree_updated_at = projectSnapshot.treeUpdatedAt;
       currentRootReadout.contract_scope = rootContract.scope;
       currentRootReadout.excludes_task_id =
         rootContract.scopedRepairTaskIds[0] ?? rootContract.excludesTaskId;
@@ -838,11 +919,18 @@ export function syncProjectReadout(
       currentRootReadout.active_task_ids_including_self =
         rootContract.activeTaskIdsIncludingSelf;
       currentRootReadout.review_task_ids = rootContract.reviewTaskIds;
+      currentRootReadout.live_review_frontier_task_ids =
+        rootContract.reviewTaskIds;
+      currentRootReadout.excluded_review_task_ids = [];
+      delete currentRootReadout.exclusion_rule;
+      delete currentRootReadout.exclusion_reason;
       currentRootReadout.waiting_task_ids = rootContract.waitingTaskIds;
       currentRootReadout.runnable_task_ids = rootContract.runnableTaskIds;
       currentRootReadout.blocked_leaf_count = rootContract.blockedLeafCount;
-      currentRootReadout.top_level_blocked_ids = rootContract.topLevelBlockedIds;
-      currentRootReadout.top_level_blocked_root_ids = rootContract.topLevelBlockedIds;
+      currentRootReadout.top_level_blocked_ids =
+        rootContract.topLevelBlockedIds;
+      currentRootReadout.top_level_blocked_root_ids =
+        rootContract.topLevelBlockedIds;
       currentRootReadout.accepted_publication_leaf_id =
         rootContract.acceptedPublicationLeafId;
       currentRootReadout.accepted_publication_leaf_live =
@@ -856,12 +944,12 @@ export function syncProjectReadout(
     projectContext.current_focus_proposal = currentFocusProposal;
     projectTask.summary = rootContract
       ? buildRootContractCurrentStateSummary({
-          updatedAt: summary.updated_at ?? nowIso,
+          updatedAt: projectSnapshot.treeUpdatedAt ?? nowIso,
           root: rootContract,
           counts,
         })
       : buildCurrentStateSummary({
-          updatedAt: summary.updated_at ?? nowIso,
+          updatedAt: projectSnapshot.treeUpdatedAt ?? nowIso,
           counts,
           liveFocusTaskIds: liveFocusIds,
           blockedDisposition: disposition,
@@ -877,17 +965,17 @@ export function syncProjectReadout(
       waiting: waitingTaskIds.length,
       runnable: runnableTaskIds.length,
       blocked: counts.blocked,
-      done: Number(summary.counts.done ?? 0),
-      leaf_total: Number(summary.leaf_total ?? 0),
+      done: projectSnapshot.frontier.counts.done,
+      leaf_total: projectSnapshot.frontier.counts.leafTotal,
       top_level_blocked: rootContract
         ? rootContract.topLevelBlockedIds.length
-        : (Array.isArray(projectTask.children)
-            ? projectTask.children.filter(
-                (child): child is string =>
-                  typeof child === "string" &&
-                  nodeState(lockedTree.tasks[child]) === "blocked",
-              ).length
-            : 0),
+        : Array.isArray(projectTask.children)
+          ? projectTask.children.filter(
+              (child): child is string =>
+                typeof child === "string" &&
+                nodeState(lockedTree.tasks[child]) === "blocked",
+            ).length
+          : 0,
     };
     projectTask.updated_at = nowIso;
     projectTask.context = projectContext;
@@ -910,5 +998,6 @@ export function syncProjectReadout(
     activeTaskId,
     counts,
     focusPlanId: focusPlan?.id ?? null,
+    snapshot: snapshotMetadata,
   };
 }

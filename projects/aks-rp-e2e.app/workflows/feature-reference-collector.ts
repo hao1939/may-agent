@@ -24,6 +24,7 @@ import {
   completeStartedAttempt,
   emitTaskCompleted,
   markAttemptStartedOnce,
+  taskRevisionFromTrigger,
 } from "./default-task-worker.ts";
 import {
   field,
@@ -44,7 +45,7 @@ import {
   saveFeatureReferenceLoopState,
   updateFeatureReferenceItem,
 } from "./lib/feature-reference-loop-store.ts";
-import type { TaskNode } from "./lib/task-tree-store.ts";
+import { taskRevision, type TaskNode } from "./lib/task-tree-store.ts";
 
 export const name = "feature-reference-collector";
 export const description =
@@ -373,12 +374,14 @@ function completion(
 ): WorkflowResult {
   const completed = completeStartedAttempt(config, {
     taskId: input.task.id,
+    taskRevision: taskRevision(input.task),
     attemptId: input.attemptId,
     claim: input.claim,
     summary: input.summary,
   });
   if (completed.ok) {
     emitTaskCompleted(ctx, completed.task, {
+      taskRevision: taskRevision(input.task),
       attemptId: input.attemptId,
       result: input.claim,
       summary: input.summary,
@@ -478,7 +481,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  const start = markAttemptStartedOnce(config, {
+    taskId,
+    taskRevision: taskRevisionFromTrigger(trigger),
+    attemptId,
+  });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
   const featureKey = contextString(task, "featureKey");

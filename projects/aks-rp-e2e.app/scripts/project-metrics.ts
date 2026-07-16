@@ -7,9 +7,9 @@ import {
   listRunnableBacklogTaskIds,
   peekTaskAssignments,
   planningPacket,
-  summarizeTaskTree,
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
+import { buildProjectSnapshotV2 } from "../workflows/lib/project-snapshot-v2.ts";
 import {
   readTaskTree,
   type TaskNode,
@@ -485,7 +485,9 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   return [
     stringRecordField(waitingFor, ["pathId", "path_id"]),
     stringRecordField(waitingFor, ["approvalPathId", "approval_path_id"]),
-  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  ].filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  );
 }
 
 function taskCoversBlockedOverdueWait(
@@ -716,8 +718,13 @@ function approvalGatedBlockedDisposition(
       continue;
     }
 
-    const waitingFor = objectRecordField(blocker, ["waiting_for", "waitingFor"]);
-    if (stringRecordField(waitingFor, ["type"]).toLowerCase() !== "owner.decision") {
+    const waitingFor = objectRecordField(blocker, [
+      "waiting_for",
+      "waitingFor",
+    ]);
+    if (
+      stringRecordField(waitingFor, ["type"]).toLowerCase() !== "owner.decision"
+    ) {
       continue;
     }
 
@@ -737,8 +744,7 @@ function approvalGatedBlockedDisposition(
     if (
       stringRecordField(governingBlocker, ["category"]).toLowerCase() !==
         "external-wait" ||
-      stringRecordField(governingBlocker, ["owner"]).toLowerCase() !==
-        "human"
+      stringRecordField(governingBlocker, ["owner"]).toLowerCase() !== "human"
     ) {
       continue;
     }
@@ -802,24 +808,12 @@ function taskCounts() {
     typeof task.id === "string" && task.id.trim()
       ? task.id.trim()
       : `blocked-leaf#${index}`;
-  let frontier: {
-    runnable: string[];
-    active: string[];
-    review: string[];
-    blocked: string[];
-  } | null = null;
-  try {
-    frontier = summarizeTaskTree(
-      taskTreeConfig({
-        appDir: effectiveAppDir,
-        projectDir,
-        worker: "aks-explorer",
-        maxConcurrent: desiredParallelism,
-      }),
-    ).frontier;
-  } catch {
-    frontier = null;
-  }
+  const projectSnapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+    nowMs: now,
+  });
+  const frontier = projectSnapshot.frontier;
   const byStatus = new Map<string, number>();
   for (const task of tasks) {
     const status = taskState(task);
@@ -835,13 +829,7 @@ function taskCounts() {
   const completed24h = completed24hTaskIds.size;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
-  const activeTaskIds =
-    frontier?.active ??
-    runtimeTasks
-      .filter((task) => isLeaf(task) && taskState(task) === "active")
-      .flatMap((task) =>
-        typeof task.id === "string" && task.id.trim() ? [task.id.trim()] : [],
-      );
+  const activeTaskIds = frontier.active;
   const activeOpsTaskIds = activeTaskIds.filter((taskId) =>
     isOpsTask(tree, taskId),
   );
@@ -849,10 +837,11 @@ function taskCounts() {
     (taskId) => !isOpsTask(tree, taskId),
   );
   const assignmentStateMismatch = openTaskAssignmentStateMismatchCount(tree);
-  const blockedLeafTasks = runtimeTasks.filter(
-    (task) => isLeaf(task) && taskState(task) === "blocked",
-  );
-  const blockedLeaves = blockedLeafTasks.length;
+  const blockedLeafTasks = frontier.blocked.flatMap((taskId) => {
+    const task = tree.tasks[taskId];
+    return task ? [task] : [];
+  });
+  const blockedLeaves = frontier.counts.blocked;
   const approvalBlockedDisposition = approvalGatedBlockedDisposition(
     tree,
     runtimeTasks,
@@ -917,14 +906,13 @@ function taskCounts() {
   const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
     (task, index) => {
       const blocker = recordValue(task.blocker);
-      const overdueAt = [
-        stringRecordField(blocker, ["next_check_at", "nextCheckAt"]),
-        stringRecordField(blocker, ["resume_at", "resumeAt"]),
+      const fallbackAt = Date.parse(
         stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
-      ]
-        .map((value) => Date.parse(value))
-        .filter((value) => Number.isFinite(value))
-        .sort((a, b) => a - b)[0];
+      );
+      const resumeAt = Date.parse(
+        stringRecordField(blocker, ["resume_at", "resumeAt"]),
+      );
+      const overdueAt = Number.isFinite(fallbackAt) ? fallbackAt : resumeAt;
       if (!Number.isFinite(overdueAt) || overdueAt > now) {
         return [];
       }
@@ -947,17 +935,15 @@ function taskCounts() {
   ).length;
   return {
     total: tasks.length,
-    runnable:
-      frontier?.runnable.length ??
-      tasks.filter(isWorkerExecutableBacklogLeaf).length,
-    active: frontier?.active.length ?? byStatus.get("active") ?? 0,
+    runnable: frontier.counts.runnable,
+    active: frontier.counts.active,
     activeTaskIds,
     activeOpsTaskIds,
     activeDomainTaskIds,
     activeRunning,
     activeStale,
     assignmentStateMismatch,
-    review: frontier?.review.length ?? byStatus.get("review") ?? 0,
+    review: frontier.counts.review,
     backlog: byStatus.get("backlog") ?? 0,
     blocked: blockedLeaves,
     blockedMissingWaitingFor,
@@ -1002,7 +988,9 @@ function taskReferencesReviewedLineage(input: {
         : "backlog";
   if (state === "review") return null;
 
-  const conflictScopes = Array.isArray((task as Record<string, unknown>).conflict_scope)
+  const conflictScopes = Array.isArray(
+    (task as Record<string, unknown>).conflict_scope,
+  )
     ? ((task as Record<string, unknown>).conflict_scope as unknown[])
         .map((value) => (typeof value === "string" ? value.trim() : ""))
         .filter(Boolean)
@@ -1202,8 +1190,17 @@ function archivedTaskAttemptId(task: TaskNode): string {
     task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
       ? (task.trace as Record<string, unknown>)
       : null;
-  const attemptId = trace?.current_attempt_id;
-  return typeof attemptId === "string" ? attemptId.trim() : "";
+  for (const key of [
+    "current_attempt_id",
+    "worker_started_attempt_id",
+    "previous_attempt_id",
+  ]) {
+    const attemptId = trace?.[key];
+    if (typeof attemptId === "string" && attemptId.trim()) {
+      return attemptId.trim();
+    }
+  }
+  return "";
 }
 
 function archivedDoneTaskForAttempt(
@@ -1233,6 +1230,67 @@ function archivedDoneTaskForAttempt(
   return null;
 }
 
+function terminalTaskWorkerWorkflowRunForAttempt(
+  taskId: string,
+  attemptId: string | null,
+  sessionId: string | null,
+): {
+  runId: string;
+  status: string;
+  sessionId: string | null;
+} | null {
+  if (!taskId || (!attemptId && !sessionId) || !existsSync(stateDbPath)) {
+    return null;
+  }
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    if (!sqliteTableExists(db, "workflow_runs")) return null;
+    const rows = db
+      .query(
+        `
+        select runId, status, task, startedAt
+        from workflow_runs
+        where workflow = 'task-worker'
+          and projectId = ?
+        order by startedAt desc
+        limit 200
+      `,
+      )
+      .all("aks-rp-e2e") as Array<Record<string, unknown>>;
+    for (const row of rows) {
+      const status = typeof row.status === "string" ? row.status.trim() : "";
+      if (!status || status === "running") continue;
+      const taskText = typeof row.task === "string" ? row.task : "";
+      const trigger = parseTriggerEvent(taskText);
+      const triggerTaskId =
+        triggerString(trigger, "taskId") || triggerString(trigger, "task_id");
+      if (triggerTaskId !== taskId) continue;
+      const triggerAttemptId =
+        triggerString(trigger, "attemptId") ||
+        triggerString(trigger, "attempt_id");
+      if (attemptId && triggerAttemptId !== attemptId) continue;
+      const triggerSessionId =
+        triggerString(trigger, "sessionId") ||
+        triggerString(trigger, "session_id");
+      if (sessionId && triggerSessionId && triggerSessionId !== sessionId) {
+        continue;
+      }
+      const runId = typeof row.runId === "string" ? row.runId.trim() : "";
+      if (!runId) continue;
+      return {
+        runId,
+        status,
+        sessionId: triggerSessionId || null,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 function representedArchivedDoneAssignmentMismatch(
   taskId: string,
   attemptId: string | null,
@@ -1246,9 +1304,6 @@ function representedArchivedDoneAssignmentMismatch(
     | "sessionEndedAt"
   >,
 ): boolean {
-  if (sessionInfo.sessionStatus !== "done") return false;
-  if (sessionInfo.sessionOutcome !== "done") return false;
-  if (sessionInfo.sessionEndedAt == null) return false;
   const archivedTask = archivedDoneTaskForAttempt(
     taskId,
     attemptId,
@@ -1260,9 +1315,29 @@ function representedArchivedDoneAssignmentMismatch(
       ? archivedTask.session_id.trim()
       : "";
   if (
+    sessionInfo.sessionStatus === "done" &&
+    sessionInfo.sessionOutcome === "done" &&
+    sessionInfo.sessionEndedAt != null
+  ) {
+    if (
+      archivedSessionId &&
+      sessionInfo.sessionId &&
+      archivedSessionId !== sessionInfo.sessionId
+    ) {
+      return false;
+    }
+    return true;
+  }
+  const workflowRun = terminalTaskWorkerWorkflowRunForAttempt(
+    taskId,
+    attemptId,
+    sessionInfo.sessionId || archivedSessionId || null,
+  );
+  if (!workflowRun) return false;
+  if (
     archivedSessionId &&
-    sessionInfo.sessionId &&
-    archivedSessionId !== sessionInfo.sessionId
+    workflowRun.sessionId &&
+    archivedSessionId !== workflowRun.sessionId
   ) {
     return false;
   }
@@ -1888,24 +1963,67 @@ function specLoopRecoveryStats(): {
   return { retryExhausted, recoveryUnowned, recoveryUnownedSpecIds };
 }
 
-function unpublishedGitChangeCount(repoDir: string): number {
-  const result = spawnSync("git", ["status", "--porcelain=v1", "--branch"], {
+function gitStdout(repoDir: string, args: string[]): string | null {
+  const result = spawnSync("git", args, {
     cwd: repoDir,
     encoding: "utf8",
     timeout: 10_000,
   });
-  if (result.status !== 0) return 0;
-  let count = 0;
-  for (const line of result.stdout.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    if (line.startsWith("## ")) {
-      const ahead = line.match(/\[ahead (\d+)/);
-      if (ahead) count += Number.parseInt(ahead[1], 10) || 0;
-      continue;
-    }
-    count += 1;
+  if (result.status !== 0) return null;
+  return result.stdout;
+}
+
+function gitStatusEntryCount(repoDir: string): number {
+  const stdout = gitStdout(repoDir, ["status", "--porcelain=v1"]);
+  if (stdout == null) return 0;
+  return stdout
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean).length;
+}
+
+function gitAheadOfUpstreamCount(repoDir: string): number {
+  const stdout = gitStdout(repoDir, ["status", "--porcelain=v1", "--branch"]);
+  if (stdout == null) return 0;
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.startsWith("## ")) continue;
+    const ahead = line.match(/\[ahead (\d+)/);
+    if (ahead) return Number.parseInt(ahead[1], 10) || 0;
+    return 0;
   }
-  return count;
+  return 0;
+}
+
+function gitOriginLocalOnlyCommitCount(repoDir: string): number {
+  const remoteRefs = gitStdout(repoDir, [
+    "for-each-ref",
+    "--format=%(refname)",
+    "refs/remotes/origin",
+  ]);
+  if (remoteRefs == null) return gitAheadOfUpstreamCount(repoDir);
+  if (
+    remoteRefs
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean).length === 0
+  ) {
+    return gitAheadOfUpstreamCount(repoDir);
+  }
+
+  const localOnly = gitStdout(repoDir, [
+    "rev-list",
+    "--count",
+    "HEAD",
+    "--not",
+    "--remotes=origin",
+  ]);
+  if (localOnly == null) return gitAheadOfUpstreamCount(repoDir);
+  const parsed = Number.parseInt(localOnly.trim(), 10);
+  return Number.isFinite(parsed) ? parsed : gitAheadOfUpstreamCount(repoDir);
+}
+
+function unpublishedGitChangeCount(repoDir: string): number {
+  return gitStatusEntryCount(repoDir) + gitOriginLocalOnlyCommitCount(repoDir);
 }
 
 function countReplays(): number {
@@ -2716,34 +2834,21 @@ function plannerTouchesOwnerSteps(run: PlannerRun): boolean {
   );
 }
 
-function plannerTimeoutStreak24h(runs: PlannerRun[]): number {
-  const ordered = [...runs]
-    .filter((run) => plannerTouchesOwnerSteps(run))
-    .sort(
-      (a, b) => (plannerRunTimestamp(a) ?? 0) - (plannerRunTimestamp(b) ?? 0),
-    );
-  let streak = 0;
-  for (let index = ordered.length - 1; index >= 0; index -= 1) {
-    if (plannerTimedOut(ordered[index])) {
-      streak += 1;
-      continue;
-    }
-    break;
-  }
-  return streak;
+function plannerTimeoutCount24h(runs: PlannerRun[]): number {
+  return runs.filter(
+    (run) => plannerTouchesOwnerSteps(run) && plannerTimedOut(run),
+  ).length;
 }
 
 function isSlowPlannerRun(run: PlannerRun): boolean {
+  if (!plannerTouchesOwnerSteps(run) || plannerTimedOut(run)) {
+    return false;
+  }
   if (typeof run.durationMs === "number" && Number.isFinite(run.durationMs)) {
     return run.durationMs >= 180_000;
   }
   const status = (run.status ?? "").toLowerCase();
-  const result = (run.result ?? "").toLowerCase();
-  return (
-    result.includes("timed out after") ||
-    status === "interrupted" ||
-    status === "cancelled"
-  );
+  return status === "interrupted" || status === "cancelled";
 }
 
 function metricSampleOutputFor(metricId: string): MetricSampleOutput {
@@ -2778,7 +2883,8 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
     ? JSON.stringify({
         disposition: "approval-gated-blocked-only",
         focusTaskIds: tasks.approvalBlockedDisposition.focusTaskIds,
-        governingWaitTaskIds: tasks.approvalBlockedDisposition.governingWaitTaskIds,
+        governingWaitTaskIds:
+          tasks.approvalBlockedDisposition.governingWaitTaskIds,
       })
     : undefined;
   const fragileActiveOnlyRecovery =
@@ -3050,7 +3156,7 @@ function metricSampleOutputFor(metricId: string): MetricSampleOutput {
           : 0,
     }),
     "aks-rp-e2e.planner.timeout-24h": () => ({
-      value: plannerTimeoutStreak24h(plannerRecent),
+      value: plannerTimeoutCount24h(plannerRecent),
     }),
     "aks-rp-e2e.planner.slow-count-24h": () => ({
       value: plannerRecent.filter((run) => isSlowPlannerRun(run)).length,

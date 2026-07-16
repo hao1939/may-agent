@@ -540,6 +540,9 @@ exit 0
       expect(JSON.stringify(dispatchCall?.[0])).toContain(
         '"timeout_minutes":"110"',
       );
+      expect(JSON.stringify(dispatchCall?.[0])).toContain(
+        '"agent_pool":"1ES-AKS-DevInfra-Normal-Yellow"',
+      );
       expect(unzipCalls.trim().length).toBeGreaterThan(0);
 
       const tree = JSON.parse(
@@ -1221,8 +1224,14 @@ exit 0
       expect(JSON.stringify(dispatchCalls[0])).toContain(
         '"timeout_minutes":"110"',
       );
+      expect(JSON.stringify(dispatchCalls[0])).toContain(
+        '"agent_pool":"1ES-AKS-DevInfra-Normal-Yellow"',
+      );
       expect(JSON.stringify(dispatchCalls[1])).toContain(
         '"timeout_minutes":"110"',
+      );
+      expect(JSON.stringify(dispatchCalls[1])).toContain(
+        '"agent_pool":"1ES-AKS-DevInfra-Normal-Yellow"',
       );
 
       const tree = JSON.parse(
@@ -1967,6 +1976,7 @@ exit 0
       expect(dispatchMetadata.inputs).toEqual({
         specs: "spec.net-integration.authorized-ip-ranges",
         target: "staging",
+        agent_pool: "1ES-AKS-DevInfra-Normal-Yellow",
         timeout_minutes: "110",
         metadata: JSON.stringify({ loop_key: specState.lastWorkflowLoopKey }),
       });

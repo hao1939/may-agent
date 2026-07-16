@@ -3,9 +3,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   peekTaskAssignments,
-  summarizeTaskTree,
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
+import {
+  buildProjectSnapshotV2,
+  type SnapshotCoverageV2,
+  type SnapshotLoop,
+  type SnapshotReview,
+} from "../workflows/lib/project-snapshot-v2.ts";
 import {
   readTaskTree,
   type TaskNode,
@@ -25,11 +30,7 @@ type JsonLine = JsonObject & {
 
 type SignalSeverity = "info" | "warn" | "critical";
 type HealthStatus =
-  | "complete"
-  | "moving"
-  | "recovering"
-  | "attention"
-  | "stalled";
+  "complete" | "moving" | "recovering" | "attention" | "stalled";
 
 type EventSelector =
   | string
@@ -108,6 +109,12 @@ export type ProcessGraphReport = {
 
 export type ProjectHealthReport = {
   capturedAt: string;
+  snapshot: {
+    version: "project-snapshot-v2";
+    capturedAt: string;
+    treeUpdatedAt: string | null;
+    coverage: SnapshotCoverageV2;
+  };
   status: HealthStatus;
   summary: string;
   appDir: string;
@@ -313,9 +320,7 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
 }
 
 function routeSelectors(route: WorkflowRoute): EventSelector[] {
-  return Array.isArray(route.accepts)
-    ? (route.accepts as EventSelector[])
-    : [];
+  return Array.isArray(route.accepts) ? (route.accepts as EventSelector[]) : [];
 }
 
 function routeInputEvents(route: WorkflowRoute): string[] {
@@ -1153,7 +1158,6 @@ export function buildProjectHealth(
   });
 
   const tree = readTaskTree(config);
-  const summary = summarizeTaskTree(config);
   const assignments = peekTaskAssignments(config);
   const journalRows = readJsonl(join(appDir, ".state", "journal.jsonl"));
   const plannerRows = readJsonl(join(appDir, ".state", "planner-runs.jsonl"));
@@ -1171,6 +1175,62 @@ export function buildProjectHealth(
   const dayJournal = rowsSince(journalRows, dayAgoMs);
   const dayReviewer = rowsSince(reviewerRows, dayAgoMs);
   const loops = buildLoopReports(appDir, tree);
+  const snapshotLoops: SnapshotLoop[] = loops.map((loop) => {
+    const relativeStatePath =
+      durableLoopTasks.find((candidate) => candidate.taskId === loop.taskId)
+        ?.statePath ?? "";
+    const statePath = relativeStatePath ? join(appDir, relativeStatePath) : "";
+    return {
+      taskId: loop.taskId,
+      workflow: loop.workflow ?? "unknown",
+      statePath,
+      stateExists: Boolean(statePath && existsSync(statePath)),
+      completionReady: loop.completionReady,
+      stateCounts: loop.stateCounts,
+      nonTerminalCount: Object.entries(loop.stateCounts).reduce(
+        (count, [status, value]) =>
+          status === "done" || status === "pass" ? count : count + value,
+        0,
+      ),
+      reportedUnrepresentedNonTerminalCount: loop.unrepresentedNonTerminalCount,
+      updatedAt: loop.updatedAt,
+    };
+  });
+  const snapshotReviews: SnapshotReview[] = reviewerRows.flatMap((row) => {
+    const value = row as Record<string, unknown>;
+    const taskId = stringValue(value.task_id ?? value.taskId);
+    const attemptId = stringValue(value.attempt_id ?? value.attemptId);
+    const decision = stringValue(value.decision);
+    const ts = stringValue(value.ts);
+    const revisionValue = value.task_revision ?? value.taskRevision;
+    const taskRevision =
+      typeof revisionValue === "number" &&
+      Number.isInteger(revisionValue) &&
+      revisionValue >= 0
+        ? revisionValue
+        : 0;
+    return taskId && attemptId && decision && ts
+      ? [{ taskId, taskRevision, attemptId, decision, ts }]
+      : [];
+  });
+  const projectSnapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+    assignments,
+    reviews: snapshotReviews,
+    loops: snapshotLoops,
+    sourceCoverage: {
+      assignments: "available",
+      sessions: "unavailable",
+      reviews: "available",
+      controllers: snapshotLoops.every((loop) => loop.stateExists)
+        ? "available"
+        : "unavailable",
+      controllerLiveness: "unavailable",
+      delivery: "unavailable",
+    },
+    nowMs,
+  });
   const incompleteLoopReports = loops.filter(
     (loop) => loop.completionReady === false,
   );
@@ -1195,22 +1255,22 @@ export function buildProjectHealth(
           "Static app manifest readout is available for the default app directory only.",
         );
   const frontier = {
-    roots: summary.roots ?? [],
-    runnable: summary.frontier.runnable ?? [],
-    waiting: summary.frontier.waiting ?? [],
-    active: summary.frontier.active ?? [],
-    review: summary.frontier.review ?? [],
-    blockedSample: sample(summary.frontier.blocked ?? [], 20),
+    roots: projectSnapshot.frontier.roots,
+    runnable: projectSnapshot.frontier.runnable,
+    waiting: projectSnapshot.frontier.waiting,
+    active: projectSnapshot.frontier.active,
+    review: projectSnapshot.frontier.review,
+    blockedSample: sample(projectSnapshot.frontier.blocked, 20),
     counts: {
-      runnable: (summary.frontier.runnable ?? []).length,
-      waiting: (summary.frontier.waiting ?? []).length,
-      active: (summary.frontier.active ?? []).length,
-      review: (summary.frontier.review ?? []).length,
-      blocked: Number(summary.counts?.blocked ?? 0),
-      backlog: Number(summary.counts?.backlog ?? 0),
-      done: Number(summary.counts?.done ?? 0),
-      total: Number(summary.total ?? 0),
-      leafTotal: Number(summary.leaf_total ?? 0),
+      runnable: projectSnapshot.frontier.counts.runnable,
+      waiting: projectSnapshot.frontier.counts.waiting,
+      active: projectSnapshot.frontier.counts.active,
+      review: projectSnapshot.frontier.counts.review,
+      blocked: projectSnapshot.frontier.counts.blocked,
+      backlog: projectSnapshot.frontier.counts.backlog,
+      done: projectSnapshot.frontier.counts.done,
+      total: projectSnapshot.frontier.counts.total,
+      leafTotal: projectSnapshot.frontier.counts.leafTotal,
     },
   };
   const movement = {
@@ -1245,6 +1305,12 @@ export function buildProjectHealth(
   };
   const baseReport = {
     capturedAt: new Date(nowMs).toISOString(),
+    snapshot: {
+      version: projectSnapshot.version,
+      capturedAt: projectSnapshot.capturedAt,
+      treeUpdatedAt: projectSnapshot.treeUpdatedAt,
+      coverage: projectSnapshot.coverage,
+    },
     appDir,
     projectDir,
     flow: [

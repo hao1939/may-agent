@@ -236,6 +236,12 @@ function context(input: {
   stateDbPath?: string;
   maxConcurrent?: number;
   sessionStartGraceMs?: number;
+  supervisorV2?: "off" | "review-handoff-revisioned";
+  supervisorAttemptV2?: "off" | "shadow";
+  conditionV2?: "off" | "exact-ado-revisioned";
+  conditionAdoptionV2?: "off" | "exact-task";
+  conditionAdoptionV2TaskId?: string;
+  conditionAdoptionV2RunId?: string;
   dispatched?: Array<{ type: string; payload: Record<string, unknown> }>;
 }) {
   return {
@@ -246,6 +252,20 @@ function context(input: {
       "maxAttempts: 2",
       `maxConcurrent: ${input.maxConcurrent ?? 3}`,
       `sessionStartGraceMs: ${input.sessionStartGraceMs ?? 60000}`,
+      `supervisorV2: ${input.supervisorV2 ?? "review-handoff-revisioned"}`,
+      ...(input.supervisorAttemptV2
+        ? [`supervisorAttemptV2: ${input.supervisorAttemptV2}`]
+        : []),
+      ...(input.conditionV2 ? [`conditionV2: ${input.conditionV2}`] : []),
+      ...(input.conditionAdoptionV2
+        ? [`conditionAdoptionV2: ${input.conditionAdoptionV2}`]
+        : []),
+      ...(input.conditionAdoptionV2TaskId
+        ? [`conditionAdoptionV2TaskId: ${input.conditionAdoptionV2TaskId}`]
+        : []),
+      ...(input.conditionAdoptionV2RunId
+        ? [`conditionAdoptionV2RunId: ${input.conditionAdoptionV2RunId}`]
+        : []),
     ].join("\n"),
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }),
@@ -830,6 +850,18 @@ describe("project execution watchdog", () => {
 
   test("recovers an active task when the worker session finished but workflow bookkeeping was interrupted", async () => {
     const projectDir = await makeProject();
+    for (const [directory, collection] of [
+      ["spec-loop", "specs"],
+      ["feature-reference-loop", "features"],
+      ["feature-compact-loop", "features"],
+    ] as const) {
+      await mkdir(join(projectDir, ".state", directory), { recursive: true });
+      await writeFile(
+        join(projectDir, ".state", directory, "state.json"),
+        `${JSON.stringify({ [collection]: {} })}\n`,
+        "utf8",
+      );
+    }
     const stateDbPath = join(projectDir, "may.db");
     const db = new Database(stateDbPath);
     db.exec(`
@@ -879,7 +911,9 @@ describe("project execution watchdog", () => {
       projectDir,
       {
         "active-task": task("active-task", "active", {
+          revision: 2,
           session_id: "s_done",
+          context: { controlPlaneVersion: 2 },
           trace: {
             current_attempt_id: "attempt-1",
             worker_started_attempt_id: "attempt-1",
@@ -897,7 +931,12 @@ describe("project execution watchdog", () => {
       payload: Record<string, unknown>;
     }> = [];
     const result = await execute(
-      context({ projectDir, stateDbPath, dispatched }),
+      context({
+        projectDir,
+        stateDbPath,
+        supervisorAttemptV2: "shadow",
+        dispatched,
+      }),
     );
 
     expect(result.status).toBe("done");
@@ -924,6 +963,18 @@ describe("project execution watchdog", () => {
     );
     expect(updated.tasks["active-task"].state).toBe("review");
     expect(updated.tasks["active-task"].trace.last_worker_result).toBe("done");
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain(
+      '"kind":"project_supervisor_terminal_attempt_shadow_v2"',
+    );
+    expect(journal).toContain('"candidate_task_ids":["active-task"]');
+    expect(journal).toContain(
+      '"legacy_revisioned_actionable_task_ids":["active-task"]',
+    );
+    expect(journal).toContain('"matches":true');
   });
 
   test("does not recover a done session whose only recovered output is the generic placeholder", async () => {
@@ -971,7 +1022,9 @@ describe("project execution watchdog", () => {
       projectDir,
       {
         "active-task": task("active-task", "active", {
+          revision: 2,
           session_id: "s_done_placeholder",
+          context: { controlPlaneVersion: 2 },
           trace: {
             current_attempt_id: "attempt-1",
             worker_started_attempt_id: "attempt-1",
@@ -989,7 +1042,12 @@ describe("project execution watchdog", () => {
       payload: Record<string, unknown>;
     }> = [];
     const result = await execute(
-      context({ projectDir, stateDbPath, dispatched }),
+      context({
+        projectDir,
+        stateDbPath,
+        supervisorAttemptV2: "shadow",
+        dispatched,
+      }),
     );
 
     expect(result.status).toBe("done");
@@ -1019,6 +1077,60 @@ describe("project execution watchdog", () => {
       await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-task"].state).toBe("active");
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain(
+      '"outcome_class":"terminal-success-nonactionable"',
+    );
+  });
+
+  test("records a revisioned terminal provider error in shadow evidence", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_terminal_error",
+      status: "failed",
+      outcome: "error",
+      opCount: 7,
+      startedAt: Date.now() - 120_000,
+      lastActivityAt: Date.now() - 60_000,
+    });
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          revision: 2,
+          session_id: "s_terminal_error",
+          context: { controlPlaneVersion: 2 },
+          trace: {
+            current_attempt_id: "attempt-error",
+            worker_started_attempt_id: "attempt-error",
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const result = await execute(
+      context({
+        projectDir,
+        stateDbPath,
+        supervisorAttemptV2: "shadow",
+        dispatched: [],
+      }),
+    );
+    expect(result.message).toContain("watchdog-stale-active-review");
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"outcome_class":"terminal-provider-error"');
+    expect(journal).toContain('"candidate_task_ids":[]');
   });
 
   test("wakes owner for an active leaf whose runtime session has error outcome", async () => {
@@ -2103,7 +2215,8 @@ describe("project execution watchdog", () => {
           condition: "Waiting for shared auth recovery.",
           waiting_for: {
             type: "project.approval.submitted",
-            pathId: "shared-authenticated-artifact-result-recovery-family-20260712",
+            pathId:
+              "shared-authenticated-artifact-result-recovery-family-20260712",
           },
           owner: "aks-explorer",
           resume_condition: "Resume when the shared auth owner return arrives.",
@@ -2131,6 +2244,101 @@ describe("project execution watchdog", () => {
         overdueOwnerActions: [],
       },
     });
+  });
+
+  test("treats child-blocked parent waits as covered when recovery work references the surviving child lineage", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_child_blocked_recovery", "running");
+    await writeTree(projectDir, {
+      "review-normalize-scenario-child": task(
+        "review-normalize-scenario-child",
+        "active",
+        {
+          session_id: "s_child_blocked_recovery",
+          context: {
+            auditedBlockedTaskIds: [
+              "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
+            ],
+          },
+        },
+      ),
+      "domain/audit-normalize-scenario-tests": task(
+        "domain/audit-normalize-scenario-tests",
+        "blocked",
+        {
+          children: [
+            "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
+          ],
+          blocker: {
+            condition:
+              "Child blocked: domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result.",
+            category: "child-blocked",
+            owner: "aks-explorer",
+            waiting_for: {
+              type: "child.task.blocked",
+              taskId: "domain/audit-normalize-scenario-tests",
+              childTaskIds: [
+                "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
+              ],
+            },
+            resume_condition:
+              "Resume when the blocked child task is resolved or replaced.",
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2001-01-02T00:00:00.000Z",
+            fallback_action:
+              "Refresh the child-blocked stewardship or reopen a concrete follow-up.",
+          },
+        },
+      ),
+      "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result":
+        task(
+          "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
+          "blocked",
+          {
+            parent_id: "domain/audit-normalize-scenario-tests",
+            blocker: {
+              condition: "Waiting for exact ADO evidence.",
+              waiting_for: { type: "ado.pipeline_run.completed" },
+              owner: "aks-explorer",
+              resume_condition: "Resume when the exact ADO run is terminal.",
+              next_check_at: "2001-01-01T00:00:00.000Z",
+              fallback_at: "2001-01-02T00:00:00.000Z",
+              fallback_action: "Refresh the exact child wait.",
+            },
+          },
+        ),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 0,
+        overdueOwnerActions: [],
+        blockedTasks: [
+          {
+            taskId:
+              "domain/wait-rp-nodepool-agentpool-operations-ado-run-172338359-result",
+          },
+        ],
+      },
+    });
+    expect(
+      dispatched[0]?.payload?.blockedTasks?.some(
+        (task: { taskId?: string }) =>
+          task.taskId === "domain/audit-normalize-scenario-tests",
+      ),
+    ).toBe(false);
   });
 
   test("does not treat prose-only blocked wait mention as active recovery work", async () => {
@@ -2283,6 +2491,386 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("Project Supervisor V2 re-emits one correlated completion and does not duplicate it", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          worker_started_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_summary: "Current completion claim.",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+          workflowResult: {
+            resultVersion: "workflow-result-v1",
+            workflow: "fixture-worker",
+            status: "done",
+            summary: "Current completion claim.",
+            artifacts: ["evidence/review.md"],
+            details: { exact: true },
+          },
+        },
+      }),
+    });
+
+    const firstDispatches: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const first = await execute(
+      context({ projectDir, dispatched: firstDispatches }),
+    );
+    expect(first.message).toContain(
+      "Project Supervisor V2 review handoff action dispatched and recorded for review-task",
+    );
+    expect(firstDispatches).toHaveLength(1);
+    expect(firstDispatches[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: {
+        taskId: "review-task",
+        taskRevision: 2,
+        attemptId: "attempt-2",
+        result: "done",
+        review: {
+          required: true,
+          reason: "project-supervisor-v2-recovered-review-completion",
+        },
+        workflowResult: {
+          workflow: "fixture-worker",
+          details: { exact: true },
+        },
+      },
+    });
+
+    const secondDispatches: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched: secondDispatches }));
+    expect(
+      secondDispatches.filter(
+        (event) => event.type === "project.task.completed",
+      ),
+    ).toHaveLength(0);
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.supervisorRecoveries[
+        "review-delivery-missing:review-task:2:attempt-2"
+      ],
+    ).toMatchObject({
+      status: "actioned",
+      actionKind: "reemit-completion",
+      actionCount: 1,
+    });
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain(
+      '"kind":"project_supervisor_review_handoff_action_v2"',
+    );
+    expect(journal).not.toContain(
+      '"kind":"watchdog_review_completion_reemitted"',
+    );
+  });
+
+  test("keeps compatibility revision zero on legacy review recovery even when the review source is available", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "legacy-review": task("legacy-review", "review", {
+        revision: 0,
+        trace: {
+          current_attempt_id: "legacy-attempt",
+          last_worker_result: "done",
+          last_worker_summary: "Legacy completion claim.",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+    expect(result.message).toBe(
+      "Watchdog re-emitted completion for review task(s): legacy-review.",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: {
+        taskId: "legacy-review",
+        attemptId: "legacy-attempt",
+        review: {
+          reason: "watchdog-recovered-review-completion-trigger",
+        },
+      },
+    });
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.supervisorRecoveries).toBeUndefined();
+  });
+
+  test("keeps revisioned review recovery on the legacy path when supervisor V2 is off", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "revisioned-review": task("revisioned-review", "review", {
+        revision: 3,
+        trace: {
+          current_attempt_id: "attempt-3",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, supervisorV2: "off", dispatched }),
+    );
+    expect(result.message).toBe(
+      "Watchdog re-emitted completion for review task(s): revisioned-review.",
+    );
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.completed",
+      payload: { taskId: "revisioned-review", attemptId: "attempt-3" },
+    });
+  });
+
+  test("Project Supervisor V2 re-emits the exact stored reviewer decision", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: "2026-07-16T04:01:00.000Z",
+        workflow: "task-reviewer",
+        result: "project.task.reviewed",
+        task_id: "review-task",
+        task_revision: 2,
+        attempt_id: "attempt-2",
+        decision: "accept",
+        confidence: "high",
+        summary: "The exact claim is accepted.",
+        findings: ["Stored finding."],
+        feedback: [],
+        suggestedFollowups: ["Continue the parent."],
+        artifacts: ["evidence/review.md"],
+        verification: ["bun test"],
+        events: [],
+      })}\n`,
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+    expect(result.message).toContain(
+      "Project Supervisor V2 review handoff action dispatched and recorded for review-task",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        taskRevision: 2,
+        attemptId: "attempt-2",
+        decision: "accept",
+        confidence: "high",
+        summary: "The exact claim is accepted.",
+        findings: ["Stored finding."],
+        reason: "project-supervisor-v2-reemit-reviewed",
+      },
+    });
+  });
+
+  test("Project Supervisor V2 does not treat a provider dispatch failure as a review decision", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: "2026-07-16T04:01:00.000Z",
+        result: "dispatch-failed",
+        task_id: "review-task",
+        task_revision: 2,
+        attempt_id: "attempt-2",
+        review: { decision: "accept", summary: "Not delivered." },
+      })}\n`,
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched }));
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.task.completed",
+    ]);
+  });
+
+  test("Project Supervisor V2 ignores a reviewer decision for a stale revision and attempt", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: "2026-07-16T04:01:00.000Z",
+        result: "project.task.reviewed",
+        task_id: "review-task",
+        task_revision: 1,
+        attempt_id: "attempt-1",
+        decision: "accept",
+        summary: "This belongs to the previous revision.",
+      })}\n`,
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched }));
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.task.completed",
+    ]);
+    expect(dispatched[0]?.payload).toMatchObject({
+      taskRevision: 2,
+      attemptId: "attempt-2",
+    });
+  });
+
+  test("Project Supervisor V2 emits one owner request after its action budget and grace are exhausted", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    const recoveryKey = "review-delivery-missing:review-task:2:attempt-2";
+    await writeTree(
+      projectDir,
+      {
+        "review-task": task("review-task", "review", {
+          revision: 2,
+          context: { controlPlaneVersion: 2 },
+          trace: {
+            current_attempt_id: "attempt-2",
+            last_worker_result: "done",
+            last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+          },
+        }),
+      },
+      {
+        supervisorRecoveries: {
+          [recoveryKey]: {
+            version: "project-supervisor-recovery-v2",
+            recoveryKey,
+            invariantType: "review-delivery-missing",
+            subject: { kind: "task", id: "review-task", revision: 2 },
+            attemptId: "attempt-2",
+            decisionId: null,
+            status: "actioned",
+            actionKind: "reemit-completion",
+            actionCount: 1,
+            maxActions: 1,
+            firstObservedAt: "2026-07-16T03:00:00.000Z",
+            lastObservedAt: "2026-07-16T03:00:00.000Z",
+            lastActionAt: "2026-07-16T03:00:00.000Z",
+          },
+        },
+      },
+    );
+
+    const firstDispatches: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched: firstDispatches }));
+    expect(firstDispatches).toHaveLength(1);
+    expect(firstDispatches[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "project-supervisor-v2-review-handoff-exhausted",
+        taskId: "review-task",
+        taskRevision: 2,
+        attemptId: "attempt-2",
+        recoveryKey,
+      },
+    });
+
+    const secondDispatches: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched: secondDispatches }));
+    expect(secondDispatches).toHaveLength(0);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.supervisorRecoveries[recoveryKey]).toMatchObject({
+      status: "exhausted",
+      actionCount: 1,
+    });
+  });
+
   test("does not duplicate a fresh completion while its reviewer can still be running", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
@@ -2325,6 +2913,36 @@ describe("project execution watchdog", () => {
       dispatched.some((event) => event.type === "project.task.completed"),
     ).toBe(false);
     expect(dispatched).toHaveLength(0);
+  });
+
+  test("does not let retained terminal-review context bypass grace for a fresh redo attempt", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "terminal-redo": task("terminal-redo", "review", {
+        context: {
+          terminalPipelineWaitReview: {
+            runId: "172475799",
+            runStatus: "completed",
+            runConclusion: "failed",
+          },
+        },
+        trace: {
+          current_attempt_id: "a_terminal-redo_20260716070402",
+          previous_attempt_id: "a_terminal-redo_172475799_terminal_wait_review",
+          last_worker_result: "done",
+          last_worker_completed_at: new Date().toISOString(),
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(context({ projectDir, dispatched }));
+    expect(
+      dispatched.filter((event) => event.type === "project.task.completed"),
+    ).toHaveLength(0);
   });
 
   test("wakes overdue blocked recovery before ordinary review work", async () => {
@@ -2502,6 +3120,618 @@ describe("project execution watchdog", () => {
       );
       expect(task.result).toContain(
         "Azure DevOps pipeline run 123456789 is terminal",
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("resolves and dispatches a revision-bound pipeline Condition continuation", async () => {
+    const projectDir = await makeProject();
+    const conditionId = "condition:pipeline:ado:172459471:terminal";
+    const now = new Date().toISOString();
+    await writeTree(
+      projectDir,
+      {
+        "fix-spec-one-v2": task("fix-spec-one-v2", "blocked", {
+          revision: 3,
+          goal: "Inspect terminal run 172459471 artifacts.",
+          context: {
+            controlPlaneVersion: 2,
+            workflow: "spec-result-review",
+            conditionId,
+            phaseContract: {
+              revision: 3,
+              resultSchema: "SPEC_RESULT_REVIEW",
+            },
+          },
+          blocker: {
+            condition:
+              "Compatibility projection intentionally lacks run correlation.",
+          },
+        }),
+      },
+      {
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: "pipeline:ado:172459471:terminal",
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId: "172459471",
+            runUrl: "https://dev.azure.com/example/172459471",
+            subject: { kind: "task", id: "fix-spec-one-v2", revision: 3 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: now,
+            fallbackAt: new Date(Date.now() + 60_000).toISOString(),
+            fallbackAction: "escalate",
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      },
+    );
+    let resolveCalls = 0;
+    let getRunCalls = 0;
+    setPipelineBackendForTests({
+      resolve: () => {
+        resolveCalls += 1;
+        return { ok: true };
+      },
+      getRun: () => {
+        getRunCalls += 1;
+        return {
+          status: "completed",
+          conclusion: "failure",
+          url: "https://dev.azure.com/example/172459471",
+          displayTitle: "spec.one",
+        };
+      },
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      await execute(context({ projectDir, dispatched }));
+      const gatedTree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(gatedTree.conditions[conditionId].status).toBe("open");
+      expect(gatedTree.tasks["fix-spec-one-v2"].state).toBe("blocked");
+      expect(resolveCalls).toBe(0);
+      expect(getRunCalls).toBe(0);
+
+      const result = await execute(
+        context({
+          projectDir,
+          dispatched,
+          conditionV2: "exact-ado-revisioned",
+        }),
+      );
+      expect(result.status).toBe("done");
+      expect(result.message).toContain(
+        "Watchdog resolved exact pipeline Condition(s): fix-spec-one-v2.",
+      );
+      expect(resolveCalls).toBe(1);
+      expect(getRunCalls).toBe(1);
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.conditions[conditionId].status).toBe("resolved");
+      expect(tree.conditions[conditionId].continuation).toMatchObject({
+        status: "assigned",
+        recoveryKey: `condition-continuation:${conditionId}:3`,
+        assignment: {
+          taskId: "fix-spec-one-v2",
+          taskRevision: 3,
+        },
+      });
+      expect(tree.tasks["fix-spec-one-v2"]).toMatchObject({
+        revision: 3,
+        state: "active",
+        context: {
+          terminalPipelineWaitReview: {
+            conditionId,
+            runId: "172459471",
+            subjectRevision: 3,
+          },
+        },
+      });
+      expect(
+        dispatched.some(
+          (event) =>
+            event.type === "project.task.assigned" &&
+            event.payload.taskId === "fix-spec-one-v2",
+        ),
+      ).toBe(true);
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("adopts one selected compatibility ADO wait before observing it", async () => {
+    const projectDir = await makeProject();
+    const taskId = "wait-egress-lockdown-windows-baseline";
+    const runId = "172480751";
+    const due = new Date(Date.now() - 60_000).toISOString();
+    const fallback = new Date(Date.now() + 60 * 60_000).toISOString();
+    await writeTree(projectDir, {
+      [taskId]: task(taskId, "blocked", {
+        revision: 0,
+        blocker: {
+          condition: `Wait for Azure DevOps run ${runId}.`,
+          category: "external-wait",
+          owner: "ado",
+          waiting_for: {
+            type: "ado.pipeline_run.completed",
+            runId,
+            runUrl: `https://dev.azure.com/example/${runId}`,
+            specIds: ["spec.egress-lockdown.windows-baseline"],
+          },
+          next_check_at: due,
+          resume_at: due,
+          resume_condition: `Run ${runId} is terminal.`,
+          fallback_at: fallback,
+          fallback_action: "Escalate the exact run wait.",
+        },
+      }),
+    });
+    let getRunCalls = 0;
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => {
+        getRunCalls += 1;
+        return {
+          status: "inProgress",
+          url: `https://dev.azure.com/example/${runId}`,
+        };
+      },
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          conditionAdoptionV2: "exact-task",
+          conditionAdoptionV2TaskId: taskId,
+          conditionAdoptionV2RunId: runId,
+          dispatched,
+        }),
+      );
+      expect(result.message).toContain(
+        "Watchdog refreshed nonterminal Azure DevOps wait check",
+      );
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.tasks[taskId]).toMatchObject({
+        revision: 1,
+        state: "blocked",
+        context: {
+          controlPlaneVersion: 2,
+          conditionId: `condition:pipeline:ado:${runId}:terminal`,
+        },
+        blocker: {
+          condition_id: `condition:pipeline:ado:${runId}:terminal`,
+          last_observed_status: "inProgress",
+          waiting_for: { subjectRevision: 1 },
+        },
+      });
+      expect(tree.tasks[taskId].blocker.resume_at).toBeUndefined();
+      expect(
+        tree.conditions[`condition:pipeline:ado:${runId}:terminal`],
+      ).toMatchObject({
+        status: "open",
+        lastObservation: { status: "inProgress" },
+        subject: { id: taskId, revision: 1 },
+      });
+      const journal = await readFile(
+        join(projectDir, ".state", "journal.jsonl"),
+        "utf8",
+      );
+      expect(journal).toContain('"kind":"exact_pipeline_wait_adopted_v2"');
+      expect(getRunCalls).toBe(1);
+
+      dispatched.length = 0;
+      const steadyState = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          conditionAdoptionV2: "exact-task",
+          conditionAdoptionV2TaskId: taskId,
+          conditionAdoptionV2RunId: runId,
+          dispatched,
+        }),
+      );
+      expect(steadyState).toEqual({
+        status: "done",
+        message:
+          "Watchdog skipped: 1 blocked task(s) are owned by open exact Conditions.",
+      });
+      expect(dispatched).toHaveLength(0);
+      expect(getRunCalls).toBe(1);
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("fallback probe refreshes a due nonterminal Condition without revising work", async () => {
+    const projectDir = await makeProject();
+    const conditionId = "condition:pipeline:ado:172459471:terminal";
+    const due = new Date(Date.now() - 60_000).toISOString();
+    const fallback = new Date(Date.now() + 60 * 60_000).toISOString();
+    await writeTree(
+      projectDir,
+      {
+        "fix-spec-one-v2": task("fix-spec-one-v2", "blocked", {
+          revision: 3,
+          context: {
+            controlPlaneVersion: 2,
+            workflow: "spec-result-review",
+            conditionId,
+          },
+          blocker: {
+            condition_id: conditionId,
+            condition: "Wait for Azure DevOps run 172459471.",
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId: "172459471",
+            },
+            next_check_at: due,
+            fallback_at: fallback,
+          },
+        }),
+      },
+      {
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: "pipeline:ado:172459471:terminal",
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId: "172459471",
+            runUrl: "https://dev.azure.com/example/172459471",
+            subject: { kind: "task", id: "fix-spec-one-v2", revision: 3 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: due,
+            fallbackAt: fallback,
+            fallbackAction: "escalate",
+            createdAt: due,
+            updatedAt: due,
+          },
+        },
+      },
+    );
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "inProgress",
+        conclusion: null,
+        url: "https://dev.azure.com/example/172459471",
+      }),
+    });
+    try {
+      await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+        }),
+      );
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.tasks["fix-spec-one-v2"].revision).toBe(3);
+      expect(tree.tasks["fix-spec-one-v2"].state).toBe("blocked");
+      expect(tree.conditions[conditionId]).toMatchObject({
+        status: "open",
+        lastObservation: { status: "inProgress" },
+      });
+      expect(
+        Date.parse(tree.conditions[conditionId].nextCheckAt),
+      ).toBeGreaterThan(Date.now());
+      expect(tree.tasks["fix-spec-one-v2"].blocker.next_check_at).toBe(
+        tree.conditions[conditionId].nextCheckAt,
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("dispatches one stable fallback for an overdue nonterminal Condition", async () => {
+    const projectDir = await makeProject();
+    const taskId = "fix-spec-fallback-v2";
+    const runId = "172459499";
+    const conditionId = `condition:pipeline:ado:${runId}:terminal`;
+    const due = new Date(Date.now() - 120_000).toISOString();
+    await writeTree(
+      projectDir,
+      {
+        [taskId]: task(taskId, "blocked", {
+          revision: 3,
+          context: {
+            controlPlaneVersion: 2,
+            workflow: "spec-result-review",
+            conditionId,
+          },
+          blocker: {
+            condition_id: conditionId,
+            condition: `Wait for Azure DevOps run ${runId}.`,
+            waiting_for: {
+              type: "ado.pipeline_run.completed",
+              runId,
+            },
+            next_check_at: due,
+            resume_at: due,
+            fallback_at: due,
+            fallback_action: "Escalate the exact queue or artifact issue.",
+          },
+        }),
+      },
+      {
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: `pipeline:ado:${runId}:terminal`,
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId,
+            runUrl: `https://dev.azure.com/example/${runId}`,
+            subject: { kind: "task", id: taskId, revision: 3 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: due,
+            fallbackAt: due,
+            fallbackAction: "Escalate the exact queue or artifact issue.",
+            createdAt: due,
+            updatedAt: due,
+          },
+        },
+      },
+    );
+    let getRunCalls = 0;
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => {
+        getRunCalls += 1;
+        return {
+          status: "inProgress",
+          conclusion: null,
+          url: `https://dev.azure.com/example/${runId}`,
+        };
+      },
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const first = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          dispatched,
+        }),
+      );
+      expect(first).toEqual({
+        status: "done",
+        message: `Watchdog dispatched exact Condition fallback(s): ${taskId}.`,
+      });
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0]).toMatchObject({
+        type: "project.owner.requested",
+        payload: {
+          reason: "condition-overdue-fallback",
+          recoveryKey: `condition-fallback:${conditionId}:3`,
+          conditionId,
+          taskId,
+          taskRevision: 3,
+        },
+      });
+      let tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.conditions[conditionId].fallbackExecution).toMatchObject({
+        recoveryKey: `condition-fallback:${conditionId}:3`,
+        status: "dispatched",
+        attempts: 1,
+      });
+      const firstObservedAt = tree.conditions[conditionId].lastObservedAt;
+      const firstNextCheckAt = tree.conditions[conditionId].nextCheckAt;
+      expect(
+        Date.parse(tree.conditions[conditionId].nextCheckAt),
+      ).toBeGreaterThan(Date.now());
+      expect(tree.tasks[taskId].blocker.next_check_at).toBe(
+        tree.conditions[conditionId].nextCheckAt,
+      );
+      expect(tree.tasks[taskId].blocker.resume_at).toBeUndefined();
+      expect(getRunCalls).toBe(1);
+
+      const second = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          dispatched,
+        }),
+      );
+      expect(second).toEqual({
+        status: "done",
+        message:
+          "Watchdog skipped: 1 blocked task(s) are owned by open exact Conditions.",
+      });
+      expect(dispatched).toHaveLength(1);
+      expect(getRunCalls).toBe(1);
+      tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.conditions[conditionId].fallbackExecution.attempts).toBe(1);
+      expect(tree.conditions[conditionId].lastObservedAt).toBe(firstObservedAt);
+      expect(tree.conditions[conditionId].nextCheckAt).toBe(firstNextCheckAt);
+
+      tree.conditions[conditionId].nextCheckAt = due;
+      tree.tasks[taskId].blocker.next_check_at = "2099-01-01T00:00:00.000Z";
+      await writeFile(
+        join(projectDir, ".state", "tasks", "tree.json"),
+        `${JSON.stringify(tree, null, 2)}\n`,
+        "utf8",
+      );
+      const postFallbackDue = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          dispatched,
+        }),
+      );
+      expect(postFallbackDue).toEqual({
+        status: "done",
+        message:
+          "Watchdog skipped: 1 blocked task(s) are owned by open exact Conditions.",
+      });
+      expect(dispatched).toHaveLength(1);
+      expect(getRunCalls).toBe(2);
+      tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(tree.conditions[conditionId].fallbackExecution.attempts).toBe(1);
+      expect(tree.tasks[taskId].blocker.next_check_at).toBe(
+        tree.conditions[conditionId].nextCheckAt,
+      );
+      expect(tree.tasks[taskId].blocker.fallback_at).toBe(
+        tree.conditions[conditionId].fallbackAt,
+      );
+      expect(tree.tasks[taskId].blocker.fallback_action).toBe(
+        tree.conditions[conditionId].fallbackAction,
+      );
+      expect(tree.tasks[taskId].blocker.resume_condition).toBe(
+        tree.conditions[conditionId].resumeCondition,
+      );
+      expect(tree.tasks[taskId].blocker.next_check_at).not.toBe(
+        "2099-01-01T00:00:00.000Z",
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
+  });
+
+  test("dispatches a due Condition fallback when pipeline observation is unavailable", async () => {
+    const projectDir = await makeProject();
+    const taskId = "fix-spec-fallback-unavailable-v2";
+    const runId = "172459500";
+    const conditionId = `condition:pipeline:ado:${runId}:terminal`;
+    const due = new Date(Date.now() - 120_000).toISOString();
+    await writeTree(
+      projectDir,
+      {
+        [taskId]: task(taskId, "blocked", {
+          revision: 3,
+          context: {
+            controlPlaneVersion: 2,
+            workflow: "spec-result-review",
+            conditionId,
+          },
+          blocker: { condition: `Wait for Azure DevOps run ${runId}.` },
+        }),
+      },
+      {
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: `pipeline:ado:${runId}:terminal`,
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId,
+            runUrl: `https://dev.azure.com/example/${runId}`,
+            subject: { kind: "task", id: taskId, revision: 3 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: due,
+            fallbackAt: due,
+            fallbackAction: "Escalate the unavailable exact run observation.",
+            createdAt: due,
+            updatedAt: due,
+          },
+        },
+      },
+    );
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: false, reason: "ADO authentication unavailable" }),
+      getRun: () => {
+        throw new Error("getRun must not run without a resolved client");
+      },
+    });
+    try {
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute(
+        context({
+          projectDir,
+          conditionV2: "exact-ado-revisioned",
+          dispatched,
+        }),
+      );
+      expect(result.message).toBe(
+        `Watchdog dispatched exact Condition fallback(s): ${taskId}.`,
+      );
+      expect(dispatched).toContainEqual(
+        expect.objectContaining({
+          type: "project.owner.requested",
+          payload: expect.objectContaining({
+            recoveryKey: `condition-fallback:${conditionId}:3`,
+            observation: expect.objectContaining({
+              status: "unavailable",
+              observationError: "ADO authentication unavailable",
+            }),
+          }),
+        }),
       );
     } finally {
       setPipelineBackendForTests(null);
@@ -2691,7 +3921,7 @@ describe("project execution watchdog", () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "wait-prose-only-run": task("wait-prose-only-run", "blocked", {
-        parent_id: "focus-dev-infra-core-live-pass",
+        parent_id: "project",
         goal: "Wait for Azure DevOps run 123456789 to prove dev-infra-core.",
         blocker: {
           condition: "Azure DevOps run 123456789 is still running.",

@@ -18,6 +18,7 @@ import {
 import {
   readTaskTree,
   taskEventSnapshot,
+  taskRevision,
   withTreeLock,
   type TaskTreeConfig,
   type TaskNode,
@@ -38,6 +39,7 @@ import {
   resultText,
   sourceDir,
   triggerString,
+  triggerValue,
   type TriggerEvent,
 } from "./lib/workflow-input.ts";
 
@@ -439,93 +441,98 @@ function matchingJsonObject(text: string, start: number): string | null {
   return null;
 }
 
-function parseFixForwardResult(text: string): FixForwardResult | null {
-  const marker = text.search(/FIX_FORWARD_RESULT/i);
-  if (marker < 0) return null;
-  const scoped = text.slice(marker);
-  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidates: string[] = [];
-  if (fenced) candidates.push(fenced[1]);
-  const firstBrace = scoped.indexOf("{");
-  if (firstBrace >= 0) {
-    const objectText = matchingJsonObject(scoped, firstBrace);
-    if (objectText) candidates.push(objectText);
-  }
-  for (const candidate of candidates) {
-    try {
-      const parsed = JSON.parse(candidate) as unknown;
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed) &&
-        (parsed as { workflow?: unknown }).workflow === "fix-forward"
-      ) {
-        return parsed as FixForwardResult;
-      }
-    } catch {
-      // Try the next candidate.
-    }
-  }
-  return null;
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function parseSpecResultReview(text: string): SpecResultReview | null {
-  const marker = text.search(/SPEC_RESULT_REVIEW/i);
-  if (marker < 0) return null;
-  const scoped = text.slice(marker);
-  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidates: string[] = [];
-  if (fenced) candidates.push(fenced[1]);
-  const firstBrace = scoped.indexOf("{");
-  if (firstBrace >= 0) {
-    const objectText = matchingJsonObject(scoped, firstBrace);
-    if (objectText) candidates.push(objectText);
-  }
-  for (const candidate of candidates) {
-    try {
-      const parsed = JSON.parse(candidate) as unknown;
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed) &&
-        (parsed as { workflow?: unknown }).workflow === "spec-result-review"
-      ) {
-        return parsed as SpecResultReview;
-      }
-    } catch {
-      // Try the next candidate.
+function structuredResultScopes(text: string, marker: string): string[] {
+  const escapedMarker = escapeRegex(marker);
+  const patterns = [
+    new RegExp(`^\\s*${escapedMarker}\\s*:`, "gim"),
+    new RegExp(escapedMarker, "gi"),
+  ];
+  const starts: number[] = [];
+  const seen = new Set<number>();
+
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) {
+      const index = match.index ?? -1;
+      if (index < 0 || seen.has(index)) continue;
+      seen.add(index);
+      starts.push(index);
     }
   }
-  return null;
+
+  return starts.map((index) => text.slice(index));
 }
 
-function parseQueuedPipelineRun(text: string): QueuedPipelineRunResult | null {
-  const marker = text.search(/QUEUED_PIPELINE_RUN/i);
-  if (marker < 0) return null;
-  const scoped = text.slice(marker);
-  const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
+function structuredJsonCandidates(text: string, marker: string): string[] {
   const candidates: string[] = [];
-  if (fenced) candidates.push(fenced[1]);
-  const firstBrace = scoped.indexOf("{");
-  if (firstBrace >= 0) {
-    const objectText = matchingJsonObject(scoped, firstBrace);
-    if (objectText) candidates.push(objectText);
+  const seen = new Set<string>();
+
+  for (const scoped of structuredResultScopes(text, marker)) {
+    const fenced = scoped.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced && !seen.has(fenced[1])) {
+      seen.add(fenced[1]);
+      candidates.push(fenced[1]);
+    }
+    const firstBrace = scoped.indexOf("{");
+    if (firstBrace >= 0) {
+      const objectText = matchingJsonObject(scoped, firstBrace);
+      if (objectText && !seen.has(objectText)) {
+        seen.add(objectText);
+        candidates.push(objectText);
+      }
+    }
   }
-  for (const candidate of candidates) {
+
+  return candidates;
+}
+
+function parseStructuredJsonBlock<T extends Record<string, unknown>>(
+  text: string,
+  marker: string,
+  matches: (record: Record<string, unknown>) => record is T,
+): T | null {
+  for (const candidate of structuredJsonCandidates(text, marker)) {
     try {
       const parsed = JSON.parse(candidate) as unknown;
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         continue;
       }
       const record = parsed as Record<string, unknown>;
-      if (textValue(record.runId) || textValue(record.run_id)) {
-        return record as QueuedPipelineRunResult;
-      }
+      if (matches(record)) return record;
     } catch {
       // Try the next candidate.
     }
   }
   return null;
+}
+
+function parseFixForwardResult(text: string): FixForwardResult | null {
+  return parseStructuredJsonBlock<FixForwardResult>(
+    text,
+    "FIX_FORWARD_RESULT",
+    (record): record is FixForwardResult => record.workflow === "fix-forward",
+  );
+}
+
+function parseSpecResultReview(text: string): SpecResultReview | null {
+  return parseStructuredJsonBlock<SpecResultReview>(
+    text,
+    "SPEC_RESULT_REVIEW",
+    (record): record is SpecResultReview =>
+      record.workflow === "spec-result-review",
+  );
+}
+
+function parseQueuedPipelineRun(text: string): QueuedPipelineRunResult | null {
+  return parseStructuredJsonBlock<QueuedPipelineRunResult>(
+    text,
+    "QUEUED_PIPELINE_RUN",
+    (record): record is QueuedPipelineRunResult =>
+      Boolean(textValue(record.runId) || textValue(record.run_id)),
+  );
 }
 
 function queuedPipelineRunFromSessionResult(
@@ -544,6 +551,7 @@ function queuedPipelineRunFromSessionResult(
 function completionControllerTick(
   task: TaskNode,
   input: {
+    taskRevision?: number;
     attemptId: string;
     result: TaskCompletionClaim;
     summary: string;
@@ -1103,6 +1111,7 @@ export function emitTaskCompleted(
   ctx: WorkflowContext,
   task: TaskNode,
   input: {
+    taskRevision?: number;
     attemptId: string;
     result: TaskCompletionClaim;
     summary: string;
@@ -1112,7 +1121,8 @@ export function emitTaskCompleted(
     workflowResult?: StructuredWorkflowResult;
     details?: Record<string, unknown>;
   },
-): void {
+): boolean {
+  const completedTaskRevision = input.taskRevision ?? 0;
   const evidence = input.evidence ?? [];
   const review = input.review ?? {
     required: true,
@@ -1133,6 +1143,8 @@ export function emitTaskCompleted(
   const completion = {
     taskId: task.id,
     task_id: task.id,
+    taskRevision: completedTaskRevision,
+    task_revision: completedTaskRevision,
     attemptId: input.attemptId,
     attempt_id: input.attemptId,
     result: input.result,
@@ -1145,11 +1157,14 @@ export function emitTaskCompleted(
     workflowResult: structuredResult,
     workflow_result: structuredResult,
   };
+  let completionDispatched = false;
   try {
     ctx.dispatchEvent("project.task.completed", {
       target: { project: "aks-rp-e2e", taskId: task.id },
       project: "aks-rp-e2e",
       ...taskEventSnapshot(task),
+      taskRevision: completedTaskRevision,
+      task_revision: completedTaskRevision,
       attemptId: input.attemptId,
       attempt_id: input.attemptId,
       result: input.result,
@@ -1163,6 +1178,7 @@ export function emitTaskCompleted(
       workflow_result: structuredResult,
       completion,
     });
+    completionDispatched = true;
     const controllerTick = completionControllerTick(task, {
       attemptId: input.attemptId,
       result: input.result,
@@ -1175,6 +1191,7 @@ export function emitTaskCompleted(
   } catch {
     // Local test contexts may not provide a real dispatcher.
   }
+  return completionDispatched;
 }
 
 export function taskAttemptId(task: TaskNode): string {
@@ -1190,6 +1207,15 @@ function taskStatus(task: TaskNode): string {
   return String(task.status ?? task.state ?? "");
 }
 
+export function taskRevisionFromTrigger(trigger: TriggerEvent | null): number {
+  const value =
+    triggerValue(trigger, "taskRevision") ??
+    triggerValue(trigger, "task_revision");
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : 0;
+}
+
 export function traceValue(task: TaskNode, key: string): unknown {
   const trace = task.trace;
   return trace && typeof trace === "object" && !Array.isArray(trace)
@@ -1201,6 +1227,7 @@ export function markAttemptStartedOnce(
   config: TaskTreeConfig,
   input: {
     taskId: string;
+    taskRevision?: number;
     attemptId: string;
   },
 ): { ok: true; task: TaskNode } | { ok: false; reason: string } {
@@ -1216,6 +1243,11 @@ export function markAttemptStartedOnce(
       return {
         ok: false,
         reason: `Assigned task ${input.taskId} is ${taskStatus(task)}, not active.`,
+      };
+    if (taskRevision(task) !== (input.taskRevision ?? 0))
+      return {
+        ok: false,
+        reason: `Assigned task ${input.taskId} revision ${input.taskRevision ?? 0} is stale; current revision is ${taskRevision(task)}.`,
       };
     if (taskAttemptId(task) !== input.attemptId)
       return {
@@ -1240,6 +1272,7 @@ export function markAttemptStartedOnce(
     appendToolJournal(config, {
       kind: "task_worker_started",
       task_id: task.id,
+      task_revision: input.taskRevision ?? 0,
       attempt_id: input.attemptId,
       session_id: task.session_id,
       worker: config.worker,
@@ -1252,6 +1285,7 @@ export function completeStartedAttempt(
   config: TaskTreeConfig,
   input: {
     taskId: string;
+    taskRevision?: number;
     attemptId: string;
     claim: TaskCompletionClaim;
     summary: string;
@@ -1259,8 +1293,7 @@ export function completeStartedAttempt(
     workflowResult?: StructuredWorkflowResult;
   },
 ):
-  | { ok: true; task: TaskNode; late?: boolean }
-  | { ok: false; reason: string } {
+  { ok: true; task: TaskNode; late?: boolean } | { ok: false; reason: string } {
   const completionState = withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
@@ -1274,6 +1307,12 @@ export function completeStartedAttempt(
       return {
         ok: false as const,
         reason: `Assigned task ${input.taskId} attempt ${input.attemptId} is no longer current; completion is obsolete.`,
+      };
+    }
+    if (taskRevision(task) !== (input.taskRevision ?? 0)) {
+      return {
+        ok: false as const,
+        reason: `Assigned task ${input.taskId} revision ${input.taskRevision ?? 0} is no longer current; current revision is ${taskRevision(task)}.`,
       };
     }
     if (taskStatus(task) !== "active") {
@@ -1301,6 +1340,8 @@ export function completeStartedAttempt(
   try {
     const task = completeTask(config, {
       taskId: input.taskId,
+      taskRevision: input.taskRevision ?? 0,
+      attemptId: input.attemptId,
       claim: input.claim,
       summary: input.summary,
       evidence: input.evidence,
@@ -1330,6 +1371,7 @@ export function completeStartedAttempt(
     appendToolJournal(config, {
       kind: "task_worker_completion_ignored",
       task_id: input.taskId,
+      task_revision: input.taskRevision ?? 0,
       attempt_id: input.attemptId,
       result: input.claim,
       reason,
@@ -1349,6 +1391,7 @@ function recordLatePreviousAttemptCompletion(
   config: TaskTreeConfig,
   input: {
     taskId: string;
+    taskRevision?: number;
     attemptId: string;
     claim: TaskCompletionClaim;
     summary: string;
@@ -1360,6 +1403,18 @@ function recordLatePreviousAttemptCompletion(
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) return { ok: false as const };
+    if (taskRevision(task) !== (input.taskRevision ?? 0)) {
+      appendToolJournal(config, {
+        kind: "task_worker_late_completion_audited",
+        task_id: input.taskId,
+        task_revision: input.taskRevision ?? 0,
+        current_task_revision: taskRevision(task),
+        attempt_id: input.attemptId,
+        result: input.claim,
+        summary: input.summary,
+      });
+      return { ok: false as const };
+    }
     const trace =
       task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
         ? (task.trace as Record<string, unknown>)
@@ -1379,6 +1434,7 @@ function recordLatePreviousAttemptCompletion(
       : [];
     const lateCompletion = {
       attempt_id: input.attemptId,
+      task_revision: input.taskRevision ?? 0,
       result: input.claim,
       summary: input.summary,
       evidence: input.evidence ?? [],
@@ -1420,6 +1476,7 @@ function recordLatePreviousAttemptCompletion(
     appendToolJournal(config, {
       kind: "task_worker_late_completion_recorded",
       task_id: input.taskId,
+      task_revision: input.taskRevision ?? 0,
       attempt_id: input.attemptId,
       result: input.claim,
       promoted: shouldPromote,
@@ -1456,8 +1513,13 @@ async function runAssignedMode(
     return ctx.done(
       `Task assignment for ${taskId} ignored because it did not include attemptId.`,
     );
+  const assignedTaskRevision = taskRevisionFromTrigger(trigger);
 
-  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  const start = markAttemptStartedOnce(config, {
+    taskId,
+    taskRevision: assignedTaskRevision,
+    attemptId,
+  });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
 
@@ -1492,6 +1554,7 @@ async function runAssignedMode(
   const specResultReviewDetails =
     terminalPipelineWaitReview || specResultReview
       ? {
+          specResultReview,
           ...(specResultReview ?? {}),
           specResultReviewStructuredResultPresent: Boolean(specResultReview),
         }
@@ -1514,15 +1577,15 @@ async function runAssignedMode(
       ...(specResultReviewDetails ?? {}),
       ...(queuedPipelineRunDetails ?? {}),
     },
-    workflow:
-      fixForwardResult
-        ? "fix-forward"
-        : terminalPipelineWaitReview || specResultReview
+    workflow: fixForwardResult
+      ? "fix-forward"
+      : terminalPipelineWaitReview || specResultReview
         ? "spec-result-review"
         : undefined,
   });
   const completion = completeStartedAttempt(config, {
     taskId: task.id,
+    taskRevision: assignedTaskRevision,
     attemptId,
     claim,
     summary,
@@ -1542,6 +1605,7 @@ async function runAssignedMode(
     // fails; planner/watchdog can resync on their next pulse.
   }
   emitTaskCompleted(ctx, completedTask, {
+    taskRevision: assignedTaskRevision,
     attemptId,
     result: claim,
     summary,

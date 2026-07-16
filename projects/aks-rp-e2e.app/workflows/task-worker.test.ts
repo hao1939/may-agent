@@ -48,6 +48,72 @@ function assignedEvent(assignment: TaskAssignment): Record<string, unknown> {
 }
 
 describe("task worker", () => {
+  test("rejects stale assignment and completion revisions", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          root_task_id: "project",
+          active_task_ids: ["revision-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["revision-task"],
+            },
+            "revision-task": {
+              id: "revision-task",
+              revision: 2,
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Complete revision two.",
+              outputs: ["artifact"],
+              acceptance: ["done"],
+              trace: { current_attempt_id: "attempt-two" },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const staleStart = markAttemptStartedOnce(config(projectDir), {
+      taskId: "revision-task",
+      taskRevision: 1,
+      attemptId: "attempt-two",
+    });
+    expect(staleStart.ok).toBe(false);
+
+    const currentStart = markAttemptStartedOnce(config(projectDir), {
+      taskId: "revision-task",
+      taskRevision: 2,
+      attemptId: "attempt-two",
+    });
+    expect(currentStart.ok).toBe(true);
+
+    const staleCompletion = completeStartedAttempt(config(projectDir), {
+      taskId: "revision-task",
+      taskRevision: 1,
+      attemptId: "attempt-two",
+      claim: "done",
+      summary: "late revision one",
+    });
+    expect(staleCompletion.ok).toBe(false);
+
+    const currentCompletion = completeStartedAttempt(config(projectDir), {
+      taskId: "revision-task",
+      taskRevision: 2,
+      attemptId: "attempt-two",
+      claim: "done",
+      summary: "revision two",
+    });
+    expect(currentCompletion.ok).toBe(true);
+  });
+
   test("uses assigned worker from trigger event for task execution config", async () => {
     const projectDir = await makeProject();
     const trigger = {
@@ -1416,6 +1482,193 @@ SPEC_RESULT_REVIEW:
       specStatus: "error",
       liveClusterObserved: true,
       specResultReviewStructuredResultPresent: true,
+    });
+  });
+
+  test("captures later SPEC_RESULT_REVIEW block when prose and FIX_FORWARD_RESULT appear first", async () => {
+    const projectDir = await makeProject();
+    const deliverablePath = join(projectDir, "gpu-shaped-review.md");
+    await writeFile(
+      deliverablePath,
+      `# GPU-shaped review memo
+
+This memo now includes both the required SPEC_RESULT_REVIEW block and an exact workflowResult.details packaging proposal.
+
+FIX_FORWARD_RESULT:
+\`\`\`json
+{
+  "workflow": "fix-forward",
+  "subject": { "kind": "spec", "id": "spec.gpu.operator-default-install" },
+  "classification": "other-known-class",
+  "diagnosis": "Existing westus2 VMSizeNotSupported blocker was preserved.",
+  "minimumDiagnosisPacket": {
+    "target": "staging",
+    "branch": "dev",
+    "runId": "172310278",
+    "resultPath": "workspace/wait-gpu/result.json",
+    "failingPhase": "completed-with-nonpassing-result",
+    "failingAssertion": "assert.gpu.driver-installed",
+    "requestOrResponseExcerpt": "HTTP 400 VMSizeNotSupported",
+    "referencesChecked": ["evidence/archive/fix-gpu-operator-default-install-run-172310278.md"],
+    "inputFingerprint": "input-a",
+    "errorFingerprint": "error-a"
+  },
+  "changedFiles": ["features/gpu/tests/gpu-operator-default-install.ts"],
+  "verification": {
+    "runId": "run_20260715123946345_pis7f7",
+    "resultPath": "runs/executions/run_20260715123946345_pis7f7/summary.md",
+    "status": "pass"
+  },
+  "nextAction": "exact-wait",
+  "nextActionReason": "No rerun until the GPU surface changes."
+}
+\`\`\`
+
+SPEC_RESULT_REVIEW:
+\`\`\`json
+{
+  "workflow": "spec-result-review",
+  "specId": "spec.gpu.operator-default-install",
+  "runId": "172310278",
+  "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172310278",
+  "resultPath": "workspace/wait-gpu-ready/result.json",
+  "specStatus": "fail",
+  "reason": "Artifact-backed failure: HTTP 400 VMSizeNotSupported for Standard_NC6s_v3 in westus2.",
+  "liveVerified": true,
+  "liveClusterObserved": true,
+  "resourceGroup": "rg-plan-002-6126-o8f8ro-329971",
+  "clusterName": "aks-plan-002-6126-o8f8ro-329971",
+  "artifactRefs": ["workspace/wait-gpu-ready/result.json"],
+  "specResults": [
+    {
+      "specId": "spec.gpu.operator-default-install",
+      "runId": "172310278",
+      "resultPath": "workspace/wait-gpu-ready/spec-runner/result.json",
+      "specStatus": "fail",
+      "reason": "Artifact-backed failure: HTTP 400 VMSizeNotSupported for Standard_NC6s_v3 in westus2.",
+      "liveVerified": true,
+      "liveClusterObserved": true,
+      "resourceGroup": "rg-plan-002-6126-o8f8ro-329971",
+      "clusterName": "aks-plan-002-6126-o8f8ro-329971",
+      "artifactRefs": ["workspace/wait-gpu-ready/spec-runner/result.json"]
+    }
+  ]
+}
+\`\`\`
+`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["gpu-review-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "gpu-review-task": {
+              id: "gpu-review-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Carry both fix-forward and terminal same-spec review data.",
+              inputs: [
+                "run:172310278",
+                "spec:spec.gpu.operator-default-install",
+              ],
+              outputs: [
+                "evidence/archive/fix-gpu-operator-default-install-run-172310278.md",
+              ],
+              acceptance: ["Both structured results are preserved."],
+              forbidden: [],
+              conflict_scope: ["spec:spec.gpu.operator-default-install"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+                terminalPipelineWaitReview: {
+                  backend: "ado",
+                  runId: "172310278",
+                  specIds: ["spec.gpu.operator-default-install"],
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "gpu-review-task",
+    });
+    const dispatched: Array<{ type: string; payload: Record<string, any> }> =
+      [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "Returned the exact same-spec review from the durable memo.",
+        finishResult: {
+          status: "success",
+          deliverables: [{ path: deliverablePath }],
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].payload.workflowResult.workflow).toBe("fix-forward");
+    expect(dispatched[0].payload.workflowResult.details).toMatchObject({
+      fixForwardStructuredResultPresent: true,
+      specResultReviewStructuredResultPresent: true,
+      specId: "spec.gpu.operator-default-install",
+      runId: "172310278",
+      resultPath: "workspace/wait-gpu-ready/result.json",
+      specStatus: "fail",
+    });
+    expect(
+      dispatched[0].payload.workflowResult.details.specResultReview,
+    ).toMatchObject({
+      workflow: "spec-result-review",
+      specId: "spec.gpu.operator-default-install",
+      runId: "172310278",
+      specResults: [
+        expect.objectContaining({
+          specId: "spec.gpu.operator-default-install",
+          resultPath: "workspace/wait-gpu-ready/spec-runner/result.json",
+        }),
+      ],
     });
   });
 

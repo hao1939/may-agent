@@ -25,6 +25,7 @@ import {
   completeStartedAttempt,
   emitTaskCompleted,
   markAttemptStartedOnce,
+  taskRevisionFromTrigger,
 } from "./default-task-worker.ts";
 import { buildLoopKey } from "./single-spec-verifier.ts";
 import {
@@ -43,6 +44,7 @@ import {
 } from "./lib/feature-compact-loop-store.ts";
 import {
   activeWorkflowRuns,
+  defaultAdoAgentPool,
   downloadWorkflowRunArtifacts,
   dispatchWorkflow,
   pipelinePollIntervalMs,
@@ -55,8 +57,11 @@ import {
   type PipelineClient,
   type PipelineRun,
 } from "./lib/ado-pipelines.ts";
-import type { TaskNode } from "./lib/task-tree-store.ts";
-import { readTaskTree } from "./lib/task-tree-store.ts";
+import {
+  readTaskTree,
+  taskRevision,
+  type TaskNode,
+} from "./lib/task-tree-store.ts";
 import type { TaskCompletionClaim } from "./lib/task-tree-tools.ts";
 
 export const name = "feature-compact-planner";
@@ -190,6 +195,14 @@ function taskContext(task: TaskNode): Record<string, unknown> {
 function contextString(task: TaskNode, key: string, fallback = ""): string {
   const value = taskContext(task)[key];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function agentPoolContext(task: TaskNode): string {
+  return (
+    contextString(task, "agentPool", "") ||
+    contextString(task, "agent_pool", "") ||
+    defaultAdoAgentPool()
+  );
 }
 
 function contextNumber(task: TaskNode, key: string, fallback: number): number {
@@ -698,14 +711,15 @@ function checkCompactLivePolicy(input: {
   diagnostics: Diagnostics;
   specIds?: string[];
 }): CommandResult {
-  const selectedSpecIds = (input.specIds?.length
-    ? input.specIds
-    : [
-        ...new Set([
-          ...(input.diagnostics.selectedSpecIds ?? []),
-          ...selectedSpecIdsForPlan(input.projectDir, input.planRel),
-        ]),
-      ]
+  const selectedSpecIds = (
+    input.specIds?.length
+      ? input.specIds
+      : [
+          ...new Set([
+            ...(input.diagnostics.selectedSpecIds ?? []),
+            ...selectedSpecIdsForPlan(input.projectDir, input.planRel),
+          ]),
+        ]
   ).filter((specId) => specId.trim().length > 0);
 
   if (selectedSpecIds.length === 0) {
@@ -779,6 +793,7 @@ function compactDispatchInputs(input: {
   specIds?: string[];
   parallel: number;
   testTimeoutSeconds: number;
+  agentPool: string;
   loopKey: string;
   includeMetadata: boolean;
 }): Record<string, string> {
@@ -788,6 +803,7 @@ function compactDispatchInputs(input: {
     ...(input.specIds?.length ? { specs: input.specIds.join(",") } : {}),
     parallel: String(input.parallel),
     test_timeout_seconds: String(input.testTimeoutSeconds),
+    agent_pool: input.agentPool,
     ...(input.includeMetadata
       ? { metadata: JSON.stringify({ loop_key: input.loopKey }) }
       : {}),
@@ -846,6 +862,7 @@ function compactDispatchMetadata(input: {
   specIds?: string[];
   parallel: number;
   testTimeoutSeconds: number;
+  agentPool: string;
   loopKey: string;
   taskId: string;
   attemptId: string;
@@ -875,6 +892,7 @@ function compactDispatchMetadata(input: {
       specIds: input.specIds,
       parallel: input.parallel,
       testTimeoutSeconds: input.testTimeoutSeconds,
+      agentPool: input.agentPool,
       loopKey: input.loopKey,
       includeMetadata: input.includeMetadata,
     }),
@@ -908,12 +926,14 @@ function completion(
 ): WorkflowResult {
   const completed = completeStartedAttempt(config, {
     taskId: input.task.id,
+    taskRevision: taskRevision(input.task),
     attemptId: input.attemptId,
     claim: input.claim,
     summary: input.summary,
   });
   if (completed.ok) {
     emitTaskCompleted(ctx, completed.task, {
+      taskRevision: taskRevision(input.task),
       attemptId: input.attemptId,
       result: input.claim,
       summary: input.summary,
@@ -1061,7 +1081,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done("Feature compact planner requires taskId and attemptId.");
   }
 
-  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  const start = markAttemptStartedOnce(config, {
+    taskId,
+    taskRevision: taskRevisionFromTrigger(trigger),
+    attemptId,
+  });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
   const { featureKey, capabilityId } = featureCompactIdentity(task);
@@ -1080,6 +1104,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const liveParallel = contextNumber(task, "liveParallel", checkParallel);
   const workflow = pipelineNameContext(task, "ado-pipeline-467665");
   const branch = contextString(task, "branch", "dev");
+  const agentPool = agentPoolContext(task);
   const testTimeoutSeconds = contextNumber(task, "testTimeoutSeconds", 7200);
   const githubWaitTimeoutMinutes = contextNumber(
     task,
@@ -1504,6 +1529,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       specIds: partialReadySpecIds,
       parallel: liveParallel,
       testTimeoutSeconds,
+      agentPool,
       loopKey,
       includeMetadata,
     }),
@@ -1521,6 +1547,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         specIds: partialReadySpecIds,
         parallel: liveParallel,
         testTimeoutSeconds,
+        agentPool,
         loopKey,
         includeMetadata,
       }),
@@ -1537,6 +1564,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       specIds: partialReadySpecIds,
       parallel: liveParallel,
       testTimeoutSeconds,
+      agentPool,
       loopKey,
       taskId: task.id,
       attemptId,

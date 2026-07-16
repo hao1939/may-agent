@@ -60,7 +60,8 @@ const metrics: MetricDef[] = [
     unit: "count",
     alertOp: "<",
     priority: "P3",
-    description: "Dashboard counter for currently assigned task-tree leaves.",
+    description:
+      "Dashboard counter for active task-tree leaves (task-tree summary counts.active / frontier.active). Excludes structural active nodes such as the active project root, which appear only in tree_counts.active.",
   },
   {
     id: "aks-rp-e2e.task.stale-active-count",
@@ -199,7 +200,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 process signal: the aks-rp-e2e project repo has dirty files or local commits that have not been pushed, so pipeline runs may be using stale test code, specs, plans, or artifacts. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
+      "P0 process signal: the aks-rp-e2e project repo has dirty files or commits that are still local-only relative to every fetched origin/* ref, so pipeline runs may be missing current test code, specs, plans, or artifacts. Commits already published on some origin ref are treated as branch-convergence residue, not invisible pipeline changes. The local aks-rp-e2e.app repo is not counted here because app UI/task-state changes take effect locally.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -587,7 +588,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P1",
     description:
-      "App-ops-visible planner health signal: counts planner_wake records from .state/planner-runs.jsonl in the last 24h whose app-ops session result timed out. Any nonzero count should wake app-ops to inspect planner recovery and backlog refill behavior.",
+      "App-ops-visible planner health signal: counts owner-step planner_wake records from .state/planner-runs.jsonl in the last 24h whose app-ops session result timed out. Any nonzero count should wake app-ops to inspect planner recovery and backlog refill behavior.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -600,7 +601,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "App-ops-visible planner slowness signal: counts planner_wake records in the last 24h that either took at least 180s wall time or ended interrupted/cancelled. This catches slow app-ops/planner loops before they become silent refill gaps.",
+      "App-ops-visible planner slowness signal: counts owner-step planner_wake records in the last 24h that were slow without timing out: at least 180s wall time or ended interrupted/cancelled. Timeout-style wakes belong to aks-rp-e2e.planner.timeout-24h.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {

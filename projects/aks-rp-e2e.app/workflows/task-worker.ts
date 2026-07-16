@@ -7,7 +7,11 @@
  */
 
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { readTaskTree, type TaskNode } from "./lib/task-tree-store.ts";
+import {
+  readTaskTree,
+  taskRevision,
+  type TaskNode,
+} from "./lib/task-tree-store.ts";
 import {
   field,
   maxConcurrent,
@@ -16,6 +20,7 @@ import {
   resultText,
   sourceDir,
   triggerString,
+  triggerValue,
 } from "./lib/workflow-input.ts";
 import {
   buildTaskTreeConfig,
@@ -53,6 +58,7 @@ function workflowTaskPayload(input: {
   sourceRoot: string;
   workflow: string;
   assignedTaskId: string;
+  assignedTaskRevision: number;
   assignedAttemptId: string;
   assignedSessionId: string;
 }): string {
@@ -62,6 +68,7 @@ function workflowTaskPayload(input: {
     `## Task Workflow Route`,
     `workflow: ${input.workflow}`,
     `taskId: ${input.assignedTaskId}`,
+    `taskRevision: ${input.assignedTaskRevision}`,
     `attemptId: ${input.assignedAttemptId}`,
     `sessionId: ${input.assignedSessionId}`,
     `app: ${input.appDir}`,
@@ -116,9 +123,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "attemptId") ||
     triggerString(trigger, "attempt_id") ||
     "";
+  const revisionValue =
+    triggerValue(trigger, "taskRevision") ??
+    triggerValue(trigger, "task_revision");
+  const assignedTaskRevision =
+    typeof revisionValue === "number" &&
+    Number.isInteger(revisionValue) &&
+    revisionValue >= 0
+      ? revisionValue
+      : 0;
 
   const task = readTaskTree(config).tasks[taskId];
   if (!task) return ctx.done(`Assigned task ${taskId} was not found.`);
+  if (taskRevision(task) !== assignedTaskRevision) {
+    return ctx.done(
+      `Assigned task ${taskId} revision ${assignedTaskRevision} is stale; current revision is ${taskRevision(task)}.`,
+    );
+  }
 
   const workflow = taskWorkflow(task);
   if (workflow === "default-task-worker") {
@@ -136,6 +157,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     sourceRoot,
     workflow,
     assignedTaskId: task.id,
+    assignedTaskRevision,
     assignedAttemptId: attemptId,
     assignedSessionId: taskSessionId,
   });

@@ -4,7 +4,11 @@ import { Database } from "bun:sqlite";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assignTask, taskTreeConfig } from "./lib/task-tree-tools.ts";
+import {
+  assignTask,
+  peekTaskAssignments,
+  taskTreeConfig,
+} from "./lib/task-tree-tools.ts";
 import { execute } from "./project-planner.ts";
 
 async function makeWorkspace() {
@@ -154,6 +158,7 @@ async function writeReviewTree(
   appDir: string,
   input: {
     taskId?: string;
+    revision?: number;
     attemptId?: string;
     status?: string;
     context?: Record<string, unknown>;
@@ -184,6 +189,9 @@ async function writeReviewTree(
           },
           [taskId]: {
             id: taskId,
+            ...(input.revision !== undefined
+              ? { revision: input.revision }
+              : {}),
             parent_id: "project",
             state: input.status ?? "review",
             status: input.status ?? "review",
@@ -275,6 +283,8 @@ function plannerContext(input: {
   dispatched?: Array<{ type: string; data: unknown }>;
   emitted?: Array<Record<string, unknown>>;
   extraTaskLines?: string[];
+  failDispatchTypes?: string[];
+  agentResult?: Record<string, unknown>;
 }) {
   return {
     task: [
@@ -292,21 +302,323 @@ function plannerContext(input: {
       input.emitted?.push(event);
     },
     dispatchEvent(type: string, data: unknown) {
+      if (input.failDispatchTypes?.includes(type)) {
+        throw new Error(`injected ${type} dispatch failure`);
+      }
       input.dispatched?.push({ type, data });
     },
     runAgent: async (_agent: string, task: string) => {
       input.prompts?.push(task);
-      return { status: "success", message: "owner should not run" };
+      return (
+        input.agentResult ?? {
+          status: "success",
+          message: "owner should not run",
+        }
+      );
     },
     runAgentSession: async (_agent: string, task: string) => {
       input.prompts?.push(task);
-      return { status: "success", message: "owner should not run" };
+      return (
+        input.agentResult ?? {
+          status: "success",
+          message: "owner should not run",
+        }
+      );
     },
     summarize: () => "",
   } as any;
 }
 
 describe("project owner workflow", () => {
+  test("keeps open V2 Condition subjects out of scheduled blocked-frontier owner work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId = "wait-condition-owned";
+    const conditionId = "condition:pipeline:ado:172500001:terminal";
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify({
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        tasks: {
+          project: {
+            id: "project",
+            state: "backlog",
+            children: [taskId],
+            goal: "project",
+            outputs: ["tasks/tree.json"],
+            acceptance: ["done"],
+          },
+          [taskId]: {
+            id: taskId,
+            revision: 1,
+            parent_id: "project",
+            state: "blocked",
+            children: [],
+            owner: "aks-explorer",
+            goal: "Wait for exact run.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["Inspect the terminal artifact."],
+            context: { controlPlaneVersion: 2, conditionId },
+            blocker: {
+              condition_id: conditionId,
+              condition: "Wait for run 172500001.",
+              waiting_for: {
+                type: "ado.pipeline_run.completed",
+                runId: "172500001",
+              },
+              next_check_at: "2099-01-01T00:00:00.000Z",
+              fallback_at: "2099-01-01T01:00:00.000Z",
+            },
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: "pipeline:ado:172500001:terminal",
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId: "172500001",
+            runUrl: "https://dev.azure.com/example/172500001",
+            subject: { kind: "task", id: taskId, revision: 1 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: "2099-01-01T00:00:00.000Z",
+            fallbackAt: "2099-01-01T01:00:00.000Z",
+            fallbackAction: "escalate",
+            createdAt: "2026-07-16T00:00:00.000Z",
+            updatedAt: "2026-07-16T00:00:00.000Z",
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+    const prompts: string[] = [];
+    await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        trigger: planningTrigger({
+          reason: "scheduled-blocked-frontier-review",
+        }),
+      }),
+    );
+    expect(prompts).toHaveLength(2);
+    for (const prompt of prompts) {
+      expect(prompt).toContain('"condition_owned_task_ids": [');
+      expect(prompt).toContain(`"${taskId}"`);
+      expect(prompt).toContain('"blocked": []');
+      expect(prompt).not.toContain('"blocked_frontier_summary":');
+    }
+    expect(prompts[1]).toContain(
+      "condition_owned_task_ids are visible but are not blocked-frontier",
+    );
+  });
+
+  test("acknowledges an exact Condition fallback only after owner planning completes", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId = "wait-condition-fallback";
+    const conditionId = "condition:pipeline:ado:172500002:terminal";
+    const recoveryKey = `condition-fallback:${conditionId}:1`;
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify({
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        tasks: {
+          project: {
+            id: "project",
+            state: "backlog",
+            children: [taskId],
+            goal: "project",
+            outputs: ["tasks/tree.json"],
+            acceptance: ["done"],
+          },
+          [taskId]: {
+            id: taskId,
+            revision: 1,
+            parent_id: "project",
+            state: "blocked",
+            children: [],
+            owner: "aks-explorer",
+            goal: "Wait for exact run.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["Inspect the terminal artifact."],
+            context: { controlPlaneVersion: 2, conditionId },
+            blocker: {
+              condition: "Wait for run 172500002.",
+              condition_id: conditionId,
+            },
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: "pipeline:ado:172500002:terminal",
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId: "172500002",
+            runUrl: "https://dev.azure.com/example/172500002",
+            subject: { kind: "task", id: taskId, revision: 1 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: "2026-07-16T06:00:00.000Z",
+            fallbackAt: "2026-07-16T06:10:00.000Z",
+            fallbackAction: "escalate",
+            createdAt: "2026-07-16T06:00:00.000Z",
+            updatedAt: "2026-07-16T06:10:00.000Z",
+            fallbackExecution: {
+              recoveryKey,
+              claimId: `${recoveryKey}:claim`,
+              status: "dispatched",
+              attempts: 1,
+              claimedAt: "2026-07-16T06:10:00.000Z",
+              leaseExpiresAt: "2026-07-16T06:15:00.000Z",
+              observation: { status: "inProgress" },
+              dispatchedAt: "2026-07-16T06:10:01.000Z",
+            },
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+    const prompts: string[] = [];
+
+    await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        agentResult: {
+          status: "error",
+          message: "injected owner planning interruption",
+        },
+        trigger: planningTrigger({
+          reason: "condition-overdue-fallback",
+          conditionId,
+          recoveryKey,
+          taskId,
+          taskRevision: 1,
+        }),
+      }),
+    );
+
+    let stored = await readTaskTreeJson(appDir);
+    expect(stored.conditions[conditionId].fallbackExecution).toMatchObject({
+      status: "dispatched",
+      attempts: 1,
+    });
+    expect(
+      stored.conditions[conditionId].fallbackExecution.acknowledgedAt,
+    ).toBeUndefined();
+    expect(prompts).toHaveLength(2);
+
+    await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        trigger: planningTrigger({
+          reason: "condition-overdue-fallback",
+          conditionId,
+          recoveryKey,
+          taskId,
+          taskRevision: 1,
+        }),
+      }),
+    );
+
+    stored = await readTaskTreeJson(appDir);
+    expect(stored.conditions[conditionId].fallbackExecution).toMatchObject({
+      status: "acknowledged",
+      attempts: 1,
+      acknowledgedBy: "project-planner",
+    });
+    expect(stored.tasks[taskId]).toMatchObject({
+      state: "blocked",
+      revision: 1,
+    });
+    expect(prompts).toHaveLength(4);
+
+    const replay = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        trigger: planningTrigger({
+          reason: "condition-overdue-fallback",
+          conditionId,
+          recoveryKey,
+          taskId,
+          taskRevision: 1,
+        }),
+      }),
+    );
+    expect(replay.message).toContain(
+      "Replayed already acknowledged Condition fallback event",
+    );
+    expect(prompts).toHaveLength(4);
+  });
+
+  test("does not apply a reviewed event from an older task revision", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, { revision: 1 });
+
+    const stale = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          taskId: "review-task",
+          taskRevision: 0,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Stale acceptance.",
+        }),
+      }),
+    );
+    expect(stale.message).toContain("revision 0 is not current (1)");
+    expect((await readTaskTreeJson(appDir)).tasks["review-task"].state).toBe(
+      "review",
+    );
+
+    const current = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          taskId: "review-task",
+          taskRevision: 1,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Current acceptance.",
+        }),
+      }),
+    );
+    expect(current.message).toContain("Applied accept review");
+    expect((await readTaskTreeJson(appDir)).tasks["review-task"].state).toBe(
+      "done",
+    );
+  });
+
   test("routes ops-prefixed backlog tasks to the ops worker", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -632,7 +944,9 @@ describe("project owner workflow", () => {
               children: [],
               goal: "Recover an exact external blocker.",
               outputs: ["evidence/archive/blocked-sibling.md"],
-              acceptance: ["Work is restored or the gap is terminally resolved."],
+              acceptance: [
+                "Work is restored or the gap is terminally resolved.",
+              ],
               blocker: {
                 condition: "External condition has not changed.",
                 owner: "operator",
@@ -648,7 +962,9 @@ describe("project owner workflow", () => {
       )}\n`,
       "utf8",
     );
-    await mkdir(projectRuntimePaths(appDir).taskArchiveDir, { recursive: true });
+    await mkdir(projectRuntimePaths(appDir).taskArchiveDir, {
+      recursive: true,
+    });
     await writeFile(
       join(
         projectRuntimePaths(appDir).taskArchiveDir,
@@ -673,8 +989,7 @@ describe("project owner workflow", () => {
               priority: "P2",
               owner: "app-ops",
               children: [],
-              goal:
-                "Reconcile the seven unpublished model/knowledge-map files in /app/projects/aks-rp-e2e to one truthful process outcome: either a coherent checkpoint-ready done slice or one exact holder that explains why the repo drift must remain uncommitted.",
+              goal: "Reconcile the seven unpublished model/knowledge-map files in /app/projects/aks-rp-e2e to one truthful process outcome: either a coherent checkpoint-ready done slice or one exact holder that explains why the repo drift must remain uncommitted.",
               outputs: [
                 "evidence/archive/ops-reconcile-unpublished-model-knowledge-map-checkpoint-slice-20260714.md",
               ],
@@ -790,7 +1105,8 @@ describe("project owner workflow", () => {
           taskId: "review-task",
           attemptId: "attempt-1",
           decision: "accept",
-          summary: "Reviewer proposed a bounded task-completion recovery event.",
+          summary:
+            "Reviewer proposed a bounded task-completion recovery event.",
           events: [
             {
               type: "project.task.completed",
@@ -804,7 +1120,8 @@ describe("project owner workflow", () => {
                 attempt_id: "attempt-2",
                 result: "blocked",
                 claim: "blocked",
-                summary: "Replay a fresh review cycle for the exact current wait.",
+                summary:
+                  "Replay a fresh review cycle for the exact current wait.",
                 review: {
                   required: true,
                   reason: "watchdog-recovered-terminal-pipeline-wait-review",
@@ -833,6 +1150,167 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("applies accepted reviews with bounded project.approval.requested events", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer proposed the canonical approval-dispatch request.",
+          events: [
+            {
+              type: "project.approval.requested",
+              owner: "project:aks-rp-e2e",
+              data: {
+                project: "aks-rp-e2e",
+                target: { project: "aks-rp-e2e" },
+                reason: "manual-approval-packet-dispatch-request",
+                params: {
+                  packetPath:
+                    "evidence/archive/ops-dispatch-shared-ado-467665-queue-family-approval-proof-20260715-packet.md",
+                  pathId:
+                    "ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715",
+                  requestedAction:
+                    "Review the selective Azure DevOps queue starvation affecting definition 467665.",
+                  approvalId:
+                    "aks-rp-e2e:approval:ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715:evidence-archive-ops-dispatch-shared-ado-467665-queue-family-approval-proof-20260715-packet.md",
+                  waitId:
+                    "wait:aks-rp-e2e:approval:ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715:evidence-archive-ops-dispatch-shared-ado-467665-queue-family-approval-proof-20260715-packet.md",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Applied accept review for review-task");
+    expect(result.message).toContain("Emitted 1 reviewed event transition");
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(emitted).toContainEqual({
+      type: "project.approval.requested",
+      owner: "project:aks-rp-e2e",
+      target: { project: "aks-rp-e2e" },
+      data: expect.objectContaining({
+        project: "aks-rp-e2e",
+        target: { project: "aks-rp-e2e" },
+        params: expect.objectContaining({
+          packetPath:
+            "evidence/archive/ops-dispatch-shared-ado-467665-queue-family-approval-proof-20260715-packet.md",
+          pathId:
+            "ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715",
+          requestedAction:
+            "Review the selective Azure DevOps queue starvation affecting definition 467665.",
+        }),
+      }),
+    });
+  });
+
+  test("normalizes bare app-ops owners for reviewed project.approval.requested events", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer used the current carrier payload shape.",
+          events: [
+            {
+              type: "project.approval.requested",
+              owner: "app-ops",
+              target: { project: "aks-rp-e2e" },
+              data: {
+                project: "aks-rp-e2e",
+                reason: "manual-approval-packet-dispatch-request",
+                params: {
+                  packetPath:
+                    "evidence/archive/ops-dispatch-shared-ado-467665-queue-family-approval-proof-20260715-packet.md",
+                  pathId:
+                    "ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715",
+                  requestedAction:
+                    "Review the selective Azure DevOps queue starvation affecting definition 467665.",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(result.message).toContain("Applied accept review for review-task");
+    expect(emitted).toContainEqual({
+      type: "project.approval.requested",
+      owner: "agent:app-ops",
+      target: { project: "aks-rp-e2e" },
+      data: expect.objectContaining({
+        project: "aks-rp-e2e",
+        target: { project: "aks-rp-e2e" },
+      }),
+    });
+  });
+
+  test("rejects reviewed project.approval.requested events without a bounded approval packet", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir);
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "review-task",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "Reviewer proposed an approval event without a packet path.",
+          events: [
+            {
+              type: "project.approval.requested",
+              owner: "agent:app-ops",
+              data: {
+                project: "aks-rp-e2e",
+                target: { project: "aks-rp-e2e" },
+                reason: "manual-approval-packet-dispatch-request",
+                params: {
+                  pathId:
+                    "ado-pipeline-467665-selective-queue-starvation-family-approval-proof-20260715",
+                  requestedAction:
+                    "Review the selective Azure DevOps queue starvation affecting definition 467665.",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain("invalid event transitions");
+    expect(tree.tasks["review-task"].state).toBe("review");
+    expect(emitted).toHaveLength(0);
+  });
+
   test("replays accepted project.task.completed repair events when the reviewed source task was already closed", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -859,7 +1337,11 @@ describe("project owner workflow", () => {
     const tree = await readTaskTreeJson(appDir);
     delete tree.tasks["source-review-task"];
     tree.tasks.project.children = ["hold-task"];
-    await writeFile(resolveTaskTreePath(appDir), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const emitted: Array<Record<string, unknown>> = [];
     const result = await execute(
@@ -872,7 +1354,8 @@ describe("project owner workflow", () => {
           taskId: "source-review-task",
           attemptId: "attempt-1",
           decision: "accept",
-          summary: "Replay the current hold-review lineage even though the source repair task already closed.",
+          summary:
+            "Replay the current hold-review lineage even though the source repair task already closed.",
           events: [
             {
               type: "project.task.completed",
@@ -1070,6 +1553,145 @@ describe("project owner workflow", () => {
         "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
     });
     expect(JSON.stringify(wait)).not.toContain("171501538");
+  });
+
+  test("accepted queued rerun retargets stale review-gated publication holders to the successor wait", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "fix-egress-lockdown-windows-baseline-aks-subnet-route-table-association",
+      conflictScope: [
+        "feature:egress-lockdown",
+        "spec:spec.egress-lockdown.windows-baseline",
+      ],
+      context: {
+        reviewedTask: {
+          taskId:
+            "repair-egress-lockdown-windows-baseline-aks-subnet-route-table-association-run-172480751",
+        },
+      },
+      extraTasks: {
+        "domain/publish-egress-lockdown-windows-baseline-review-visible-20260716":
+          {
+            id: "domain/publish-egress-lockdown-windows-baseline-review-visible-20260716",
+            parent_id: "project",
+            state: "blocked",
+            status: "blocked",
+            kind: "domain_leaf",
+            priority: "P2",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Keep the current egress-lockdown Windows-baseline repo slice unpublished until the live review lineage returns a publication-safe decision.",
+            outputs: [
+              "../aks-rp-e2e/evidence/archive/publish-egress-lockdown-windows-baseline-review-visible-20260716.md",
+            ],
+            acceptance: [
+              "Consume the structured publication-safe decision produced by wait-egress-lockdown-windows-baseline-ado-run-172480751-result for spec.egress-lockdown.windows-baseline before publishing or superseding any repo slice.",
+              "If that decision accepts the current slice, publish the exact accepted egress-lockdown Windows-baseline commit slice to the branch/head used by future ADO work and record the visible commit/hash proof; if it rejects or narrows the slice, create or link the exact successor repair task instead of leaving this unpublished holder open.",
+            ],
+            conflict_scope: [
+              "feature:egress-lockdown",
+              "spec:spec.egress-lockdown.windows-baseline",
+            ],
+            blocker: {
+              condition:
+                "The current publication holder truthfully waits on live review wait wait-egress-lockdown-windows-baseline-ado-run-172480751-result, which is tracking exact same-spec ADO run 172480751 for spec.egress-lockdown.windows-baseline. Keep this holder blocked until that live wait returns the structured publication-safe decision for this slice or an exact successor replaces it.",
+              category: "external-wait",
+              owner: "aks-explorer",
+              blocked_at: "2026-07-16T07:15:51.367Z",
+              waiting_for: {
+                type: "blocker.resolved",
+                taskId:
+                  "domain/publish-egress-lockdown-windows-baseline-review-visible-20260716",
+              },
+              observed_by: {
+                workflow: "project-planner",
+                schedule: "blocked-frontier-app-ops-review",
+                trigger: "project.owner.requested",
+              },
+              observation_method:
+                "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+              resume_condition:
+                "Resume only when wait-egress-lockdown-windows-baseline-ado-run-172480751-result returns the structured publication-safe decision for this slice or an exact successor repair/wait replaces it.",
+              fallback_at: "2026-07-16T14:30:00Z",
+              fallback_action:
+                "If the repaired live review lineage still has not returned by fallback, keep one reviewer-gated publication wait or replace it with the exact successor; do not leave this holder pointing at a missing task id.",
+            },
+          },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "fix-egress-lockdown-windows-baseline-aks-subnet-route-table-association",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Worker evidence satisfies the repair and queued the successor same-spec verification run.",
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "172493879",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172493879",
+                  specIds: ["spec.egress-lockdown.windows-baseline"],
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const wait =
+      tree.tasks[
+        "wait-egress-lockdown-windows-baseline-ado-run-172493879-result"
+      ];
+    const holder =
+      tree.tasks[
+        "domain/publish-egress-lockdown-windows-baseline-review-visible-20260716"
+      ];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "created pipeline wait wait-egress-lockdown-windows-baseline-ado-run-172493879-result",
+    );
+    expect(wait.blocker.waiting_for.runId).toBe("172493879");
+    expect(holder.state).toBe("blocked");
+    expect(holder.acceptance[0]).toContain(
+      "wait-egress-lockdown-windows-baseline-ado-run-172493879-result",
+    );
+    expect(holder.acceptance[0]).not.toContain("172480751");
+    expect(holder.blocker.condition).toContain(
+      "wait-egress-lockdown-windows-baseline-ado-run-172493879-result",
+    );
+    expect(holder.blocker.waiting_for).toMatchObject({
+      type: "blocker.resolved",
+      taskId:
+        "domain/publish-egress-lockdown-windows-baseline-review-visible-20260716",
+      governingWaitTaskId:
+        "wait-egress-lockdown-windows-baseline-ado-run-172493879-result",
+      sourceTaskId:
+        "fix-egress-lockdown-windows-baseline-aks-subnet-route-table-association",
+      runId: "172493879",
+      specIds: ["spec.egress-lockdown.windows-baseline"],
+    });
+    expect(holder.context).toMatchObject({
+      publicationGateWaitTaskId:
+        "wait-egress-lockdown-windows-baseline-ado-run-172493879-result",
+      publicationGateRunId: "172493879",
+      publicationGateSourceTaskId:
+        "fix-egress-lockdown-windows-baseline-aks-subnet-route-table-association",
+      publicationGateSpecIds: ["spec.egress-lockdown.windows-baseline"],
+    });
   });
 
   test("accepted task review does not dedupe queued run from existing prose", async () => {
@@ -1299,6 +1921,10 @@ describe("project owner workflow", () => {
       plannerContext({
         appDir,
         projectDir,
+        extraTaskLines: [
+          "revisionV2: fix-forward-exact-spec",
+          "revisionV2SpecId: spec.cluster-autoscaler.mincount-recovery",
+        ],
         trigger: reviewedTrigger({
           project: "aks-rp-e2e",
           taskId:
@@ -1353,7 +1979,14 @@ describe("project owner workflow", () => {
       tree.tasks["fix-cluster-autoscaler-mincount-recovery-run-171349474"];
     expect(fixTask).toBeTruthy();
     expect(["backlog", "active"]).toContain(fixTask.state);
+    expect(fixTask.revision).toBe(1);
     expect(fixTask.context.workflow).toBe("fix-forward");
+    expect(fixTask.context.controlPlaneVersion).toBe(2);
+    expect(fixTask.context.revisionCanaryV2).toEqual({
+      mode: "fix-forward-exact-spec",
+      specId: "spec.cluster-autoscaler.mincount-recovery",
+      initialRevision: 1,
+    });
     expect(fixTask.context.sourceSpecResult).toMatchObject({
       specId: "spec.cluster-autoscaler.mincount-recovery",
       status: "fail",
@@ -1405,6 +2038,10 @@ describe("project owner workflow", () => {
       plannerContext({
         appDir,
         projectDir,
+        extraTaskLines: [
+          "revisionV2: fix-forward-first-nonpass-run",
+          "revisionV2RunId: 171342018",
+        ],
         trigger: reviewedTrigger({
           project: "aks-rp-e2e",
           taskId:
@@ -1487,6 +2124,16 @@ describe("project owner workflow", () => {
       tree.tasks["fix-network-acns-retina-enterprise-run-171342018"];
     expect(ciliumFix).toBeTruthy();
     expect(retinaFix).toBeTruthy();
+    expect(ciliumFix.revision).toBe(1);
+    expect(retinaFix.revision).toBe(0);
+    expect(ciliumFix.context.controlPlaneVersion).toBe(2);
+    expect(retinaFix.context.controlPlaneVersion).toBe(1);
+    expect(ciliumFix.context.revisionCanaryV2).toEqual({
+      mode: "fix-forward-first-nonpass-run",
+      specId: "spec.network-acns.cilium-observability",
+      sourceRunId: "171342018",
+      initialRevision: 1,
+    });
     expect(["backlog", "active"]).toContain(ciliumFix.state);
     expect(["backlog", "active"]).toContain(retinaFix.state);
     expect(ciliumFix.context.workflow).toBe("fix-forward");
@@ -1501,6 +2148,171 @@ describe("project owner workflow", () => {
       status: "error",
       runId: "171342018",
     });
+  });
+
+  test("accepted ready-subset review creates independently runnable per-spec fix-forward scopes", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "wait-network-cni-ready-subset-ado-run-172310203-result",
+      conflictScope: [
+        "feature:network-cni",
+        "feature-compact-ready-subset:network-cni",
+        "ado-run:172310203",
+        "spec:spec.network-acns.basic-retina-update-retina-enterprise",
+        "spec:spec.network-acns.cilium-observability",
+        "spec:spec.network-acns.performance-cilium-upgrade",
+      ],
+      context: {
+        featureKey: "network-cni",
+        readySubsetPipelineRun: true,
+        acceptedQueuedPipelineRun: {
+          runId: "172310203",
+          specIds: [
+            "spec.network-acns.basic-retina-update-retina-enterprise",
+            "spec.network-acns.cilium-observability",
+            "spec.network-acns.performance-cilium-upgrade",
+          ],
+        },
+        terminalPipelineWaitReview: {
+          runId: "172310203",
+          runStatus: "completed",
+          runConclusion: "failed",
+        },
+      },
+    });
+    await writeSpecLoopState(appDir, {
+      "spec.network-acns.basic-retina-update-retina-enterprise": {
+        status: "pending",
+        attempts: 1,
+        taskId: "wait-network-cni-ready-subset-ado-run-172310203-result",
+        lastRunId: "172310203",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172310203",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-15T13:36:13.361Z",
+      },
+      "spec.network-acns.cilium-observability": {
+        status: "pending",
+        attempts: 1,
+        taskId: "wait-network-cni-ready-subset-ado-run-172310203-result",
+        lastRunId: "172310203",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172310203",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-15T13:36:13.361Z",
+      },
+      "spec.network-acns.performance-cilium-upgrade": {
+        status: "pending",
+        attempts: 1,
+        taskId: "wait-network-cni-ready-subset-ado-run-172310203-result",
+        lastRunId: "172310203",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172310203",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-15T13:36:13.361Z",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "wait-network-cni-ready-subset-ado-run-172310203-result",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Returned ready-subset ADO artifact records two independent non-pass specs.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "single-spec-verifier",
+              status: "partial",
+              subject: {
+                kind: "spec-group",
+                id: "network-cni",
+              },
+              details: {
+                backend: "azure-devops-pipeline",
+                runId: "172310203",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172310203",
+                resultPath:
+                  "runs/test-results/test_20260715094829217_195n0z_313290/result.json",
+                specResults: [
+                  {
+                    specId:
+                      "spec.network-acns.basic-retina-update-retina-enterprise",
+                    status: "error",
+                    reason:
+                      'Error from server (NotFound): deployments.apps "hubble-ui" not found',
+                    artifactRefs: [
+                      "runs/test-results/test_20260715094829217_195n0z_313290/artifacts/network-acns-basic-retina-update-retina-enterprise/spec-runner/result.json",
+                    ],
+                  },
+                  {
+                    specId: "spec.network-acns.performance-cilium-upgrade",
+                    status: "error",
+                    reason:
+                      "Incorrect kubernetes.azure.com/user-iptables-rules values on 2 CiliumNode objects",
+                    artifactRefs: [
+                      "runs/test-results/test_20260715094829217_195n0z_313290/artifacts/network-acns-performance-cilium-upgrade/spec-runner/result.json",
+                    ],
+                  },
+                  {
+                    specId: "spec.network-acns.cilium-observability",
+                    status: "pass",
+                    liveVerified: true,
+                    reason: "all assertions passed",
+                    artifactRefs: [
+                      "runs/test-results/test_20260715094829217_195n0z_313290/artifacts/network-acns-cilium-observability/spec-runner/result.json",
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const basic =
+      tree.tasks[
+        "fix-network-acns-basic-retina-update-retina-enterprise-run-172310203"
+      ];
+    const performance =
+      tree.tasks["fix-network-acns-performance-cilium-upgrade-run-172310203"];
+    expect(result.status).toBe("done");
+    expect(basic.conflict_scope).toEqual([
+      "spec:spec.network-acns.basic-retina-update-retina-enterprise",
+      "fix-forward:spec.network-acns.basic-retina-update-retina-enterprise:172310203",
+    ]);
+    expect(performance.conflict_scope).toEqual([
+      "spec:spec.network-acns.performance-cilium-upgrade",
+      "fix-forward:spec.network-acns.performance-cilium-upgrade:172310203",
+    ]);
+    expect(basic.context.featureKey).toBe("network-cni");
+    expect(performance.context.featureKey).toBe("network-cni");
+    expect(basic.context.readySubsetPipelineRun).toBeTrue();
+    expect(performance.context.readySubsetPipelineRun).toBeTrue();
+    expect(basic.conflict_scope).not.toContain("feature:network-cni");
+    expect(basic.conflict_scope).not.toContain(
+      "feature-compact-ready-subset:network-cni",
+    );
+    expect(basic.conflict_scope).not.toContain("ado-run:172310203");
+    expect(basic.conflict_scope).not.toContain(
+      "spec:spec.network-acns.performance-cilium-upgrade",
+    );
+    expect(
+      basic.conflict_scope.filter((scope: string) =>
+        performance.conflict_scope.includes(scope),
+      ),
+    ).toEqual([]);
   });
 
   test("applies redo reviews by requeuing the reviewed task with a fresh attempt", async () => {
@@ -2280,8 +3092,7 @@ describe("project owner workflow", () => {
             actionKind: "app-state-repair",
             owner: "app-ops",
             parentId: "project",
-            goal:
-              "Manually reconcile the guarded review from the existing worker evidence and either accept it, reject it, or create one exact successor without duplicating passive waits.",
+            goal: "Manually reconcile the guarded review from the existing worker evidence and either accept it, reject it, or create one exact successor without duplicating passive waits.",
           },
         }),
       }),
@@ -2293,7 +3104,9 @@ describe("project owner workflow", () => {
     expect(result.message).toContain(
       "Requeued guarded app-state-repair review for",
     );
-    expect(new Set(Object.keys(tree.tasks))).toEqual(new Set(["project", taskId]));
+    expect(new Set(Object.keys(tree.tasks))).toEqual(
+      new Set(["project", taskId]),
+    );
     expect(task.state).toBe("active");
     expect(task.owner).toBe("app-ops");
     expect(task.trace.previous_attempt_id).toBe(priorAttemptId);
@@ -2318,8 +3131,7 @@ describe("project owner workflow", () => {
 
   test("routes repeated app-owned followup decisions to the project owner instead of nesting successors", async () => {
     const { appDir, projectDir } = await makeWorkspace();
-    const taskId =
-      "ops-apply-windows-gpu-vm-prerelease-task-tree-followup";
+    const taskId = "ops-apply-windows-gpu-vm-prerelease-task-tree-followup";
     const attemptId = "a_ops_apply_windows_gpu_20260715053105";
     await writeReviewTree(appDir, {
       taskId,
@@ -2390,7 +3202,9 @@ describe("project owner workflow", () => {
     expect(result.message).toContain(
       "routed the remaining app-owned action to the project owner",
     );
-    expect(new Set(Object.keys(tree.tasks))).toEqual(new Set(["project", taskId]));
+    expect(new Set(Object.keys(tree.tasks))).toEqual(
+      new Set(["project", taskId]),
+    );
     expect(tree.tasks[taskId].state).toBe("done");
     expect(dispatched).toContainEqual({
       type: "project.owner.requested",
@@ -2436,27 +3250,28 @@ describe("project owner workflow", () => {
           outputs: [".state/feature-compact-loop/state.json"],
           acceptance: ["done"],
         },
-        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-": {
-          id: "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
-          parent_id: "aks-feature-compact-loop",
-          state: "review",
-          status: "review",
-          kind: "domain_leaf",
-          priority: "P1",
-          owner: "aks-explorer",
-          children: [],
-          goal: "Review me",
-          outputs: ["runs/test-results/review-task.json"],
-          acceptance: ["review accepted"],
-          conflict_scope: ["feature-compact:storage-csi"],
-          session_id: "s_task_review_task",
-          result: "worker result",
-          trace: {
-            current_attempt_id: "attempt-1",
-            last_worker_result: "done",
-            last_worker_summary: "worker says done",
+        "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-":
+          {
+            id: "domain-reconcile-storage-csi-holder-vs-model-20260715-followup-followup-",
+            parent_id: "aks-feature-compact-loop",
+            state: "review",
+            status: "review",
+            kind: "domain_leaf",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Review me",
+            outputs: ["runs/test-results/review-task.json"],
+            acceptance: ["review accepted"],
+            conflict_scope: ["feature-compact:storage-csi"],
+            session_id: "s_task_review_task",
+            result: "worker result",
+            trace: {
+              current_attempt_id: "attempt-1",
+              last_worker_result: "done",
+              last_worker_summary: "worker says done",
+            },
           },
-        },
       },
     });
 
@@ -2524,10 +3339,83 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("atomically applies a fully structured task-tree followup without an ops apply hop", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "review-egress-followup",
+      revision: 2,
+      conflictScope: ["spec:egress-lockdown"],
+      extraTasks: {
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: [],
+        },
+      },
+    });
+    const before = await readTaskTreeJson(appDir);
+    before.tasks.project.children.push("lane");
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(before, null, 2)}\n`,
+      "utf8",
+    );
+
+    const trigger = reviewedTrigger({
+      taskId: "review-egress-followup",
+      taskRevision: 2,
+      attemptId: "attempt-1",
+      decision: "followup",
+      summary: "Create the exact egress verification successor.",
+      reviewAction: {
+        actionKind: "task-tree-followup",
+        idBase: "domain/verify-egress-followup",
+        parentId: "lane",
+        owner: "aks-explorer",
+        goal: "Verify the reviewed egress-lockdown behavior.",
+        outputs: ["evidence/archive/verify-egress-followup.md"],
+        acceptance: [
+          "The exact verification evidence is independently reviewed.",
+        ],
+        conflictScopes: ["spec:egress-lockdown"],
+      },
+    });
+    const first = await execute(
+      plannerContext({ appDir, projectDir, trigger }),
+    );
+
+    expect(first.message).toContain("Applied V2 task-tree follow-up review");
+    let updated = await readTaskTreeJson(appDir);
+    expect(updated.tasks["review-egress-followup"].state).toBe("done");
+    expect(updated.tasks["domain/verify-egress-followup"]).toMatchObject({
+      parent_id: "lane",
+      owner: "aks-explorer",
+    });
+    expect(["backlog", "active"]).toContain(
+      updated.tasks["domain/verify-egress-followup"].state,
+    );
+    expect(
+      Object.keys(updated.tasks).filter((id) => id.includes("ops-apply")),
+    ).toEqual([]);
+
+    const replay = await execute(
+      plannerContext({ appDir, projectDir, trigger }),
+    );
+    expect(replay.message).toContain("Replayed V2 task-tree follow-up review");
+    updated = await readTaskTreeJson(appDir);
+    expect(
+      updated.tasks.lane.children.filter(
+        (id: string) => id === "domain/verify-egress-followup",
+      ),
+    ).toHaveLength(1);
+  });
+
   test("turns create-domain-followup reviews into direct domain successor tasks", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
-      taskId: "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+      taskId:
+        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
       conflictScope: ["feature-compact:traffic"],
       extraTasks: {
         project: {
@@ -2554,27 +3442,28 @@ describe("project owner workflow", () => {
           outputs: [".state/feature-compact-loop/state.json"],
           acceptance: ["done"],
         },
-        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo": {
-          id: "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
-          parent_id: "aks-feature-compact-loop",
-          state: "review",
-          status: "review",
-          kind: "domain_leaf",
-          priority: "P1",
-          owner: "aks-explorer",
-          children: [],
-          goal: "Review me",
-          outputs: ["runs/test-results/review-task.json"],
-          acceptance: ["review accepted"],
-          conflict_scope: ["feature-compact:traffic"],
-          session_id: "s_task_review_task",
-          result: "worker result",
-          trace: {
-            current_attempt_id: "attempt-1",
-            last_worker_result: "done",
-            last_worker_summary: "worker says done",
+        "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo":
+          {
+            id: "domain-reconcile-traffic-draft-frontier-vs-model-20260715-followup-follo",
+            parent_id: "aks-feature-compact-loop",
+            state: "review",
+            status: "review",
+            kind: "domain_leaf",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Review me",
+            outputs: ["runs/test-results/review-task.json"],
+            acceptance: ["review accepted"],
+            conflict_scope: ["feature-compact:traffic"],
+            session_id: "s_task_review_task",
+            result: "worker result",
+            trace: {
+              current_attempt_id: "attempt-1",
+              last_worker_result: "done",
+              last_worker_summary: "worker says done",
+            },
           },
-        },
       },
     });
 
@@ -2898,62 +3787,28 @@ describe("project owner workflow", () => {
               outputs: [".state/feature-compact-loop/state.json"],
               acceptance: ["loop represented"],
             },
-            "wait-net-integration-multinic-dualstack-ado-run-172275388-result": {
-              id: "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
-              parent_id: "aks-feature-compact-loop",
-              state: "review",
-              status: "review",
-              kind: "domain_leaf",
-              priority: "P2",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Inspect run 172275388 when it is terminal.",
-              outputs: ["runs/test-results/"],
-              acceptance: ["exact result inspected"],
-              conflict_scope: [
-                "feature-compact:net-integration",
-                "feature:net-integration",
-                "spec:spec.net-integration.multinic-dualstack",
-                "spec:spec.net-integration.multinic-mixed",
-                "ado-run:172275388",
-              ],
-              context: {
-                acceptedQueuedPipelineRun: {
-                  runId: "172275388",
-                  runUrl:
-                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
-                  specIds: [
-                    "spec.net-integration.multinic-dualstack",
-                    "spec.net-integration.multinic-mixed",
-                  ],
-                },
-                terminalPipelineWaitReview: {
-                  runId: "172275388",
-                  runStatus: "inProgress",
-                  runConclusion: null,
-                  runUrl:
-                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
-                  namedSpecIds: [
-                    "spec.net-integration.multinic-dualstack",
-                    "spec.net-integration.multinic-mixed",
-                  ],
-                },
-              },
-              result:
-                "Azure DevOps pipeline run 172275388 is terminal; inspect the returned artifacts.",
-              trace: {
-                current_attempt_id: "attempt-1",
-                last_worker_result: "blocked",
-                last_worker_summary:
-                  "Run 172275388 is still inProgress with no published artifacts.",
-                previous_blocker_before_terminal_pipeline_wait_review: {
-                  condition:
-                    "Wait for Azure DevOps run 172275388 for spec.net-integration.multinic-dualstack, spec.net-integration.multinic-mixed queued by accepted task fix-net-integration-multinic-mixed-run-172268432.",
-                  category: "external-wait",
-                  owner: "aks-explorer",
-                  blocked_at: "2026-07-15T01:59:32.232Z",
-                  waiting_for: {
-                    type: "ado.pipeline_run.completed",
+            "wait-net-integration-multinic-dualstack-ado-run-172275388-result":
+              {
+                id: "wait-net-integration-multinic-dualstack-ado-run-172275388-result",
+                parent_id: "aks-feature-compact-loop",
+                state: "review",
+                status: "review",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Inspect run 172275388 when it is terminal.",
+                outputs: ["runs/test-results/"],
+                acceptance: ["exact result inspected"],
+                conflict_scope: [
+                  "feature-compact:net-integration",
+                  "feature:net-integration",
+                  "spec:spec.net-integration.multinic-dualstack",
+                  "spec:spec.net-integration.multinic-mixed",
+                  "ado-run:172275388",
+                ],
+                context: {
+                  acceptedQueuedPipelineRun: {
                     runId: "172275388",
                     runUrl:
                       "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
@@ -2962,22 +3817,57 @@ describe("project owner workflow", () => {
                       "spec.net-integration.multinic-mixed",
                     ],
                   },
-                  observed_by: {
-                    workflow: "project-execution-watchdog",
-                    trigger: "project.task.reviewed",
+                  terminalPipelineWaitReview: {
+                    runId: "172275388",
+                    runStatus: "inProgress",
+                    runConclusion: null,
+                    runUrl:
+                      "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                    namedSpecIds: [
+                      "spec.net-integration.multinic-dualstack",
+                      "spec.net-integration.multinic-mixed",
+                    ],
                   },
-                  observation_method:
-                    "Watchdog checks the named Azure DevOps run and moves this wait to review when the run is terminal; the reviewer then consumes artifacts and records the exact result.",
-                  next_check_at: "2026-07-15T02:14:13Z",
-                  resume_condition:
-                    "Resume when Azure DevOps run 172275388 is terminal and its artifacts are available for exact result inspection.",
-                  fallback_at: "2026-07-15T04:04:13Z",
-                  fallback_action:
-                    "If run 172275388 is still not terminal or artifacts remain unavailable at fallback, refresh this exact wait with current Azure DevOps queue evidence or escalate the queue/artifact issue without creating duplicate same-scope waits.",
                 },
+                result:
+                  "Azure DevOps pipeline run 172275388 is terminal; inspect the returned artifacts.",
+                trace: {
+                  current_attempt_id: "attempt-1",
+                  last_worker_result: "blocked",
+                  last_worker_summary:
+                    "Run 172275388 is still inProgress with no published artifacts.",
+                  previous_blocker_before_terminal_pipeline_wait_review: {
+                    condition:
+                      "Wait for Azure DevOps run 172275388 for spec.net-integration.multinic-dualstack, spec.net-integration.multinic-mixed queued by accepted task fix-net-integration-multinic-mixed-run-172268432.",
+                    category: "external-wait",
+                    owner: "aks-explorer",
+                    blocked_at: "2026-07-15T01:59:32.232Z",
+                    waiting_for: {
+                      type: "ado.pipeline_run.completed",
+                      runId: "172275388",
+                      runUrl:
+                        "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172275388",
+                      specIds: [
+                        "spec.net-integration.multinic-dualstack",
+                        "spec.net-integration.multinic-mixed",
+                      ],
+                    },
+                    observed_by: {
+                      workflow: "project-execution-watchdog",
+                      trigger: "project.task.reviewed",
+                    },
+                    observation_method:
+                      "Watchdog checks the named Azure DevOps run and moves this wait to review when the run is terminal; the reviewer then consumes artifacts and records the exact result.",
+                    next_check_at: "2026-07-15T02:14:13Z",
+                    resume_condition:
+                      "Resume when Azure DevOps run 172275388 is terminal and its artifacts are available for exact result inspection.",
+                    fallback_at: "2026-07-15T04:04:13Z",
+                    fallback_action:
+                      "If run 172275388 is still not terminal or artifacts remain unavailable at fallback, refresh this exact wait with current Azure DevOps queue evidence or escalate the queue/artifact issue without creating duplicate same-scope waits.",
+                  },
+                },
+                session_id: "s_task_wait_run_172275388",
               },
-              session_id: "s_task_wait_run_172275388",
-            },
           },
         },
         null,
@@ -3143,7 +4033,9 @@ describe("project owner workflow", () => {
     expect(task.conflict_scope).toContain("ado-run:172-new");
     expect(task.conflict_scope).not.toContain("ado-run:171-old");
     expect(task.conflict_scope).not.toContain("spec:spec.two");
-    expect(tree.tasks["fix-spec-one-domain-followup-domain-followup"]).toBeUndefined();
+    expect(
+      tree.tasks["fix-spec-one-domain-followup-domain-followup"],
+    ).toBeUndefined();
 
     await execute(
       plannerContext({
@@ -3157,8 +4049,347 @@ describe("project owner workflow", () => {
       "blocked",
     );
     expect(
-      stableTree.tasks["fix-spec-one-domain-followup"].blocker.waiting_for.runId,
+      stableTree.tasks["fix-spec-one-domain-followup"].blocker.waiting_for
+        .runId,
     ).toBe("172-new");
+  });
+
+  test("revises fix-forward into a revision-local artifact-review contract", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "fix-spec-one-v2",
+      revision: 2,
+      context: {
+        workflow: "fix-forward",
+        specId: "spec.one",
+        controlPlaneVersion: 2,
+      },
+      conflictScope: ["fix-forward:spec.one", "spec:spec.one"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        trigger: reviewedTrigger({
+          taskId: "fix-spec-one-v2",
+          taskRevision: 2,
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary: "Run 172459471 is queued and has no artifact yet.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "fix-forward",
+              status: "partial",
+              subject: { kind: "task", id: "fix-spec-one-v2" },
+              details: {
+                specId: "spec.one",
+                runId: "172459471",
+                runUrl:
+                  "https://dev.azure.com/example/_build/results?buildId=172459471",
+                fixForward: {
+                  workflow: "fix-forward",
+                  subject: { kind: "spec", id: "spec.one" },
+                  classification: "missing-result-artifact",
+                  diagnosis: "The exact rerun is queued.",
+                  minimumDiagnosisPacket: { runId: "172459471" },
+                  verification: { runId: "172459471", status: "not-run" },
+                  nextAction: "exact-wait",
+                  nextActionReason: "Wait for the queued run.",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    expect(result.message).toContain(
+      "from fix-forward revision 2 to spec-result-review revision 3",
+    );
+    const updated = await readTaskTreeJson(appDir);
+    expect(updated.tasks["fix-spec-one-v2"]).toMatchObject({
+      revision: 3,
+      state: "blocked",
+      context: {
+        workflow: "spec-result-review",
+        phaseContract: {
+          revision: 3,
+          resultSchema: "SPEC_RESULT_REVIEW",
+        },
+      },
+      blocker: {
+        waiting_for: {
+          runId: "172459471",
+          subjectRevision: 3,
+        },
+      },
+    });
+    expect(
+      updated.tasks["fix-spec-one-v2"].trace.current_attempt_id,
+    ).toBeUndefined();
+    expect(updated.tasks["fix-spec-one-v2"].acceptance.join(" ")).not.toContain(
+      "FIX_FORWARD_RESULT",
+    );
+
+    const completionTrigger = [
+      "## Trigger Event",
+      "```json",
+      JSON.stringify(
+        {
+          type: "project.test_run.completed",
+          target: {
+            project: "aks-rp-e2e",
+            taskId: "fix-spec-one-v2",
+          },
+          data: {
+            project: "aks-rp-e2e",
+            taskId: "fix-spec-one-v2",
+            runId: "172459471",
+            status: "completed",
+            conclusion: "success",
+            runUrl:
+              "https://dev.azure.com/example/_build/results?buildId=172459471",
+          },
+        },
+        null,
+        2,
+      ),
+      "```",
+    ].join("\n");
+    const failedDispatches: Array<{ type: string; data: unknown }> = [];
+    const eventResult = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        dispatched: failedDispatches,
+        failDispatchTypes: ["project.task.assigned"],
+        trigger: completionTrigger,
+      }),
+    );
+    expect(eventResult.message).toContain(
+      "Applied project.test_run.completed for Condition-backed task fix-spec-one-v2 run 172459471",
+    );
+    const eventApplied = await readTaskTreeJson(appDir);
+    expect(
+      eventApplied.conditions["condition:pipeline:ado:172459471:terminal"],
+    ).toMatchObject({
+      status: "resolved",
+      resolution: { source: "project.test_run.completed" },
+    });
+    expect(eventApplied.tasks["fix-spec-one-v2"]).toMatchObject({
+      revision: 3,
+      state: "active",
+      context: {
+        controlPlaneVersion: 2,
+        workflow: "spec-result-review",
+      },
+    });
+    expect(failedDispatches).toHaveLength(0);
+    expect(peekTaskAssignments(config(appDir, projectDir))).toHaveLength(1);
+
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+    const replayPrompts: string[] = [];
+    const replayResult = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        dispatched,
+        prompts: replayPrompts,
+        trigger: completionTrigger,
+      }),
+    );
+    expect(replayResult.message).toContain(
+      "Replayed project.test_run.completed for Condition-backed task fix-spec-one-v2 run 172459471",
+    );
+    expect(replayPrompts).toEqual([]);
+    expect(dispatched).toContainEqual(
+      expect.objectContaining({
+        type: "project.task.assigned",
+        data: expect.objectContaining({
+          taskId: "fix-spec-one-v2",
+          taskRevision: 3,
+        }),
+      }),
+    );
+    expect(peekTaskAssignments(config(appDir, projectDir))).toEqual([]);
+  });
+
+  test("keeps reviewed fix-forward exact environment waits as non-pipeline blockers", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "fix-rp-regional-quota-public-create-path-run-172346097",
+      context: {
+        workflow: "fix-forward",
+        specId: "spec.rp-regional-quota.public-create-path",
+        sourceSpecResult: {
+          specId: "spec.rp-regional-quota.public-create-path",
+          runId: "172346097",
+          runUrl:
+            "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172346097",
+        },
+      },
+      conflictScope: [
+        "fix-forward:spec.rp-regional-quota.public-create-path:172346097",
+        "spec:spec.rp-regional-quota.public-create-path",
+      ],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "fix-rp-regional-quota-public-create-path-run-172346097",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "The repaired carrier is already landed and locally verifies in check mode.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "fix-forward",
+              status: "done",
+              subject: {
+                kind: "task",
+                id: "fix-rp-regional-quota-public-create-path-run-172346097",
+              },
+              details: {
+                specId: "spec.rp-regional-quota.public-create-path",
+                fixForward: {
+                  workflow: "fix-forward",
+                  subject: {
+                    kind: "spec",
+                    id: "spec.rp-regional-quota.public-create-path",
+                  },
+                  classification: "other-known-class",
+                  diagnosis:
+                    "The previous ADO run is consumed; the remaining gap is external quota headroom.",
+                  minimumDiagnosisPacket: {
+                    runId: "172346097",
+                  },
+                  verification: {
+                    runId: "local-check-2026-07-16T02:53:10.696Z",
+                    status: "pass",
+                  },
+                  nextAction: "exact-wait",
+                  nextActionReason:
+                    "No rerun until the same staging target is exhausted again or another reviewed same-surface target is accepted.",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks["fix-rp-regional-quota-public-create-path-run-172346097"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Restored exact blocked wait fix-rp-regional-quota-public-create-path-run-172346097 in place for external fact review",
+    );
+    expect(task.state).toBe("blocked");
+    expect(task.blocker.owner).toBe("human");
+    expect(task.blocker.waiting_for).toMatchObject({
+      type: "blocker.resolved",
+      taskId: "fix-rp-regional-quota-public-create-path-run-172346097",
+      specIds: ["spec.rp-regional-quota.public-create-path"],
+      sourceRunId: "172346097",
+    });
+    expect(task.blocker.condition).toContain(
+      "do not convert local verification ids into fake Azure DevOps waits",
+    );
+    expect(task.context.acceptedQueuedPipelineRun).toBeUndefined();
+    expect(task.context.exactExternalWait).toMatchObject({
+      sourceRunId: "172346097",
+      specIds: ["spec.rp-regional-quota.public-create-path"],
+    });
+    expect(task.conflict_scope).not.toContain(
+      "ado-run:local-check-2026-07-16T02:53:10.696Z",
+    );
+  });
+
+  test("does not let non-fix-forward app repair tasks become exact pipeline wait carriers", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops/reconcile-live-frontier-readout-focus-parity-20260716b",
+      context: {
+        currentRepairKind: "root-frontier-readout",
+      },
+      conflictScope: ["ops/root-frontier-readout"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops/reconcile-live-frontier-readout-focus-parity-20260716b",
+          attemptId: "attempt-1",
+          decision: "followup",
+          summary:
+            "Parity repair landed, but run 172346097 still needs separate artifact review on its existing spec carrier.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: {
+                kind: "task",
+                id: "ops/reconcile-live-frontier-readout-focus-parity-20260716b",
+              },
+              details: {
+                specId: "spec.rp-regional-quota.public-create-path",
+                runId: "172346097",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172346097",
+                reason:
+                  "Aggregate and per-spec artifacts both show the public-create-path rerun stopped at preflight.target-usage with managedClusters=40/161.",
+                fixForward: {
+                  workflow: "fix-forward",
+                  subject: {
+                    kind: "feature-family",
+                    id: "rp-regional-quota",
+                  },
+                  classification: "other-known-class",
+                  diagnosis:
+                    "The readout repair task is not the same thing as the exact rp-regional-quota run carrier.",
+                  minimumDiagnosisPacket: {
+                    runId: "172346097",
+                  },
+                  verification: {
+                    runId: "172346097",
+                    status: "error",
+                  },
+                  nextAction: "exact-wait",
+                  nextActionReason:
+                    "Keep the exact same-run wait on the existing fix-forward carrier instead of moving it onto the app repair task.",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task =
+      tree.tasks["ops/reconcile-live-frontier-readout-focus-parity-20260716b"];
+    expect(result.status).toBe("done");
+    expect(result.message).not.toContain("Restored exact blocked wait");
+    expect(task.state).toBe("done");
+    expect(task.blocker).toBeUndefined();
+    expect(task.context?.acceptedQueuedPipelineRun).toBeUndefined();
+    expect(task.context?.terminalPipelineWaitReview).toBeUndefined();
+    expect(task.conflict_scope).toEqual(["ops/root-frontier-readout"]);
   });
 
   test("keeps future-window reviewed blocked successors blocked until their resume window", async () => {
@@ -6322,6 +7553,154 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("skips owner session for stale watchdog blocked-frontier overdue packets after wait refresh and same-lineage recovery", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "domain/review-overdue-runtime-container",
+          active_task_ids: ["domain/review-overdue-runtime-container"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "wait-runtime-container-kscr-rotation-matrix-ado-run-172502185-result-blocked",
+                "domain/review-overdue-runtime-container",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "wait-runtime-container-kscr-rotation-matrix-ado-run-172502185-result-blocked":
+              {
+                id: "wait-runtime-container-kscr-rotation-matrix-ado-run-172502185-result-blocked",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Wait for same-run runtime-container kscr rotation artifact review.",
+                outputs: ["evidence/archive/runtime-container-blocked.md"],
+                acceptance: ["done"],
+                blocker: {
+                  condition: "Wait for same-run review recovery.",
+                  category: "external-wait",
+                  owner: "external",
+                  waiting_for: {
+                    type: "blocker.resolved",
+                    pathId: "path.runtime-container.kscr-rotation",
+                  },
+                  next_check_at: "2099-06-26T00:40:00.000Z",
+                  resume_at: "2099-06-26T00:40:00.000Z",
+                  fallback_at: "2099-06-27T00:40:00.000Z",
+                  fallback_action: "Recheck the same-run review carrier.",
+                },
+              },
+            "domain/review-overdue-runtime-container": {
+              id: "domain/review-overdue-runtime-container",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Re-poll the same ADO run and inspect the exact same-run artifact once it exists.",
+              outputs: ["evidence/archive/runtime-container-review.md"],
+              acceptance: ["done"],
+              conflict_scope: ["path.runtime-container.kscr-rotation"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId:
+                  "wait-runtime-container-kscr-rotation-matrix-ado-run-172502185-result-blocked",
+                parentId: "project",
+                nextCheckAt: "2099-06-26T00:40:00.000Z",
+                resumeAt: "2099-06-26T00:40:00.000Z",
+                fallbackAt: "2099-06-27T00:40:00.000Z",
+              },
+            ],
+            blockedCount: 1,
+            blockedFutureWatchCount: 1,
+            blockedMissingWatchCount: 0,
+            blockedOverdueCount: 1,
+            overdueOwnerActions: [
+              {
+                taskId:
+                  "wait-runtime-container-kscr-rotation-matrix-ado-run-172502185-result-blocked",
+                owner: "external",
+                watchAt: "2001-01-01T00:00:00.000Z",
+                recoveryRequired:
+                  "Next-check window passed without active/review recovery work.",
+              },
+            ],
+            overdueOwnerActionCount: 1,
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog blocked-frontier review was a false positive",
+    );
+    expect(result.message).toContain(
+      "active/review same-lineage recovery work after live-tree revalidation",
+    );
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Watchdog blocked-frontier review was a false positive",
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
   test("skips owner session for stale-active watchdog review when the cited task still has a running runtime session", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const dbPath = join(appDir, ".state", "may.db");
@@ -7007,6 +8386,94 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"active_task_ids":["active-task"]');
   });
 
+  test("replays stored reviewer output for live watchdog-review-pending tasks before owner planning", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "review-task",
+      attemptId: "attempt-1",
+    });
+    await writeFile(
+      join(appDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: "2026-07-15T12:15:51.765Z",
+        workflow: "task-reviewer",
+        result: "project.task.reviewed",
+        task_id: "review-task",
+        attempt_id: "attempt-1",
+        decision: "accept",
+        summary:
+          "Reviewer already approved the bounded follow-up and only needs deterministic apply.",
+        reviewAction: {
+          actionKind: "create-domain-followup",
+          goal: "Run the exact bounded next step for the reviewed task.",
+          owner: "aks-explorer",
+          parentId: "project",
+          idBase: "review-task-domain-followup",
+          kind: "domain_leaf",
+          outputs: ["evidence/archive/review-task-domain-followup.md"],
+          acceptance: ["The bounded next step is represented."],
+          conflictScopes: ["scope.review-task"],
+        },
+      })}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{ type: string; data: unknown }> = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        dispatched,
+        extraTaskLines: ["domainWorker: aks-explorer", "opsWorker: app-ops"],
+        trigger: planningTrigger({
+          reason: "watchdog-review-pending",
+          reviewTasks: [
+            {
+              taskId: "review-task",
+              updatedAt: "2026-07-15T12:20:51.490Z",
+            },
+          ],
+          reviewCount: 1,
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const followup = tree.tasks["review-task-domain-followup"];
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Recovered review-task from watchdog-review-pending using the stored reviewer decision",
+    );
+    expect(prompts).toHaveLength(0);
+    expect(tree.tasks["review-task"].state).toBe("done");
+    expect(followup).toBeTruthy();
+    expect(["backlog", "active"]).toContain(followup.state);
+    expect(followup.context.reviewedTask).toMatchObject({
+      taskId: "review-task",
+      attemptId: "attempt-1",
+      decision: "accept",
+      reviewAction: {
+        actionKind: "create-domain-followup",
+      },
+    });
+    expect(dispatched).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "project.task.assigned" }),
+      ]),
+    );
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain(
+      '"steps":["task-reviewed-apply","quick-refill"]',
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
   test("skips owner session for stale watchdog-runnable-backlog packets even when unrelated blocked leaves exist", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const treeUpdatedAt = "2026-06-18T01:52:39.649Z";
@@ -7602,10 +9069,7 @@ describe("project owner workflow", () => {
             project: {
               id: "project",
               state: "active",
-              children: [
-                "ops/repair-shared-auth-family",
-                "shared-auth-wait",
-              ],
+              children: ["ops/repair-shared-auth-family", "shared-auth-wait"],
               goal: "project",
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
@@ -7641,7 +9105,8 @@ describe("project owner workflow", () => {
                 condition: "Waiting for shared auth recovery.",
                 waiting_for: {
                   type: "project.approval.submitted",
-                  pathId: "shared-authenticated-artifact-result-recovery-family-20260712",
+                  pathId:
+                    "shared-authenticated-artifact-result-recovery-family-20260712",
                 },
                 fallback_at: "2026-01-01T00:00:00.000Z",
               },

@@ -879,8 +879,7 @@ describe("feature compact loop", () => {
       retryable: false,
       taskId: "hold-compact-windows-eligibility-frontier-20260707",
       lastSummaryPath: "features/windows/compact/staging.summary.md",
-      lastDiagnosticsPath:
-        "features/windows/compact/staging.diagnostics.json",
+      lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
       lastSummary:
         "Windows compact still has a rerun-ready member set while the blocked frontier remains partially represented.",
       blockedReason:
@@ -936,7 +935,9 @@ describe("feature compact loop", () => {
           windows: expect.stringMatching(/^[a-f0-9]{64}$/),
         },
       });
-      expect(supportChildren[0].context.workFingerprint).toMatch(/^[a-f0-9]{64}$/);
+      expect(supportChildren[0].context.workFingerprint).toMatch(
+        /^[a-f0-9]{64}$/,
+      );
       expect(supportChildren[0].acceptance.join("\n")).toContain(
         "compactLiveReadiness.readySpecIds",
       );
@@ -1050,8 +1051,7 @@ describe("feature compact loop", () => {
       retryable: false,
       taskId: "hold-windows",
       lastSummaryPath: "features/windows/compact/staging.summary.md",
-      lastDiagnosticsPath:
-        "features/windows/compact/staging.diagnostics.json",
+      lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
     });
     saveFeatureCompactLoopState(statePath, state);
     const restoreGh = await installCompactPipelineBackend(projectDir);
@@ -1177,8 +1177,7 @@ describe("feature compact loop", () => {
       errorClass: "package-partial",
       retryable: false,
       taskId: "hold-windows",
-      lastDiagnosticsPath:
-        "features/windows/compact/staging.diagnostics.json",
+      lastDiagnosticsPath: "features/windows/compact/staging.diagnostics.json",
     });
     saveFeatureCompactLoopState(statePath, state);
     const restoreGh = await installCompactPipelineBackend(projectDir);
@@ -1214,9 +1213,9 @@ describe("feature compact loop", () => {
         ),
       ).toHaveLength(0);
       const savedState = JSON.parse(await readFile(statePath, "utf8"));
-      expect(
-        savedState.features.windows.lastSupportWorkFingerprint,
-      ).toMatch(/^[a-f0-9]{64}$/);
+      expect(savedState.features.windows.lastSupportWorkFingerprint).toMatch(
+        /^[a-f0-9]{64}$/,
+      );
     } finally {
       restoreGh();
     }
@@ -1751,6 +1750,9 @@ describe("feature compact loop", () => {
     expect(dispatchMetadata.loopKey).toBe(
       state.features.windows.lastWorkflowLoopKey,
     );
+    expect(dispatchMetadata.inputs.agent_pool).toBe(
+      "1ES-AKS-DevInfra-Normal-Yellow",
+    );
     expect(dispatchMetadata.inputs.metadata).toBe(
       JSON.stringify({ loop_key: state.features.windows.lastWorkflowLoopKey }),
     );
@@ -1860,6 +1862,9 @@ describe("feature compact loop", () => {
       await readFile(state.features.windows.lastDispatchMetadataPath, "utf8"),
     );
     expect(dispatchMetadata.dispatchResult.ok).toBe(true);
+    expect(dispatchMetadata.inputs.agent_pool).toBe(
+      "1ES-AKS-DevInfra-Normal-Yellow",
+    );
     expect(dispatchMetadata.inputs.metadata).toBe(
       JSON.stringify({ loop_key: state.features.windows.lastWorkflowLoopKey }),
     );
@@ -2454,6 +2459,9 @@ describe("feature compact loop", () => {
       await readFile(state.features.windows.lastDispatchMetadataPath, "utf8"),
     );
     expect(dispatchMetadata.dispatchResult.ok).toBe(true);
+    expect(dispatchMetadata.inputs.agent_pool).toBe(
+      "1ES-AKS-DevInfra-Normal-Yellow",
+    );
     expect(dispatchMetadata.inputs.metadata).toBeUndefined();
     const dispatchLog = (
       await readFile(
@@ -2466,7 +2474,9 @@ describe("feature compact loop", () => {
       .filter(Boolean)
       .map((line) => JSON.parse(line) as Record<string, string>);
     expect(dispatchLog).toHaveLength(2);
+    expect(dispatchLog[0].agent_pool).toBe("1ES-AKS-DevInfra-Normal-Yellow");
     expect(dispatchLog[0].metadata).toBeDefined();
+    expect(dispatchLog[1].agent_pool).toBe("1ES-AKS-DevInfra-Normal-Yellow");
     expect(dispatchLog[1].metadata).toBeUndefined();
     expect(dispatchLog[1].plan_path).toBe(
       "features/windows/compact/staging.plan.json",
@@ -5450,8 +5460,7 @@ describe("feature compact loop", () => {
             url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123",
             createdAt: new Date().toISOString(),
             displayTitle: `AKS RP E2E 123 ${JSON.stringify({
-              task_id:
-                "domain/compact-windows-ready-subset-followup-20260715",
+              task_id: "domain/compact-windows-ready-subset-followup-20260715",
               selected_specs: "spec.windows.node-pool-create-virtualmachines",
               target: "staging",
             })} spec.windows.node-pool-create-virtualmachines`,
@@ -5516,8 +5525,7 @@ describe("feature compact loop", () => {
       expect(first.message).toContain("Created 1 exact compact wait task");
 
       let savedTree = JSON.parse(await readFile(treePath, "utf8"));
-      const waitTaskId =
-        "wait-windows-ready-subset-ado-run-123-result";
+      const waitTaskId = "wait-windows-ready-subset-ado-run-123-result";
       expect(savedTree.tasks[waitTaskId]).toMatchObject({
         parent_id: "aks-feature-compact-loop",
         state: "blocked",
@@ -6190,14 +6198,16 @@ describe("feature compact loop", () => {
     expect(repair.taskRepairs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          taskId: "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
+          taskId:
+            "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
           featureKey: "serverless-schedulerctrl",
           field: "task.owner",
           before: "aks-explorer",
           after: "operator",
         }),
         expect.objectContaining({
-          taskId: "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
+          taskId:
+            "hold-compact-serverless-schedulerctrl-live-workflow-frontier",
           featureKey: "serverless-schedulerctrl",
           field: "task.projection",
           before: "human",
@@ -8005,12 +8015,13 @@ describe("feature compact loop", () => {
         }),
       ]),
     );
-    expect(tree.tasks["hold-compact-windows-reviewed-exception-frontier"])
-      .toMatchObject({
-        state: "done",
-        status: "done",
-        resolution: "completed",
-      });
+    expect(
+      tree.tasks["hold-compact-windows-reviewed-exception-frontier"],
+    ).toMatchObject({
+      state: "done",
+      status: "done",
+      resolution: "completed",
+    });
     expect(state.features.windows.taskId).toBeNull();
     expect(state.features.windows.frontierTaskIds).toEqual([]);
   });
@@ -8123,10 +8134,12 @@ describe("feature compact loop", () => {
 
     const repairedTree = JSON.parse(await readFile(treePath, "utf8"));
     expect(
-      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"].state,
+      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"]
+        .state,
     ).toBe("done");
     expect(
-      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"].resolution,
+      repairedTree.tasks["hold-compact-windows-reviewed-exception-frontier"]
+        .resolution,
     ).toBe("completed");
 
     const repairedState = JSON.parse(await readFile(statePath, "utf8"));
@@ -11117,7 +11130,8 @@ describe("feature compact loop", () => {
           featureKey: "app-routing",
           field: "taskId",
           before: null,
-          after: "hold-compact-app-routing-package-partial-frontier-202607090617",
+          after:
+            "hold-compact-app-routing-package-partial-frontier-202607090617",
         }),
         expect.objectContaining({
           featureKey: "machines-agentpool",
@@ -11779,7 +11793,9 @@ describe("feature compact loop", () => {
       goal: "Wait for the generic windows frontier covering spec.windows.node-pool-create.",
       inputs: [],
       outputs: [],
-      acceptance: ["Close once the named spec is already pass and no exact wait contract applies."],
+      acceptance: [
+        "Close once the named spec is already pass and no exact wait contract applies.",
+      ],
       forbidden: [],
       conflict_scope: ["feature:windows"],
       context: {
@@ -12103,7 +12119,9 @@ describe("feature compact loop", () => {
         "specs",
         "timing.json",
       ),
-      JSON.stringify({ id: "spec.planned-maintenance.autoupgrade-scheduling-timing-stable" }),
+      JSON.stringify({
+        id: "spec.planned-maintenance.autoupgrade-scheduling-timing-stable",
+      }),
       "utf8",
     );
     await writeRootTree(projectDir);
@@ -12218,9 +12236,9 @@ describe("feature compact loop", () => {
         ],
       },
     });
-    expect(
-      updatedTree.tasks["aks-feature-compact-loop"].children,
-    ).toContain("wait-compact-reviewed-exception-live-ready-policy-family-20260702");
+    expect(updatedTree.tasks["aks-feature-compact-loop"].children).toContain(
+      "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+    );
     expect(
       updatedTree.tasks["aks-feature-compact-loop"].context.workflowProgress,
     ).toMatchObject({
@@ -12673,14 +12691,15 @@ describe("feature compact loop", () => {
 
     expect(result.harvestedTaskIds).toEqual([]);
     const updated = JSON.parse(await readFile(treePath, "utf8"));
-    expect(updated.tasks["hold-compact-net-integration-package-partial-frontier"])
-      .toMatchObject({
-        state: "blocked",
-        trace: {
-          current_attempt_id:
-            "a_hold-compact-net-integration-package-partial-frontier_172268432_terminal_wait_review",
-        },
-      });
+    expect(
+      updated.tasks["hold-compact-net-integration-package-partial-frontier"],
+    ).toMatchObject({
+      state: "blocked",
+      trace: {
+        current_attempt_id:
+          "a_hold-compact-net-integration-package-partial-frontier_172268432_terminal_wait_review",
+      },
+    });
   });
 
   test("controller leaves active Azure DevOps compact waits blocked", async () => {
@@ -12895,11 +12914,13 @@ describe("feature compact loop", () => {
       updated.tasks["wait-compact-windows-run"].blocker.condition,
     ).not.toContain("spec.windows.stale-prior-scope");
     expect(
-      Date.parse(updated.tasks["wait-compact-windows-run"].blocker.next_check_at),
+      Date.parse(
+        updated.tasks["wait-compact-windows-run"].blocker.next_check_at,
+      ),
     ).toBeGreaterThan(before);
-    expect(
-      updated.tasks["wait-compact-windows-run"].blocker.fallback_at,
-    ).toBe("2099-01-01T00:00:00.000Z");
+    expect(updated.tasks["wait-compact-windows-run"].blocker.fallback_at).toBe(
+      "2099-01-01T00:00:00.000Z",
+    );
 
     const { state: refreshed } = loadFeatureCompactLoopState({
       appDir: projectDir,
@@ -12941,7 +12962,10 @@ describe("feature compact loop", () => {
       outputs: [],
       acceptance: ["Review terminal workflow result."],
       forbidden: [],
-      conflict_scope: ["feature-compact:windows", "spec:spec.windows.node-pool-create"],
+      conflict_scope: [
+        "feature-compact:windows",
+        "spec:spec.windows.node-pool-create",
+      ],
       depends_on: [],
       context: {
         featureKey: "windows",
@@ -13030,7 +13054,9 @@ describe("feature compact loop", () => {
     expect(result.refreshedTaskIds).toEqual(["wait-compact-windows-run"]);
     const updated = JSON.parse(await readFile(treePath, "utf8"));
     expect(
-      Date.parse(updated.tasks["wait-compact-windows-run"].blocker.next_check_at),
+      Date.parse(
+        updated.tasks["wait-compact-windows-run"].blocker.next_check_at,
+      ),
     ).toBeLessThan(
       Date.parse(updated.tasks["wait-compact-windows-run"].blocker.fallback_at),
     );

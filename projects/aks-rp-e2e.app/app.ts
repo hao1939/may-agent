@@ -199,7 +199,7 @@ export default defineProjectApp({
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned\nrevisionV2: fix-forward-first-nonpass-run\nrevisionV2RunId: 172484121`,
         timeoutMs: 3_600_000,
       },
       accepts: [
@@ -241,8 +241,8 @@ export default defineProjectApp({
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
-        timeoutMs: 120_000,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned\nrevisionV2: fix-forward-first-nonpass-run\nrevisionV2RunId: 172484121`,
+        timeoutMs: 600_000,
       },
       accepts: [
         { type: "project.task.reviewed", target: { project: projectId } },
@@ -334,12 +334,13 @@ export default defineProjectApp({
       ],
       handler: {
         workflow: "project-execution-watchdog",
-        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nsupervisorV2: review-handoff-revisioned\nsupervisorAttemptV2: shadow\nconditionV2: exact-ado-revisioned`,
         timeoutMs: 1_800_000,
       },
       emits: [
         "project.owner.requested",
         "project.stall.review.requested",
+        "project.task.assigned",
         "project.task.tick",
       ],
       context: taskTreeContext,

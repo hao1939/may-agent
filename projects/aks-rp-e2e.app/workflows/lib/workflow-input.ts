@@ -44,11 +44,44 @@ export function sourceDir(raw: string): string {
   );
 }
 
+function matchingJsonObject(text: string, start: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, index + 1);
+    }
+  }
+  return null;
+}
+
 export function parseTriggerEvent(raw: string): TriggerEvent | null {
-  const match = raw.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
-  if (!match) return null;
+  const marker = raw.indexOf("## Trigger Event");
+  if (marker < 0) return null;
+  const scoped = raw.slice(marker);
+  const firstBrace = scoped.indexOf("{");
+  if (firstBrace < 0) return null;
+  const objectText = matchingJsonObject(scoped, firstBrace);
+  if (!objectText) return null;
   try {
-    const parsed = JSON.parse(match[1]) as TriggerEvent;
+    const parsed = JSON.parse(objectText) as TriggerEvent;
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;

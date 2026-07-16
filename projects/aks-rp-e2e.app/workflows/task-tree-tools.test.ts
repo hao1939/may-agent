@@ -9,6 +9,7 @@ import {
   completeTask,
   confirmRunnableBacklogLeaves,
   createTask,
+  kanbanTaskTreeState,
   listRunnableBacklogTaskIds,
   markTaskDone,
   planningPacket,
@@ -16,6 +17,7 @@ import {
   refreshBlockedWait,
   repairTaskTreeRollups,
   rollupParent,
+  saveTaskTreeWithKanbanSnapshot,
   seedModelGapBacklog,
   summarizeTaskTree,
   taskTreeConfig,
@@ -24,7 +26,9 @@ import {
   updateArchivedTaskEvidence,
   updateTaskOutputs,
   updateTaskText,
+  unblockTask,
 } from "./lib/task-tree-tools.ts";
+import { readTaskTree } from "./lib/task-tree-store.ts";
 import { reopenControllerRootWhenIncomplete } from "./lib/loop-controller-repair.ts";
 
 async function makeProject() {
@@ -67,6 +71,201 @@ function config(projectDir: string) {
 }
 
 describe("task tree tools", () => {
+  test("open Condition ownership mechanically rejects generic task and registry mutations", async () => {
+    const projectDir = await makeProject();
+    const taskId = "wait-condition-owned";
+    const conditionId = "condition:pipeline:ado:172500001:terminal";
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify({
+        version: 1,
+        project: "aks-rp-e2e",
+        root_task_id: "project",
+        tasks: {
+          project: {
+            id: "project",
+            state: "backlog",
+            children: [taskId, "unrelated"],
+          },
+          [taskId]: {
+            id: taskId,
+            revision: 1,
+            parent_id: "project",
+            state: "blocked",
+            children: [],
+            goal: "Wait for the exact run.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["Review the terminal artifact."],
+            context: { controlPlaneVersion: 2, conditionId },
+            blocker: {
+              condition_id: conditionId,
+              condition: "Wait for run 172500001.",
+            },
+          },
+          unrelated: {
+            id: "unrelated",
+            parent_id: "project",
+            state: "backlog",
+            children: [],
+            goal: "Unrelated work.",
+            outputs: ["evidence/unrelated.md"],
+            acceptance: ["Done."],
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            status: "open",
+            subject: { kind: "task", id: taskId, revision: 1 },
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+    const treeConfig = config(projectDir);
+    const ownershipError = `owned by open Condition ${conditionId}`;
+
+    expect(() =>
+      updateTaskText(treeConfig, {
+        taskId,
+        goal: "Generic replacement goal.",
+      }),
+    ).toThrow(ownershipError);
+    expect(() =>
+      refreshBlockedWait(treeConfig, {
+        taskId,
+        condition: "Refresh the wait generically.",
+        resumeCondition: "Run is terminal.",
+        summary: "Generic refresh.",
+      }),
+    ).toThrow(ownershipError);
+    expect(() =>
+      unblockTask(treeConfig, {
+        taskId,
+        reason: "Generic unblock.",
+      }),
+    ).toThrow(ownershipError);
+    expect(() =>
+      markTaskDone(treeConfig, {
+        taskId,
+        taskRevision: 1,
+        summary: "Generic closure.",
+        resolution: "replaced",
+      }),
+    ).toThrow(ownershipError);
+
+    const directTree = readTaskTree(treeConfig);
+    directTree.conditions![conditionId] = {
+      ...(directTree.conditions![conditionId] as Record<string, unknown>),
+      status: "resolved",
+    };
+    expect(() =>
+      saveTaskTreeWithKanbanSnapshot(treeConfig, directTree),
+    ).toThrow(ownershipError);
+    expect(() =>
+      saveTaskTreeWithKanbanSnapshot(treeConfig, directTree, {
+        kind: "project-condition-v2",
+        conditionId,
+        taskId,
+        taskRevision: 1,
+        action: "generic-refresh",
+      } as any),
+    ).toThrow(ownershipError);
+
+    expect(
+      updateTaskText(treeConfig, {
+        taskId: "unrelated",
+        goal: "Updated unrelated work.",
+      }).goal,
+    ).toBe("Updated unrelated work.");
+    const stored = readTaskTree(treeConfig);
+    expect(stored.tasks[taskId].goal).toBe("Wait for the exact run.");
+    expect(
+      (stored.conditions![conditionId] as Record<string, unknown>).status,
+    ).toBe("open");
+  });
+
+  test("planning packet derives its frontier and generation from ProjectSnapshotV2", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-16T06:00:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["structural-parent", "live-review"],
+              context: {
+                current_root_readout: {
+                  review_task_ids: ["ghost-review"],
+                },
+              },
+            },
+            "structural-parent": {
+              id: "structural-parent",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+            },
+            "blocked-child": {
+              id: "blocked-child",
+              parent_id: "structural-parent",
+              state: "blocked",
+              children: [],
+            },
+            "live-review": {
+              id: "live-review",
+              parent_id: "project",
+              state: "review",
+              children: [],
+              goal: "Review the live result.",
+              outputs: ["evidence/live.md"],
+              acceptance: ["Review is applied."],
+            },
+            "disconnected-container": {
+              id: "disconnected-container",
+              state: "blocked",
+              kind: "work",
+              children: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.frontier.review).toEqual(["live-review"]);
+    expect(packet.frontier.blocked).toEqual(["blocked-child"]);
+    expect(packet.counts.blocked).toBe(1);
+    expect(packet.total).toBe(4);
+    expect(packet.project_snapshot).toMatchObject({
+      version: "project-snapshot-v2",
+      tree_updated_at: "2026-07-16T06:00:00.000Z",
+      frontier_counts: { review: 1, blocked: 1, total: 4 },
+    });
+    const kanban = kanbanTaskTreeState(config(projectDir)).kanban;
+    expect(kanban.tree_total).toBe(4);
+    expect(kanban.card_ids_by_column.review).toEqual([
+      "blocked-child",
+      "live-review",
+    ]);
+    expect(kanban.card_ids_by_column.blocked).toEqual([]);
+    expect(kanban.card_ids_by_column.review).not.toContain("structural-parent");
+    expect(kanban.card_ids_by_column.review).not.toContain(
+      "disconnected-container",
+    );
+  });
+
   test("allows owner-decided ordinary task creation directly under root", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -887,7 +1086,8 @@ describe("task tree tools", () => {
       condition: "The exact ADO run is still nonterminal.",
       resumeCondition:
         "Resume when a fresh observation records the exact run as terminal.",
-      summary: "Refreshed the same exact pipeline wait without queueing a rerun.",
+      summary:
+        "Refreshed the same exact pipeline wait without queueing a rerun.",
       nextCheckAt: "2026-07-15T11:52:00Z",
     });
 
@@ -1248,6 +1448,152 @@ describe("task tree tools", () => {
               outputs: ["evidence/archive/lifecycle.md"],
               acceptance: [
                 "The distinct subpath path.private-cluster-private-endpoint-connections-lifecycle stays separate from sibling path.private-cluster-private-endpoint-connections.",
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.project_hygiene_warnings).toBeUndefined();
+  });
+
+  test("planning packet suppresses warning for explicit non-rerun compact-surface hygiene on a final path", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.rp-cluster-lifecycle.preflight-validation",
+              status: "pass",
+              verdictFinal: true,
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "compact-direct-path-repair",
+          active_task_ids: ["compact-direct-path-repair"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["compact-direct-path-repair"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-direct-path-repair": {
+              id: "compact-direct-path-repair",
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Refresh the repo-local rp-cluster-lifecycle compact review surfaces for spec.rp-cluster-lifecycle.preflight-validation so committed compact artifacts point at features/rp-cluster-lifecycle/tests/rp-preflight-validation.test.ts instead of the deleted plain .ts path, without rerunning the already-final pass path or widening into unrelated rp-cluster-lifecycle specs.",
+              outputs: [
+                "../aks-rp-e2e/features/rp-cluster-lifecycle/compact/staging.plan.json",
+              ],
+              acceptance: [
+                "features/rp-cluster-lifecycle/specs/rp-preflight-validation.json and features/rp-cluster-lifecycle/packets/preflight-validation.yaml continue to point at features/rp-cluster-lifecycle/tests/rp-preflight-validation.test.ts, and evidence explains this is compact-surface hygiene on already-final path path.rp-cluster-lifecycle.preflight-validation rather than rerun authority.",
+                "The worker records exact non-rerun repo verification for the repaired compact artifact and does not launch a cloud rerun from this leaf.",
+              ],
+              conflict_scope: [
+                "spec:spec.rp-cluster-lifecycle.preflight-validation",
+                "path:path.rp-cluster-lifecycle.preflight-validation",
+                "file:features/rp-cluster-lifecycle/compact/staging.plan.json",
+              ],
+              context: {
+                repairSurface: "compact-direct-path",
+                nonRerun: true,
+                scenario: "spec.rp-cluster-lifecycle.preflight-validation",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.project_hygiene_warnings).toBeUndefined();
+  });
+
+  test("planning packet suppresses warning for final-path hygiene warning repair tasks", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.rp-cluster-lifecycle.preflight-validation",
+              status: "pass",
+              verdictFinal: true,
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "warning-repair",
+          active_task_ids: ["warning-repair"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["warning-repair"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "warning-repair": {
+              id: "warning-repair",
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Repair the task-tree/planner integrity shape that flags final-path compact-surface hygiene as stale retry planning so non-rerun file-only follow-up work on an already-final path stops emitting stale-terminal-retry warnings.",
+              outputs: ["evidence/archive/warning-repair.md"],
+              acceptance: [
+                "The next packet no longer flags the bounded compact-direct-path hygiene leaf as retry planning on a final path.",
+              ],
+              conflict_scope: [
+                "ops:task-tree-integrity:final-path-hygiene-warning",
               ],
             },
           },
@@ -2208,6 +2554,250 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses source-exactness-overblock warning for watched app-ops external waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["watched-source-wait", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "watched-source-wait": {
+              id: "watched-source-wait",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep the exact same-run queue-family holder visible after the source-equivalent replay repair was already queued.",
+              outputs: ["evidence/archive/watched-source-wait.md"],
+              acceptance: ["one family-level wait remains visible"],
+              blocker: {
+                condition:
+                  "Blocked on the exact queue-family frontier after a source-equivalent replay repair was already queued; do not create a second passive source-holder while app-ops keeps the shared approval proof active.",
+                category: "external-wait",
+                owner: "app-ops",
+                waiting_for: {
+                  type: "frontier.changed",
+                  taskId: "watched-source-wait",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  trigger: "task-tree.refresh-blocked-wait",
+                },
+                observation_method:
+                  "Scheduled app-ops review checks this wait and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+                resume_at: "2099-07-13T12:00:00Z",
+                next_check_at: "2099-07-13T12:00:00Z",
+                fallback_at: "2099-07-14T12:00:00Z",
+                fallback_action:
+                  "If the shared family is still unresolved, refresh this exact wait instead of creating duplicate passive source blockers.",
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses source-exactness-overblock warning for exact Azure DevOps completion waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["ado-source-wait", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ado-source-wait": {
+              id: "ado-source-wait",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Preserve the exact in-flight ADO completion wait after the source-equivalent repair replay was queued.",
+              outputs: ["evidence/archive/ado-source-wait.md"],
+              acceptance: ["the exact run wait remains visible"],
+              blocker: {
+                condition:
+                  "Blocked on the exact Azure DevOps pipeline wait after a source-equivalent repair replay was queued. Resume only when run 172009175 is terminal and artifacts are available.",
+                category: "external-wait",
+                owner: "ado",
+                waiting_for: {
+                  type: "ado.pipeline_run.completed",
+                  runId: "172009175",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172009175",
+                },
+                observed_by: {
+                  workflow: "project-execution-watchdog",
+                  trigger: "project.task.reviewed",
+                },
+                observation_method:
+                  "Watchdog checks the named Azure DevOps run and moves this wait to review when the run is terminal; the reviewer then consumes artifacts and records the exact result.",
+                next_check_at: "2099-07-13T16:25:00Z",
+                fallback_at: "2099-07-13T18:15:00Z",
+                fallback_action:
+                  "If the run is still not reviewable at fallback, refresh this exact wait with current ADO status or escalate the artifact/reachability issue.",
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses blocked-action warnings for review-gated publication waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["review-gated-publication-holder", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "review-gated-publication-holder": {
+              id: "domain/publish-rp-regional-quota-review-visible-20260716",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep the accepted rp-regional-quota repo slice unpublished until the live review lineage returns a publication-safe decision, then publish that exact accepted slice to a pipeline-visible branch/head or replace it with the reviewer-requested successor without widening into new rp-regional-quota authoring from this holder.",
+              outputs: [
+                "evidence/archive/publish-rp-regional-quota-review-visible-20260716.md",
+              ],
+              acceptance: [
+                "Consume the structured publication-safe decision produced by the live rp-regional-quota redo/review chain before publishing or superseding any repo slice.",
+              ],
+              blocker: {
+                condition:
+                  "Reviewer-gated publication holder only. This task is not the westus2 managedClusters quota/capacity blocker: that exact environment wait remains carried by reconcile-spec-loop-pending-rp-regional-quota. This holder should unblock only on a reviewer decision for fix-rp-regional-quota-public-create-path-run-172346097 or an accepted same-lineage successor that makes publication safe.",
+                resume_condition:
+                  "Resume only when the project.task.reviewed decision for fix-rp-regional-quota-public-create-path-run-172346097, or an accepted same-lineage successor, returns the exact publication-safe decision for this rp-regional-quota slice.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "blocker.resolved",
+                  taskId:
+                    "domain/publish-rp-regional-quota-review-visible-20260716",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-app-ops-review",
+                  trigger: "project.owner.requested",
+                },
+                observation_method:
+                  "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses environment-overblock warning for feature-compact exact non-environment frontiers", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -2342,45 +2932,46 @@ describe("task tree tools", () => {
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
             },
-            "wait-compact-reviewed-exception-live-ready-policy-family-20260702": {
-              id: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
-              parent_id: "project",
-              state: "blocked",
-              children: [],
-              goal: "Represent the shared residual reviewed-exception/live-ready policy wait for ccp-coredns, ccp-metricsserver, kms-etcd-encryption, planned-maintenance, and ossku-migration until accepted member reclassification or an intentional compact live-ready policy change occurs.",
-              outputs: ["evidence/archive/compact-policy-family.md"],
-              acceptance: ["shared family wait stays visible"],
-              context: {
-                featureCompactExactWait: true,
-                familyFeatureKeys: [
-                  "ccp-coredns",
-                  "ccp-metricsserver",
-                  "kms-etcd-encryption",
-                  "ossku-migration",
-                  "planned-maintenance",
-                ],
-              },
-              blocker: {
-                condition:
-                  "Blocked only while the residual reviewed-exception members across ccp-coredns, ccp-metricsserver, kms-etcd-encryption, ossku-migration, and planned-maintenance remain intentionally excluded from the compact live-ready subset.",
-                category: "external-wait",
-                owner: "aks-explorer",
-                waiting_for: {
-                  type: "compact.live-ready.policy",
-                  scope: "reviewed-exception-live-ready-family",
-                  taskId:
-                    "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
-                  featureKeys: [
+            "wait-compact-reviewed-exception-live-ready-policy-family-20260702":
+              {
+                id: "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+                parent_id: "project",
+                state: "blocked",
+                children: [],
+                goal: "Represent the shared residual reviewed-exception/live-ready policy wait for ccp-coredns, ccp-metricsserver, kms-etcd-encryption, planned-maintenance, and ossku-migration until accepted member reclassification or an intentional compact live-ready policy change occurs.",
+                outputs: ["evidence/archive/compact-policy-family.md"],
+                acceptance: ["shared family wait stays visible"],
+                context: {
+                  featureCompactExactWait: true,
+                  familyFeatureKeys: [
                     "ccp-coredns",
                     "ccp-metricsserver",
                     "kms-etcd-encryption",
                     "ossku-migration",
                     "planned-maintenance",
                   ],
-                  target: "staging",
+                },
+                blocker: {
+                  condition:
+                    "Blocked only while the residual reviewed-exception members across ccp-coredns, ccp-metricsserver, kms-etcd-encryption, ossku-migration, and planned-maintenance remain intentionally excluded from the compact live-ready subset.",
+                  category: "external-wait",
+                  owner: "aks-explorer",
+                  waiting_for: {
+                    type: "compact.live-ready.policy",
+                    scope: "reviewed-exception-live-ready-family",
+                    taskId:
+                      "wait-compact-reviewed-exception-live-ready-policy-family-20260702",
+                    featureKeys: [
+                      "ccp-coredns",
+                      "ccp-metricsserver",
+                      "kms-etcd-encryption",
+                      "ossku-migration",
+                      "planned-maintenance",
+                    ],
+                    target: "staging",
+                  },
                 },
               },
-            },
             "real-env-blocker": {
               id: "real-env-blocker",
               parent_id: "project",
@@ -2740,6 +3331,99 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for refreshed aad-rbac trio holders that explicitly reject a missing review leaf as the mover", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: [
+                "aad-rbac-reviewed-exception-trio",
+                "real-env-blocker",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aad-rbac-reviewed-exception-trio": {
+              id: "hold-compact-aad-rbac-reviewed-exception-trio-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Preserve only the exact aad-rbac reviewed-exception compact trio: the capacity-family wait for spec.aad-rbac.azure-rbac-automatic-sku, the row-37 owner contradiction holder for spec.aad-rbac.managed-v2-lifecycle, and the reviewed-exception/domain-evidence ceiling for spec.aad-rbac.run-command-access.",
+              outputs: ["evidence/archive/aad-rbac-trio.md"],
+              acceptance: [
+                "The holder preserves only the reviewed-exception trio and records the exact surviving downstream lineage: wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702, hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705, and reviewed-exception/domain evidence for spec.aad-rbac.run-command-access.",
+                "The old broad package-partial frontage is retired; the compact leaf now truthfully describes a reviewed-exception trio only.",
+              ],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "aad-rbac",
+                errorClass: "reviewed-exception",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "2026-07-16T11:15Z metric-breach repair revalidated that this compact frontier is only a passive trio representation: wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702 remains the single live shared Automatic/ManagedSystem capacity-family wait for spec.aad-rbac.azure-rbac-automatic-sku; hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705 remains the exact owner-contradiction holder for spec.aad-rbac.managed-v2-lifecycle; and the accepted reviewed-exception/domain evidence ceiling still governs spec.aad-rbac.run-command-access. The previously named review leaf domain/recheck-automatic-managedsystem-capacity-family-recovery-20260716 is not present in the current tree, so do not treat it as the mover.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "blocker.resolved",
+                  taskId:
+                    "hold-compact-aad-rbac-reviewed-exception-trio-frontier",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-app-ops-review",
+                  trigger: "project.planning.requested",
+                },
+                observation_method:
+                  "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+                resume_condition:
+                  "Resume when wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702 returns reviewed Automatic/ManagedSystem capacity recovery evidence for the aad-rbac automatic-sku member, when the row-37 owner adjudication changes, or when stronger direct run-command-access evidence materially changes the reviewed-exception ceiling.",
+                fallback_action:
+                  "If fallback review still sees the same trio, keep one exact compact trio holder aligned to wait-secops-fips-automatic-managedsystem-capacity-family-return-20260702 and the row-37 owner-response state instead of restoring a broad package-partial wait.",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet still warns on blocker.resolved environment holders that lack exact shared-family plus no-local-successor evidence", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -2921,6 +3605,185 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses source-exactness-overblock warning for compact superseded source-witness carriers already blocked behind an exact public wait", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: [
+                "compact-source-witness-carrier",
+                "source-exactness-blocker",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-source-witness-carrier": {
+              id: "compact-source-witness-carrier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep the rp-regional-quota compact package blocked only behind the single public-create-path exact wait; represent the multi-cluster source-equivalent alias only as a superseded nonlive source witness, not as pending review debt.",
+              outputs: ["evidence/archive/compact-source-witness-carrier.md"],
+              acceptance: [
+                "spec.rp-regional-quota.multi-cluster-source-equivalent is represented only as superseded raw-file/source-witness lineage and no longer appears as live review debt.",
+                "spec.rp-regional-quota.public-create-path remains the only active compact frontier and is blocked only through reconcile-spec-loop-pending-rp-regional-quota.",
+              ],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "rp-regional-quota",
+                errorClass: "compact-error",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Compact package excludes superseded raw-file lineage spec.rp-regional-quota.multi-cluster-source-equivalent; the only active compact frontier is spec.rp-regional-quota.public-create-path, which is already preserved as the exact blocked westus2 exhaustion wait on reconcile-spec-loop-pending-rp-regional-quota.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "blocker.resolved",
+                  taskId: "compact-source-witness-carrier",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-app-ops-review",
+                  trigger: "project.owner.requested",
+                },
+                observation_method:
+                  "Scheduled blocked-frontier review checks the compact summary/diagnostics plus the named public carrier and either keeps this exact compact wait or restores the next truthful compact frontier.",
+                resume_condition:
+                  "Resume only when reconcile-spec-loop-pending-rp-regional-quota changes the accepted public frontier or when the compact live-ready filter contract itself materially changes.",
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses source-exactness-overblock warning for exact quota-headroom waits with isolated alternative-target work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["quota-headroom-wait", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "quota-headroom-wait": {
+              id: "quota-headroom-wait",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Carry the single exact westus2 quota-headroom wait for spec.rp-regional-quota.public-create-path. The only remaining blocker is current staging managedClusters headroom; any alternative-target or source-equivalent question is already isolated and must not spawn duplicate blocked work.",
+              outputs: ["evidence/archive/quota-headroom-wait.md"],
+              acceptance: [
+                "This task remains the only live blocked carrier while westus2 managedClusters headroom prevents the decisive quota-negative create assertion; lack of a new exact source witness alone must not block progress.",
+                "Resume only when the same staging subscription+region is again exhausted enough for the decisive managedClusters PUT quota-negative assertion, or when another reviewed same-surface exhausted target is accepted for this exact carrier.",
+                "If the active alternative-target check proves no truthful successor exists, keep this exact wait as the sole family holder.",
+              ],
+              blocker: {
+                condition:
+                  "Reviewed run 172346097 proves the repaired carrier now stops only because staging westus2 managedClusters headroom is 40/161 rather than exhausted, so the decisive quota-negative create assertion was not reached.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "azure.quota.exhausted",
+                  taskId: "quota-headroom-wait",
+                  specId: "spec.rp-regional-quota.public-create-path",
+                  subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+                  location: "westus2",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-app-ops-review",
+                  trigger: "project.owner.requested",
+                },
+                observation_method:
+                  "Blocked-frontier review checks reviewed same-surface quota/headroom evidence for the named subscription+region and either keeps the wait, restores one bounded rerun task, or records an accepted replacement exhausted target.",
+                next_check_at: "2099-07-16T03:35:33.203Z",
+                fallback_at: "2099-07-16T13:35:33.203Z",
+                resume_condition:
+                  "Resume only when the same staging subscription+region is again exhausted enough for the decisive managedClusters PUT quota-negative assertion, or when another reviewed same-surface exhausted target is accepted for this exact carrier.",
+                fallback_action:
+                  "If no reviewed same-surface exhaustion proof appears by the next review window, refresh this exact wait from current quota/headroom evidence; do not rerun unchanged and do not revive the superseded multi-cluster source witness.",
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet excludes durable loop roots from task_tree_hygiene compaction candidates", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -3060,9 +3923,7 @@ describe("task tree tools", () => {
       repairedChildBlockedParentResults: [],
       repairedLegacyFocusApprovalStates: [],
       repairedProjectRootGoal: false,
-      repaired: [
-        { taskId: "model-feedback", from: "done", to: "active" },
-      ],
+      repaired: [{ taskId: "model-feedback", from: "done", to: "active" }],
     });
 
     const tree = JSON.parse(
@@ -5779,9 +6640,109 @@ describe("task tree tools", () => {
     );
     expect(tree.tasks["aks-spec-verification-loop"].state).toBe("backlog");
     expect(tree.tasks["aks-spec-verification-loop"].blocker).toBeUndefined();
+    expect(tree.tasks["aks-spec-verification-loop"].trace?.reopened_by).toBe(
+      "task-tree-repair",
+    );
+  });
+
+  test("suppresses runnable durable loop roots when active children already carry the live spec frontier", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "active-spec-followup",
+          active_task_ids: ["active-spec-followup"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal", "active-spec-followup"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "spec-loop frontier remains narrow while residue is still nonterminal: 1 active child leaf/leaves, 0 review child leaf/leaves, 0 waiting child leaf/leaves, 0 backlog child leaf/leaves, 1 blocked wait leaf/leaves, 0 backlog follow-up leaf/leaves; residue pending=42 (dispatchable=0, stranded=42), residue running=0, residue error=0, residue fail=0",
+                  pending: 42,
+                  dispatchablePending: 0,
+                  strandedPending: 42,
+                  running: 0,
+                  activeChildren: 1,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                  openChildren: 1,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  blockedWaitChildren: 1,
+                  unrepresentedNonTerminalCount: 0,
+                },
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+            "active-spec-followup": {
+              id: "active-spec-followup",
+              parent_id: "aks-spec-verification-loop",
+              state: "active",
+              status: "active",
+              goal: "Repair a spec.",
+              outputs: ["evidence/archive/active-spec.md"],
+              acceptance: ["Repair reviewed"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    repairTaskTreeRollups(config(projectDir));
+
+    const summary = summarizeTaskTree(config(projectDir));
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.active).toEqual(["active-spec-followup"]);
+
+    expect(confirmRunnableBacklogLeaves(config(projectDir), 10)).toEqual([]);
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["aks-spec-verification-loop"].state).toBe("backlog");
     expect(
-      tree.tasks["aks-spec-verification-loop"].trace?.reopened_by,
-    ).toBe("task-tree-repair");
+      tree.tasks["aks-spec-verification-loop"].trace?.promoted_by,
+    ).toBeUndefined();
   });
 
   test("repair-rollups preserves blocked-only durable loop wait stewardship roots even with active/review/waiting/backlog counters explicitly zero", async () => {
@@ -6247,7 +7208,9 @@ describe("task tree tools", () => {
     expect(packet.frontier_details.runnable.map((task) => task.id)).toEqual([
       "regular-backlog-fix",
     ]);
-    expect(packet.frontier.review).toEqual(["domain/compact-ready-subset-review"]);
+    expect(packet.frontier.review).toEqual([
+      "domain/compact-ready-subset-review",
+    ]);
 
     expect(listRunnableBacklogTaskIds(config(projectDir), 10)).toEqual([
       "regular-backlog-fix",
@@ -6319,6 +7282,275 @@ describe("task tree tools", () => {
     expect(summary.active_structural_task_ids).toEqual(["project"]);
     expect(summary.active_count_explanation).toContain("project");
     expect(summary.active_count_explanation).toContain("tree_counts.active");
+  });
+
+  test("explains structural backlog contributors when tree_counts.backlog exceeds executable backlog leaves", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-feature-compact-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              workflow: "feature-compact-loop-controller",
+              children: ["wait-compact-external-signal"],
+              goal: "Keep compact loop moving.",
+              outputs: [".state/feature-compact-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  pending: 0,
+                  running: 0,
+                  blocked: 1,
+                  error: 0,
+                  retryBudgetExhausted: 0,
+                  unrepresentedNonTerminalCount: 0,
+                  openChildren: 0,
+                  openSupportChildren: 0,
+                  blockedWaitChildren: 1,
+                },
+              },
+            },
+            "wait-compact-external-signal": {
+              id: "wait-compact-external-signal",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              status: "blocked",
+              children: [],
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-compact.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const summary = summarizeTaskTree(config(projectDir)) as {
+      tree_counts: Record<string, number>;
+      counts: Record<string, number>;
+      frontier: { runnable: string[]; waiting: string[] };
+      backlog_structural_task_ids?: string[];
+      backlog_count_explanation?: string;
+    };
+    expect(summary.tree_counts.backlog).toBe(2);
+    expect(summary.counts.backlog).toBe(0);
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.waiting).toEqual([]);
+    expect(summary.backlog_structural_task_ids).toEqual([
+      "aks-feature-compact-loop",
+      "project",
+    ]);
+    expect(summary.backlog_count_explanation).toContain(
+      "aks-feature-compact-loop",
+    );
+    expect(summary.backlog_count_explanation).toContain(
+      "frontier.runnable + frontier.waiting",
+    );
+  });
+
+  test("suppresses blocked structural durable loop roots and explains blocked count parity", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["aks-spec-verification-loop"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "blocked",
+              status: "blocked",
+              workflow: "spec-loop-controller",
+              priority: "P1",
+              children: ["wait-spec-external-signal"],
+              goal: "Keep spec verification moving.",
+              outputs: [".state/spec-loop/state.json"],
+              acceptance: ["Loop stays truthful."],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  noRefillNow: true,
+                  reason:
+                    "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
+                  pending: 1,
+                  running: 0,
+                  unrepresentedNonTerminalCount: 0,
+                  blockedWaitChildren: 1,
+                  openChildren: 0,
+                  openSpecVerifierChildren: 0,
+                  openFollowups: 0,
+                  activeChildren: 0,
+                  reviewChildren: 0,
+                  waitingChildren: 0,
+                  backlogChildren: 0,
+                },
+              },
+            },
+            "wait-spec-external-signal": {
+              id: "wait-spec-external-signal",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              status: "blocked",
+              children: [],
+              goal: "Wait for exact signal.",
+              outputs: ["evidence/archive/wait-spec.md"],
+              acceptance: ["Signal returned"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const summary = summarizeTaskTree(config(projectDir)) as {
+      tree_counts: Record<string, number>;
+      counts: Record<string, number>;
+      frontier: { blocked: string[] };
+      blocked_structural_task_ids?: string[];
+      blocked_count_explanation?: string;
+    };
+    expect(summary.tree_counts.blocked).toBe(2);
+    expect(summary.counts.blocked).toBe(1);
+    expect(summary.frontier.blocked).toEqual(["wait-spec-external-signal"]);
+    expect(summary.frontier.blocked).not.toContain(
+      "aks-spec-verification-loop",
+    );
+    expect(summary.blocked_structural_task_ids).toEqual([
+      "aks-spec-verification-loop",
+    ]);
+    expect(summary.blocked_count_explanation).toContain(
+      "aks-spec-verification-loop",
+    );
+    expect(summary.blocked_count_explanation).toContain("tree_counts.blocked");
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.frontier.blocked).toEqual(["wait-spec-external-signal"]);
+  });
+
+  test("repair-rollups converts hidden focus-plan approval backlog into a blocked approval wait", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["focus-hidden-backlog"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "focus-hidden-backlog": {
+              id: "focus-hidden-backlog",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "focus_plan",
+              goal: "Propose the next focus mission.",
+              outputs: ["evidence/archive/focus-hidden-backlog.md"],
+              acceptance: ["Owner reviews the plan."],
+              context: {
+                needs_approval: true,
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const before = summarizeTaskTree(config(projectDir));
+    expect(before.counts.backlog).toBe(1);
+    expect(before.frontier.runnable).toEqual([]);
+    expect(before.frontier.waiting).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(projectDir), 10)).toEqual([]);
+
+    const result = repairTaskTreeRollups(config(projectDir));
+    expect(result.repairedLegacyFocusApprovalStates).toEqual([
+      "focus-hidden-backlog",
+    ]);
+
+    const after = summarizeTaskTree(config(projectDir));
+    expect(after.counts.backlog).toBe(0);
+    expect(after.frontier.runnable).toEqual([]);
+    expect(after.frontier.waiting).toEqual([]);
+    expect(after.frontier.blocked).toEqual(["focus-hidden-backlog"]);
+    expect(confirmRunnableBacklogLeaves(config(projectDir), 10)).toEqual([]);
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["focus-hidden-backlog"].state).toBe("blocked");
+    expect(tree.tasks["focus-hidden-backlog"].blocker).toMatchObject({
+      category: "human-approval",
+      owner: "human",
+      waiting_for: {
+        type: "project.approval.submitted",
+        taskId: "focus-hidden-backlog",
+      },
+    });
+    expect(
+      tree.tasks["focus-hidden-backlog"].context
+        ?.approval_wait_normalization_note,
+    ).toContain("stale hidden backlog state");
   });
 
   test("repair-rollups reopens spec-loop stranded exhausted residue", async () => {

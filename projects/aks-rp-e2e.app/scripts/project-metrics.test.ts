@@ -226,6 +226,7 @@ async function writeArchivedDoneTask(
     attemptId: string;
     sessionId: string;
     resolution?: string;
+    omitCurrentAttemptId?: boolean;
   },
 ) {
   await writeFile(
@@ -242,7 +243,9 @@ async function writeArchivedDoneTask(
             resolution: input.resolution ?? "completed",
             session_id: input.sessionId,
             trace: {
-              current_attempt_id: input.attemptId,
+              ...(input.omitCurrentAttemptId
+                ? {}
+                : { current_attempt_id: input.attemptId }),
               worker_started_attempt_id: input.attemptId,
               last_worker_result: "done",
               last_worker_claim: "done",
@@ -547,7 +550,7 @@ describe("project metrics", () => {
     expect(note.staleWorkflowRuns).toEqual([]);
   });
 
-  test("counts overdue blocked waits only when no active recovery references them", async () => {
+  test("counts overdue blocked waits only after fallback and when no active recovery references them", async () => {
     const overdueBlocker = {
       waiting_for: { type: "workflow.completed" },
       resume_condition: "Resume when the named workflow completes.",
@@ -867,7 +870,9 @@ describe("project metrics", () => {
       lineageScopedRecovery.appDir,
       {
         goal: "Repair the shared auth family.",
-        conflict_scope: ["shared-authenticated-artifact-result-recovery-family-20260712"],
+        conflict_scope: [
+          "shared-authenticated-artifact-result-recovery-family-20260712",
+        ],
       },
       {
         "shared-auth-wait": {
@@ -880,7 +885,8 @@ describe("project metrics", () => {
             ...overdueBlocker,
             waiting_for: {
               type: "project.approval.submitted",
-              pathId: "shared-authenticated-artifact-result-recovery-family-20260712",
+              pathId:
+                "shared-authenticated-artifact-result-recovery-family-20260712",
             },
           },
         },
@@ -913,13 +919,13 @@ describe("project metrics", () => {
         dueResumeWithFutureFallback,
         "aks-rp-e2e.process.blocked.overdue-unworked-count",
       ),
-    ).toBe("1");
+    ).toBe("0");
     expect(
       await metricValue(
         dueResumeWithFutureFallback,
         "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
       ),
-    ).toBe("1");
+    ).toBe("0");
   });
 
   test("counts review decisions that were emitted but not applied to the live review task", async () => {
@@ -1519,7 +1525,9 @@ describe("project metrics", () => {
       status: "running",
       opCount: 1,
       startedAt: Date.now() - 10_000,
-      lastActivityAt: Date.now(),
+      // The loop-recovery assertions invoke several metric subprocesses; do
+      // not let their runtime turn this unrelated session into another signal.
+      lastActivityAt: Date.now() + 60_000,
     });
     await writeSpecLoopState(fixture, {
       "spec.network-acns.retina-basic": {
@@ -1577,7 +1585,9 @@ describe("project metrics", () => {
       status: "running",
       opCount: 1,
       startedAt: Date.now() - 10_000,
-      lastActivityAt: Date.now(),
+      // This test invokes three metric subprocesses; keep the unrelated active
+      // fixture out of the 1s stale-session threshold while they run.
+      lastActivityAt: Date.now() + 60_000,
     });
     await writeSpecLoopState(fixture, {
       "spec.network-acns.retina-basic": {
@@ -1696,7 +1706,10 @@ describe("project metrics", () => {
       status: "running",
       opCount: 1,
       startedAt: Date.now() - 10_000,
-      lastActivityAt: Date.now(),
+      // This test invokes three metric subprocesses. Under the full parallel
+      // suite they can span the 1s stale-session threshold, so keep the
+      // unrelated active repair fixture fresh for the whole assertion window.
+      lastActivityAt: Date.now() + 60_000,
     });
     await writeSpecLoopState(fixture, {
       "spec.node-ephemeral-disk.auto-resource-placement": {
@@ -1768,7 +1781,9 @@ describe("project metrics", () => {
       status: "running",
       opCount: 1,
       startedAt: Date.now() - 10_000,
-      lastActivityAt: Date.now(),
+      // The loop-recovery assertions invoke several metric subprocesses; do
+      // not let their runtime turn this unrelated session into another signal.
+      lastActivityAt: Date.now() + 60_000,
     });
     await writeSpecLoopState(fixture, {
       "spec.bootstrap-profile-byo-acr.cache-direct-cache-switch": {
@@ -1876,6 +1891,41 @@ describe("project metrics", () => {
         ),
       ),
     ).toBeGreaterThan(0);
+  });
+
+  test("ignores ahead commits that are already visible on another origin ref", async () => {
+    const fixture = await makeFixture();
+    const originDir = join(fixture.root, "origin.git");
+    await $`git init --bare ${originDir}`.quiet();
+    await $`git init -b feature`.cwd(fixture.projectDir).quiet();
+    await $`git config user.name "Test User"`.cwd(fixture.projectDir).quiet();
+    await $`git config user.email "test@example.com"`
+      .cwd(fixture.projectDir)
+      .quiet();
+    await $`git add .`.cwd(fixture.projectDir).quiet();
+    await $`git commit -m "base"`.cwd(fixture.projectDir).quiet();
+    await $`git remote add origin ${originDir}`.cwd(fixture.projectDir).quiet();
+    await $`git push -u origin feature`.cwd(fixture.projectDir).quiet();
+
+    await writeFile(join(fixture.projectDir, "visible.txt"), "visible\n");
+    await $`git add visible.txt`.cwd(fixture.projectDir).quiet();
+    await $`git commit -m "visible elsewhere"`.cwd(fixture.projectDir).quiet();
+    await $`git push origin HEAD:refs/heads/visible-branch`
+      .cwd(fixture.projectDir)
+      .quiet();
+
+    await writeFile(join(fixture.projectDir, "local-only.txt"), "local only\n");
+    await $`git add local-only.txt`.cwd(fixture.projectDir).quiet();
+    await $`git commit -m "local only"`.cwd(fixture.projectDir).quiet();
+
+    expect(
+      Number(
+        await metricValue(
+          fixture,
+          "aks-rp-e2e.process.unpublished-change-count",
+        ),
+      ),
+    ).toBe(1);
   });
 
   test("counts task tree root integrity problems", async () => {
@@ -2030,16 +2080,9 @@ describe("project metrics", () => {
 
   test("does not count archived done assignment pairs with a completed task-worker session as unowned mismatch work", async () => {
     const fixture = await makeFixture();
-    await writeTree(fixture.appDir, { session_id: "s_running" });
-    writeSession(fixture.dbPath, {
-      sessionId: "s_running",
-      status: "running",
-      outcome: null,
-      source: "workflow:task-worker",
-      startedAt: Date.now() - 500,
-      lastActivityAt: Date.now(),
-      endedAt: null,
-      task: '{"taskId":"active-task"}\nAttempt: active-attempt',
+    await writeTree(fixture.appDir, {
+      session_id: "s_running",
+      kind: "focus_plan",
     });
     await writeArchivedDoneTask(fixture.appDir, {
       taskId: "archived-followup",
@@ -2092,6 +2135,88 @@ describe("project metrics", () => {
     expect(unowned.sampleSize).toBe(0);
     expect(JSON.parse(unowned.note ?? "{}")).toEqual(
       expect.objectContaining({
+        assignmentMismatchKeys: [],
+        assignmentMismatchTasks: [],
+      }),
+    );
+  });
+
+  test("does not count archived replaced assignment pairs once the no-session task-worker run has finished", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_running",
+      kind: "focus_plan",
+    });
+    await writeArchivedDoneTask(fixture.appDir, {
+      taskId: "archived-followup",
+      attemptId: "attempt-1",
+      sessionId: "s_missing",
+      resolution: "replaced",
+      omitCurrentAttemptId: true,
+    });
+    writeWorkflowRun(fixture.dbPath, {
+      runId: "wr_finished_no_session",
+      workflow: "task-worker",
+      status: "done",
+      startedAt: Date.now() - 20_000,
+      task: [
+        "app: /tmp/app",
+        "project: /tmp/project",
+        "source: /tmp/source",
+        "",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.task.assigned",
+          data: {
+            project: "aks-rp-e2e",
+            taskId: "archived-followup",
+            attemptId: "attempt-1",
+            sessionId: "s_missing",
+            worker: "aks-explorer",
+            assignedAt: new Date(Date.now() - 20_000).toISOString(),
+          },
+        }),
+        "```",
+      ].join("\n"),
+    });
+    writeProjectTaskPair(fixture.dbPath, {
+      taskId: "archived-followup",
+      attemptId: "attempt-1",
+      status: "open",
+    });
+
+    const mismatch = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment-state-mismatch-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(mismatch.value).toBe(0);
+    expect(mismatch.sampleSize).toBe(0);
+    expect(JSON.parse(mismatch.note ?? "{}")).toEqual({ mismatches: [] });
+
+    const unowned = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.unowned-work-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(unowned.value).toBe(0);
+    expect(unowned.sampleSize).toBe(0);
+    expect(JSON.parse(unowned.note ?? "{}")).toEqual(
+      expect.objectContaining({
+        staleWorkflowRuns: [],
         assignmentMismatchKeys: [],
         assignmentMismatchTasks: [],
       }),
@@ -3373,7 +3498,8 @@ describe("project metrics", () => {
             owner: "human",
             waiting_for: {
               type: "owner.decision",
-              taskId: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              taskId:
+                "ops/wait-project-approval-owner-return-primary-blocker-20260713",
               governingWaitTaskId:
                 "ops/wait-project-approval-owner-return-primary-blocker-20260713",
             },
@@ -3396,11 +3522,7 @@ describe("project metrics", () => {
     });
 
     const noWork = JSON.parse(
-      await metricValue(
-        fixture,
-        "aks-rp-e2e.task.no-work-with-gaps",
-        "--json",
-      ),
+      await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps", "--json"),
     );
     expect(noWork).toMatchObject({
       value: 0,
@@ -3408,7 +3530,9 @@ describe("project metrics", () => {
     });
     expect(JSON.parse(noWork.note)).toMatchObject({
       disposition: "approval-gated-blocked-only",
-      focusTaskIds: ["focus-terminal-frontier-finality-reconciliation-20260714"],
+      focusTaskIds: [
+        "focus-terminal-frontier-finality-reconciliation-20260714",
+      ],
       governingWaitTaskIds: [
         "ops/wait-project-approval-owner-return-primary-blocker-20260713",
       ],
@@ -3516,11 +3640,7 @@ describe("project metrics", () => {
     });
 
     const noWork = JSON.parse(
-      await metricValue(
-        fixture,
-        "aks-rp-e2e.task.no-work-with-gaps",
-        "--json",
-      ),
+      await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps", "--json"),
     );
     expect(noWork).toMatchObject({
       value: 0,
@@ -3740,7 +3860,7 @@ describe("project metrics", () => {
     );
   });
 
-  test("counts planner timeout and slow planner runs from planner-runs history", async () => {
+  test("counts owner-step timeout wakes separately from non-timeout slow wakes", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, { session_id: "s_running" });
     writeSession(fixture.dbPath, {
@@ -3772,6 +3892,16 @@ describe("project metrics", () => {
           durationMs: 181000,
           result:
             "Routine watchdog refill seeded model-gap work without owner-agent planning.",
+        }),
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          durationMs: 181000,
+          result:
+            "Planner update completed after a long owner-step review wave.",
         }),
         JSON.stringify({
           ts: new Date().toISOString(),
@@ -3811,10 +3941,10 @@ describe("project metrics", () => {
     );
 
     expect(await metricValue(fixture, "aks-rp-e2e.planner.timeout-24h")).toBe(
-      "1",
+      "2",
     );
     expect(
       await metricValue(fixture, "aks-rp-e2e.planner.slow-count-24h"),
-    ).toBe("4");
+    ).toBe("2");
   });
 });

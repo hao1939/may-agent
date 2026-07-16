@@ -11,7 +11,11 @@ import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { isAbsolute, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { readTaskTree, type TaskNode } from "./lib/task-tree-store.ts";
+import {
+  readTaskTree,
+  taskRevision,
+  type TaskNode,
+} from "./lib/task-tree-store.ts";
 import { taskTreeConfig } from "./lib/task-tree-tools.ts";
 import {
   field,
@@ -122,6 +126,17 @@ function hasTerminalPipelineWaitReview(task: TaskNode): boolean {
 function currentAttemptId(task: TaskNode): string {
   const value = taskTrace(task).current_attempt_id;
   return typeof value === "string" ? value : "";
+}
+
+function completionTaskRevision(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): number {
+  const value =
+    triggerValue(trigger, "taskRevision") ??
+    triggerValue(trigger, "task_revision");
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : 0;
 }
 
 function stringList(value: unknown): string[] {
@@ -668,7 +683,11 @@ function terminalPipelineWaitExpectedSpecIds(task: TaskNode): string[] {
 }
 
 function looksExactArtifactPath(path: string): boolean {
-  return Boolean(path) && !path.endsWith("/") && /(^|\/)[^/]+\.[A-Za-z0-9]+$/i.test(path);
+  return (
+    Boolean(path) &&
+    !path.endsWith("/") &&
+    /(^|\/)[^/]+\.[A-Za-z0-9]+$/i.test(path)
+  );
 }
 
 function terminalPipelineStructuredResultIssues(
@@ -688,7 +707,9 @@ function terminalPipelineStructuredResultIssues(
     : [];
 
   if (!looksExactArtifactPath(aggregateResultPath)) {
-    findings.push("terminal-pipeline-aggregate-result-path-missing-or-not-exact");
+    findings.push(
+      "terminal-pipeline-aggregate-result-path-missing-or-not-exact",
+    );
   }
 
   if (expectedSpecIds.length > 1) {
@@ -705,20 +726,23 @@ function terminalPipelineStructuredResultIssues(
         (entry) => textValue(entry.specId) === expectedSpecId,
       );
       if (!match) {
-        findings.push(`terminal-pipeline-missing-spec-result:${expectedSpecId}`);
+        findings.push(
+          `terminal-pipeline-missing-spec-result:${expectedSpecId}`,
+        );
         continue;
       }
       const artifactRefs = stringList(match.artifactRefs);
       const exactResultPath =
         textValue(match.resultPath) ||
         artifactRefs.find((ref) => looksExactArtifactPath(ref));
-      const specStatus =
-        textValue(match.specStatus) || textValue(match.status);
+      const specStatus = textValue(match.specStatus) || textValue(match.status);
       if (!textValue(match.runId)) {
         findings.push(`terminal-pipeline-missing-run-id:${expectedSpecId}`);
       }
       if (!looksExactArtifactPath(exactResultPath)) {
-        findings.push(`terminal-pipeline-missing-result-path:${expectedSpecId}`);
+        findings.push(
+          `terminal-pipeline-missing-result-path:${expectedSpecId}`,
+        );
       }
       if (
         specStatus !== "pass" &&
@@ -731,7 +755,9 @@ function terminalPipelineStructuredResultIssues(
         findings.push(`terminal-pipeline-missing-reason:${expectedSpecId}`);
       }
       if (artifactRefs.length === 0) {
-        findings.push(`terminal-pipeline-missing-artifact-refs:${expectedSpecId}`);
+        findings.push(
+          `terminal-pipeline-missing-artifact-refs:${expectedSpecId}`,
+        );
       }
     }
   }
@@ -1044,6 +1070,13 @@ Only include \`reviewAction\` when an additional planner-owned action is require
 after this review. Omit it when the current task should close with no successor;
 put optional future ideas in \`suggestedFollowups\` instead. Never emit a
 \`reviewAction\` whose goal is to close the current task with no successor.
+For a deterministic \`task-tree-followup\` that should create the domain
+successor directly, include the complete successor contract: \`idBase\`,
+\`parentId\`, \`owner\`, \`goal\`, non-empty \`outputs\`, non-empty
+\`acceptance\`, and non-empty \`conflictScopes\`. The owner must remain the
+reviewed task owner, and any workflow must remain the reviewed task workflow.
+If those fields cannot be stated exactly, omit the incomplete fields; the
+planner will keep that review on the legacy bounded app-ops path.
 
 Finish with exactly one structured block:
 
@@ -1067,7 +1100,13 @@ TASK_REVIEW_JSON:
   ],
   "reviewAction": {
     "actionKind": "optional structured planner action such as app-state-repair, publish-domain-repair-and-rerun, create-domain-followup, or task-tree-followup",
-    "goal": "optional exact successor goal"
+    "goal": "optional exact successor goal",
+    "idBase": "required exact task id for direct task-tree-followup",
+    "parentId": "required existing parent for direct task-tree-followup",
+    "owner": "required current task owner for direct task-tree-followup",
+    "outputs": ["required outputs for direct task-tree-followup"],
+    "acceptance": ["required acceptance for direct task-tree-followup"],
+    "conflictScopes": ["required conflict scope for direct task-tree-followup"]
   }
 }
 \`\`\`
@@ -1138,6 +1177,7 @@ function emitTaskReviewed(
   ctx: WorkflowContext,
   input: {
     task: TaskNode;
+    taskRevision: number;
     attemptId: string;
     completion: Record<string, unknown>;
     review: StructuredReview;
@@ -1148,6 +1188,8 @@ function emitTaskReviewed(
     project: "aks-rp-e2e",
     taskId: input.task.id,
     task_id: input.task.id,
+    taskRevision: input.taskRevision,
+    task_revision: input.taskRevision,
     attemptId: input.attemptId,
     attempt_id: input.attemptId,
     decision: input.review.decision,
@@ -1198,6 +1240,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       "Task reviewer ignored completion event because taskId and attemptId are required.",
     );
   }
+  const completedTaskRevision = completionTaskRevision(trigger);
 
   const config = taskTreeConfig({
     appDir,
@@ -1212,6 +1255,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       result: "ignored",
       reason: "task-not-found",
       task_id: taskId,
+      task_revision: completedTaskRevision,
       attempt_id: attemptId,
     });
     return ctx.done(
@@ -1223,11 +1267,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       result: "ignored",
       reason: "task-not-in-review",
       task_id: taskId,
+      task_revision: completedTaskRevision,
       attempt_id: attemptId,
       state: taskState(task),
     });
     return ctx.done(
       `Task reviewer ignored stale completion for ${taskId}: task is ${taskState(task)}, not review.`,
+    );
+  }
+  if (taskRevision(task) !== completedTaskRevision) {
+    appendReviewRun(appDir, {
+      result: "ignored",
+      reason: "stale-revision",
+      task_id: taskId,
+      task_revision: completedTaskRevision,
+      current_task_revision: taskRevision(task),
+      attempt_id: attemptId,
+    });
+    return ctx.done(
+      `Task reviewer ignored stale completion for ${taskId}: revision ${completedTaskRevision} is not current (${taskRevision(task)}).`,
     );
   }
   if (currentAttemptId(task) && currentAttemptId(task) !== attemptId) {
@@ -1252,6 +1310,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       : {
           taskId,
           task_id: taskId,
+          taskRevision: completedTaskRevision,
+          task_revision: completedTaskRevision,
           attemptId,
           attempt_id: attemptId,
           result: triggerValue(trigger, "result"),
@@ -1300,11 +1360,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ),
   );
   try {
-    emitTaskReviewed(ctx, { task, attemptId, completion, review });
+    emitTaskReviewed(ctx, {
+      task,
+      taskRevision: completedTaskRevision,
+      attemptId,
+      completion,
+      review,
+    });
   } catch {
     appendReviewRun(appDir, {
       result: "dispatch-failed",
       task_id: taskId,
+      task_revision: completedTaskRevision,
       attempt_id: attemptId,
       review,
     });
@@ -1316,6 +1383,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   appendReviewRun(appDir, {
     result: "project.task.reviewed",
     task_id: taskId,
+    task_revision: completedTaskRevision,
     attempt_id: attemptId,
     decision: review.decision,
     confidence: review.confidence,

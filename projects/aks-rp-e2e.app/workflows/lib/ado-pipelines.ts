@@ -173,6 +173,14 @@ function adoPipelineId(): string {
   ).trim();
 }
 
+export function defaultAdoAgentPool(): string {
+  return (
+    process.env.AKS_RP_E2E_ADO_AGENT_POOL ||
+    process.env.MAY_ADO_AGENT_POOL ||
+    "1ES-AKS-DevInfra-Normal-Yellow"
+  ).trim();
+}
+
 function isUnitTestProcess(): boolean {
   return (
     process.env.AKS_RP_E2E_APP_ALLOW_ADO_TEST_DISPATCH !== "1" &&
@@ -234,10 +242,7 @@ function displayTitleForRun(run: AdoRunPayload): string {
   return interesting.join(" ");
 }
 
-function parseAdoRun(
-  client: PipelineClient,
-  run: AdoRunPayload,
-): PipelineRun {
+function parseAdoRun(client: PipelineClient, run: AdoRunPayload): PipelineRun {
   const id = Number(run.id);
   const status = stringValue(run.status);
   const result = stringValue(run.result);
@@ -285,7 +290,10 @@ export function resolvePipelineClient(projectDir: string): {
     const resolved = testPipelineBackend.resolve?.(projectDir) ?? { ok: true };
     return resolved.ok
       ? { client: { kind: "test" } }
-      : { client: null, reason: resolved.reason || "test pipeline unavailable" };
+      : {
+          client: null,
+          reason: resolved.reason || "test pipeline unavailable",
+        };
   }
   const client: PipelineClient = {
     kind: "ado",

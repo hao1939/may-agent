@@ -9,6 +9,7 @@ export {
   saveTaskTree,
   setTaskState,
   taskEventSnapshot,
+  taskRevision,
   taskState,
   withTreeLock,
 } from "@may-agent/sdk";

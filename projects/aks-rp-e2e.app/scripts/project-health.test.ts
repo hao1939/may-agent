@@ -111,6 +111,15 @@ describe("project health", () => {
     expect(report.status).toBe("moving");
     expect(report.processGraph.available).toBe(false);
     expect(report.frontier.counts.active).toBe(1);
+    expect(report.snapshot.coverage).toEqual({
+      tree: "available",
+      assignments: "available",
+      sessions: "unavailable",
+      reviews: "available",
+      controllers: "unavailable",
+      controllerLiveness: "unavailable",
+      delivery: "unavailable",
+    });
     expect(report.signals.map((signal) => signal.code)).toContain(
       "frontier.active",
     );

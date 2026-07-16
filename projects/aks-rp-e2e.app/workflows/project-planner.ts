@@ -16,15 +16,16 @@ import {
   type WorkflowResult,
 } from "@may-agent/sdk";
 import {
+  acknowledgeTaskAssignments,
   appendPlannerRun,
   appendToolJournal,
   assignTask,
   compactDoneLeaves,
   createTask,
-  drainTaskAssignments,
   listRunnableBacklogTaskIds,
   markTaskDone,
   planningPacket,
+  peekTaskAssignments,
   readTask,
   refreshBlockedWait,
   rejectTaskReview,
@@ -35,8 +36,26 @@ import {
   type TaskPlanningPacket,
   type TaskTreeConfig,
 } from "./lib/task-tree-tools.ts";
-import { readTaskTree, withTreeLock } from "./lib/task-tree-store.ts";
+import {
+  readTaskTree,
+  taskRevision,
+  withTreeLock,
+} from "./lib/task-tree-store.ts";
 import { syncProjectReadout } from "./lib/project-readout-sync.ts";
+import {
+  applyTaskTreeFollowupReviewV2,
+  revisePipelineVerificationPhaseV2,
+  type TaskTreeFollowupActionV2,
+} from "./lib/work-commands-v2.ts";
+import {
+  acknowledgePipelineConditionFallbackV2,
+  conditionRegistry,
+  ensureResolvedPipelineConditionAssignmentsV2,
+  exactAdoConditionV2Enabled,
+  openExactConditionSubjectIdsV2,
+  resolvePipelineConditionV2,
+  type ProjectConditionV2Mode,
+} from "./lib/project-conditions.ts";
 import {
   field,
   maxConcurrent,
@@ -54,6 +73,11 @@ import {
   type SpecLoopState,
   type SpecLoopSpecState,
 } from "./lib/spec-loop-store.ts";
+import {
+  activeExternalRunWaitProgress,
+  exactBlockedWaitStewardshipProgress,
+  heldDispatchRepresentedFrontierProgress,
+} from "./lib/durable-loop-wait-stewardship.ts";
 
 export const name = "project-planner";
 export const description =
@@ -76,6 +100,29 @@ type RuntimeEventRow = {
   urgency?: unknown;
   data?: unknown;
   timestamp?: unknown;
+};
+
+type TaskReviewerRun = {
+  ts?: unknown;
+  result?: unknown;
+  task_id?: unknown;
+  taskId?: unknown;
+  task_revision?: unknown;
+  taskRevision?: unknown;
+  attempt_id?: unknown;
+  attemptId?: unknown;
+  decision?: unknown;
+  confidence?: unknown;
+  summary?: unknown;
+  findings?: unknown;
+  feedback?: unknown;
+  suggestedFollowups?: unknown;
+  suggested_followups?: unknown;
+  artifacts?: unknown;
+  verification?: unknown;
+  events?: unknown;
+  reviewAction?: unknown;
+  review_action?: unknown;
 };
 
 const loopControllerWorkflows = new Set([
@@ -163,9 +210,50 @@ function isLoopOwnedChildTask(config: TaskTreeConfig, taskId: string): boolean {
 }
 
 function plannerAssignableBacklogTaskIds(config: TaskTreeConfig): string[] {
-  return listRunnableBacklogTaskIds(config, 200).filter(
+  const workItemIds = listRunnableBacklogTaskIds(config, 200).filter(
     (taskId) => !isLoopOwnedChildTask(config, taskId),
   );
+  const tree = readTaskTree(config);
+  const controllerIds = [...loopControllerTaskIds].filter((taskId) => {
+    const task = tree.tasks[taskId];
+    if (!task || String(task.state ?? task.status ?? "backlog") !== "backlog") {
+      return false;
+    }
+    const context =
+      task.context &&
+      typeof task.context === "object" &&
+      !Array.isArray(task.context)
+        ? (task.context as Record<string, unknown>)
+        : {};
+    const progressValue = context.workflowProgress;
+    const progress =
+      progressValue &&
+      typeof progressValue === "object" &&
+      !Array.isArray(progressValue)
+        ? (progressValue as Record<string, unknown>)
+        : null;
+    if (!progress || progress.completionReady !== false) return false;
+    if (
+      exactBlockedWaitStewardshipProgress(progress) ||
+      heldDispatchRepresentedFrontierProgress(progress) ||
+      activeExternalRunWaitProgress(progress)
+    ) {
+      return false;
+    }
+    return ![
+      "activeChildren",
+      "reviewChildren",
+      "waitingChildren",
+      "backlogChildren",
+      "openSupportChildren",
+      "openFollowups",
+      "openSpecVerifierChildren",
+    ].some((key) => {
+      const value = progress[key];
+      return typeof value === "number" && Number.isFinite(value) && value > 0;
+    });
+  });
+  return [...new Set([...workItemIds, ...controllerIds])];
 }
 
 function loopControllerActionForTask(
@@ -292,6 +380,7 @@ type ReviewedEvent = {
   type:
     | "escalation.resolved"
     | "escalation.dismissed"
+    | "project.approval.requested"
     | "project.task.completed"
     | "project.task.tick";
   owner: string;
@@ -441,12 +530,21 @@ function compactTaskDetailForPrompt(
   return compact;
 }
 
-function compactPlannerPacketForPrompt(packet: unknown): unknown {
+function compactPlannerPacketForPrompt(
+  packet: unknown,
+  conditionOwnedTaskIds: string[] = [],
+): unknown {
   if (!packet || typeof packet !== "object" || Array.isArray(packet)) {
     return packet;
   }
 
   const compact = JSON.parse(JSON.stringify(packet)) as Record<string, unknown>;
+  const conditionOwned = new Set(conditionOwnedTaskIds);
+  if (conditionOwned.size > 0) {
+    compact.condition_owned_task_ids = [...conditionOwned].sort((left, right) =>
+      left.localeCompare(right),
+    );
+  }
 
   const frontierDetails =
     compact.frontier_details &&
@@ -458,17 +556,56 @@ function compactPlannerPacketForPrompt(packet: unknown): unknown {
     for (const key of ["runnable", "waiting", "active", "review", "blocked"]) {
       const entries = frontierDetails[key];
       if (!Array.isArray(entries)) continue;
+      const actionableEntries =
+        key === "blocked"
+          ? entries.filter((entry) => {
+              if (!entry || typeof entry !== "object" || Array.isArray(entry))
+                return true;
+              const detail = entry as Record<string, unknown>;
+              const taskId = stringValue(detail.id ?? detail.taskId);
+              return !conditionOwned.has(taskId);
+            })
+          : entries;
       const limit = key === "review" ? 5 : 3;
-      frontierDetails[key] = entries
+      frontierDetails[key] = actionableEntries
         .slice(0, limit)
         .map((entry) =>
           entry && typeof entry === "object" && !Array.isArray(entry)
             ? compactTaskDetailForPrompt(entry as Record<string, unknown>)
             : entry,
         );
-      if (entries.length > limit) {
-        frontierDetails[`${key}_omitted_count`] = entries.length - limit;
+      if (actionableEntries.length > limit) {
+        frontierDetails[`${key}_omitted_count`] =
+          actionableEntries.length - limit;
       }
+    }
+  }
+
+  const frontier =
+    compact.frontier &&
+    typeof compact.frontier === "object" &&
+    !Array.isArray(compact.frontier)
+      ? (compact.frontier as Record<string, unknown>)
+      : null;
+  if (frontier) {
+    const omitted: Record<string, number> = {};
+    for (const key of ["runnable", "waiting", "active", "review", "blocked"]) {
+      const ids = frontier[key];
+      if (!Array.isArray(ids)) continue;
+      const actionableIds =
+        key === "blocked"
+          ? ids.filter(
+              (taskId) =>
+                typeof taskId !== "string" || !conditionOwned.has(taskId),
+            )
+          : ids;
+      const limit = key === "blocked" ? 20 : 40;
+      frontier[key] = actionableIds.slice(0, limit);
+      if (actionableIds.length > limit)
+        omitted[key] = actionableIds.length - limit;
+    }
+    if (Object.keys(omitted).length > 0) {
+      compact.frontier_omitted_counts = omitted;
     }
   }
 
@@ -554,9 +691,7 @@ function archivedReviewedTaskLineageContext(
   const matchingRollup = rollupArchives
     .map((entry) => objectValue(entry))
     .find(
-      (entry) =>
-        entry &&
-        stringList(entry.task_ids).includes(reviewedTaskId),
+      (entry) => entry && stringList(entry.task_ids).includes(reviewedTaskId),
     );
 
   for (const archiveFile of archivedDoneLeafFilesForPlanner(
@@ -572,7 +707,9 @@ function archivedReviewedTaskLineageContext(
       : undefined;
     if (!archivedTask) continue;
     const archivedContext = taskContext(archivedTask);
-    const archivedTrace = taskTrace(archivedTask as NonNullable<ReturnType<typeof readTask>>);
+    const archivedTrace = taskTrace(
+      archivedTask as NonNullable<ReturnType<typeof readTask>>,
+    );
     return {
       reviewedTaskId,
       wakeReason,
@@ -594,14 +731,15 @@ function archivedReviewedTaskLineageContext(
       projectCurrentFocusEvidencePath: stringValue(currentFocus?.evidence_path),
       ...(matchingRollup
         ? {
-            archiveFile:
-              stringValue(matchingRollup.archive) || archiveFile,
+            archiveFile: stringValue(matchingRollup.archive) || archiveFile,
             archiveGeneratedAt:
-              stringValue(matchingRollup.at) || stringValue(bundle.generated_at),
+              stringValue(matchingRollup.at) ||
+              stringValue(bundle.generated_at),
             archiveReason:
               stringValue(matchingRollup.reason) || stringValue(bundle.reason),
             archiveSummary:
-              stringValue(matchingRollup.summary) || stringValue(bundle.summary),
+              stringValue(matchingRollup.summary) ||
+              stringValue(bundle.summary),
           }
         : {}),
     };
@@ -932,6 +1070,7 @@ function buildPlannerPrompt(input: {
   reviewedTaskLineage: ReviewedTaskLineageContext | null;
   wakeReason: string | null;
   aggressivePush: boolean;
+  conditionOwnedTaskIds: string[];
 }): string {
   const singleAssignmentWakeGuidance = [
     "task-completed",
@@ -1025,6 +1164,10 @@ Core operating model:
   that meaning is preserved. Leave a task blocked only when it is the single
   useful live representation of a true wait. Never retry a blocked leaf
   unchanged.
+- Tasks listed in condition_owned_task_ids are visible but are not blocked-frontier
+  owner work. Their exact Condition owns observation, fallback, resolution, and
+  continuation. Do not create refresh, polling, recovery, or replacement work
+  for them from a scheduled/metric/heartbeat wake.
 - Treat blocked_action_warnings as direct owner-review hints. They do not decide
   the domain truth, but they flag blocked leaves whose shape is suspicious.
   A response-await task is not a real blocker when the ask has not been proven
@@ -1205,7 +1348,11 @@ ${input.eventReview}
 
 Current compact task-tree packet:
 \`\`\`json
-${JSON.stringify(compactPlannerPacketForPrompt(input.packet), null, 2)}
+${JSON.stringify(
+  compactPlannerPacketForPrompt(input.packet, input.conditionOwnedTaskIds),
+  null,
+  2,
+)}
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
@@ -1221,6 +1368,7 @@ function buildEventReviewPrompt(input: {
   packet: unknown;
   humanSteering: Record<string, unknown>[];
   reviewedTaskLineage: ReviewedTaskLineageContext | null;
+  conditionOwnedTaskIds: string[];
 }): string {
   return `Planner Event Review Step
 
@@ -1278,7 +1426,11 @@ Role: app-ops event review. Do not decide AKS product correctness here.${reviewe
 
 Compact task-tree packet:
 \`\`\`json
-${JSON.stringify(compactPlannerPacketForPrompt(input.packet), null, 2)}
+${JSON.stringify(
+  compactPlannerPacketForPrompt(input.packet, input.conditionOwnedTaskIds),
+  null,
+  2,
+)}
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
@@ -1307,7 +1459,8 @@ async function runOwnerStep(input: {
 function dispatchAssignedTasks(
   ctx: WorkflowContext,
   assignments: TaskAssignment[],
-): void {
+): TaskAssignment[] {
+  const dispatched: TaskAssignment[] = [];
   for (const assignment of assignments) {
     try {
       ctx.dispatchEvent("project.task.assigned", {
@@ -1316,16 +1469,19 @@ function dispatchAssignedTasks(
         ...assignment,
         requested_by: "project-planner",
       });
+      dispatched.push(assignment);
     } catch {
       // Local tests may not provide a dispatcher.
     }
   }
+  return dispatched;
 }
 
 function dispatchLoopControllerPulses(
   ctx: WorkflowContext,
   pulses: LoopControllerPulse[],
-): void {
+): LoopControllerPulse[] {
+  const dispatched: LoopControllerPulse[] = [];
   for (const pulse of pulses) {
     try {
       ctx.dispatchEvent("project.task.tick", {
@@ -1337,10 +1493,12 @@ function dispatchLoopControllerPulses(
         reason: pulse.reason,
         requested_by: "project-planner",
       });
+      dispatched.push(pulse);
     } catch {
       // Local tests may not provide a dispatcher.
     }
   }
+  return dispatched;
 }
 
 function splitLoopControllerAssignments(
@@ -1349,22 +1507,66 @@ function splitLoopControllerAssignments(
 ): {
   workerAssignments: TaskAssignment[];
   controllerPulses: LoopControllerPulse[];
+  controllerAssignmentBridges: Array<{
+    assignment: TaskAssignment;
+    pulse: LoopControllerPulse;
+  }>;
 } {
   const workerAssignments: TaskAssignment[] = [];
   const controllerPulses: LoopControllerPulse[] = [];
+  const controllerAssignmentBridges: Array<{
+    assignment: TaskAssignment;
+    pulse: LoopControllerPulse;
+  }> = [];
   for (const assignment of assignments) {
     const action = loopControllerActionForTask(config, assignment.taskId);
     if (!action) {
       workerAssignments.push(assignment);
       continue;
     }
-    controllerPulses.push({
+    const pulse = {
       taskId: assignment.taskId,
       action,
       reason: "planner-assignment-bridge",
-    });
+    };
+    controllerPulses.push(pulse);
+    controllerAssignmentBridges.push({ assignment, pulse });
   }
-  return { workerAssignments, controllerPulses };
+  return {
+    workerAssignments,
+    controllerPulses,
+    controllerAssignmentBridges,
+  };
+}
+
+function deliverPendingTaskWork(
+  ctx: WorkflowContext,
+  config: TaskTreeConfig,
+  requestedControllerPulses: LoopControllerPulse[] = [],
+): {
+  assignments: TaskAssignment[];
+  controllerPulses: LoopControllerPulse[];
+} {
+  const queuedAssignments = peekTaskAssignments(config);
+  const bridged = splitLoopControllerAssignments(config, queuedAssignments);
+  const assignments = dispatchAssignedTasks(ctx, bridged.workerAssignments);
+  const controllerPulses = dispatchLoopControllerPulses(ctx, [
+    ...requestedControllerPulses,
+    ...bridged.controllerPulses,
+  ]);
+  const deliveredPulseKeys = new Set(
+    controllerPulses.map((pulse) => `${pulse.taskId}:${pulse.action}`),
+  );
+  const acknowledged = [
+    ...assignments,
+    ...bridged.controllerAssignmentBridges
+      .filter(({ pulse }) =>
+        deliveredPulseKeys.has(`${pulse.taskId}:${pulse.action}`),
+      )
+      .map(({ assignment }) => assignment),
+  ];
+  acknowledgeTaskAssignments(config, acknowledged);
+  return { assignments, controllerPulses };
 }
 
 function plannerProgressTaskIds(input: {
@@ -1428,6 +1630,12 @@ function stringValue(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
 
+function nonNegativeInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
 function stringList(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
@@ -1436,6 +1644,12 @@ function stringList(value: unknown): string[] {
   }
   const text = stringValue(value);
   return text ? [text] : [];
+}
+
+function sortedUnique(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim()))].sort(
+    (left, right) => left.localeCompare(right),
+  );
 }
 
 function reviewObject(trigger: ReturnType<typeof parseTriggerEvent>) {
@@ -1466,6 +1680,16 @@ function reviewStringList(
   key: string,
 ): string[] {
   return stringList(reviewValue(trigger, key));
+}
+
+function reviewTaskRevision(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+): number {
+  return (
+    nonNegativeInteger(reviewValue(trigger, "taskRevision")) ??
+    nonNegativeInteger(reviewValue(trigger, "task_revision")) ??
+    0
+  );
 }
 
 function objectValue(value: unknown): Record<string, unknown> | null {
@@ -1508,21 +1732,27 @@ type ExactPipelineWait = {
   reason: string;
 };
 
-function reviewedExactPipelineWait(
+type ExactExternalWait = {
+  specIds: string[];
+  reason: string;
+  diagnosis: string;
+  sourceRunId: string;
+  sourceRunUrl: string;
+};
+
+function fixForwardExactWaitPayload(
   trigger: ReturnType<typeof parseTriggerEvent>,
-): ExactPipelineWait | null {
+): {
+  details: Record<string, unknown>;
+  fixForward: Record<string, unknown>;
+  reason: string;
+  specIds: string[];
+} | null {
   const workflowResult = reviewedCompletionWorkflowResult(trigger);
   const details = objectValue(workflowResult?.details);
   const fixForward = objectValue(details?.fixForward);
+  if (!details || !fixForward) return null;
   if (stringValue(fixForward?.nextAction) !== "exact-wait") return null;
-
-  const verification = objectValue(fixForward?.verification);
-  const diagnosis = objectValue(fixForward?.minimumDiagnosisPacket);
-  const runId =
-    stringValue(verification?.runId) ||
-    stringValue(diagnosis?.runId) ||
-    stringValue(details?.runId);
-  if (!runId) return null;
 
   const subject = objectValue(fixForward?.subject);
   const ids = new Set<string>();
@@ -1538,15 +1768,126 @@ function reviewedExactPipelineWait(
   }
 
   return {
-    runId,
-    runUrl:
-      stringValue(details?.runUrl) ||
-      `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
-    specIds: [...ids].sort((a, b) => a.localeCompare(b)),
+    details,
+    fixForward,
     reason:
       stringValue(fixForward?.nextActionReason) ||
       stringValue(details?.reason) ||
-      `Azure DevOps run ${runId} is not ready for exact result inspection.`,
+      "Reviewed fix-forward evidence says the same exact wait remains.",
+    specIds: [...ids].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+function looksLikeLocalVerificationRunId(runId: string): boolean {
+  return /(^|[^a-z])local-check(?:[^a-z]|$)/i.test(runId.trim());
+}
+
+function taskCanCarryFixForwardWait(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): boolean {
+  const context = taskContext(task);
+  if (stringValue(context.workflow) === "fix-forward") return true;
+  if (objectValue(context.sourceSpecResult)) return true;
+  if (objectValue(context.exactExternalWait)) return true;
+  if (
+    Array.isArray(context.representedSpecIds) &&
+    context.representedSpecIds.some(
+      (entry) => typeof entry === "string" && entry.trim(),
+    )
+  ) {
+    return true;
+  }
+  if (stringValue(context.specId) && task.id.startsWith("fix-")) return true;
+  return taskConflictScopes(task).some((scope) =>
+    scope.startsWith("fix-forward:"),
+  );
+}
+
+function reviewedExactPipelineWait(input: {
+  trigger: ReturnType<typeof parseTriggerEvent>;
+  task: NonNullable<ReturnType<typeof readTask>>;
+}): ExactPipelineWait | null {
+  if (!taskCanCarryFixForwardWait(input.task)) return null;
+  const payload = fixForwardExactWaitPayload(input.trigger);
+  if (!payload) return null;
+
+  const structuredQueued = queuedPipelineRunFromAcceptedReview(input);
+  if (structuredQueued) {
+    return {
+      ...structuredQueued,
+      reason: payload.reason,
+    };
+  }
+
+  const context = taskContext(input.task);
+  const acceptedQueued = objectValue(context.acceptedQueuedPipelineRun);
+  const acceptedQueuedRunId = stringValue(acceptedQueued?.runId);
+  const acceptedQueuedRunUrl = stringValue(acceptedQueued?.runUrl);
+  const sourceSpecResult = objectValue(context.sourceSpecResult);
+  const terminalWaitReview =
+    objectValue(context.terminalPipelineWaitReview) ??
+    objectValue(context.terminalGitHubWaitReview);
+  const verification = objectValue(payload.fixForward?.verification);
+  const diagnosis = objectValue(payload.fixForward?.minimumDiagnosisPacket);
+  const sourceRunIds = new Set(
+    [
+      stringValue(sourceSpecResult?.runId),
+      stringValue(terminalWaitReview?.runId),
+    ].filter(Boolean),
+  );
+  const runId = [
+    stringValue(payload.details?.runId),
+    stringValue(diagnosis?.runId),
+    stringValue(verification?.runId),
+  ].find((candidate) => {
+    if (!candidate) return false;
+    if (looksLikeLocalVerificationRunId(candidate)) return false;
+    if (acceptedQueuedRunId && candidate === acceptedQueuedRunId) return true;
+    return !sourceRunIds.has(candidate);
+  });
+  if (!runId) return null;
+
+  return {
+    runId,
+    runUrl:
+      stringValue(payload.details?.runUrl) ||
+      (runId === acceptedQueuedRunId ? acceptedQueuedRunUrl : "") ||
+      `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
+    specIds: payload.specIds,
+    reason: payload.reason,
+  };
+}
+
+function reviewedExactExternalWait(input: {
+  trigger: ReturnType<typeof parseTriggerEvent>;
+  task: NonNullable<ReturnType<typeof readTask>>;
+}): ExactExternalWait | null {
+  if (!taskCanCarryFixForwardWait(input.task)) return null;
+  const payload = fixForwardExactWaitPayload(input.trigger);
+  if (!payload) return null;
+  if (reviewedExactPipelineWait(input)) return null;
+
+  const context = taskContext(input.task);
+  const sourceSpecResult = objectValue(context.sourceSpecResult);
+  const terminalWaitReview =
+    objectValue(context.terminalPipelineWaitReview) ??
+    objectValue(context.terminalGitHubWaitReview);
+  const diagnosis = objectValue(payload.fixForward?.minimumDiagnosisPacket);
+  return {
+    specIds: payload.specIds,
+    reason: payload.reason,
+    diagnosis:
+      stringValue(payload.fixForward?.diagnosis) ||
+      stringValue(payload.details?.reason) ||
+      payload.reason,
+    sourceRunId:
+      stringValue(diagnosis?.runId) ||
+      stringValue(sourceSpecResult?.runId) ||
+      stringValue(terminalWaitReview?.runId) ||
+      stringValue(payload.details?.runId),
+    sourceRunUrl:
+      stringValue(sourceSpecResult?.runUrl) ||
+      stringValue(terminalWaitReview?.runUrl),
   };
 }
 
@@ -1763,15 +2104,41 @@ function openSpecResultFixForwardExists(input: {
   return false;
 }
 
+function acceptedSpecResultFixForwardConflictScopes(
+  result: AcceptedSpecVerifierResult,
+): string[] {
+  return [
+    `spec:${result.specId}`,
+    `fix-forward:${result.specId}:${result.runId}`,
+  ];
+}
+
 function createAcceptedSpecResultFixForwardTasks(input: {
   config: TaskTreeConfig;
   task: NonNullable<ReturnType<typeof readTask>>;
   attemptId: string;
   results: AcceptedSpecVerifierResult[];
+  revisionV2SpecId?: string;
+  revisionV2RunId?: string;
 }): string[] {
   if (!input.task.parent_id) return [];
   const createdTaskIds: string[] = [];
   const sourceContext = taskContext(input.task);
+  const revisionV2SpecId =
+    input.revisionV2SpecId ??
+    input.results
+      .filter(
+        (result) =>
+          result.loopStatus !== "pass" &&
+          result.runId === input.revisionV2RunId &&
+          !openSpecResultFixForwardExists({
+            config: input.config,
+            specId: result.specId,
+            runId: result.runId,
+          }),
+      )
+      .map((result) => result.specId)
+      .sort((left, right) => left.localeCompare(right))[0];
   for (const result of input.results) {
     if (result.loopStatus === "pass") continue;
     if (
@@ -1787,9 +2154,15 @@ function createAcceptedSpecResultFixForwardTasks(input: {
       input.config,
       `fix-${slugForTaskId(result.specId)}-run-${result.runId}`,
     );
+    const initialRevision =
+      revisionV2SpecId === result.specId &&
+      (!input.revisionV2RunId || input.revisionV2RunId === result.runId)
+        ? 1
+        : 0;
     createTask(input.config, {
       id,
       parentId: input.task.parent_id,
+      initialRevision,
       state: "backlog",
       kind: "domain_leaf",
       priority: taskPriority(input.task),
@@ -1822,19 +2195,27 @@ function createAcceptedSpecResultFixForwardTasks(input: {
         "Do not rerun the same input after the same error without a changed input, changed diagnosis, or new external fact.",
         "Do not mark product behavior from this result without checking official/API/design/source evidence when needed.",
       ],
-      conflict_scope: [
-        ...new Set([
-          ...taskStringList(input.task, "conflict_scope"),
-          `spec:${result.specId}`,
-          `ado-run:${result.runId}`,
-          `fix-forward:${result.specId}:${result.runId}`,
-        ]),
-      ],
+      conflict_scope: acceptedSpecResultFixForwardConflictScopes(result),
       context: {
         ...sourceContext,
         workflow: "fix-forward",
+        controlPlaneVersion: initialRevision > 0 ? 2 : 1,
         specId: result.specId,
         representedSpecIds: [result.specId],
+        ...(initialRevision > 0
+          ? {
+              revisionCanaryV2: {
+                mode: input.revisionV2RunId
+                  ? "fix-forward-first-nonpass-run"
+                  : "fix-forward-exact-spec",
+                specId: result.specId,
+                ...(input.revisionV2RunId
+                  ? { sourceRunId: input.revisionV2RunId }
+                  : {}),
+                initialRevision,
+              },
+            }
+          : {}),
         sourceSpecResult: {
           sourceTaskId: input.task.id,
           sourceAttemptId: input.attemptId,
@@ -1854,6 +2235,9 @@ function createAcceptedSpecResultFixForwardTasks(input: {
       kind: "accepted_spec_result_fix_forward_tasks_created",
       source_task_id: input.task.id,
       task_ids: createdTaskIds,
+      revisioned_task_ids: createdTaskIds.filter(
+        (taskId) => taskRevision(readTask(input.config, taskId)) > 0,
+      ),
     });
   }
   return createdTaskIds;
@@ -1964,6 +2348,226 @@ function openPipelineWaitExists(
   return false;
 }
 
+function specFeatureToken(specId: string): string {
+  const ensured = ensureSpecId(specId);
+  if (!ensured.startsWith("spec.")) return "";
+  const feature = ensured.slice("spec.".length).split(".")[0]?.trim() ?? "";
+  return feature ? `feature:${feature}` : "";
+}
+
+function taskSearchText(task: TaskNode): string {
+  const blocker = objectValue(task.blocker);
+  const waitingFor = objectValue(blocker?.waiting_for);
+  return [
+    task.id,
+    taskGoalText(task),
+    ...stringList(task.result),
+    ...stringList(task.inputs),
+    ...stringList(task.outputs),
+    ...stringList(task.acceptance),
+    ...stringList(blocker?.condition),
+    ...stringList(blocker?.resume_condition),
+    ...stringList(blocker?.fallback_action),
+    ...stringList(waitingFor?.taskId),
+    ...stringList(waitingFor?.governingWaitTaskId),
+  ]
+    .join("\n")
+    .toLowerCase();
+}
+
+function isReviewGatedPublicationHolder(task: TaskNode): boolean {
+  if (taskStateForSelection(task) !== "blocked") return false;
+  if (Array.isArray(task.children) && task.children.length > 0) return false;
+  const blocker = objectValue(task.blocker);
+  if (stringValue(blocker?.category).toLowerCase() !== "external-wait") {
+    return false;
+  }
+  const waitingFor = objectValue(blocker?.waiting_for);
+  if (stringValue(waitingFor?.type) !== "blocker.resolved") return false;
+
+  const text = taskSearchText(task);
+  const publicationSignals = [
+    "review-gated publication wait",
+    "reviewer-gated publication holder",
+    "publication holder only",
+    "publish the exact accepted",
+    "publish the exact accepted slice",
+    "pipeline-visible branch/head",
+    "publication-safe decision",
+    "review-visible",
+    "unpublished",
+  ];
+  const reviewSignals = [
+    "project.task.reviewed",
+    "reviewer decision",
+    "same-lineage review",
+    "accepted same-lineage successor",
+    "live review lineage",
+  ];
+  return (
+    publicationSignals.some((signal) => text.includes(signal)) &&
+    reviewSignals.some((signal) => text.includes(signal))
+  );
+}
+
+function publicationHolderMatchesQueuedWait(input: {
+  task: TaskNode;
+  sourceTask: NonNullable<ReturnType<typeof readTask>>;
+  specIds: string[];
+}): boolean {
+  const context = taskContext(input.task);
+  if (
+    stringValue(context.publicationGateSourceTaskId) === input.sourceTask.id
+  ) {
+    return true;
+  }
+  if (
+    stringList(context.publicationGateSpecIds).some((specId) =>
+      input.specIds.includes(ensureSpecId(specId)),
+    )
+  ) {
+    return true;
+  }
+
+  const text = taskSearchText(input.task);
+  const taskScopes = new Set(taskConflictScopes(input.task));
+  const sourceScopes = new Set(taskConflictScopes(input.sourceTask));
+  const sourceReviewedTaskId = stringValue(
+    objectValue(taskContext(input.sourceTask).reviewedTask)?.taskId,
+  );
+  const tokens = [
+    input.sourceTask.id,
+    sourceReviewedTaskId,
+    ...input.specIds,
+    ...input.specIds.map((specId) => specId.replace(/^spec\./, "")),
+    ...input.specIds.map(specFeatureToken),
+  ]
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  return tokens.some((token) => {
+    if (token.startsWith("spec:")) return taskScopes.has(token);
+    if (token.startsWith("feature:")) {
+      return (
+        taskScopes.has(token) || sourceScopes.has(token) || text.includes(token)
+      );
+    }
+    return text.includes(token);
+  });
+}
+
+function retargetReviewGatedPublicationHolders(input: {
+  tree: ReturnType<typeof readTaskTree>;
+  sourceTask: NonNullable<ReturnType<typeof readTask>>;
+  waitTaskId: string;
+  runId: string;
+  runUrl: string;
+  specIds: string[];
+  now: string;
+}): string[] {
+  const retargetedTaskIds: string[] = [];
+  const specIds = sortedUnique(
+    input.specIds.map((specId) => ensureSpecId(specId)),
+  );
+  if (specIds.length === 0) return retargetedTaskIds;
+
+  for (const candidate of Object.values(input.tree.tasks ?? {})) {
+    if (!isReviewGatedPublicationHolder(candidate)) continue;
+    if (
+      !publicationHolderMatchesQueuedWait({
+        task: candidate,
+        sourceTask: input.sourceTask,
+        specIds,
+      })
+    ) {
+      continue;
+    }
+
+    const blocker = objectValue(candidate.blocker);
+    const waitingFor = objectValue(blocker?.waiting_for);
+    const context = taskContext(candidate);
+    const currentGovernedWaitTaskId = stringValue(
+      waitingFor?.governingWaitTaskId,
+    );
+    const currentRunId = stringValue(waitingFor?.runId);
+    const currentAcceptance = Array.isArray(candidate.acceptance)
+      ? candidate.acceptance.find(
+          (entry) =>
+            typeof entry === "string" && entry.includes(input.waitTaskId),
+        )
+      : undefined;
+    if (
+      currentGovernedWaitTaskId === input.waitTaskId &&
+      currentRunId === input.runId &&
+      currentAcceptance
+    ) {
+      continue;
+    }
+
+    const specText = specIds.join(", ");
+    const acceptanceLead =
+      `Consume the structured publication-safe decision produced by ${input.waitTaskId} ` +
+      `for ${specText} before publishing or superseding any repo slice.`;
+    candidate.acceptance = [
+      acceptanceLead,
+      ...(Array.isArray(candidate.acceptance)
+        ? candidate.acceptance.filter(
+            (entry, index): entry is string =>
+              typeof entry === "string" && Boolean(entry.trim()) && index > 0,
+          )
+        : []),
+    ];
+    candidate.blocker = {
+      ...blocker,
+      condition:
+        `The current publication holder truthfully waits on successor wait ${input.waitTaskId}, ` +
+        `which is tracking exact same-spec ADO run ${input.runId} for ${specText} ` +
+        `queued by accepted task ${input.sourceTask.id}. Keep this holder blocked until ` +
+        `that wait returns the structured publication-safe decision for this slice or ` +
+        "an exact successor replaces it.",
+      category: stringValue(blocker?.category) || "external-wait",
+      owner:
+        stringValue(blocker?.owner) ||
+        input.sourceTask.owner ||
+        candidate.owner,
+      waiting_for: {
+        ...waitingFor,
+        type: "blocker.resolved",
+        taskId: candidate.id,
+        governingWaitTaskId: input.waitTaskId,
+        sourceTaskId: input.sourceTask.id,
+        runId: input.runId,
+        runUrl: input.runUrl,
+        specIds,
+      },
+      resume_condition:
+        `Resume only when ${input.waitTaskId} returns the structured publication-safe decision ` +
+        "for this slice or an exact successor repair/wait replaces it.",
+      fallback_action:
+        "If the repaired live review lineage still has not returned by fallback, keep one reviewer-gated publication wait or replace it with the exact successor; do not leave this holder pointing at a missing or superseded task id.",
+      blocked_at: stringValue(blocker?.blocked_at) || input.now,
+    };
+    candidate.context = {
+      ...context,
+      publicationGateWaitTaskId: input.waitTaskId,
+      publicationGateRunId: input.runId,
+      publicationGateSourceTaskId: input.sourceTask.id,
+      publicationGateSpecIds: specIds,
+    };
+    candidate.trace = {
+      ...objectValue(candidate.trace),
+      publication_gate_wait_task_id: input.waitTaskId,
+      publication_gate_run_id: input.runId,
+      publication_gate_source_task_id: input.sourceTask.id,
+      publication_gate_retargeted_at: input.now,
+      publication_gate_retargeted_by: "project-planner",
+    };
+    retargetedTaskIds.push(candidate.id);
+  }
+
+  return retargetedTaskIds.sort((left, right) => left.localeCompare(right));
+}
+
 function createAcceptedQueuedPipelineWait(input: {
   config: TaskTreeConfig;
   task: NonNullable<ReturnType<typeof readTask>>;
@@ -2029,6 +2633,7 @@ function createAcceptedQueuedPipelineWait(input: {
     blockerOwner: "ado",
     resumeCondition: `Resume when Azure DevOps run ${input.queuedRun.runId} is terminal and its artifacts are available.`,
   });
+  let retargetedPublicationHolderTaskIds: string[] = [];
   withTreeLock(input.config, () => {
     const tree = readTaskTree(input.config);
     const task = tree.tasks[id];
@@ -2072,6 +2677,15 @@ function createAcceptedQueuedPipelineWait(input: {
       accepted_queued_pipeline_source_attempt_id: input.attemptId,
       accepted_queued_pipeline_run_id: input.queuedRun.runId,
     };
+    retargetedPublicationHolderTaskIds = retargetReviewGatedPublicationHolders({
+      tree,
+      sourceTask: input.task,
+      waitTaskId: id,
+      runId: input.queuedRun.runId,
+      runUrl: input.queuedRun.runUrl,
+      specIds: input.queuedRun.specIds,
+      now: blockedAt,
+    });
     saveTaskTreeWithKanbanSnapshot(input.config, tree);
   });
   appendToolJournal(input.config, {
@@ -2080,6 +2694,7 @@ function createAcceptedQueuedPipelineWait(input: {
     source_task_id: input.task.id,
     run_id: input.queuedRun.runId,
     spec_ids: input.queuedRun.specIds,
+    retargeted_publication_holder_task_ids: retargetedPublicationHolderTaskIds,
   });
   return id;
 }
@@ -2142,14 +2757,13 @@ function restoreReviewedTerminalWaitToBlocked(input: {
   const resumeCondition =
     stringValue(previousBlocker?.resume_condition) ||
     `Resume when Azure DevOps run ${runId} is terminal and its artifacts are available for exact same-spec result inspection.`;
-  const waitingFor =
-    objectValue(previousBlocker?.waiting_for) ?? {
-      type: "ado.pipeline_run.completed",
-      runId,
-      ...(runUrl ? { runUrl } : {}),
-      ...(specIds.length > 0 ? { specIds } : {}),
-      sourceTaskId: input.task.id,
-    };
+  const waitingFor = objectValue(previousBlocker?.waiting_for) ?? {
+    type: "ado.pipeline_run.completed",
+    runId,
+    ...(runUrl ? { runUrl } : {}),
+    ...(specIds.length > 0 ? { specIds } : {}),
+    sourceTaskId: input.task.id,
+  };
   const observedBy = objectValue(previousBlocker?.observed_by) ?? {
     workflow: "project-execution-watchdog",
     trigger: "project.task.reviewed",
@@ -2210,9 +2824,7 @@ function restoreReviewedExactPipelineWaitToBlocked(input: {
       type: "ado.pipeline_run.completed",
       runId: input.wait.runId,
       runUrl: input.wait.runUrl,
-      ...(input.wait.specIds.length > 0
-        ? { specIds: input.wait.specIds }
-        : {}),
+      ...(input.wait.specIds.length > 0 ? { specIds: input.wait.specIds } : {}),
       sourceTaskId: input.task.id,
     },
     observedBy: objectValue(retainedBlocker?.observed_by) ?? {
@@ -2237,6 +2849,17 @@ function restoreReviewedExactPipelineWaitToBlocked(input: {
     const tree = readTaskTree(input.config);
     const task = tree.tasks[input.task.id];
     if (!task) return;
+    const context = {
+      ...taskContext(task),
+      acceptedQueuedPipelineRun: {
+        sourceTaskId: input.task.id,
+        runId: input.wait.runId,
+        runUrl: input.wait.runUrl,
+        specIds: input.wait.specIds,
+        summary: input.summary,
+      },
+    } as Record<string, unknown>;
+    delete context.exactExternalWait;
     task.conflict_scope = [
       ...new Set([
         ...taskStringList(task, "conflict_scope").filter(
@@ -2247,21 +2870,15 @@ function restoreReviewedExactPipelineWaitToBlocked(input: {
         `ado-run:${input.wait.runId}`,
       ]),
     ];
-    task.context = {
-      ...taskContext(task),
-      acceptedQueuedPipelineRun: {
-        sourceTaskId: input.task.id,
-        runId: input.wait.runId,
-        runUrl: input.wait.runUrl,
-        specIds: input.wait.specIds,
-        summary: input.summary,
-      },
-    };
-    task.trace = {
+    task.context = context;
+    const trace = {
       ...(task.trace ?? {}),
       exact_pipeline_wait_restored_at: new Date().toISOString(),
       exact_pipeline_wait_run_id: input.wait.runId,
-    };
+    } as Record<string, unknown>;
+    delete trace.exact_external_wait_restored_at;
+    delete trace.exact_external_wait_source_run_id;
+    task.trace = trace;
     saveTaskTreeWithKanbanSnapshot(input.config, tree);
   });
 
@@ -2272,6 +2889,102 @@ function restoreReviewedExactPipelineWaitToBlocked(input: {
     spec_ids: input.wait.specIds,
   });
   return input.wait.runId;
+}
+
+function restoreReviewedExactExternalWaitToBlocked(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  summary: string;
+  wait: ExactExternalWait;
+}): string {
+  const previousBlocker = previousTerminalWaitBlocker(input.task);
+  const specText = input.wait.specIds.length
+    ? ` for ${input.wait.specIds.join(", ")}`
+    : "";
+  const reviewedRunText = input.wait.sourceRunId
+    ? `Reviewed run ${input.wait.sourceRunId} is already consumed; `
+    : "";
+  const condition =
+    `Exact external blocker${specText}: ${reviewedRunText}${input.wait.reason} ` +
+    "Keep this same task id visible until the named external fact materially changes or a narrower exact blocker is proven; do not convert local verification ids into fake Azure DevOps waits.";
+  const resumeCondition =
+    `Resume only when the named external fact materially changes so a bounded rerun becomes truthful${specText}, ` +
+    "or when a narrower exact blocker or owner-specific handoff is proven.";
+  const now = Date.now();
+
+  refreshBlockedWait(input.config, {
+    taskId: input.task.id,
+    condition,
+    resumeCondition,
+    summary: input.summary || input.wait.reason,
+    category: stringValue(previousBlocker?.category) || "external-wait",
+    owner: "human",
+    waitingFor: {
+      type: "blocker.resolved",
+      taskId: input.task.id,
+      ...(input.wait.specIds.length > 0 ? { specIds: input.wait.specIds } : {}),
+      ...(input.wait.sourceRunId
+        ? { sourceRunId: input.wait.sourceRunId }
+        : {}),
+      source: "project-planner.fix-forward.exact-external-wait",
+    },
+    observedBy: {
+      workflow: "project-planner",
+      schedule: "blocked-frontier-app-ops-review",
+      trigger: "project.planning.requested",
+    },
+    observationMethod:
+      "Scheduled blocked-frontier app-ops review checks whether the named external fact changed and must unblock, replace, escalate, or keep this exact wait with fresh evidence.",
+    nextCheckAt: new Date(now + 12 * 60 * 60 * 1000).toISOString(),
+    fallbackAt: new Date(now + 36 * 60 * 60 * 1000).toISOString(),
+    fallbackAction:
+      "If the same external fact still holds at fallback, refresh this exact wait with current evidence or replace it with a narrower exact blocker; do not queue a same-input rerun or convert local verification ids into pipeline waits.",
+  });
+
+  withTreeLock(input.config, () => {
+    const tree = readTaskTree(input.config);
+    const task = tree.tasks[input.task.id];
+    if (!task) return;
+    task.conflict_scope = [
+      ...new Set([
+        ...taskStringList(task, "conflict_scope").filter(
+          (scope) =>
+            !scope.startsWith("ado-run:") && !scope.startsWith("spec:"),
+        ),
+        ...input.wait.specIds.map((specId) => `spec:${specId}`),
+      ]),
+    ];
+    const context = {
+      ...taskContext(task),
+      exactExternalWait: {
+        kind: "fix-forward",
+        reason: input.wait.reason,
+        diagnosis: input.wait.diagnosis,
+        specIds: input.wait.specIds,
+        sourceRunId: input.wait.sourceRunId,
+        sourceRunUrl: input.wait.sourceRunUrl,
+      },
+    } as Record<string, unknown>;
+    delete context.acceptedQueuedPipelineRun;
+    task.context = context;
+    const trace = {
+      ...(task.trace ?? {}),
+      exact_external_wait_restored_at: new Date().toISOString(),
+      exact_external_wait_source_run_id: input.wait.sourceRunId || undefined,
+    } as Record<string, unknown>;
+    delete trace.exact_pipeline_wait_restored_at;
+    delete trace.exact_pipeline_wait_run_id;
+    task.trace = trace;
+    saveTaskTreeWithKanbanSnapshot(input.config, tree);
+  });
+
+  appendToolJournal(input.config, {
+    kind: "reviewed_exact_external_wait_restored",
+    task_id: input.task.id,
+    source_run_id: input.wait.sourceRunId,
+    spec_ids: input.wait.specIds,
+  });
+  return input.wait.sourceRunId || "external-fact";
 }
 
 function normalizeReviewDecision(value: unknown): ReviewDecision | null {
@@ -2328,6 +3041,358 @@ function taskConflictScopes(task: TaskNode): string[] {
         (entry): entry is string => typeof entry === "string",
       )
     : [];
+}
+
+function taskGoalText(task: TaskNode): string {
+  return typeof task.goal === "string" ? task.goal : "";
+}
+
+function taskStateForSelection(task: TaskNode): string {
+  return typeof task.status === "string"
+    ? task.status
+    : typeof task.state === "string"
+      ? task.state
+      : "";
+}
+
+function ensureSpecId(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("spec.") ? trimmed : `spec.${trimmed}`;
+}
+
+function scorePipelineRunTaskCandidate(input: {
+  task: TaskNode;
+  runId: string;
+  specIds: string[];
+}): number {
+  const stateScore =
+    {
+      active: 50,
+      review: 40,
+      backlog: 30,
+      waiting: 20,
+      blocked: 10,
+    }[taskStateForSelection(input.task)] ?? 0;
+  const scopes = taskConflictScopes(input.task);
+  const matchingSpecCount = input.specIds.filter((specId) =>
+    scopes.includes(`spec:${specId}`),
+  ).length;
+  const goal = taskGoalText(input.task);
+  const blockerText =
+    input.task.blocker && typeof input.task.blocker === "object"
+      ? JSON.stringify(input.task.blocker)
+      : typeof input.task.blocker === "string"
+        ? input.task.blocker
+        : "";
+  const haystack = `${goal}\n${blockerText}`;
+  const namesRun = haystack.includes(input.runId) ? 5 : 0;
+  const namesWaitShape = /Wait for Azure DevOps run/i.test(goal) ? 3 : 0;
+  return stateScore + matchingSpecCount * 20 + namesRun + namesWaitShape;
+}
+
+function resolvedProjectTestRunCompletedTaskId(input: {
+  config: TaskTreeConfig;
+  trigger: ReturnType<typeof parseTriggerEvent>;
+}): string | null {
+  if (input.trigger?.type !== "project.test_run.completed") return null;
+  const runId = stringValue(triggerValue(input.trigger, "runId"));
+  if (!runId) return null;
+  const requestedTaskId =
+    stringValue(triggerValue(input.trigger, "taskId")) ||
+    stringValue(objectValue(input.trigger?.target)?.taskId);
+  const targetRunScope = `ado-run:${runId}`;
+  const openStates = new Set([
+    "active",
+    "backlog",
+    "review",
+    "waiting",
+    "blocked",
+  ]);
+  const tree = readTaskTree(input.config);
+  const specIds = stringList(triggerValue(input.trigger, "specIds"))
+    .map(ensureSpecId)
+    .filter(Boolean);
+
+  const requestedTask = requestedTaskId
+    ? tree.tasks?.[requestedTaskId]
+    : undefined;
+  if (
+    requestedTask &&
+    openStates.has(taskStateForSelection(requestedTask)) &&
+    taskConflictScopes(requestedTask).includes(targetRunScope)
+  ) {
+    return requestedTaskId;
+  }
+
+  const candidates = Object.values(tree.tasks ?? {})
+    .filter(
+      (task): task is TaskNode =>
+        !!task &&
+        typeof task.id === "string" &&
+        openStates.has(taskStateForSelection(task)) &&
+        taskConflictScopes(task).includes(targetRunScope),
+    )
+    .sort(
+      (left, right) =>
+        scorePipelineRunTaskCandidate({ task: right, runId, specIds }) -
+        scorePipelineRunTaskCandidate({ task: left, runId, specIds }),
+    );
+
+  return candidates[0]?.id ?? null;
+}
+
+function applyProjectTestRunConditionV2(input: {
+  config: TaskTreeConfig;
+  trigger: ReturnType<typeof parseTriggerEvent>;
+  mode: ProjectConditionV2Mode;
+}): {
+  handled: boolean;
+  applied: boolean;
+  replayed?: boolean;
+  taskId?: string;
+  runId?: string;
+  reason?: string;
+} {
+  if (input.trigger?.type !== "project.test_run.completed") {
+    return { handled: false, applied: false };
+  }
+  if (!exactAdoConditionV2Enabled(input.mode)) {
+    return {
+      handled: false,
+      applied: false,
+      reason: "exact ADO Condition V2 writer is disabled",
+    };
+  }
+  const runId = stringValue(triggerValue(input.trigger, "runId"));
+  if (!runId) {
+    return {
+      handled: true,
+      applied: false,
+      reason: "project.test_run.completed has no runId",
+    };
+  }
+  const requestedTaskId =
+    stringValue(triggerValue(input.trigger, "taskId")) ||
+    stringValue(objectValue(input.trigger.target)?.taskId);
+  const tree = readTaskTree(input.config);
+  const matches = Object.values(conditionRegistry(tree)).filter(
+    (condition) =>
+      condition.backend === "ado" &&
+      condition.runId === runId &&
+      (!requestedTaskId || condition.subject.id === requestedTaskId),
+  );
+  if (matches.length !== 1) {
+    return {
+      handled: false,
+      applied: false,
+      runId,
+      reason:
+        matches.length === 0
+          ? "no exact Condition matches the completed run"
+          : "completed run matches more than one open Condition",
+    };
+  }
+  const condition = matches[0];
+  const resolvedAt =
+    stringValue(triggerValue(input.trigger, "completedAt")) ||
+    stringValue(triggerValue(input.trigger, "finishedAt")) ||
+    new Date().toISOString();
+  const result = resolvePipelineConditionV2(input.config, {
+    mode: input.mode,
+    conditionId: condition.id,
+    backend: "ado",
+    runId,
+    taskId: condition.subject.id,
+    taskRevision: condition.subject.revision,
+    resolvedAt,
+    resolution: {
+      source: "project.test_run.completed",
+      status: stringValue(triggerValue(input.trigger, "status")) || "completed",
+      conclusion:
+        stringValue(triggerValue(input.trigger, "conclusion")) || null,
+      runUrl:
+        stringValue(triggerValue(input.trigger, "runUrl")) || condition.runUrl,
+      eventTaskId: requestedTaskId || null,
+    },
+  });
+  return {
+    handled: true,
+    applied: result.applied,
+    replayed: result.replayed,
+    taskId: condition.subject.id,
+    runId,
+    reason: result.reason,
+  };
+}
+
+type ConditionFallbackEventCorrelationV2 = {
+  conditionId: string;
+  recoveryKey: string;
+  taskId: string;
+  taskRevision: number;
+};
+
+function conditionFallbackEventV2(input: {
+  config: TaskTreeConfig;
+  trigger: ReturnType<typeof parseTriggerEvent>;
+}): {
+  handled: boolean;
+  valid: boolean;
+  replayed?: boolean;
+  correlation?: ConditionFallbackEventCorrelationV2;
+  reason?: string;
+} {
+  if (
+    input.trigger?.type !== "project.owner.requested" ||
+    stringValue(triggerValue(input.trigger, "reason")) !==
+      "condition-overdue-fallback"
+  ) {
+    return { handled: false, valid: false };
+  }
+  const conditionId = stringValue(triggerValue(input.trigger, "conditionId"));
+  const recoveryKey = stringValue(triggerValue(input.trigger, "recoveryKey"));
+  const taskId = stringValue(triggerValue(input.trigger, "taskId"));
+  const taskRevision = nonNegativeInteger(
+    triggerValue(input.trigger, "taskRevision"),
+  );
+  if (!conditionId || !recoveryKey || !taskId || taskRevision === null) {
+    return {
+      handled: true,
+      valid: false,
+      reason: "condition fallback event is missing exact correlation",
+    };
+  }
+  const condition = conditionRegistry(readTaskTree(input.config))[conditionId];
+  const fallback = condition?.fallbackExecution;
+  if (
+    !condition ||
+    !fallback ||
+    fallback.recoveryKey !== recoveryKey ||
+    condition.subject.id !== taskId ||
+    condition.subject.revision !== taskRevision ||
+    (fallback.status !== "dispatched" && fallback.status !== "acknowledged")
+  ) {
+    return {
+      handled: true,
+      valid: false,
+      reason: "condition fallback event correlation mismatch",
+    };
+  }
+  return {
+    handled: true,
+    valid: true,
+    replayed: fallback.status === "acknowledged",
+    correlation: { conditionId, recoveryKey, taskId, taskRevision },
+  };
+}
+
+function acknowledgeConditionFallbackEventV2(input: {
+  config: TaskTreeConfig;
+  mode: ProjectConditionV2Mode;
+  correlation: ConditionFallbackEventCorrelationV2;
+}): ReturnType<typeof acknowledgePipelineConditionFallbackV2> {
+  return acknowledgePipelineConditionFallbackV2(input.config, {
+    mode: input.mode,
+    ...input.correlation,
+    acknowledgedAt: new Date().toISOString(),
+    acknowledgedBy: name,
+  });
+}
+
+function normalizedPlannerTrigger(
+  config: TaskTreeConfig,
+  rawTask: string,
+): ReturnType<typeof parseTriggerEvent> {
+  const trigger = parseTriggerEvent(rawTask);
+  if (!trigger) return null;
+  const resolvedTaskId = resolvedProjectTestRunCompletedTaskId({
+    config,
+    trigger,
+  });
+  if (!resolvedTaskId) return trigger;
+
+  const currentTaskId =
+    stringValue(triggerValue(trigger, "taskId")) ||
+    stringValue(objectValue(trigger?.target)?.taskId);
+  if (currentTaskId === resolvedTaskId) return trigger;
+
+  return {
+    ...trigger,
+    target: {
+      ...(objectValue(trigger.target) ?? {}),
+      taskId: resolvedTaskId,
+    },
+    data: {
+      ...(objectValue(trigger.data) ?? {}),
+      taskId: resolvedTaskId,
+      normalizedFromTaskId: currentTaskId || null,
+      normalizedBy: name,
+    },
+  };
+}
+
+function plannerTriggerBlock(config: TaskTreeConfig, rawTask: string): string {
+  const trigger = normalizedPlannerTrigger(config, rawTask);
+  if (!trigger) return triggerBlock(rawTask);
+  return (
+    `## Trigger Event
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+
+a
+a`.replace("a\na", "") +
+    "```json\n" +
+    JSON.stringify(trigger, null, 2) +
+    "\n```"
+  );
 }
 
 function readJsonFile<T>(path: string, fallback: T): T {
@@ -2656,7 +3721,9 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   return [
     stringValue(waitingFor?.pathId ?? waitingFor?.path_id),
     stringValue(waitingFor?.approvalPathId ?? waitingFor?.approval_path_id),
-  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  ].filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  );
 }
 
 function blockedWaitOverdueAt(task: TaskNode): number | null {
@@ -2906,6 +3973,7 @@ type ReviewAction = {
   outputs?: string[];
   acceptance?: string[];
   conflictScopes?: string[];
+  workflow?: string;
 };
 
 function taskIdLeaf(id: string): string {
@@ -2930,7 +3998,48 @@ function reviewActionFromValue(value: unknown): ReviewAction | null {
     conflictScopes: stringList(
       action?.conflictScopes ?? action?.conflict_scope,
     ),
+    workflow: stringValue(action?.workflow),
   };
+}
+
+function taskTreeFollowupActionV2(
+  action: ReviewAction | null,
+): TaskTreeFollowupActionV2 | null {
+  if (
+    action?.actionKind !== "task-tree-followup" ||
+    !action.idBase ||
+    !action.parentId ||
+    !action.owner ||
+    !action.goal ||
+    !action.outputs?.length ||
+    !action.acceptance?.length ||
+    !action.conflictScopes?.length
+  ) {
+    return null;
+  }
+  return {
+    actionKind: "task-tree-followup",
+    idBase: action.idBase,
+    parentId: action.parentId,
+    owner: action.owner,
+    goal: action.goal,
+    outputs: action.outputs,
+    acceptance: action.acceptance,
+    conflictScopes: action.conflictScopes,
+    ...(action.kind ? { kind: action.kind } : {}),
+    ...(action.workflow ? { workflow: action.workflow } : {}),
+  };
+}
+
+function normalizeReviewedEventOwner(
+  type: ReviewedEvent["type"] | string,
+  owner: string,
+): string | null {
+  if (/^(?:agent|human|project|task):/.test(owner)) return owner;
+  if (type === "project.approval.requested" && owner === "app-ops") {
+    return "agent:app-ops";
+  }
+  return null;
 }
 
 function reviewedEventsFromValue(value: unknown): {
@@ -2950,13 +4059,17 @@ function reviewedEventsFromValue(value: unknown): {
     if (
       type !== "escalation.resolved" &&
       type !== "escalation.dismissed" &&
+      type !== "project.approval.requested" &&
       type !== "project.task.completed" &&
       type !== "project.task.tick"
     ) {
       invalid.push(`events[${index}].type`);
       return;
     }
-    if (!owner || !/^(?:agent|human|project|task):/.test(owner)) {
+    const normalizedOwner = owner
+      ? normalizeReviewedEventOwner(type, owner)
+      : null;
+    if (!normalizedOwner) {
       invalid.push(`events[${index}].owner`);
       return;
     }
@@ -2995,7 +4108,7 @@ function reviewedEventsFromValue(value: unknown): {
       }
       events.push({
         type,
-        owner,
+        owner: normalizedOwner,
         action,
         target: {
           ...(tickTarget ?? {}),
@@ -3016,6 +4129,68 @@ function reviewedEventsFromValue(value: unknown): {
       });
       return;
     }
+    if (type === "project.approval.requested") {
+      const approvalTarget = target ?? objectValue(data.target);
+      const project =
+        stringValue(data.project) || stringValue(approvalTarget?.project);
+      const params = objectValue(data.params);
+      const packetPath = stringValue(params?.packetPath ?? params?.packet_path);
+      const pathId = stringValue(params?.pathId ?? params?.path_id);
+      const requestedAction = stringValue(
+        params?.requestedAction ?? params?.requested_action,
+      );
+      if (!project) {
+        invalid.push(`events[${index}].data.project`);
+        return;
+      }
+      if (!approvalTarget || stringValue(approvalTarget.project) !== project) {
+        invalid.push(`events[${index}].target.project`);
+        return;
+      }
+      if (!params) {
+        invalid.push(`events[${index}].data.params`);
+        return;
+      }
+      if (
+        !packetPath ||
+        packetPath.includes("..") ||
+        !packetPath.startsWith("evidence/archive/")
+      ) {
+        invalid.push(`events[${index}].data.params.packetPath`);
+        return;
+      }
+      if (!pathId) {
+        invalid.push(`events[${index}].data.params.pathId`);
+        return;
+      }
+      if (!requestedAction) {
+        invalid.push(`events[${index}].data.params.requestedAction`);
+        return;
+      }
+      events.push({
+        type,
+        owner: normalizedOwner,
+        target: {
+          ...(approvalTarget ?? {}),
+          project,
+        },
+        data: {
+          ...data,
+          project,
+          target: {
+            ...(approvalTarget ?? {}),
+            project,
+          },
+          params: {
+            ...params,
+            packetPath,
+            pathId,
+            requestedAction,
+          },
+        },
+      });
+      return;
+    }
     if (type === "project.task.completed") {
       const completionTarget = target ?? objectValue(data.target);
       const completionProject =
@@ -3026,7 +4201,8 @@ function reviewedEventsFromValue(value: unknown): {
         stringValue(completionTarget?.taskId);
       const completionAttemptId =
         stringValue(data.attemptId) || stringValue(data.attempt_id);
-      const completionResult = stringValue(data.result) || stringValue(data.claim);
+      const completionResult =
+        stringValue(data.result) || stringValue(data.claim);
       const completionSummary = stringValue(data.summary);
       if (!completionProject) {
         invalid.push(`events[${index}].data.project`);
@@ -3058,7 +4234,7 @@ function reviewedEventsFromValue(value: unknown): {
       }
       events.push({
         type,
-        owner,
+        owner: normalizedOwner,
         target: completionTarget,
         data,
       });
@@ -3081,7 +4257,7 @@ function reviewedEventsFromValue(value: unknown): {
     }
     events.push({
       type,
-      owner,
+      owner: normalizedOwner,
       ...(target ? { target } : {}),
       data,
     });
@@ -3103,9 +4279,14 @@ function reviewedCompletionReplayTargetsLiveReview(
   const targetAttemptId =
     stringValue(event.data.attemptId) || stringValue(event.data.attempt_id);
   if (!targetTaskId || !targetAttemptId) return false;
+  const targetTaskRevision =
+    nonNegativeInteger(event.data.taskRevision) ??
+    nonNegativeInteger(event.data.task_revision) ??
+    0;
   const targetTask = readTask(config, targetTaskId);
   if (!targetTask) return false;
   if (taskState(targetTask) !== "review") return false;
+  if (taskRevision(targetTask) !== targetTaskRevision) return false;
   const liveAttemptId = currentAttemptId(targetTask);
   return !liveAttemptId || liveAttemptId !== targetAttemptId;
 }
@@ -3573,6 +4754,9 @@ function requeueReviewedBlockedProjectActions(
 function applyReviewedTaskEvent(
   config: TaskTreeConfig,
   trigger: ReturnType<typeof parseTriggerEvent>,
+  conditionV2: ProjectConditionV2Mode = "off",
+  revisionV2SpecId?: string,
+  revisionV2RunId?: string,
 ): ReviewedTaskApplyResult {
   if (trigger?.type !== "project.task.reviewed") {
     return {
@@ -3595,6 +4779,7 @@ function applyReviewedTaskEvent(
         "Ignored project.task.reviewed because taskId, attemptId, and decision are required.",
     };
   }
+  const reviewedTaskRevision = reviewTaskRevision(trigger);
 
   const summary =
     reviewString(trigger, "summary") ||
@@ -3613,6 +4798,29 @@ function applyReviewedTaskEvent(
   const reviewedEvents = reviewedEventsFromValue(
     reviewValue(trigger, "events"),
   );
+
+  const v2FollowupAction = taskTreeFollowupActionV2(reviewAction);
+  if (v2FollowupAction && (decision === "accept" || decision === "followup")) {
+    const command = applyTaskTreeFollowupReviewV2(config, {
+      taskId,
+      taskRevision: reviewedTaskRevision,
+      attemptId,
+      decision,
+      summary,
+      action: v2FollowupAction,
+    });
+    return {
+      handled: true,
+      applied: command.applied,
+      decision,
+      taskId,
+      successorTaskId: command.successorTaskId,
+      events: command.applied ? reviewedEvents.events : undefined,
+      message: command.applied
+        ? `${command.replayed ? "Replayed" : "Applied"} V2 task-tree follow-up review for ${taskId}; exact successor ${command.successorTaskId}.`
+        : `Did not apply V2 task-tree follow-up review for ${taskId}: ${command.reason}`,
+    };
+  }
 
   const task = readTask(config, taskId);
   if (!task) {
@@ -3650,6 +4858,15 @@ function applyReviewedTaskEvent(
       message: `Ignored stale reviewed event for ${taskId}: task is ${state}, not review.`,
     };
   }
+  if (taskRevision(task) !== reviewedTaskRevision) {
+    return {
+      handled: true,
+      applied: false,
+      decision,
+      taskId,
+      message: `Ignored stale reviewed event for ${taskId}: revision ${reviewedTaskRevision} is not current (${taskRevision(task)}).`,
+    };
+  }
   const liveAttemptId = currentAttemptId(task);
   if (liveAttemptId && liveAttemptId !== attemptId) {
     return {
@@ -3660,14 +4877,37 @@ function applyReviewedTaskEvent(
       message: `Ignored stale reviewed event for ${taskId}: attempt ${attemptId} is not current.`,
     };
   }
-
-  const exactPipelineWait = reviewedExactPipelineWait(trigger);
+  const exactPipelineWait = reviewedExactPipelineWait({ trigger, task });
   if (
     exactPipelineWait &&
-    (decision === "accept" ||
-      decision === "followup" ||
-      decision === "blocked")
+    (decision === "accept" || decision === "followup" || decision === "blocked")
   ) {
+    if (
+      reviewedTaskRevision > 0 &&
+      stringValue(taskContext(task).workflow) === "fix-forward" &&
+      conditionV2 === "exact-ado-revisioned"
+    ) {
+      const phase = revisePipelineVerificationPhaseV2(config, {
+        conditionV2,
+        taskId,
+        taskRevision: reviewedTaskRevision,
+        attemptId,
+        summary,
+        runId: exactPipelineWait.runId,
+        runUrl: exactPipelineWait.runUrl,
+        specIds: exactPipelineWait.specIds,
+        reason: exactPipelineWait.reason,
+      });
+      return {
+        handled: true,
+        applied: phase.applied,
+        decision,
+        taskId,
+        message: phase.applied
+          ? `${phase.replayed ? "Replayed" : "Revised"} ${taskId} from fix-forward revision ${reviewedTaskRevision} to spec-result-review revision ${phase.toRevision} for run ${exactPipelineWait.runId}.`
+          : `Did not revise ${taskId} to pipeline verification: ${phase.reason}`,
+      };
+    }
     const runId = restoreReviewedExactPipelineWaitToBlocked({
       config,
       task,
@@ -3680,6 +4920,26 @@ function applyReviewedTaskEvent(
       decision,
       taskId,
       message: `Restored exact blocked wait ${taskId} in place for run ${runId}.`,
+    };
+  }
+
+  const exactExternalWait = reviewedExactExternalWait({ trigger, task });
+  if (
+    exactExternalWait &&
+    (decision === "accept" || decision === "followup" || decision === "blocked")
+  ) {
+    const sourceRunId = restoreReviewedExactExternalWaitToBlocked({
+      config,
+      task,
+      summary,
+      wait: exactExternalWait,
+    });
+    return {
+      handled: true,
+      applied: true,
+      decision,
+      taskId,
+      message: `Restored exact blocked wait ${taskId} in place for external fact review from ${sourceRunId}.`,
     };
   }
 
@@ -3773,6 +5033,8 @@ function applyReviewedTaskEvent(
     ) {
       markTaskDone(config, {
         taskId,
+        taskRevision: reviewedTaskRevision,
+        attemptId,
         summary,
         reviewDecision: decision,
       });
@@ -3812,6 +5074,8 @@ function applyReviewedTaskEvent(
           results: acceptedResults.filter((result) =>
             acceptedSpecIdSet.has(result.specId),
           ),
+          revisionV2SpecId,
+          revisionV2RunId,
         })
       : [];
     const queuedRun = acceptedSpecIds.length
@@ -3852,7 +5116,13 @@ function applyReviewedTaskEvent(
             reviewAction,
           })
         : null;
-    markTaskDone(config, { taskId, summary, reviewDecision: decision });
+    markTaskDone(config, {
+      taskId,
+      taskRevision: reviewedTaskRevision,
+      attemptId,
+      summary,
+      reviewDecision: decision,
+    });
     return {
       handled: true,
       applied: true,
@@ -3881,6 +5151,8 @@ function applyReviewedTaskEvent(
   if (decision === "redo") {
     rejectTaskReview(config, {
       taskId,
+      taskRevision: reviewedTaskRevision,
+      attemptId,
       reason: firstText(feedback, findings, [summary]),
       freshSession: true,
       review: {
@@ -3915,6 +5187,8 @@ function applyReviewedTaskEvent(
   ) {
     markTaskDone(config, {
       taskId,
+      taskRevision: reviewedTaskRevision,
+      attemptId,
       resolution: "completed",
       summary,
       reviewDecision: decision,
@@ -3948,6 +5222,8 @@ function applyReviewedTaskEvent(
   ) {
     rejectTaskReview(config, {
       taskId,
+      taskRevision: reviewedTaskRevision,
+      attemptId,
       reason: firstText(feedback, findings, [summary]),
       freshSession: true,
       review: {
@@ -4006,6 +5282,8 @@ function applyReviewedTaskEvent(
   });
   markTaskDone(config, {
     taskId,
+    taskRevision: reviewedTaskRevision,
+    attemptId,
     resolution: decision === "followup" ? "completed" : "replaced",
     summary: `Reviewer decision ${decision}; successor ${successorTaskId}: ${summary}`,
     reviewDecision: decision,
@@ -4031,7 +5309,9 @@ function shouldRequeueGuardedAppStateRepairReview(input: {
   if (input.reviewAction?.actionKind !== "app-state-repair") return false;
   if (input.task.owner !== "app-ops") return false;
   const priorReviewedTask = objectValue(taskContext(input.task).reviewedTask);
-  const priorReviewAction = reviewActionFromValue(priorReviewedTask?.reviewAction);
+  const priorReviewAction = reviewActionFromValue(
+    priorReviewedTask?.reviewAction,
+  );
   return priorReviewAction?.actionKind === "app-state-repair";
 }
 
@@ -4052,7 +5332,9 @@ function shouldRouteNestedAppActionToOwner(input: {
     return false;
   }
   const priorReviewedTask = objectValue(taskContext(input.task).reviewedTask);
-  const priorReviewAction = reviewActionFromValue(priorReviewedTask?.reviewAction);
+  const priorReviewAction = reviewActionFromValue(
+    priorReviewedTask?.reviewAction,
+  );
   return (
     priorReviewAction?.actionKind === "app-state-repair" ||
     priorReviewAction?.actionKind === "task-tree-followup"
@@ -4257,7 +5539,9 @@ function settledActiveNoopResult(input: {
     ...input.packet.active_task_ids,
     ...input.packet.frontier.active,
     ...Object.values(liveTree.tasks ?? {}).flatMap((task) =>
-      taskState(task) === "active" && (task.children?.length ?? 0) === 0 && task.id
+      taskState(task) === "active" &&
+      (task.children?.length ?? 0) === 0 &&
+      task.id
         ? [task.id]
         : [],
     ),
@@ -4312,7 +5596,7 @@ function settledActiveNoopResult(input: {
     activeOpsTaskIds.length > 0 &&
     (triggerNumber(input.rawTask, "blockedOverdueCount") ?? 0) === 0 &&
     (triggerNumber(input.rawTask, "blockedMissingWatchCount") ?? 0) === 0 &&
-    triggerOverdueOwnerActions(input.rawTask).length === 0 &&
+    liveOverdueOwnerActions(input.config, input.rawTask).length === 0 &&
     (() => {
       const blockedTasks = triggerBlockedTasks(input.rawTask);
       if (blockedTasks.length === 0) return false;
@@ -4366,6 +5650,17 @@ function settledActiveNoopResult(input: {
     hasOnlyActiveFrontier
   ) {
     return "Watchdog stale-active review was a false positive: every cited stale-active task still has a currently running runtime session after live-tree revalidation.";
+  }
+  if (
+    isBlockedFrontierReviewReason(reason) &&
+    triggerOverdueOwnerActions(input.rawTask).length > 0 &&
+    liveOverdueOwnerActions(input.config, input.rawTask).length === 0 &&
+    input.quickAssignments.length === 0 &&
+    input.quickControllerPulses.length === 0 &&
+    noHumanSteering &&
+    input.packet.frontier.runnable.length === 0
+  ) {
+    return "Watchdog blocked-frontier review was a false positive: every cited overdue owner action is already refreshed or covered by active/review same-lineage recovery work after live-tree revalidation.";
   }
   if (settledAfterCompletion) {
     return "Task-completed wake is already settled in the task tree: the completed task no longer exists in the live tree, no review task remains, and no runnable frontier needs owner judgment.";
@@ -4555,6 +5850,148 @@ function triggerReviewTasks(rawTask: string): TriggerReviewTask[] {
       return { taskId, updatedAt };
     })
     .filter((entry): entry is TriggerReviewTask => Boolean(entry));
+}
+
+function latestReviewerRunByAttempt(
+  appDir: string,
+): Map<string, TaskReviewerRun> {
+  const path = join(appDir, ".state", "task-reviewer-runs.jsonl");
+  if (!existsSync(path)) return new Map();
+  const latest = new Map<string, TaskReviewerRun>();
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const row = JSON.parse(line) as TaskReviewerRun;
+      if (row.result !== "project.task.reviewed") continue;
+      const taskId =
+        typeof row.task_id === "string"
+          ? row.task_id.trim()
+          : typeof row.taskId === "string"
+            ? row.taskId.trim()
+            : "";
+      const attemptId =
+        typeof row.attempt_id === "string"
+          ? row.attempt_id.trim()
+          : typeof row.attemptId === "string"
+            ? row.attemptId.trim()
+            : "";
+      if (!taskId || !attemptId) continue;
+      const revision =
+        nonNegativeInteger(row.task_revision) ??
+        nonNegativeInteger(row.taskRevision) ??
+        0;
+      latest.set(`${taskId}:${revision}:${attemptId}`, row);
+    } catch {
+      // Ignore malformed historical reviewer rows during watchdog recovery.
+    }
+  }
+  return latest;
+}
+
+function reviewedTriggerFromReviewerRun(
+  row: TaskReviewerRun,
+): ReturnType<typeof parseTriggerEvent> | null {
+  const taskId =
+    typeof row.task_id === "string"
+      ? row.task_id.trim()
+      : typeof row.taskId === "string"
+        ? row.taskId.trim()
+        : "";
+  const attemptId =
+    typeof row.attempt_id === "string"
+      ? row.attempt_id.trim()
+      : typeof row.attemptId === "string"
+        ? row.attemptId.trim()
+        : "";
+  const decision = normalizeReviewDecision(row.decision);
+  if (!taskId || !attemptId || !decision) return null;
+  const revision =
+    nonNegativeInteger(row.task_revision) ??
+    nonNegativeInteger(row.taskRevision) ??
+    0;
+  const data: Record<string, unknown> = {
+    taskId,
+    task_id: taskId,
+    taskRevision: revision,
+    task_revision: revision,
+    attemptId,
+    attempt_id: attemptId,
+    decision,
+  };
+  if (typeof row.confidence === "string" && row.confidence.trim()) {
+    data.confidence = row.confidence.trim();
+  }
+  if (typeof row.summary === "string" && row.summary.trim()) {
+    data.summary = row.summary.trim();
+  }
+  for (const key of [
+    "findings",
+    "feedback",
+    "suggestedFollowups",
+    "suggested_followups",
+    "artifacts",
+    "verification",
+    "events",
+    "reviewAction",
+    "review_action",
+  ] as const) {
+    const value = row[key];
+    if (value !== undefined) data[key] = value;
+  }
+  return {
+    type: "project.task.reviewed",
+    data,
+  } as ReturnType<typeof parseTriggerEvent>;
+}
+
+function recoverWatchdogReviewPendingApply(
+  config: TaskTreeConfig,
+  rawTask: string,
+  conditionV2: ProjectConditionV2Mode = "off",
+  revisionV2SpecId?: string,
+  revisionV2RunId?: string,
+): ReviewedTaskApplyResult {
+  const reason = triggerValue(parseTriggerEvent(rawTask), "reason");
+  if (reason !== "watchdog-review-pending") {
+    return {
+      handled: false,
+      applied: false,
+      message: "Trigger is not watchdog-review-pending.",
+    };
+  }
+
+  const latestReviewerRuns = latestReviewerRunByAttempt(config.appDir);
+  for (const triggerTask of triggerReviewTasks(rawTask)) {
+    const task = readTask(config, triggerTask.taskId);
+    if (!task || taskState(task) !== "review") continue;
+    const attemptId = currentAttemptId(task);
+    if (!attemptId) continue;
+    const reviewerRun = latestReviewerRuns.get(
+      `${task.id}:${taskRevision(task)}:${attemptId}`,
+    );
+    if (!reviewerRun) continue;
+    const synthesizedTrigger = reviewedTriggerFromReviewerRun(reviewerRun);
+    if (!synthesizedTrigger) continue;
+    const recovered = applyReviewedTaskEvent(
+      config,
+      synthesizedTrigger,
+      conditionV2,
+      revisionV2SpecId,
+      revisionV2RunId,
+    );
+    if (!recovered.applied) continue;
+    return {
+      ...recovered,
+      handled: true,
+      message: `Recovered ${task.id} from watchdog-review-pending using the stored reviewer decision for attempt ${attemptId}. ${recovered.message}`,
+    };
+  }
+
+  return {
+    handled: false,
+    applied: false,
+    message: "No recoverable live review task matched watchdog-review-pending.",
+  };
 }
 
 function staleReviewPendingNoopResult(input: {
@@ -4750,6 +6187,34 @@ function triggerOverdueOwnerActions(
     .filter((entry): entry is TriggerOverdueOwnerAction => Boolean(entry));
 }
 
+function liveOverdueOwnerActions(
+  config: TaskTreeConfig,
+  rawTask: string,
+): TriggerOverdueOwnerAction[] {
+  const overdueActions = triggerOverdueOwnerActions(rawTask);
+  if (overdueActions.length === 0) return [];
+
+  const tree = readTaskTree(config);
+  const activeOrReview = (Object.values(tree.tasks) as TaskNode[]).filter(
+    (task) => ["active", "review"].includes(taskState(task)),
+  );
+  const now = Date.now();
+
+  return overdueActions.filter((action) => {
+    const blockedTask = readTask(config, action.taskId);
+    if (!blockedTask || taskState(blockedTask) !== "blocked") return false;
+    if ((blockedTask.children ?? []).length > 0) return false;
+
+    const overdueAt = blockedWaitOverdueAt(blockedTask);
+    if (overdueAt === null || overdueAt > now) return false;
+
+    const covered = activeOrReview.some((candidate) =>
+      taskCoversBlockedOverdueWait(candidate, blockedTask, ""),
+    );
+    return !covered;
+  });
+}
+
 function futureTimestamp(value: string | undefined): number | null {
   if (!value) return null;
   const ts = Date.parse(value);
@@ -4767,6 +6232,7 @@ function futureBlockedWatchAt(task: TriggerBlockedTask): number | null {
 }
 
 function blockedFrontierFutureWaitNoopResult(input: {
+  config: TaskTreeConfig;
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
@@ -4802,7 +6268,9 @@ function blockedFrontierFutureWaitNoopResult(input: {
   if (blockedMissingWatchCount !== null && blockedMissingWatchCount > 0) {
     return null;
   }
-  if (triggerOverdueOwnerActions(input.rawTask).length > 0) return null;
+  if (liveOverdueOwnerActions(input.config, input.rawTask).length > 0) {
+    return null;
+  }
 
   const blockedTasks = triggerBlockedTasks(input.rawTask);
   if (blockedTasks.length === 0) return null;
@@ -4821,6 +6289,7 @@ function blockedFrontierFutureWaitNoopResult(input: {
 }
 
 function singleAssignmentShortCircuitResult(input: {
+  config: TaskTreeConfig;
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
@@ -4829,7 +6298,9 @@ function singleAssignmentShortCircuitResult(input: {
   aggressivePush: boolean;
 }): string | null {
   if (input.aggressivePush) return null;
-  if (triggerOverdueOwnerActions(input.rawTask).length > 0) return null;
+  if (liveOverdueOwnerActions(input.config, input.rawTask).length > 0) {
+    return null;
+  }
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   if (
     ![
@@ -4902,6 +6373,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const sourceRoot = sourceDir(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, null);
+  const conditionV2: ProjectConditionV2Mode =
+    field(ctx.task, "conditionV2") === "exact-ado-revisioned"
+      ? "exact-ado-revisioned"
+      : "off";
+  const revisionV2SpecId =
+    field(ctx.task, "revisionV2") === "fix-forward-exact-spec"
+      ? field(ctx.task, "revisionV2SpecId")?.trim() || undefined
+      : undefined;
+  const revisionV2RunId =
+    field(ctx.task, "revisionV2") === "fix-forward-first-nonpass-run"
+      ? field(ctx.task, "revisionV2RunId")?.trim() || undefined
+      : undefined;
   const aggressivePush = projectPushMode(appDir) === "aggressive-push";
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
@@ -4922,6 +6405,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     worker,
     maxConcurrent: configuredMaxConcurrent,
   });
+  const trigger = parseTriggerEvent(ctx.task);
+  const fallbackEvent = conditionFallbackEventV2({
+    config,
+    trigger,
+  });
+  if (fallbackEvent.handled && !fallbackEvent.valid) {
+    return ctx.done(
+      `Ignored uncorrelated Condition fallback event: ${fallbackEvent.reason ?? "correlation failed"}.`,
+    );
+  }
+  if (fallbackEvent.replayed) {
+    return ctx.done(
+      `Replayed already acknowledged Condition fallback event for ${fallbackEvent.correlation?.conditionId ?? "unknown Condition"}; owner planning was not repeated.`,
+    );
+  }
+  const isConditionFallbackEvent = Boolean(fallbackEvent.correlation);
 
   let humanSteering = recentHumanSteering(ctx);
   const initialRepair = repairTaskTreeRollups(config);
@@ -4931,27 +6430,94 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   requeueReviewedBlockedProjectActions(config);
   syncPlannerProjectReadout(config);
-  const trigger = parseTriggerEvent(ctx.task);
-  const overdueOwnerActionCount = triggerOverdueOwnerActions(ctx.task).length;
-  const reviewedApply = applyReviewedTaskEvent(config, trigger);
+  ensureResolvedPipelineConditionAssignmentsV2(config, {
+    mode: conditionV2,
+  });
+  const conditionEventApply = applyProjectTestRunConditionV2({
+    config,
+    trigger,
+    mode: conditionV2,
+  });
+  if (conditionEventApply.applied && conditionEventApply.taskId) {
+    ensureResolvedPipelineConditionAssignmentsV2(config, {
+      mode: conditionV2,
+    });
+    const requestedControllerPulses = assignPlannerRunnableBacklogTasks(
+      config,
+      {
+        worker,
+        domainWorker,
+        opsWorker,
+      },
+    );
+    const { assignments, controllerPulses } = deliverPendingTaskWork(
+      ctx,
+      config,
+      requestedControllerPulses,
+    );
+    const finalRepair = repairTaskTreeRollups(config);
+    syncPlannerProjectReadout(config);
+    const packet = planningPacket(config);
+    const message = `${
+      conditionEventApply.replayed ? "Replayed" : "Applied"
+    } project.test_run.completed for Condition-backed task ${conditionEventApply.taskId} run ${conditionEventApply.runId}.${
+      assignments.length > 0
+        ? ` Assigned ${assignments.map((assignment) => assignment.taskId).join(", ")}.`
+        : ""
+    }`;
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status:
+        assignments.length > 0 || controllerPulses.length > 0
+          ? "assigned"
+          : "settled",
+      ran_agent: false,
+      steps: ["condition-event-resolve", "quick-refill"],
+      assigned_task_ids: assignments.map((assignment) => assignment.taskId),
+      pulsed_controller_task_ids: controllerPulses.map((pulse) => pulse.taskId),
+      repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
+      active_task_ids: packet.active_task_ids,
+      result: message,
+    });
+    return ctx.done(message);
+  }
+  const overdueOwnerActionCount = liveOverdueOwnerActions(
+    config,
+    ctx.task,
+  ).length;
+  const directReviewedApply = applyReviewedTaskEvent(
+    config,
+    trigger,
+    conditionV2,
+    revisionV2SpecId,
+    revisionV2RunId,
+  );
+  const reviewedApply = directReviewedApply.handled
+    ? directReviewedApply
+    : recoverWatchdogReviewPendingApply(
+        config,
+        ctx.task,
+        conditionV2,
+        revisionV2SpecId,
+        revisionV2RunId,
+      );
   if (reviewedApply.handled) {
     const reviewedEventDispatch = reviewedApply.applied
       ? dispatchReviewedEvents(ctx, appDir, reviewedApply.events ?? [])
       : { emitted: 0, alreadyClosed: 0 };
-    const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
-      worker,
-      domainWorker,
-      opsWorker,
-    });
-    const drainedAssignments = drainTaskAssignments(config);
-    const bridgedAssignments = splitLoopControllerAssignments(
+    const requestedControllerPulses = assignPlannerRunnableBacklogTasks(
       config,
-      drainedAssignments,
+      {
+        worker,
+        domainWorker,
+        opsWorker,
+      },
     );
-    const assignments = bridgedAssignments.workerAssignments;
-    controllerPulses.push(...bridgedAssignments.controllerPulses);
-    dispatchAssignedTasks(ctx, assignments);
-    dispatchLoopControllerPulses(ctx, controllerPulses);
+    const { assignments, controllerPulses } = deliverPendingTaskWork(
+      ctx,
+      config,
+      requestedControllerPulses,
+    );
     const finalRepair = repairTaskTreeRollups(config);
     syncPlannerProjectReadout(config);
     const packet = planningPacket(config);
@@ -5024,7 +6590,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
                 "quick-refill",
                 "reviewed-owner-action-requested",
               ]
-          : ["task-reviewed-apply", "quick-refill"]
+            : ["task-reviewed-apply", "quick-refill"]
         : ["task-reviewed-stale-noop"],
       assigned_task_ids: assignments.map((assignment) => assignment.taskId),
       pulsed_controller_task_ids: controllerPulses.map((pulse) => pulse.taskId),
@@ -5044,20 +6610,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
   const stallReviewedApply = applyStallReviewedEvent(config, trigger);
   if (stallReviewedApply.handled && stallReviewedApply.applied) {
-    const controllerPulses = assignPlannerRunnableBacklogTasks(config, {
-      worker,
-      domainWorker,
-      opsWorker,
-    });
-    const drainedAssignments = drainTaskAssignments(config);
-    const bridgedAssignments = splitLoopControllerAssignments(
+    const requestedControllerPulses = assignPlannerRunnableBacklogTasks(
       config,
-      drainedAssignments,
+      {
+        worker,
+        domainWorker,
+        opsWorker,
+      },
     );
-    const assignments = bridgedAssignments.workerAssignments;
-    controllerPulses.push(...bridgedAssignments.controllerPulses);
-    dispatchAssignedTasks(ctx, assignments);
-    dispatchLoopControllerPulses(ctx, controllerPulses);
+    const { assignments, controllerPulses } = deliverPendingTaskWork(
+      ctx,
+      config,
+      requestedControllerPulses,
+    );
     const finalRepair = repairTaskTreeRollups(config);
     syncPlannerProjectReadout(config);
     const packet = planningPacket(config);
@@ -5091,15 +6656,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     domainWorker,
     opsWorker,
   });
-  const quickDrainedAssignments = drainTaskAssignments(config);
-  const quickBridgedAssignments = splitLoopControllerAssignments(
+  const quickDelivery = deliverPendingTaskWork(
+    ctx,
     config,
-    quickDrainedAssignments,
+    quickControllerPulses,
   );
-  const quickAssignments = quickBridgedAssignments.workerAssignments;
-  quickControllerPulses.push(...quickBridgedAssignments.controllerPulses);
-  dispatchAssignedTasks(ctx, quickAssignments);
-  dispatchLoopControllerPulses(ctx, quickControllerPulses);
+  const quickAssignments = quickDelivery.assignments;
+  quickControllerPulses.splice(
+    0,
+    quickControllerPulses.length,
+    ...quickDelivery.controllerPulses,
+  );
   syncPlannerProjectReadout(config);
   let packet = planningPacket(config);
 
@@ -5111,7 +6678,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     quickAssignments,
     quickControllerPulses,
   });
-  if (noopResult) {
+  if (noopResult && !isConditionFallbackEvent) {
     appendNoopPlannerRun({
       appDir,
       result: noopResult,
@@ -5129,7 +6696,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     quickAssignments,
     quickControllerPulses,
   });
-  if (staleRunnableNoop) {
+  if (staleRunnableNoop && !isConditionFallbackEvent) {
     appendNoopPlannerRun({
       appDir,
       result: staleRunnableNoop,
@@ -5148,7 +6715,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     quickAssignments,
     quickControllerPulses,
   });
-  if (staleReviewNoop) {
+  if (staleReviewNoop && !isConditionFallbackEvent) {
     appendNoopPlannerRun({
       appDir,
       result: staleReviewNoop,
@@ -5160,6 +6727,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const singleAssignmentNoop = singleAssignmentShortCircuitResult({
+    config,
     rawTask: ctx.task,
     packet,
     humanSteering,
@@ -5167,7 +6735,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     quickControllerPulses,
     aggressivePush,
   });
-  if (singleAssignmentNoop) {
+  if (singleAssignmentNoop && !isConditionFallbackEvent) {
     appendNoopPlannerRun({
       appDir,
       result: singleAssignmentNoop,
@@ -5183,13 +6751,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const blockedFrontierFutureWaitNoop = blockedFrontierFutureWaitNoopResult({
+    config,
     rawTask: ctx.task,
     packet,
     humanSteering,
     quickAssignments,
     quickControllerPulses,
   });
-  if (blockedFrontierFutureWaitNoop) {
+  if (blockedFrontierFutureWaitNoop && !isConditionFallbackEvent) {
     appendNoopPlannerRun({
       appDir,
       result: blockedFrontierFutureWaitNoop,
@@ -5201,6 +6770,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (
+    !isConditionFallbackEvent &&
     (quickAssignments.length > 0 || quickControllerPulses.length > 0) &&
     overdueOwnerActionCount === 0 &&
     humanSteering.length === 0 &&
@@ -5291,6 +6861,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         packet,
         humanSteering,
         reviewedTaskLineage,
+        conditionOwnedTaskIds: openExactConditionSubjectIdsV2(
+          readTaskTree(config),
+        ),
       }),
     });
     packet = planningPacket(config);
@@ -5316,9 +6889,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         humanSteering,
         reviewedTaskLineage,
         wakeReason: triggerValue(parseTriggerEvent(ctx.task), "reason") as
-          | string
-          | null,
+          string | null,
         aggressivePush,
+        conditionOwnedTaskIds: openExactConditionSubjectIdsV2(
+          readTaskTree(config),
+        ),
       }),
     });
   } catch (err) {
@@ -5327,19 +6902,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       message: err instanceof Error ? err.message : String(err),
     };
   }
+  const plannerStatus = (plannerResult as { status?: string })?.status;
+  const fallbackAcknowledgement =
+    fallbackEvent.correlation && plannerStatus !== "error"
+      ? acknowledgeConditionFallbackEventV2({
+          config,
+          mode: conditionV2,
+          correlation: fallbackEvent.correlation,
+        })
+      : null;
   const finalRepair = repairTaskTreeRollups(config);
   syncPlannerProjectReadout(config);
   packet = planningPacket(config);
 
-  const ownerDrainedAssignments = drainTaskAssignments(config);
-  const ownerBridgedAssignments = splitLoopControllerAssignments(
-    config,
-    ownerDrainedAssignments,
-  );
-  let ownerAssignments = ownerBridgedAssignments.workerAssignments;
-  const ownerControllerPulses = ownerBridgedAssignments.controllerPulses;
-  dispatchAssignedTasks(ctx, ownerAssignments);
-  dispatchLoopControllerPulses(ctx, ownerControllerPulses);
+  const ownerDelivery = deliverPendingTaskWork(ctx, config);
+  const ownerAssignments = ownerDelivery.assignments;
+  const ownerControllerPulses = ownerDelivery.controllerPulses;
   const controllerPulses = [...quickControllerPulses, ...ownerControllerPulses];
   const assignments = [...quickAssignments, ...ownerAssignments];
   const progressTaskIds = plannerProgressTaskIds({
@@ -5360,13 +6938,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     result: resultText(plannerResult).slice(0, 4000),
   });
 
+  const fallbackMessage = fallbackAcknowledgement
+    ? fallbackAcknowledgement.applied
+      ? ` Condition fallback disposition ${fallbackAcknowledgement.replayed ? "was already acknowledged" : "was durably acknowledged"}.`
+      : ` Condition fallback disposition acknowledgement failed: ${fallbackAcknowledgement.reason ?? "unknown reason"}.`
+    : isConditionFallbackEvent
+      ? " Condition fallback disposition remains unacknowledged for replay."
+      : "";
   const plannerMessage = progressTaskIds.length
     ? `${plannerProgressMessage({
         prefix: "Planner",
         assignments,
         controllerPulses,
-      })} Agent result: ${resultText(plannerResult)}`
-    : `Planner assigned no tasks. Agent ran event-review and planning-update. Result: ${resultText(plannerResult)}`;
+      })} Agent result: ${resultText(plannerResult)}${fallbackMessage}`
+    : `Planner assigned no tasks. Agent ran event-review and planning-update. Result: ${resultText(plannerResult)}${fallbackMessage}`;
   if ((plannerResult as { status?: string }).status === "escalated")
     return ctx.blocked(plannerMessage);
   return ctx.done(plannerMessage);

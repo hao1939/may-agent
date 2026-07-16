@@ -21,6 +21,7 @@ import {
 } from "@may-agent/sdk";
 import {
   readTaskTree,
+  taskRevision,
   withTreeLock,
   type TaskNode,
   type TaskTreeConfig,
@@ -30,6 +31,7 @@ import {
   completeStartedAttempt,
   emitTaskCompleted,
   markAttemptStartedOnce,
+  taskRevisionFromTrigger,
 } from "./default-task-worker.ts";
 import {
   field,
@@ -50,6 +52,7 @@ import {
   type SpecLoopSpecStatus,
 } from "./lib/spec-loop-store.ts";
 import {
+  defaultAdoAgentPool,
   dispatchWorkflow as dispatchPipelineWorkflow,
   downloadWorkflowRunArtifacts as downloadPipelineArtifacts,
   getWorkflowRun as getPipelineWorkflowRun,
@@ -227,6 +230,14 @@ function pipelineNameContext(task: TaskNode, fallback: string): string {
     contextString(task, "adoPipeline", "") ||
     contextString(task, "pipelineWorkflow", "") ||
     contextString(task, "githubWorkflow", fallback)
+  );
+}
+
+function agentPoolContext(task: TaskNode): string {
+  return (
+    contextString(task, "agentPool", "") ||
+    contextString(task, "agent_pool", "") ||
+    defaultAdoAgentPool()
   );
 }
 
@@ -677,9 +688,7 @@ function classifyProjectResult(
         `Spec completed on non-live surface ${targetSurface}; dry-run/check validation is useful evidence but not a live pass verdict.`,
     };
   }
-  if (
-    category === "environment_blocker"
-  ) {
+  if (category === "environment_blocker") {
     return {
       loopStatus: "error",
       claim: "partial",
@@ -1147,6 +1156,7 @@ function dispatchMetadataPayload(input: {
   branch: string;
   specId: string;
   target: string;
+  agentPool: string;
   loopKey: string;
   taskId: string;
   attemptId: string;
@@ -1157,6 +1167,7 @@ function dispatchMetadataPayload(input: {
   const inputs: Record<string, string> = {
     specs: input.specId,
     target: input.target,
+    agent_pool: input.agentPool,
   };
   if (input.timeoutMinutes) {
     inputs.timeout_minutes = input.timeoutMinutes;
@@ -1226,13 +1237,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done("Single-spec verifier requires taskId and attemptId.");
   }
 
-  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  const start = markAttemptStartedOnce(config, {
+    taskId,
+    taskRevision: taskRevisionFromTrigger(trigger),
+    attemptId,
+  });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
   const specId = contextString(task, "specId");
   const workflow = pipelineNameContext(task, "ado-pipeline-467665");
   const branch = contextString(task, "branch", "dev");
   const target = contextString(task, "target", "staging");
+  const agentPool = agentPoolContext(task);
   const timeoutMinutes = contextOptionalText(task, "timeoutMinutes");
   const stateRef = contextString(
     task,
@@ -1264,12 +1280,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const summary = `Task ${task.id} is missing context.specId.`;
     const completion = completeStartedAttempt(config, {
       taskId,
+      taskRevision: taskRevision(task),
       attemptId,
       claim: "blocked",
       summary,
     });
     if (completion.ok) {
       emitTaskCompleted(ctx, completion.task, {
+        taskRevision: taskRevision(task),
         attemptId,
         result: "blocked",
         summary,
@@ -1402,12 +1420,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
     const completion = completeStartedAttempt(config, {
       taskId,
+      taskRevision: taskRevision(task),
       attemptId,
       claim: "partial",
       summary,
     });
     if (completion.ok) {
       emitTaskCompleted(ctx, completion.task, {
+        taskRevision: taskRevision(task),
         attemptId,
         result: "partial",
         summary,
@@ -1436,12 +1456,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
     const completion = completeStartedAttempt(config, {
       taskId,
+      taskRevision: taskRevision(task),
       attemptId,
       claim: "blocked",
       summary,
     });
     if (completion.ok) {
       emitTaskCompleted(ctx, completion.task, {
+        taskRevision: taskRevision(task),
         attemptId,
         result: "blocked",
         summary,
@@ -1482,12 +1504,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       });
       const completion = completeStartedAttempt(config, {
         taskId,
+        taskRevision: taskRevision(task),
         attemptId,
         claim: "blocked",
         summary,
       });
       if (completion.ok) {
         emitTaskCompleted(ctx, completion.task, {
+          taskRevision: taskRevision(task),
           attemptId,
           result: "blocked",
           summary,
@@ -1502,6 +1526,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ): Record<string, string> => ({
       specs: specId,
       target,
+      agent_pool: agentPool,
       ...(timeoutMinutes ? { timeout_minutes: timeoutMinutes } : {}),
       ...(includeMetadata
         ? { metadata: JSON.stringify({ loop_key: loopKey }) }
@@ -1532,6 +1557,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         branch,
         specId,
         target,
+        agentPool,
         loopKey,
         taskId,
         attemptId,
@@ -1563,12 +1589,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       });
       const completion = completeStartedAttempt(config, {
         taskId,
+        taskRevision: taskRevision(task),
         attemptId,
         claim: "blocked",
         summary,
       });
       if (completion.ok) {
         emitTaskCompleted(ctx, completion.task, {
+          taskRevision: taskRevision(task),
           attemptId,
           result: "blocked",
           summary,
@@ -1615,12 +1643,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       });
       const completion = completeStartedAttempt(config, {
         taskId,
+        taskRevision: taskRevision(task),
         attemptId,
         claim: "blocked",
         summary,
       });
       if (completion.ok) {
         emitTaskCompleted(ctx, completion.task, {
+          taskRevision: taskRevision(task),
           attemptId,
           result: "blocked",
           summary,
@@ -1822,6 +1852,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const completion = completeStartedAttempt(config, {
     taskId,
+    taskRevision: taskRevision(task),
     attemptId,
     claim: classification.claim,
     summary,
@@ -1835,6 +1866,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
   publishState(completionPatch, { requireActiveAttempt: false });
   emitTaskCompleted(ctx, completion.task, {
+    taskRevision: taskRevision(task),
     attemptId,
     result: classification.claim,
     summary,

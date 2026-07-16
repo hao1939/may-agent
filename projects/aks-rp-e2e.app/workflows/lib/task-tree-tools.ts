@@ -1,36 +1,55 @@
 import {
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import {
   appendToolJournal,
+  assignTask as sdkAssignTask,
   completeTask as sdkCompleteTask,
   isLeaf,
+  kanbanTaskTreeState as sdkKanbanTaskTreeState,
   markTaskDone as sdkMarkTaskDone,
   planningPacket as sdkPlanningPacket,
   normalizeStringArray,
   pruneMissingChildren,
   readTask,
   readTaskTree,
+  rejectTaskReview as sdkRejectTaskReview,
+  requeueStaleActiveTasks as sdkRequeueStaleActiveTasks,
+  projectRuntimePaths,
   taskState,
   repairTaskTreeRollups as sdkRepairTaskTreeRollups,
   rollupParent as sdkRollupParent,
-  saveTaskTreeWithKanbanSnapshot,
+  saveTaskTreeWithKanbanSnapshot as sdkSaveTaskTreeWithKanbanSnapshot,
+  summarizeBlockedFrontier,
+  taskKanbanColumn as sdkTaskKanbanColumn,
+  taskTreeConfig as sdkTaskTreeConfig,
+  taskRevision,
+  unblockTask as sdkUnblockTask,
+  updateTaskOutputs as sdkUpdateTaskOutputs,
   updateTaskText as sdkUpdateTaskText,
   summarizeTaskTree as sdkSummarizeTaskTree,
   withTreeLock,
   type RollupParentInput,
+  type TaskKanbanColumn,
+  type TaskKanbanProjection,
+  type TaskKanbanSnapshot,
+  type TaskKanbanState,
   type TaskNode,
   type TaskPlanningPacket,
+  type TaskPlanningSnapshot,
   type TaskTree,
   type TaskTreeConfig,
   type TaskTreeCompactResult,
   type TaskTreeHygieneSummary,
   type TaskTreeSummary,
+  type TaskTreeToolConfig,
 } from "@may-agent/sdk";
 import { compactDoneLeaves as sdkCompactDoneLeaves } from "@may-agent/sdk";
 import {
@@ -52,26 +71,19 @@ import {
   specLoopSpecHasStructuredSuccessor,
   specStateSelfRepresentsExactFrontier,
 } from "./spec-loop-frontier.ts";
+import { buildProjectSnapshotV2 } from "./project-snapshot-v2.ts";
 
 export {
+  acknowledgeTaskAssignments,
   appendPlannerRun,
   appendToolJournal,
   assignRunnableBacklogTasks,
-  assignTask,
   createTask,
   drainTaskAssignments,
-  kanbanTaskTreeState,
   peekTaskAssignments,
   pruneMissingChildren,
   readTask,
-  rejectTaskReview,
-  requeueStaleActiveTasks,
-  updateTaskOutputs,
-  saveTaskTreeWithKanbanSnapshot,
   taskKanbanColumn,
-  taskTreeConfig,
-  unblockTask,
-  writeKanbanSnapshot,
   waitingBacklogTaskSnapshots,
 } from "@may-agent/sdk";
 export type {
@@ -100,9 +112,281 @@ export type {
   UpdateTaskTextInput,
 } from "@may-agent/sdk";
 
-export const completeTask = sdkCompleteTask;
+export const PROJECT_CONDITION_MUTATION_ACTIONS_V2 = [
+  "observe",
+  "resolve",
+  "fallback-claim",
+  "fallback-dispatch",
+  "fallback-acknowledge",
+] as const;
+
+export type ProjectConditionMutationActionV2 =
+  (typeof PROJECT_CONDITION_MUTATION_ACTIONS_V2)[number];
+
+export type ProjectConditionMutationAuthorityV2 = {
+  kind: "project-condition-v2";
+  conditionId: string;
+  taskId: string;
+  taskRevision: number;
+  action: ProjectConditionMutationActionV2;
+};
+
+type ConditionSubjectV2 = {
+  kind?: unknown;
+  id?: unknown;
+  revision?: unknown;
+};
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function openConditionSubjectV2(
+  conditionId: string,
+  value: unknown,
+): {
+  conditionId: string;
+  taskId: string;
+  taskRevision: number;
+} | null {
+  const condition = recordValue(value);
+  if (!condition || condition.status !== "open") return null;
+  const subject = recordValue(condition.subject) as ConditionSubjectV2 | null;
+  if (
+    subject?.kind !== "task" ||
+    typeof subject.id !== "string" ||
+    typeof subject.revision !== "number" ||
+    !Number.isInteger(subject.revision) ||
+    subject.revision < 0
+  ) {
+    return null;
+  }
+  return {
+    conditionId,
+    taskId: subject.id,
+    taskRevision: subject.revision,
+  };
+}
+
+function sameStoredValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function conditionAuthorityMatches(
+  authority: unknown,
+  ownership: NonNullable<ReturnType<typeof openConditionSubjectV2>>,
+): boolean {
+  const candidate = recordValue(authority);
+  const action = candidate?.action;
+  return Boolean(
+    candidate?.kind === "project-condition-v2" &&
+    candidate.conditionId === ownership.conditionId &&
+    candidate.taskId === ownership.taskId &&
+    candidate.taskRevision === ownership.taskRevision &&
+    typeof action === "string" &&
+    PROJECT_CONDITION_MUTATION_ACTIONS_V2.includes(
+      action as ProjectConditionMutationActionV2,
+    ),
+  );
+}
+
+export function validateProjectTaskTreeMutationV2(input: {
+  current: TaskTree;
+  next: TaskTree;
+  authority?: unknown;
+}): void {
+  for (const [conditionId, rawCondition] of Object.entries(
+    input.current.conditions ?? {},
+  )) {
+    const ownership = openConditionSubjectV2(conditionId, rawCondition);
+    if (!ownership) continue;
+    const currentTask = input.current.tasks[ownership.taskId];
+    if (!currentTask || taskRevision(currentTask) !== ownership.taskRevision) {
+      continue;
+    }
+    const conditionChanged = !sameStoredValue(
+      rawCondition,
+      input.next.conditions?.[conditionId],
+    );
+    const taskChanged = !sameStoredValue(
+      currentTask,
+      input.next.tasks[ownership.taskId],
+    );
+    if (!conditionChanged && !taskChanged) continue;
+    if (conditionAuthorityMatches(input.authority, ownership)) continue;
+    throw new Error(
+      `Task ${ownership.taskId} revision ${ownership.taskRevision} is owned by open Condition ${conditionId}; only the correlated Condition observe, resolve, fallback, or continuation command may mutate it`,
+    );
+  }
+}
+
+export function withProjectTaskTreeMutationGuard(
+  config: TaskTreeConfig,
+  authority?: ProjectConditionMutationAuthorityV2,
+): TaskTreeConfig {
+  const priorValidator = config.validateMutation;
+  return {
+    ...config,
+    mutationAuthority: authority,
+    validateMutation: (input) => {
+      if (
+        priorValidator &&
+        priorValidator !== validateProjectTaskTreeMutationV2
+      ) {
+        priorValidator(input);
+      }
+      validateProjectTaskTreeMutationV2(input);
+    },
+  };
+}
+
+export function taskTreeConfig(input: TaskTreeToolConfig): TaskTreeConfig {
+  return withProjectTaskTreeMutationGuard(sdkTaskTreeConfig(input));
+}
+
+export function assignTask(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkAssignTask>[1],
+): ReturnType<typeof sdkAssignTask> {
+  return sdkAssignTask(withProjectTaskTreeMutationGuard(config), input);
+}
+
+export function completeTask(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkCompleteTask>[1],
+): ReturnType<typeof sdkCompleteTask> {
+  return sdkCompleteTask(withProjectTaskTreeMutationGuard(config), input);
+}
+
+export function rejectTaskReview(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkRejectTaskReview>[1],
+): ReturnType<typeof sdkRejectTaskReview> {
+  return sdkRejectTaskReview(withProjectTaskTreeMutationGuard(config), input);
+}
+
+export function requeueStaleActiveTasks(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkRequeueStaleActiveTasks>[1],
+): ReturnType<typeof sdkRequeueStaleActiveTasks> {
+  return sdkRequeueStaleActiveTasks(
+    withProjectTaskTreeMutationGuard(config),
+    input,
+  );
+}
+
+export function updateTaskOutputs(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkUpdateTaskOutputs>[1],
+): ReturnType<typeof sdkUpdateTaskOutputs> {
+  return sdkUpdateTaskOutputs(withProjectTaskTreeMutationGuard(config), input);
+}
+
+export function unblockTask(
+  config: TaskTreeConfig,
+  input: Parameters<typeof sdkUnblockTask>[1],
+): ReturnType<typeof sdkUnblockTask> {
+  return sdkUnblockTask(withProjectTaskTreeMutationGuard(config), input);
+}
 
 const MIN_BLOCKED_WAIT_FALLBACK_WINDOW_MS = 10 * 60_000;
+
+function projectSnapshotKanban(
+  tree: TaskTree,
+  legacy: TaskKanbanProjection,
+): TaskKanbanProjection {
+  const snapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+  });
+  const columns: Record<TaskKanbanColumn, string[]> = {
+    backlog: [...snapshot.frontier.runnable, ...snapshot.frontier.waiting],
+    "in-progress": [...snapshot.frontier.active],
+    review: [...snapshot.frontier.review],
+    blocked: [],
+    done: [...snapshot.frontier.done],
+  };
+  for (const taskId of snapshot.frontier.blocked) {
+    const task =
+      tree.tasks[taskId] ??
+      Object.values(tree.tasks).find((candidate) => candidate.id === taskId);
+    const column = task ? sdkTaskKanbanColumn(task) : "blocked";
+    if (column === "review") columns.review.push(taskId);
+    else columns.blocked.push(taskId);
+  }
+  for (const ids of Object.values(columns))
+    ids.sort((a, b) => a.localeCompare(b));
+  const columnCounts = Object.fromEntries(
+    Object.entries(columns).map(([column, ids]) => [column, ids.length]),
+  ) as Record<TaskKanbanColumn, number>;
+  const statusCounts = {
+    backlog: columns.backlog.length,
+    active: columns["in-progress"].length,
+    review: snapshot.frontier.review.length,
+    blocked: snapshot.frontier.blocked.length,
+    done: columns.done.length,
+  };
+  const totalCards = Object.values(columnCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  const settled = columnCounts.done + columnCounts.blocked;
+  return {
+    ...legacy,
+    total_cards: totalCards,
+    tree_total: snapshot.frontier.counts.total,
+    status_counts: statusCounts,
+    column_counts: columnCounts,
+    card_ids_by_column: columns,
+    settled_pct: totalCards ? Math.round((settled / totalCards) * 100) : 0,
+  };
+}
+
+function writeProjectSnapshotKanban(
+  config: TaskTreeConfig,
+  tree: TaskTree,
+  legacy: TaskKanbanProjection,
+): TaskKanbanSnapshot {
+  const snapshot: TaskKanbanSnapshot = {
+    version: 1,
+    generated_at: new Date().toISOString(),
+    tree_updated_at: tree.updated_at,
+    kanban: projectSnapshotKanban(tree, legacy),
+  };
+  const path = projectRuntimePaths(config.appDir).kanbanPath;
+  mkdirSync(dirname(path), { recursive: true });
+  const tempPath = `${path}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(tempPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+  renameSync(tempPath, path);
+  return snapshot;
+}
+
+export function saveTaskTreeWithKanbanSnapshot(
+  config: TaskTreeConfig,
+  tree: TaskTree,
+  authority?: ProjectConditionMutationAuthorityV2,
+): TaskKanbanSnapshot {
+  const guardedConfig = withProjectTaskTreeMutationGuard(config, authority);
+  const legacy = sdkSaveTaskTreeWithKanbanSnapshot(guardedConfig, tree);
+  return writeProjectSnapshotKanban(guardedConfig, tree, legacy.kanban);
+}
+
+export function kanbanTaskTreeState(config: TaskTreeConfig): TaskKanbanState {
+  const legacy = sdkKanbanTaskTreeState(config);
+  return {
+    tree: legacy.tree,
+    kanban: projectSnapshotKanban(legacy.tree, legacy.kanban),
+  };
+}
+
+export function writeKanbanSnapshot(
+  config: TaskTreeConfig,
+): TaskKanbanSnapshot {
+  const state = sdkKanbanTaskTreeState(config);
+  return writeProjectSnapshotKanban(config, state.tree, state.kanban);
+}
 
 function configuredProjectGoal(config: TaskTreeConfig): string | null {
   const definition = readJsonFile<{ goal?: unknown }>(
@@ -131,12 +415,16 @@ export function updateTaskText(
       );
     }
   }
-  return sdkUpdateTaskText(config, input);
+  return sdkUpdateTaskText(withProjectTaskTreeMutationGuard(config), input);
 }
 
 export type AppTaskTreeSummary = TaskTreeSummary & {
   active_structural_task_ids: string[];
   active_count_explanation: string;
+  backlog_structural_task_ids: string[];
+  backlog_count_explanation: string;
+  blocked_structural_task_ids: string[];
+  blocked_count_explanation: string;
 };
 
 export type RefreshBlockedWaitInput = {
@@ -156,6 +444,8 @@ export type RefreshBlockedWaitInput = {
 
 type MarkDoneInput = {
   taskId: string;
+  taskRevision?: number;
+  attemptId?: string;
   summary: string;
   resolution?: string;
   reviewDecision?: string;
@@ -216,6 +506,23 @@ function pausedDurableLoopWaitStewardship(task: TaskNode): boolean {
 function heldDurableLoopRepresentedFrontier(task: TaskNode): boolean {
   if (!durableLoopTaskIds.has(task.id)) return false;
   return heldDispatchRepresentedFrontierProgress(workflowProgress(task));
+}
+
+function runnableDurableLoopAlreadyHasOpenChildFrontier(
+  task: TaskNode,
+): boolean {
+  if (!durableLoopTaskIds.has(task.id)) return false;
+  const progress = workflowProgress(task);
+  if (!progress || progress.completionReady !== false) return false;
+  return (
+    (numberProgressField(progress, "activeChildren") ?? 0) > 0 ||
+    (numberProgressField(progress, "reviewChildren") ?? 0) > 0 ||
+    (numberProgressField(progress, "waitingChildren") ?? 0) > 0 ||
+    (numberProgressField(progress, "backlogChildren") ?? 0) > 0 ||
+    (numberProgressField(progress, "openSupportChildren") ?? 0) > 0 ||
+    (numberProgressField(progress, "openFollowups") ?? 0) > 0 ||
+    (numberProgressField(progress, "openSpecVerifierChildren") ?? 0) > 0
+  );
 }
 
 function workflowProgressBlocksCompletion(task: TaskNode): string | null {
@@ -288,7 +595,11 @@ function appFrontierSuppression(
     suppressedRunnableDurableLoops: new Set(
       frontier.runnable.filter((taskId) => {
         const task = tree.tasks[taskId];
-        return !!task && heldDurableLoopRepresentedFrontier(task);
+        return (
+          !!task &&
+          (heldDurableLoopRepresentedFrontier(task) ||
+            runnableDurableLoopAlreadyHasOpenChildFrontier(task))
+        );
       }),
     ),
     suppressedActiveDurableLoops: suppressedActiveDurableLoopRoots(
@@ -308,54 +619,98 @@ function hasAppFrontierSuppression(
   );
 }
 
-function activeStructuralTaskIds(
+function structuralTaskIdsByState(
   tree: TaskTree,
-  frontierActiveIds: string[],
+  state: string,
+  frontierIds: string[],
 ): string[] {
-  const frontierActiveSet = new Set(frontierActiveIds);
+  const frontierSet = new Set(frontierIds);
   return Object.values(tree.tasks)
-    .filter((task) => taskState(task) === "active")
+    .filter((task) => taskState(task) === state)
     .filter((task) => !isLeaf(task))
-    .filter((task) => !frontierActiveSet.has(task.id))
+    .filter((task) => !frontierSet.has(task.id))
     .map((task) => task.id)
     .sort((a, b) => a.localeCompare(b));
 }
 
 export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
-  const summary = sdkSummarizeTaskTree(config);
-  const tree = readTaskTree(config);
-  const suppression = appFrontierSuppression(tree, summary.frontier);
-  const frontierRunnable = summary.frontier.runnable.filter(
+  let summary = sdkSummarizeTaskTree(config);
+  let tree = withTreeLock(config, () => readTaskTree(config));
+  if (summary.updated_at !== tree.updated_at) {
+    summary = sdkSummarizeTaskTree(config);
+    tree = withTreeLock(config, () => readTaskTree(config));
+  }
+
+  const snapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+  });
+  const suppression = appFrontierSuppression(tree, snapshot.frontier);
+  const frontierRunnable = snapshot.frontier.runnable.filter(
     (taskId) => !suppression.suppressedRunnableDurableLoops.has(taskId),
   );
-  const frontierActive = summary.frontier.active.filter(
+  const frontierActive = snapshot.frontier.active.filter(
     (taskId) => !suppression.suppressedActiveDurableLoops.has(taskId),
   );
-  const structuralActiveTaskIds = activeStructuralTaskIds(tree, frontierActive);
+  const frontierReview = snapshot.frontier.review.filter(
+    (taskId) => !suppression.nonReviewableDurableLoops.has(taskId),
+  );
+  const frontierBlocked = snapshot.frontier.blocked;
+  const structuralActiveTaskIds = structuralTaskIdsByState(
+    tree,
+    "active",
+    frontierActive,
+  );
+  const structuralBacklogTaskIds = structuralTaskIdsByState(tree, "backlog", [
+    ...snapshot.frontier.runnable,
+    ...snapshot.frontier.waiting,
+  ]);
+  const structuralBlockedTaskIds = structuralTaskIdsByState(
+    tree,
+    "blocked",
+    frontierBlocked,
+  );
   const activeCountExplanation =
     structuralActiveTaskIds.length > 0
       ? `tree_counts.active counts all active task nodes, including non-leaf structural ancestors; counts.active counts only active leaves; frontier.active lists live active frontier leaves/controllers after app-level suppression. Current non-frontier active structural task ids: ${structuralActiveTaskIds.join(", ")}.`
       : "tree_counts.active, counts.active, and frontier.active currently agree on live active work semantics.";
-
-  if (!hasAppFrontierSuppression(suppression)) {
-    return {
-      ...summary,
-      active_structural_task_ids: structuralActiveTaskIds,
-      active_count_explanation: activeCountExplanation,
-    };
-  }
+  const backlogCountExplanation =
+    structuralBacklogTaskIds.length > 0
+      ? `tree_counts.backlog counts all backlog task nodes, including non-leaf structural ancestors; counts.backlog counts only backlog leaves; frontier.runnable + frontier.waiting list only executable backlog leaves. Current non-frontier backlog structural task ids: ${structuralBacklogTaskIds.join(", ")}.`
+      : "tree_counts.backlog, counts.backlog, and executable backlog frontier currently agree on backlog semantics.";
+  const blockedCountExplanation =
+    structuralBlockedTaskIds.length > 0
+      ? `tree_counts.blocked counts all blocked task nodes, including non-leaf structural ancestors; counts.blocked counts only blocked leaves; frontier.blocked lists exact blocked frontier leaves. Current non-frontier blocked structural task ids: ${structuralBlockedTaskIds.join(", ")}.`
+      : "tree_counts.blocked, counts.blocked, and frontier.blocked currently agree on blocked leaf frontier semantics.";
 
   return {
     ...summary,
+    updated_at: snapshot.treeUpdatedAt ?? summary.updated_at,
+    total: snapshot.frontier.counts.total,
+    leaf_total: snapshot.frontier.counts.leafTotal,
+    roots: snapshot.frontier.roots,
+    active_task_ids: frontierActive,
+    counts: {
+      ...summary.counts,
+      done: snapshot.frontier.counts.done,
+      blocked: frontierBlocked.length,
+      review: frontierReview.length,
+      backlog: snapshot.frontier.counts.backlog,
+      active: frontierActive.length,
+    },
     active_structural_task_ids: structuralActiveTaskIds,
     active_count_explanation: activeCountExplanation,
+    backlog_structural_task_ids: structuralBacklogTaskIds,
+    backlog_count_explanation: backlogCountExplanation,
+    blocked_structural_task_ids: structuralBlockedTaskIds,
+    blocked_count_explanation: blockedCountExplanation,
     frontier: {
       ...summary.frontier,
       runnable: frontierRunnable,
+      waiting: snapshot.frontier.waiting,
       active: frontierActive,
-      review: summary.frontier.review.filter(
-        (taskId) => !suppression.nonReviewableDurableLoops.has(taskId),
-      ),
+      review: frontierReview,
+      blocked: frontierBlocked,
     },
   };
 }
@@ -410,7 +765,7 @@ function normalizeReviewDecision(value: unknown): string {
 
 function latestReviewerDecisionForAttempt(
   config: TaskTreeConfig,
-  input: { taskId: string; attemptId: string },
+  input: { taskId: string; taskRevision: number; attemptId: string },
 ): string {
   const reviewLogPath = join(
     config.appDir,
@@ -427,6 +782,8 @@ function latestReviewerDecisionForAttempt(
       if (
         row.result === "project.task.reviewed" &&
         row.task_id === input.taskId &&
+        (typeof row.task_revision === "number" ? row.task_revision : 0) ===
+          input.taskRevision &&
         row.attempt_id === input.attemptId
       ) {
         return normalizeReviewDecision(row.decision);
@@ -453,6 +810,7 @@ function assertReviewCloseMatchesLatestReviewerDecision(
   if (!attemptId) return;
   const latestDecision = latestReviewerDecisionForAttempt(config, {
     taskId: task.id,
+    taskRevision: taskRevision(task),
     attemptId,
   });
   if (!latestDecision) return;
@@ -1053,21 +1411,31 @@ function repairLegacyFocusApprovalStates(config: TaskTreeConfig): string[] {
     for (const task of Object.values(tree.tasks ?? {})) {
       if (task.kind !== "focus_plan") continue;
       const rawState = String(task.status ?? task.state ?? "");
-      if (rawState !== "needs_approval") continue;
-
       const taskRecord = task as Record<string, unknown>;
-      const updatedAt =
-        typeof taskRecord.updated_at === "string" ? taskRecord.updated_at : "";
-      const blockedAt =
-        updatedAt && Number.isFinite(Date.parse(updatedAt)) ? updatedAt : now;
-      const nextCheckAt = addHours(now, 24);
-      const fallbackAt = addHours(now, 48);
       const context =
         task.context &&
         typeof task.context === "object" &&
         !Array.isArray(task.context)
           ? (task.context as Record<string, unknown>)
           : {};
+      const needsApproval = context.needs_approval === true;
+      if (
+        rawState !== "needs_approval" &&
+        !(rawState === "backlog" && needsApproval)
+      ) {
+        continue;
+      }
+
+      const updatedAt =
+        typeof taskRecord.updated_at === "string" ? taskRecord.updated_at : "";
+      const blockedAt =
+        updatedAt && Number.isFinite(Date.parse(updatedAt)) ? updatedAt : now;
+      const nextCheckAt = addHours(now, 24);
+      const fallbackAt = addHours(now, 48);
+      const normalizationNote =
+        rawState === "backlog"
+          ? "Runtime focus-plan context requested human approval while the task still advertised backlog; normalized the stale hidden backlog state to a structured blocked approval wait."
+          : "Runtime focus-plan context requested human approval; legacy task state needs_approval was normalized to blocked.";
 
       task.state = "blocked";
       delete taskRecord.status;
@@ -1101,8 +1469,7 @@ function repairLegacyFocusApprovalStates(config: TaskTreeConfig): string[] {
         ...context,
         needs_approval: true,
         approval_wait_normalized_at: now,
-        approval_wait_normalization_note:
-          "Runtime focus-plan context requested human approval; legacy task state needs_approval was normalized to blocked.",
+        approval_wait_normalization_note: normalizationNote,
       };
       task.trace = {
         ...(task.trace ?? {}),
@@ -1119,7 +1486,7 @@ function repairLegacyFocusApprovalStates(config: TaskTreeConfig): string[] {
         kind: "legacy_focus_approval_states_repaired",
         task_ids: repaired,
         reason:
-          "focus-plan needs_approval is a workflow result, not a task-tree state; represented it as a structured human approval wait",
+          "focus-plan needs_approval is a workflow result, not runnable backlog; represented it as a structured human approval wait",
       });
     }
 
@@ -1287,7 +1654,11 @@ function normalizeDurableLoopWorkflowProgress(
         continue;
       }
       if (specLoopFollowupTask(child)) {
-        if (status === "active" || status === "backlog" || status === "review") {
+        if (
+          status === "active" ||
+          status === "backlog" ||
+          status === "review"
+        ) {
           openFollowups += 1;
         }
         continue;
@@ -1342,9 +1713,11 @@ function normalizeDurableLoopWorkflowProgress(
     changed =
       setProgressNumber(progress, "reviewChildren", reviewChildren) || changed;
     changed =
-      setProgressNumber(progress, "waitingChildren", waitingChildren) || changed;
+      setProgressNumber(progress, "waitingChildren", waitingChildren) ||
+      changed;
     changed =
-      setProgressNumber(progress, "backlogChildren", backlogChildren) || changed;
+      setProgressNumber(progress, "backlogChildren", backlogChildren) ||
+      changed;
     changed =
       setProgressNumber(
         progress,
@@ -1354,13 +1727,11 @@ function normalizeDurableLoopWorkflowProgress(
     changed =
       setProgressNumber(progress, "openFollowups", openFollowups) || changed;
     changed =
-      setProgressNumber(
-        progress,
-        "blockedWaitChildren",
-        blockedWaitChildren,
-      ) || changed;
+      setProgressNumber(progress, "blockedWaitChildren", blockedWaitChildren) ||
+      changed;
     changed =
-      setProgressString(progress, "frontierSummary", frontierSummary) || changed;
+      setProgressString(progress, "frontierSummary", frontierSummary) ||
+      changed;
     changed = setProgressFlag(progress, "noRefillNow", noRefillNow) || changed;
     if (noRefillNow) {
       changed =
@@ -1409,17 +1780,11 @@ function normalizeDurableLoopWorkflowProgress(
     changed =
       setProgressNumber(progress, "openChildren", openChildren) || changed;
     changed =
-      setProgressNumber(
-        progress,
-        "openSupportChildren",
-        openSupportChildren,
-      ) || changed;
+      setProgressNumber(progress, "openSupportChildren", openSupportChildren) ||
+      changed;
     changed =
-      setProgressNumber(
-        progress,
-        "blockedWaitChildren",
-        blockedWaitChildren,
-      ) || changed;
+      setProgressNumber(progress, "blockedWaitChildren", blockedWaitChildren) ||
+      changed;
     changed = setProgressFlag(progress, "noRefillNow", noRefillNow) || changed;
     if (noRefillNow) {
       changed =
@@ -1462,7 +1827,8 @@ function durableLoopBlockedWaitStewardshipBlocker(
     observation_method:
       "Task-tree rollup recomputes parent state from current child states; keep this blocked steward only while one or more child tasks remain blocked.",
     next_check_at: addMinutes(now, 10),
-    resume_condition: "Resume when the blocked child task is resolved or replaced.",
+    resume_condition:
+      "Resume when the blocked child task is resolved or replaced.",
     fallback_at: addHours(now, 24),
     fallback_action:
       "If child-blocked stewardship still holds at fallback time, rerun task-tree rollup/owner review and refresh the blocker metadata or reopen a concrete child follow-up.",
@@ -1507,8 +1873,7 @@ function reopenIncompleteDurableLoopRoots(config: TaskTreeConfig): string[] {
           ...(task.trace ?? {}),
           reopened_at: now,
           reopened_by: "task-tree-repair",
-          reopen_reason:
-            `Durable loop root had exact blocked wait stewardship while state=${status || "unknown"}; repair restored blocked durable wait stewardship.`,
+          reopen_reason: `Durable loop root had exact blocked wait stewardship while state=${status || "unknown"}; repair restored blocked durable wait stewardship.`,
           previous_nonterminal_status: status || undefined,
           current_attempt_id: undefined,
           worker_started_attempt_id: undefined,
@@ -1754,7 +2119,7 @@ export function markTaskDone(
       );
     }
   }
-  return sdkMarkTaskDone(config, input);
+  return sdkMarkTaskDone(withProjectTaskTreeMutationGuard(config), input);
 }
 
 function rollupProtectedDoneChildCount(
@@ -1930,8 +2295,25 @@ export type BlockedActionWarning = {
 };
 
 export type AksTaskPlanningPacket = TaskPlanningPacket & {
+  condition_owned_task_ids?: string[];
   project_hygiene_warnings?: ProjectHygieneWarning[];
   blocked_action_warnings?: BlockedActionWarning[];
+  project_snapshot?: {
+    version: "project-snapshot-v2";
+    captured_at: string;
+    tree_updated_at: string | null;
+    frontier_counts: {
+      total: number;
+      leafTotal: number;
+      runnable: number;
+      waiting: number;
+      active: number;
+      review: number;
+      blocked: number;
+      backlog: number;
+      done: number;
+    };
+  };
 };
 
 function readJsonFile<T>(path: string, fallback: T): T {
@@ -2137,6 +2519,37 @@ function isExplicitSubpathRefinementTask(
   });
 }
 
+function isExplicitNonRerunCompactSurfaceHygieneTask(task: TaskNode): boolean {
+  const context = taskContext(task);
+  if (context.nonRerun !== true) return false;
+
+  const repairSurface = normalizeTextValue(
+    context.repairSurface,
+  )?.toLowerCase();
+  if (!repairSurface || !repairSurface.includes("compact")) return false;
+
+  const scenario = normalizeTextValue(context.scenario)?.toLowerCase();
+  return scenario?.startsWith("spec.") === true;
+}
+
+function isFinalPathHygieneWarningRepairTask(
+  task: TaskNode,
+  text: string,
+): boolean {
+  const conflictScope = normalizeStringArray(task.conflict_scope).map((entry) =>
+    entry.toLowerCase(),
+  );
+  if (
+    !conflictScope.includes(
+      "ops:task-tree-integrity:final-path-hygiene-warning",
+    )
+  ) {
+    return false;
+  }
+
+  return text.includes("stale-terminal-retry") && text.includes("warning");
+}
+
 function projectHygieneWarnings(
   config: TaskTreeConfig,
 ): ProjectHygieneWarning[] {
@@ -2152,6 +2565,8 @@ function projectHygieneWarnings(
       if (!isLeaf(task)) continue;
       if (state === "done") continue;
       const text = taskSearchText(task);
+      if (isExplicitNonRerunCompactSurfaceHygieneTask(task)) continue;
+      if (isFinalPathHygieneWarningRepairTask(task, text)) continue;
       if (!hasRetryIntent(text)) continue;
       for (const path of terminalPaths) {
         if (!text.includes(path.id.toLowerCase())) continue;
@@ -2401,6 +2816,83 @@ function isWatchedAppOpsExternalWait(
   );
 }
 
+function isReviewGatedPublicationWait(task: TaskNode): boolean {
+  if (!isLeaf(task)) return false;
+  const state = task.status ?? task.state ?? "backlog";
+  if (state !== "blocked") return false;
+
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+
+  const category =
+    typeof blocker.category === "string"
+      ? blocker.category.trim().toLowerCase()
+      : "";
+  if (category !== "external-wait") return false;
+
+  const waitingForType = blockerWaitingForType(task);
+  if (waitingForType !== "blocker.resolved") return false;
+
+  const observedBy = (blocker as Record<string, unknown>).observed_by;
+  const observationMethod = (blocker as Record<string, unknown>)
+    .observation_method;
+  if (
+    observedBy == null ||
+    typeof observedBy !== "object" ||
+    Array.isArray(observedBy) ||
+    typeof observationMethod !== "string" ||
+    observationMethod.trim().length === 0
+  ) {
+    return false;
+  }
+
+  const text = taskSearchText(task);
+  const publicationGateText = includesAny(text, [
+    "review-gated publication wait",
+    "reviewer-gated publication holder",
+    "publication holder only",
+    "publish the accepted",
+    "pipeline-visible branch/head",
+    "without publishing unreviewed work",
+    "publication-safe decision",
+  ]);
+  const reviewDecisionText = includesAny(text, [
+    "task-reviewer returns",
+    "task-reviewer decision",
+    "reviewer decision",
+    "structured project.task.reviewed decision",
+    "project.task.reviewed decision",
+    "live review leaves",
+    "review chain",
+  ]);
+  return publicationGateText && reviewDecisionText;
+}
+
+function isQuotaHeadroomWaitWithIsolatedAlternativeCheck(
+  task: TaskNode,
+): boolean {
+  if (!isLeaf(task)) return false;
+  const state = task.status ?? task.state ?? "backlog";
+  if (state !== "blocked") return false;
+  if (blockerWaitingForType(task) !== "azure.quota.exhausted") return false;
+
+  const text = taskSearchText(task);
+  return (
+    includesAny(text, [
+      "alternative-target",
+      "source-equivalent question is already isolated",
+      "same-surface exhausted target",
+    ]) &&
+    includesAny(text, [
+      "lack of a new exact source witness alone must not block progress",
+      "must not spawn duplicate blocked work",
+      "keep this exact wait as the sole family holder",
+    ])
+  );
+}
+
 function isFeatureCompactExactWait(task: TaskNode): boolean {
   if (taskContext(task).featureCompactExactWait === true) return true;
   if (task.parent_id !== "aks-feature-compact-loop") return false;
@@ -2440,6 +2932,54 @@ function isFeatureCompactNonEnvironmentFrontier(task: TaskNode): boolean {
     "azure.capacity.available",
     "environment.prerequisite.ready",
   ].includes(blockerWaitingForType(task));
+}
+
+function isSupersededCompactSourceWitnessCarrier(task: TaskNode): boolean {
+  if (!isFeatureCompactExactWait(task)) return false;
+  if (blockerWaitingForType(task) !== "blocker.resolved") return false;
+
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+
+  const category =
+    typeof blocker.category === "string"
+      ? blocker.category.trim().toLowerCase()
+      : "";
+  if (category !== "external-wait") return false;
+
+  const observedBy = (blocker as Record<string, unknown>).observed_by;
+  const observationMethod = (blocker as Record<string, unknown>)
+    .observation_method;
+  if (
+    observedBy == null ||
+    typeof observedBy !== "object" ||
+    Array.isArray(observedBy) ||
+    typeof observationMethod !== "string" ||
+    observationMethod.trim().length === 0
+  ) {
+    return false;
+  }
+
+  const text = taskSearchText(task);
+  const supersededWitnessSignals = [
+    "superseded nonlive source witness",
+    "superseded nonlive source-witness",
+    "superseded source-witness lineage",
+    "superseded raw-file/source-witness lineage",
+    "superseded raw-file lineage",
+  ];
+  if (!includesAny(text, supersededWitnessSignals)) return false;
+
+  return includesAny(text, [
+    "only active compact frontier",
+    "blocked only through",
+    "blocked behind",
+    "preserves only",
+    "already preserved as the exact blocked",
+    "exact wait",
+  ]);
 }
 
 function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
@@ -2484,8 +3024,28 @@ function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
       "setup",
       "escalation",
     ]);
+  if (noLocalSuccessorJudgment) return true;
 
-  return noLocalSuccessorJudgment;
+  const passiveCoveredHolderJudgment =
+    includesAny(text, [
+      "passive trio representation",
+      "passive holder",
+      "do not treat it as the mover",
+      "do not treat it as mover",
+      "still governs",
+      "owner-contradiction holder",
+      "reviewed-exception/domain evidence ceiling",
+    ]) &&
+    includesAny(text, [
+      "single live shared",
+      "single live shared automatic/managedsystem capacity-family wait",
+      "exact owner-contradiction holder",
+      "accepted reviewed-exception/domain evidence ceiling",
+      "keep one exact compact trio holder",
+      "fallback review still sees the same trio",
+    ]);
+
+  return passiveCoveredHolderJudgment;
 }
 
 function isFocusPlanApprovalWait(task: TaskNode): boolean {
@@ -2633,8 +3193,13 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           isHumanOwnedExternalWait(task) ||
           isRepresentedBlockedFrontier(task) ||
           isFeatureCompactNonEnvironmentFrontier(task) ||
+          isSupersededCompactSourceWitnessCarrier(task) ||
           isFocusPlanApprovalWait(task) ||
-          isDependentHumanApprovalWait(task)
+          isDependentHumanApprovalWait(task) ||
+          isWatchedAppOpsExternalWait(task) ||
+          isExactAdoCompletionWait(task) ||
+          isReviewGatedPublicationWait(task) ||
+          isQuotaHeadroomWaitWithIsolatedAlternativeCheck(task)
         ) {
           continue;
         }
@@ -2689,7 +3254,8 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           isDependentHumanApprovalWait(task) ||
           isPreWindowBlockedExecutionWait(task) ||
           isWatchedAppOpsExternalWait(task) ||
-          isExactAdoCompletionWait(task)
+          isExactAdoCompletionWait(task) ||
+          isReviewGatedPublicationWait(task)
         ) {
           continue;
         }
@@ -2800,44 +3366,169 @@ function taskTreeHygieneSummary(
   };
 }
 
+function snapshotPlanningTask(
+  tree: TaskTree,
+  taskId: string,
+  readinessReasons?: string[],
+): TaskPlanningSnapshot | null {
+  const task =
+    tree.tasks[taskId] ??
+    Object.values(tree.tasks).find((candidate) => candidate.id === taskId);
+  if (!task) return null;
+  const state = taskState(task);
+  const blocker = (() => {
+    if (typeof task.blocker === "string") return task.blocker.slice(0, 700);
+    if (!task.blocker) return undefined;
+    try {
+      return JSON.stringify(task.blocker).slice(0, 700);
+    } catch {
+      return undefined;
+    }
+  })();
+  return {
+    id: task.id,
+    parent_id: task.parent_id,
+    state,
+    status: state,
+    kind: task.kind,
+    priority: task.priority,
+    owner: task.owner,
+    workflow: task.workflow,
+    session_id: task.session_id,
+    goal: typeof task.goal === "string" ? task.goal.slice(0, 900) : undefined,
+    outputs: normalizeStringArray(task.outputs).slice(0, 20),
+    acceptance: normalizeStringArray(task.acceptance).slice(0, 20),
+    conflict_scope: normalizeStringArray(task.conflict_scope).slice(0, 20),
+    depends_on: normalizeStringArray(task.depends_on).slice(0, 20),
+    blocker,
+    readiness_reasons: readinessReasons?.slice(0, 6),
+  };
+}
+
+function snapshotPlanningDetails(
+  tree: TaskTree,
+  ids: string[],
+  readiness: Record<string, string[]>,
+): TaskPlanningSnapshot[] {
+  return ids.slice(0, 8).flatMap((taskId) => {
+    const detail = snapshotPlanningTask(tree, taskId, readiness[taskId]);
+    return detail ? [detail] : [];
+  });
+}
+
 export function planningPacket(config: TaskTreeConfig): AksTaskPlanningPacket {
-  const packet = sdkPlanningPacket(config) as AksTaskPlanningPacket;
-  const tree = withTreeLock(config, () => readTaskTree(config));
-  const suppression = appFrontierSuppression(tree, packet.frontier);
-  if (hasAppFrontierSuppression(suppression)) {
-    packet.frontier = {
-      ...packet.frontier,
-      runnable: packet.frontier.runnable.filter(
-        (taskId) => !suppression.suppressedRunnableDurableLoops.has(taskId),
-      ),
-      active: packet.frontier.active.filter(
-        (taskId) => !suppression.suppressedActiveDurableLoops.has(taskId),
-      ),
-      review: packet.frontier.review.filter(
-        (taskId) => !suppression.nonReviewableDurableLoops.has(taskId),
-      ),
-    };
-    packet.frontier_details = {
-      ...packet.frontier_details,
-      runnable: packet.frontier_details.runnable.filter(
-        (task) => !suppression.suppressedRunnableDurableLoops.has(task.id),
-      ),
-      active: packet.frontier_details.active.filter(
-        (task) => !suppression.suppressedActiveDurableLoops.has(task.id),
-      ),
-      review: packet.frontier_details.review.filter(
-        (task) => !suppression.nonReviewableDurableLoops.has(task.id),
-      ),
-    };
+  let packet = sdkPlanningPacket(config) as AksTaskPlanningPacket;
+  let tree = withTreeLock(config, () => readTaskTree(config));
+  if (packet.updated_at !== tree.updated_at) {
+    packet = sdkPlanningPacket(config) as AksTaskPlanningPacket;
+    tree = withTreeLock(config, () => readTaskTree(config));
   }
+  const snapshot = buildProjectSnapshotV2({
+    projectId: "aks-rp-e2e",
+    tree,
+  });
+  const conditionOwnedTaskIds = Object.values(tree.conditions ?? {})
+    .flatMap((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        return [];
+      const condition = value as Record<string, unknown>;
+      if (condition.status !== "open") return [];
+      const subject =
+        condition.subject &&
+        typeof condition.subject === "object" &&
+        !Array.isArray(condition.subject)
+          ? (condition.subject as Record<string, unknown>)
+          : {};
+      const taskId =
+        typeof subject.id === "string" && subject.id.trim()
+          ? subject.id.trim()
+          : "";
+      const task = tree.tasks[taskId];
+      return task &&
+        taskState(task) === "blocked" &&
+        taskRevision(task) === subject.revision &&
+        task.context?.controlPlaneVersion === 2
+        ? [taskId]
+        : [];
+    })
+    .sort((left, right) => left.localeCompare(right));
+  const suppression = appFrontierSuppression(tree, snapshot.frontier);
+  const frontier = {
+    runnable: snapshot.frontier.runnable.filter(
+      (taskId) => !suppression.suppressedRunnableDurableLoops.has(taskId),
+    ),
+    waiting: snapshot.frontier.waiting,
+    active: snapshot.frontier.active.filter(
+      (taskId) => !suppression.suppressedActiveDurableLoops.has(taskId),
+    ),
+    review: snapshot.frontier.review.filter(
+      (taskId) => !suppression.nonReviewableDurableLoops.has(taskId),
+    ),
+    blocked: snapshot.frontier.blocked,
+  };
+  packet.updated_at = snapshot.treeUpdatedAt ?? undefined;
+  packet.total = snapshot.frontier.counts.total;
+  packet.leaf_total = snapshot.frontier.counts.leafTotal;
+  packet.roots = snapshot.frontier.roots;
+  packet.active_task_ids = frontier.active;
+  packet.counts = {
+    ...packet.counts,
+    runnable: frontier.runnable.length,
+    waiting: frontier.waiting.length,
+    active: frontier.active.length,
+    review: frontier.review.length,
+    blocked: frontier.blocked.length,
+    backlog: snapshot.frontier.counts.backlog,
+    done: snapshot.frontier.counts.done,
+  };
+  packet.frontier = frontier;
+  if (conditionOwnedTaskIds.length > 0) {
+    packet.condition_owned_task_ids = conditionOwnedTaskIds;
+  } else {
+    delete packet.condition_owned_task_ids;
+  }
+  const ownerActionableBlockedSummary = summarizeBlockedFrontier(
+    tree,
+    conditionOwnedTaskIds,
+  );
+  if (ownerActionableBlockedSummary) {
+    packet.blocked_frontier_summary = ownerActionableBlockedSummary;
+  } else {
+    delete packet.blocked_frontier_summary;
+  }
+  packet.frontier_details = {
+    runnable: snapshotPlanningDetails(
+      tree,
+      frontier.runnable,
+      snapshot.frontier.readiness,
+    ),
+    waiting: snapshotPlanningDetails(
+      tree,
+      frontier.waiting,
+      snapshot.frontier.readiness,
+    ),
+    active: snapshotPlanningDetails(tree, frontier.active, {}),
+    review: snapshotPlanningDetails(tree, frontier.review, {}),
+    blocked: snapshotPlanningDetails(tree, frontier.blocked, {}),
+  };
+  packet.project_snapshot = {
+    version: snapshot.version,
+    captured_at: snapshot.capturedAt,
+    tree_updated_at: snapshot.treeUpdatedAt,
+    frontier_counts: snapshot.frontier.counts,
+  };
   const hygiene = taskTreeHygieneSummary(config);
   if (hygiene) packet.task_tree_hygiene = hygiene;
   else delete packet.task_tree_hygiene;
   const warnings = projectHygieneWarnings(config);
   if (warnings.length > 0) packet.project_hygiene_warnings = warnings;
   const blockedWarnings = blockedActionWarnings(config);
-  if (blockedWarnings.length > 0)
-    packet.blocked_action_warnings = blockedWarnings;
+  const ownerActionableBlockedWarnings = blockedWarnings.filter(
+    (warning) => !conditionOwnedTaskIds.includes(warning.taskId),
+  );
+  if (ownerActionableBlockedWarnings.length > 0)
+    packet.blocked_action_warnings = ownerActionableBlockedWarnings;
+  else delete packet.blocked_action_warnings;
   return packet;
 }
 

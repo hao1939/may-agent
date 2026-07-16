@@ -4,10 +4,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute as executePlanner } from "./project-planner.ts";
-import {
-  execute,
-  isTransientReviewerFailure,
-} from "./task-reviewer.ts";
+import { execute, isTransientReviewerFailure } from "./task-reviewer.ts";
 
 async function makeWorkspace() {
   const root = await mkdtemp(join(tmpdir(), "aks-task-reviewer-"));
@@ -23,6 +20,7 @@ async function writeTree(
   appDir: string,
   input: {
     state?: string;
+    revision?: number;
     attemptId?: string;
     context?: Record<string, unknown>;
     trace?: Record<string, unknown>;
@@ -50,6 +48,9 @@ async function writeTree(
           },
           "review-task": {
             id: "review-task",
+            ...(input.revision !== undefined
+              ? { revision: input.revision }
+              : {}),
             parent_id: "project",
             state: input.state ?? "review",
             kind: "domain_leaf",
@@ -90,6 +91,7 @@ ${JSON.stringify(event)}
 function completionEvent(
   input: {
     taskId?: string;
+    taskRevision?: number;
     attemptId?: string;
     result?: string;
     summary?: string;
@@ -98,6 +100,7 @@ function completionEvent(
   } = {},
 ): Record<string, unknown> {
   const taskId = input.taskId ?? "review-task";
+  const taskRevision = input.taskRevision ?? 0;
   const attemptId = input.attemptId ?? "attempt-1";
   const result = input.result ?? "done";
   const summary = input.summary ?? "GitHub live workflow passed.";
@@ -108,11 +111,15 @@ function completionEvent(
     target: { project: "aks-rp-e2e", taskId },
     project: "aks-rp-e2e",
     taskId,
+    taskRevision,
+    task_revision: taskRevision,
     attemptId,
     result,
     summary,
     completion: {
       taskId,
+      taskRevision,
+      task_revision: taskRevision,
       attemptId,
       result,
       summary,
@@ -156,6 +163,59 @@ ${JSON.stringify(
 }
 
 describe("task reviewer", () => {
+  test("ignores old revisions and emits the current revision", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, { revision: 1 });
+    let reviewerCalls = 0;
+    const stale = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        triggerEvent(completionEvent({ taskRevision: 0 })),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      dispatchEvent() {},
+      runAgentSession: async () => {
+        reviewerCalls += 1;
+        return { status: "success", message: "unused" };
+      },
+    } as any);
+
+    expect(stale.message).toContain("revision 0 is not current (1)");
+    expect(reviewerCalls).toBe(0);
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const current = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        triggerEvent(completionEvent({ taskRevision: 1 })),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary: "Revision one is current.",
+        }),
+      }),
+    } as any);
+
+    expect(current.message).toContain("emitted accept review");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: { taskRevision: 1, task_revision: 1 },
+    });
+  });
+
   test("emits structured reviewed event for a current review task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeTree(appDir);
@@ -256,6 +316,51 @@ describe("task reviewer", () => {
       "utf8",
     );
     expect(runs).toContain('"result":"project.task.reviewed"');
+  });
+
+  test("accepts completion trigger whose embedded summary contains fenced FIX_FORWARD_RESULT", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(
+          completionEvent({
+            summary:
+              'status: success\n\nFIX_FORWARD_RESULT:\n```json\n{\n  "workflow": "fix-forward",\n  "subject": { "kind": "spec", "id": "spec.network-cni.cilium-enterprise-addon-lifecycle" },\n  "classification": "compact-plan-conflict",\n  "diagnosis": "summary carries embedded fenced json",\n  "minimumDiagnosisPacket": {\n    "target": "staging",\n    "branch": "dev",\n    "runId": "172310203",\n    "resultPath": "evidence/archive/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203.md",\n    "failingPhase": "review",\n    "failingAssertion": "",\n    "requestOrResponseExcerpt": "",\n    "referencesChecked": ["evidence/archive/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203.md"],\n    "inputFingerprint": "run172310203",\n    "errorFingerprint": "underlay-kubeconfig-env-present"\n  },\n  "changedFiles": ["evidence/archive/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203.md"],\n  "verification": {\n    "runId": "",\n    "resultPath": "evidence/archive/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203.md",\n    "status": "pass"\n  },\n  "nextAction": "rerun-after-change",\n  "nextActionReason": "changed input is ready"\n}\n```',
+          }),
+        ),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary: "Embedded fenced fix-forward summary is still reviewable.",
+          findings: ["trigger event parsed despite fenced JSON in summary"],
+        }),
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Task reviewer emitted accept review");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]?.type).toBe("project.task.reviewed");
   });
 
   test("reviewer session ids stay unique for long task ids and attempts", async () => {
@@ -1430,7 +1535,8 @@ describe("task reviewer", () => {
         status: "success",
         message: reviewMessage({
           decision: "redo",
-          summary: "Grouped terminal wait result is missing per-spec exact artifact paths.",
+          summary:
+            "Grouped terminal wait result is missing per-spec exact artifact paths.",
           findings: [],
         }),
       }),
@@ -1452,7 +1558,18 @@ describe("task reviewer", () => {
 
   test("accepts structured spec result on ordinary artifact-review task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
-    await writeTree(appDir);
+    await writeTree(appDir, {
+      revision: 3,
+      context: {
+        workflow: "spec-result-review",
+        phaseContract: {
+          revision: 3,
+          resultSchema: "SPEC_RESULT_REVIEW",
+          acceptedPhaseResultRef:
+            ".state/task-reviewer-runs.jsonl#review-task:2:attempt-fix",
+        },
+      },
+    });
     const dispatched: Array<{
       type: string;
       payload: Record<string, unknown>;
@@ -1465,6 +1582,7 @@ describe("task reviewer", () => {
         "agent: aks-reviewer",
         triggerEvent(
           completionEvent({
+            taskRevision: 3,
             result: "partial",
             summary: "Reviewed ADO run 171341417 artifact result.",
             evidenceRefs: [
@@ -1527,6 +1645,7 @@ describe("task reviewer", () => {
       type: "project.task.reviewed",
       payload: {
         taskId: "review-task",
+        taskRevision: 3,
         decision: "accept",
         confidence: "high",
         summary: "The structured artifact review satisfies the task.",
@@ -1938,7 +2057,9 @@ describe("task reviewer", () => {
       ),
     ).toBe(true);
     expect(
-      isTransientReviewerFailure("OpenAI API error (503): upstream unavailable"),
+      isTransientReviewerFailure(
+        "OpenAI API error (503): upstream unavailable",
+      ),
     ).toBe(true);
     expect(isTransientReviewerFailure("looks fine but missing JSON")).toBe(
       false,

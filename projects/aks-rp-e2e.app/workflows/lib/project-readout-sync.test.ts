@@ -12,8 +12,35 @@ function expectParitySurfaces(input: {
 }) {
   const proposalReason =
     input.taskTree.tasks.project.context.current_focus_proposal.reason;
-  expect(input.projectState.currentFocus.focusReview.note).toContain(proposalReason);
+  expect(input.projectState.currentFocus.focusReview.note).toContain(
+    proposalReason,
+  );
   expect(input.projectState.focusPlan.summary).toContain(proposalReason);
+
+  const focusMission = input.projectState.currentFocus?.focusMission;
+  if (focusMission?.reviewTaskIds) {
+    expect(focusMission.liveReviewFrontierTaskIds).toEqual(
+      focusMission.reviewTaskIds,
+    );
+    expect(focusMission.excludedReviewTaskIds ?? []).toEqual([]);
+  }
+
+  const proposalContext =
+    input.taskTree.tasks.project.context.current_focus_proposal?.context;
+  if (proposalContext?.review_task_ids) {
+    expect(proposalContext.live_review_frontier_task_ids).toEqual(
+      proposalContext.review_task_ids,
+    );
+    expect(proposalContext.excluded_review_task_ids ?? []).toEqual([]);
+  }
+
+  const rootReadout = input.taskTree.tasks.project.context.current_root_readout;
+  if (rootReadout?.review_task_ids) {
+    expect(rootReadout.live_review_frontier_task_ids).toEqual(
+      rootReadout.review_task_ids,
+    );
+    expect(rootReadout.excluded_review_task_ids ?? []).toEqual([]);
+  }
 }
 
 async function makeWorkspace() {
@@ -143,7 +170,9 @@ describe("syncProjectReadout", () => {
     const projectState = JSON.parse(
       await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    const taskTree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
     expect(projectState.currentState.summary).toContain(
       "approval-gated blocked disposition",
     );
@@ -182,7 +211,8 @@ describe("syncProjectReadout", () => {
           project_lifecycle: "active",
           root_task_id: "project",
           updated_at: "2026-07-14T20:20:00.000Z",
-          active_task_id: "ops/guard-focus-readout-parity-current-focus-proposal-20260714",
+          active_task_id:
+            "ops/guard-focus-readout-parity-current-focus-proposal-20260714",
           active_task_ids: [
             "ops/guard-focus-readout-parity-current-focus-proposal-20260714",
           ],
@@ -197,7 +227,8 @@ describe("syncProjectReadout", () => {
               ],
               context: {
                 current_focus_proposal: {
-                  reason: "stale proposal reason active guard leaf leaked into readout",
+                  reason:
+                    "stale proposal reason active guard leaf leaked into readout",
                 },
               },
             },
@@ -273,10 +304,10 @@ describe("syncProjectReadout", () => {
     const projectState = JSON.parse(
       await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    const taskTree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
-    expect(projectState.currentState.summary).toContain(
-      "0 active leaves",
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
+    expect(projectState.currentState.summary).toContain("0 active leaves");
     expect(projectState.currentFocus.activeTaskIds).toEqual([
       "focus-terminal-frontier-finality-reconciliation-20260714",
       "ops/wait-project-approval-owner-return-primary-blocker-20260713",
@@ -293,7 +324,9 @@ describe("syncProjectReadout", () => {
     );
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
-    ).not.toContain("ops/guard-focus-readout-parity-current-focus-proposal-20260714");
+    ).not.toContain(
+      "ops/guard-focus-readout-parity-current-focus-proposal-20260714",
+    );
     expectParitySurfaces({ projectState, taskTree });
   });
 
@@ -334,22 +367,23 @@ describe("syncProjectReadout", () => {
               children: [],
               goal: "Review the overdue network acns hubble owner return frontier.",
             },
-            "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704": {
-              id: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
-              parent_id: "project",
-              state: "blocked",
-              kind: "domain_leaf",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Carry the exact blocked wait.",
-              blocker: {
-                category: "external-wait",
-                owner: "human",
-                waiting_for: {
-                  type: "project.approval.submitted",
+            "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704":
+              {
+                id: "wait-shared-github-auth-preflight-401-family-spec-defender-compact-oidc-20260704",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact blocked wait.",
+                blocker: {
+                  category: "external-wait",
+                  owner: "human",
+                  waiting_for: {
+                    type: "project.approval.submitted",
+                  },
                 },
               },
-            },
             "ops-apply-readout-repair": {
               id: "ops-apply-readout-repair",
               parent_id: "project",
@@ -383,10 +417,10 @@ describe("syncProjectReadout", () => {
     const projectState = JSON.parse(
       await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    const taskTree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
-    expect(projectState.currentState.summary).toContain(
-      "1 active leaves",
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
     );
+    expect(projectState.currentState.summary).toContain("1 active leaves");
     expect(projectState.currentState.summary).toContain(
       "ops/review-overdue-network-acns-hubble-owner-return-20260714",
     );
@@ -414,7 +448,9 @@ describe("syncProjectReadout", () => {
     );
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
-    ).toContain("active=[ops/review-overdue-network-acns-hubble-owner-return-20260714]");
+    ).toContain(
+      "active=[ops/review-overdue-network-acns-hubble-owner-return-20260714]",
+    );
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
     ).not.toContain("ops-apply-readout-repair");
@@ -432,7 +468,8 @@ describe("syncProjectReadout", () => {
           project_lifecycle: "active",
           root_task_id: "project",
           updated_at: "2026-07-15T06:03:23.577Z",
-          active_task_id: "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
+          active_task_id:
+            "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
           active_task_ids: [
             "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
           ],
@@ -501,31 +538,33 @@ describe("syncProjectReadout", () => {
               children: [],
               goal: "Represent a lower-level blocked loop child.",
             },
-            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703": {
-              id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
-              parent_id: "project",
-              state: "blocked",
-              kind: "domain_leaf",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Carry the exact top-level blocked wait.",
-              blocker: {
-                category: "external-wait",
-                owner: "human",
-                waiting_for: {
-                  type: "project.approval.submitted",
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact top-level blocked wait.",
+                blocker: {
+                  category: "external-wait",
+                  owner: "human",
+                  waiting_for: {
+                    type: "project.approval.submitted",
+                  },
                 },
               },
-            },
-            "ops/reconcile-project-root-readout-project-state-scope-sync-20260715": {
-              id: "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
-              parent_id: "project",
-              state: "active",
-              kind: "domain_leaf",
-              owner: "app-ops",
-              children: [],
-              goal: "Reconcile the project root readout and project-state scope sync without letting the repair leaf leak back into the root contract.",
-            },
+            "ops/reconcile-project-root-readout-project-state-scope-sync-20260715":
+              {
+                id: "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
+                parent_id: "project",
+                state: "active",
+                kind: "domain_leaf",
+                owner: "app-ops",
+                children: [],
+                goal: "Reconcile the project root readout and project-state scope sync without letting the repair leaf leak back into the root contract.",
+              },
           },
         },
         null,
@@ -545,7 +584,9 @@ describe("syncProjectReadout", () => {
     const projectState = JSON.parse(
       await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    const taskTree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
     expect(projectState.currentState.summary).toContain("Project-root readout");
     expect(projectState.currentState.summary).toContain(
       "domain/publish-windows-gpu-vmss-successors-visible-20260715 is archived done",
@@ -560,20 +601,24 @@ describe("syncProjectReadout", () => {
       "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
     ]);
     expect(projectState.currentFocus.focusMission.activeTaskIds).toEqual([]);
-    expect(projectState.currentFocus.focusMission.linkedBlockedTaskIds).toEqual([
-      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
-    ]);
+    expect(projectState.currentFocus.focusMission.linkedBlockedTaskIds).toEqual(
+      ["wait-shared-westus2-managed-cluster-capacity-family-return-20260703"],
+    );
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
     ).toContain("Current root-contract non-repair frontier is active=[none]");
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
-    ).not.toContain("ops/reconcile-project-root-readout-project-state-scope-sync-20260715");
+    ).not.toContain(
+      "ops/reconcile-project-root-readout-project-state-scope-sync-20260715",
+    );
     expect(
-      taskTree.tasks.project.context.current_focus_proposal.context.active_task_ids,
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .active_task_ids,
     ).toEqual([]);
     expect(
-      taskTree.tasks.project.context.current_focus_proposal.context.linked_blocked_task_ids,
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .linked_blocked_task_ids,
     ).toEqual([
       "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
     ]);
@@ -683,28 +728,30 @@ describe("syncProjectReadout", () => {
               children: [],
               goal: "Inspect the exact returned ccp-coredns ready-subset run.",
             },
-            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703": {
-              id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
-              parent_id: "project",
-              state: "blocked",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Carry the exact top-level blocked wait.",
-            },
-            "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair": {
-              id: "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair",
-              parent_id: "project",
-              state: "active",
-              owner: "app-ops",
-              children: [],
-              goal: "Recompute the live non-self frontier after this review, then rewrite project.context.current_focus_proposal and mirrored .state/project-state.json focus surfaces so they no longer claim the archived 2026-07-15 compact ready-subset wave and instead truthfully represent the current review/blocked frontier without widening scope.",
-              context: {
-                reviewedTask: {
-                  taskId:
-                    "ops/reconcile-current-focus-proposal-stale-ready-subset-state-20260715",
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact top-level blocked wait.",
+              },
+            "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair":
+              {
+                id: "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair",
+                parent_id: "project",
+                state: "active",
+                owner: "app-ops",
+                children: [],
+                goal: "Recompute the live non-self frontier after this review, then rewrite project.context.current_focus_proposal and mirrored .state/project-state.json focus surfaces so they no longer claim the archived 2026-07-15 compact ready-subset wave and instead truthfully represent the current review/blocked frontier without widening scope.",
+                context: {
+                  reviewedTask: {
+                    taskId:
+                      "ops/reconcile-current-focus-proposal-stale-ready-subset-state-20260715",
+                  },
                 },
               },
-            },
           },
         },
         null,
@@ -724,7 +771,9 @@ describe("syncProjectReadout", () => {
     const projectState = JSON.parse(
       await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
     );
-    const taskTree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
     expect(projectState.currentState.activeTaskId).toBeNull();
     expect(projectState.currentState.metrics.activeLeafCount).toBe(0);
     expect(projectState.currentState.metrics.reviewLeafCount).toBe(1);
@@ -743,12 +792,14 @@ describe("syncProjectReadout", () => {
     expect(projectState.currentFocus.focusMission.reviewTaskIds).toEqual([
       "wait-ccp-coredns-ready-subset-ado-run-172310245-result",
     ]);
-    expect(taskTree.tasks.project.context.current_root_readout.excludes_task_id).toBe(
+    expect(
+      taskTree.tasks.project.context.current_root_readout.excludes_task_id,
+    ).toBe(
       "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair",
     );
-    expect(taskTree.tasks.project.context.current_root_readout.review_task_ids).toEqual([
-      "wait-ccp-coredns-ready-subset-ado-run-172310245-result",
-    ]);
+    expect(
+      taskTree.tasks.project.context.current_root_readout.review_task_ids,
+    ).toEqual(["wait-ccp-coredns-ready-subset-ado-run-172310245-result"]);
     expect(
       taskTree.tasks.project.context.current_focus_proposal.reason,
     ).toContain(
@@ -760,10 +811,12 @@ describe("syncProjectReadout", () => {
       "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair",
     );
     expect(
-      taskTree.tasks.project.context.current_focus_proposal.context.active_task_ids,
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .active_task_ids,
     ).toEqual([]);
     expect(
-      taskTree.tasks.project.context.current_focus_proposal.context.review_task_ids,
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .review_task_ids,
     ).toEqual(["wait-ccp-coredns-ready-subset-ado-run-172310245-result"]);
     expect(taskTree.tasks.project.progress).toEqual({
       updated_at: "2026-07-15T10:13:47.510Z",
@@ -777,6 +830,901 @@ describe("syncProjectReadout", () => {
       leaf_total: 3,
       top_level_blocked: 1,
     });
+    expectParitySurfaces({ projectState, taskTree });
+  });
+
+  test("root-contract sync preserves blocked lineage without hiding live work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-16T02:17:31.360Z",
+          active_task_id: "domain/normalize-next-scenario-test-slice-20260716",
+          active_task_ids: [
+            "domain/normalize-next-scenario-test-slice-20260716",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+                "fix-localdns-auto-default-run-172310406",
+                "domain/normalize-next-scenario-test-slice-20260716",
+                "aks-spec-verification-loop",
+                "aks-feature-compact-loop",
+              ],
+              context: {
+                current_focus_proposal: {
+                  id: "focus-same-spec-verification-fix-forward-followthrough-20260715",
+                  title:
+                    "review-only follow-through with exact blocked carriers",
+                  reason: "stale proposal reason",
+                  context: {
+                    active_task_ids: [],
+                    review_task_ids: [
+                      "domain/normalize-scenario-tests-repo-frontier-20260715",
+                      "fix-localdns-auto-default-run-172310406",
+                    ],
+                    blocked_task_ids: [
+                      "fix-network-acns-retina-enterprise-run-172393474",
+                      "reconcile-spec-loop-pending-rp-regional-quota",
+                      "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+                      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                    ],
+                    linked_blocked_task_ids: [
+                      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                    ],
+                  },
+                },
+                current_root_readout: {
+                  updated_at: "2026-07-16T02:17:31.360Z",
+                  contract_scope:
+                    "compact-loop ready-subset adjudication frontier + exact compact blocked holders",
+                  excludes_task_id:
+                    "ops/repair-current-focus-frontier-metadata-drift-20260716b",
+                  active_task_ids_excluding_self: [],
+                  active_task_ids_including_self: [],
+                  review_task_ids: [
+                    "domain/normalize-scenario-tests-repo-frontier-20260715",
+                    "fix-localdns-auto-default-run-172310406",
+                  ],
+                  waiting_task_ids: [],
+                  runnable_task_ids: [],
+                  blocked_leaf_count: 5,
+                  top_level_blocked_ids: [
+                    "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                    "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                  ],
+                  accepted_publication_leaf_id:
+                    "domain/spec-windows-ready-subset-followup-20260715",
+                  accepted_publication_leaf_live: false,
+                },
+              },
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "active",
+              kind: "workflow_root",
+              children: [
+                "fix-network-acns-retina-enterprise-run-172393474",
+                "reconcile-spec-loop-pending-rp-regional-quota",
+              ],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              kind: "workflow_root",
+              children: [
+                "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+              ],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review repo-wide scenario normalization changes.",
+            },
+            "fix-localdns-auto-default-run-172310406": {
+              id: "fix-localdns-auto-default-run-172310406",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review localdns auto-default follow-up.",
+            },
+            "domain/normalize-next-scenario-test-slice-20260716": {
+              id: "domain/normalize-next-scenario-test-slice-20260716",
+              parent_id: "project",
+              state: "active",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Live repo-local normalization frontier that scope metadata must not hide.",
+            },
+            "fix-network-acns-retina-enterprise-run-172393474": {
+              id: "fix-network-acns-retina-enterprise-run-172393474",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Exact blocked carrier for the fix-network follow-through.",
+            },
+            "reconcile-spec-loop-pending-rp-regional-quota": {
+              id: "reconcile-spec-loop-pending-rp-regional-quota",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Exact blocked public carrier.",
+            },
+            "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715":
+              {
+                id: "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+                parent_id: "aks-feature-compact-loop",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Exact compact blocked lineage carrier.",
+              },
+            "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+              id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              parent_id: "project",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Carry the exact project approval wait.",
+            },
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact shared capacity wait.",
+              },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    const syncResult = syncProjectReadout(config, "2026-07-16T02:17:31.360Z");
+
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
+    );
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+    const blockedLineage = [
+      "fix-network-acns-retina-enterprise-run-172393474",
+      "reconcile-spec-loop-pending-rp-regional-quota",
+      "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+    ];
+
+    expect(syncResult.snapshot).toEqual({
+      version: "project-snapshot-v2",
+      capturedAt: "2026-07-16T02:17:31.360Z",
+      treeUpdatedAt: "2026-07-16T02:17:31.360Z",
+    });
+    expect(projectState.currentState.snapshot).toEqual(syncResult.snapshot);
+    expect(projectState.currentFocus.snapshot).toEqual(syncResult.snapshot);
+    expect(
+      taskTree.tasks.project.context.current_root_readout.snapshot_version,
+    ).toBe("project-snapshot-v2");
+    expect(
+      taskTree.tasks.project.context.current_root_readout
+        .source_tree_updated_at,
+    ).toBe("2026-07-16T02:17:31.360Z");
+
+    expect(projectState.currentState.activeTaskId).toBe(
+      "domain/normalize-next-scenario-test-slice-20260716",
+    );
+    expect(projectState.currentState.metrics.activeLeafCount).toBe(1);
+    expect(projectState.currentFocus.activeTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+    ]);
+    expect(projectState.currentFocus.proposedTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...blockedLineage,
+    ]);
+    expect(projectState.currentFocus.focusMission.activeTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+    ]);
+    expect(projectState.currentFocus.focusMission.linkedBlockedTaskIds).toEqual(
+      blockedLineage,
+    );
+    expect(projectState.currentFocus.summary).toContain(
+      "Preserved blocked carrier lineage remains fix-network-acns-retina-enterprise-run-172393474, reconcile-spec-loop-pending-rp-regional-quota, hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+    );
+    expect(projectState.focusPlan.summary).toContain(
+      "Preserved blocked carrier lineage remains fix-network-acns-retina-enterprise-run-172393474, reconcile-spec-loop-pending-rp-regional-quota, hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.reason,
+    ).toContain(
+      "Preserved blocked carrier lineage remains fix-network-acns-retina-enterprise-run-172393474, reconcile-spec-loop-pending-rp-regional-quota, hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .linked_blocked_task_ids,
+    ).toEqual(blockedLineage);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .proposed_task_ids,
+    ).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...blockedLineage,
+    ]);
+    expectParitySurfaces({ projectState, taskTree });
+  });
+
+  test("root-contract sync prunes archived review/proposed ghost ids after accepted publication compaction", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const blockedLineage = [
+      "fix-network-acns-retina-enterprise-run-172393474",
+      "reconcile-spec-loop-pending-rp-regional-quota",
+      "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+    ];
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-16T02:40:00.000Z",
+          active_task_id: "domain/normalize-next-scenario-test-slice-20260716",
+          active_task_ids: [
+            "domain/normalize-next-scenario-test-slice-20260716",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+                "fix-localdns-auto-default-run-172310406",
+                "domain/normalize-next-scenario-test-slice-20260716",
+                "aks-spec-verification-loop",
+                "aks-feature-compact-loop",
+              ],
+              context: {
+                current_focus_proposal: {
+                  reason:
+                    "stale proposal reason archived publication ghost leaked into review/proposed ids",
+                  context: {
+                    active_task_ids: [],
+                    review_task_ids: [
+                      "domain/normalize-scenario-tests-repo-frontier-20260715",
+                      "fix-localdns-auto-default-run-172310406",
+                      "domain/spec-windows-ready-subset-followup-20260715",
+                      "ghost-review-archived-20260716",
+                    ],
+                    blocked_task_ids: blockedLineage,
+                    linked_blocked_task_ids: blockedLineage,
+                    proposed_task_ids: [
+                      "domain/normalize-scenario-tests-repo-frontier-20260715",
+                      "fix-localdns-auto-default-run-172310406",
+                      "domain/spec-windows-ready-subset-followup-20260715",
+                      "ghost-review-archived-20260716",
+                      ...blockedLineage,
+                    ],
+                  },
+                },
+                current_root_readout: {
+                  updated_at: "2026-07-16T02:39:59.000Z",
+                  contract_scope:
+                    "compact-loop ready-subset adjudication frontier + exact compact blocked holders",
+                  excludes_task_id:
+                    "ops/repair-current-focus-frontier-metadata-drift-20260716b",
+                  active_task_ids_excluding_self: [],
+                  active_task_ids_including_self: [],
+                  review_task_ids: [
+                    "domain/normalize-scenario-tests-repo-frontier-20260715",
+                    "fix-localdns-auto-default-run-172310406",
+                    "domain/spec-windows-ready-subset-followup-20260715",
+                  ],
+                  waiting_task_ids: [],
+                  runnable_task_ids: [],
+                  blocked_leaf_count: 5,
+                  top_level_blocked_ids: [
+                    "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                    "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                  ],
+                  accepted_publication_leaf_id:
+                    "domain/spec-windows-ready-subset-followup-20260715",
+                  accepted_publication_leaf_live: false,
+                  accepted_publication_leaf_archive_file:
+                    ".state/tasks/archive/done-leaves-20260716022753848.json",
+                  accepted_publication_leaf_archived_at:
+                    "2026-07-16T02:27:53.849Z",
+                },
+              },
+            },
+            "aks-spec-verification-loop": {
+              id: "aks-spec-verification-loop",
+              parent_id: "project",
+              state: "active",
+              kind: "workflow_root",
+              children: [
+                "fix-network-acns-retina-enterprise-run-172393474",
+                "reconcile-spec-loop-pending-rp-regional-quota",
+              ],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              kind: "workflow_root",
+              children: [
+                "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+              ],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review repo-wide scenario normalization changes.",
+            },
+            "fix-localdns-auto-default-run-172310406": {
+              id: "fix-localdns-auto-default-run-172310406",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review localdns auto-default follow-up.",
+            },
+            "domain/normalize-next-scenario-test-slice-20260716": {
+              id: "domain/normalize-next-scenario-test-slice-20260716",
+              parent_id: "project",
+              state: "active",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Unrelated repo-local normalization frontier that must not leak into the scoped root contract.",
+            },
+            "fix-network-acns-retina-enterprise-run-172393474": {
+              id: "fix-network-acns-retina-enterprise-run-172393474",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Exact blocked carrier for the fix-network follow-through.",
+            },
+            "reconcile-spec-loop-pending-rp-regional-quota": {
+              id: "reconcile-spec-loop-pending-rp-regional-quota",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Exact blocked public carrier.",
+            },
+            "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715":
+              {
+                id: "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+                parent_id: "aks-feature-compact-loop",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Exact compact blocked lineage carrier.",
+              },
+            "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+              id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              parent_id: "project",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Carry the exact project approval wait.",
+            },
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact shared capacity wait.",
+              },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    syncProjectReadout(config, "2026-07-16T02:40:30.000Z");
+
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
+    );
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+
+    expect(
+      taskTree.tasks.project.context.current_root_readout.review_task_ids,
+    ).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .review_task_ids,
+    ).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .proposed_task_ids,
+    ).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...blockedLineage,
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .proposed_task_ids,
+    ).not.toContain("domain/spec-windows-ready-subset-followup-20260715");
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .proposed_task_ids,
+    ).not.toContain("ghost-review-archived-20260716");
+    expect(projectState.currentFocus.proposedTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...blockedLineage,
+    ]);
+    expect(projectState.currentFocus.proposedTaskIds).not.toContain(
+      "domain/spec-windows-ready-subset-followup-20260715",
+    );
+    expect(projectState.currentFocus.proposedTaskIds).toContain(
+      "domain/normalize-next-scenario-test-slice-20260716",
+    );
+    expect(projectState.currentFocus.focusMission.linkedBlockedTaskIds).toEqual(
+      blockedLineage,
+    );
+    expect(taskTree.tasks.project.summary).toContain(
+      "domain/spec-windows-ready-subset-followup-20260715 is archived done and absent from the live task map",
+    );
+    expectParitySurfaces({ projectState, taskTree });
+  });
+
+  test("root-contract sync recognizes hyphenated project-root readout repair goals as scoped self exclusions", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-16T04:01:54.736Z",
+          active_task_id:
+            "ops/repair-project-root-frontier-review-parity-20260716",
+          active_task_ids: [
+            "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+            "ops/repair-project-root-frontier-review-parity-20260716",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+                "ops/repair-project-root-frontier-review-parity-20260716",
+                "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+              ],
+              context: {
+                current_focus_proposal: {
+                  reason:
+                    "stale proposal reason active=[domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716, ops/repair-project-root-frontier-review-parity-20260716]",
+                  context: {
+                    active_task_ids: [
+                      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+                      "ops/repair-project-root-frontier-review-parity-20260716",
+                    ],
+                    review_task_ids: [],
+                    linked_blocked_task_ids: [
+                      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                    ],
+                  },
+                },
+                current_root_readout: {
+                  updated_at: "2026-07-16T04:01:54.658Z",
+                  contract_scope:
+                    "live root frontier after retina-enterprise review redo + exact blocked carrier lineage",
+                  excludes_task_id:
+                    "ops-apply-repair-root-frontier-readout-post-retina-review-redo-20260716-state-repair",
+                  active_task_ids_excluding_self: [
+                    "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+                    "ops/repair-project-root-frontier-review-parity-20260716",
+                  ],
+                  active_task_ids_including_self: [
+                    "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+                    "ops/repair-project-root-frontier-review-parity-20260716",
+                  ],
+                  review_task_ids: [],
+                  waiting_task_ids: [],
+                  runnable_task_ids: [],
+                  blocked_leaf_count: 1,
+                  top_level_blocked_ids: [
+                    "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                  ],
+                  accepted_publication_leaf_id:
+                    "domain/spec-windows-ready-subset-followup-20260715",
+                  accepted_publication_leaf_live: false,
+                },
+              },
+            },
+            "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716":
+              {
+                id: "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+                parent_id: "project",
+                state: "active",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the live non-repair active frontier.",
+              },
+            "ops/repair-project-root-frontier-review-parity-20260716": {
+              id: "ops/repair-project-root-frontier-review-parity-20260716",
+              parent_id: "project",
+              state: "active",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair the project-root frontier/progress readout so it truthfully reflects the live planning frontier after the 2026-07-16 metric recovery.",
+            },
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact shared capacity wait.",
+              },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    syncProjectReadout(config, "2026-07-16T04:02:30.000Z");
+
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
+    );
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+
+    expect(
+      taskTree.tasks.project.context.current_root_readout.excludes_task_id,
+    ).toBe("ops/repair-project-root-frontier-review-parity-20260716");
+    expect(
+      taskTree.tasks.project.context.current_root_readout
+        .active_task_ids_excluding_self,
+    ).toEqual([
+      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_root_readout
+        .active_task_ids_including_self,
+    ).toEqual([
+      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+      "ops/repair-project-root-frontier-review-parity-20260716",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .active_task_ids,
+    ).toEqual([
+      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+    ]);
+    expect(projectState.currentState.activeTaskId).toBe(
+      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+    );
+    expect(projectState.currentState.metrics.activeLeafCount).toBe(1);
+    expect(projectState.currentFocus.activeTaskIds).toEqual([
+      "domain/reconcile-rp-cluster-lifecycle-update-tags-inline-rewrite-20260716",
+    ]);
+    expectParitySurfaces({ projectState, taskTree });
+  });
+
+  test("root-contract sync clears stale ghosts without hiding the live active frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const blockedLineage = [
+      "fix-network-acns-retina-enterprise-run-172393474",
+      "reconcile-spec-loop-pending-rp-regional-quota",
+      "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+      "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+    ];
+    const reachableBlockedLineage = blockedLineage.slice(-2);
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-16T02:45:00.000Z",
+          active_task_id: "domain/normalize-next-scenario-test-slice-20260716",
+          active_task_ids: [
+            "domain/normalize-next-scenario-test-slice-20260716",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+                "fix-localdns-auto-default-run-172310406",
+                "domain/normalize-next-scenario-test-slice-20260716",
+              ],
+              context: {
+                current_focus_proposal: {
+                  reason:
+                    "stale proposal reason active=[none] review-only frontier still carries waiting/runnable ghosts",
+                  context: {
+                    active_task_ids: [],
+                    review_task_ids: [
+                      "domain/normalize-scenario-tests-repo-frontier-20260715",
+                      "fix-localdns-auto-default-run-172310406",
+                      "ghost-review-archived-20260716",
+                    ],
+                    waiting_task_ids: ["ghost-wait-20260716"],
+                    runnable_task_ids: ["ghost-runnable-20260716"],
+                    blocked_task_ids: blockedLineage,
+                    linked_blocked_task_ids: blockedLineage,
+                    proposed_task_ids: [
+                      "domain/normalize-scenario-tests-repo-frontier-20260715",
+                      "fix-localdns-auto-default-run-172310406",
+                      "ghost-review-archived-20260716",
+                      "ghost-wait-20260716",
+                      "ghost-runnable-20260716",
+                      ...blockedLineage,
+                    ],
+                  },
+                },
+                current_root_readout: {
+                  updated_at: "2026-07-16T02:44:59.000Z",
+                  contract_scope:
+                    "compact-loop ready-subset adjudication frontier + exact compact blocked holders",
+                  excludes_task_id:
+                    "ops/repair-current-focus-frontier-metadata-drift-20260716b",
+                  active_task_ids_excluding_self: [],
+                  active_task_ids_including_self: [],
+                  review_task_ids: [
+                    "domain/normalize-scenario-tests-repo-frontier-20260715",
+                    "fix-localdns-auto-default-run-172310406",
+                    "ghost-review-archived-20260716",
+                  ],
+                  waiting_task_ids: ["ghost-wait-20260716"],
+                  runnable_task_ids: ["ghost-runnable-20260716"],
+                  blocked_leaf_count: 5,
+                  top_level_blocked_ids: [
+                    "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                    "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                  ],
+                  accepted_publication_leaf_id:
+                    "domain/spec-windows-ready-subset-followup-20260715",
+                  accepted_publication_leaf_live: false,
+                },
+              },
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review repo-wide scenario normalization changes.",
+            },
+            "fix-localdns-auto-default-run-172310406": {
+              id: "fix-localdns-auto-default-run-172310406",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review localdns auto-default follow-up.",
+            },
+            "domain/normalize-next-scenario-test-slice-20260716": {
+              id: "domain/normalize-next-scenario-test-slice-20260716",
+              parent_id: "project",
+              state: "active",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Live repo-local normalization frontier that scope metadata must not hide.",
+            },
+            "fix-network-acns-retina-enterprise-run-172393474": {
+              id: "fix-network-acns-retina-enterprise-run-172393474",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Exact blocked carrier for the fix-network follow-through.",
+            },
+            "reconcile-spec-loop-pending-rp-regional-quota": {
+              id: "reconcile-spec-loop-pending-rp-regional-quota",
+              parent_id: "aks-spec-verification-loop",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Exact blocked public carrier.",
+            },
+            "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715":
+              {
+                id: "hold-compact-rp-regional-quota-source-equivalent-evidence-ceiling-frontier-20260715",
+                parent_id: "aks-feature-compact-loop",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Exact compact blocked lineage carrier.",
+              },
+            "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+              id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              parent_id: "project",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Carry the exact project approval wait.",
+            },
+            "wait-shared-westus2-managed-cluster-capacity-family-return-20260703":
+              {
+                id: "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
+                parent_id: "project",
+                state: "blocked",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Carry the exact shared capacity wait.",
+              },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    syncProjectReadout(config, "2026-07-16T02:45:30.000Z");
+
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
+    );
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+
+    expect(
+      taskTree.tasks.project.context.current_root_readout.review_task_ids,
+    ).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_root_readout.waiting_task_ids,
+    ).toEqual([]);
+    expect(
+      taskTree.tasks.project.context.current_root_readout.runnable_task_ids,
+    ).toEqual([]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .review_task_ids,
+    ).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .waiting_task_ids,
+    ).toEqual([]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .runnable_task_ids,
+    ).toEqual([]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .proposed_task_ids,
+    ).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...reachableBlockedLineage,
+    ]);
+    expect(projectState.currentFocus.activeTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+    ]);
+    expect(projectState.currentFocus.proposedTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+      ...reachableBlockedLineage,
+    ]);
+    expect(projectState.currentFocus.focusMission.activeTaskIds).toEqual([
+      "domain/normalize-next-scenario-test-slice-20260716",
+    ]);
+    expect(projectState.currentFocus.focusMission.reviewTaskIds).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "fix-localdns-auto-default-run-172310406",
+    ]);
+    expect(projectState.currentFocus.focusMission.waitingTaskIds).toEqual([]);
+    expect(projectState.currentFocus.focusMission.runnableTaskIds).toEqual([]);
+    expect(projectState.currentFocus.proposedTaskIds).not.toContain(
+      "ghost-review-archived-20260716",
+    );
+    expect(projectState.currentFocus.proposedTaskIds).not.toContain(
+      "ghost-wait-20260716",
+    );
+    expect(projectState.currentFocus.proposedTaskIds).not.toContain(
+      "ghost-runnable-20260716",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.reason,
+    ).toContain(
+      "Current root-contract non-repair frontier is active=[domain/normalize-next-scenario-test-slice-20260716], review=[domain/normalize-scenario-tests-repo-frontier-20260715, fix-localdns-auto-default-run-172310406], waiting=[none], runnable=[none], blocked=2",
+    );
     expectParitySurfaces({ projectState, taskTree });
   });
 });

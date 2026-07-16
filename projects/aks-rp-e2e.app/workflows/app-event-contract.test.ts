@@ -215,6 +215,36 @@ describe("app event contract", () => {
     );
   });
 
+  test("manifest explicitly opts only the bounded exact ADO Condition writers into V2", () => {
+    for (const name of [
+      "aks-rp-e2e-project-planner",
+      "aks-rp-e2e-reviewed-task-applier",
+      "aks-rp-e2e-project-watchdog",
+    ]) {
+      expect(handler(name).handler?.task).toContain(
+        "conditionV2: exact-ado-revisioned",
+      );
+    }
+    for (const name of [
+      "aks-rp-e2e-project-planner",
+      "aks-rp-e2e-reviewed-task-applier",
+      "aks-rp-e2e-project-watchdog",
+    ]) {
+      expect(handler(name).handler?.task).not.toContain("conditionAdoptionV2:");
+    }
+    for (const name of [
+      "aks-rp-e2e-project-planner",
+      "aks-rp-e2e-reviewed-task-applier",
+    ]) {
+      expect(handler(name).handler?.task).toContain(
+        "revisionV2: fix-forward-first-nonpass-run",
+      );
+      expect(handler(name).handler?.task).toContain(
+        "revisionV2RunId: 172484121",
+      );
+    }
+  });
+
   test("worker and controllers own their targeted task events", () => {
     expect(handler("aks-rp-e2e-task-execution-worker")).toMatchObject({
       handler: { workflow: "task-worker" },
