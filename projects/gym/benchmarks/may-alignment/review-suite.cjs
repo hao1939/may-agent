@@ -54,6 +54,22 @@ for (const name of suite.scenarios) {
   add(`${name}:common-scorer`, scorer.includes("score-decision.cjs"), "Uses the shared scorer");
   add(`${name}:response-bound`, Number.isFinite(expected.response_max_words), "Defines a response-length bound");
   add(`${name}:delegation-ground-truth`, expected.delegations && Number.isFinite(expected.delegations.min), "Defines delegation expectations");
+  add(`${name}:canonical-answer`, Boolean(expected.human_answer?.trim()), "Provides a plain-language answer for human review");
+
+  const scoredFields = new Set([
+    ...Object.keys(expected.exact ?? {}),
+    ...Object.keys(expected.one_of ?? {}),
+    ...Object.keys(expected.contains_all ?? {}),
+    ...Object.keys(expected.contains_any ?? {}),
+    ...Object.keys(expected.contains_groups ?? {}),
+  ]);
+  add(`${name}:mode-ground-truth`, scoredFields.has("mode"), "Defines acceptable operating-mode concepts");
+  add(`${name}:priority-ground-truth`, scoredFields.has("priority"), "Defines acceptable priority concepts");
+  add(
+    `${name}:preference-ground-truth`,
+    scoredFields.has("preference_updates") || expected.empty?.includes("preference_updates"),
+    "Defines whether this turn changes standing preferences",
+  );
 
   const brittleExact = Object.entries(expected.exact ?? {}).filter(([, value]) => typeof value === "string");
   add(`${name}:no-brittle-exact-labels`, brittleExact.length === 0, brittleExact.length ? `Exact string labels: ${brittleExact.map(([key]) => key).join(", ")}` : "Open-ended labels use acceptable sets or semantic matching");

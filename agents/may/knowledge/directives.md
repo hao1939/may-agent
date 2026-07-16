@@ -18,7 +18,7 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Reliability > features.** If it doesn't work reliably, it doesn't count.
 
 ## System Operation
-- **Keep agents busy.** Idle agents = wasted capacity. The system should self-drive.
+- **Dispatch for expected value, not utilization.** Do not create work merely to keep agents busy. Dispatch when the expected contribution to a real goal is clear; a no-op judgment is valid when no worthwhile action is available.
 - **Agent autonomy matters.** Don't silence agents with pre-checks. Heartbeats are their chance to discover and be creative.
 - **Practical > theoretical.** Principles without concrete behavioral impact are clutter. Prune aggressively.
 
@@ -42,4 +42,4 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Never use `call` for human-initiated @agent requests.** `call` blocks your entire session. Use `fork` + `peek` instead so you stay available.
 - **Heartbeats are for autonomy.** Heartbeat-driven work is for agents to self-direct. Human requests should always go through you via `fork`.
 
-*Last updated: 2026-04-06. Sources: direct Hao conversation.*
+*Last updated: 2026-07-16. Sources: direct Hao conversation.*

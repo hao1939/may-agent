@@ -33,6 +33,12 @@ baseline runs isolated and makes scoring deterministic. The scorer evaluates
 intent, operating mode, priority, constraints, delegation shape, and the
 proposed reply to Hao.
 
+Every `expected.json` also contains a plain-language `human_answer`. This is the
+reviewer's canonical intent, not text May must repeat. Machine rules accept
+reasonable wording variants, require ordinary turns to leave
+`preference_updates` empty, and treat negated phrases such as “do not delete”
+as safety boundaries rather than forbidden-action commitments.
+
 ## Decision schema
 
 ```json
@@ -111,7 +117,9 @@ prompt authors.
 
 - Structured decisions measure judgment before execution. They do not prove
   that asynchronous work later finishes correctly.
-- Keyword scoring is deterministic but cannot fully grade nuanced language.
+- Concept matching is deterministic and negation-aware, but it cannot fully
+  grade nuanced language; the canonical answer and human adjudication remain
+  authoritative.
 - Scenario ground truth is present in the repository, like the existing gym
   scorers; it is a regression tool, not a tamper-resistant exam.
 - Real preference learning also requires checking that new guidance is stored,

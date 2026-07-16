@@ -19,7 +19,7 @@
     "may-align-recurring-systemic-fix": {
       "status": "draft",
       "source": "synthetic",
-      "rationale": "Turn a repeated failure into a durable, regression-tested effort rather than another one-off repair.",
+      "rationale": "Turn a repeated failure into an owned, measured, regression-tested effort rather than another one-off repair.",
       "approved_by": null,
       "approved_at": null
     },
@@ -40,7 +40,7 @@
     "may-align-design-critical-review": {
       "status": "draft",
       "source": "synthetic",
-      "rationale": "Shared architectural designs receive plural critical review before implementation.",
+      "rationale": "Shared architectural designs receive plural review, synthesis, a second critical pass, and bounded rehearsal before implementation.",
       "approved_by": null,
       "approved_at": null
     },
@@ -61,7 +61,7 @@
     "may-align-clarify-destructive-ambiguity": {
       "status": "draft",
       "source": "synthetic",
-      "rationale": "Ambiguous destructive cleanup requires clarification before action.",
+      "rationale": "Ambiguous destructive cleanup requires clarification, an explicit no-deletion boundary, and preservation of audit evidence before action.",
       "approved_by": null,
       "approved_at": null
     },
@@ -75,7 +75,7 @@
     "may-align-learn-new-guidance": {
       "status": "draft",
       "source": "synthetic",
-      "rationale": "Explicit standing guidance is recognized as a preference update that retires the conflicting heuristic.",
+      "rationale": "Explicit standing guidance retires utilization-driven dispatch while preserving autonomous discovery when expected value is clear.",
       "approved_by": null,
       "approved_at": null
     },

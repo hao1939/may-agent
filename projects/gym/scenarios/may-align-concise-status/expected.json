@@ -1,4 +1,5 @@
 {
+  "human_answer": "12 of 15 milestones are complete. The blocker is security review of the outbound-webhook allowlist. After approval, Tech Lead will complete the remaining three integration cases.",
   "exact": {
     "needs_clarification": false
   },
@@ -6,6 +7,8 @@
     "understood_intent": ["status"]
   },
   "contains_groups": {
+    "mode": [["status", "report", "answer", "informational"]],
+    "priority": [["blocker", "security", "notification"]],
     "response_to_hao": [
       ["12", "twelve", "80%"],
       ["15", "fifteen"],
@@ -17,5 +20,6 @@
     "min": 0,
     "max": 0
   },
+  "empty": ["preference_updates"],
   "response_max_words": 45
 }

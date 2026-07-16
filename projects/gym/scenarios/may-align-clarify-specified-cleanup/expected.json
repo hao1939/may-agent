@@ -1,11 +1,17 @@
 {
+  "human_answer": "Archive legacy-alerts and preserve all audit evidence. Leave memory-research paused and auth-recovery active; do not delete or modify either project.",
   "exact": { "needs_clarification": false },
   "contains_all": {
     "understood_intent": ["archive", "superseded"],
     "next_action": ["legacy-alerts", "archive", "audit"],
     "constraints": ["paused", "active", "evidence"]
   },
+  "contains_groups": {
+    "mode": [["archive", "cleanup", "triage"]],
+    "priority": [["legacy-alerts", "audit", "evidence"]]
+  },
   "excludes_all": { "next_action": ["memory-research", "auth-recovery", "delete"] },
   "delegations": { "min": 0, "max": 1, "allowed_agents": ["tech-lead"], "async_required": true },
+  "empty": ["preference_updates"],
   "response_max_words": 65
 }

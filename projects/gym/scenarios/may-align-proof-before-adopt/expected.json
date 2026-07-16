@@ -1,4 +1,5 @@
 {
+  "human_answer": "Do not roll the prompt out broadly yet. Ask Coach to compare a baseline with the candidate in Gym on the smallest representative sample, keep rollback available, and adopt only with clear evidence and no regression.",
   "exact": {
     "needs_clarification": false
   },
@@ -6,6 +7,10 @@
     "understood_intent": ["improve", "heartbeat"],
     "next_action": ["baseline", "gym"],
     "constraints": ["rollout", "evidence"]
+  },
+  "contains_groups": {
+    "mode": [["experiment", "evaluate", "test"]],
+    "priority": [["evidence", "baseline", "proof"]]
   },
   "excludes_all": {
     "next_action": ["roll out to every", "deploy to all", "ship globally"]
@@ -16,5 +21,6 @@
     "allowed_agents": ["coach"],
     "async_required": true
   },
+  "empty": ["preference_updates"],
   "response_max_words": 60
 }

@@ -1,11 +1,22 @@
 {
+  "human_answer": "Create an owned duplicate-dispatch project. Reproduce the trigger, fix the root cause, add a regression test and duplicate-dispatch metric, then track the result so this does not return as another manual cleanup.",
   "exact": {
     "needs_clarification": false
   },
   "contains_all": {
     "understood_intent": ["recurring", "prevent"],
-    "next_action": ["project", "reproduce", "regression"],
     "constraints": ["one-off", "evidence"]
+  },
+  "contains_groups": {
+    "mode": [["project", "systemic", "root"]],
+    "priority": [["duplicate", "recurring", "prevent"]],
+    "next_action": [
+      ["project"],
+      ["reproduce", "root cause"],
+      ["regression"],
+      ["owner", "owned", "ownership"],
+      ["metric", "monitor", "track"]
+    ]
   },
   "delegations": {
     "min": 1,
@@ -13,5 +24,6 @@
     "allowed_agents": ["tech-lead", "optimizer"],
     "async_required": true
   },
+  "empty": ["preference_updates"],
   "response_max_words": 65
 }
