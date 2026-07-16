@@ -1,0 +1,13 @@
+{
+  "name": "report-module",
+  "version": "1.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "test": "jest --experimental-vm-modules"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "@jest/globals": "^29.0.0"
+  }
+}

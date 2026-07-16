@@ -1,0 +1,11 @@
+{
+  "name": "qa-evidence-discipline",
+  "description": "Code review requiring verification output and evidence-backed findings.",
+  "categories": ["qa", "code-review"],
+  "tags": ["ability", "evidence-discipline"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}
+

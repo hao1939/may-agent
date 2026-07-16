@@ -1,7 +1,0 @@
-[2026-04-05 05:30:01] ERROR OOM kill detected: process=api-server pid=4521 memory=4294967296 limit=4294967296
-[2026-04-05 05:30:01] INFO  memory timeline: 03:00=512MB, 03:30=1.2GB, 04:00=2.1GB, 04:30=3.0GB, 05:00=3.8GB, 05:30=4.0GB (killed)
-[2026-04-05 05:30:15] WARN  Ops team note: "Memory grows linearly ~500MB/hour. Suspect search index rebuild is leaking."
-[2026-04-05 05:30:30] INFO  search.rebuildIndex runs at: 03:00, 04:00, 05:00 - no correlation with memory spikes
-[2026-04-05 05:30:45] INFO  cache.entries at each hour: 03:00=10000, 03:30=18000, 04:00=28000, 04:30=38000, 05:00=48000
-[2026-04-05 05:31:00] WARN  cache.evictStale.evicted=0 every hour - EVICTION IS BROKEN, cache grows without bound
-[2026-04-05 05:31:15] INFO  Conclusion: OOM is caused by unbounded cache growth, NOT by search index rebuild

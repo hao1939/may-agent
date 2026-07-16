@@ -12,8 +12,8 @@ concise evidence instead of padding a status file.
 ## Environment
 - bun: `.state/.bun/bin/bun`. No npx — use `bun x`. No sudo.
 - Project root: /app. App-owned agents live under `projects/may-agent.app/agents/`. No src/ or package.json at root.
-- query_db tool for DB. Gym: `cd /app/projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios bash test/gym/run-gym.sh <scenario> --timeout 10`
-- Batch gym: `cd /app/projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios scripts/gym-batch.sh` (--variants, --trials N, --tier/--category)
+- query_db tool for DB. Gym: `cd /app/projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/projects/gym/scenarios bash test/gym/run-gym.sh <scenario> --timeout 10`
+- Batch gym: `cd /app/projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/projects/gym/scenarios scripts/gym-batch.sh` (--variants, --trials N, --tier/--category)
 
 ## Conventions (MANDATORY)
 - **C1.1**: read() before edit(). **C1.3**: read() after write(). **C1.7**: verify in last 5 calls before finish(success). **C12.1**: first 3-5 calls = read/ls/grep.

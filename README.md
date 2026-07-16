@@ -15,7 +15,8 @@ May-agent system.
   `projects/README.md`.
 - `projects/scout-knowledge-lib/knowledge/` - Scout-maintained external
   research and paper/doc knowledge library.
-- `gym/` - behavior/evaluation scenarios for agent quality work.
+- `projects/gym/` - standalone behavior/evaluation project for agent quality
+  work.
 - `contracts/` - explicit system contracts.
 - `scripts/` - reusable app-level scripts.
 - `projects/may-agent.app/docs/` - durable May-agent system docs, principles,

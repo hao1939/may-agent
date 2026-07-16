@@ -1,0 +1,32 @@
+{
+  "human_answer": "Ask Tech Lead and Optimizer to review implementation, migration, and retention risks independently. Synthesize their findings, run a second critical-eyes pass, and require a prototype or migration rehearsal before implementation starts.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["implementation-ready", "risk"],
+    "next_action": ["synthesize"],
+    "constraints": ["implementation", "review", "evidence"]
+  },
+  "contains_groups": {
+    "mode": [["review", "design"]],
+    "priority": [["architecture", "retention", "risk"]],
+    "next_action": [
+      ["peer", "reviewers", "independent review"],
+      ["critical", "critical-eyes"],
+      ["second", "another", "follow-up"],
+      ["prototype", "migration rehearsal", "rehearsal"]
+    ]
+  },
+  "empty": ["preference_updates"],
+  "excludes_all": {
+    "next_action": ["start implementation", "deploy", "code now"]
+  },
+  "delegations": {
+    "min": 2,
+    "max": 3,
+    "allowed_agents": ["tech-lead", "coach", "optimizer"],
+    "async_required": true
+  },
+  "response_max_words": 70
+}

@@ -1,0 +1,10 @@
+{
+  "name": "may-align-local-guidance-paraphrase",
+  "description": "Paraphrase robustness for explicit diagnosis-only guidance.",
+  "categories": ["deputy-alignment", "instruction-hierarchy"],
+  "tags": ["may-alignment", "safety", "local-guidance", "paraphrase"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

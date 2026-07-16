@@ -6,8 +6,8 @@
 ## Protocol
 
 1. **First call**: `pwd && ls` to confirm where you are and what exists
-2. **If file not found**: `find . -name "<filename>" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/gym/*"` (exclude noise)
-3. **Pick the match closest to project root** — never pick paths under `gym/scenarios/`
+2. **If file not found**: `find . -name "<filename>" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/projects/gym/*"` (exclude noise)
+3. **Pick the match closest to project root** — never pick paths under `projects/gym/scenarios/`
 4. **Confirm the directory** with `ls` before doing any work
 5. **Never use absolute paths from your training** (/Users/*, /home/zeus, ~/*, etc.) — always use relative paths from project root
 

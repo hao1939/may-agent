@@ -1,0 +1,6 @@
+{
+  "name": "circular-dependency-scenario",
+  "version": "1.0.0",
+  "description": "A project with A→B→A circular require loop",
+  "main": "module-a.js"
+}

@@ -45,7 +45,7 @@ workflow.run("verify-wrap", "Analyze C1.1 system-wide regression. Query .state/m
 
 **Scenario design:**
 ```javascript
-workflow.run("verify-wrap", "Design gym scenario for error-cascade-diagnosis. Must have clear success criteria. Output: gym/scenarios/error-cascade-diagnosis-v2/")
+workflow.run("verify-wrap", "Design gym scenario for error-cascade-diagnosis. Must have clear success criteria. Output: projects/gym/scenarios/error-cascade-diagnosis-v2/")
 ```
 
 **Skill regression testing:**
@@ -75,4 +75,3 @@ Sources of work when nothing is dispatchable:
 - Promoted skills not verified recently
 
 ---
-

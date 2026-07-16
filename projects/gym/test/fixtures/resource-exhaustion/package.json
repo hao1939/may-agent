@@ -1,0 +1,6 @@
+{
+  "name": "resource-exhaustion-scenario",
+  "version": "1.0.0",
+  "description": "A project that accumulates temp files until storage limit is hit",
+  "main": "processor.js"
+}

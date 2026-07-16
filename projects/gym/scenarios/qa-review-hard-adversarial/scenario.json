@@ -1,0 +1,11 @@
+{
+  "name": "qa-review-hard-adversarial",
+  "description": "Adversarial review variant targeting subtle session cache and specification defects.",
+  "categories": ["qa", "code-review"],
+  "tags": ["ability", "evidence-discipline", "adversarial"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}
+

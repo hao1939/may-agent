@@ -12,6 +12,9 @@ model from the directory name alone; classify by markers.
   **domain workspace**. It should be portable and useful without May-agent.
 - A folder with `project.md` is a **legacy project workspace**. Its status and
   type come from front matter.
+- A standalone portable project without an Agent App sibling must be listed
+  explicitly in this index; it remains useful through its own CLI/library
+  boundary.
 - `_archive/` is the **physical archive** for old material moved out of the
   top-level project list.
 - Folders with no project markers are **ambiguous/stale** until adopted or
@@ -27,6 +30,7 @@ The top level is intentionally small:
 
 - active project apps
 - domain workspaces required by those apps
+- explicitly listed standalone projects
 - `_archive/`
 
 Legacy `project.md` workspaces should live under `_archive/` unless explicitly
@@ -49,6 +53,13 @@ restored for migration or review.
   git repo and should remain usable without the project app.
 - `scout-knowledge-lib/` - portable Scout knowledge library workspace with
   knowledge notes, reports, and design material.
+
+## Standalone Projects
+
+- `gym/` - portable agent evaluation project containing scenarios, fixtures,
+  benchmarks, scorers, reports, and human review records. It runs without a
+  `gym.app`; an optional operator app may be added later without becoming a
+  dependency of the project.
 
 ## Legacy Project Workspaces
 

@@ -90,7 +90,7 @@ for (const path of [...markdownFiles(principlesDir), ...markdownFiles(designDir)
 
 const allowedRootEntries = new Set([
   ".agents", ".claude", ".codex", ".copilot", ".git", ".gitignore", ".initialized", ".state",
-  "CONVENTIONS.md", "README.md", "agents", "bun.lock", "bunfig.toml", "contracts", "gym",
+  "CONVENTIONS.md", "README.md", "agents", "bun.lock", "bunfig.toml", "contracts",
   "node_modules", "package.json", "packages", "projects", "scripts", "shared", "sources", "tsconfig.json", "ui",
 ]);
 for (const entry of readdirSync(root).sort()) {

@@ -12,13 +12,13 @@
 
 ```
 /app/
-├── src/                          # Compiled runtime harness (TypeScript)
-│   ├── lib/
-│   │   ├── tools/                # Tool implementations (bash, read, edit, etc.)
-│   │   └── growth.ts             # Growth/skill loading
-│   ├── gym/
-│   │   └── runner.ts             # Gym execution engine
-│   └── pipeline.js               # Session pipeline
+├── projects/
+│   ├── may-agent/                # Runtime workspace
+│   │   ├── src/                  # Runtime source
+│   │   ├── test/gym/             # Transitional Gym runner + tests
+│   │   └── scripts/              # Gym CLI/batch wrappers
+│   └── gym/
+│       └── scenarios/            # Gym project scenario definitions
 ├── agents/                       # Agent configs, skills, knowledge (SEPARATE git repo)
 │   ├── {agent}/
 │   │   ├── SOUL.md               # Identity + behavior
@@ -33,19 +33,10 @@
 │   │   ├── protocols/            # Shared protocols (escalation)
 │   │   ├── workflows/            # Workflow implementations (.ts)
 │   │   └── CONVENTIONS.md        # Convention definitions
-│   ├── gym/
-│   │   └── scenarios/            # Gym scenario definitions
 │   └── evaluator/
 │       └── skills/
 │           ├── monitor-session.cjs  # Session monitoring (DETECTS issues)
 │           └── monitor-session.md   # Monitor documentation
-├── scripts/
-│   ├── gym-run.sh                # Single scenario runner (CORRECT path)
-│   ├── gym-batch.sh              # Batch runner with trials + comparison
-│   └── gym-stats.ts              # Stats queries
-├── test/gym/
-│   ├── run-gym.sh                # ALSO works (legacy path, same script)
-│   └── stats.db                  # Legacy stats DB (may be empty)
 └── .state/
     ├── (database — access via query_db tool only)
     └── .bun/bin/bun              # Bun binary

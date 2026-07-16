@@ -1,0 +1,6 @@
+{
+  "name": "infinite-loop-scenario",
+  "version": "1.0.0",
+  "description": "A project with a script that hangs due to an infinite loop",
+  "main": "worker.js"
+}

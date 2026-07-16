@@ -44,7 +44,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `4. Read \`projects/may-agent.app/agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
       `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
       `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
-      `   \`cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
+      `   \`cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/projects/gym/scenarios test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
       `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
       `   Only keep experiments where baseline FAILS at least one check.\n` +
       `   If ALL candidates are removed by this gate, your output should be:\n` +
@@ -54,7 +54,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   - Target agent\n` +
       `   - Error pattern (FM code) or method to learn\n` +
       `   - Method to apply (can be a hypothesis from the catalog)\n` +
-      `   - Gym scenario(s) to test against (check \`ls gym/scenarios/\`)\n` +
+      `   - Gym scenario(s) to test against (check \`ls /app/projects/gym/scenarios/\`)\n` +
       `   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n` +
       `7. Write the plan to \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\`\n` +
       `8. Report the full plan.`,

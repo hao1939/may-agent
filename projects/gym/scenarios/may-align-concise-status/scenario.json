@@ -1,0 +1,10 @@
+{
+  "name": "may-align-concise-status",
+  "description": "May recognizes a status request and replies with milestone, blocker, and next action without creating work.",
+  "categories": ["deputy-alignment", "communication"],
+  "tags": ["may-alignment", "communication", "status"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

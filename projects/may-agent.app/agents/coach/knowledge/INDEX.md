@@ -8,7 +8,7 @@ Scout researches (Opus). Optimizer makes agents cheaper/more robust.
 ## Core Loop
 - **Growth Cycle**: Fork → Train → Gym Test → Promote/Discard.
 - **Method Catalog**: 18+ methods with evidence status. Consult before acting.
-- **Gym Runner**: `test/gym/gym-runner.ts` — automated scoring, `--lab` for forks, `--tier` for filtering.
+- **Gym Runner**: `projects/gym/src/cli.ts` — automated scoring, `--lab` for forks, `--tier` for filtering.
 - **Training Sprint**: Batch 3-5 experiments when you have multiple targets.
 - **🏆 Workflow Enforcement (#15)**: 41/44 (93%+) across 8 scenarios, 5 agents, 3 models. Skip text methods — go directly to workflow enforcement or infra guards for behavioral fixes.
 - **Text coaching is closed**: 0/18 total (0/13 judgment + 0/5 procedural). C39 is the sole exception. Don't waste experiments on SOUL/LESSONS/heartbeat text for behavioral patterns.
@@ -51,7 +51,7 @@ Use standardized codes from `agents/shared/knowledge/mast-taxonomy.md`:
 - `agents/*/LESSONS.md` — accumulated learnings
 - `agents/*/knowledge/` — agent context
 - `agents/.lab/` — experimental forks
-- `agents/gym/scenarios/` — gym scenarios with automated scorers
+- `projects/gym/scenarios/` — Gym project scenarios with automated scorers
 
 **⚠️ Archetype agents**: coder, coach, scout live in `agents/_archetypes/<name>/`, NOT `agents/<name>/`. Reading `agents/coder/SOUL.md` will ENOENT. Use `agents/_archetypes/coder/SOUL.md` instead.
 

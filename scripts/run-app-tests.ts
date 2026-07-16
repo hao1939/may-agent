@@ -5,7 +5,6 @@ import { spawnSync } from "node:child_process";
 
 const roots = ["shared", "agents"];
 const excluded = [
-  /^gym\//,
   /^node_modules\//,
   /^shared\/projects\//,
   /^agents\/shared\//,

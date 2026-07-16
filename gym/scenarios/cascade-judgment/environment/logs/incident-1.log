@@ -1,6 +1,0 @@
-[2026-04-05 03:42:01] WARN  cache.entries=48293 cache.maxSize=10000 - Cache size exceeds max, eviction not working
-[2026-04-05 03:42:01] INFO  cache.evictStale.evicted=0 cache.entries=48293 - Hourly eviction ran, nothing evicted
-[2026-04-05 03:42:15] WARN  cache.entries=48301 - Still growing, 48301 entries after eviction
-[2026-04-05 03:42:30] ERROR memory.heapUsed=2147483648 memory.heapTotal=2684354560 - Heap usage at 80%
-[2026-04-05 03:42:45] INFO  cache.evictStale called manually - evicted=0 entries (bug: nothing qualifies for eviction)
-[2026-04-05 03:43:00] WARN  Investigating evictStale: threshold=3600000ms, oldest_entry_age=3590000ms - entries are just under threshold when eviction runs hourly

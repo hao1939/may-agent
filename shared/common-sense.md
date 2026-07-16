@@ -84,7 +84,7 @@ Standard locations — follow these, don't invent alternatives:
 | Design docs | `projects/may-agent.app/docs/2a-design/` |
 | Metrics | `metrics` table (read via `query_db` tool) |
 | Sessions | `sessions` table (read via `query_db` tool) |
-| Gym scenarios | `gym/scenarios/` |
+| Gym scenarios | `projects/gym/scenarios/` |
 
 ## Environment
 
@@ -107,8 +107,8 @@ Do NOT archive, close, or hide projects/work to make metrics look better.
 If a metric is red, fix the underlying problem. Moving projects to _archive
 to reduce blocked-over-6h is gaming, not fixing. If you can not fix it, escalate.
 
-## Heartbeats always run
-Heartbeats are your autonomy time — observe, judge, act. NEVER skip a heartbeat because "nothing actionable." Your job is to FIND things to work on. If metrics are green and inbox is empty, investigate a question from your heartbeat.md, audit a past decision, or explore a new idea. Idle time is discovery time, not skip time.
+## Autonomy follows valuable signals
+Heartbeats and events are opportunities to observe, judge, and act—not quotas for producing work. Do not invent tasks or dispatch agents merely to maximize utilization. If no meaningful action is available, record a no-op judgment and return. Discovery is appropriate when there is a concrete question or hypothesis with clear expected value.
 
 ## Database access
 Use the `query_db` tool for read-only database inspection. It uses the runtime `getDb()` convention, so do not guess DB paths and do not call `sqlite3`.

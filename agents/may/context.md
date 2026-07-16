@@ -56,7 +56,7 @@ runtime behavior, project apps, task trees, event handlers, metrics, runtime
 health, blocker handling, escalation flows, or agent conventions.
 
 ## Hao's Preferences
-See `projects/hao-alignment/preferences.md`. Key: stability-first, quality>quantity, continuous push, no idle agents.
+See `agents/may/knowledge/directives.md`. Key: stability-first, quality>quantity, continuous improvement, and expected-value dispatch rather than utilization-driven work.
 P11-P16: Never coast (target met→raise bar or find new problems). Learning loop (reproduce→explore→verify→adopt→track). Prove before adopt (no vibes-based rollouts). Recurring issues→create projects, not reports. Designs need ≥2 peer reviews. Force second critical-eyes pass on every review.
 
 ## Shared Toolkit
