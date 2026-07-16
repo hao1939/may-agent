@@ -3552,7 +3552,7 @@ describe("project execution watchdog", () => {
       });
       expect(dispatched).toHaveLength(1);
       expect(dispatched[0]).toMatchObject({
-        type: "project.owner.requested",
+        type: "project.condition.fallback.requested",
         payload: {
           reason: "condition-overdue-fallback",
           recoveryKey: `condition-fallback:${conditionId}:3`,
@@ -3723,7 +3723,7 @@ describe("project execution watchdog", () => {
       );
       expect(dispatched).toContainEqual(
         expect.objectContaining({
-          type: "project.owner.requested",
+          type: "project.condition.fallback.requested",
           payload: expect.objectContaining({
             recoveryKey: `condition-fallback:${conditionId}:3`,
             observation: expect.objectContaining({

@@ -3243,11 +3243,14 @@ function conditionFallbackEventV2(input: {
   correlation?: ConditionFallbackEventCorrelationV2;
   reason?: string;
 } {
-  if (
-    input.trigger?.type !== "project.owner.requested" ||
-    stringValue(triggerValue(input.trigger, "reason")) !==
-      "condition-overdue-fallback"
-  ) {
+  const reason = stringValue(triggerValue(input.trigger, "reason"));
+  const typedFallback =
+    input.trigger?.type === "project.condition.fallback.requested" &&
+    reason === "condition-overdue-fallback";
+  const legacyFallback =
+    input.trigger?.type === "project.owner.requested" &&
+    reason === "condition-overdue-fallback";
+  if (!typedFallback && !legacyFallback) {
     return { handled: false, valid: false };
   }
   const conditionId = stringValue(triggerValue(input.trigger, "conditionId"));

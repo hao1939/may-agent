@@ -1332,7 +1332,7 @@ function harvestTerminalPipelineWaits(input: {
           let dispatched = false;
           let error: string | undefined;
           try {
-            input.ctx.dispatchEvent("project.owner.requested", {
+            input.ctx.dispatchEvent("project.condition.fallback.requested", {
               target: { project: "aks-rp-e2e" },
               project: "aks-rp-e2e",
               reason: "condition-overdue-fallback",

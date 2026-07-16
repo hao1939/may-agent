@@ -275,6 +275,22 @@ function planningTrigger(data: Record<string, unknown> = {}) {
   ].join("\n");
 }
 
+function conditionFallbackTrigger(data: Record<string, unknown>) {
+  return [
+    "## Trigger Event",
+    "```json",
+    JSON.stringify(
+      {
+        type: "project.condition.fallback.requested",
+        data: { project: "aks-rp-e2e", ...data },
+      },
+      null,
+      2,
+    ),
+    "```",
+  ].join("\n");
+}
+
 function plannerContext(input: {
   appDir: string;
   projectDir: string;
@@ -509,7 +525,7 @@ describe("project owner workflow", () => {
           status: "error",
           message: "injected owner planning interruption",
         },
-        trigger: planningTrigger({
+        trigger: conditionFallbackTrigger({
           reason: "condition-overdue-fallback",
           conditionId,
           recoveryKey,
@@ -535,7 +551,7 @@ describe("project owner workflow", () => {
         projectDir,
         prompts,
         extraTaskLines: ["conditionV2: exact-ado-revisioned"],
-        trigger: planningTrigger({
+        trigger: conditionFallbackTrigger({
           reason: "condition-overdue-fallback",
           conditionId,
           recoveryKey,

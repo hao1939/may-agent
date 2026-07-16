@@ -257,6 +257,28 @@ export default defineProjectApp({
       context: taskTreeContext,
     },
     {
+      name: "aks-rp-e2e-condition-fallback-planner",
+      type: "job",
+      enabled: true,
+      description:
+        "Dedicated delivery lane for one correlated Condition fallback owner disposition.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "project-planner",
+        includeEvent: true,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
+        timeoutMs: 1_200_000,
+      },
+      accepts: [
+        {
+          type: "project.condition.fallback.requested",
+          target: { project: projectId },
+        },
+      ],
+      emits: ["project.task.assigned", "project.owner.requested"],
+      context: taskTreeContext,
+    },
+    {
       name: "aks-rp-e2e-task-reviewer",
       type: "job",
       enabled: true,
@@ -339,6 +361,7 @@ export default defineProjectApp({
       },
       emits: [
         "project.owner.requested",
+        "project.condition.fallback.requested",
         "project.stall.review.requested",
         "project.task.assigned",
         "project.task.tick",

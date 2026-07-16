@@ -176,13 +176,19 @@ describe("app event contract", () => {
     expect(appManifest.onEvent).toBeUndefined();
   });
 
-  test("owner workflow and fast review applier use the planner workflow", () => {
+  test("owner workflow and fast handoff appliers use the planner workflow", () => {
     expect(handler("aks-rp-e2e-project-planner").handler?.workflow).toBe(
       "project-planner",
     );
     expect(handler("aks-rp-e2e-reviewed-task-applier").handler?.workflow).toBe(
       "project-planner",
     );
+    expect(
+      handler("aks-rp-e2e-condition-fallback-planner").handler?.workflow,
+    ).toBe("project-planner");
+    expect(handlerEvents("aks-rp-e2e-condition-fallback-planner")).toEqual([
+      "project.condition.fallback.requested",
+    ]);
     expect(handlerEvents("aks-rp-e2e-reviewed-task-applier")).toEqual([
       "project.task.reviewed",
     ]);
@@ -219,6 +225,7 @@ describe("app event contract", () => {
     for (const name of [
       "aks-rp-e2e-project-planner",
       "aks-rp-e2e-reviewed-task-applier",
+      "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).toContain(
@@ -228,6 +235,7 @@ describe("app event contract", () => {
     for (const name of [
       "aks-rp-e2e-project-planner",
       "aks-rp-e2e-reviewed-task-applier",
+      "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).not.toContain("conditionAdoptionV2:");
