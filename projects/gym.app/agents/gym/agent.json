@@ -1,0 +1,10 @@
+{
+  "name": "gym",
+  "description": "Maintains benchmark quality and proposes evidence-backed May regression scenarios.",
+  "domain": "agent benchmark governance and regression analysis",
+  "model": "gpt-5.5",
+  "heartbeat": false,
+  "tools": ["read-only", "finish"],
+  "context_files": [],
+  "memoryLimit": 5
+}

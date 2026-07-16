@@ -1,0 +1,25 @@
+{
+  "name": "@may-agent/gym-app",
+  "private": true,
+  "type": "module",
+  "description": "Autonomous project app operating the standalone Agent Gym.",
+  "scripts": {
+    "bundle": "bun build ./app.ts ./workflows/incident-intake.ts ./workflows/regression-run.ts ./workflows/review-and-propose.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk --external @earendil-works/pi-ai",
+    "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
+    "syntax": "bun build ./app.ts ./workflows/incident-intake.ts ./workflows/regression-run.ts ./workflows/review-and-propose.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk --external @earendil-works/pi-ai",
+    "typecheck": "bun x tsc -p tsconfig.json --noEmit",
+    "test": "bun test ./*.test.ts ./workflows/*.test.ts --timeout 30000",
+    "format": "bun x prettier --write app.ts workflows/**/*.ts agents/*/agent.json agents/*/AGENTS.md package.json project.json tsconfig.json README.md",
+    "format:check": "bun x prettier --check app.ts workflows/**/*.ts agents/*/agent.json agents/*/AGENTS.md package.json project.json tsconfig.json README.md"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "0.80.7",
+    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "bun-types": "^1.3.14",
+    "prettier": "^3.8.4",
+    "typescript": "^5.7.3"
+  }
+}

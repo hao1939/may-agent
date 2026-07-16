@@ -1,0 +1,12 @@
+{
+  "id": "gym",
+  "type": "project-app",
+  "owner": "gym",
+  "status": "active",
+  "priority": "P1",
+  "domainProject": {
+    "id": "gym",
+    "path": "../gym"
+  },
+  "goal": "Continuously turn actionable May failures into reviewed regression proposals and run trustworthy benchmarks without coupling Gym to infrastructure."
+}

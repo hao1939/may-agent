@@ -14,6 +14,7 @@
     "gym": "bun --cwd=projects/gym run scenario:run",
     "gym:list": "bun --cwd=projects/gym run scenario:list",
     "gym:check": "bun --cwd=projects/gym run check",
+    "gym:app:check": "bun --cwd=projects/gym.app run check",
     "gym:loop": "bun --cwd=projects/gym run loop",
     "gym:review": "bun --cwd=projects/gym run review:may-alignment",
     "test": "bun scripts/run-app-tests.ts",

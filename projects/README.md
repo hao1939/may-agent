@@ -39,6 +39,8 @@ restored for migration or review.
 ## Current Active Project Apps
 
 - `aks-rp-e2e.app/` - May-agent app that drives the AKS RP E2E domain project.
+- `gym.app/` - optional autonomous operator for Gym schedules, incident intake,
+  regression execution, and review proposals.
 - `may-agent.app/` - May-agent app that drives the May-agent platform/runtime
   domain project and owns May-agent design/principle docs.
 - `scout-knowledge-lib.app/` - May-agent app that drives Scout's knowledge
@@ -57,8 +59,8 @@ restored for migration or review.
 ## Standalone Projects
 
 - `gym/` - portable agent evaluation project containing scenarios, fixtures,
-  benchmarks, scorers, reports, and human review records. It runs without a
-  `gym.app`; an optional operator app may be added later without becoming a
+  benchmarks, scorers, reports, and human review records. It remains runnable
+  without `gym.app`; the sibling app automates operation without becoming a
   dependency of the project.
 
 ## Legacy Project Workspaces

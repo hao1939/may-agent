@@ -17,6 +17,8 @@ May-agent system.
   research and paper/doc knowledge library.
 - `projects/gym/` - standalone behavior/evaluation project for agent quality
   work.
+- `projects/gym.app/` - optional autonomous operator for Gym events, schedules,
+  and review preparation.
 - `contracts/` - explicit system contracts.
 - `scripts/` - reusable app-level scripts.
 - `projects/may-agent.app/docs/` - durable May-agent system docs, principles,

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
+    },
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["bun-types"]
+  },
+  "include": ["app.ts", "workflows/**/*.ts"],
+  "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
+}
