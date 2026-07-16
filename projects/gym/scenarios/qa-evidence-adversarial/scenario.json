@@ -1,0 +1,11 @@
+{
+  "name": "qa-evidence-adversarial",
+  "description": "Adversarial review variant requiring concrete evidence for subtle rate-limiter defects.",
+  "categories": ["qa", "code-review"],
+  "tags": ["ability", "evidence-discipline", "adversarial"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "qa",
+  "workflow": false
+}
+

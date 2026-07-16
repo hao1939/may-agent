@@ -11,6 +11,11 @@
   },
   "scripts": {
     "check:may-design": "bun scripts/check-may-design-integrity.ts",
+    "gym": "bun --cwd=projects/gym run scenario:run",
+    "gym:list": "bun --cwd=projects/gym run scenario:list",
+    "gym:check": "bun --cwd=projects/gym run check",
+    "gym:loop": "bun --cwd=projects/gym run loop",
+    "gym:review": "bun --cwd=projects/gym run review:may-alignment",
     "test": "bun scripts/run-app-tests.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }

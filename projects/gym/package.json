@@ -1,0 +1,26 @@
+{
+  "name": "@may-agent/gym",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable scenario-based evaluation project for agents and Agent Apps.",
+  "exports": {
+    "./scoring": "./dist/@may-agent/gym/scoring.js"
+  },
+  "scripts": {
+    "build": "bun build ./src/scoring/gym-score-utils.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/scoring.js",
+    "scenario:list": "bun ./src/cli.ts --list",
+    "scenario:validate": "bun ./src/scenarios/validate-cli.ts",
+    "scenario:run": "bun run build && bun ./src/cli.ts",
+    "loop": "bun run build && bun ./src/loop/cli.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun run build && bun test ./test && node --test ./benchmarks/may-alignment/score-decision.test.cjs",
+    "review:may-alignment": "node ./benchmarks/may-alignment/review-suite.cjs",
+    "benchmark:may-alignment": "bash ./benchmarks/may-alignment/run.sh",
+    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.20.0",
+    "typescript": "^6.0.3"
+  }
+}

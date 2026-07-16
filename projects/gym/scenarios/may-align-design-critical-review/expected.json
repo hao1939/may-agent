@@ -1,0 +1,20 @@
+{
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["implementation-ready", "risk"],
+    "next_action": ["peer", "critical", "synthesize"],
+    "constraints": ["implementation", "review"]
+  },
+  "excludes_all": {
+    "next_action": ["start implementation", "deploy", "code now"]
+  },
+  "delegations": {
+    "min": 2,
+    "max": 3,
+    "allowed_agents": ["tech-lead", "coach", "optimizer"],
+    "async_required": true
+  },
+  "response_max_words": 70
+}

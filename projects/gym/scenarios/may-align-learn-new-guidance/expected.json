@@ -1,0 +1,16 @@
+{
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_groups": {
+    "understood_intent": [["standing", "going forward"], ["guidance", "decision rule", "preference"]],
+    "next_action": [["record", "update", "retire"], ["guidance", "preference", "heuristic"]],
+    "preference_updates": [["expected value"], ["utilization", "keep agents busy", "idle"]],
+    "response_to_hao": [["expected value"], ["standing", "going forward", "retired"]]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "response_max_words": 45
+}

@@ -1,0 +1,704 @@
+# Service Configuration
+# Generated for gym scenario
+
+- name: service-001
+  status: healthy
+  port: 3001
+  host: 10.0.0.1
+  region: us-west-2
+  replicas: 2
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 11s
+  dependencies:
+    - service-009
+    - service-010
+    - service-011
+
+- name: service-002
+  status: healthy
+  port: 3002
+  host: 10.0.0.2
+  region: eu-west-1
+  replicas: 3
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 12s
+  dependencies:
+    - service-010
+    - service-011
+    - service-012
+    - service-013
+
+- name: service-003
+  status: healthy
+  port: 3003
+  host: 10.0.0.3
+  region: us-east-1
+  replicas: 4
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 13s
+  dependencies:
+    - service-011
+    - service-012
+
+- name: service-004
+  status: healthy
+  port: 3004
+  host: 10.0.0.4
+  region: us-west-2
+  replicas: 5
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 14s
+  dependencies:
+    - service-012
+    - service-013
+    - service-014
+
+- name: service-005
+  status: healthy
+  port: 3005
+  host: 10.0.0.5
+  region: eu-west-1
+  replicas: 1
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 15s
+  dependencies:
+    - service-013
+    - service-014
+    - service-015
+    - service-016
+
+- name: service-006
+  status: healthy
+  port: 3006
+  host: 10.0.0.6
+  region: us-east-1
+  replicas: 2
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 16s
+  dependencies:
+    - service-014
+    - service-015
+
+- name: service-007
+  status: healthy
+  port: 3007
+  host: 10.0.0.7
+  region: us-west-2
+  replicas: 3
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 17s
+  dependencies:
+    - service-015
+    - service-016
+    - service-017
+
+- name: service-008
+  status: healthy
+  port: 3008
+  host: 10.0.0.8
+  region: eu-west-1
+  replicas: 4
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 18s
+  dependencies:
+    - service-016
+    - service-017
+    - service-018
+    - service-019
+
+- name: service-009
+  status: healthy
+  port: 3009
+  host: 10.0.0.9
+  region: us-east-1
+  replicas: 5
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 19s
+  dependencies:
+    - service-017
+    - service-018
+
+- name: service-010
+  status: healthy
+  port: 3010
+  host: 10.0.0.10
+  region: us-west-2
+  replicas: 1
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 20s
+  dependencies:
+    - service-018
+    - service-019
+    - service-020
+
+- name: service-011
+  status: healthy
+  port: 3011
+  host: 10.0.0.11
+  region: eu-west-1
+  replicas: 2
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 21s
+  dependencies:
+    - service-019
+    - service-020
+    - service-021
+    - service-022
+
+- name: payment-gateway
+  status: degraded
+  port: 3012
+  host: 10.0.0.12
+  region: us-east-1
+  replicas: 3
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 22s
+  dependencies:
+    - service-020
+    - service-021
+
+- name: service-013
+  status: healthy
+  port: 3013
+  host: 10.0.0.13
+  region: us-west-2
+  replicas: 4
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 23s
+  dependencies:
+    - service-021
+    - service-022
+    - service-023
+
+- name: service-014
+  status: healthy
+  port: 3014
+  host: 10.0.0.14
+  region: eu-west-1
+  replicas: 5
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 24s
+  dependencies:
+    - service-022
+    - service-023
+    - service-024
+    - service-025
+
+- name: service-015
+  status: healthy
+  port: 3015
+  host: 10.0.0.15
+  region: us-east-1
+  replicas: 1
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 25s
+  dependencies:
+    - service-023
+    - service-024
+
+- name: service-016
+  status: healthy
+  port: 3016
+  host: 10.0.0.16
+  region: us-west-2
+  replicas: 2
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 26s
+  dependencies:
+    - service-024
+    - service-025
+    - service-026
+
+- name: service-017
+  status: healthy
+  port: 3017
+  host: 10.0.0.17
+  region: eu-west-1
+  replicas: 3
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 27s
+  dependencies:
+    - service-025
+    - service-026
+    - service-027
+    - service-028
+
+- name: service-018
+  status: healthy
+  port: 3018
+  host: 10.0.0.18
+  region: us-east-1
+  replicas: 4
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 28s
+  dependencies:
+    - service-026
+    - service-027
+
+- name: service-019
+  status: healthy
+  port: 3019
+  host: 10.0.0.19
+  region: us-west-2
+  replicas: 5
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 29s
+  dependencies:
+    - service-027
+    - service-028
+    - service-029
+
+- name: service-020
+  status: healthy
+  port: 3020
+  host: 10.0.0.20
+  region: eu-west-1
+  replicas: 1
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 10s
+  dependencies:
+    - service-028
+    - service-029
+    - service-030
+    - service-031
+
+- name: service-021
+  status: healthy
+  port: 3021
+  host: 10.0.0.21
+  region: us-east-1
+  replicas: 2
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 11s
+  dependencies:
+    - service-029
+    - service-030
+
+- name: service-022
+  status: healthy
+  port: 3022
+  host: 10.0.0.22
+  region: us-west-2
+  replicas: 3
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 12s
+  dependencies:
+    - service-030
+    - service-031
+    - service-032
+
+- name: service-023
+  status: healthy
+  port: 3023
+  host: 10.0.0.23
+  region: eu-west-1
+  replicas: 4
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 13s
+  dependencies:
+    - service-031
+    - service-032
+    - service-033
+    - service-034
+
+- name: service-024
+  status: healthy
+  port: 3024
+  host: 10.0.0.24
+  region: us-east-1
+  replicas: 5
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 14s
+  dependencies:
+    - service-032
+    - service-033
+
+- name: service-025
+  status: healthy
+  port: 3025
+  host: 10.0.0.25
+  region: us-west-2
+  replicas: 1
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 15s
+  dependencies:
+    - service-033
+    - service-034
+    - service-035
+
+- name: service-026
+  status: healthy
+  port: 3026
+  host: 10.0.0.26
+  region: eu-west-1
+  replicas: 2
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 16s
+  dependencies:
+    - service-034
+    - service-035
+    - service-036
+    - service-037
+
+- name: service-027
+  status: healthy
+  port: 3027
+  host: 10.0.0.27
+  region: us-east-1
+  replicas: 3
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 17s
+  dependencies:
+    - service-035
+    - service-036
+
+- name: service-028
+  status: healthy
+  port: 3028
+  host: 10.0.0.28
+  region: us-west-2
+  replicas: 4
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 18s
+  dependencies:
+    - service-036
+    - service-037
+    - service-038
+
+- name: service-029
+  status: healthy
+  port: 3029
+  host: 10.0.0.29
+  region: eu-west-1
+  replicas: 5
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 19s
+  dependencies:
+    - service-037
+    - service-038
+    - service-039
+    - service-040
+
+- name: service-030
+  status: healthy
+  port: 3030
+  host: 10.0.0.30
+  region: us-east-1
+  replicas: 1
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 20s
+  dependencies:
+    - service-038
+    - service-039
+
+- name: cache-proxy
+  status: degraded
+  port: 3031
+  host: 10.0.0.31
+  region: us-west-2
+  replicas: 2
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 21s
+  dependencies:
+    - service-039
+    - service-040
+    - service-041
+
+- name: service-032
+  status: healthy
+  port: 3032
+  host: 10.0.0.32
+  region: eu-west-1
+  replicas: 3
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 22s
+  dependencies:
+    - service-040
+    - service-041
+    - service-042
+    - service-043
+
+- name: service-033
+  status: healthy
+  port: 3033
+  host: 10.0.0.33
+  region: us-east-1
+  replicas: 4
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 23s
+  dependencies:
+    - service-041
+    - service-042
+
+- name: service-034
+  status: healthy
+  port: 3034
+  host: 10.0.0.34
+  region: us-west-2
+  replicas: 5
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 24s
+  dependencies:
+    - service-042
+    - service-043
+    - service-044
+
+- name: service-035
+  status: healthy
+  port: 3035
+  host: 10.0.0.35
+  region: eu-west-1
+  replicas: 1
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 25s
+  dependencies:
+    - service-043
+    - service-044
+    - service-045
+    - service-046
+
+- name: service-036
+  status: healthy
+  port: 3036
+  host: 10.0.0.36
+  region: us-east-1
+  replicas: 2
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 26s
+  dependencies:
+    - service-044
+    - service-045
+
+- name: service-037
+  status: healthy
+  port: 3037
+  host: 10.0.0.37
+  region: us-west-2
+  replicas: 3
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 27s
+  dependencies:
+    - service-045
+    - service-046
+    - service-047
+
+- name: service-038
+  status: healthy
+  port: 3038
+  host: 10.0.0.38
+  region: eu-west-1
+  replicas: 4
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 28s
+  dependencies:
+    - service-046
+    - service-047
+    - service-048
+    - service-049
+
+- name: service-039
+  status: healthy
+  port: 3039
+  host: 10.0.0.39
+  region: us-east-1
+  replicas: 5
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 29s
+  dependencies:
+    - service-047
+    - service-048
+
+- name: service-040
+  status: healthy
+  port: 3040
+  host: 10.0.0.40
+  region: us-west-2
+  replicas: 1
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 10s
+  dependencies:
+    - service-048
+    - service-049
+    - service-050
+
+- name: service-041
+  status: healthy
+  port: 3041
+  host: 10.0.0.41
+  region: eu-west-1
+  replicas: 2
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 11s
+  dependencies:
+    - service-049
+    - service-050
+    - service-001
+    - service-002
+
+- name: service-042
+  status: healthy
+  port: 3042
+  host: 10.0.0.42
+  region: us-east-1
+  replicas: 3
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 12s
+  dependencies:
+    - service-050
+    - service-001
+
+- name: service-043
+  status: healthy
+  port: 3043
+  host: 10.0.0.43
+  region: us-west-2
+  replicas: 4
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 13s
+  dependencies:
+    - service-001
+    - service-002
+    - service-003
+
+- name: service-044
+  status: healthy
+  port: 3044
+  host: 10.0.0.44
+  region: eu-west-1
+  replicas: 5
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 14s
+  dependencies:
+    - service-002
+    - service-003
+    - service-004
+    - service-005
+
+- name: service-045
+  status: healthy
+  port: 3045
+  host: 10.0.0.45
+  region: us-east-1
+  replicas: 1
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 15s
+  dependencies:
+    - service-003
+    - service-004
+
+- name: service-046
+  status: healthy
+  port: 3046
+  host: 10.0.0.46
+  region: us-west-2
+  replicas: 2
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 16s
+  dependencies:
+    - service-004
+    - service-005
+    - service-006
+
+- name: auth-service
+  status: degraded
+  port: 3047
+  host: 10.0.0.47
+  region: eu-west-1
+  replicas: 3
+  memory_limit: 1024MB
+  cpu_limit: 2
+  healthcheck_interval: 17s
+  dependencies:
+    - service-005
+    - service-006
+    - service-007
+    - service-008
+
+- name: service-048
+  status: healthy
+  port: 3048
+  host: 10.0.0.48
+  region: us-east-1
+  replicas: 4
+  memory_limit: 256MB
+  cpu_limit: 0.5
+  healthcheck_interval: 18s
+  dependencies:
+    - service-006
+    - service-007
+
+- name: service-049
+  status: healthy
+  port: 3049
+  host: 10.0.0.49
+  region: us-west-2
+  replicas: 5
+  memory_limit: 512MB
+  cpu_limit: 1
+  healthcheck_interval: 19s
+  dependencies:
+    - service-007
+    - service-008
+    - service-009
+
+- name: service-050
+  status: healthy
+  port: 3050
+  host: 10.0.0.50
+  region: eu-west-1
+  replicas: 1
+  memory_limit: 768MB
+  cpu_limit: 1.5
+  healthcheck_interval: 20s
+  dependencies:
+    - service-008
+    - service-009
+    - service-010
+    - service-011
+

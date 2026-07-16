@@ -1,0 +1,17 @@
+{
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["recurring", "prevent"],
+    "next_action": ["project", "reproduce", "regression"],
+    "constraints": ["one-off", "evidence"]
+  },
+  "delegations": {
+    "min": 1,
+    "max": 2,
+    "allowed_agents": ["tech-lead", "optimizer"],
+    "async_required": true
+  },
+  "response_max_words": 65
+}

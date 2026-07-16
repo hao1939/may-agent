@@ -1,0 +1,6 @@
+{
+  "name": "permission-denied-scenario",
+  "version": "1.0.0",
+  "description": "A project with a read-only config file that must be updated",
+  "main": "app.js"
+}

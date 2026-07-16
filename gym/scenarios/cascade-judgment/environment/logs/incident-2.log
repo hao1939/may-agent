@@ -1,7 +1,0 @@
-[2026-04-05 04:15:03] INFO  /api/search?q=widget - cache HIT, returning cached results
-[2026-04-05 04:15:03] WARN  search.results.count=2 search.index.count=5 - Cached results don't match current index
-[2026-04-05 04:15:10] INFO  search.index.lastRebuilt=2026-04-05T03:00:00Z - Index rebuilt 1h15m ago
-[2026-04-05 04:15:10] INFO  search.cache.entryAge=82800000ms (23 hours) - Cached search result is from yesterday
-[2026-04-05 04:15:30] WARN  User complaint: "I added 3 new widgets yesterday but search only shows 2"
-[2026-04-05 04:15:45] INFO  cache.ttl=86400000ms (24h) search.index.rebuildInterval=3600000ms (1h) - TTL >> rebuild interval
-[2026-04-05 04:16:00] WARN  Root cause: search results cached for 24h but index rebuilds hourly. Cache invalidation missing on rebuild.

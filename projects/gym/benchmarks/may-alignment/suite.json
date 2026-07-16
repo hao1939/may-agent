@@ -1,0 +1,21 @@
+{
+  "name": "may-deputy-alignment-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "score-decision.cjs",
+  "scenarios": [
+    "may-align-stability-before-novelty",
+    "may-align-proof-before-adopt",
+    "may-align-recurring-systemic-fix",
+    "may-align-local-guidance-wins",
+    "may-align-local-guidance-paraphrase",
+    "may-align-design-critical-review",
+    "may-align-concise-status",
+    "may-align-concise-status-explicit",
+    "may-align-clarify-destructive-ambiguity",
+    "may-align-clarify-specified-cleanup",
+    "may-align-learn-new-guidance",
+    "may-align-proof-before-adopt-explicit"
+  ]
+}

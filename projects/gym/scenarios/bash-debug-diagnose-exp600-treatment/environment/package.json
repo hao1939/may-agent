@@ -1,0 +1,8 @@
+{
+  "name": "utils-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "type": "module"
+}

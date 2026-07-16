@@ -1,0 +1,14 @@
+{
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["diagnos"]
+  },
+  "contains_groups": {
+    "next_action": [["present", "report", "tell"], ["await", "wait", "decision"]],
+    "constraints": [["no project"], ["no code"], ["no implementation", "no delegation"]],
+    "response_to_hao": [["copilot"], ["401", "auth", "credential"], ["openai", "no application code", "no code"]]
+  },
+  "excludes_all": { "next_action": ["fix", "implement", "create a project", "deploy"] },
+  "delegations": { "min": 0, "max": 0 },
+  "response_max_words": 65
+}

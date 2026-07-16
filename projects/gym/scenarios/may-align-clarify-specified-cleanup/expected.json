@@ -1,0 +1,11 @@
+{
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["archive", "superseded"],
+    "next_action": ["legacy-alerts", "archive", "audit"],
+    "constraints": ["paused", "active", "evidence"]
+  },
+  "excludes_all": { "next_action": ["memory-research", "auth-recovery", "delete"] },
+  "delegations": { "min": 0, "max": 1, "allowed_agents": ["tech-lead"], "async_required": true },
+  "response_max_words": 65
+}

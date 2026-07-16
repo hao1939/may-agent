@@ -1,0 +1,16 @@
+{
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["status"]
+  },
+  "contains_groups": {
+    "response_to_hao": [
+      ["12", "twelve", "80%"],
+      ["15", "fifteen"],
+      ["security review", "security approval"],
+      ["3", "three", "remaining integration"]
+    ]
+  },
+  "delegations": { "min": 0, "max": 0 },
+  "response_max_words": 45
+}

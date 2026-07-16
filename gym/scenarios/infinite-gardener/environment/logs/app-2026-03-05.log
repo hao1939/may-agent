@@ -1,6 +1,0 @@
-2026-03-05 08:00:00 INFO Server started on port 3000
-2026-03-05 08:00:01 INFO Loading configuration...
-2026-03-05 09:30:00 ERROR OutOfMemoryError: heap limit reached
-2026-03-05 09:30:01 INFO Process restarted by supervisor
-2026-03-05 09:30:05 INFO Server started on port 3000
-2026-03-05 10:00:00 INFO Health check OK

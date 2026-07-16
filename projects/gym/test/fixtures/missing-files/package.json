@@ -1,0 +1,6 @@
+{
+  "name": "missing-files-scenario",
+  "version": "1.0.0",
+  "description": "A project that imports a non-existent math-utils module",
+  "main": "app.js"
+}

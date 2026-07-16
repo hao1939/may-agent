@@ -27,6 +27,7 @@ shared/coverage/
 shared/coverage-out/
 test/gym/.gym-runner-bundle*.mjs
 test/gym/stats.db
+projects/gym/dist/
 
 # Removed legacy shared directories - don't re-add
 shared/protocols/
@@ -70,11 +71,6 @@ projects/*/outputs/**
 projects/*/ui/
 !projects/*.app/ui/
 !projects/*.app/ui/**
-
-# Local gym experiment material. Commit intentional scenarios with `git add -f`.
-gym/experiments/run-exp*-baseline.js
-gym/scenarios/*/environment/**
-gym/scenarios/*/success_criteria*.js
 
 # Local knowledge drafts. Commit reviewed knowledge entries with `git add -f`.
 shared/knowledge/entries/KE-*.md
