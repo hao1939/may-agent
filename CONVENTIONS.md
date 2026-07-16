@@ -29,4 +29,7 @@ The canonical convention docs are maintained under the current app layout:
 
 ## Layout Rule
 
-Top-level `/app` should expose only the core namespaces: `agents/`, `shared/`, `projects/`, `gym/`, `test/`, runtime `.state/`, and repo metadata. Legacy root content belongs in scoped agent/project/shared folders or under `projects/_archive/legacy-root/`.
+Top-level `/app` should expose only the core namespaces: `agents/`, `shared/`,
+`projects/`, `test/`, runtime `.state/`, and repo metadata. Gym is a project at
+`projects/gym/`. Legacy root content belongs in scoped agent/project/shared
+folders or under `projects/_archive/legacy-root/`.

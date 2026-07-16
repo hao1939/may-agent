@@ -12,8 +12,9 @@
 - **Cold Start**: In a fresh environment, `test/gym/stats.db` may be 0 bytes or missing. This is normal. It initializes on the first run.
 
 ## Convention Compliance
-- **Scenarios**: Located in `agents/gym/scenarios/`.
-- **Deployment**: Must be copied to `test/gym/scenarios/` to be active.
+- **Scenarios**: Located in `projects/gym/scenarios/`.
+- **Runner**: The transitional runner discovers the project scenarios directly;
+  no copy into `test/gym/scenarios/` is required.
 - **Core Scenarios**:
   - `convention-safe-append`
   - `convention-promise-report`

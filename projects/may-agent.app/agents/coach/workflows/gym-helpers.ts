@@ -25,8 +25,8 @@ export const AGENTS_ROOT = resolve(
 );
 export const SCENARIOS_DIR = resolve(
   process.env["GYM_SCENARIOS_DIR"] ||
-    (existsSync(join(REPO_ROOT, "gym/scenarios"))
-      ? join(REPO_ROOT, "gym/scenarios")
+    (existsSync(join(REPO_ROOT, "projects/gym/scenarios"))
+      ? join(REPO_ROOT, "projects/gym/scenarios")
       : join(MAY_AGENT_ROOT, "app/gym/scenarios")),
 );
 export const LAB_DIR = join(AGENTS_ROOT, ".lab");

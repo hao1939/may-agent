@@ -41,7 +41,7 @@ Modify the fork — one method at a time.
 - **One change per experiment.** Multiple changes make results uninterpretable.
 - Consult `knowledge/method-catalog.md` for the right method.
 
-### 4. Gym Test (`test/gym/gym-runner.ts`)
+### 4. Gym Test (`projects/gym/src/cli.ts`)
 Run the forked agent against gym scenarios with automated scoring.
 ```bash
 # Test the fork

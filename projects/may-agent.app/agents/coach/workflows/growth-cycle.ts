@@ -115,7 +115,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- Working directory: /app\n` +
     `- No npm — use bun or ./node_modules/.bin/\n` +
     `- App-owned agent files: /app/projects/may-agent.app/agents/<name>/\n` +
-    `- Gym scenarios: /app/gym/scenarios/\n` +
+    `- Gym scenarios: /app/projects/gym/scenarios/\n` +
     `- Lab forks: /app/projects/may-agent.app/agents/.lab/<fork-name>/\n` +
     `- May-agent source/scripts: /app/projects/may-agent/\n` +
     `- Scripts: /app/scripts/\n` +
@@ -151,7 +151,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   - For heartbeat steps: read \`projects/may-agent.app/agents/*/heartbeat.md\` examples\n` +
       `   - For knowledge files: read \`projects/may-agent.app/agents/*/knowledge/\` examples\n` +
       `   - For agent.json: read the agent-loader source for config options\n` +
-      `3. Pick a simple gym scenario to test with: \`ls gym/scenarios/\`\n` +
+      `3. Pick a simple gym scenario to test with: \`ls /app/projects/gym/scenarios/\`\n` +
       `4. Pick a target agent (preferably coder — simplest agent).\n` +
       `5. Design a small experiment: what change will you make using this method?\n` +
       `6. Report: what you learned about the method, your experiment plan.`
@@ -169,7 +169,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   - If the catalog has evidence for this pattern → use the proven method.\n` +
       `   - If no evidence → pick the method you think fits best (you'll test it).\n` +
       `5. Identify which agent needs the fix.\n` +
-      `6. Identify which gym scenarios can test this fix (check \`gym/scenarios/\` with \`ls\`).\n` +
+      `6. Identify which gym scenarios can test this fix (check \`/app/projects/gym/scenarios/\` with \`ls\`).\n` +
       `7. Report:\n` +
       `   - Error pattern (FM code + description)\n` +
       `   - Target agent\n` +

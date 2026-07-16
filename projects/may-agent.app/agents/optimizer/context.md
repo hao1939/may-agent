@@ -7,7 +7,7 @@
 - **bun**: `.state/.bun/bin/bun` (add to PATH)
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x`
 - **DB**: use `query_db` tool. Run `PRAGMA table_info(<table>)` first. Tables: sessions, evaluations, requests, gym_runs.
-- **Gym**: `cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios scripts/gym-run.sh <scenario> --agent <name>`
+- **Gym**: `cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/projects/gym/scenarios scripts/gym-run.sh <scenario> --agent <name>`
 - **Cron handlers**: app-owned handlers live under `projects/may-agent.app/agents/<name>/handlers/`
 
 ## ⛔ VERIFY AFTER EVERY WRITE (MANDATORY)

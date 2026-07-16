@@ -12,7 +12,7 @@ You are deploying a per-agent context rule (adding a line to `agents/<agent>/con
 ## Failure pattern (why gym will ceiling)
 
 1. `shared/common-sense.md` already contains the target norm in plain English.
-2. `test/gym/gym-runner.ts` injects `common-sense.md` for every agent variant, including your lab fork (e.g. `agents/.lab/coder-no-c16/`) that only shadows `context.md`.
+2. `projects/gym/src/cli.ts` injects `common-sense.md` for every agent variant, including your lab fork (e.g. `agents/.lab/coder-no-c16/`) that only shadows `context.md`.
 3. Both treatment and control therefore inherit the framework-level norm. The per-agent rule is redundant in gym even if it's load-bearing in production.
 4. Result: A/B delta = 0pp, often at 100%/100% — KE-010 ceiling.
 
@@ -39,7 +39,7 @@ This is structural, not a bug in any specific scenario.
 
 1. **Prefer structural over textual.** Per KE-007, workflow enforcement is the only reliable behavioral intervention (5/56 experiments promoted, all structural). Guards, workflow steps, heartbeat structure, tool presence/absence — not `context.md` lines — are what change behavior durably in gym.
 2. **If you must ship a context rule, measure it in production.** Deploy, wait ≥24h, use query_db tool for the target failure-mode tag (e.g. C1.6 → `T2-no-post-write-verification` blockers; C1.5 → scope_violation sessions). Treat gym = 100%/100% as "not informative", not as "shipped successfully".
-3. **Or fork `common-sense.md` too.** The gym-runner currently hardcodes the path (`test/gym/gym-runner.ts`, ~line 1343). Adding a `--common-sense <path>` flag is a one-time infra investment that unblocks clean A/B of any per-agent rule that duplicates a framework line. Filed as Iter 7 candidate in `prove-the-loop.md`.
+3. **Or fork `common-sense.md` too.** The Gym CLI supports a `--common-sense <path>` overlay from `projects/gym/src/cli.ts`, enabling clean A/B tests for per-agent rules that duplicate framework text.
 4. **Name it honestly in the experiment log.** Do NOT write "deployed successfully" on a 100%/100% gym result. Write "no gym signal — ceiling, production-only measurement" so future coaches (and active-recall) don't re-run the same untestable A/B.
 
 ## Linked
