@@ -30,7 +30,7 @@ workspace, or `.state/`.
   archives. Its own classification lives in `projects/README.md`.
 - `projects/scout-knowledge-lib/knowledge/` - Scout-maintained external
   research and paper/doc knowledge library.
-- `gym/` - agent behavior and evaluation scenarios.
+- `projects/gym/` - standalone agent behavior and evaluation project.
 - `contracts/` - explicit contracts used by the system.
 - `scripts/` - reusable app-level scripts.
 
