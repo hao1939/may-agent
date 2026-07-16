@@ -193,7 +193,7 @@ Shared result shape:
 interface ExecutionResult {
   id: string;
   kind: "session" | "workflow";
-  status: "done" | "error" | "interrupted" | "blocked" | "escalated";
+  status: "done" | "error" | "interrupted" | "blocked";
   summary: string;
   traceId: string;
   evidence?: Record<string, unknown>;
@@ -202,14 +202,14 @@ interface ExecutionResult {
 
 `TaskResult` and `WorkflowResult` can carry richer details, but they should map
 to this shape. This keeps tracing, diagnostics, UI, and tests simple.
-For workflows, legacy `escalated` rows/results are normalized to `blocked`.
-`escalated` remains only for non-workflow historical compatibility.
+Legacy `escalated` workflow rows/results are normalized to `blocked` at the
+read boundary. New workflow results use only the current terminal vocabulary.
 
 Resume should follow the same symmetry:
 
 ```
 resumeSession(sessionId, opts)  -> continue/recover one session
-resumeWorkflow(runId, opts)    -> continue/recover a pre-orchestrated session tree
+resumeWorkflow(runId, opts)    -> recover an interrupted synchronous workflow run
 ```
 
 Both are diagnostic operations as much as execution operations. They should:
@@ -225,6 +225,11 @@ Workflow resume should not be a special opaque replay. It should use the same
 trace model as sessions: parent links, workflow run id, completed steps,
 current/failed step, child session ids, interruption/block reason, and next
 recoverable action.
+
+Workflow resume is crash recovery only. It must not continue a business
+process after an expected human, timer, callback, or external-dependency wait.
+Those waits end the current workflow phase; a later event starts a new
+synchronous workflow run from persisted domain state.
 
 ### Agent -> Infra
 
@@ -332,7 +337,7 @@ Loading contract:
 | local tools under `tools/` | agent loader | explicit reload command/event | none; future sessions see the new toolset | skip bad tool, emit loader evidence |
 | handler files under `handlers/` | handler loader | each handler invocation | none; next invocation imports fresh code | fail that event, emit handler failure evidence |
 | `cron.json` | cron runner | file watch or explicit cron reload | unchanged timers are preserved | skip bad entries, keep valid entries running |
-| workflows under `workflows/` | workflow runner | each workflow invocation/resume | running workflow keeps persisted state; next step imports current workflow code | fail/resume with diagnostic evidence |
+| workflows under `workflows/` | workflow runner | each list/run or crash-recovery resolution | an active run keeps its selected source identity; the next new run sees current code; recovery verifies stored identity and compatibility | fail recovery with diagnostic evidence |
 
 Hot-reload should stay narrow. Handlers and workflows can reload at invocation
 boundaries because they are short-lived execution units. Agent definitions,
@@ -606,7 +611,7 @@ provably wrong.
 | Handler throws | Mark handler failed, keep scheduler alive, expose failure in handler metrics. | `handler.failed`, `handler.success-rate`. |
 | Workflow step times out | Mark step/session interrupted or error, preserve partial trace, let workflow decide retry/escalate when safe. | workflow step result + session status. |
 | Workflow blocked by guard | Preserve completed steps and block reason; emit guard signal; route to owner or next recovery path. | local `workflow.blocked` callback, durable `workflow_runs.status = "blocked"`, `guard.triggered`. |
-| `resumeWorkflow` sees corrupted/partial state | Inspect durable state first; resume only when lineage and next step are clear. Otherwise return diagnostic status and escalate/requeue rather than replay blindly. | `workflow.resume_failed` with reason. |
+| `resumeWorkflow` sees corrupted/partial state | Inspect durable state first; recover only when lineage and one safe synchronous continuation are clear. Otherwise return diagnostic status and escalate/requeue rather than replay blindly. Never use resume for an expected business wait. | `workflow.resume_failed` with reason. |
 | Session resume sees missing/corrupt transcript | Preserve original session id/state; inject recovery context only when safe; otherwise mark interrupted/error with reason. | session status + recovery event. |
 | Owner resolution is ambiguous or wrong | Prefer explicit owner, then project owner, then convention, then `may`. If owner is invalid, route to `may` and emit routing anomaly. | `routing.owner_invalid` / metric. |
 | Metric source/query fails | Record metric measurement failure without updating value as success; keep last known value distinguishable from fresh measurement. | metric measurement error event/metric. |

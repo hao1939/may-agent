@@ -165,18 +165,24 @@ can normalize these fields:
 {
   "state": "blocked",
   "owner": "human | agent:name | project:name | team:name",
-  "context": {
-    "requested_action": "what the owner must do",
+  "blocker": {
+    "condition": "why local work cannot continue",
+    "owner": "who owns the returned signal",
+    "waiting_for": {
+      "type": "approval | message | pipeline | external fact",
+      "id": "stable correlation id"
+    },
     "resume_condition": "what proves the project can continue",
     "next_check_at": "optional ISO timestamp",
-    "fallback": "what happens if the wait does not resolve",
-    "escalation_ref": "event id, approval id, packet path, or message id"
+    "fallback_at": "optional ISO timestamp",
+    "fallback_action": "what happens if the wait does not resolve"
   }
 }
 ```
 
-The same meaning can live under `blocker` when the app already uses a
-structured blocker object. Legacy prose such as "waiting for owner, fallback
+Legacy apps may keep equivalent fields under `context`; the evaluator may read
+them through an explicit compatibility normalizer. New exact waits use the
+structured `blocker` contract. Prose such as "waiting for owner, fallback
 tomorrow" is useful context, but it is not enough to suppress a human
 notification.
 

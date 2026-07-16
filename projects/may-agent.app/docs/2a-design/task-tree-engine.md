@@ -170,7 +170,7 @@ The task-tree tool provides safe primitives:
 ```typescript
 // Owner mutations
 tree.create(parentId, task); // add backlog leaf or branch
-tree.decompose(nodeId, children); // add children and keep parent state valid
+tree.decompose(nodeId, children); // add children without inferring parent meaning
 tree.rework(nodeId, reason); // review -> backlog
 tree.markDone(nodeId, summary); // review/backlog -> done
 tree.block(nodeId, blocker); // review/backlog -> blocked
@@ -186,7 +186,7 @@ tree.summary();
 tree.next();
 tree.readiness(nodeId);
 tree.kanban();
-tree.rollup(nodeId);
+tree.rollupHint(nodeId);
 tree.check();
 ```
 
@@ -213,7 +213,8 @@ Derived predicates are computed fresh and never persisted as state:
 
 | Predicate             | Meaning                                                                |
 | --------------------- | ---------------------------------------------------------------------- |
-| `runnable`            | Backlog leaf; all dependencies are done; no conflict with active work. |
+| `worker-executable`   | Backlog leaf intended for a worker attempt, not a structural/standing/planning node. |
+| `runnable`            | Worker-executable leaf; all dependencies are done; no conflict with active work. |
 | `dependency-blocked`  | Backlog leaf waiting for dependency completion.                        |
 | `conflict-blocked`    | Backlog leaf conflicts with active work.                               |
 | `needs-decomposition` | Backlog leaf appears too broad for one worker session.                 |
@@ -226,6 +227,9 @@ Example readiness:
 function isRunnable(node): boolean {
   if (node.state !== "backlog") return false;
   if (node.children.length > 0) return false;
+  if (["work", "focus_plan", "durable_lane", "standing_task"].includes(node.kind)) {
+    return false;
+  }
   for (const dep of node.depends_on ?? []) {
     if (tasks[dep].state !== "done") return false;
   }
@@ -235,6 +239,11 @@ function isRunnable(node): boolean {
   return true;
 }
 ```
+
+Structural containers, focus plans, durable lanes, standing tasks, and other
+planning-only leaves remain visible but are not dispatched as ordinary worker
+backlog. Their owner, schedule, event route, or concrete child task carries the
+next executable action.
 
 ## Rollup
 
@@ -682,6 +691,17 @@ The checker reports rollup and liveness hints; it does not fix project meaning.
 | `archived`        | no              | True when low-value detail has been collapsed.                                             |
 | `archive_summary` | no              | Human-readable summary of archived subtree.                                                |
 | `tags`            | no              | Optional labels such as `focus_plan`, `milestone`, or `needs-review`.                      |
+
+The shared `TaskNode` type also reads established cross-app metadata such as
+`created_at`, `updated_at`, `rollup_summary`, `strategy_context`, and
+`progress`, plus blocker observation timestamps/status. Typed compatibility
+does not grant the runtime authority to interpret those fields. The owning app
+defines their meaning, and parent-state changes remain owner decisions.
+
+For new generic task data, prefer the canonical fields above and keep
+app-specific working state under `context`. Compatibility fields remain
+readable so existing project trees can migrate without unsafe whole-tree
+rewrites.
 
 ## Migration
 

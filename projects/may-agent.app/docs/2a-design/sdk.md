@@ -226,7 +226,7 @@ current result types above.
 interface ExecutionResult {
   id: string;
   kind: "session" | "workflow";
-  status: "done" | "error" | "interrupted" | "blocked" | "escalated";
+  status: "done" | "error" | "interrupted" | "blocked";
   summary: string;
   traceId: string;
   evidence?: Record<string, unknown>;
@@ -235,20 +235,25 @@ interface ExecutionResult {
 
 `TaskResult` and `WorkflowResult` can include more detail, but both should map
 to this shape for UI, diagnostics, tests, and resume handling.
-For workflows, legacy `escalated` statuses are normalized to `blocked`;
-`escalated` remains only for non-workflow historical compatibility.
+Legacy `escalated` workflow records are normalized to `blocked` at the read
+boundary; new execution results do not add `escalated` as a workflow terminal
+state.
 
-Resume should follow the same symmetry:
+Target diagnostic symmetry (these are not both `AgentSDK` methods today):
 
 ```
 resumeSession(sessionId, opts) -> continue/recover one session
-resumeWorkflow(runId, opts)   -> continue/recover a pre-orchestrated session tree
+resumeWorkflow(runId, opts)   -> recover an interrupted synchronous workflow run
 ```
 
 Both resume calls should preserve lineage, emit recovery/resume events, return
 diagnostic status, and point to the trace. Resume is not just retry; it should
 explain whether the work was resumed, already terminal, blocked, missing state,
 or unsafe to continue.
+
+Workflow resume is not a durable-wait mechanism. Expected human, timer,
+callback, or external-dependency waits end the current workflow phase. A later
+event starts a new workflow run from persisted app/domain state.
 
 ## Alignment: SDK ↔ Agent Tools
 
@@ -276,7 +281,8 @@ The SDK and agent tools are two sides of the same coin:
 
 - `runAgent()` and `runWorkflow()` share the same mental model, but their return
   values are not yet mapped through the target `ExecutionResult` view.
-- Resume is not yet symmetric across sessions and workflows.
+- Session and workflow recovery diagnostics are not yet fully symmetric;
+  workflow recovery remains limited to interrupted synchronous runs.
 - `getDb()` remains a compatibility escape hatch. New code should prefer
   `query` and `metrics` so infra internals can keep moving.
 
