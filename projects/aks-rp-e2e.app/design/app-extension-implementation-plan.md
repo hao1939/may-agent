@@ -1,6 +1,6 @@
 # App Extension Implementation Plan
 
-Status: current implementation plan, updated 2026-07-09
+Status: working gap tracker; non-canonical
 
 ## Purpose
 
@@ -9,6 +9,11 @@ kinds, task kinds, or configuration-heavy schema. This is the working checklist
 for implementation order; the mental model stays in `README.md`,
 `project-observability.md`, `project-planner-contract.md`, and the loop-specific
 docs.
+
+Use those contract documents and current code/tests as authority. This tracker
+preserves sequencing and remaining-gap context; it must not override a newer
+implemented contract, and completed checklist items should be removed rather
+than becoming a second design specification.
 
 The target model is convention-based:
 

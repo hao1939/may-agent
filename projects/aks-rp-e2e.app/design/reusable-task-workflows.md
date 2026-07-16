@@ -2,6 +2,10 @@
 
 Status: accepted design direction
 
+May's canonical executor, synchronous-run, durable-wait, and schema-backed
+agent-step rules live in `../../may-agent.app/docs/2a-design/workflows.md`.
+This document defines only the AKS app's task adapters and result conventions.
+
 ## Purpose
 
 Long-running loops and direct human requests repeat the same project work:
@@ -133,10 +137,12 @@ ledger, review result, and next operating move.
    A task `workflow` value must refer to `workflows/<name>.ts`, except for
    explicitly allowed domain workflows such as `spec-runner`.
 
-2. A workflow declares its input and output when downstream automation needs it.
+2. A workflow owns both documentation and runtime result contracts.
 
-   The declaration lives in the workflow file as `workflowContract`. There is no
-   registry file and no category-specific contract marker.
+   `workflowContract` documents the overall workflow input/output beside the
+   implementation. When workflow code consumes fields returned by an agent
+   step, pass a workflow-authored TypeBox `schema` to `ctx.runAgent`. There is
+   no central registry, and callers cannot replace the schema at runtime.
 
 3. Direct input and task context carry the same workflow input.
 
@@ -281,7 +287,10 @@ The structured result should be small:
   "workflowUnderReview": "single-spec-verifier",
   "casesReviewed": ["ado-run:171234001", "ado-run:171234777"],
   "lesson": "Do not rerun unchanged inputs after request-shape failures.",
-  "changed": ["workflows/single-spec-verifier.ts", "workflows/single-spec-verifier.test.ts"],
+  "changed": [
+    "workflows/single-spec-verifier.ts",
+    "workflows/single-spec-verifier.test.ts"
+  ],
   "verification": {
     "kind": "ado-run",
     "id": "171235111",
@@ -447,9 +456,11 @@ Example:
 ```
 
 Common fields such as `workflow`, `subject`, `status`, `summary`, `artifacts`,
-`checks`, `metrics`, `problem`, `inputFingerprint`, and `details` are
-conventions, not SDK-enforced schema. Use stable values only where downstream
-automation actually reads them.
+`checks`, `metrics`, `problem`, `inputFingerprint`, and `details` form the
+app-level result convention. May always enforces the workflow step's standard
+`finish()` envelope. A workflow additionally enforces any domain fields its
+code consumes by supplying a TypeBox schema to `ctx.runAgent`; fields that are
+only documented or stored in artifacts remain app-validated conventions.
 
 ## Workflow Contract
 
@@ -473,7 +484,8 @@ export const workflowContract = {
 
 This is documentation and a local affordance for tests or integrity checks. The
 `input` and `output` objects may be as simple or detailed as the workflow needs;
-there is no central schema registry and no new workflow type.
+there is no central schema registry and no new workflow type. This declaration
+does not replace the runtime TypeBox schema for a schema-backed agent step.
 
 ## Task Adapter
 

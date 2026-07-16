@@ -1,5 +1,22 @@
 # Project App Event Contract
 
+## Work-item revision correlation
+
+Task lifecycle envelopes carry both camelCase and snake_case revision fields:
+
+```text
+taskRevision
+task_revision
+```
+
+`project.task.assigned`, `project.task.completed`, and
+`project.task.reviewed` must preserve the same work-item revision alongside
+the attempt id. Missing revision fields are accepted only as compatibility
+revision `0`. Once a task has revision greater than zero, a missing or
+mismatched revision is stale and may be recorded for audit, but it cannot
+start work, submit completion, invoke review, apply a review, or close the
+current task intent.
+
 Status: implemented contract
 
 ## Purpose
@@ -335,7 +352,8 @@ live task-tree leaves. A blocked-only frontier is not a valid steady state when
 Asks the deep-dive fallback workflow to collect the project liveness packet and
 ask `app-ops` to judge why the project is not moving. Code
 collects structured state and applies only safe mechanical repairs, such as
-task-tree rollup repair, only in fallback mode. The agent judges the stall
+refreshing objective loop metadata and collecting task-tree rollup hints, only
+in fallback mode. It does not choose parent state. The agent judges the stall
 class and recommends the next project move.
 
 The packet is a starting point, not a verdict. The agent must verify current
@@ -366,9 +384,9 @@ record a real escalation/resume condition.
 When the stall packet shows durable loop state with pending/error records and no
 runnable, active, or review leaves, the default structured judgment is
 `needs-work` unless every non-terminal record is represented by an exact
-blocked/escalated leaf or an accepted terminal disposition. Agent prose may
-explain a different judgment, but code must not downgrade that packet to a
-no-op merely because the model failed to return structured JSON.
+blocked/escalated leaf or an accepted terminal disposition. Code must not
+downgrade that packet to a no-op when the validated structured judgment is
+absent or invalid. Prose is explanation, not a routing fallback.
 
 ```json
 {
@@ -482,7 +500,7 @@ does not replace `project.task.completed` when a task owns the run.
 
 | Event                                                 | Destination                                   | Purpose                                                 |
 | ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
-| `project.owner.requested`                          | workflow: `project-planner`                   | App-ops planner wake/reconciliation.                    |
+| `project.owner.requested`                             | workflow: `project-planner`                   | App-ops planner wake/reconciliation.                    |
 | `project.task.assigned`                               | workflow: `task-worker`                       | Execute one dispatched leaf.                            |
 | `project.task.completed`                              | workflow: `task-reviewer`                     | Independently judge completed worker output.            |
 | `project.task.reviewed`                               | workflow: `project-planner`                   | Apply reviewer judgment to the task tree.               |
@@ -652,7 +670,7 @@ canonical names above.
 | Old Event                             | Canonical Event                                                  |
 | ------------------------------------- | ---------------------------------------------------------------- |
 | `project.planning.requested`          | `project.owner.requested`                                        |
-| `project.tick`                        | `project.owner.requested`                                     |
+| `project.tick`                        | `project.owner.requested`                                        |
 | `project.watchdog.tick`               | `project.watchdog.check.requested`                               |
 | `project.problem.requested`           | `project.problem.investigation.requested`                        |
 | `project.problem.unknown`             | `project.problem.inconclusive`                                   |
@@ -660,7 +678,7 @@ canonical names above.
 | `project.focus.approval.submitted`    | `project.approval.submitted` with `data.approvalKind=focus-plan` |
 | `project.approval.dispatch.requested` | `project.approval.requested`                                     |
 | `project.approval.dispatch.submitted` | `project.approval.submitted`                                     |
-| `task.requeued`                       | `project.owner.requested` with `data.reason=task-requeued`    |
+| `task.requeued`                       | `project.owner.requested` with `data.reason=task-requeued`       |
 
 `project.task.tick` is not a compatibility alias. It is the canonical targeted
 task wake event.

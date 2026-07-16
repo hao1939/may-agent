@@ -130,10 +130,10 @@ Project-level liveness fallback is split from routine planning:
    no useful runnable/review/active frontier.
 2. `project-stall-review` collects the task tree, durable loop state, recent
    journal context, and safe mechanical repair results.
-3. Code does not decide the root cause. In `fallback` mode it may perform
-   objective repair such as task-tree rollup repair and pulse durable loop
-   controllers only when the normal frontier is empty. In `risk-review` mode it
-   is collect-only.
+3. Code does not decide the root cause. In `fallback` mode it may refresh
+   objective loop metadata, collect parent rollup hints, and pulse durable loop
+   controllers only when the normal frontier is empty. It does not apply a
+   parent-state judgment. In `risk-review` mode it is collect-only.
 4. `app-ops` judges the stall and emits `project.stall.reviewed` with a
    structured `stallReview` object. The workflow validates `judgment`; prose is
    explanation only.
@@ -655,10 +655,12 @@ Examples:
 - Use `project.task.reviewed.data.events` for canonical state transitions that
   the reviewer has judged and the planner can validate. The current planner
   accepts complete `escalation.resolved` / `escalation.dismissed` proposals,
-  plus bounded `project.task.completed` replay proposals that carry a concrete
-  current task/attempt/result/summary packet for a fresh review cycle, and
-  strictly targeted `project.task.tick` proposals for the three durable loop
-  roots.
+  bounded `project.approval.requested` proposals only when they target the
+  current project and carry one exact `evidence/archive/...` approval packet
+  with validated `packetPath`, `pathId`, and `requestedAction`, bounded
+  `project.task.completed` replay proposals that carry a concrete current
+  task/attempt/result/summary packet for a fresh review cycle, and strictly
+  targeted `project.task.tick` proposals for the three durable loop roots.
   Arbitrary reviewer-generated events are rejected.
 - If a blocked/follow-up review says the next step is project-side work, the
   reviewer must use `project.task.reviewed.data.reviewAction`. The planner uses
@@ -672,8 +674,8 @@ Examples:
   - `task-tree-followup` means the remaining work is a planner/app-owned
     task-tree mutation; the planner should either apply the bounded mutation or
     create one app-owned apply task, not another domain memo loop.
-  Add a new action kind only when the planner can validate and apply it as a
-  bounded task-tree operation.
+    Add a new action kind only when the planner can validate and apply it as a
+    bounded task-tree operation.
 - `summary`, `findings`, `feedback`, and `suggestedFollowups` explain the
   judgment and proposed work. They are not a routing protocol.
 - Use `blockedTasks[].resumeAt` for future-dated external waits.

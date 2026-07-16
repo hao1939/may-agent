@@ -1,0 +1,32 @@
+# Work Graph V2 Replay Fixture Manifest
+
+These fixtures are existing deterministic tests. They need no live Azure,
+GitHub, model-provider, or May runtime dependency. The manifest deliberately
+points at the smallest test that preserves each current behavior before V2
+replaces its writer.
+
+| Failure class                           | Current replay                                                                                                                                                                                                                                                     | Current behavior to preserve or replace                                                | V2 assertion                                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root readout/frontier drift             | `workflows/lib/project-readout-sync.test.ts` — `root-contract sync clears stale waiting/runnable ghosts for a zero-active review-only frontier`                                                                                                                    | A writer repairs copied readout fields in the root/project mirrors.                    | `project-snapshot-v2.test.ts` — `detects stored frontier mirror drift without using it as authority`; V2 derives the frontier and reports the mirror only as drift. |
+| Lost reviewer/completion delivery       | `workflows/project-execution-watchdog.test.ts` — `re-emits terminal pipeline wait review through task reviewer`                                                                                                                                                    | The watchdog re-emits a completion event after a grace window.                         | `project-snapshot-v2.test.ts` — `distinguishes review grace, missing delivery, and unapplied decisions`; the snapshot emits one typed invariant and stable key.     |
+| Runtime/provider failure on active work | `workflows/project-execution-watchdog.test.ts` — `wakes owner for an active leaf with no session activity past grace`, `wakes owner for an active leaf whose runtime session has error outcome`                                                                    | The watchdog classifies missing/error/stale runtime state with overlapping wake paths. | `project-snapshot-v2.test.ts` — `projects viable, stale, terminal, and missing active attempts`; runtime facts are projected separately from recovery policy.       |
+| Exact ADO wait becomes terminal         | `workflows/project-execution-watchdog.test.ts` — `moves blocked Azure DevOps wait to review when the run is terminal`                                                                                                                                              | The watchdog mutates the legacy wait task into review.                                 | The exact run becomes an external Condition fact; Slice 5 will resolve it and schedule revision-safe continuation.                                                  |
+| Fix-forward → wait → artifact review    | `workflows/project-planner.test.ts` — `turns reviewed fix-forward exact waits into one in-place pipeline carrier`                                                                                                                                                  | One task identity is reused across incompatible phase contracts.                       | The malformed-run fixture in `project-snapshot-v2.test.ts` pins run `172459471`; Slice 4 must replay it as distinct revisions with one result schema per phase.     |
+| Loop ledger representation              | `workflows/project-execution-watchdog.test.ts` — `requests stall review when feature-compact residue is not represented by exact waits`; `workflows/feature-compact-loop.test.ts` — `counts blocked compact features with projected frontier tasks as represented` | Both controller and watchdog infer whether ledger rows have task representatives.      | `ProjectSnapshotV2.controllers` and `controller-record-unrepresented` provide the shared read model; controller-specific mutation remains in the controller.        |
+| Overdue/malformed external wait         | `workflows/project-execution-watchdog.test.ts` — `samples overdue blocked waits before future waits`; `workflows/task-tree-tools.test.ts` malformed exact ADO wait fixture near line 1966                                                                          | Several consumers parse partial blocker shapes and choose different recovery actions.  | `project-snapshot-v2.test.ts` — `normalizes malformed legacy blockers with stable recovery keys`; missing observer/timer/fallback fields are explicit.              |
+| Duplicate follow-up/apply chain         | `workflows/project-planner.test.ts` — `turns task-tree-followup reviews into runnable app-ops apply work instead of memo-only domain retries`, `requeues guarded app-state-repair reviews in place instead of nesting another ops-apply successor`                 | Dedupe depends on action-specific planner branches and lineage prose.                  | Slice 3 must atomically apply one reviewed action and dedupe by task/revision/attempt plus command key.                                                             |
+
+Baseline consumers retained during shadow mode:
+
+- `summarizeTaskTree` remains the current task-frontier reference.
+- `buildProjectHealth`, watchdog tests, and metric tests remain current policy
+  references; they do not become V2 authorities merely because their output is
+  compared.
+- Stored root/current-focus readouts are mirrors, never fixture truth.
+- Loop JSON is authoritative for loop records; task nodes are representation.
+
+The focused V2 suite is run with:
+
+```sh
+bun test ./workflows/project-snapshot-v2.test.ts
+```

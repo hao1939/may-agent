@@ -822,7 +822,7 @@ allowed outcomes is observed.
 
 | Input event                                      | Expected route target               | Closed when                                                                   |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------- |
-| `project.owner.requested`                     | `project-planner`                   | planner run row records dispatched work, pulse, accepted no-op, or exact wait |
+| `project.owner.requested`                        | `project-planner`                   | planner run row records dispatched work, pulse, accepted no-op, or exact wait |
 | `project.task.assigned`                          | `task-worker`                       | task starts worker and reaches `review`, `done`, `blocked`, or stale-noop     |
 | `project.task.completed`                         | `task-reviewer`                     | reviewer emits `project.task.reviewed` or records structured escalation       |
 | `project.task.reviewed`                          | `project-planner`                   | planner applies decision or records structured stale-noop                     |
@@ -1088,6 +1088,7 @@ stale-noop, or recovery.
 | `aks-rp-e2e.process.route.unobserved-count`                  | gauge  | emitted event has no route run after SLA                                                                                                    |
 | `aks-rp-e2e.process.workflow.no-next-step-count`             | gauge  | workflow ended without expected next step                                                                                                   |
 | `aks-rp-e2e.process.assignment.not-consumed-count`           | gauge  | task-dispatch queue rows are stale                                                                                                          |
+| `aks-rp-e2e.task.active-count`                               | gauge  | active task-tree leaves only (`counts.active` / `frontier.active`), excluding structural active nodes counted in `tree_counts.active`       |
 | `aks-rp-e2e.task.stale-active-count`                         | gauge  | active leaves lack live worker activity                                                                                                     |
 | `aks-rp-e2e.process.task.review-not-applied-count`           | gauge  | review facts not applied/stale-nooped                                                                                                       |
 | `aks-rp-e2e.process.unowned-work-count`                      | gauge  | unfinished work has no active owner                                                                                                         |

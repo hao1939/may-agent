@@ -50,6 +50,12 @@ output. They should not need to know parent rollup, assignment queues, review
 state, or task-tree storage unless their purpose is orchestration, such as
 `project-planner` or a durable loop controller.
 
+Every workflow agent step ends through May's `finish()` envelope. When later
+workflow code consumes domain fields, the workflow owns a TypeBox schema and
+passes it to `ctx.runAgent`; routes and task callers cannot replace that
+schema. App-level `workflowContract` declarations document overall input and
+output but do not enforce agent results.
+
 Keep one task tree with two visible roots:
 
 ```text
@@ -104,6 +110,9 @@ logs, source links, review notes, or test results.
   after all remaining external handoffs were sent and tracked.
 - The root project goal comes from `project.json`; temporary focus and ops work
   must not replace it.
+- Parent state is owner judgment. Task-tree helpers and integrity checks report
+  child-rollup hints; they do not silently rewrite a parent into the hinted
+  state.
 - Metrics and watchdog are fallback. Repeated fallback becomes ops repair work.
 - Git tracks source and design. `.state/` tracks runtime.
 
