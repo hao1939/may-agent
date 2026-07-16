@@ -762,8 +762,8 @@ Condition, so the blocker is explicitly output-only for this family.
 Fallback handling now distinguishes accepted dispatch from completed owner
 processing operationally: the planner validates correlation on entry and
 acknowledges only after owner planning returns. A crash/error leaves the stable
-action unacknowledged. The dispatcher permits one redelivery after a 15-minute
-acknowledgement grace and then stops at two total attempts. Focused interruption,
+action unacknowledged. The dispatcher permits two redeliveries after 15-minute
+acknowledgement grace windows and then stops at three total attempts. Focused interruption,
 replay, projection-drift, and forged-authority tests pass. Live evidence of the
 post-hardening acknowledgement or bounded redelivery remains the final closure
 gate for this exact canary.
@@ -776,6 +776,16 @@ revealed that the harvest loop could enter the expired-fallback branch before
 producing a false unavailable observation. Harvest now uses the same due gate
 before all V2 observation/fallback transitions; an early post-fallback replay
 fixture requires unchanged observation and next-check timestamps.
+
+Local runtime traces showed both generic fallback owner events in `pending`
+state with no workflow run or session, including the original event from
+`11:55Z`; the generic owner lane had accumulated many similar pending events.
+The second dispatch therefore proved stable redelivery but not improved
+delivery. New fallback actions emit typed
+`project.condition.fallback.requested` events to a dedicated
+single-concurrency planner handler. Legacy generic owner events remain readable
+for buffered compatibility, while new actions no longer compete with the broad
+owner-event backlog. Live acknowledgement through this lane remains pending.
 
 ### Work
 

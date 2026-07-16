@@ -499,9 +499,9 @@ compatibility policy (`next_check_at`, `resume_condition`, `fallback_at`,
 Fallback acknowledgement is also crash-aware. The planner validates the exact
 event immediately but records acknowledgement only after both owner-planning
 steps return. An interrupted planner leaves the action dispatched and therefore
-replayable. An unacknowledged dispatch receives one redelivery after a
-15-minute acknowledgement grace; a second miss exhausts the bounded automatic
-delivery budget. This is still a family-local implementation, not yet the
+replayable. An unacknowledged dispatch receives at most two redeliveries after
+15-minute acknowledgement grace windows; a third miss exhausts the bounded
+automatic delivery budget. This is still a family-local implementation, not yet the
 common pending-action primitive from Transfer 1.
 
 The hot-loaded hardening received a live watchdog tick at `12:40:08Z`. It
@@ -517,6 +517,20 @@ recorded an artificial unavailable observation without acquiring pipeline
 access. The harvest loop now applies the same due predicate before terminal,
 fallback, or observation transitions. A regression fixture proves an early
 post-fallback tick changes neither `lastObservedAt` nor `nextCheckAt`.
+
+Runtime delivery tracing then showed why neither the original nor first
+redelivery was acknowledged: both `project.owner.requested` events were accepted
+by the generic cron/owner route but remained `pending` with no workflow run or
+session. The first had remained pending since `11:55Z`, alongside a larger
+generic owner-event backlog. Redelivery into the same lane therefore did not
+improve the postcondition.
+
+Fallback delivery now uses the typed
+`project.condition.fallback.requested` event and a dedicated single-concurrency
+planner handler. The planner retains legacy `project.owner.requested` parsing
+only for already-buffered events. The pending action still uses the same
+recovery key and bounded attempts; only its delivery lane changed. Live
+acknowledgement through the dedicated handler is the remaining canary gate.
 
 Latest hardening verification:
 
