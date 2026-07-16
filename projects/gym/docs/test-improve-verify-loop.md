@@ -83,6 +83,17 @@ the problem before changing anything:
 Only change the responsible layer. If the scorer or ground truth changes, rerun
 the baseline as well as the candidate.
 
+When developing a scorer, re-evaluate the already captured answers first:
+
+```bash
+bun run loop -- rescore --run <run-id>
+```
+
+Rescoring is diagnostic and non-destructive. It writes a separate artifact
+under the run's `rescoring/` directory and never changes the original machine
+verdicts, frozen inputs, or report. Once the scorer and truth are accepted,
+create a fresh baseline for any release comparison.
+
 ## 3. Improve in isolation
 
 Use an ignored agent overlay such as:
@@ -129,6 +140,13 @@ bun run loop -- review \
   --reviewer hao \
   --reason "The bounded experiment matches the intended outcome."
 ```
+
+Reviews use only `pass` or `fail`. If an automated failure is wrong, record a
+human `pass` with `--classification ground-truth|scorer|harness`. A human
+`fail` requires a classification so a behavior problem cannot silently absorb
+a benchmark defect. Optional repeatable `--reason-code` values (for example
+`scorer-false-positive`, `wrong-owner`, or `too-verbose`) make recurring
+findings aggregatable without replacing the written reason.
 
 Reviews are append-only JSONL. Re-running `report` includes every adjudication:
 

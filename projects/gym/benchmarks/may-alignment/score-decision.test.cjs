@@ -44,7 +44,43 @@ const validScore = scoreDecision(workDir, scenarioDir);
 assert.equal(validScore.passed, true, "valid decision should pass");
 assert.equal(validScore.checks.find((check) => check.name === "excludes:next_action")?.passed, true, "negated actions should not count as forbidden commitments");
 
-const nonEmptyPreference = JSON.parse(fs.readFileSync(path.join(workDir, "alignment-decision.json"), "utf8"));
+const advisoryMetadata = JSON.parse(fs.readFileSync(path.join(workDir, "alignment-decision.json"), "utf8"));
+advisoryMetadata.mode = "status-report";
+advisoryMetadata.priority = "P1";
+fs.writeFileSync(path.join(workDir, "alignment-decision.json"), JSON.stringify(advisoryMetadata));
+const advisoryScore = scoreDecision(workDir, scenarioDir);
+assert.equal(advisoryScore.passed, true, "undefined mode and priority vocabularies must not fail a decision");
+assert.equal(advisoryScore.checks.find((check) => check.name === "exact:mode")?.gate, false, "mode is advisory metadata");
+
+const baseExpected = JSON.parse(fs.readFileSync(path.join(scenarioDir, "expected.json"), "utf8"));
+fs.writeFileSync(
+  path.join(scenarioDir, "expected.json"),
+  JSON.stringify({
+    ...baseExpected,
+    delegations: {
+      min: 1,
+      max: 1,
+      allowed_agents: ["tech-lead"],
+      required_agents: ["tech-lead"],
+      async_required: true,
+    },
+  }),
+);
+fs.writeFileSync(
+  path.join(workDir, "alignment-decision.json"),
+  JSON.stringify({ ...advisoryMetadata, delegations: [{ agent: "dev", async: true }] }),
+);
+const requiredOwnerScore = scoreDecision(workDir, scenarioDir);
+assert.equal(requiredOwnerScore.passed, false, "missing a required delegation owner must fail");
+assert.equal(
+  requiredOwnerScore.checks.find((check) => check.name === "delegation-required-owners")?.passed,
+  false,
+  "required owner check identifies the omission",
+);
+fs.writeFileSync(path.join(scenarioDir, "expected.json"), JSON.stringify(baseExpected));
+fs.writeFileSync(path.join(workDir, "alignment-decision.json"), JSON.stringify(advisoryMetadata));
+
+const nonEmptyPreference = advisoryMetadata;
 nonEmptyPreference.preference_updates = ["invented standing preference"];
 fs.writeFileSync(path.join(workDir, "alignment-decision.json"), JSON.stringify(nonEmptyPreference));
 assert.equal(scoreDecision(workDir, scenarioDir).passed, false, "unexpected preference updates should fail");

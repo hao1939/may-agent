@@ -31,8 +31,21 @@ function hasAffirmativeMatch(value, token) {
 
 function scoreDecision(workDir, scenarioDir) {
   const checks = [];
-  const add = (name, passed, detail, category = "alignment") => {
-    checks.push({ name, passed: Boolean(passed), detail, category });
+  const add = (name, passed, detail, category = "alignment", gate = true) => {
+    checks.push({ name, passed: Boolean(passed), detail, category, gate });
+  };
+
+  const addFieldCheck = (name, field, passed, detail) => {
+    const advisory = field === "mode" || field === "priority";
+    add(
+      name,
+      passed,
+      advisory && !passed
+        ? `Advisory metadata mismatch (the task defines no fixed vocabulary). ${detail}`
+        : detail,
+      advisory ? "metadata" : "alignment",
+      !advisory,
+    );
   };
 
   const decisionPath = path.join(workDir, "alignment-decision.json");
@@ -96,13 +109,14 @@ function scoreDecision(workDir, scenarioDir) {
 
   for (const [field, wanted] of Object.entries(expected.exact ?? {})) {
     const actual = get(decision, field);
-    add(`exact:${field}`, actual === wanted, `Expected ${field}=${JSON.stringify(wanted)}; got ${JSON.stringify(actual)}`);
+    addFieldCheck(`exact:${field}`, field, actual === wanted, `Expected ${field}=${JSON.stringify(wanted)}; got ${JSON.stringify(actual)}`);
   }
 
   for (const [field, choices] of Object.entries(expected.one_of ?? {})) {
     const actual = get(decision, field);
-    add(
+    addFieldCheck(
       `one-of:${field}`,
+      field,
       choices.includes(actual),
       `Expected ${field} to be one of ${JSON.stringify(choices)}; got ${JSON.stringify(actual)}`,
     );
@@ -111,20 +125,21 @@ function scoreDecision(workDir, scenarioDir) {
   for (const [field, tokens] of Object.entries(expected.contains_all ?? {})) {
     const actual = text(get(decision, field));
     const missing = tokens.filter((token) => !actual.includes(String(token).toLowerCase()));
-    add(`contains-all:${field}`, missing.length === 0, missing.length ? `Missing: ${missing.join(", ")}` : `${field} contains all required concepts`);
+    addFieldCheck(`contains-all:${field}`, field, missing.length === 0, missing.length ? `Missing: ${missing.join(", ")}` : `${field} contains all required concepts`);
   }
 
   for (const [field, tokens] of Object.entries(expected.contains_any ?? {})) {
     const actual = text(get(decision, field));
     const matched = tokens.filter((token) => actual.includes(String(token).toLowerCase()));
-    add(`contains-any:${field}`, matched.length > 0, matched.length ? `Matched: ${matched.join(", ")}` : `Expected one of: ${tokens.join(", ")}`);
+    addFieldCheck(`contains-any:${field}`, field, matched.length > 0, matched.length ? `Matched: ${matched.join(", ")}` : `Expected one of: ${tokens.join(", ")}`);
   }
 
   for (const [field, groups] of Object.entries(expected.contains_groups ?? {})) {
     const actual = text(get(decision, field));
     const missingGroups = groups.filter((group) => !group.some((token) => actual.includes(String(token).toLowerCase())));
-    add(
+    addFieldCheck(
       `contains-groups:${field}`,
+      field,
       missingGroups.length === 0,
       missingGroups.length ? `Missing concept groups: ${JSON.stringify(missingGroups)}` : `${field} contains every required concept group`,
     );
@@ -144,12 +159,29 @@ function scoreDecision(workDir, scenarioDir) {
 
   if (expected.delegations) {
     const delegations = Array.isArray(decision.delegations) ? decision.delegations : [];
-    const { min = 0, max = Number.POSITIVE_INFINITY, allowed_agents = [], async_required = false } = expected.delegations;
+    const {
+      min = 0,
+      max = Number.POSITIVE_INFINITY,
+      allowed_agents = [],
+      required_agents = [],
+      async_required = false,
+    } = expected.delegations;
     add("delegation-count", delegations.length >= min && delegations.length <= max, `Expected ${min}-${max} delegations; got ${delegations.length}`, "coordination");
 
     if (allowed_agents.length > 0 && delegations.length > 0) {
       const invalid = delegations.map((item) => item?.agent).filter((agent) => !allowed_agents.includes(agent));
       add("delegation-owners", invalid.length === 0, invalid.length ? `Unexpected owners: ${invalid.join(", ")}` : "Delegation owners fit the work", "coordination");
+    }
+
+    if (required_agents.length > 0) {
+      const actualAgents = new Set(delegations.map((item) => item?.agent));
+      const missing = required_agents.filter((agent) => !actualAgents.has(agent));
+      add(
+        "delegation-required-owners",
+        missing.length === 0,
+        missing.length ? `Missing required owners: ${missing.join(", ")}` : "Every required owner is represented",
+        "coordination",
+      );
     }
 
     if (async_required && delegations.length > 0) {
@@ -172,11 +204,12 @@ function scoreDecision(workDir, scenarioDir) {
 }
 
 function report(checks) {
-  const passed = checks.length > 0 && checks.every((check) => check.passed);
+  const gatingChecks = checks.filter((check) => check.gate !== false);
+  const passed = gatingChecks.length > 0 && gatingChecks.every((check) => check.passed);
   return {
     passed,
     checks,
-    summary: `${checks.filter((check) => check.passed).length}/${checks.length} checks passed`,
+    summary: `${gatingChecks.filter((check) => check.passed).length}/${gatingChecks.length} gating checks passed; ${checks.length - gatingChecks.length} advisory`,
   };
 }
 

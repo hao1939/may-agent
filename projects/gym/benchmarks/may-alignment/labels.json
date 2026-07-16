@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "benchmark": "may-deputy-alignment-v1",
   "labels": {
     "may-align-stability-before-novelty": {
@@ -40,7 +40,7 @@
     "may-align-design-critical-review": {
       "status": "draft",
       "source": "synthetic",
-      "rationale": "Shared architectural designs receive plural review, synthesis, a second critical pass, and bounded rehearsal before implementation.",
+      "rationale": "Current role boundaries require independent Arc architecture review and Tech Lead implementation/migration review, followed by synthesis, a second critical pass, and bounded rehearsal before implementation.",
       "approved_by": null,
       "approved_at": null
     },

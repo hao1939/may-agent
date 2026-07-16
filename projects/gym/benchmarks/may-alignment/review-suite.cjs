@@ -9,6 +9,29 @@ const labelsPath = path.join(here, suite.labels_file || "labels.json");
 const labels = fs.existsSync(labelsPath) ? JSON.parse(fs.readFileSync(labelsPath, "utf8")) : null;
 const checks = [];
 
+function currentAgentNames() {
+  const names = new Set();
+  const roots = [path.join(repoRoot, "agents")];
+  const projectsDir = path.join(repoRoot, "projects");
+  for (const entry of fs.readdirSync(projectsDir, { withFileTypes: true })) {
+    if (entry.isDirectory() && entry.name.endsWith(".app")) {
+      roots.push(path.join(projectsDir, entry.name, "agents"));
+    }
+  }
+  for (const root of roots) {
+    if (!fs.existsSync(root)) continue;
+    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+      const configPath = path.join(root, entry.name, "agent.json");
+      if (!entry.isDirectory() || !fs.existsSync(configPath)) continue;
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      if (typeof config.name === "string" && config.name) names.add(config.name);
+    }
+  }
+  return names;
+}
+
+const agentNames = currentAgentNames();
+
 function add(name, passed, detail) {
   checks.push({ name, passed: Boolean(passed), detail });
 }
@@ -54,6 +77,16 @@ for (const name of suite.scenarios) {
   add(`${name}:common-scorer`, scorer.includes("score-decision.cjs"), "Uses the shared scorer");
   add(`${name}:response-bound`, Number.isFinite(expected.response_max_words), "Defines a response-length bound");
   add(`${name}:delegation-ground-truth`, expected.delegations && Number.isFinite(expected.delegations.min), "Defines delegation expectations");
+  const expectedAgents = [
+    ...(expected.delegations?.allowed_agents ?? []),
+    ...(expected.delegations?.required_agents ?? []),
+  ];
+  const missingAgents = [...new Set(expectedAgents)].filter((agent) => !agentNames.has(agent));
+  add(
+    `${name}:delegation-agents-current`,
+    missingAgents.length === 0,
+    missingAgents.length ? `Removed or unknown agents: ${missingAgents.join(", ")}` : "Allowed delegation owners exist in the current registry",
+  );
   add(`${name}:canonical-answer`, Boolean(expected.human_answer?.trim()), "Provides a plain-language answer for human review");
 
   const scoredFields = new Set([
@@ -63,8 +96,8 @@ for (const name of suite.scenarios) {
     ...Object.keys(expected.contains_any ?? {}),
     ...Object.keys(expected.contains_groups ?? {}),
   ]);
-  add(`${name}:mode-ground-truth`, scoredFields.has("mode"), "Defines acceptable operating-mode concepts");
-  add(`${name}:priority-ground-truth`, scoredFields.has("priority"), "Defines acceptable priority concepts");
+  add(`${name}:mode-observed`, scoredFields.has("mode"), "Records expected operating-mode concepts as advisory metadata");
+  add(`${name}:priority-observed`, scoredFields.has("priority"), "Records expected priority concepts as advisory metadata");
   add(
     `${name}:preference-ground-truth`,
     scoredFields.has("preference_updates") || expected.empty?.includes("preference_updates"),

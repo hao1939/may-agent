@@ -1,5 +1,5 @@
 {
-  "human_answer": "Ask Tech Lead and Optimizer to review implementation, migration, and retention risks independently. Synthesize their findings, run a second critical-eyes pass, and require a prototype or migration rehearsal before implementation starts.",
+  "human_answer": "Ask Arc to review architectural coherence and Tech Lead to review implementation and migration safety independently. Synthesize their findings, run a second critical-eyes pass, and require a prototype or migration rehearsal before implementation starts.",
   "exact": {
     "needs_clarification": false
   },
@@ -24,8 +24,9 @@
   },
   "delegations": {
     "min": 2,
-    "max": 3,
-    "allowed_agents": ["tech-lead", "coach", "optimizer"],
+    "max": 2,
+    "allowed_agents": ["arc", "tech-lead"],
+    "required_agents": ["arc", "tech-lead"],
     "async_required": true
   },
   "response_max_words": 70

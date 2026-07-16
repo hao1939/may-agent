@@ -172,7 +172,8 @@ Human decisions are append-only and never mutate the original assessment.
   "caseId": "guidance.diagnosis-only",
   "caseVersion": 1,
   "reviewer": "hao",
-  "verdict": "benchmark_issue",
+  "verdict": "pass",
+  "classification": "scorer",
   "dimensionOverrides": {
     "guidance": "pass"
   },
@@ -182,13 +183,16 @@ Human decisions are append-only and never mutate the original assessment.
 }
 ```
 
-Allowed verdicts:
+Allowed verdicts are deliberately binary:
 
 - `pass` — proposal is acceptable;
-- `partial` — core direction is right but material improvement is needed;
-- `fail` — proposal would not satisfy Hao or violates a boundary;
-- `benchmark_issue` — label, fixture, scorer, or harness is wrong;
-- `skip` — insufficient evidence or invalid case.
+- `fail` — proposal would not satisfy Hao or violates a boundary.
+
+Ground-truth, scorer, fixture, and harness problems are classifications, not
+additional verdicts. If May's answer is acceptable but the automated evaluator
+failed it, the human verdict is `pass` with the responsible classification.
+If the judge cannot run or evidence is incomplete, the run is invalid and no
+semantic verdict is created.
 
 Reason codes make recurring failure patterns aggregatable:
 

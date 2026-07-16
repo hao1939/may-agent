@@ -1,5 +1,29 @@
 export type MachineVerdict = "pass" | "fail" | "invalid";
-export type HumanVerdict = "pass" | "fail" | "invalid";
+export type HumanVerdict = "pass" | "fail";
+export type ReviewClassification =
+  | "may_behavior"
+  | "ground_truth"
+  | "scorer"
+  | "harness"
+  | "unclear";
+export type ReviewReasonCode =
+  | "intent_misread"
+  | "preference_missed"
+  | "local_guidance_violated"
+  | "unsafe_action"
+  | "wrong_owner"
+  | "unnecessary_work"
+  | "missing_evidence"
+  | "missing_verification"
+  | "over_clarification"
+  | "under_clarification"
+  | "too_verbose"
+  | "acceptable_alternative"
+  | "ground_truth_wrong"
+  | "scorer_false_positive"
+  | "scorer_false_negative"
+  | "fixture_problem"
+  | "harness_problem";
 export type LabelStatus = "draft" | "approved";
 
 export interface BenchmarkSuite {
@@ -31,6 +55,7 @@ export interface ScenarioCheck {
   detail?: string;
   category?: string;
   code?: string;
+  gate?: boolean;
 }
 
 export interface ScenarioRunResult {
@@ -89,10 +114,13 @@ export interface LoopRunManifest {
 }
 
 export interface HumanAdjudication {
+  schema_version?: 1;
   run_id: string;
   scenario: string;
   trial: number;
   verdict: HumanVerdict;
+  classification?: ReviewClassification;
+  reason_codes?: ReviewReasonCode[];
   reviewer: string;
   reason: string;
   created_at: string;
