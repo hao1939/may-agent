@@ -18,7 +18,7 @@ function listAgentDirectoriesInRoot(
   const agents: AgentDirectory[] = [];
   for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    if (entry.name === "shared" || entry.name === "gym") continue;
+    if (entry.name === "shared") continue;
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
     const dir = resolve(agentsRoot, entry.name);
     if (!existsSync(resolve(dir, "agent.json"))) continue;
@@ -65,7 +65,8 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
     }
 
     const projectDir = resolve(projectsRoot, entry.name);
-    const hasProjectFrame = existsSync(resolve(projectDir, "project.md")) || existsSync(resolve(projectDir, ".app", "project.md"));
+    const hasProjectFrame =
+      existsSync(resolve(projectDir, "project.md")) || existsSync(resolve(projectDir, ".app", "project.md"));
     if (!hasProjectFrame) continue;
     for (const agentsRoot of [resolve(projectDir, "agents"), resolve(projectDir, ".app", "agents")]) {
       if (!existsSync(agentsRoot)) continue;
@@ -76,10 +77,7 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
 }
 
 export function listRuntimeAgentDirectories(agentsRoot: string, projectsRoot?: string): AgentDirectory[] {
-  return [
-    ...listAgentDirectories(agentsRoot),
-    ...(projectsRoot ? listProjectAgentDirectories(projectsRoot) : []),
-  ];
+  return [...listAgentDirectories(agentsRoot), ...(projectsRoot ? listProjectAgentDirectories(projectsRoot) : [])];
 }
 
 function configuredNameForDirectory(agentDir: AgentDirectory): string | null {

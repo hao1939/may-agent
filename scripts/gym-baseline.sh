@@ -63,7 +63,7 @@ for scenario in "${SCENARIOS[@]}"; do
   
   # Run scenario, capture all output
   tmpfile=$(mktemp /tmp/gym-XXXXXX.txt)
-  timeout 360 "$PROJECT_ROOT/scripts/gym-run.sh" "$scenario" --agent "$AGENT" > "$tmpfile" 2>&1 || true
+  GYM_NO_RECORD=1 timeout 360 "$PROJECT_ROOT/scripts/gym-run.sh" "$scenario" --agent "$AGENT" > "$tmpfile" 2>&1 || true
   
   # Extract JSON result (last valid JSON object in output)
   result_json=$(python3 -c "
