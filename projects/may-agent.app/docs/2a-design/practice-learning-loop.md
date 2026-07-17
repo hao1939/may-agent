@@ -104,7 +104,7 @@ Rows may be free-form, but they should keep enough stable fields to map back to 
   "source": "evaluator-aftermath",
   "author": "evaluator",
   "createdAt": 1770000000000,
-  "rawSource": ".state/sessions/history/s_.../session.jsonl",
+  "rawSource": ".state/sessions/s_.../session.jsonl",
   "rawRole": "assistant",
   "judgment": "The assistant inspected the served UI path but did not verify the tracked source that should receive the change.",
   "why": "This created a false sense of completion: the browser could show a local copy while the repo source remained stale.",
@@ -188,7 +188,7 @@ A promoted learning item should preserve lineage:
   "evidence": [
     {
       "sessionId": "s_1778916277917_374",
-      "evalTrail": ".state/sessions/history/s_1778916277917_374/session.eval.jsonl",
+      "evalTrail": ".state/sessions/s_1778916277917_374/session.eval.jsonl",
       "lines": [14, 19, 23]
     }
   ],
@@ -299,7 +299,7 @@ finding context under `data.finding`:
     "kind": "owner_finding",
     "sessionId": "s_...",
     "projectId": "platform",
-    "evalTrailPath": ".state/sessions/history/s_.../session.eval.jsonl",
+    "evalTrailPath": ".state/sessions/s_.../session.eval.jsonl",
     "summary": "[high] intent_context/input-context: clarify missing trigger context",
     "finding": {
       "id": "input-context",
@@ -371,7 +371,7 @@ Humans can append feedback to the same eval trail. Human feedback should keep ra
   "createdAt": 1770000001000,
   "comment": "This was not the main issue. The problem was reporting success before checking the served UI.",
   "rawContext": {
-    "rawSource": ".state/sessions/history/s_.../session.jsonl",
+    "rawSource": ".state/sessions/s_.../session.jsonl",
     "line": 14
   }
 }

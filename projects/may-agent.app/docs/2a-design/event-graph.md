@@ -683,7 +683,7 @@ compact attributes and references:
     "turnIndex": 4,
     "model": "gpt-5.5",
     "summary": "Interpreted human approval and emitted escalation.resolved.",
-    "transcriptRef": ".state/sessions/history/s_123/session.jsonl#turn=4"
+    "transcriptRef": ".state/sessions/s_123/session.jsonl#turn=4"
   }
 }
 ```

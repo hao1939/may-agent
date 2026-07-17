@@ -122,7 +122,8 @@ remain migration data rather than a reason to weaken the current contract.
 Runtime maintenance expires old SQL projections in bounded batches. It does not
 delete a live record merely because its original task is large: new task text
 is bounded in SQL by construction and the full task stays in `meta.json`.
-Longer-term analysis uses `.state/sessions/history/<id>/` while retained.
+Longer-term analysis uses the same `.state/sessions/<id>/` path. Terminal state
+is metadata; it is not a filesystem location.
 
 See `events.md` → "Data Retention" for the full retention table.
 
@@ -137,14 +138,22 @@ See `events.md` → "Data Retention" for the full retention table.
 
 ### kind and autoClose define the lifecycle policy
 
-`autoClose` controls filesystem persistence (archive session dir to `history/` vs keep in-place).
-It's an internal detail of the persistence layer, not a user-facing concept:
-- Chat sessions use `autoClose: "never"` → dir stays in `sessions/` so they survive restarts
-- Job/call sessions use `autoClose: "immediate"` → dir moves to `sessions/history/` on completion
+`autoClose` controls lifecycle state only. It never controls filesystem
+location and is not a user-facing concept:
+- Chat sessions use `autoClose: "never"` → successful turns become `idle`
+- Job/call sessions use `autoClose: "immediate"` → completion becomes terminal
 
 Callers don't set it directly — it's derived from `kind`. `autoClose` remains a
-filesystem lifecycle policy; the design does not move full sessions into
-SQLite.
+lifecycle policy; every kind retains the same permanent session directory and
+the design does not move full sessions into SQLite.
+
+### Permanent path invariant
+
+For session `s_123`, every artifact stays below `.state/sessions/s_123/`.
+Closing, resuming, process recovery, evaluation, and retention must not rename
+that directory. `[ACTIVE]` marks sessions that the runtime may resume; status
+in `meta.json` and SQLite records the lifecycle. `[STARTED]` is only a turn/crash
+sentinel. Neither marker changes the artifact path.
 
 `kind` ("chat" | "job" | "call") is both an observability tag and a lifecycle
 policy selector. `kind: "chat"` with `autoClose: "never"` uses the persistent

@@ -317,8 +317,6 @@ See [cron.md](../2a-design/cron.md) for details.
       meta.json               # Session metadata (status, kind, agent, task)
       session.jsonl            # Conversation history
       output/                 # Task deliverables
-    history/
-      <id>/                   # Archived sessions
   evaluations/
     <sessionId>.json          # Session evaluation scores
   may.db                      # events, sessions, workflow_runs, metrics, alerts

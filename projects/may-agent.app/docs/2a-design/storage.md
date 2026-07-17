@@ -1,8 +1,8 @@
 # Runtime Storage
 
 **Design status:** Accepted.
-**Implementation status:** Migration in progress; new writers use file-backed
-artifacts and bounded SQLite projections while legacy rows remain readable.
+**Implementation status:** Implemented with file-backed artifacts and bounded
+SQLite projections.
 
 ## Decision
 
@@ -21,9 +21,18 @@ Files are authoritative for full execution artifacts:
 .state/event-bodies/<sha256>.json
 ```
 
-Completed sessions may move under `.state/sessions/history/<id>/`. Session
-artifact references are logical references: readers check the live path and
-then the history path.
+Session paths are immutable. A session remains under
+`.state/sessions/<id>/` from creation through idle, terminal, and resumed
+states. Lifecycle changes update `meta.json`, marker files, and the SQLite read
+model; they never rename or relocate the session directory.
+
+This is a storage invariant, not an optimization preference:
+
+> A session ID owns exactly one filesystem path for its entire lifetime.
+
+Moving completed sessions creates no retention value. It does not reclaim
+space, and it introduces broken references, rename failure windows, collision
+handling, and unnecessary resume logic.
 
 SQLite keeps only what a query, join, scheduler, or coordinator needs without
 opening an artifact: identity, lifecycle status, ownership, timestamps,
@@ -87,8 +96,8 @@ session_id, workflow_run_id, project_id, task_id, attempt_id,
 handler, metric_id, alert_id, escalation_id, subject_status, duration_ms
 ```
 
-Compatibility JSON remains available during migration, but new queries use the
-typed columns. Full-content inspection resolves the artifact reference.
+Queries use typed columns. Full-content inspection resolves the artifact
+reference.
 
 ## Retention And Maintenance
 
@@ -107,19 +116,12 @@ Database size is an observability signal, not a trigger for synchronous full
 rewrites. With bounded rows, old rows can age out naturally and incremental
 reclaim can remain opportunistic.
 
-## Compatibility-First Migration
+## Canonical Layout
 
-The cutover is additive:
-
-1. add reference/hash/size and typed correlation columns;
-2. dual-write canonical artifacts and bounded projections;
-3. make resume/detail readers prefer artifacts and fall back to legacy rows;
-4. move identity queries from JSON/task text to typed columns;
-5. compact only new writes;
-6. let old rows expire under normal retention.
-
-There is no mass rewrite of the existing database. Missing references identify
-legacy records, not corrupt records.
+The runtime supports one current schema and one session layout. Historical
+state is normalized once during deployment; runtime readers do not carry
+fallback paths or legacy-schema branches. Missing references are integrity
+errors, not an alternate storage mode.
 
 ## Agent Boundary
 

@@ -16,7 +16,6 @@ The raw `session.jsonl` remains the source of truth. The evaluator writes an app
 
 ```text
 .state/sessions/<id>/session.eval.jsonl
-.state/sessions/history/<id>/session.eval.jsonl
 ```
 
 The `evaluations` database table is a projection/index of the latest session-level summary. It is not the only source of evaluation truth.
@@ -35,7 +34,7 @@ Session summary row:
   "source": "evaluator-heuristic",
   "author": "evaluator",
   "createdAt": 1770000000000,
-  "transcriptSource": ".state/sessions/history/s_.../session.jsonl",
+  "transcriptSource": ".state/sessions/s_.../session.jsonl",
   "verdict": "needs_improvement",
   "quality": 0.55,
   "efficiency": 0.8,
@@ -79,7 +78,7 @@ Line-level row:
   "source": "evaluator-heuristic",
   "author": "evaluator",
   "createdAt": 1770000000000,
-  "rawSource": ".state/sessions/history/s_.../session.jsonl",
+  "rawSource": ".state/sessions/s_.../session.jsonl",
   "rawRole": "toolResult",
   "score": "issue",
   "issues": ["tool_output_error"],
@@ -100,7 +99,7 @@ Human feedback is stored in the same trail:
   "createdAt": 1770000001000,
   "comment": "This was not wasteful; the prior output was from generated UI, not tracked source.",
   "rawContext": {
-    "source": ".state/sessions/history/s_.../session.jsonl",
+    "source": ".state/sessions/s_.../session.jsonl",
     "line": 12,
     "raw": "{...}"
   }
