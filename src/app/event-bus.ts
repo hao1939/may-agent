@@ -365,6 +365,7 @@ export type SystemEvent =
         sourceAgent: string;
         reason: string;
         requestedAction: string;
+        resumeCondition?: string;
         severity?: "P0" | "P1" | "P2" | "P3";
         sourceSessionId?: string;
         projectId?: string;
@@ -1107,7 +1108,8 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
     eventType === "project.owner.reviewed" ||
     eventType === "owner.inbox.reviewed" ||
     eventType === "owner.inbox.expired"
-  ) return hasKey(data.openEventId);
+  )
+    return hasKey(data.openEventId);
   return false;
 }
 

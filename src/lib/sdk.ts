@@ -94,6 +94,7 @@ export interface EventEnvelopeOptions {
 
 export interface EscalationOptions extends EventEnvelopeOptions {
   requestedAction?: string;
+  resumeCondition?: string;
   evidence?: Record<string, unknown>;
   severity?: "P0" | "P1" | "P2" | "P3";
   projectId?: string;

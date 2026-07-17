@@ -91,6 +91,7 @@ describe("AgentSDK escalation", () => {
     const ref = sdk.escalate("Missing production decision", {
       owner: "human:operator",
       requestedAction: "Choose whether to deploy now or wait.",
+      resumeCondition: "Resume when the deployment owner chooses deploy-now or wait.",
       evidence: { runbook: "deploy.md" },
       severity: "P1",
       projectId: "platform",
@@ -118,9 +119,14 @@ describe("AgentSDK escalation", () => {
       projectId: "platform",
       reason: "Missing production decision",
       requestedAction: "Choose whether to deploy now or wait.",
+      resumeCondition: "Resume when the deployment owner chooses deploy-now or wait.",
       evidence: { runbook: "deploy.md" },
       severity: "P1",
-      resume: { kind: "session", checkpointRef: "s_123" },
+      resume: {
+        kind: "session",
+        checkpointRef: "s_123",
+        condition: "Resume when the deployment owner chooses deploy-now or wait.",
+      },
       dedupKey: "deploy:missing-decision",
     });
     expect(typeof data.escalationId).toBe("string");
