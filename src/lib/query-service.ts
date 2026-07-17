@@ -468,10 +468,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         `SELECT e.id, e.event_type as eventType, e.data, e.urgency, e.timestamp
          FROM events e
          WHERE e.owner = ?
-           AND (
-             (e.delivery_status = 'accepted' AND e.delivery_route = 'owner_inbox')
-             OR (e.delivery_route IS NULL AND e.status = 'pending')
-           )
+           AND e.delivery_status = 'accepted'
+           AND e.delivery_route = 'owner_inbox'
            AND e.timestamp > ?
            AND (e.ttl_ms IS NULL OR e.timestamp + e.ttl_ms > ?)
            AND NOT EXISTS (
@@ -653,8 +651,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const since = typeof filter.since === "number" ? filter.since : 0;
 
       const judgmentWhere = alertId != null
-        ? "COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)"
-        : "COALESCE(metric_id, json_extract(data, '$.metricId')) = ?";
+        ? "alert_id = CAST(? AS TEXT)"
+        : "metric_id = ?";
       const judgmentParam = alertId != null ? alertId : metricId;
 
       const latestJudgment = db.prepare(
@@ -675,8 +673,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       ).get(metricId) as Record<string, unknown> | null;
 
       const routedWhere = alertId != null
-        ? "COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)"
-        : "COALESCE(metric_id, json_extract(data, '$.metricId')) = ?";
+        ? "alert_id = CAST(? AS TEXT)"
+        : "metric_id = ?";
       const routedParam = alertId != null ? alertId : metricId;
 
       const recentFeedbackRouted = db.prepare(
@@ -796,8 +794,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
            FROM events
            WHERE event_type = 'metric.alert_judged'
              AND (
-               COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)
-               OR COALESCE(metric_id, json_extract(data, '$.metricId')) = ?
+               alert_id = CAST(? AS TEXT)
+               OR metric_id = ?
              )
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,

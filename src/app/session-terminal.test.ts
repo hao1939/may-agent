@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachDaemonEventSubscribers, attachEventPersistence } from "./daemon-events.js";
 import { EventBus } from "./event-bus.js";
-import { applyDbSchemaAndMigrations } from "../lib/db/schema.js";
+import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb } from "../lib/requests.js";
 
 describe("canonical session terminal event", () => {
@@ -14,7 +14,7 @@ describe("canonical session terminal event", () => {
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-session-terminal-test-"));
     bus = new EventBus();
-    applyDbSchemaAndMigrations(getDb(persistDir));
+    applyDbSchema(getDb(persistDir));
     attachEventPersistence({ bus, persistDir });
     attachDaemonEventSubscribers({
       bus,

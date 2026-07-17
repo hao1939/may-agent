@@ -34,7 +34,7 @@ function findEscalationCreated(persistDir: string, escalationId: string): Escala
     SELECT id, source, owner, data
     FROM events
     WHERE event_type = 'escalation.created'
-      AND COALESCE(escalation_id, json_extract(data, '$.escalationId')) = ?
+      AND escalation_id = ?
     ORDER BY id DESC
     LIMIT 1
   `).get(escalationId) as { id: number; source: string | null; owner: string | null; data: string | null } | undefined;

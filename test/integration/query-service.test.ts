@@ -180,16 +180,18 @@ describe("QueryService", () => {
       ["s_owner", "arc", "handle alert", "done", "metric-alert-reactor:handler.failed-count", now - 400],
     );
     db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["metric.alert_judged", "arc", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), now - 300],
+      "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ["metric.alert_judged", "arc", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), "handler.failed-count", String(alert.id), now - 300],
     );
     db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         "metric.feedback.routed",
         "project-app-loader",
         "agent:arc",
         JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id, route: "owner-app" }),
+        "handler.failed-count",
+        String(alert.id),
         now - 350,
       ],
     );
@@ -243,12 +245,14 @@ describe("QueryService", () => {
       ["s_old", "evaluator", "old triage", "done", "metric-alert-reactor:session.failed-triage-rate-3h", now - 4_400],
     );
     db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         "metric.alert_judged",
         "evaluator",
         "agent:evaluator",
         JSON.stringify({ metricId: "session.failed-triage-rate-3h", alertId: oldAlert.id, operation: "waiting_with_evidence" }),
+        "session.failed-triage-rate-3h",
+        String(oldAlert.id),
         now - 4_000,
       ],
     );
@@ -291,8 +295,8 @@ describe("QueryService", () => {
       ["handler.failed-count", 5, 4, now - 100, "may", "latest"],
     );
     db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["metric.alert_judged", "may", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), now - 500],
+      "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ["metric.alert_judged", "may", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), "handler.failed-count", String(alert.id), now - 500],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
@@ -359,8 +363,8 @@ describe("QueryService", () => {
       ["arc.quality", "threshold", "quality below target", now - 100],
     );
     db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "agent:arc", JSON.stringify({ summary: "resume project" }), now - 100, "immediate", 10_000],
+      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms, delivery_status, delivery_route) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["project.nudge", "test", "agent:arc", JSON.stringify({ summary: "resume project" }), now - 100, "immediate", 10_000, "accepted", "owner_inbox"],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",

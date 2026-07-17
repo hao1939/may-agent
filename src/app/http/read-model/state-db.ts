@@ -6,7 +6,7 @@
  */
 
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
-import { applyDbSchemaAndMigrations } from "../../../lib/db/schema.js";
+import { applyDbSchema } from "../../../lib/db/schema.js";
 
 export type { RunResult, SqliteDb, Statement } from "../../../lib/db.js";
 
@@ -19,7 +19,7 @@ export function openStateDb(path: string): SqliteDb {
   const db = openDatabase(path);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
-  applyDbSchemaAndMigrations(db);
+  applyDbSchema(db);
 
   const cachedDb: SqliteDb = {
     exec: (sql) => db.exec(sql),

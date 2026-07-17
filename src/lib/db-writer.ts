@@ -20,7 +20,7 @@ import {
 } from "./artifacts.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
-export const INLINE_EVENT_DATA_BYTES = 4_096;
+const INLINE_EVENT_DATA_BYTES = 4_096;
 const MAX_EVENT_PROJECTION_LENGTH = 12_000;
 
 const DURABLE_COMMAND_EVENTS = new Set([
@@ -155,7 +155,7 @@ function numberField(payload: Record<string, unknown>, ...keys: string[]): numbe
   return null;
 }
 
-export function eventCorrelation(payload: Record<string, unknown>) {
+function eventCorrelation(payload: Record<string, unknown>) {
   return {
     sessionId: stringField(payload, "sessionId", "session_id", "sourceSessionId"),
     workflowRunId: stringField(payload, "workflowRunId", "workflow_run_id"),
@@ -171,7 +171,7 @@ export function eventCorrelation(payload: Record<string, unknown>) {
   };
 }
 
-export function prepareEventBody(
+function prepareEventBody(
   persistDir: string,
   payload: Record<string, unknown>,
 ): { data: string; artifact: ArtifactDescriptor } {

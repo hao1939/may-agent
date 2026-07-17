@@ -94,7 +94,7 @@ function findPriorEscalationCreated(db: SqliteDb, escalationId: string, eventId:
      FROM events
      WHERE event_type = 'escalation.created'
        AND id != ?
-       AND COALESCE(escalation_id, json_extract(data, '$.escalationId')) = ?
+       AND escalation_id = ?
      ORDER BY id DESC
      LIMIT 1`,
   ).get(eventId, escalationId) as { id?: unknown } | null;
