@@ -8,7 +8,9 @@ import { closeDb, getDb } from "../../src/lib/requests.js";
 const TEST_DIR = join(tmpdir(), "may-agent-db-writer-test");
 
 beforeEach(() => {
-  try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
+  try {
+    rmSync(TEST_DIR, { recursive: true, force: true });
+  } catch {}
   mkdirSync(TEST_DIR, { recursive: true });
   closeDb(TEST_DIR);
 });
@@ -27,12 +29,17 @@ describe("DbWriter", () => {
       owner: "agent:dev",
     } as any);
 
-    expect(db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE sessionId = ?").get("s_flat")).toMatchObject({ count: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE sessionId = ?").get("s_flat")).toMatchObject({
+      count: 0,
+    });
 
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
-      ["s_running", "dev", "task", "running", Date.now() - 1_000],
-    );
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
+      "s_running",
+      "dev",
+      "task",
+      "running",
+      Date.now() - 1_000,
+    ]);
 
     writer.handler({
       type: "session.end",
@@ -47,7 +54,9 @@ describe("DbWriter", () => {
       status: "running",
       endedAt: null,
     });
-    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type IN ('session.start', 'session.end')").get()).toMatchObject({ count: 0 });
+    expect(
+      db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type IN ('session.start', 'session.end')").get(),
+    ).toMatchObject({ count: 0 });
   });
 
   it("does not erase session lineage when a duplicate start event lacks projectId", () => {
@@ -84,7 +93,9 @@ describe("DbWriter", () => {
       },
     } as any);
 
-    const row = db.prepare("SELECT sessionId, projectId, workflowRunId FROM sessions WHERE sessionId = ?").get("s_project") as any;
+    const row = db
+      .prepare("SELECT sessionId, projectId, workflowRunId FROM sessions WHERE sessionId = ?")
+      .get("s_project") as any;
     expect(row).toMatchObject({
       sessionId: "s_project",
       projectId: "may/aks-rp-e2e",
@@ -96,10 +107,14 @@ describe("DbWriter", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);
     const now = Date.now();
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, error) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s_error", "dev", "task", "error", now - 10, "provider failed"],
-    );
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt, error) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s_error",
+      "dev",
+      "task",
+      "error",
+      now - 10,
+      "provider failed",
+    ]);
 
     writer.handler({
       type: "session.end",
@@ -111,6 +126,49 @@ describe("DbWriter", () => {
     expect(db.prepare("SELECT status, error FROM sessions WHERE sessionId = ?").get("s_error")).toEqual({
       status: "error",
       error: "provider failed",
+    });
+  });
+
+  it("hydrates resumeCondition on persisted escalation.created rows from finish evidence", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "escalation.created",
+      source: "runtime:session-finish",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_finish_resume",
+        sourceAgent: "app-ops",
+        sourceSessionId: "s_finish_resume",
+        reason: "Task returned blocked with exact next steps.",
+        requestedAction: "Planner/app-ops should choose the recorded repair path.",
+        evidence: {
+          finishParams: {
+            status: "blocked",
+            next_steps:
+              "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
+            blockers: [
+              {
+                reason: "Wrongly decomposed task.",
+                context: "The acceptance references a non-live holder and needs a replacement successor.",
+              },
+            ],
+          },
+        },
+      },
+    } as any);
+
+    const row = db.prepare("SELECT data FROM events WHERE event_type = 'escalation.created'").get() as { data: string };
+    const data = JSON.parse(row.data) as Record<string, unknown>;
+    expect(data.resumeCondition).toBe(
+      "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
+    );
+    expect(data.resume).toEqual({
+      kind: "session",
+      sessionId: "s_finish_resume",
+      condition:
+        "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
     });
   });
 });

@@ -7,7 +7,16 @@
  * Design: shared/may-agent-docs/sdk.md
  */
 
-import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult, EscalationOptions, EscalationRef } from "./sdk.js";
+import type {
+  AgentSDK,
+  WorkflowSDK,
+  RunOpts,
+  TaskResult,
+  DoneOpts,
+  WorkflowResult,
+  EscalationOptions,
+  EscalationRef,
+} from "./sdk.js";
 import { EVENT_ROW_ID, type EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
@@ -266,6 +275,22 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       const severity = opts.severity ?? "P2";
       const escalationId = createEscalationId();
       const requestedAction = opts.requestedAction ?? `Investigate and resolve or answer this blocker: ${reason}`;
+      const resumeCondition =
+        typeof opts.resumeCondition === "string" && opts.resumeCondition.trim()
+          ? opts.resumeCondition.trim()
+          : undefined;
+      const resume = opts.resume
+        ? {
+            ...opts.resume,
+            ...(resumeCondition && typeof opts.resume.condition !== "string" ? { condition: resumeCondition } : {}),
+          }
+        : resumeCondition && opts.sourceSessionId
+          ? {
+              kind: "session",
+              sessionId: opts.sourceSessionId,
+              condition: resumeCondition,
+            }
+          : undefined;
       const event = {
         type: "escalation.created",
         source: opts.source ?? `agent:${deps.agentName}`,
@@ -279,9 +304,10 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
           ...(opts.projectId ? { projectId: opts.projectId } : {}),
           reason,
           requestedAction,
+          ...(resumeCondition ? { resumeCondition } : {}),
           severity,
           ...(opts.evidence ? { evidence: opts.evidence } : {}),
-          ...(opts.resume ? { resume: opts.resume } : {}),
+          ...(resume ? { resume } : {}),
           ...(opts.dedupKey ? { dedupKey: opts.dedupKey } : {}),
         },
       };

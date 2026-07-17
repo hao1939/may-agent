@@ -110,6 +110,7 @@ describe("runtime integration", () => {
       sourceAgent: "dev",
       reason: "Need a decision",
       requestedAction: "Decide the rollout window",
+      resumeCondition: "Decide the rollout window",
       severity: "P1",
     });
     expect(JSON.parse(row.data)).not.toHaveProperty("owner");
@@ -123,6 +124,7 @@ describe("runtime integration", () => {
       data: {
         escalationId: "esc_integration",
         reason: "Need a decision",
+        resumeCondition: "Decide the rollout window",
       },
     });
   });

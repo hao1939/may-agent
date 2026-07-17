@@ -137,6 +137,73 @@ function parseStoredEventData(value: unknown): Record<string, unknown> | null {
   }
 }
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function arrayValue(value: unknown): unknown[] | null {
+  return Array.isArray(value) ? value : null;
+}
+
+function textValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function firstEscalationResumeCondition(payload: Record<string, unknown>): string | null {
+  const resume = objectValue(payload.resume);
+  const evidence = objectValue(payload.evidence);
+  const finishParams = objectValue(evidence?.finishParams);
+  const blockers = arrayValue(finishParams?.blockers);
+  const firstBlocker = objectValue(blockers?.[0]);
+
+  return (
+    textValue(payload.resumeCondition) ??
+    textValue(payload.resume_condition) ??
+    textValue(resume?.condition) ??
+    textValue(resume?.resumeCondition) ??
+    textValue(finishParams?.resumeCondition) ??
+    textValue(finishParams?.resume_condition) ??
+    textValue(finishParams?.next_steps) ??
+    textValue(finishParams?.nextSteps) ??
+    textValue(firstBlocker?.context) ??
+    textValue(firstBlocker?.reason) ??
+    textValue(payload.blockedOn) ??
+    textValue(payload.requestedAction)
+  );
+}
+
+function normalizePersistedEscalationPayload(
+  eventType: string,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  if (eventType !== "escalation.created") return payload;
+  const resumeCondition = firstEscalationResumeCondition(payload);
+  if (!resumeCondition) return payload;
+
+  const resume = objectValue(payload.resume);
+  const sourceSessionId = textValue(payload.sourceSessionId);
+  return {
+    ...payload,
+    resumeCondition,
+    ...(resume
+      ? {
+          resume:
+            textValue(resume.condition) || textValue(resume.resumeCondition)
+              ? resume
+              : { ...resume, condition: resumeCondition },
+        }
+      : sourceSessionId
+        ? {
+            resume: {
+              kind: "session",
+              sessionId: sourceSessionId,
+              condition: resumeCondition,
+            },
+          }
+        : {}),
+  };
+}
+
 function isTerminalNoopEvent(eventType: unknown, data: Record<string, unknown> | null): boolean {
   if (eventType !== "session.end" || !data) return false;
   return (
@@ -403,9 +470,13 @@ export class DbWriter {
         this.db.exec("COMMIT");
         return null;
       }
+      const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
+      if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
+        (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
+      }
       const info = this.db.run(
         "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [event.type, source, owner, capEventData(payload), timestamp, urgency, ttlMs],
+        [event.type, source, owner, capEventData(persistedPayload), timestamp, urgency, ttlMs],
       );
       const rowId = Number(info.lastInsertRowid);
       if (!Number.isFinite(rowId) || rowId <= 0) {
