@@ -69,19 +69,6 @@ export function writeContentAddressedJson(
   return { ref, ...metadata };
 }
 
-/** Write immutable text exactly as supplied and return its content-addressed reference. */
-export function writeContentAddressedText(
-  persistDir: string,
-  directory: string,
-  content: string,
-): ArtifactDescriptor {
-  const metadata = digest(content);
-  const ref = `${directory}/${metadata.sha256}.txt`;
-  const filePath = join(persistDir, ref);
-  if (!existsSync(filePath)) writeAtomic(filePath, content);
-  return { ref, ...metadata };
-}
-
 export function sessionMetaRef(sessionId: string): string {
   return `sessions/${sessionId}/meta.json`;
 }

@@ -1790,7 +1790,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("retires stale inbox work through pair state without rewriting event status", () => {
+  it("retires stale inbox work through pair state without rewriting the event", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1805,20 +1805,16 @@ describe("event delivery metadata", () => {
       const db = getDb(root);
       const event = db
         .prepare(
-          `SELECT id
+          `SELECT id, data
          FROM events
          WHERE event_type = 'message.created'`,
         )
-        .get() as { id: number };
+        .get() as { id: number; data: string };
       db.prepare("UPDATE events SET timestamp = ? WHERE id = ?").run(Date.now() - 48 * 60 * 60_000, event.id);
 
       const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
       expect(commands.expireStaleMessages(24 * 60 * 60_000)).toBe(1);
-      expect(db.prepare("SELECT status, handled_by, result FROM events WHERE id = ?").get(event.id)).toMatchObject({
-        status: "pending",
-        handled_by: null,
-        result: null,
-      });
+      expect(db.prepare("SELECT data FROM events WHERE id = ?").get(event.id)).toEqual({ data: event.data });
       expect(
         db
           .prepare(

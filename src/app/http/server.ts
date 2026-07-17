@@ -401,10 +401,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        WHERE event_type = 'metric.alert_judged'
          AND timestamp >= ?
          AND (
-           COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)
+           alert_id = CAST(? AS TEXT)
            OR (
-             COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) IS NULL
-             AND COALESCE(metric_id, json_extract(data, '$.metricId')) = ?
+             alert_id IS NULL
+             AND metric_id = ?
            )
          )
        ORDER BY timestamp DESC, id DESC
