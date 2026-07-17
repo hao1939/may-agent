@@ -26,7 +26,7 @@ Problems we fixed manually:
 ```
 PURE INFRA (domain-neutral, runs forever on may's cron):
   metrics-snapshot (5min)   — measures everything, emits breach/recovered
-  db-retention (60min)      — prunes old data
+  runtime maintenance       — bounded metadata retention outside agent execution
   session-recovery (5min)   — resumes crashed sessions
   escalation (event)        — routes escalations to owners
 
@@ -87,7 +87,7 @@ INFRA (handlers):
   session-recovery    → resumes crashed sessions
   escalation          → routes to owners
   project-steward     → scans project health, emits findings
-  db-retention        → prunes old data
+  runtime maintenance → prunes bounded metadata outside agent execution
 
 APP (may-agent.app):
   receives metric.breach, project.health.finding, escalation signals

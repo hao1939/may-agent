@@ -1,19 +1,5 @@
 [
   {
-    "name": "db-retention",
-    "type": "job",
-    "intervalMs": 3600000,
-    "handler": "db-retention",
-    "agent": "may",
-    "enabled": true,
-    "description": "Hourly DB retention: DELETE events >5d, sessions >14d, snapshots >14d, workflow_runs >14d, evaluations >30d, then VACUUM if significant. Keeps DB under control.",
-    "context": [
-      "agents/may/handlers/db-retention.ts",
-      "projects/may-agent.app/project.json"
-    ],
-    "lastModified": "2026-06-14T21:50:18.565Z"
-  },
-  {
     "name": "heartbeat",
     "type": "job",
     "intervalMs": 1800000,
@@ -252,7 +238,7 @@
     "agent": "may",
     "enabled": true,
     "timeoutMs": 600000,
-    "description": "Measure handler health metrics every 5 minutes. Timeout raised to 600s (2026-06-30): handler runs DB retention, VACUUM, /tmp cleanup, and session-history pruning alongside 127 metric measurements — p95 ~150s steady-state but VACUUM can push to 300-400s under disk pressure.",
+    "description": "Measure and record health metrics every 5 minutes. Storage retention and compaction run in the dedicated runtime maintenance process, never in this handler.",
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"

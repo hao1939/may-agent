@@ -254,6 +254,11 @@ metrics-snapshot handler
   -> metric-alert-reactor is the generic fallback for unhandled alerts
 ```
 
+The metrics handler measures and records metrics only. Database retention,
+filesystem pruning, WAL management, and compaction are runtime maintenance and
+must not run inside `metrics-snapshot` or any agent execution. See
+[storage.md](storage.md#retention-and-maintenance).
+
 `project-steward` is another producer for project health signals. It scans
 project docs/tasks read-only and emits `project.health.finding` events (the
 former `project.health.checked` periodic snapshot was removed in commit

@@ -93,10 +93,13 @@ Verified structurally: almost no `call` session has a non-null
 ## Persistence
 
 Sessions persist to:
-1. **SQLite** (`sessions` table) — for SQL queries, dashboard, status checks
-2. **Disk** (`.state/sessions/<id>/meta.json`) — full metadata, messages
+1. **Disk** (`meta.json`, `session.jsonl`, and terminal `result.json`) — full
+   task, conversation, and result artifacts
+2. **SQLite** (`sessions` table) — bounded lifecycle/lineage projection, task
+   preview, and artifact reference/hash/size
 
-The DB is the queryable index. Disk is the source of truth for message history.
+Disk is the source of truth for full session content. The DB is the queryable
+index. See [storage.md](storage.md) for the cross-record storage contract.
 
 ## Persistence Integrity
 
@@ -105,8 +108,9 @@ persisted before side-effect subscribers run; if persistence fails, manager
 state is rolled back and the registry records the start error. Consumers must
 therefore never observe a durable session start for an unregistered session.
 
-Terminal `session.end` data includes `status`, `outcome`, and `error`, and the DB
-writer persists those fields. Disk metadata remains the full transcript source,
+Terminal `session.end` data includes `status`, `outcome`, and `error`. The
+runtime writes those fields to terminal `result.json` and projects the bounded
+lifecycle fields into SQLite. Disk remains the full transcript/result source,
 while SQLite is the canonical bounded read model for lifecycle queries.
 
 `lastActivityAt` is updated by progress and terminal writes. Stale-session
@@ -115,13 +119,10 @@ remain migration data rather than a reason to weaken the current contract.
 
 ## Data Retention
 
-The `db-retention` handler (`agents/may/handlers/db-retention.ts`, daily cron)
-deletes sessions where `startedAt < now - 14 days`. This means SQL queries
-against `sessions` older than 14 days return empty results. Additionally,
-sessions with `task` column > 1 MB are deleted regardless of age (size-based
-retention, KE-1986, commit `a1ff9b269`). For longer-term session analysis,
-use disk artifacts (`.state/sessions/history/<id>/meta.json`) if they have
-not been cleaned separately.
+Runtime maintenance expires old SQL projections in bounded batches. It does not
+delete a live record merely because its original task is large: new task text
+is bounded in SQL by construction and the full task stays in `meta.json`.
+Longer-term analysis uses `.state/sessions/history/<id>/` while retained.
 
 See `events.md` → "Data Retention" for the full retention table.
 
@@ -141,8 +142,9 @@ It's an internal detail of the persistence layer, not a user-facing concept:
 - Chat sessions use `autoClose: "never"` → dir stays in `sessions/` so they survive restarts
 - Job/call sessions use `autoClose: "immediate"` → dir moves to `sessions/history/` on completion
 
-Callers don't set it directly — it's derived from `kind`. Eventually, when we move to
-pure-SQLite session tracking, `autoClose` disappears entirely.
+Callers don't set it directly — it's derived from `kind`. `autoClose` remains a
+filesystem lifecycle policy; the design does not move full sessions into
+SQLite.
 
 `kind` ("chat" | "job" | "call") is both an observability tag and a lifecycle
 policy selector. `kind: "chat"` with `autoClose: "never"` uses the persistent

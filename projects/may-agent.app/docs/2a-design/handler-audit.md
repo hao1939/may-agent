@@ -61,7 +61,7 @@ infra behavior remains owned by a global agent such as May.
 | `session-eval` | Retired | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
 | `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.end` recoverable outcomes. |
 | `escalation` | May/global | Escalation routing | canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations. |
-| `db-retention` | May/global | Daily data retention cleanup: prune events (7d), sessions (14d), snapshots (30d); VACUUM after large deletes | direct DB | yes | Keep direct; deterministic cleanup with no judgment. |
+| `db-retention` | Runtime | Retired agent handler; bounded retention now runs in the dedicated `may-agent --maintenance` process | runtime maintenance | no | No agent/event-loop ownership and no online full VACUUM. |
 | `feedback-echo-sync` | May/global | Sync evaluator feedback into `agents/<name>/last-eval.md` files | direct DB read + FS write | yes | Keep direct; inline handler replaced a flaky subprocess spawn (bun:sqlite race). |
 | `metric-auto-handlers` | May/global | Declarative auto-remediation for known metric breaches (e.g., kill stale sessions) | direct DB + metrics service | yes | Keep direct; called by metric-alert-reactor before LLM triage dispatch. Registry-based, not judgment. |
 

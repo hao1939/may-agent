@@ -126,11 +126,16 @@ The agent just works. The infra triggers, frames, protects, records, and connect
 │  Pi-coding-agent events are bridged into system events via           │
 │  session.subscribe()                                                 │
 └───────────────────────────────────────────────────────────────────────┘
-                                    │ all events persisted
+                                    │ bounded projections persisted
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                     SQLite (single queryable store)                   │
+│              SQLite (bounded metadata/coordination store)            │
 │  metrics │ metric_snapshots │ sessions │ events │ projects            │
+└──────────────────────────────────────────────────────────────────────┘
+                                    │ artifact references
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│       Runtime artifacts (sessions, workflow runs, event bodies)       │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -521,7 +526,9 @@ CREATE TABLE projects (id, name, owner, status, path, updated_at);
 
 ### 8. Storage
 
-**Files** for things humans/agents edit. **DB** for things the system produces and queries.
+**Files** hold editable definitions and full runtime artifacts. **DB** holds
+bounded metadata, indexes, and coordination state. See
+[storage.md](storage.md) for the authoritative storage and migration contract.
 
 #### Files (git-tracked, hot-reloadable)
 
@@ -539,7 +546,11 @@ CREATE TABLE projects (id, name, owner, status, path, updated_at);
 | Work queue | `shared/work-queue.md` | |
 | Session transcripts | Pi-coding-agent SessionManager format | |
 
-#### DB (queryable, time-series)
+Runtime-generated artifacts under `.state/` are not git-tracked. Full session
+tasks/results, workflow inputs/results, large event bodies, and evaluation
+evidence live there; SQLite stores their query projections and references.
+
+#### DB (bounded query/coordination store)
 
 Core tables (see individual docs for canonical schemas):
 

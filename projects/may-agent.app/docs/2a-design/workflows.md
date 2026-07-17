@@ -372,6 +372,18 @@ workflow controls sequence
 
 Do not ask a skill to simulate durable workflow state, retries, or completion.
 
+## Run Persistence
+
+The authoritative run record is
+`.state/workflow-runs/<workflowRunId>/run.json`. It contains the full task,
+source provenance, lineage, lifecycle, and terminal result. Writes use atomic
+replace.
+
+`workflow_runs` is a bounded SQL projection containing the same identity and
+lifecycle fields, a short task preview, and the artifact reference/hash/size.
+Resume reads `run.json` first and falls back to full legacy SQL rows created
+before the file-backed format. See [storage.md](storage.md).
+
 ## Promotion Heuristic
 
 Promote a skill or repeated practice into a workflow only when evidence shows

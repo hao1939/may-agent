@@ -20,6 +20,7 @@ or knowledge. Events are not decorative audit rows.
 Read [system-model.md](system-model.md) for the relationship among events,
 delivery, pairs, traces, and domain entities. Read
 [event-graph.md](event-graph.md) for causal graph details.
+Read [storage.md](storage.md) for event-body storage and retention invariants.
 
 ## Canonical Envelope
 
@@ -93,6 +94,18 @@ The runtime guarantees:
 
 Persistence is not proof of execution. Delivery acceptance is not proof of
 completion.
+
+### Body storage
+
+The event row always keeps bounded routing, delivery, causality, and common
+correlation fields. A small bounded body may remain inline. A larger body is
+atomically written to `.state/event-bodies/<sha256>.json` before the row is
+committed; `data` then contains a bounded compatibility projection and artifact
+reference. Content-addressed bodies are immutable and may be shared.
+
+Consumers that only route, correlate, or measure an event must not load the
+full body. Detail/audit readers resolve the reference when full content is
+actually required.
 
 ## Delivery Acceptance
 

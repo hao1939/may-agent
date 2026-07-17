@@ -31,6 +31,7 @@ System architecture and subsystem designs.
 |-----|------|
 | [system-model.md](2a-design/system-model.md) | Compact governing model: objects, ownership, execution, closure, and reliability. Read this before subsystem designs. |
 | [architecture.md](2a-design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
+| [storage.md](2a-design/storage.md) | Runtime storage: authoritative artifacts, bounded SQLite projections, migration, and maintenance |
 | [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
 | [events.md](2a-design/events.md) | Event-native architecture: delivery, inbox, event types |
 | [event-graph.md](2a-design/event-graph.md) | Event trace graph: causality, closure links, delivery evidence, and graph read model |
