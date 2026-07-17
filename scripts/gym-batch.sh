@@ -227,12 +227,10 @@ if session_path:
         candidates.append(os.path.join(session_path, "session.jsonl"))
 if gym_root and sid:
     candidates.append(os.path.join(gym_root, "state", "sessions", sid, "session.jsonl"))
-    candidates.append(os.path.join(gym_root, "state", "sessions", "history", sid, "session.jsonl"))
 if sid:
     # Project root fallback.
     root = Path(__file__).resolve() if False else Path.cwd()
-    for base in (".state/sessions", ".state/sessions/history"):
-        candidates.append(os.path.join(str(root), base, sid, "session.jsonl"))
+    candidates.append(os.path.join(str(root), ".state/sessions", sid, "session.jsonl"))
 
 jsonl_path = None
 for c in candidates:

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { sessionDir, historyDir } from "../../src/lib/persistence.js";
+import { sessionDir } from "../../src/lib/persistence.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -21,7 +21,7 @@ function fakeModel(): Model<any> {
   };
 }
 
-describe("session archival on completion", () => {
+describe("terminal session persistence", () => {
   let persistDir: string;
   let manager: SubagentManager;
 
@@ -50,32 +50,29 @@ describe("session archival on completion", () => {
     const sessionId = manager.run("echo-agent", "task");
     await manager.waitFor(sessionId);
 
-    // Session data is archived to sessions/history/<id>/ after completion
     const sessDir = sessionDir(persistDir, sessionId);
-    expect(existsSync(sessDir)).toBe(false); // no longer in active dir
-
-    const archivedDir = join(historyDir(persistDir), sessionId);
-    expect(existsSync(archivedDir)).toBe(true); // moved to history
+    expect(existsSync(sessDir)).toBe(true);
+    expect(existsSync(join(sessDir, "[ACTIVE]"))).toBe(false);
 
     // Not in activeSessions (getSessionCount reflects only running sessions)
     expect(manager.getSessionCount()).toBe(0);
   });
 
-  it("result() works for archived sessions via persistence", async () => {
+  it("result() works for terminal sessions via persistence", async () => {
     const sessionId = manager.run("echo-agent", "task");
     await manager.waitFor(sessionId);
 
-    // result() reads from archive
+    // result() reads from the permanent session directory.
     const result = manager.result(sessionId);
     expect(result.sessionId).toBe(sessionId);
     expect(["done", "error"]).toContain(result.status); // fake model may succeed or fail
   });
 
-  it("progress() works for archived sessions via persistence", async () => {
+  it("progress() works for terminal sessions via persistence", async () => {
     const sessionId = manager.run("echo-agent", "task");
     await manager.waitFor(sessionId);
 
-    // progress() reads from archived JSONL
+    // progress() reads from the permanent JSONL.
     const messages = manager.progress(sessionId);
     expect(messages.length).toBeGreaterThan(0);
   });
@@ -84,7 +81,7 @@ describe("session archival on completion", () => {
     const sessionId = manager.run("echo-agent", "task");
     const result1 = await manager.waitFor(sessionId);
 
-    // Call waitFor again — session is already archived
+    // Call waitFor again after the session is terminal.
     const result2 = await manager.waitFor(sessionId);
     expect(result2.sessionId).toBe(result1.sessionId);
     expect(result2.status).toBe(result1.status);

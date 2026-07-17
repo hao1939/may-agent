@@ -118,11 +118,11 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
   try {
     return db.prepare(
       `WITH handlers AS (
-         SELECT COALESCE(handler, json_extract(data, '$.handler')) AS name, MAX(timestamp) AS lastFire
+         SELECT handler AS name, MAX(timestamp) AS lastFire
          FROM events
          WHERE event_type = 'handler.started'
-           AND COALESCE(handler, json_extract(data, '$.handler')) IS NOT NULL
-         GROUP BY COALESCE(handler, json_extract(data, '$.handler'))
+           AND handler IS NOT NULL
+         GROUP BY handler
        )
        SELECT h.name, h.lastFire,
          CASE latest.event_type
@@ -134,7 +134,7 @@ function loadProcessHealth(persistDir: string): ProcessInfo[] {
        LEFT JOIN events latest ON latest.id = (
          SELECT e.id FROM events e
          WHERE e.event_type IN ('handler.completed', 'handler.failed')
-           AND json_extract(e.data, '$.handler') = h.name
+           AND e.handler = h.name
          ORDER BY e.timestamp DESC, e.id DESC LIMIT 1
        )
        ORDER BY h.lastFire DESC

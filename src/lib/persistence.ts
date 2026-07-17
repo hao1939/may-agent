@@ -9,7 +9,7 @@ import {
   readdirSync,
 } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import type { TSchema } from "@earendil-works/pi-ai";
@@ -54,7 +54,7 @@ export interface PersistedSession {
   instance?: string;
   /** Session kind. Defaults to "job" for backward compat with old meta.json files. */
   kind?: SessionKind;
-  /** Session lifecycle policy. "never" = stays idle on completion, "immediate" = archives on completion. */
+  /** Session lifecycle policy. "never" = stays idle on completion, "immediate" = becomes terminal. */
   autoClose?: "immediate" | "never";
   /** Number of state-changing tool calls executed so far (persisted for crash recovery). */
   opCount?: number;
@@ -277,78 +277,20 @@ export function clearSessionMessages(persistDir: string, sessionId: string): voi
   }
 }
 
-// ── History / archival helpers ─────────────────────────────────────────
-
-/** Return the path to the history directory: <persistDir>/sessions/history/ */
-export function historyDir(persistDir: string): string {
-  return join(persistDir, "sessions", "history");
-}
-
-/** Move a session directory from sessions/<id>/ to sessions/history/<id>/. */
-export function archiveSession(persistDir: string, sessionId: string): void {
-  const src = sessionDir(persistDir, sessionId);
-  const dest = join(historyDir(persistDir), sessionId);
-  mkdirSync(historyDir(persistDir), { recursive: true });
-  // Remove any existing archived session to avoid ENOTEMPTY on re-archival
-  if (existsSync(dest)) {
-    rmSync(dest, { recursive: true, force: true });
-  }
-  renameSync(src, dest);
-}
-
-/**
- * Move a session's JSONL/output back from history/ to the live sessions/ dir.
- * Used by Manager.resumeSession() when the operator messages a cold-archived
- * session: the session has to be "live" again so appendSessionMessage and
- * downstream tools (transcript reader, message_end subscriber) write/read
- * from the same path the live runtime expects.
- *
- * Idempotent: if the live dir already exists or the archive is missing,
- * does nothing.
- */
-export function unarchiveSession(persistDir: string, sessionId: string): void {
-  const src = join(historyDir(persistDir), sessionId);
-  const dest = sessionDir(persistDir, sessionId);
-  if (!existsSync(src)) return;
-  if (existsSync(dest)) return;
-  mkdirSync(join(persistDir, "sessions"), { recursive: true });
-  renameSync(src, dest);
-}
-
 // ── Session meta.json helpers ─────────────────────────────────────────
 
-/** Path to a session's meta.json (in active session dir). */
+/** Path to a session's meta.json. Session paths never change with lifecycle state. */
 export function sessionMetaPath(persistDir: string, sessionId: string): string {
   return join(sessionDir(persistDir, sessionId), "meta.json");
 }
 
-/** Path to a session's meta.json in the history archive. */
-function archivedSessionMetaPath(persistDir: string, sessionId: string): string {
-  return join(historyDir(persistDir), sessionId, "meta.json");
-}
-
-/** Read a session's meta.json. Checks active dir first, then history.
- *  Returns null if not found or corrupted. */
+/** Read a session's meta.json. Returns null if not found or corrupted. */
 export function readSessionMeta(persistDir: string, sessionId: string): PersistedSession | null {
-  // Check active session dir first
-  const activePath = sessionMetaPath(persistDir, sessionId);
-  if (existsSync(activePath)) {
-    try {
-      return JSON.parse(readFileSync(activePath, "utf-8")) as PersistedSession;
-    } catch {
-      return null;
-    }
+  try {
+    return JSON.parse(readFileSync(sessionMetaPath(persistDir, sessionId), "utf-8")) as PersistedSession;
+  } catch {
+    return null;
   }
-  // Fall back to history archive
-  const archivePath = archivedSessionMetaPath(persistDir, sessionId);
-  if (existsSync(archivePath)) {
-    try {
-      return JSON.parse(readFileSync(archivePath, "utf-8")) as PersistedSession;
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }
 
 /** Write a session's meta.json atomically. Creates the session dir if needed. */
@@ -360,26 +302,32 @@ export function writeSessionMeta(persistDir: string, sessionId: string, meta: Pe
   renameSync(tmpPath, filePath);
 }
 
-/** Scan sessions/ directory for all session IDs (active, not archived).
- *  Returns directory names that look like session IDs (skips 'history'). */
-export function listActiveSessionIds(persistDir: string): string[] {
+const ACTIVE_MARKER = "[ACTIVE]";
+const STARTED_MARKER = "[STARTED]";
+
+/** Mark a session as runtime-active without changing its permanent directory. */
+export function markSessionActive(persistDir: string, sessionId: string): void {
+  ensureSessionDir(persistDir, sessionId);
+  writeFileSync(join(sessionDir(persistDir, sessionId), ACTIVE_MARKER), new Date().toISOString(), "utf-8");
+}
+
+/** Mark a session terminal. Artifacts remain in their original directory. */
+export function markSessionInactive(persistDir: string, sessionId: string): void {
+  for (const marker of [ACTIVE_MARKER, STARTED_MARKER]) {
+    try {
+      rmSync(join(sessionDir(persistDir, sessionId), marker), { force: true });
+    } catch {
+      /* best effort */
+    }
+  }
+}
+
+/** List every durable session record. */
+export function listSessionIds(persistDir: string): string[] {
   const sessionsRoot = join(persistDir, "sessions");
   if (!existsSync(sessionsRoot)) return [];
   try {
     return readdirSync(sessionsRoot, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && d.name !== "history")
-      .map((d) => d.name);
-  } catch {
-    return [];
-  }
-}
-
-/** Scan sessions/history/ directory for all archived session IDs. */
-export function listArchivedSessionIds(persistDir: string): string[] {
-  const histDir = historyDir(persistDir);
-  if (!existsSync(histDir)) return [];
-  try {
-    return readdirSync(histDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
   } catch {
@@ -387,28 +335,27 @@ export function listArchivedSessionIds(persistDir: string): string[] {
   }
 }
 
-/** Scan all session meta.json files (active + archived) and return a map.
+/** List runtime-active sessions using tiny marker files, without reading all historical metadata. */
+export function listActiveSessionIds(persistDir: string): string[] {
+  return listSessionIds(persistDir).filter((sessionId) => {
+    const dir = sessionDir(persistDir, sessionId);
+    return existsSync(join(dir, ACTIVE_MARKER)) || existsSync(join(dir, STARTED_MARKER));
+  });
+}
+
+/** Scan all session meta.json files and return a map.
  *  Reads session metadata from per-session meta.json files in the persist directory.
  *  @returns Record mapping session IDs to their persisted metadata. */
 export function loadAllSessionMetas(persistDir: string): Record<string, PersistedSession> {
   const result: Record<string, PersistedSession> = {};
-  // Active sessions
-  for (const sid of listActiveSessionIds(persistDir)) {
-    const meta = readSessionMeta(persistDir, sid);
-    if (meta) result[sid] = meta;
-  }
-  // Archived sessions (don't overwrite active — active takes precedence)
-  for (const sid of listArchivedSessionIds(persistDir)) {
-    if (result[sid]) continue;
+  for (const sid of listSessionIds(persistDir)) {
     const meta = readSessionMeta(persistDir, sid);
     if (meta) result[sid] = meta;
   }
   return result;
 }
 
-/** Scan active session meta.json files only.
- *  Startup stale-session recovery should not walk archived history; archived
- *  sessions are cold records and cannot be in-process work to resume. */
+/** Read only marker-selected active metadata for bounded startup recovery. */
 export function loadActiveSessionMetas(persistDir: string): Record<string, PersistedSession> {
   const result: Record<string, PersistedSession> = {};
   for (const sid of listActiveSessionIds(persistDir)) {
@@ -422,38 +369,19 @@ export function loadActiveSessionMetas(persistDir: string): Record<string, Persi
 
 /** Async version of readSessionMeta. Uses fs/promises for non-blocking I/O. */
 export async function readSessionMetaAsync(persistDir: string, sessionId: string): Promise<PersistedSession | null> {
-  const activePath = sessionMetaPath(persistDir, sessionId);
   try {
-    const data = await readFile(activePath, "utf-8");
-    return JSON.parse(data) as PersistedSession;
-  } catch {
-    // Not in active dir — try history archive
-  }
-  const archivePath = archivedSessionMetaPath(persistDir, sessionId);
-  try {
-    const data = await readFile(archivePath, "utf-8");
+    const data = await readFile(sessionMetaPath(persistDir, sessionId), "utf-8");
     return JSON.parse(data) as PersistedSession;
   } catch {
     return null;
   }
 }
 
-/** Async version of listActiveSessionIds. */
-export async function listActiveSessionIdsAsync(persistDir: string): Promise<string[]> {
+/** Async version of listSessionIds. */
+export async function listSessionIdsAsync(persistDir: string): Promise<string[]> {
   const sessionsRoot = join(persistDir, "sessions");
   try {
     const entries = await readdir(sessionsRoot, { withFileTypes: true });
-    return entries.filter((d) => d.isDirectory() && d.name !== "history").map((d) => d.name);
-  } catch {
-    return [];
-  }
-}
-
-/** Async version of listArchivedSessionIds. */
-export async function listArchivedSessionIdsAsync(persistDir: string): Promise<string[]> {
-  const histDir = historyDir(persistDir);
-  try {
-    const entries = await readdir(histDir, { withFileTypes: true });
     return entries.filter((d) => d.isDirectory()).map((d) => d.name);
   } catch {
     return [];
@@ -464,21 +392,11 @@ export async function listArchivedSessionIdsAsync(persistDir: string): Promise<s
  *  Reads session metadata from per-session meta.json files without blocking the event loop. */
 export async function loadAllSessionMetasAsync(persistDir: string): Promise<Record<string, PersistedSession>> {
   const result: Record<string, PersistedSession> = {};
-  // Active sessions
-  const activeIds = await listActiveSessionIdsAsync(persistDir);
-  const activeMetas = await Promise.all(
-    activeIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
+  const sessionIds = await listSessionIdsAsync(persistDir);
+  const metas = await Promise.all(
+    sessionIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
   );
-  for (const [sid, meta] of activeMetas) {
-    if (meta) result[sid] = meta;
-  }
-  // Archived sessions (don't overwrite active — active takes precedence)
-  const archivedIds = await listArchivedSessionIdsAsync(persistDir);
-  const archivedMetas = await Promise.all(
-    archivedIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
-  );
-  for (const [sid, meta] of archivedMetas) {
-    if (result[sid]) continue;
+  for (const [sid, meta] of metas) {
     if (meta) result[sid] = meta;
   }
   return result;
@@ -569,11 +487,6 @@ export class RegistryStore implements SessionStore {
 }
 
 // ── Workflow Run persistence ───────────────────────────────────────────
-
-/** Read messages from the archived (history) session JSONL. Returns [] if not found. */
-export function readArchivedSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
-  return readJsonlFile<AgentMessage>(join(historyDir(persistDir), sessionId, "session.jsonl"));
-}
 
 // ── Rolling Compaction: compacted state snapshot ─────────────────────────
 

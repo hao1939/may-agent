@@ -176,9 +176,7 @@ describe("sendSocketCommand", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
     });
 
-    await expect(sendSocketCommand(endpoint, { type: "status" }, { timeoutMs: 200 })).rejects.toThrow(
-      "Socket timeout",
-    );
+    await expect(sendSocketCommand(endpoint, { type: "status" }, { timeoutMs: 200 })).rejects.toThrow("Socket timeout");
   });
 
   it("rejects on connection error (no server)", async () => {
@@ -218,7 +216,14 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // After a short delay, emit the event we're waiting for
       setTimeout(() => {
-        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_1", status: "done" } }) + "\n");
+        socket.write(
+          JSON.stringify({
+            type: "session.end",
+            source: "runtime",
+            owner: "agent:may",
+            data: { sessionId: "s_1", status: "done" },
+          }) + "\n",
+        );
       }, 100);
     });
 
@@ -233,9 +238,23 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         // Wrong session
-        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_other", status: "done" } }) + "\n");
+        socket.write(
+          JSON.stringify({
+            type: "session.end",
+            source: "runtime",
+            owner: "agent:may",
+            data: { sessionId: "s_other", status: "done" },
+          }) + "\n",
+        );
         // Right session
-        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_target", status: "error" } }) + "\n");
+        socket.write(
+          JSON.stringify({
+            type: "session.end",
+            source: "runtime",
+            owner: "agent:may",
+            data: { sessionId: "s_target", status: "error" },
+          }) + "\n",
+        );
       }, 100);
     });
 
@@ -316,8 +335,6 @@ describe("waitForDetached", () => {
   beforeEach(() => {
     mkdirSync(resolve(tmpDir, "sessions"), { recursive: true });
     mkdirSync(resolve(tmpDir, "instances"), { recursive: true });
-    // History dir for archived sessions
-    mkdirSync(resolve(tmpDir, "sessions", "history"), { recursive: true });
   });
 
   afterEach(() => {
@@ -330,19 +347,12 @@ describe("waitForDetached", () => {
     writeFileSync(resolve(dir, "meta.json"), JSON.stringify(data, null, 2));
   }
 
-  function writeArchivedSession(sessionId: string, data: Record<string, unknown>, messages: unknown[]) {
-    // Write meta.json in the active session dir (for getSession to find)
+  function writeStoredSession(sessionId: string, data: Record<string, unknown>, messages: unknown[]) {
     writeSessionMeta(sessionId, data);
-    // Write session.jsonl in both active and history dirs
-    // (readSessionMessages reads from active dir; readArchivedSessionMessages from history)
-    const activeDir = resolve(tmpDir, "sessions", sessionId);
-    mkdirSync(activeDir, { recursive: true });
+    const sessionPath = resolve(tmpDir, "sessions", sessionId);
+    mkdirSync(sessionPath, { recursive: true });
     const jsonlContent = messages.map((m) => JSON.stringify(m)).join("\n") + "\n";
-    writeFileSync(resolve(activeDir, "session.jsonl"), jsonlContent);
-    // Also write to history dir for backward compat
-    const histDir = resolve(tmpDir, "sessions", "history", sessionId);
-    mkdirSync(histDir, { recursive: true });
-    writeFileSync(resolve(histDir, "session.jsonl"), jsonlContent);
+    writeFileSync(resolve(sessionPath, "session.jsonl"), jsonlContent);
   }
 
   function writeInstanceIdentity(instanceName: string, data: Record<string, unknown>) {
@@ -355,7 +365,7 @@ describe("waitForDetached", () => {
     const manager = new SubagentManager({ persistDir: tmpDir });
     const sessionId = "s_done_1";
 
-    writeArchivedSession(
+    writeStoredSession(
       sessionId,
       {
         agent: "bob",
@@ -398,7 +408,7 @@ describe("waitForDetached", () => {
 
     // After 500ms, update meta to "done" and write archive
     setTimeout(() => {
-      writeArchivedSession(
+      writeStoredSession(
         sessionId,
         {
           agent: "bob",
@@ -437,11 +447,9 @@ describe("waitForDetached", () => {
       socket: "",
     });
 
-    // Write archived session (for when resultFromArchive reads it after status update)
-    const histDir = resolve(tmpDir, "sessions", "history", sessionId);
-    mkdirSync(histDir, { recursive: true });
+    const sessionPath = resolve(tmpDir, "sessions", sessionId);
     writeFileSync(
-      resolve(histDir, "session.jsonl"),
+      resolve(sessionPath, "session.jsonl"),
       JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Crashed" }], timestamp: Date.now() }) + "\n",
     );
 

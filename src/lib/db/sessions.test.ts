@@ -29,11 +29,13 @@ describe("session DB progress", () => {
       const row = getDb(persistDir)
         .prepare("select status, endedAt, opCount, lastActivityAt from sessions where sessionId = ?")
         .get("s_live") as { status: string; endedAt: number | null; opCount: number; lastActivityAt: number };
+      const foreignKeys = getDb(persistDir).prepare("PRAGMA foreign_keys").get() as { foreign_keys: number };
 
       expect(row.status).toBe("running");
       expect(row.endedAt).toBeNull();
       expect(row.opCount).toBe(2);
       expect(row.lastActivityAt).toBe(2000);
+      expect(foreignKeys.foreign_keys).toBe(1);
     } finally {
       closeDb(persistDir);
     }

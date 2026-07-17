@@ -796,10 +796,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function resolveSessionJsonl(sessionId: string): { path: string; source: string } | null {
-    const livePath = join(STATE_DIR, "sessions", sessionId, "session.jsonl");
-    if (existsSync(livePath)) return { path: livePath, source: ".state/sessions/" + sessionId + "/session.jsonl" };
-    const historyPath = join(STATE_DIR, "sessions", "history", sessionId, "session.jsonl");
-    if (existsSync(historyPath)) return { path: historyPath, source: ".state/sessions/history/" + sessionId + "/session.jsonl" };
+    const path = join(STATE_DIR, "sessions", sessionId, "session.jsonl");
+    if (existsSync(path)) return { path, source: ".state/sessions/" + sessionId + "/session.jsonl" };
     return null;
   }
 

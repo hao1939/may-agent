@@ -212,7 +212,7 @@ export class ChatSession {
       })
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
-        // Session gone (closed, archived, etc.) — create a fresh one
+        // Session gone or terminal — create a fresh one
         if (msg.includes("not found") || msg.includes("terminal state")) {
           // Guard against infinite recursion (e.g., persistent "not found" error)
           if (this.sendRetryDepth >= 2) {
@@ -232,7 +232,7 @@ export class ChatSession {
 
   /**
    * Track session completion for the onDone callback.
-   * For autoClose: "never", the session goes idle (not archived).
+   * For autoClose: "never", the session goes idle rather than terminal.
    * Surfaces any errors (empty responses, API failures, etc.) to the user.
    */
   private trackCompletion(sessionId: string): void {
@@ -243,7 +243,7 @@ export class ChatSession {
         // (e.g., empty model response, stream errors on idle sessions)
         const session = this.manager.status().find((s) => s.sessionId === sessionId);
         if (session?.error) {
-          // If the session overflowed, it was already archived by handleCompletion.
+          // If the session overflowed, handleCompletion already made it terminal.
           // Clear our reference so the next message creates a fresh session.
           if (isOverflowError(session.error)) {
             this.sessionId = null;

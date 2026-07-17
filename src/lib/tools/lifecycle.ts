@@ -10,13 +10,13 @@
  *   - Triggers post-turn hooks (evaluation, context-learn, memory)
  *
  * What finish() does NOT do:
- *   - Close/archive the session (that's the caller's decision via autoClose)
+ *   - Choose whether the session becomes idle or terminal (the caller's autoClose policy does that)
  *   - Prevent further messages (chat sessions accept input after finish)
  *
  * Session lifecycle after finish():
  *   - Chat (autoClose: "never"):  turn ends → session idle → awaits next input
- *   - Job  (autoClose: "immediate"): turn ends → session archives → parent continues
- *   - Call (autoClose: "immediate"): turn ends → session archives → caller gets result
+ *   - Job  (autoClose: "immediate"): turn ends → session terminal → parent continues
+ *   - Call (autoClose: "immediate"): turn ends → session terminal → caller gets result
  *
  * The session close decision belongs to whoever created it, not to the agent.
  */

@@ -26,7 +26,7 @@ function createTestState() {
   const agentsRoot = join(root, "agents");
 
   // Create directory structure
-  mkdirSync(join(stateDir, "sessions", "history"), { recursive: true });
+  mkdirSync(join(stateDir, "sessions"), { recursive: true });
   mkdirSync(join(agentsRoot, "shared"), { recursive: true });
   mkdirSync(join(agentsRoot, "may", "workspace"), { recursive: true });
 
@@ -43,6 +43,7 @@ function createTestState() {
       kind: "job",
     }),
   );
+  writeFileSync(join(stateDir, "sessions", activeSession1, "[ACTIVE]"), "active");
 
   const activeSession2 = "s_" + (Date.now() - 120_000) + "_2"; // 2m ago
   mkdirSync(join(stateDir, "sessions", activeSession2));
@@ -56,12 +57,13 @@ function createTestState() {
       kind: "chat",
     }),
   );
+  writeFileSync(join(stateDir, "sessions", activeSession2, "[ACTIVE]"), "active");
 
-  // Create history sessions (some recent, some old)
+  // Create terminal sessions (some recent, some old)
   const recentHistory = "s_" + (Date.now() - 5 * 60_000) + "_100";
-  mkdirSync(join(stateDir, "sessions", "history", recentHistory));
+  mkdirSync(join(stateDir, "sessions", recentHistory));
   writeFileSync(
-    join(stateDir, "sessions", "history", recentHistory, "meta.json"),
+    join(stateDir, "sessions", recentHistory, "meta.json"),
     JSON.stringify({
       agent: "coder",
       task: "Implement feature X",
@@ -73,9 +75,9 @@ function createTestState() {
   );
 
   const recentError = "s_" + (Date.now() - 10 * 60_000) + "_101";
-  mkdirSync(join(stateDir, "sessions", "history", recentError));
+  mkdirSync(join(stateDir, "sessions", recentError));
   writeFileSync(
-    join(stateDir, "sessions", "history", recentError, "meta.json"),
+    join(stateDir, "sessions", recentError, "meta.json"),
     JSON.stringify({
       agent: "optimizer",
       task: "Optimize prompts",
@@ -87,11 +89,11 @@ function createTestState() {
     }),
   );
 
-  // Old history (should be outside 60m window)
+  // Old terminal session (should be outside 60m window)
   const oldHistory = "s_" + (Date.now() - 120 * 60_000) + "_50";
-  mkdirSync(join(stateDir, "sessions", "history", oldHistory));
+  mkdirSync(join(stateDir, "sessions", oldHistory));
   writeFileSync(
-    join(stateDir, "sessions", "history", oldHistory, "meta.json"),
+    join(stateDir, "sessions", oldHistory, "meta.json"),
     JSON.stringify({
       agent: "scout",
       task: "Deep dive research",
