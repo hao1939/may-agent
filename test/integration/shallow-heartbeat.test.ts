@@ -62,7 +62,7 @@ describe("shallow heartbeat detection", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("heartbeat sessions with zero tool calls archive as error", async () => {
+  it("heartbeat sessions with zero tool calls become terminal errors", async () => {
     manager.register(baseDef());
     const sid = manager.run("bot", "[heartbeat] Read heartbeat.md and check health.");
     await manager.waitFor(sid);

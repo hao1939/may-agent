@@ -906,14 +906,14 @@ export class Cron {
         return row.startedAt;
       }
 
-      // Secondary fallback: handler.started events always record the entry name
-      // in data.handler. This covers synthetic project-app schedule entries whose
+      // Handler events project the entry name into the typed handler column.
+      // This covers synthetic project-app schedule entries whose
       // handler string ("__project_app_schedule__") doesn't map to a workflow name.
       const evtRow = db
         .prepare(
           `SELECT timestamp FROM events
            WHERE event_type = 'handler.started'
-             AND COALESCE(handler, json_extract(data, '$.handler')) = ?
+             AND handler = ?
            ORDER BY timestamp DESC LIMIT 1`,
         )
         .get(entryName) as { timestamp: number } | undefined;

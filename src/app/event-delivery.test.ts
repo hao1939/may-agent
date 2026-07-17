@@ -287,7 +287,7 @@ describe("event delivery metadata", () => {
       ]);
       const graph = addSessionTranscriptToEventGraph(buildEventGraph(db, start), "s_transcript", {
         sessionId: "s_transcript",
-        source: ".state/sessions/history/s_transcript/session.jsonl",
+        source: ".state/sessions/s_transcript/session.jsonl",
         messages: [
           { role: "user", text: "Investigate the issue", rawLine: 1 },
           {

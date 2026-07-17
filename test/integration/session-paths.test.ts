@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import {
-  historyDir,
-  archiveSession,
   ensureSessionDir,
+  markSessionActive,
+  markSessionInactive,
   sessionDir,
   sessionOutputDir,
   appendSessionMessage,
@@ -29,13 +29,7 @@ function fakeModel(): Model<any> {
   };
 }
 
-describe("historyDir", () => {
-  it("returns the correct history path", () => {
-    expect(historyDir("/state")).toBe(join("/state", "sessions", "history"));
-  });
-});
-
-describe("archiveSession", () => {
+describe("permanent session paths", () => {
   let persistDir: string;
 
   beforeEach(() => {
@@ -46,8 +40,8 @@ describe("archiveSession", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("moves session directory to history", () => {
-    const sessionId = "archive-test-1";
+  it("changes lifecycle markers without moving session artifacts", () => {
+    const sessionId = "path-test-1";
     ensureSessionDir(persistDir, sessionId);
     mkdirSync(sessionOutputDir(persistDir, sessionId), { recursive: true });
 
@@ -58,17 +52,15 @@ describe("archiveSession", () => {
       timestamp: Date.now(),
     } as AgentMessage);
 
-    // Archive
-    archiveSession(persistDir, sessionId);
+    const originalDir = sessionDir(persistDir, sessionId);
+    markSessionActive(persistDir, sessionId);
+    expect(existsSync(join(originalDir, "[ACTIVE]"))).toBe(true);
 
-    // Original should be gone
-    expect(existsSync(sessionDir(persistDir, sessionId))).toBe(false);
-
-    // History should exist
-    const archivedDir = join(historyDir(persistDir), sessionId);
-    expect(existsSync(archivedDir)).toBe(true);
-    expect(existsSync(join(archivedDir, "session.jsonl"))).toBe(true);
-    expect(existsSync(join(archivedDir, "output"))).toBe(true);
+    markSessionInactive(persistDir, sessionId);
+    expect(existsSync(originalDir)).toBe(true);
+    expect(existsSync(join(originalDir, "[ACTIVE]"))).toBe(false);
+    expect(existsSync(join(originalDir, "session.jsonl"))).toBe(true);
+    expect(existsSync(join(originalDir, "output"))).toBe(true);
   });
 });
 
@@ -132,7 +124,7 @@ describe("SubagentManager path accessors", () => {
     expect(outputPath).toBe(sessionOutputDir(persistDir, sessionId));
   });
 
-  it("getOutputPath returns archived outputDir after completion", async () => {
+  it("getOutputPath returns the stable outputDir after completion", async () => {
     const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "arch-agent",
@@ -148,8 +140,7 @@ describe("SubagentManager path accessors", () => {
     await manager.waitFor(sessionId);
 
     const outputPath = manager.getOutputPath(sessionId);
-    // After archival, the outputDir should point to the active session's stored path
-    // (it's still in the ActiveSession map with the original outputDir)
+    // Terminal state does not change the stored output path.
     expect(outputPath).toBeDefined();
     expect(outputPath).toContain(sessionId);
     expect(outputPath).toContain("output");

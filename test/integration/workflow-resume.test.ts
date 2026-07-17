@@ -57,7 +57,7 @@ function saveWorkflowRunCompat(dir: string, run: WorkflowRun): void {
 }
 
 /** Create a fake session with the given assistant response.
- *  Sessions stay in the active sessions dir (manager no longer archives to history/). */
+ *  Sessions retain one permanent directory for every lifecycle state. */
 function createArchivedSession(sessionId: string, agentName: string, task: string, responseText: string): void {
   const sessionDir = join(persistDir, "sessions", sessionId);
   mkdirSync(sessionDir, { recursive: true });
@@ -374,7 +374,7 @@ describe("workflow tool: resume", () => {
     };
     saveWorkflowRunCompat(persistDir, prevRun);
 
-    // Create archived session data for step 1
+    // Create terminal session data for step 1
     createArchivedSession("s_step1", "coder", "implement fix the bug", "I fixed the bug in main.ts");
     addToRegistry("s_step1", "coder", "implement fix the bug", "done", {
       workflowRunId: "wr_crashed_one",

@@ -159,12 +159,10 @@ echo "Phase 2 complete (session: $PHASE2_SESSION, exit: $PHASE2_EXIT)" >&2
 COMBINED_TRANSCRIPT="$GYM_ROOT/combined-transcript.jsonl"
 for SESS_ID in "$PHASE1_SESSION" "$PHASE2_SESSION"; do
   if [[ -n "$SESS_ID" ]]; then
-    for candidate in "$GYM_STATE/sessions/$SESS_ID" "$GYM_STATE/sessions/history/$SESS_ID"; do
-      if [[ -d "$candidate" && -f "$candidate/session.jsonl" ]]; then
-        cat "$candidate/session.jsonl" >> "$COMBINED_TRANSCRIPT"
-        break
-      fi
-    done
+    candidate="$GYM_STATE/sessions/$SESS_ID"
+    if [[ -d "$candidate" && -f "$candidate/session.jsonl" ]]; then
+      cat "$candidate/session.jsonl" >> "$COMBINED_TRANSCRIPT"
+    fi
   fi
 done
 TRANSCRIPT_PATH=""

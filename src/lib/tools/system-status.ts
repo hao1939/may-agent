@@ -107,9 +107,7 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
   try {
     const db = getDb(stateDir);
     // Check if metrics table exists
-    const tableCheck = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
-      .get();
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'").get();
     if (!tableCheck) return [];
 
     const rows = db
@@ -135,9 +133,7 @@ function getAgentMetrics(stateDir: string, agent: string): MetricRow[] {
 function getAllActiveMetrics(stateDir: string): MetricRow[] {
   try {
     const db = getDb(stateDir);
-    const tableCheck = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'")
-      .get();
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='metrics'").get();
     if (!tableCheck) return [];
 
     const rows = db
@@ -206,7 +202,7 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
     const db = getDb(stateDir);
     const rows = db
       .prepare(
-        `SELECT COALESCE(handler, json_extract(data, '$.handler')) as jobName,
+        `SELECT handler as jobName,
                 'handler' as type,
                 CASE event_type
                   WHEN 'handler.completed' THEN 'success'
@@ -216,7 +212,7 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
                 '' as summary,
                 datetime(timestamp / 1000, 'unixepoch') as startedAt,
                 datetime(timestamp / 1000, 'unixepoch') as endedAt,
-                COALESCE(duration_ms, json_extract(data, '$.durationMs'), 0) as durationMs
+                COALESCE(duration_ms, 0) as durationMs
          FROM events
          WHERE event_type IN ('handler.completed', 'handler.failed')
          ORDER BY timestamp DESC LIMIT ?`,
@@ -235,7 +231,7 @@ function getActiveSessions(stateDir: string): Array<{ id: string; meta: Persiste
   const results: Array<{ id: string; meta: PersistedSession }> = [];
   try {
     const dirs = readdirSync(sessionsRoot, { withFileTypes: true }).filter(
-      (d) => d.isDirectory() && d.name !== "history",
+      (d) => d.isDirectory() && existsSync(join(sessionsRoot, d.name, "[ACTIVE]")),
     );
 
     for (const d of dirs) {
@@ -259,12 +255,14 @@ function getRecentHistory(
   windowMs: number,
   maxEntries: number = 100,
 ): Array<{ id: string; meta: PersistedSession }> {
-  const histDir = join(stateDir, "sessions", "history");
-  if (!existsSync(histDir)) return [];
+  const sessionsRoot = join(stateDir, "sessions");
+  if (!existsSync(sessionsRoot)) return [];
 
   try {
-    // readdir returns filenames — session IDs contain timestamps: s_{TIMESTAMP}_...
-    const dirs = readdirSync(histDir);
+    // Session IDs contain timestamps, so name order is a bounded recent-history approximation.
+    const dirs = readdirSync(sessionsRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
     // Sort descending by name (timestamps in names give chronological order)
     dirs.sort((a, b) => b.localeCompare(a));
 
@@ -274,13 +272,13 @@ function getRecentHistory(
     const results: Array<{ id: string; meta: PersistedSession }> = [];
 
     for (const name of candidates) {
-      const metaPath = join(histDir, name, "meta.json");
+      const metaPath = join(sessionsRoot, name, "meta.json");
       if (!existsSync(metaPath)) continue;
       try {
         const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as PersistedSession;
         // Filter by time window — use endedAt if available, otherwise startedAt
         const ts = meta.endedAt ?? meta.startedAt;
-        if (ts >= cutoff) {
+        if (meta.status !== "running" && meta.status !== "idle" && ts >= cutoff) {
           results.push({ id: name, meta });
         }
       } catch {
@@ -517,7 +515,11 @@ function formatMarkdown(
  * @param agentsRoot - Path to agents/ directory
  * @param sharedRoot - Path to shared/ directory
  */
-export function createSystemStatusTool(stateDir: string, agentsRoot: string, sharedRoot = join(agentsRoot, "shared")): AgentTool {
+export function createSystemStatusTool(
+  stateDir: string,
+  agentsRoot: string,
+  sharedRoot = join(agentsRoot, "shared"),
+): AgentTool {
   return {
     name: "system_status",
     label: "System Status Dashboard",
@@ -533,8 +535,7 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string, sha
       ),
       agent: Type.Optional(
         Type.String({
-          description:
-            "Agent name to show metrics for. If omitted, shows all active metrics.",
+          description: "Agent name to show metrics for. If omitted, shows all active metrics.",
         }),
       ),
     }),
@@ -551,12 +552,19 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string, sha
       const todoSummary = readTodoSummary(stateDir);
 
       // Fetch metrics — filtered by agent if provided, otherwise all active
-      const metrics = agent
-        ? getAgentMetrics(stateDir, agent)
-        : getAllActiveMetrics(stateDir);
+      const metrics = agent ? getAgentMetrics(stateDir, agent) : getAllActiveMetrics(stateDir);
       const metricsSection = formatMetricsSection(metrics, agent);
 
-      const markdown = formatMarkdown(active, history, delegations, jobs, focus, todoSummary, windowMinutes, metricsSection);
+      const markdown = formatMarkdown(
+        active,
+        history,
+        delegations,
+        jobs,
+        focus,
+        todoSummary,
+        windowMinutes,
+        metricsSection,
+      );
 
       return {
         content: [{ type: "text", text: markdown }],

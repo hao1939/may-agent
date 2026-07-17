@@ -26,6 +26,7 @@ import {
   sessionOutputDir,
   writeSessionMeta,
   readSessionMeta,
+  markSessionActive,
 } from "../../src/lib/persistence.js";
 import type { PersistedSession } from "../../src/lib/persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -109,6 +110,7 @@ function writeRegistryState(persistDir: string, sessions: Record<string, Persist
   mkdirSync(persistDir, { recursive: true });
   for (const [sid, meta] of Object.entries(sessions)) {
     writeSessionMeta(persistDir, sid, meta);
+    if (meta.status === "running" || meta.status === "idle") markSessionActive(persistDir, sid);
   }
 }
 

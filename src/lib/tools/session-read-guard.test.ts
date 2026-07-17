@@ -20,7 +20,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
-        path: ".state/sessions/history/s_1234567890_42/session.jsonl",
+        path: ".state/sessions/s_1234567890_42/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -44,7 +44,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
-        path: "./.state/sessions/history/s_123_1/session.jsonl",
+        path: "./.state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -55,7 +55,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
-        path: ".state/sessions/history/s_1234567890_42/meta.json",
+        path: ".state/sessions/s_1234567890_42/meta.json",
       }),
     );
     expect(result).toBeUndefined();
@@ -95,7 +95,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "cat .state/sessions/history/s_123_1/session.jsonl",
+        command: "cat .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -107,7 +107,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "less .state/sessions/history/s_123_1/session.jsonl",
+        command: "less .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -119,7 +119,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "cat -n .state/sessions/history/s_123_1/session.jsonl",
+        command: "cat -n .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -134,7 +134,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep 'pattern' .state/sessions/history/s_123_1/session.jsonl",
+        command: "grep 'pattern' .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -146,7 +146,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep 'error' .state/sessions/history/*/session.jsonl",
+        command: "grep 'error' .state/sessions/*/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -157,7 +157,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "rg 'pattern' .state/sessions/history/s_123_1/session.jsonl",
+        command: "rg 'pattern' .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -172,7 +172,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep 'pattern' .state/sessions/history/s_123_1/session.jsonl | head -20",
+        command: "grep 'pattern' .state/sessions/s_123_1/session.jsonl | head -20",
       }),
     );
     expect(result).toBeUndefined();
@@ -182,7 +182,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep 'pattern' .state/sessions/history/s_123_1/session.jsonl | tail -5",
+        command: "grep 'pattern' .state/sessions/s_123_1/session.jsonl | tail -5",
       }),
     );
     expect(result).toBeUndefined();
@@ -192,7 +192,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep -c 'pattern' .state/sessions/history/s_123_1/session.jsonl",
+        command: "grep -c 'pattern' .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
@@ -202,7 +202,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep -l 'pattern' .state/sessions/history/*/session.jsonl",
+        command: "grep -l 'pattern' .state/sessions/*/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
@@ -212,7 +212,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep -m 5 'pattern' .state/sessions/history/s_123_1/session.jsonl",
+        command: "grep -m 5 'pattern' .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
@@ -222,7 +222,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep --count 'pattern' .state/sessions/history/s_123_1/session.jsonl",
+        command: "grep --count 'pattern' .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
@@ -232,7 +232,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep --files-with-matches 'pattern' .state/sessions/history/*/session.jsonl",
+        command: "grep --files-with-matches 'pattern' .state/sessions/*/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
@@ -256,7 +256,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "cat .state/sessions/history/s_123_1/meta.json",
+        command: "cat .state/sessions/s_123_1/meta.json",
       }),
     );
     expect(result).toBeUndefined();
@@ -276,7 +276,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("write", {
-        path: ".state/sessions/history/s_123_1/session.jsonl",
+        path: ".state/sessions/s_123_1/session.jsonl",
         content: "test",
       }),
     );
@@ -294,7 +294,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: `for f in .state/sessions/history/s_1774*/session.jsonl; do grep 'error' "$f"; done`,
+        command: `for f in .state/sessions/s_1774*/session.jsonl; do grep 'error' "$f"; done`,
       }),
     );
     // The grep doesn't directly reference session.jsonl (uses $f), so it passes
@@ -305,7 +305,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "grep 'error' .state/sessions/history/s_1774*/session.jsonl",
+        command: "grep 'error' .state/sessions/s_1774*/session.jsonl",
       }),
     );
     expect(result).toBeDefined();
@@ -316,7 +316,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "jq '.role' .state/sessions/history/s_123_1/session.jsonl | head -5",
+        command: "jq '.role' .state/sessions/s_123_1/session.jsonl | head -5",
       }),
     );
     // jq is not cat/grep, so it's not matched by the guard
@@ -327,7 +327,7 @@ describe("session-read-guard", () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
-        command: "wc -l .state/sessions/history/s_123_1/session.jsonl",
+        command: "wc -l .state/sessions/s_123_1/session.jsonl",
       }),
     );
     expect(result).toBeUndefined();
