@@ -229,11 +229,6 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_handler ON events(handler, timestamp);
-CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp);
 
 CREATE TABLE IF NOT EXISTS event_traces (
   event_id        INTEGER PRIMARY KEY,
@@ -309,10 +304,8 @@ WHEN
     SELECT 1
     FROM sessions s
     WHERE s.status IN ('running', 'idle')
-      AND COALESCE(
-        OLD.session_id,
-        CASE WHEN json_valid(OLD.data) THEN json_extract(OLD.data, '$.sessionId') END
-      ) = s.sessionId
+      AND json_valid(OLD.data)
+      AND json_extract(OLD.data, '$.sessionId') = s.sessionId
   )
 BEGIN
   SELECT RAISE(IGNORE);
