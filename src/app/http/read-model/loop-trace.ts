@@ -345,10 +345,10 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
 
   const guardSignals: Row[] = [];
   if (workflowIds.length > 0) {
-    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND json_extract(data, '$.workflowRunId') IN (${placeholders(workflowIds)}) ORDER BY timestamp DESC LIMIT 50`, ...workflowIds));
+    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND COALESCE(workflow_run_id, json_extract(data, '$.workflowRunId')) IN (${placeholders(workflowIds)}) ORDER BY timestamp DESC LIMIT 50`, ...workflowIds));
   }
   if (sessionIds.length > 0) {
-    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND json_extract(data, '$.sessionId') IN (${placeholders(sessionIds)}) ORDER BY timestamp DESC LIMIT 50`, ...sessionIds));
+    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND COALESCE(session_id, json_extract(data, '$.sessionId')) IN (${placeholders(sessionIds)}) ORDER BY timestamp DESC LIMIT 50`, ...sessionIds));
   }
   const uniqueGuardSignals = uniqBy(guardSignals, "id");
 
@@ -356,10 +356,12 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     ? safeAll(
         db,
         `SELECT * FROM events
-         WHERE json_extract(data, '$.metricId') = ?
-            OR json_extract(data, '$.metric') = ?
-            OR json_extract(data, '$.metric_id') = ?
+         WHERE metric_id = ?
+            OR (metric_id IS NULL AND json_extract(data, '$.metricId') = ?)
+            OR (metric_id IS NULL AND json_extract(data, '$.metric') = ?)
+            OR (metric_id IS NULL AND json_extract(data, '$.metric_id') = ?)
          ORDER BY timestamp DESC LIMIT 80`,
+        metricId,
         metricId,
         metricId,
         metricId,
@@ -375,9 +377,9 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     `SELECT * FROM events
      WHERE event_type IN ('workflow.resume_failed', 'workflow.resume_skipped', 'session.resume_failed', 'message.delivery_failed')
        AND (
-         (? IS NOT NULL AND json_extract(data, '$.workflowRunId') = ?)
-         OR (? IS NOT NULL AND json_extract(data, '$.sessionId') = ?)
-         OR (? IS NOT NULL AND json_extract(data, '$.metricId') = ?)
+         (? IS NOT NULL AND COALESCE(workflow_run_id, json_extract(data, '$.workflowRunId')) = ?)
+         OR (? IS NOT NULL AND COALESCE(session_id, json_extract(data, '$.sessionId')) = ?)
+         OR (? IS NOT NULL AND COALESCE(metric_id, json_extract(data, '$.metricId')) = ?)
        )
      ORDER BY timestamp DESC LIMIT 50`,
     seed.workflowRunId,

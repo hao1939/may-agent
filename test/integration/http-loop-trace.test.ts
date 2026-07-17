@@ -32,6 +32,11 @@ describe("buildLoopTrace", () => {
         source TEXT,
         owner TEXT,
         data TEXT,
+        session_id TEXT,
+        workflow_run_id TEXT,
+        project_id TEXT,
+        metric_id TEXT,
+        alert_id TEXT,
         timestamp INTEGER,
         urgency TEXT
       );

@@ -67,10 +67,10 @@ export function closeDb(persistDir: string): void {
   }
 }
 
-/** Close all cached DB connections and checkpoint WAL. Call on shutdown. */
+/** Close cached connections after a non-blocking checkpoint. Call on shutdown. */
 export function closeAllDbs(): void {
   for (const [dir, db] of dbCache) {
-    try { db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); } catch { /* best-effort */ }
+    try { db.exec("PRAGMA wal_checkpoint(PASSIVE)"); } catch { /* best-effort */ }
     try { db.close(); } catch { /* best-effort */ }
     dbCache.delete(dir);
   }

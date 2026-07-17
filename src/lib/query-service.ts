@@ -653,8 +653,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const since = typeof filter.since === "number" ? filter.since : 0;
 
       const judgmentWhere = alertId != null
-        ? "json_extract(data, '$.alertId') = ?"
-        : "json_extract(data, '$.metricId') = ?";
+        ? "COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)"
+        : "COALESCE(metric_id, json_extract(data, '$.metricId')) = ?";
       const judgmentParam = alertId != null ? alertId : metricId;
 
       const latestJudgment = db.prepare(
@@ -675,8 +675,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       ).get(metricId) as Record<string, unknown> | null;
 
       const routedWhere = alertId != null
-        ? "json_extract(data, '$.alertId') = ?"
-        : "json_extract(data, '$.metricId') = ?";
+        ? "COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)"
+        : "COALESCE(metric_id, json_extract(data, '$.metricId')) = ?";
       const routedParam = alertId != null ? alertId : metricId;
 
       const recentFeedbackRouted = db.prepare(
@@ -796,8 +796,8 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
            FROM events
            WHERE event_type = 'metric.alert_judged'
              AND (
-               json_extract(data, '$.alertId') = ?
-               OR json_extract(data, '$.metricId') = ?
+               COALESCE(alert_id, CAST(json_extract(data, '$.alertId') AS TEXT)) = CAST(? AS TEXT)
+               OR COALESCE(metric_id, json_extract(data, '$.metricId')) = ?
              )
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,

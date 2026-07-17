@@ -13,6 +13,7 @@
  */
 
 import { getDb } from "./requests.js";
+import { describeText, sessionMetaRef } from "./artifacts.js";
 import { readSessionMessages } from "./persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
@@ -325,19 +326,28 @@ function insertDigest(
 ): number {
   const db = getDb(persistDir);
   const insertVerb = opts?.onConflict === "ignore" ? "INSERT OR IGNORE" : "INSERT";
+  const fullTask = row.task ?? "";
+  const taskRef = sessionMetaRef(row.sessionId);
+  const taskArtifact = describeText(taskRef, fullTask);
+  const taskPreview = fullTask.length <= 2_000
+    ? fullTask
+    : `${fullTask.slice(0, 2_000)}\n...[full task in session meta; ${fullTask.length} chars]`;
   const result = db
     .prepare(
       `${insertVerb} INTO session_digests
-       (sessionId, agent, trigger, step, task, what_happened, outcome, still_open,
+       (sessionId, agent, trigger, step, task, task_ref, task_sha256, task_bytes, what_happened, outcome, still_open,
         files_modified, details, action, action_reason, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       row.sessionId,
       row.agent,
       row.trigger,
       row.step,
-      row.task ?? null,
+      row.task == null ? null : taskPreview,
+      row.task == null ? null : taskArtifact.ref,
+      row.task == null ? null : taskArtifact.sha256,
+      row.task == null ? null : taskArtifact.bytes,
       row.what_happened ?? null,
       row.outcome ?? null,
       row.still_open ?? null,

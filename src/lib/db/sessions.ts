@@ -1,4 +1,5 @@
 import { getDb } from "./connection.js";
+import { describeText, sessionMetaRef, type ArtifactDescriptor } from "../artifacts.js";
 
 export interface SessionDbEntry {
   sessionId: string;
@@ -20,26 +21,29 @@ export interface SessionDbEntry {
   lastActivityAt?: number;
 }
 
-/** Maximum task text stored in the sessions table (200KB).
- * Prevents runaway workflows from bloating the DB with recursive payloads. */
-const MAX_TASK_LENGTH = 200_000;
+/** SQL keeps a human-readable preview; meta.json owns the full task. */
+const MAX_TASK_PREVIEW_LENGTH = 2_000;
 
-function capTask(task: string): string {
-  if (task.length <= MAX_TASK_LENGTH) return task;
-  return `${task.slice(0, MAX_TASK_LENGTH)}\n...[TRUNCATED: original was ${task.length} chars]`;
+function taskPreview(task: string): string {
+  if (task.length <= MAX_TASK_PREVIEW_LENGTH) return task;
+  return `${task.slice(0, MAX_TASK_PREVIEW_LENGTH)}\n...[full task in session meta; ${task.length} chars]`;
 }
 
 /** Insert or update a session row without erasing existing lineage fields. */
 export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
-  const cappedTask = capTask(entry.task ?? "");
+  const task = entry.task ?? "";
+  const taskArtifact = describeText(sessionMetaRef(entry.sessionId), task);
   db.run(
     `INSERT INTO sessions
-      (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount, lastActivityAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (sessionId, agent, task, task_ref, task_sha256, task_bytes, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount, lastActivityAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(sessionId) DO UPDATE SET
        agent = excluded.agent,
        task = CASE WHEN excluded.task != '' THEN excluded.task ELSE sessions.task END,
+       task_ref = COALESCE(excluded.task_ref, sessions.task_ref),
+       task_sha256 = CASE WHEN excluded.task != '' THEN excluded.task_sha256 ELSE sessions.task_sha256 END,
+       task_bytes = CASE WHEN excluded.task != '' THEN excluded.task_bytes ELSE sessions.task_bytes END,
        status = excluded.status,
        kind = COALESCE(excluded.kind, sessions.kind),
        source = COALESCE(excluded.source, sessions.source),
@@ -62,7 +66,10 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
     [
       entry.sessionId,
       entry.agent,
-      cappedTask,
+      taskPreview(task),
+      taskArtifact.ref,
+      taskArtifact.sha256,
+      taskArtifact.bytes,
       entry.status,
       entry.kind ?? "job",
       entry.source ?? null,
@@ -92,6 +99,7 @@ export function updateSessionDb(
     outcome?: string;
     opCount?: number;
     lastActivityAt?: number;
+    resultArtifact?: ArtifactDescriptor;
   },
 ): void {
   const db = getDb(persistDir);
@@ -104,6 +112,9 @@ export function updateSessionDb(
       endedAt = COALESCE(?, endedAt),
       error = COALESCE(?, error),
       outcome = COALESCE(?, outcome),
+      result_ref = COALESCE(?, result_ref),
+      result_sha256 = COALESCE(?, result_sha256),
+      result_bytes = COALESCE(?, result_bytes),
       opCount = CASE WHEN ? > opCount THEN ? ELSE opCount END,
       lastActivityAt = CASE
         WHEN ? IS NULL THEN lastActivityAt
@@ -117,6 +128,9 @@ export function updateSessionDb(
       fields.endedAt ?? null,
       fields.error ?? null,
       fields.outcome ?? null,
+      fields.resultArtifact?.ref ?? null,
+      fields.resultArtifact?.sha256 ?? null,
+      fields.resultArtifact?.bytes ?? null,
       fields.opCount ?? 0,
       fields.opCount ?? 0,
       fields.lastActivityAt ?? null,

@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS sessions (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,
   task            TEXT NOT NULL,
+  task_ref        TEXT,
+  task_sha256     TEXT,
+  task_bytes      INTEGER,
+  result_ref      TEXT,
+  result_sha256   TEXT,
+  result_bytes    INTEGER,
   status          TEXT NOT NULL DEFAULT 'running',
   kind            TEXT,
   source          TEXT,
@@ -128,6 +134,9 @@ CREATE TABLE IF NOT EXISTS session_digests (
   trigger        TEXT NOT NULL,
   step           INTEGER NOT NULL,
   task           TEXT,
+  task_ref       TEXT,
+  task_sha256    TEXT,
+  task_bytes     INTEGER,
   what_happened  TEXT,
   outcome        TEXT,
   still_open     TEXT,
@@ -202,10 +211,29 @@ CREATE TABLE IF NOT EXISTS events (
   source          TEXT,
   owner           TEXT,
   data            TEXT,
+  body_ref        TEXT,
+  body_sha256     TEXT,
+  body_bytes      INTEGER,
+  session_id      TEXT,
+  workflow_run_id TEXT,
+  project_id      TEXT,
+  task_id         TEXT,
+  attempt_id      TEXT,
+  handler         TEXT,
+  metric_id       TEXT,
+  alert_id        TEXT,
+  escalation_id  TEXT,
+  subject_status  TEXT,
+  duration_ms     INTEGER,
   timestamp       INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_handler ON events(handler, timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp);
 
 CREATE TABLE IF NOT EXISTS event_traces (
   event_id        INTEGER PRIMARY KEY,
@@ -281,8 +309,10 @@ WHEN
     SELECT 1
     FROM sessions s
     WHERE s.status IN ('running', 'idle')
-      AND json_valid(OLD.data)
-      AND json_extract(OLD.data, '$.sessionId') = s.sessionId
+      AND COALESCE(
+        OLD.session_id,
+        CASE WHEN json_valid(OLD.data) THEN json_extract(OLD.data, '$.sessionId') END
+      ) = s.sessionId
   )
 BEGIN
   SELECT RAISE(IGNORE);
@@ -362,11 +392,17 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_owner  ON projects(owner);
 
--- Workflow runs: lightweight tracking of workflow executions (replaces .state/workflows/*.json)
+-- Workflow runs: bounded query projection of .state/workflow-runs/<id>/run.json.
 CREATE TABLE IF NOT EXISTS workflow_runs (
   runId               TEXT PRIMARY KEY,
   workflow            TEXT NOT NULL,
   task                TEXT NOT NULL,
+  task_ref            TEXT,
+  task_sha256         TEXT,
+  task_bytes          INTEGER,
+  artifact_ref        TEXT,
+  artifact_sha256     TEXT,
+  artifact_bytes      INTEGER,
   parentSessionId     TEXT,
   parentWorkflowRunId TEXT,
   projectId           TEXT,
@@ -453,6 +489,20 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   } catch {
     /* already exists */
   }
+  for (const [column, type] of [
+    ["task_ref", "TEXT"],
+    ["task_sha256", "TEXT"],
+    ["task_bytes", "INTEGER"],
+    ["result_ref", "TEXT"],
+    ["result_sha256", "TEXT"],
+    ["result_bytes", "INTEGER"],
+  ] as const) {
+    try {
+      db.exec(`ALTER TABLE sessions ADD COLUMN ${column} ${type}`);
+    } catch {
+      /* already exists */
+    }
+  }
   try {
     db.exec("CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId)");
   } catch {
@@ -478,6 +528,12 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
     ["sourcePath", "TEXT"],
     ["sourceScope", "TEXT"],
     ["entryContentHash", "TEXT"],
+    ["task_ref", "TEXT"],
+    ["task_sha256", "TEXT"],
+    ["task_bytes", "INTEGER"],
+    ["artifact_ref", "TEXT"],
+    ["artifact_sha256", "TEXT"],
+    ["artifact_bytes", "INTEGER"],
   ] as const) {
     try {
       db.exec(`ALTER TABLE workflow_runs ADD COLUMN ${column} ${type}`);
@@ -549,6 +605,28 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
       /* already exists */
     }
   }
+  for (const [column, type] of [
+    ["body_ref", "TEXT"],
+    ["body_sha256", "TEXT"],
+    ["body_bytes", "INTEGER"],
+    ["session_id", "TEXT"],
+    ["workflow_run_id", "TEXT"],
+    ["project_id", "TEXT"],
+    ["task_id", "TEXT"],
+    ["attempt_id", "TEXT"],
+    ["handler", "TEXT"],
+    ["metric_id", "TEXT"],
+    ["alert_id", "TEXT"],
+    ["escalation_id", "TEXT"],
+    ["subject_status", "TEXT"],
+    ["duration_ms", "INTEGER"],
+  ] as const) {
+    try {
+      db.exec(`ALTER TABLE events ADD COLUMN ${column} ${type}`);
+    } catch {
+      /* already exists */
+    }
+  }
   try {
     db.exec("DROP INDEX IF EXISTS idx_event_pair_open_event");
     db.exec("CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id)");
@@ -558,6 +636,11 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
     db.exec("CREATE INDEX IF NOT EXISTS idx_event_traces_parent ON event_traces(parent_event_id)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_handler ON events(handler, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_metric ON events(metric_id, timestamp)");
   } catch {
     /* already exists */
   }
@@ -654,6 +737,17 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   } catch {
     /* already exists */
   }
+  for (const [column, type] of [
+    ["task_ref", "TEXT"],
+    ["task_sha256", "TEXT"],
+    ["task_bytes", "INTEGER"],
+  ] as const) {
+    try {
+      db.exec(`ALTER TABLE session_digests ADD COLUMN ${column} ${type}`);
+    } catch {
+      /* already exists */
+    }
+  }
   // Typed metrics: config JSON column for type-specific measurement + alert rules.
   try {
     db.exec("ALTER TABLE metrics ADD COLUMN config TEXT");
@@ -666,4 +760,47 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   } catch {
     /* already exists */
   }
+
+  // Existing databases retain the old JSON-only trigger until explicitly replaced.
+  try {
+    const marker = db.prepare("SELECT key FROM runtime_migrations WHERE key = ?").get("event_retention_typed_session_v1");
+    if (!marker) {
+      db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
+      db.exec(`
+CREATE TRIGGER trg_events_referential_retention
+BEFORE DELETE ON events
+WHEN
+  EXISTS (
+    SELECT 1 FROM event_pair_runs p
+    WHERE p.open_event_id = OLD.id AND p.status IN ('open', 'orphan')
+  )
+  OR EXISTS (
+    SELECT 1 FROM event_traces t
+    WHERE t.parent_event_id = OLD.id AND t.event_id != OLD.id
+  )
+  OR EXISTS (
+    SELECT 1 FROM event_trace_links l
+    WHERE l.from_event_id = OLD.id OR l.to_event_id = OLD.id
+  )
+  OR EXISTS (
+    SELECT 1
+    FROM sessions s
+    WHERE s.status IN ('running', 'idle')
+      AND COALESCE(
+        OLD.session_id,
+        CASE WHEN json_valid(OLD.data) THEN json_extract(OLD.data, '$.sessionId') END
+      ) = s.sessionId
+  )
+BEGIN
+  SELECT RAISE(IGNORE);
+END`);
+      db.run("INSERT INTO runtime_migrations (key, applied_at) VALUES (?, ?)", [
+        "event_retention_typed_session_v1",
+        Date.now(),
+      ]);
+    }
+  } catch {
+    /* best-effort trigger migration */
+  }
+
 }

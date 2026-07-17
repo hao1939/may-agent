@@ -198,7 +198,9 @@ describe("workflow tool: resume", () => {
       result_reason: null,
       resumedFromRunId: null,
     });
-    getDb(persistDir).run("UPDATE workflow_runs SET depth = NULL WHERE runId = ?", ["wr_corrupt"]);
+    const artifactPath = join(persistDir, "workflow-runs", "wr_corrupt", "run.json");
+    const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
+    writeFileSync(artifactPath, JSON.stringify({ ...artifact, depth: null }));
 
     const manager = new SubagentManager({ persistDir });
     const events: Array<Record<string, unknown>> = [];
