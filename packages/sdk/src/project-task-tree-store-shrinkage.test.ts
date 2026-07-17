@@ -29,6 +29,43 @@ describe("saveTaskTree shrinkage guard", () => {
     mkdirSync(join(TEST_DIR, "tasks"), { recursive: true });
   });
 
+  it("runs an atomic mutation validator against the current stored tree", () => {
+    const config = makeConfig();
+    const existingTree: TaskTree = { tasks: makeTasks(5) };
+    writeFileSync(config.treePath, JSON.stringify(existingTree));
+    const observations: Array<{ current: number; next: number; authority: unknown }> = [];
+    config.mutationAuthority = { kind: "test-authority" };
+    config.validateMutation = ({ current, next, authority }) => {
+      observations.push({
+        current: Object.keys(current.tasks).length,
+        next: Object.keys(next.tasks).length,
+        authority,
+      });
+    };
+
+    saveTaskTree(config, { tasks: makeTasks(6) });
+
+    expect(observations).toEqual([
+      {
+        current: 5,
+        next: 6,
+        authority: { kind: "test-authority" },
+      },
+    ]);
+  });
+
+  it("does not write when the mutation validator rejects the transition", () => {
+    const config = makeConfig();
+    const existingTree: TaskTree = { tasks: makeTasks(5) };
+    writeFileSync(config.treePath, JSON.stringify(existingTree));
+    config.validateMutation = () => {
+      throw new Error("mutation rejected");
+    };
+
+    expect(() => saveTaskTree(config, { tasks: makeTasks(6) })).toThrow("mutation rejected");
+    expect(Object.keys((JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree).tasks).length).toBe(5);
+  });
+
   afterEach(() => {
     rmSync(TEST_DIR, { recursive: true, force: true });
   });
