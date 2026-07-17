@@ -502,8 +502,7 @@ export interface HandlerModule {
 
 type MaybePromise<T> = T | Promise<T>;
 type ValueResolver<T> =
-  | T
-  | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
+  T | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
 
 export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;
@@ -986,6 +985,7 @@ export {
   saveTaskTree,
   setTaskState,
   taskEventSnapshot,
+  taskRevision,
   taskState,
   withTreeLock,
 } from "./project-task-tree-store.js";
@@ -1002,6 +1002,7 @@ export {
 export type { EnsureTaskTreeStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
 
 export {
+  acknowledgeTaskAssignments,
   appendPlannerRun,
   appendToolJournal,
   assignRunnableBacklogTasks,
@@ -1027,7 +1028,9 @@ export {
   repairTaskTreeRollups,
   saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
+  summarizeBlockedFrontier,
   taskKanbanColumn,
+  taskIntentFingerprint,
   taskTreeConfig,
   waitingBacklogTaskSnapshots,
   writeKanbanSnapshot,
