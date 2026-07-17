@@ -122,7 +122,8 @@ export function migrateLegacyStoragePass(
 
   const workflowRuns = db.prepare(
     `SELECT * FROM workflow_runs
-     WHERE artifact_ref IS NULL AND LENGTH(task) > ?
+     WHERE LENGTH(task) > ?
+       AND task NOT LIKE '%...[full task in workflow artifact; %'
      ORDER BY rowid LIMIT ?`,
   ).all(MAX_TASK_PREVIEW_LENGTH, batchSize) as unknown as WorkflowRunRecord[];
   const preparedWorkflowRuns = workflowRuns.map((row) => ({
@@ -191,11 +192,11 @@ export function migrateLegacyStoragePass(
         `UPDATE workflow_runs SET
            task = ?, task_ref = ?, task_sha256 = ?, task_bytes = ?,
            artifact_ref = ?, artifact_sha256 = ?, artifact_bytes = ?
-         WHERE runId = ? AND artifact_ref IS NULL`,
+         WHERE runId = ? AND task = ?`,
         [
           preview, persisted.task_ref, persisted.task_sha256, persisted.task_bytes,
           persisted.artifact_ref, persisted.artifact_sha256, persisted.artifact_bytes,
-          row.runId,
+          row.runId, row.task,
         ],
       );
       if (update.changes > 0) {
