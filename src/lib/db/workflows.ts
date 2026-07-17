@@ -41,7 +41,7 @@ function taskPreview(task: string): string {
   return `${task.slice(0, MAX_TASK_PREVIEW_LENGTH)}\n...[full task in workflow artifact; ${task.length} chars]`;
 }
 
-function writeWorkflowRunArtifact(persistDir: string, run: WorkflowRunRecord): WorkflowRunRecord {
+export function writeWorkflowRunArtifact(persistDir: string, run: WorkflowRunRecord): WorkflowRunRecord {
   const ref = workflowRunRef(run.runId);
   const artifact = writeJsonArtifact(persistDir, ref, {
     schemaVersion: 1,
