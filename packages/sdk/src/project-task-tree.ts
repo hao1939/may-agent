@@ -1,4 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { ensureTaskTreeState, projectRuntimePaths } from "./project-runtime-state.js";
 import {
@@ -9,6 +10,7 @@ import {
   readTaskTree,
   saveTaskTree,
   setTaskState,
+  taskRevision,
   taskState,
   withTreeLock,
   type TaskTreeConfig,
@@ -162,6 +164,7 @@ export type TaskCompletionClaim = "done" | "partial" | "blocked";
 
 export type TaskAssignment = {
   taskId: string;
+  taskRevision: number;
   attemptId: string;
   sessionId: string;
   worker: string;
@@ -212,6 +215,7 @@ export type RollupParentInput = {
 export type CreateTaskInput = {
   id: string;
   parentId: string;
+  initialRevision?: number;
   state?: "backlog" | "blocked";
   status?: "backlog" | "blocked";
   kind?: string;
@@ -238,6 +242,8 @@ export type CreateTaskInput = {
 
 export type MarkTaskDoneInput = {
   taskId: string;
+  taskRevision?: number;
+  attemptId?: string;
   summary: string;
   resolution?: string;
 };
@@ -270,10 +276,85 @@ export type UnblockTaskInput = {
 
 export type RejectTaskReviewInput = {
   taskId: string;
+  taskRevision?: number;
+  attemptId?: string;
   reason: string;
   freshSession?: boolean;
   review?: Record<string, unknown>;
 };
+
+function canonicalIntentValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonicalIntentValue);
+  }
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, canonicalIntentValue(entry)]),
+  );
+}
+
+function sortedIntentStrings(value: unknown): string[] {
+  return [...new Set(normalizeStringArray(value))].sort((left, right) => left.localeCompare(right));
+}
+
+function blockerIntent(blocker: TaskBlocker | undefined): unknown {
+  if (typeof blocker === "string") return blocker.trim();
+  if (!blocker || typeof blocker !== "object") return null;
+  return {
+    condition: blocker.condition,
+    category: blocker.category,
+    owner: blocker.owner,
+    resume_condition: blocker.resume_condition ?? blocker.resumeCondition,
+    waiting_for: blocker.waiting_for ?? blocker.waitingFor,
+    fallback_action: blocker.fallback_action ?? blocker.fallbackAction,
+  };
+}
+
+export function taskIntentFingerprint(task: TaskNode): string {
+  const intent = canonicalIntentValue({
+    goal: task.goal?.trim() ?? "",
+    workflow: task.workflow?.trim() ?? "",
+    inputs: sortedIntentStrings(task.inputs),
+    outputs: sortedIntentStrings(task.outputs),
+    acceptance: sortedIntentStrings(task.acceptance),
+    forbidden: sortedIntentStrings(task.forbidden),
+    depends_on: sortedIntentStrings(task.depends_on),
+    conflict_scope: sortedIntentStrings(task.conflict_scope),
+    blocker: blockerIntent(task.blocker),
+  });
+  return createHash("sha256").update(JSON.stringify(intent)).digest("hex");
+}
+
+function bumpRevisionForIntentChange(task: TaskNode, previousFingerprint: string): boolean {
+  if (taskIntentFingerprint(task) === previousFingerprint) return false;
+  task.revision = taskRevision(task) + 1;
+  return true;
+}
+
+function assertTaskCorrelation(
+  task: TaskNode,
+  input: { taskRevision?: number; attemptId?: string },
+  operation: string,
+): void {
+  const currentRevision = taskRevision(task);
+  if (input.taskRevision !== undefined && input.taskRevision !== currentRevision) {
+    throw new Error(`Task ${task.id} revision ${input.taskRevision} is stale; current revision is ${currentRevision}`);
+  }
+  if (currentRevision > 0 && input.taskRevision === undefined) {
+    throw new Error(`${operation} for task ${task.id} requires taskRevision ${currentRevision}`);
+  }
+  const currentAttemptId =
+    typeof task.trace?.current_attempt_id === "string" ? task.trace.current_attempt_id : undefined;
+  if (input.attemptId && currentAttemptId && input.attemptId !== currentAttemptId) {
+    throw new Error(`Task ${task.id} attempt ${input.attemptId} is stale; current attempt is ${currentAttemptId}`);
+  }
+  if (currentRevision > 0 && currentAttemptId && !input.attemptId) {
+    throw new Error(`${operation} for task ${task.id} requires attemptId ${currentAttemptId}`);
+  }
+}
 
 export function taskTreeConfig(input: TaskTreeToolConfig): ToolConfig {
   const runtimePaths = projectRuntimePaths(input.appDir);
@@ -467,10 +548,7 @@ function openLeafIds(tree: TaskTree): string[] {
     .map((task) => task.id);
 }
 
-function blockedOnlyWorkflowWaitStewardship(
-  tree: TaskTree,
-  task: TaskNode,
-): boolean {
+function blockedOnlyWorkflowWaitStewardship(tree: TaskTree, task: TaskNode): boolean {
   if (!isWorkflowControllerTask(task)) return false;
   const progress = contextObject(task).workflowProgress;
   if (!progress || typeof progress !== "object" || Array.isArray(progress)) {
@@ -478,10 +556,7 @@ function blockedOnlyWorkflowWaitStewardship(
   }
   const record = progress as Record<string, unknown>;
   const blockedWaitChildren = progressNumber(record, "blockedWaitChildren") ?? 0;
-  const unrepresentedNonTerminalCount = progressNumber(
-    record,
-    "unrepresentedNonTerminalCount",
-  );
+  const unrepresentedNonTerminalCount = progressNumber(record, "unrepresentedNonTerminalCount");
   if (blockedWaitChildren <= 0 || unrepresentedNonTerminalCount !== 0) {
     return false;
   }
@@ -556,9 +631,7 @@ function blockedConditionForChildren(tree: TaskTree, task: TaskNode): string {
 }
 
 function childBlockedIds(tree: TaskTree, task: TaskNode): string[] {
-  return normalizeStringArray(task.children).filter(
-    (id) => taskState(tree.tasks[id]) === "blocked",
-  );
+  return normalizeStringArray(task.children).filter((id) => taskState(tree.tasks[id]) === "blocked");
 }
 
 function hasBlockerCondition(task: TaskNode): boolean {
@@ -594,8 +667,7 @@ function childBlockedContract(tree: TaskTree, task: TaskNode): Exclude<TaskBlock
     observation_method:
       "Task-tree rollup recomputes parent state from current child states; keep this blocked steward only while one or more child tasks remain blocked.",
     next_check_at: isoPlusMinutes(now, 10),
-    resume_condition:
-      "Resume when the blocked child task is resolved or replaced.",
+    resume_condition: "Resume when the blocked child task is resolved or replaced.",
     fallback_at: isoPlusHours(now, 24),
     fallback_action:
       "If child-blocked stewardship still holds at fallback time, rerun task-tree rollup/owner review and refresh the blocker metadata or reopen a concrete child follow-up.",
@@ -721,19 +793,17 @@ function taskDepth(tree: TaskTree, task: TaskNode): number {
 function isDurableLoopRetirementProtected(task: TaskNode | undefined): boolean {
   if (!task) return false;
   const acceptance = normalizeStringArray(task.acceptance).map((value) => value.toLowerCase());
-  return acceptance.some((value) =>
-    value.includes("loop remains present until explicitly retired"),
-  );
+  return acceptance.some((value) => value.includes("loop remains present until explicitly retired"));
 }
 
 function isSafeDoneLeaf(tree: TaskTree, task: TaskNode | undefined, dependencyRefs: Set<string>): task is TaskNode {
   return Boolean(
     task &&
-      task.id !== tree.root_task_id &&
-      isLeaf(task) &&
-      taskState(task) === "done" &&
-      !dependencyRefs.has(task.id) &&
-      !isDurableLoopRetirementProtected(task),
+    task.id !== tree.root_task_id &&
+    isLeaf(task) &&
+    taskState(task) === "done" &&
+    !dependencyRefs.has(task.id) &&
+    !isDurableLoopRetirementProtected(task),
   );
 }
 
@@ -1162,15 +1232,10 @@ function trimmed(value: string | undefined): string | undefined {
 }
 
 function blockerRecord(value: TaskBlocker | undefined): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 }
 
-function blockerTextField(
-  blocker: TaskBlocker | undefined,
-  ...keys: string[]
-): string | undefined {
+function blockerTextField(blocker: TaskBlocker | undefined, ...keys: string[]): string | undefined {
   const record = blockerRecord(blocker);
   for (const key of keys) {
     const value = record?.[key];
@@ -1182,10 +1247,7 @@ function blockerTextField(
   return undefined;
 }
 
-function blockerObjectField(
-  blocker: TaskBlocker | undefined,
-  ...keys: string[]
-): Record<string, unknown> | undefined {
+function blockerObjectField(blocker: TaskBlocker | undefined, ...keys: string[]): Record<string, unknown> | undefined {
   const record = blockerRecord(blocker);
   for (const key of keys) {
     const value = record?.[key];
@@ -1236,10 +1298,7 @@ function buildBlocker(input: TaskBlockerInput): TaskBlocker | undefined {
   }
 
   const existingRecord = sanitizeStructuredBlockerPatch(blockerRecord(blockerValue) ?? {});
-  const condition =
-    typeof blockerValue === "string"
-      ? trimmed(blockerValue)
-      : blockerCondition(blockerValue);
+  const condition = typeof blockerValue === "string" ? trimmed(blockerValue) : blockerCondition(blockerValue);
 
   const nextCheckAt = trimmed(input.nextCheckAt);
   const resumeAt = trimmed(input.resumeAt) ?? nextCheckAt;
@@ -1392,9 +1451,13 @@ function blockerSignature(text: string): string {
     .slice(0, 180);
 }
 
-function blockedFrontierSummary(tree: TaskTree): TaskBlockedFrontierSummary | undefined {
+export function summarizeBlockedFrontier(
+  tree: TaskTree,
+  excludedTaskIds: readonly string[] = [],
+): TaskBlockedFrontierSummary | undefined {
+  const excluded = new Set(excludedTaskIds);
   const blockedLeaves = Object.values(tree.tasks)
-    .filter((task) => isLeaf(task) && taskState(task) === "blocked")
+    .filter((task) => isLeaf(task) && taskState(task) === "blocked" && !excluded.has(task.id))
     .sort(taskSort);
   if (blockedLeaves.length === 0) return undefined;
 
@@ -1706,7 +1769,7 @@ export function planningPacket(config: ToolConfig): TaskPlanningPacket {
     const tree = readTaskTree(config);
     const summary = summarizeLoadedTree(tree);
     const modelSummary = loadModelStatusSummary(config);
-    const blockedSummary = blockedFrontierSummary(tree);
+    const blockedSummary = summarizeBlockedFrontier(tree);
     const packet: TaskPlanningPacket = {
       ...summary,
       frontier_details: {
@@ -1786,13 +1849,9 @@ function createAssignmentForTask(
     input.attemptId ?? `a_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}_${now.replace(/\D/g, "").slice(0, 14)}`;
   const sessionId = taskAttemptSessionId(task, attemptId);
   const worker =
-    nonEmptyTrimmedString(input.worker) ||
-    nonEmptyTrimmedString(task.owner) ||
-    nonEmptyTrimmedString(config.worker);
+    nonEmptyTrimmedString(input.worker) || nonEmptyTrimmedString(task.owner) || nonEmptyTrimmedString(config.worker);
   if (!worker) {
-    throw new Error(
-      `Task ${task.id} cannot be assigned without a non-empty worker/owner contract`,
-    );
+    throw new Error(`Task ${task.id} cannot be assigned without a non-empty worker/owner contract`);
   }
   setTaskState(task, "active");
   task.owner = worker;
@@ -1801,6 +1860,7 @@ function createAssignmentForTask(
   task.trace = {
     ...(task.trace ?? {}),
     current_attempt_id: attemptId,
+    current_task_revision: taskRevision(task),
     assigned_at: now,
     assigned_by: "planner",
     assigned_worker: worker,
@@ -1808,6 +1868,7 @@ function createAssignmentForTask(
   };
   return {
     taskId: task.id,
+    taskRevision: taskRevision(task),
     attemptId,
     sessionId,
     worker,
@@ -1837,8 +1898,11 @@ function parseTaskAssignment(value: unknown): TaskAssignment | null {
   const sessionId = nonEmptyTrimmedString(row.sessionId) || nonEmptyTrimmedString(row.session_id);
   const worker = nonEmptyTrimmedString(row.worker);
   const assignedAt = nonEmptyTrimmedString(row.assignedAt) || nonEmptyTrimmedString(row.assigned_at);
+  const rawRevision = row.taskRevision ?? row.task_revision;
+  const taskRevision =
+    typeof rawRevision === "number" && Number.isInteger(rawRevision) && rawRevision >= 0 ? rawRevision : 0;
   if (!taskId || !attemptId || !sessionId || !worker || !assignedAt) return null;
-  return { taskId, attemptId, sessionId, worker, assignedAt };
+  return { taskId, taskRevision, attemptId, sessionId, worker, assignedAt };
 }
 
 function readAssignmentFile(path: string): TaskAssignment[] {
@@ -1861,9 +1925,10 @@ function assignmentMatchesTree(tree: TaskTree, assignment: TaskAssignment): bool
   const task = tree.tasks[assignment.taskId];
   return Boolean(
     task &&
-      taskState(task) === "active" &&
-      task.session_id === assignment.sessionId &&
-      task.trace?.current_attempt_id === assignment.attemptId,
+    taskState(task) === "active" &&
+    task.session_id === assignment.sessionId &&
+    task.trace?.current_attempt_id === assignment.attemptId &&
+    taskRevision(task) === assignment.taskRevision,
   );
 }
 
@@ -1894,6 +1959,33 @@ export function peekTaskAssignments(config: ToolConfig): TaskAssignment[] {
   return [...readAssignmentFile(drainingPath), ...readAssignmentFile(path)].filter((assignment) =>
     assignmentMatchesTree(tree, assignment),
   );
+}
+
+function assignmentDeliveryKey(assignment: TaskAssignment): string {
+  return `${assignment.taskId}:${assignment.taskRevision}:${assignment.attemptId}:${assignment.sessionId}`;
+}
+
+export function acknowledgeTaskAssignments(config: ToolConfig, assignments: TaskAssignment[]): number {
+  const acknowledgedKeys = new Set(assignments.map(assignmentDeliveryKey));
+  if (acknowledgedKeys.size === 0) return 0;
+  return withTreeLock(config, () => {
+    const path = assignmentOutboxPath(config);
+    const drainingPath = assignmentDrainPath(config);
+    const tree = readTaskTree(config);
+    const rows = [...readAssignmentFile(drainingPath), ...readAssignmentFile(path)];
+    const liveRows = rows.filter((assignment) => assignmentMatchesTree(tree, assignment));
+    const remaining = liveRows.filter((assignment) => !acknowledgedKeys.has(assignmentDeliveryKey(assignment)));
+    const acknowledged = liveRows.length - remaining.length;
+    rmSync(path, { force: true });
+    rmSync(drainingPath, { force: true });
+    if (remaining.length > 0) {
+      mkdirSync(dirname(path), { recursive: true });
+      const temporaryPath = `${path}.ack-${process.pid}-${Date.now()}`;
+      writeFileSync(temporaryPath, `${remaining.map((assignment) => JSON.stringify(assignment)).join("\n")}\n`);
+      renameSync(temporaryPath, path);
+    }
+    return acknowledged;
+  });
 }
 
 export function requeueStaleActiveTasks(
@@ -1992,6 +2084,7 @@ export function assignRunnableBacklogTasks(
         appendToolJournal(config, {
           kind: "task_assigned",
           task_id: assignment.taskId,
+          task_revision: assignment.taskRevision,
           attempt_id: assignment.attemptId,
           session_id: assignment.sessionId,
           worker: assignment.worker,
@@ -2009,12 +2102,18 @@ export function assignTask(
     taskId: string;
     worker?: string;
     attemptId?: string;
+    expectedRevision?: number;
   },
 ): TaskAssignment {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    if (input.expectedRevision !== undefined && input.expectedRevision !== taskRevision(task)) {
+      throw new Error(
+        `Task ${task.id} revision ${input.expectedRevision} is stale; current revision is ${taskRevision(task)}`,
+      );
+    }
     const currentState = taskState(task);
     if (currentState !== "backlog") throw new Error(`Task ${task.id} is ${currentState}, not runnable backlog`);
     const controllerTask = isWorkerExecutableController(task);
@@ -2036,6 +2135,7 @@ export function assignTask(
     appendToolJournal(config, {
       kind: "task_assigned",
       task_id: task.id,
+      task_revision: assignment.taskRevision,
       attempt_id: assignment.attemptId,
       session_id: assignment.sessionId,
       worker: assignment.worker,
@@ -2053,12 +2153,17 @@ export function createTask(config: ToolConfig, input: CreateTaskInput): TaskNode
     const requestedState = input.state ?? input.status ?? "backlog";
     const state = requestedState === "blocked" ? "blocked" : "backlog";
     const blocker = buildBlocker(input);
+    const initialRevision = input.initialRevision ?? 0;
+    if (!Number.isInteger(initialRevision) || initialRevision < 0) {
+      throw new Error("initialRevision must be a non-negative integer");
+    }
     if (state === "blocked" && !blockerCondition(blocker)) throw new Error("Blocked tasks require --blocker");
     if (state !== "blocked" && hasBlockerInput(input))
       throw new Error("--blocker fields are only valid with --status blocked");
 
     const task: TaskNode = {
       id: input.id,
+      revision: initialRevision,
       parent_id: input.parentId,
       state,
       kind: input.kind ?? "domain_leaf",
@@ -2127,6 +2232,8 @@ export function completeTask(
   config: ToolConfig,
   input: {
     taskId: string;
+    taskRevision?: number;
+    attemptId?: string;
     claim: TaskCompletionClaim;
     summary: string;
     evidence?: string[];
@@ -2136,6 +2243,7 @@ export function completeTask(
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    assertTaskCorrelation(task, input, "Completion");
     const now = new Date().toISOString();
     const trace = {
       ...(task.trace ?? {}),
@@ -2143,6 +2251,7 @@ export function completeTask(
       last_worker_claim: input.claim,
       last_worker_summary: input.summary,
       last_worker_completed_at: now,
+      last_worker_task_revision: taskRevision(task),
       last_worker_evidence: input.evidence ?? [],
     };
     setTaskState(task, "review");
@@ -2156,6 +2265,8 @@ export function completeTask(
     appendToolJournal(config, {
       kind: "task_worker_completed",
       task_id: task.id,
+      task_revision: taskRevision(task),
+      attempt_id: input.attemptId,
       result: input.claim,
       state: taskState(task),
       summary: input.summary,
@@ -2169,6 +2280,7 @@ export function markTaskDone(config: ToolConfig, input: MarkTaskDoneInput): Task
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    assertTaskCorrelation(task, input, "Review acceptance");
     const now = new Date().toISOString();
     setTaskState(task, "done");
     task.blocker = undefined;
@@ -2205,14 +2317,18 @@ export function updateTaskOutputs(config: ToolConfig, input: UpdateTaskOutputsIn
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    const previousFingerprint = taskIntentFingerprint(task);
     const outputs = normalizeStringArray(input.outputs);
     if (outputs.length === 0) throw new Error("Task outputs cannot be empty");
     task.outputs = outputs;
+    const revisionChanged = bumpRevisionForIntentChange(task, previousFingerprint);
     saveTaskTreeWithKanbanSnapshot(config, tree);
     appendToolJournal(config, {
       kind: "task_outputs_updated",
       task_id: task.id,
       outputs,
+      revision: taskRevision(task),
+      revision_changed: revisionChanged,
     });
     return task;
   });
@@ -2223,6 +2339,7 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    const previousFingerprint = taskIntentFingerprint(task);
 
     const hasGoal = typeof input.goal === "string";
     const hasAcceptance = input.acceptance !== undefined;
@@ -2257,6 +2374,8 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
       task.blocker = blockerCondition(blocker) ? blocker : undefined;
     }
 
+    const revisionChanged = bumpRevisionForIntentChange(task, previousFingerprint);
+
     saveTaskTreeWithKanbanSnapshot(config, tree);
     appendToolJournal(config, {
       kind: "task_text_updated",
@@ -2266,6 +2385,8 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
       blocker_updated: hasBlocker || clearBlocker,
       acceptance_count: acceptance?.length,
       blocked_state: task.blocker ? "present" : "cleared",
+      revision: taskRevision(task),
+      revision_changed: revisionChanged,
     });
     return task;
   });
@@ -2279,6 +2400,7 @@ export function unblockTask(config: ToolConfig, input: UnblockTaskInput): TaskNo
     if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
     const state = taskState(task);
     if (state !== "blocked") throw new Error(`Task ${task.id} is ${state}, not blocked`);
+    const previousFingerprint = taskIntentFingerprint(task);
 
     const reason = input.reason.trim();
     if (!reason) throw new Error("Unblock reason cannot be empty");
@@ -2305,6 +2427,7 @@ export function unblockTask(config: ToolConfig, input: UnblockTaskInput): TaskNo
     const now = new Date().toISOString();
     setTaskState(task, "backlog");
     task.blocker = undefined;
+    const revisionChanged = bumpRevisionForIntentChange(task, previousFingerprint);
     task.trace = {
       ...(task.trace ?? {}),
       unblocked_at: now,
@@ -2319,6 +2442,8 @@ export function unblockTask(config: ToolConfig, input: UnblockTaskInput): TaskNo
       kind: "task_unblocked",
       task_id: task.id,
       reason,
+      revision: taskRevision(task),
+      revision_changed: revisionChanged,
     });
     return task;
   });
@@ -2331,6 +2456,7 @@ export function rejectTaskReview(config: ToolConfig, input: RejectTaskReviewInpu
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
     const state = taskState(task);
     if (state !== "review") throw new Error(`Task ${task.id} is ${state}, not review`);
+    assertTaskCorrelation(task, input, "Review rejection");
     if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
     const now = new Date().toISOString();
     const previousAttemptId =
@@ -2354,6 +2480,8 @@ export function rejectTaskReview(config: ToolConfig, input: RejectTaskReviewInpu
     appendToolJournal(config, {
       kind: "task_review_rejected",
       task_id: task.id,
+      task_revision: taskRevision(task),
+      attempt_id: input.attemptId,
       reason: input.reason,
       review: input.review,
     });

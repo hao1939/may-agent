@@ -26,6 +26,8 @@ export type TaskBlocker =
       fallbackAt?: string;
       fallback_action?: string;
       fallbackAction?: string;
+      condition_id?: string;
+      conditionId?: string;
       last_observed_at?: string;
       lastObservedAt?: string;
       last_observed_status?: string;
@@ -34,6 +36,7 @@ export type TaskBlocker =
 
 export type TaskNode = {
   id: string;
+  revision?: number;
   parent_id?: string | null;
   state?: string;
   status?: string;
@@ -79,6 +82,7 @@ export type TaskTree = {
   root_task_id?: string;
   active_task_id?: string | null;
   active_task_ids?: string[];
+  conditions?: Record<string, unknown>;
   tasks: Record<string, TaskNode>;
 };
 
@@ -89,6 +93,8 @@ export type TaskTreeConfig = {
   journalPath: string;
   worker: string;
   maxConcurrent: number;
+  mutationAuthority?: unknown;
+  validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
 };
 
 function timeoutFromAnyEnv(names: string[], fallbackMs: number): number {
@@ -103,6 +109,8 @@ export function taskEventSnapshot(task: TaskNode): Record<string, unknown> {
   const trace = task.trace && typeof task.trace === "object" && !Array.isArray(task.trace) ? task.trace : {};
   return {
     taskId: task.id,
+    taskRevision: taskRevision(task),
+    task_revision: taskRevision(task),
     parent_id: task.parent_id,
     state: taskState(task),
     kind: task.kind,
@@ -136,6 +144,11 @@ export function taskState(task: TaskNode | undefined): string {
   if (raw === "decomposed") return "backlog";
   if (raw === "claimed_done" || raw === "rejected") return "review";
   return raw;
+}
+
+export function taskRevision(task: TaskNode | undefined): number {
+  const value = task?.revision;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;
 }
 
 export function rawTaskState(task: TaskNode | undefined): string {
@@ -214,13 +227,32 @@ export type SaveTaskTreeOptions = {
 export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: SaveTaskTreeOptions): void {
   normalizeTaskTreeInPlace(tree);
 
+  let existingTree: TaskTree | null = null;
+  if (existsSync(config.treePath)) {
+    try {
+      existingTree = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+      normalizeTaskTreeInPlace(existingTree);
+    } catch {
+      existingTree = null;
+    }
+  }
+
+  if (existingTree && config.validateMutation) {
+    config.validateMutation({
+      current: existingTree,
+      next: tree,
+      authority: config.mutationAuthority,
+    });
+  }
+
   // Shrinkage guard: reject writes that reduce task count by >80%.
   // This prevents agent-caused data loss from whole-file overwrites.
   if (!options?.allowShrinkage && existsSync(config.treePath)) {
     try {
-      const existing = JSON.parse(readFileSync(config.treePath, "utf-8")) as {
+      const existing = existingTree as {
         tasks?: Record<string, unknown> | unknown[];
-      };
+      } | null;
+      if (!existing) throw new Error("existing task tree is unavailable");
       const existingCount = Array.isArray(existing.tasks)
         ? existing.tasks.length
         : typeof existing.tasks === "object" && existing.tasks !== null

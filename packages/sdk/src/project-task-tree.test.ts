@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  acknowledgeTaskAssignments,
   assignRunnableBacklogTasks,
   assignTask,
   compactDoneLeaves,
@@ -13,6 +14,7 @@ import {
   drainTaskAssignments,
   listRunnableBacklogTaskIds,
   markTaskDone,
+  summarizeBlockedFrontier,
   summarizeTaskTree,
   peekTaskAssignments,
   planningPacket,
@@ -22,9 +24,12 @@ import {
   repairTaskTreeRollups,
   rollupParent,
   saveTaskTree,
+  taskIntentFingerprint,
+  taskRevision,
   taskTreeConfig,
   unblockTask,
   updateTaskText,
+  updateTaskOutputs,
 } from "./index.js";
 
 async function makeApp() {
@@ -167,6 +172,7 @@ describe("project task tree SDK", () => {
     expect(assignment.sessionId).toContain("s_task_leaf_");
     expect(assignment).toEqual({
       taskId: "leaf",
+      taskRevision: 0,
       attemptId: assignment.attemptId,
       sessionId: assignment.sessionId,
       worker: "owner-agent",
@@ -199,6 +205,253 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.leaf.status).toBe("done");
     expect(tree.tasks.project.status).toBe("backlog");
     expect(tree.active_task_ids).toEqual([]);
+  });
+
+  test("acknowledges only accepted assignment deliveries", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: ["one", "two"],
+        },
+        one: {
+          id: "one",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "one",
+          outputs: ["one"],
+          acceptance: ["one"],
+        },
+        two: {
+          id: "two",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "two",
+          outputs: ["two"],
+          acceptance: ["two"],
+        },
+      },
+    });
+    const first = assignTask(config(appDir), { taskId: "one" });
+    const second = assignTask({ ...config(appDir), maxConcurrent: 2 }, { taskId: "two" });
+    expect(acknowledgeTaskAssignments(config(appDir), [first])).toBe(1);
+    expect(peekTaskAssignments(config(appDir))).toEqual([second]);
+    expect(acknowledgeTaskAssignments(config(appDir), [first])).toBe(0);
+    expect(acknowledgeTaskAssignments(config(appDir), [second])).toBe(1);
+    expect(peekTaskAssignments(config(appDir))).toEqual([]);
+  });
+
+  test("correlates revised task attempts and reviews while legacy revision zero drains", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: [],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    const created = createTask(config(appDir), {
+      id: "revision-leaf",
+      parentId: "project",
+      goal: "produce revision one",
+      outputs: ["artifact-v0"],
+      acceptance: ["artifact exists"],
+    });
+    expect(taskRevision(created)).toBe(0);
+    const initialFingerprint = taskIntentFingerprint(created);
+
+    const metadataTree = readTaskTree(config(appDir));
+    metadataTree.tasks["revision-leaf"].summary = "metadata only";
+    expect(taskIntentFingerprint(metadataTree.tasks["revision-leaf"])).toBe(initialFingerprint);
+    saveTaskTree(config(appDir), metadataTree);
+
+    const unchanged = updateTaskOutputs(config(appDir), {
+      taskId: "revision-leaf",
+      outputs: ["artifact-v0"],
+    });
+    expect(taskRevision(unchanged)).toBe(0);
+    const revised = updateTaskOutputs(config(appDir), {
+      taskId: "revision-leaf",
+      outputs: ["artifact-v1"],
+    });
+    expect(taskRevision(revised)).toBe(1);
+
+    expect(() =>
+      assignTask(config(appDir), {
+        taskId: "revision-leaf",
+        attemptId: "attempt-stale-dispatch",
+        expectedRevision: 0,
+      }),
+    ).toThrow(/revision 0 is stale; current revision is 1/);
+
+    const first = assignTask(config(appDir), {
+      taskId: "revision-leaf",
+      attemptId: "attempt-revision-1-a",
+      expectedRevision: 1,
+    });
+    expect(first.taskRevision).toBe(1);
+    expect(peekTaskAssignments(config(appDir))).toEqual([first]);
+    drainTaskAssignments(config(appDir));
+
+    expect(() =>
+      completeTask(config(appDir), {
+        taskId: "revision-leaf",
+        taskRevision: 0,
+        attemptId: first.attemptId,
+        claim: "done",
+        summary: "stale revision result",
+      }),
+    ).toThrow(/revision 0 is stale/);
+    expect(() =>
+      completeTask(config(appDir), {
+        taskId: "revision-leaf",
+        claim: "done",
+        summary: "uncorrelated result",
+      }),
+    ).toThrow(/requires taskRevision 1/);
+
+    completeTask(config(appDir), {
+      taskId: "revision-leaf",
+      taskRevision: 1,
+      attemptId: first.attemptId,
+      claim: "done",
+      summary: "revision one result",
+    });
+    expect(() =>
+      rejectTaskReview(config(appDir), {
+        taskId: "revision-leaf",
+        taskRevision: 0,
+        attemptId: first.attemptId,
+        reason: "stale review",
+      }),
+    ).toThrow(/revision 0 is stale/);
+
+    rejectTaskReview(config(appDir), {
+      taskId: "revision-leaf",
+      taskRevision: 1,
+      attemptId: first.attemptId,
+      reason: "retry the same intent",
+    });
+    const retry = assignTask(config(appDir), {
+      taskId: "revision-leaf",
+      attemptId: "attempt-revision-1-b",
+      expectedRevision: 1,
+    });
+    expect(retry.taskRevision).toBe(1);
+    expect(retry.attemptId).not.toBe(first.attemptId);
+
+    expect(() =>
+      completeTask(config(appDir), {
+        taskId: "revision-leaf",
+        taskRevision: 1,
+        attemptId: first.attemptId,
+        claim: "done",
+        summary: "late first attempt",
+      }),
+    ).toThrow(/attempt .* is stale/);
+  });
+
+  test("can explicitly create revisioned canary work while default creation remains revision zero", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: [],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    const revisioned = createTask(config(appDir), {
+      id: "revisioned-canary",
+      parentId: "project",
+      initialRevision: 1,
+      goal: "run one revisioned canary",
+      outputs: ["artifact"],
+      acceptance: ["artifact exists"],
+    });
+    expect(taskRevision(revisioned)).toBe(1);
+
+    expect(() =>
+      createTask(config(appDir), {
+        id: "invalid-revision",
+        parentId: "project",
+        initialRevision: -1,
+        goal: "invalid",
+        outputs: ["artifact"],
+        acceptance: ["artifact exists"],
+      }),
+    ).toThrow(/initialRevision must be a non-negative integer/);
+  });
+
+  test("does not revise work intent when only blocker observation windows move", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["wait"],
+        },
+        wait: {
+          id: "wait",
+          revision: 3,
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for exact run.",
+          outputs: ["artifact"],
+          acceptance: ["run is terminal"],
+          blocker: {
+            category: "external-wait",
+            owner: "app-ops",
+            condition: "Run 42 is terminal.",
+            resume_condition: "Run 42 reaches a terminal state.",
+            waiting_for: { type: "ado.pipeline.terminal", runId: "42" },
+            next_check_at: "2026-07-16T05:00:00.000Z",
+            fallback_at: "2026-07-16T06:00:00.000Z",
+            fallback_action: "Escalate run 42.",
+          },
+        },
+      },
+    });
+
+    const refreshed = updateTaskText(config(appDir), {
+      taskId: "wait",
+      nextCheckAt: "2026-07-16T05:10:00.000Z",
+      fallbackAt: "2026-07-16T06:10:00.000Z",
+    });
+    expect(taskRevision(refreshed)).toBe(3);
+
+    const changedCondition = updateTaskText(config(appDir), {
+      taskId: "wait",
+      resumeCondition: "Run 43 reaches a terminal state.",
+    });
+    expect(taskRevision(changedCondition)).toBe(4);
   });
 
   test("drops write-ahead assignments that were not committed to the tree", async () => {
@@ -500,10 +753,7 @@ describe("project task tree SDK", () => {
     expect(retry.sessionId).toContain("attempt-2");
 
     const retryTree = readTaskTree(config(appDir));
-    expect(retryTree.tasks.leaf.session_history).toEqual([
-      assignment.sessionId,
-      retry.sessionId,
-    ]);
+    expect(retryTree.tasks.leaf.session_history).toEqual([assignment.sessionId, retry.sessionId]);
     expect(retryTree.tasks.leaf.trace?.current_attempt_id).toBe("attempt-2");
   });
 
@@ -556,10 +806,7 @@ describe("project task tree SDK", () => {
     expect(retry.sessionId).toContain("attempt-2");
 
     const retryTree = readTaskTree(config(appDir));
-    expect(retryTree.tasks.leaf.session_history).toEqual([
-      assignment.sessionId,
-      retry.sessionId,
-    ]);
+    expect(retryTree.tasks.leaf.session_history).toEqual([assignment.sessionId, retry.sessionId]);
     expect(retryTree.tasks.leaf.trace?.review_reject_fresh_session).toBe(false);
     expect(retryTree.tasks.leaf.trace?.last_session).toBe(retry.sessionId);
   });
@@ -615,14 +862,16 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.leaf.state).toBe("backlog");
     expect(tree.tasks.leaf.status).toBe("backlog");
     expect(tree.tasks.leaf.trace?.assigned_worker).toBeUndefined();
-    expect(peekTaskAssignments(
-      taskTreeConfig({
-        appDir,
-        projectDir: appDir,
-        worker: "",
-        maxConcurrent: 1,
-      }),
-    )).toHaveLength(0);
+    expect(
+      peekTaskAssignments(
+        taskTreeConfig({
+          appDir,
+          projectDir: appDir,
+          worker: "",
+          maxConcurrent: 1,
+        }),
+      ),
+    ).toHaveLength(0);
   });
 
   test("trims blank worker input and falls back to task owner", async () => {
@@ -1177,6 +1426,22 @@ describe("project task tree SDK", () => {
       ],
     });
     expect(packet.blocked_frontier_summary?.parent_groups[0].sample_blocked_leaf_ids).toContain("blocked-1");
+
+    const tree = readTaskTree(config(appDir));
+    const ownerActionable = summarizeBlockedFrontier(
+      tree,
+      Array.from({ length: 9 }, (_, index) => `blocked-${index + 1}`),
+    );
+    expect(ownerActionable).toMatchObject({
+      blocked_leaf_count: 3,
+      parent_groups: [
+        {
+          parent_id: "small-blocked-family",
+          blocked_leaf_count: 3,
+        },
+      ],
+    });
+    expect(ownerActionable?.repeated_blocker_groups).toEqual([]);
   });
 
   test("confirmRunnableBacklogLeaves honors active conflict_scope overlap like assignTask", async () => {
@@ -1520,8 +1785,7 @@ describe("project task tree SDK", () => {
     });
 
     expect(updated.blocker).toMatchObject({
-      condition:
-        "Still waiting for returned approval after a same-lineage refresh.",
+      condition: "Still waiting for returned approval after a same-lineage refresh.",
       waiting_for: {
         type: "project.approval.submitted",
         taskId: "blocked-leaf",
@@ -1589,8 +1853,7 @@ describe("project task tree SDK", () => {
     });
 
     expect(updated.blocker).toMatchObject({
-      condition:
-        "Waiting for the same returned approval after a readout refresh.",
+      condition: "Waiting for the same returned approval after a readout refresh.",
       category: "external-wait",
       owner: "human",
       waiting_for: {
@@ -2002,8 +2265,8 @@ describe("project task tree SDK", () => {
           acceptance: ["Signal returned"],
           blocker: {
             condition: "external signal required",
-            category: "external-wait"
-          }
+            category: "external-wait",
+          },
         },
       },
     });
@@ -2063,8 +2326,8 @@ describe("project task tree SDK", () => {
           acceptance: ["Auth restored"],
           blocker: {
             condition: "GitHub auth required",
-            category: "external-wait"
-          }
+            category: "external-wait",
+          },
         },
       },
     });
@@ -2129,8 +2392,8 @@ describe("project task tree SDK", () => {
           acceptance: ["Signal returned"],
           blocker: {
             condition: "external signal required",
-            category: "external-wait"
-          }
+            category: "external-wait",
+          },
         },
       },
     });
@@ -2226,8 +2489,7 @@ describe("project task tree SDK", () => {
               executionDrained: true,
               noRefillNow: true,
               strandedExhaustedResidueOnly: true,
-              reason:
-                "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
+              reason: "spec-loop execution is drained and the remaining frontier is exact wait stewardship",
               pending: 244,
               dispatchablePending: 0,
               strandedPending: 244,
