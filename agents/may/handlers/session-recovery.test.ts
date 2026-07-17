@@ -104,6 +104,87 @@ describe("session-recovery handler", () => {
     expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
   });
 
+  it("reaps an extremely stale orphan when session metadata is missing", async () => {
+    const ctx = makeCtx("requeue");
+    const now = Date.now();
+    const update = vi.fn(() => ({ changes: 1 }));
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        if (sql.includes("UPDATE sessions")) return { run: update };
+        if (sql.includes("lastActivityAt")) return { all: vi.fn(() => []) };
+        return {
+          all: vi.fn(() => [{
+            sessionId: "s_orphan",
+            agent: "dev",
+            task: "abandoned task",
+            status: "running",
+            startedAt: now - 2 * 60 * 60_000 - 1,
+          }]),
+        };
+      }),
+    };
+    ctx.sdk.paths = { root: "/tmp/may-agent-test", persist: "/tmp/may-agent-test/missing-state" };
+    ctx.sdk.getDb = vi.fn(() => db);
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "timer.tick",
+      source: "timer",
+      owner: "agent:may",
+      timestamp: now,
+      data: { entry: "session-recovery" },
+    });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.any(Number),
+      "Auto-closed stale immediate session with no assistant activity",
+      "s_orphan",
+      now - 2 * 60 * 60_000 - 1,
+    );
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("session.end", expect.objectContaining({
+      sessionId: "s_orphan",
+      autoClosed: true,
+      reason: "stale_immediate_no_assistant_activity",
+    }));
+  });
+
+  it("preserves a normally stale session when session metadata is missing", async () => {
+    const ctx = makeCtx("requeue");
+    const now = Date.now();
+    const update = vi.fn(() => ({ changes: 1 }));
+    const db = {
+      prepare: vi.fn((sql: string) => {
+        if (sql.includes("UPDATE sessions")) return { run: update };
+        if (sql.includes("lastActivityAt")) return { all: vi.fn(() => []) };
+        return {
+          all: vi.fn(() => [{
+            sessionId: "s_recent_orphan",
+            agent: "dev",
+            task: "possibly active task",
+            status: "running",
+            startedAt: now - 31 * 60_000,
+          }]),
+        };
+      }),
+    };
+    ctx.sdk.paths = { root: "/tmp/may-agent-test", persist: "/tmp/may-agent-test/missing-state" };
+    ctx.sdk.getDb = vi.fn(() => db);
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "timer.tick",
+      source: "timer",
+      owner: "agent:may",
+      timestamp: now,
+      data: { entry: "session-recovery" },
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("session.end", expect.objectContaining({
+      sessionId: "s_recent_orphan",
+    }));
+  });
+
   it("does not unwrap nested event.data.data payloads", async () => {
     const ctx = makeCtx("requeue");
     const handler = create(ctx, {} as any);

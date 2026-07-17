@@ -126,7 +126,13 @@ function isSafeAutocloseSession(ctx: HandlerContext, row: RunningSessionRow, now
 
   const persistDir = ctx.sdk.paths.persist ?? join(ctx.sdk.paths.root, ".state");
   const meta = parseMeta(persistDir, row.sessionId);
-  if (!meta) return false;
+
+  // If meta is corrupted/missing and session is extremely stale (4x threshold)
+  // with no assistant activity, allow reaping as orphan cleanup.
+  if (!meta) {
+    const extremelyStale = (row.startedAt ?? now) < now - STALE_AUTOCLOSE_MS * 4;
+    return extremelyStale && !hasAssistantLine(persistDir, row.sessionId);
+  }
 
   return meta.status === "running"
     && meta.autoClose === "immediate"
