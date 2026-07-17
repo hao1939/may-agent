@@ -26,6 +26,7 @@
     "down": "docker compose -f ./container/compose.yml down",
     "logs": "docker compose -f ./container/compose.yml logs -f",
     "restart": "supervisorctl start may-agent-restarter",
+    "maintain:db": "bun src/app/may.ts --maintenance-once",
     "restart:host": "docker exec may-agent supervisorctl start may-agent-restarter",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",

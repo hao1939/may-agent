@@ -911,7 +911,10 @@ export class Cron {
       // handler string ("__project_app_schedule__") doesn't map to a workflow name.
       const evtRow = db
         .prepare(
-          `SELECT timestamp FROM events WHERE event_type = 'handler.started' AND json_extract(data, '$.handler') = ? ORDER BY timestamp DESC LIMIT 1`,
+          `SELECT timestamp FROM events
+           WHERE event_type = 'handler.started'
+             AND COALESCE(handler, json_extract(data, '$.handler')) = ?
+           ORDER BY timestamp DESC LIMIT 1`,
         )
         .get(entryName) as { timestamp: number } | undefined;
       if (evtRow?.timestamp) {

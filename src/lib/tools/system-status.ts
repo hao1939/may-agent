@@ -206,7 +206,7 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
     const db = getDb(stateDir);
     const rows = db
       .prepare(
-        `SELECT json_extract(data, '$.handler') as jobName,
+        `SELECT COALESCE(handler, json_extract(data, '$.handler')) as jobName,
                 'handler' as type,
                 CASE event_type
                   WHEN 'handler.completed' THEN 'success'
@@ -216,7 +216,7 @@ function getRecentJobs(stateDir: string, count: number): JobHistoryEntry[] {
                 '' as summary,
                 datetime(timestamp / 1000, 'unixepoch') as startedAt,
                 datetime(timestamp / 1000, 'unixepoch') as endedAt,
-                COALESCE(json_extract(data, '$.durationMs'), 0) as durationMs
+                COALESCE(duration_ms, json_extract(data, '$.durationMs'), 0) as durationMs
          FROM events
          WHERE event_type IN ('handler.completed', 'handler.failed')
          ORDER BY timestamp DESC LIMIT ?`,

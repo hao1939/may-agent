@@ -1830,6 +1830,16 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             });
           }
 
+          if (prevRunRecord.artifact_error) {
+            return workflowResumeError({
+              workflowRunId: params.workflowRunId,
+              workflow: prevRunRecord.workflow,
+              projectId: prevRunRecord.projectId ?? opts.projectId,
+              reason: `Workflow run "${params.workflowRunId}" has incomplete persisted state: ${prevRunRecord.artifact_error}`,
+              category: "corrupt_state",
+            });
+          }
+
           if (!prevRunRecord.workflow || !prevRunRecord.task || typeof prevRunRecord.depth !== "number") {
             return workflowResumeError({
               workflowRunId: params.workflowRunId,

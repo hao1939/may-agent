@@ -12,10 +12,16 @@ import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
+import {
+  describeText,
+  writeContentAddressedJson,
+  writeSessionResult,
+  type ArtifactDescriptor,
+} from "./artifacts.js";
 
-/** Maximum event data payload persisted (200KB). Prevents DB bloat from
- * recursive session tasks or oversized payloads. */
-const MAX_EVENT_DATA = 200_000;
+/** Keep coordination rows small; full large bodies live in event-bodies/. */
+const INLINE_EVENT_DATA_BYTES = 4_096;
+const MAX_EVENT_PROJECTION_LENGTH = 12_000;
 
 const DURABLE_COMMAND_EVENTS = new Set([
   "input",
@@ -64,7 +70,7 @@ function eventTtlMs(event: Record<string, unknown>): number | null {
 
 function compactEventValue(value: unknown, depth = 0): unknown {
   if (typeof value === "string") {
-    const max = depth === 0 ? 16_000 : 8_000;
+    const max = depth === 0 ? 4_000 : 2_000;
     return value.length <= max ? value : `${value.slice(0, max)}...[TRUNCATED: ${value.length} chars]`;
   }
   if (value === null || typeof value !== "object") return value;
@@ -84,17 +90,17 @@ function compactEventValue(value: unknown, depth = 0): unknown {
 
 function capEventData(payload: Record<string, unknown>): string {
   const json = JSON.stringify(payload);
-  if (json.length <= MAX_EVENT_DATA) return json;
+  if (json.length <= MAX_EVENT_PROJECTION_LENGTH) return json;
 
   const compacted = compactEventValue(payload) as Record<string, unknown>;
   const compactJson = JSON.stringify({
     ...compacted,
-    _truncated: { originalLength: json.length },
+    _truncated: payload._truncated ?? { originalLength: json.length },
   });
-  if (compactJson.length <= MAX_EVENT_DATA) return compactJson;
+  if (compactJson.length <= MAX_EVENT_PROJECTION_LENGTH) return compactJson;
 
   const fallback: Record<string, unknown> = {
-    _truncated: {
+    _truncated: payload._truncated ?? {
       originalLength: json.length,
       reason: "event payload exceeded persistence limit",
     },
@@ -109,7 +115,15 @@ function capEventData(payload: Record<string, unknown>): string {
     "workflowRunId",
     "projectId",
     "taskId",
+    "attemptId",
     "handler",
+    "metricId",
+    "metric",
+    "alertId",
+    "escalationId",
+    "durationMs",
+    "lane",
+    "reason",
   ];
   const scalarEntries = Object.entries(payload).filter(([, value]) => value === null || typeof value !== "object");
   const orderedEntries = [
@@ -118,10 +132,71 @@ function capEventData(payload: Record<string, unknown>): string {
   ];
   for (const [key, value] of orderedEntries) {
     const candidate = { ...fallback, [key]: compactEventValue(value, 1) };
-    if (JSON.stringify(candidate).length > MAX_EVENT_DATA) continue;
+    if (JSON.stringify(candidate).length > MAX_EVENT_PROJECTION_LENGTH) continue;
     fallback[key] = candidate[key];
   }
   return JSON.stringify(fallback);
+}
+
+function stringField(payload: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return null;
+}
+
+function numberField(payload: Record<string, unknown>, ...keys: string[]): number | null {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function eventCorrelation(payload: Record<string, unknown>) {
+  return {
+    sessionId: stringField(payload, "sessionId", "session_id", "sourceSessionId"),
+    workflowRunId: stringField(payload, "workflowRunId", "workflow_run_id"),
+    projectId: stringField(payload, "projectId", "project_id", "project"),
+    taskId: stringField(payload, "taskId", "task_id"),
+    attemptId: stringField(payload, "attemptId", "attempt_id"),
+    handler: stringField(payload, "handler"),
+    metricId: stringField(payload, "metricId", "metric_id", "metric"),
+    alertId: stringField(payload, "alertId", "alert_id"),
+    escalationId: stringField(payload, "escalationId", "escalation_id"),
+    status: stringField(payload, "status"),
+    durationMs: numberField(payload, "durationMs", "duration_ms"),
+  };
+}
+
+function prepareEventBody(
+  persistDir: string,
+  payload: Record<string, unknown>,
+): { data: string; artifact: ArtifactDescriptor } {
+  const serialized = `${JSON.stringify(payload)}\n`;
+  const inlineDescriptor = describeText("", serialized);
+  if (inlineDescriptor.bytes <= INLINE_EVENT_DATA_BYTES) {
+    return { data: JSON.stringify(payload), artifact: inlineDescriptor };
+  }
+  const artifact = writeContentAddressedJson(persistDir, "event-bodies", payload);
+  const projected = compactEventValue(payload) as Record<string, unknown>;
+  return {
+    data: capEventData({
+      ...projected,
+      _truncated: {
+        originalLength: serialized.length - 1,
+        reason: "full event body stored as artifact",
+      },
+      _artifact: {
+        ref: artifact.ref,
+        sha256: artifact.sha256,
+        bytes: artifact.bytes,
+      },
+    }),
+    artifact,
+  };
 }
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
@@ -360,13 +435,25 @@ export class DbWriter {
         const ev = event as any;
         if (!isCanonicalEventEnvelope(ev)) break;
         const payload = eventPayload(ev);
+        const endedAt = Date.now();
+        const resultArtifact = writeSessionResult(this.persistDir, payload.sessionId as string, {
+          status: payload.status,
+          outcome: payload.outcome,
+          error: payload.error,
+          summary: payload.summary,
+          opCount: payload.opCount,
+          turnCount: payload.turnCount,
+          finishParams: payload.finishParams,
+          endedAt,
+        });
         updateSessionDb(this.persistDir, payload.sessionId as string, {
           status: payload.status as any,
           error: payload.error as string | undefined,
           outcome: payload.outcome as string | undefined,
           opCount: payload.opCount as number | undefined,
-          lastActivityAt: Date.now(),
-          endedAt: Date.now(),
+          lastActivityAt: endedAt,
+          endedAt,
+          resultArtifact,
         });
         this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
         break;
@@ -474,9 +561,38 @@ export class DbWriter {
       if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
         (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
       }
+      const body = prepareEventBody(this.persistDir, persistedPayload);
+      const correlation = eventCorrelation(persistedPayload);
       const info = this.db.run(
-        "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [event.type, source, owner, capEventData(persistedPayload), timestamp, urgency, ttlMs],
+        `INSERT INTO events
+          (event_type, source, owner, data, body_ref, body_sha256, body_bytes,
+           session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
+           metric_id, alert_id, escalation_id, subject_status, duration_ms,
+           timestamp, urgency, ttl_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          event.type,
+          source,
+          owner,
+          body.data,
+          body.artifact.ref || null,
+          body.artifact.sha256,
+          body.artifact.bytes,
+          correlation.sessionId,
+          correlation.workflowRunId,
+          correlation.projectId,
+          correlation.taskId,
+          correlation.attemptId,
+          correlation.handler,
+          correlation.metricId,
+          correlation.alertId,
+          correlation.escalationId,
+          correlation.status,
+          correlation.durationMs,
+          timestamp,
+          urgency,
+          ttlMs,
+        ],
       );
       const rowId = Number(info.lastInsertRowid);
       if (!Number.isFinite(rowId) || rowId <= 0) {
