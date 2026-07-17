@@ -101,10 +101,7 @@ export function runDbMaintenancePass(
          AND NOT EXISTS (
            SELECT 1 FROM sessions s
            WHERE s.status IN ('running', 'idle')
-             AND COALESCE(
-               e.session_id,
-               CASE WHEN json_valid(e.data) THEN json_extract(e.data, '$.sessionId') END
-             ) = s.sessionId
+             AND e.session_id = s.sessionId
          )
        ORDER BY e.timestamp LIMIT ?
      )`,

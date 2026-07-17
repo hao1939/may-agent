@@ -47,19 +47,4 @@ describe("workflow run storage", () => {
     }
   });
 
-  it("falls back to legacy SQL rows when run.json is absent", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "may-workflow-legacy-"));
-    try {
-      const db = getDb(persistDir);
-      db.run(
-        `INSERT INTO workflow_runs
-         (runId, workflow, task, depth, status, startedAt)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["wr_legacy", "legacy", "full legacy task", 1, "interrupted", 1],
-      );
-      expect(getWorkflowRun(persistDir, "wr_legacy")?.task).toBe("full legacy task");
-    } finally {
-      closeDb(persistDir);
-    }
-  });
 });

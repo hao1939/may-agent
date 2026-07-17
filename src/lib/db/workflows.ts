@@ -41,7 +41,7 @@ function taskPreview(task: string): string {
   return `${task.slice(0, MAX_TASK_PREVIEW_LENGTH)}\n...[full task in workflow artifact; ${task.length} chars]`;
 }
 
-export function writeWorkflowRunArtifact(persistDir: string, run: WorkflowRunRecord): WorkflowRunRecord {
+function writeWorkflowRunArtifact(persistDir: string, run: WorkflowRunRecord): WorkflowRunRecord {
   const ref = workflowRunRef(run.runId);
   const artifact = writeJsonArtifact(persistDir, ref, {
     schemaVersion: 1,
@@ -125,9 +125,10 @@ export function updateWorkflowRun(
 export function getWorkflowRun(persistDir: string, runId: string): WorkflowRunRecord | null {
   const db = getDb(persistDir);
   const row = db.prepare("SELECT * FROM workflow_runs WHERE runId = ?").get(runId) as WorkflowRunRecord | null;
+  if (!row) return null;
   const loaded = readJsonArtifactWithDescriptor<WorkflowRunRecord & { schemaVersion?: number }>(
     persistDir,
-    row?.artifact_ref ?? workflowRunRef(runId),
+    row.artifact_ref ?? workflowRunRef(runId),
   );
   if (loaded) {
     if (row?.artifact_sha256 && row.artifact_sha256 !== loaded.descriptor.sha256) {
@@ -135,7 +136,7 @@ export function getWorkflowRun(persistDir: string, runId: string): WorkflowRunRe
     }
     return loaded.value;
   }
-  return row;
+  return { ...row, artifact_error: "workflow artifact missing" };
 }
 
 /** List all workflow run IDs, ordered by startedAt. */

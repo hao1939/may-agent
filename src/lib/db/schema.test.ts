@@ -1,23 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { openDatabase } from "../db.js";
-import { applyDbSchemaAndMigrations } from "./schema.js";
+import { applyDbSchema } from "./schema.js";
 
-describe("database schema migrations", () => {
-  it("adds typed event columns before creating their indexes and trigger", () => {
+describe("canonical database schema", () => {
+  it("creates the complete schema idempotently without migration state", () => {
     const db = openDatabase(":memory:");
     try {
-      db.exec(`
-        CREATE TABLE events (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          event_type TEXT NOT NULL,
-          source TEXT,
-          owner TEXT,
-          data TEXT,
-          timestamp INTEGER NOT NULL
-        )
-      `);
-
-      expect(() => applyDbSchemaAndMigrations(db)).not.toThrow();
+      expect(() => applyDbSchema(db)).not.toThrow();
+      expect(() => applyDbSchema(db)).not.toThrow();
 
       const columns = db.prepare("PRAGMA table_info(events)").all() as Array<{ name: string }>;
       const indexes = db.prepare("PRAGMA index_list(events)").all() as Array<{ name: string }>;
@@ -26,8 +16,12 @@ describe("database schema migrations", () => {
       ).get() as { sql: string };
 
       expect(columns.some(({ name }) => name === "session_id")).toBe(true);
+      expect(columns.some(({ name }) => name === "delivery_status")).toBe(true);
+      expect(columns.some(({ name }) => name === "handled_by")).toBe(false);
       expect(indexes.some(({ name }) => name === "idx_events_session")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
+      expect(trigger.sql).not.toContain("json_extract");
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
     } finally {
       db.close();
     }

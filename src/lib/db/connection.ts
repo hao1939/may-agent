@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../db.js";
-import { applyDbSchemaAndMigrations } from "./schema.js";
+import { applyDbSchema } from "./schema.js";
 
 const dbCache = new Map<string, SqliteDb>();
 
@@ -52,7 +52,7 @@ export function getDb(persistDir: string): SqliteDb {
 
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
-  applyDbSchemaAndMigrations(db);
+  applyDbSchema(db);
 
   dbCache.set(persistDir, db);
   return db;

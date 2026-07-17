@@ -37,6 +37,7 @@ describe("buildLoopTrace", () => {
         project_id TEXT,
         metric_id TEXT,
         alert_id TEXT,
+        subject_status TEXT,
         timestamp INTEGER,
         urgency TEXT
       );
@@ -109,16 +110,16 @@ describe("buildLoopTrace", () => {
       .run("session.first-turn-error-count-1h", "First turn errors", "may", "v2-spec-coverage-buildout", 2, 0, 1, "P1", ">");
     db.prepare("INSERT INTO metric_alerts (id, metric_id, alert_type, message, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?)")
       .run(7, "session.first-turn-error-count-1h", "threshold", "first turn errors breached", now - 10_000, null);
-    db.prepare("INSERT INTO events (id, event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run(11, "metric.breach", "metrics", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h" }), now - 9_000, "normal");
+    db.prepare("INSERT INTO events (id, event_type, source, owner, data, alert_id, metric_id, project_id, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(11, "metric.breach", "metrics", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h" }), "7", "session.first-turn-error-count-1h", "v2-spec-coverage-buildout", now - 9_000, "normal");
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("wr_triage", "metric-alert-triage", "triage session.first-turn-error-count-1h", null, null, "v2-spec-coverage-buildout", 1, "done", now - 8_000);
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, projectId, startedAt, endedAt, outcome, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("s_triage", "may", "triage session.first-turn-error-count-1h", "done", "workflow:metric-alert-triage", "wr_triage", "v2-spec-coverage-buildout", now - 7_000, now - 6_000, "judged", 4);
-    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("guard.triggered", "workflow", "agent:may", JSON.stringify({ workflowRunId: "wr_triage", sessionId: "s_triage", guard: "verify-after-write", demandType: "warn" }), now - 5_000, "normal");
-    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("metric.alert_judged", "workflow", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", verdict: "needs_fix" }), now - 4_000, "normal");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, workflow_run_id, session_id, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("guard.triggered", "workflow", "agent:may", JSON.stringify({ workflowRunId: "wr_triage", sessionId: "s_triage", guard: "verify-after-write", demandType: "warn" }), "wr_triage", "s_triage", now - 5_000, "normal");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, alert_id, metric_id, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("metric.alert_judged", "workflow", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", verdict: "needs_fix" }), "7", "session.first-turn-error-count-1h", now - 4_000, "normal");
     db.prepare("INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)")
       .run("session.first-turn-error-count-1h", 2, 10, now - 3_000, "metrics-snapshot", null);
 
@@ -153,8 +154,8 @@ describe("buildLoopTrace", () => {
     const now = Date.now();
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
       .run("wr_missing", "deleted-workflow", "resume me", "closed-loop-reliability", 1, "running", now - 10_000);
-    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("workflow.resume_failed", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", projectId: "closed-loop-reliability", category: "workflow_definition_missing", recoverable: true, nextAction: "recover" }), now - 5_000, "normal");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, workflow_run_id, project_id, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("workflow.resume_failed", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", projectId: "closed-loop-reliability", category: "workflow_definition_missing", recoverable: true, nextAction: "recover" }), "wr_missing", "closed-loop-reliability", now - 5_000, "normal");
 
     const trace = buildLoopTrace(db, { workflowRunId: "wr_missing" });
 
@@ -181,8 +182,8 @@ describe("buildLoopTrace", () => {
     const now = Date.now();
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt, endedAt, result_summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("wr_done", "goal-driver", "already finished", "p1", 1, "done", now - 20_000, now - 10_000, "finished");
-    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("workflow.resume_skipped", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_done", workflow: "goal-driver", projectId: "p1", status: "done", reason: "workflow already reached terminal status", nextAction: "none" }), now - 5_000, "normal");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, workflow_run_id, project_id, subject_status, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("workflow.resume_skipped", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_done", workflow: "goal-driver", projectId: "p1", status: "done", reason: "workflow already reached terminal status", nextAction: "none" }), "wr_done", "p1", "done", now - 5_000, "normal");
 
     const trace = buildLoopTrace(db, { workflowRunId: "wr_done" });
 
@@ -204,8 +205,8 @@ describe("buildLoopTrace", () => {
     const now = Date.now();
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, projectId, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("s_unreg", "missing-agent", "continue work", "interrupted", "resumeStaleSessions", "wr_parent", "closed-loop-reliability", now - 10_000, now - 9_000, "agent not registered");
-    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("session.resume_failed", "manager", "agent:missing-agent", JSON.stringify({ sessionId: "s_unreg", agent: "missing-agent", workflowRunId: "wr_parent", projectId: "closed-loop-reliability", category: "agent_not_registered", recoverable: false, reason: "Process restarted (agent not registered)" }), now - 8_000, "normal");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, session_id, workflow_run_id, project_id, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("session.resume_failed", "manager", "agent:missing-agent", JSON.stringify({ sessionId: "s_unreg", agent: "missing-agent", workflowRunId: "wr_parent", projectId: "closed-loop-reliability", category: "agent_not_registered", recoverable: false, reason: "Process restarted (agent not registered)" }), "s_unreg", "wr_parent", "closed-loop-reliability", now - 8_000, "normal");
 
     const trace = buildLoopTrace(db, { sessionId: "s_unreg" });
 

@@ -27,7 +27,6 @@
     "logs": "docker compose -f ./container/compose.yml logs -f",
     "restart": "supervisorctl start may-agent-restarter",
     "maintain:db": "bun src/app/may.ts --maintenance-once",
-    "migrate:legacy-storage": "bun src/app/may.ts --migrate-legacy-storage",
     "restart:host": "docker exec may-agent supervisorctl start may-agent-restarter",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
