@@ -7,7 +7,14 @@ import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 import type { WorkflowRun } from "../../src/lib/workflow-tool.js";
-import { getDb, insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, listWorkflowRunIds, upsertSession } from "../../src/lib/requests.js";
+import {
+  getDb,
+  insertWorkflowRun,
+  getWorkflowRun,
+  getWorkflowStepSessions,
+  listWorkflowRunIds,
+  upsertSession,
+} from "../../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../../src/lib/requests.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
@@ -65,14 +72,46 @@ function createArchivedSession(sessionId: string, agentName: string, task: strin
     content: [{ type: "text", text: responseText }],
     timestamp: Date.now() - 4000,
   };
+  const finishCallId = `finish_${sessionId}`;
+  const finishCall = {
+    role: "assistant",
+    content: [
+      {
+        type: "toolCall",
+        id: finishCallId,
+        name: "finish",
+        arguments: {
+          status: "success",
+          summary: responseText,
+          verification_evidence: ["Recovered archived workflow step."],
+        },
+      },
+    ],
+    timestamp: Date.now() - 3000,
+  } as unknown as AgentMessage;
+  const finishResult = {
+    role: "toolResult",
+    toolCallId: finishCallId,
+    toolName: "finish",
+    content: [{ type: "text", text: `✅ SUCCESS: ${responseText}` }],
+    isError: false,
+    timestamp: Date.now() - 2000,
+  } as unknown as AgentMessage;
 
-  const jsonl = [JSON.stringify(userMsg), JSON.stringify(assistantMsg)].join("\n") + "\n";
+  const jsonl =
+    [userMsg, assistantMsg, finishCall, finishResult].map((message) => JSON.stringify(message)).join("\n") + "\n";
   writeFileSync(join(sessionDir, "session.jsonl"), jsonl, "utf-8");
   mkdirSync(join(sessionDir, "output"), { recursive: true });
 }
 
 /** Create a fake registry entry for a session using per-session meta.json. */
-function addToRegistry(sessionId: string, agentName: string, task: string, status: string, opts?: { workflowRunId?: string; outcome?: string }): void {
+function addToRegistry(
+  sessionId: string,
+  agentName: string,
+  task: string,
+  status: string,
+  opts?: { workflowRunId?: string; outcome?: string },
+): void {
   const sessionDir = join(persistDir, "sessions", sessionId);
   mkdirSync(sessionDir, { recursive: true });
   const meta = {
@@ -177,16 +216,18 @@ describe("workflow tool: resume", () => {
       expect(parsed.category).toBe("corrupt_state");
       expect(parsed.error).toContain("incomplete persisted state");
     }
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "workflow.resume_failed",
-      owner: "agent:may",
-      data: expect.objectContaining({
-        workflowRunId: "wr_corrupt",
-        workflow: "corrupt-workflow",
-        category: "corrupt_state",
-        recoverable: false,
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.resume_failed",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          workflowRunId: "wr_corrupt",
+          workflow: "corrupt-workflow",
+          category: "corrupt_state",
+          recoverable: false,
+        }),
       }),
-    }));
+    );
   });
 
   it("returns error when workflow definition no longer exists", async () => {
@@ -219,15 +260,17 @@ describe("workflow tool: resume", () => {
       expect(parsed.workflowRunId).toBe("wr_stale");
       expect(parsed.category).toBe("workflow_definition_missing");
     }
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "workflow.resume_failed",
-      owner: "agent:may",
-      data: expect.objectContaining({
-        workflowRunId: "wr_stale",
-        workflow: "deleted-workflow",
-        category: "workflow_definition_missing",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.resume_failed",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          workflowRunId: "wr_stale",
+          workflow: "deleted-workflow",
+          category: "workflow_definition_missing",
+        }),
       }),
-    }));
+    );
   });
 
   it("does not replay a workflow that already reached done", async () => {
@@ -274,15 +317,17 @@ describe("workflow tool: resume", () => {
       expect(parsed.steps[0]).toMatchObject({ agent: "coder", sessionId: "s_done_step", output: "stored step output" });
     }
     expect(listWorkflowRunIds(persistDir)).toEqual(["wr_done"]);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "workflow.resume_skipped",
-      owner: "agent:may",
-      data: expect.objectContaining({
-        workflowRunId: "wr_done",
-        workflow: "already-done",
-        status: "done",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.resume_skipped",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          workflowRunId: "wr_done",
+          workflow: "already-done",
+          status: "done",
+        }),
       }),
-    }));
+    );
   });
 
   it("resumes a workflow that crashed after completing 1 of 2 steps", async () => {
@@ -329,7 +374,10 @@ describe("workflow tool: resume", () => {
 
     // Create archived session data for step 1
     createArchivedSession("s_step1", "coder", "implement fix the bug", "I fixed the bug in main.ts");
-    addToRegistry("s_step1", "coder", "implement fix the bug", "done", { workflowRunId: "wr_crashed_one", outcome: "I fixed the bug in main.ts" });
+    addToRegistry("s_step1", "coder", "implement fix the bug", "done", {
+      workflowRunId: "wr_crashed_one",
+      outcome: "I fixed the bug in main.ts",
+    });
 
     // Register agents with the manager — coder is a no-op since step 1 is replayed,
     // reviewer needs to be a real (mock) agent
