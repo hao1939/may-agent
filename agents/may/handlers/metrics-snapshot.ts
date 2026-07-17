@@ -1133,15 +1133,6 @@ export const create: HandlerModule["create"] = (
     const db = ctx.sdk.getDb();
     const now = Date.now();
 
-    // ── Ensure indexes exist (idempotent) ────────────────────────────
-
-    db.run(
-      "CREATE INDEX IF NOT EXISTS idx_events_type_timestamp ON events(event_type, timestamp)",
-    );
-    db.run(
-      "CREATE INDEX IF NOT EXISTS idx_metric_snapshots_measured_at ON metric_snapshots(measured_at)",
-    );
-
     // ── Helpers ──────────────────────────────────────────────────────
 
     function record(
