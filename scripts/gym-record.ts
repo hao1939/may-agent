@@ -17,7 +17,7 @@
  */
 
 import { Database } from "bun:sqlite";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 
 // ── DB Location ────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ function getDbPath(): string {
 
 function openDb(): Database {
   const dbPath = getDbPath();
+  mkdirSync(dirname(dbPath), { recursive: true });
   const db = new Database(dbPath);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec("PRAGMA foreign_keys = ON;");
@@ -65,9 +66,14 @@ function openDb(): Database {
   const cols = db.prepare("PRAGMA table_info(gym_runs)").all() as any[];
   const colNames = new Set(cols.map((c: any) => c.name));
   const migrations: Array<[string, string]> = [
-    ["prompt_hash", "TEXT"], ["framework_sha", "TEXT"], ["model", "TEXT"],
-    ["batch_id", "TEXT"], ["run_tag", "TEXT"], ["categories", "TEXT"],
-    ["tags", "TEXT"], ["tier", "TEXT"],
+    ["prompt_hash", "TEXT"],
+    ["framework_sha", "TEXT"],
+    ["model", "TEXT"],
+    ["batch_id", "TEXT"],
+    ["run_tag", "TEXT"],
+    ["categories", "TEXT"],
+    ["tags", "TEXT"],
+    ["tier", "TEXT"],
   ];
   for (const [col, type] of migrations) {
     if (!colNames.has(col)) {
@@ -139,15 +145,16 @@ export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: s
     opts?.batch_id || null,
     result.categories ? JSON.stringify(result.categories) : null,
     result.tags ? JSON.stringify(result.tags) : null,
-    result.tier || null
+    result.tier || null,
   );
 
   const runId = Number(runResult.lastInsertRowid);
 
   // Insert prompt snapshot if new prompt_hash (idempotent via INSERT OR IGNORE)
   if (result.prompt_hash && result.prompt_text) {
-    db.query(`INSERT OR IGNORE INTO gym_prompts (prompt_hash, agent_name, model, framework_sha, prompt_text) VALUES (?, ?, ?, ?, ?)`)
-      .run(result.prompt_hash, result.agent, result.model || null, result.framework_sha || null, result.prompt_text);
+    db.query(
+      `INSERT OR IGNORE INTO gym_prompts (prompt_hash, agent_name, model, framework_sha, prompt_text) VALUES (?, ?, ?, ?, ?)`,
+    ).run(result.prompt_hash, result.agent, result.model || null, result.framework_sha || null, result.prompt_text);
   }
 
   // Insert individual checks
@@ -158,7 +165,14 @@ export function recordRun(db: Database, result: GymResult, opts?: { batch_id?: s
     `);
 
     for (const check of result.checks) {
-      insertCheck.run(runId, check.name, check.passed ? 1 : 0, check.detail || null, check.category || null, check.code || null);
+      insertCheck.run(
+        runId,
+        check.name,
+        check.passed ? 1 : 0,
+        check.detail || null,
+        check.category || null,
+        check.code || null,
+      );
     }
   }
 

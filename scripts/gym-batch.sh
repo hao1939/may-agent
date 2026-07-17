@@ -143,7 +143,7 @@ run_one() {
   local tmpout
   tmpout=$(mktemp /tmp/gym-run-XXXXXX.txt)
   local exit_code=0
-  "$PROJECT_ROOT/scripts/gym-run.sh" "${run_args[@]}" > "$tmpout" 2>&1 || exit_code=$?
+  GYM_NO_RECORD=1 "$PROJECT_ROOT/scripts/gym-run.sh" "${run_args[@]}" > "$tmpout" 2>&1 || exit_code=$?
 
   # Extract JSON result
   local json_start

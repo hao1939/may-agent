@@ -23,6 +23,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+GYM_CLI="$PROJECT_ROOT/../gym/src/cli.ts"
 
 # Ensure bun on PATH for host dev runs (the container image already has
 # /usr/local/bin/bun on PATH).
@@ -38,13 +39,13 @@ done
 
 # --list mode: exec directly (no recording needed, plain text output)
 if [ "$_is_list" -eq 1 ]; then
-  exec bun "$PROJECT_ROOT/test/gym/gym-runner.ts" "$@"
+  exec bun "$GYM_CLI" "$@"
 fi
 
 # ── Normal / run-all mode: capture output, display, and record ─────────
 _tmpout=$(mktemp)
 _exit_code=0
-bun "$PROJECT_ROOT/test/gym/gym-runner.ts" "$@" > "$_tmpout" 2>&1 || _exit_code=$?
+bun "$GYM_CLI" "$@" > "$_tmpout" 2>&1 || _exit_code=$?
 
 # Always display output to caller
 cat "$_tmpout"
