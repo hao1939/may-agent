@@ -199,7 +199,7 @@ export default defineProjectApp({
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned\nrevisionV2: fix-forward-first-nonpass-run\nrevisionV2RunId: 172484121`,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
         timeoutMs: 3_600_000,
       },
       accepts: [
@@ -241,7 +241,7 @@ export default defineProjectApp({
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned\nrevisionV2: fix-forward-first-nonpass-run\nrevisionV2RunId: 172484121`,
+        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
         timeoutMs: 600_000,
       },
       accepts: [
@@ -288,7 +288,7 @@ export default defineProjectApp({
       handler: {
         workflow: "task-reviewer",
         includeEvent: true,
-        task: `${appTaskContext}\nagent: aks-reviewer\nmaxAttempts: 1`,
+        task: `${appTaskContext}\nagent: aks-reviewer\nmaxAttempts: 1\npendingActionV2: review-application-revisioned`,
         timeoutMs: 900_000,
       },
       accepts: [
@@ -307,7 +307,7 @@ export default defineProjectApp({
       handler: {
         workflow: "task-worker",
         includeEvent: true,
-        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}\npendingActionV2: completion-review-revisioned`,
         timeoutMs: 13 * 60 * 60_000,
       },
       accepts: [
@@ -356,7 +356,7 @@ export default defineProjectApp({
       ],
       handler: {
         workflow: "project-execution-watchdog",
-        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nsupervisorV2: review-handoff-revisioned\nsupervisorAttemptV2: shadow\nconditionV2: exact-ado-revisioned`,
+        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nsupervisorV2: review-handoff-revisioned\nsupervisorAttemptV2: shadow\nconditionV2: exact-ado-revisioned\npendingActionRedeliveryV2: review-application-revisioned`,
         timeoutMs: 1_800_000,
       },
       emits: [

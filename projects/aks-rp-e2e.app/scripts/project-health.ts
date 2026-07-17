@@ -1196,8 +1196,43 @@ export function buildProjectHealth(
       updatedAt: loop.updatedAt,
     };
   });
+  const reviewDeliveryReceipts = new Map<
+    string,
+    {
+      status: "accepted" | "failed";
+      attempts: number;
+      acceptedAt: string | null;
+    }
+  >();
+  for (const row of reviewerRows) {
+    const value = row as Record<string, unknown>;
+    const result = stringValue(value.result);
+    if (
+      result !== "project.task.reviewed.delivery-accepted" &&
+      result !== "project.task.reviewed.delivery-failed" &&
+      result !== "pending-action-delivery-v2"
+    ) {
+      continue;
+    }
+    const reviewId = stringValue(value.review_id ?? value.reviewId);
+    const status = stringValue(value.delivery_status ?? value.status);
+    if (!reviewId || (status !== "accepted" && status !== "failed")) continue;
+    const prior = reviewDeliveryReceipts.get(reviewId);
+    reviewDeliveryReceipts.set(reviewId, {
+      status,
+      attempts: Math.max(
+        prior?.attempts ?? 0,
+        numberValue(value.delivery_attempt ?? value.attempt) ?? 1,
+      ),
+      acceptedAt:
+        status === "accepted"
+          ? stringValue(value.recorded_at ?? value.recordedAt ?? value.ts)
+          : (prior?.acceptedAt ?? null),
+    });
+  }
   const snapshotReviews: SnapshotReview[] = reviewerRows.flatMap((row) => {
     const value = row as Record<string, unknown>;
+    if (value.result !== "project.task.reviewed") return [];
     const taskId = stringValue(value.task_id ?? value.taskId);
     const attemptId = stringValue(value.attempt_id ?? value.attemptId);
     const decision = stringValue(value.decision);
@@ -1209,9 +1244,30 @@ export function buildProjectHealth(
       revisionValue >= 0
         ? revisionValue
         : 0;
-    return taskId && attemptId && decision && ts
-      ? [{ taskId, taskRevision, attemptId, decision, ts }]
-      : [];
+    if (!taskId || !attemptId || !decision || !ts) return [];
+    const reviewId = stringValue(value.review_id ?? value.reviewId);
+    const receipt = reviewId ? reviewDeliveryReceipts.get(reviewId) : null;
+    const sourceStatus = stringValue(value.delivery_status);
+    const legacyAccepted = sourceStatus === null;
+    return [
+      {
+        reviewId: reviewId || undefined,
+        taskId,
+        taskRevision,
+        attemptId,
+        decision,
+        ts,
+        actionDeliveryStatus:
+          receipt?.status ??
+          (legacyAccepted
+            ? "accepted"
+            : sourceStatus === "pending"
+              ? "pending"
+              : "unknown"),
+        actionDeliveryAttempts: receipt?.attempts ?? (legacyAccepted ? 1 : 0),
+        actionAcceptedAt: receipt?.acceptedAt ?? (legacyAccepted ? ts : null),
+      },
+    ];
   });
   const projectSnapshot = buildProjectSnapshotV2({
     projectId: "aks-rp-e2e",

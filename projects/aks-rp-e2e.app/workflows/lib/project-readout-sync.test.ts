@@ -457,6 +457,112 @@ describe("syncProjectReadout", () => {
     expectParitySurfaces({ projectState, taskTree });
   });
 
+  test("suppresses self-scoped focus metadata repair leaves without reviewedTask context", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-17T10:10:59.493Z",
+          active_task_id:
+            "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+          active_task_ids: [
+            "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717",
+            "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "focus-same-spec-verification-fix-forward-followthrough-20260715",
+                "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717",
+                "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+              ],
+              context: {
+                current_focus_proposal: {
+                  reason:
+                    "stale proposal reason active=[ops/apply-current-focus-review-frontier-metadata-drift-20260717]",
+                },
+              },
+            },
+            "focus-same-spec-verification-fix-forward-followthrough-20260715": {
+              id: "focus-same-spec-verification-fix-forward-followthrough-20260715",
+              parent_id: "project",
+              state: "review",
+              kind: "focus_plan",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Keep one visible focus branch.",
+            },
+            "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717":
+              {
+                id: "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717",
+                parent_id: "project",
+                state: "active",
+                kind: "domain_leaf",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Re-poll the returned terminal artifact review.",
+              },
+            "ops/apply-current-focus-review-frontier-metadata-drift-20260717": {
+              id: "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              owner: "app-ops",
+              children: [],
+              goal: "Refresh only the current focus metadata surfaces that still advertise stale/nonexistent frontier ids so the focus branch, project.context.current_focus_proposal, and runtime.currentFocus.focusMission match the current live frontier without changing domain truth or launching cloud work.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    syncProjectReadout(config, "2026-07-17T10:15:00.000Z");
+
+    const projectState = JSON.parse(
+      await readFile(projectRuntimePaths(appDir).projectStatePath, "utf8"),
+    );
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+
+    expect(projectState.currentFocus.activeTaskIds).toEqual([
+      "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717",
+    ]);
+    expect(projectState.currentFocus.activeTaskIds).not.toContain(
+      "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+    );
+    expect(projectState.currentFocus.focusMission.activeTaskIds).toEqual([
+      "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717",
+    ]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.reason,
+    ).toContain(
+      "active=[domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review-20260717]",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.reason,
+    ).not.toContain(
+      "ops/apply-current-focus-review-frontier-metadata-drift-20260717",
+    );
+    expectParitySurfaces({ projectState, taskTree });
+  });
+
   test("preserves a root-contract readout scope when generic sync sees only the scope-sync repair leaf", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -664,6 +770,7 @@ describe("syncProjectReadout", () => {
             project: {
               id: "project",
               state: "active",
+              owner: "aks-explorer",
               children: [
                 "aks-feature-compact-loop",
                 "wait-shared-westus2-managed-cluster-capacity-family-return-20260703",
@@ -780,6 +887,9 @@ describe("syncProjectReadout", () => {
     expect(projectState.currentFocus.summary).toContain(
       "review=[wait-ccp-coredns-ready-subset-ado-run-172310245-result]",
     );
+    expect(projectState.currentFocus.summary).toContain(
+      "Structural controller project remains active and owned by aks-explorer.",
+    );
     expect(projectState.currentFocus.summary).not.toContain(
       "ops-apply-reconcile-current-focus-proposal-stale-ready-subset-state-20260715-state-repair",
     );
@@ -792,6 +902,15 @@ describe("syncProjectReadout", () => {
     expect(projectState.currentFocus.focusMission.reviewTaskIds).toEqual([
       "wait-ccp-coredns-ready-subset-ado-run-172310245-result",
     ]);
+    expect(
+      taskTree.tasks.project.context.current_root_readout.controller_task_id,
+    ).toBe("project");
+    expect(
+      taskTree.tasks.project.context.current_root_readout.controller_owner,
+    ).toBe("aks-explorer");
+    expect(
+      taskTree.tasks.project.context.current_root_readout.controller_state,
+    ).toBe("active");
     expect(
       taskTree.tasks.project.context.current_root_readout.excludes_task_id,
     ).toBe(
@@ -1540,6 +1659,19 @@ describe("syncProjectReadout", () => {
                       "ghost-runnable-20260716",
                       ...blockedLineage,
                     ],
+                    success_criteria: [
+                      "Focus metadata and mirrored runtime focusMission surfaces represent the current controller-visible root frontier as active=[none], review=[ghost-review-archived-20260716], waiting=[ghost-wait-20260716], runnable=[ghost-runnable-20260716].",
+                      "Preserve the rest of the focus contract.",
+                    ],
+                    progress_review: {
+                      answers: {
+                        learned_or_verified: [
+                          "The current controller-visible frontier is now a narrow 0-active / 3-review branch, not the older domain-heavy packet and not the earlier repair/publication slice seen at the start of this pass.",
+                        ],
+                        parallel_leafs:
+                          "Parallel work is concrete but entirely review-based: 0 active, 3 review, 0 waiting, 0 runnable. Owner-loop throughput should come from processing these exact review leaves.",
+                      },
+                    },
                   },
                 },
                 current_root_readout: {
@@ -1711,6 +1843,27 @@ describe("syncProjectReadout", () => {
     ]);
     expect(projectState.currentFocus.focusMission.waitingTaskIds).toEqual([]);
     expect(projectState.currentFocus.focusMission.runnableTaskIds).toEqual([]);
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .success_criteria[0],
+    ).toBe(
+      "Focus metadata and mirrored runtime focusMission surfaces represent the current controller-visible root frontier as active=[domain/normalize-next-scenario-test-slice-20260716], review=[domain/normalize-scenario-tests-repo-frontier-20260715, fix-localdns-auto-default-run-172310406], waiting=[none], runnable=[none].",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .progress_review.answers.learned_or_verified[0],
+    ).toBe(
+      "The current controller-visible root frontier is active=[domain/normalize-next-scenario-test-slice-20260716], review=[domain/normalize-scenario-tests-repo-frontier-20260715, fix-localdns-auto-default-run-172310406], waiting=[none], runnable=[none], blocked=2. Summary/frontier/packet should follow these live leaf ids rather than stale completed-review projections.",
+    );
+    expect(
+      taskTree.tasks.project.context.current_focus_proposal.context
+        .progress_review.answers.parallel_leafs,
+    ).toBe(
+      "Parallel work is concrete: 1 active, 2 review, 0 waiting, 0 runnable. Owner-loop throughput should come from these exact live frontier leaves.",
+    );
+    expect(projectState.currentFocus.focusMission.successCriteria[0]).toBe(
+      "Focus metadata and mirrored runtime focusMission surfaces represent the current controller-visible root frontier as active=[domain/normalize-next-scenario-test-slice-20260716], review=[domain/normalize-scenario-tests-repo-frontier-20260715, fix-localdns-auto-default-run-172310406], waiting=[none], runnable=[none].",
+    );
     expect(projectState.currentFocus.proposedTaskIds).not.toContain(
       "ghost-review-archived-20260716",
     );
@@ -1726,5 +1879,161 @@ describe("syncProjectReadout", () => {
       "Current root-contract non-repair frontier is active=[domain/normalize-next-scenario-test-slice-20260716], review=[domain/normalize-scenario-tests-repo-frontier-20260715, fix-localdns-auto-default-run-172310406], waiting=[none], runnable=[none], blocked=2",
     );
     expectParitySurfaces({ projectState, taskTree });
+  });
+
+  test("root-contract sync refreshes the live focus-plan task metadata when its frontier prose drifts", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-17T02:20:00.000Z",
+          active_task_id: "domain/live-active-20260717",
+          active_task_ids: ["domain/live-active-20260717"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "focus-live-frontier-20260717",
+                "domain/live-active-20260717",
+                "domain/live-review-20260717",
+                "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              ],
+              context: {
+                current_focus_proposal: {
+                  reason: "stale proposal reason",
+                  context: {
+                    blocked_task_ids: [
+                      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                    ],
+                    linked_blocked_task_ids: [
+                      "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                    ],
+                  },
+                },
+                current_root_readout: {
+                  contract_scope: "live focus frontier parity",
+                  top_level_blocked_ids: [
+                    "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                  ],
+                },
+              },
+            },
+            "focus-live-frontier-20260717": {
+              id: "focus-live-frontier-20260717",
+              parent_id: "project",
+              kind: "focus_plan",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Keep the visible focus branch truthful.",
+              acceptance: [
+                "This focus branch is the single visible 12-24h mission and truthfully represents the controller-visible current root frontier: active=[none], review=[focus-live-frontier-20260717], waiting=[none], runnable=[none].",
+              ],
+              context: {
+                success_criteria: [
+                  "Focus metadata and mirrored runtime focusMission surfaces represent the current controller-visible root frontier as active=[none], review=[focus-live-frontier-20260717], waiting=[none], runnable=[none].",
+                ],
+                progress_review: {
+                  summary:
+                    "The focus branch is refreshed to the current controller-visible 0-active/1-review frontier.",
+                  evidence: [
+                    "Focus progress review refreshed the stale success criteria and lane links to the current controller-visible 0-active/1-review frontier.",
+                  ],
+                  answers: {
+                    learned_or_verified: [
+                      "The current controller-visible frontier is now a narrow 0-active / 1-review branch.",
+                    ],
+                    parallel_leafs:
+                      "Parallel work is concrete but entirely review-based: 0 active, 1 review, 0 waiting, 0 runnable. Owner-loop throughput should come from processing these exact review leaves.",
+                  },
+                },
+                observations: {
+                  frontier_active_leaf_count: 0,
+                  frontier_review_leaf_count: 1,
+                  frontier_waiting_leaf_count: 0,
+                  frontier_runnable_leaf_count: 0,
+                  frontier_blocked_leaf_count: 1,
+                  parallel_work_gap:
+                    "The current focus is entirely review-based: zero active leaves and no runnable backlog.",
+                  structural_status:
+                    "Focus metadata mirrors a stale review-only branch.",
+                },
+              },
+            },
+            "domain/live-active-20260717": {
+              id: "domain/live-active-20260717",
+              parent_id: "project",
+              state: "active",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Live active branch.",
+            },
+            "domain/live-review-20260717": {
+              id: "domain/live-review-20260717",
+              parent_id: "project",
+              state: "review",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Live review branch.",
+            },
+            "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+              id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+              parent_id: "project",
+              state: "blocked",
+              owner: "app-ops",
+              children: [],
+              goal: "Carry the exact project approval wait.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const config = taskTreeConfig({
+      appDir,
+      projectDir,
+      worker: "app-ops",
+      maxConcurrent: 1,
+    });
+    syncProjectReadout(config, "2026-07-17T02:21:00.000Z");
+
+    const taskTree = JSON.parse(
+      await readFile(resolveTaskTreePath(appDir), "utf8"),
+    );
+    const focusTask = taskTree.tasks["focus-live-frontier-20260717"];
+
+    expect(focusTask.acceptance[0]).toBe(
+      "This focus branch is the single visible 12-24h mission and truthfully represents the controller-visible current root frontier: active=[domain/live-active-20260717], review=[domain/live-review-20260717, focus-live-frontier-20260717], waiting=[none], runnable=[none].",
+    );
+    expect(focusTask.context.success_criteria[0]).toBe(
+      "Focus metadata and mirrored runtime focusMission surfaces represent the current controller-visible root frontier as active=[domain/live-active-20260717], review=[domain/live-review-20260717, focus-live-frontier-20260717], waiting=[none], runnable=[none].",
+    );
+    expect(focusTask.context.progress_review.summary).toBe(
+      "The focus branch is refreshed to the current controller-visible root frontier active=[domain/live-active-20260717], review=[domain/live-review-20260717, focus-live-frontier-20260717], waiting=[none], runnable=[none]. The visible branch must track live active/review leaves rather than stale completed-review projections.",
+    );
+    expect(focusTask.context.progress_review.evidence[0]).toBe(
+      "Focus progress review refreshed stale focus-branch frontier metadata to current controller-visible root frontier active=[domain/live-active-20260717], review=[domain/live-review-20260717, focus-live-frontier-20260717], waiting=[none], runnable=[none].",
+    );
+    expect(focusTask.context.progress_review.answers.parallel_leafs).toBe(
+      "Parallel work is concrete: 1 active, 2 review, 0 waiting, 0 runnable. Owner-loop throughput should come from these exact live frontier leaves.",
+    );
+    expect(focusTask.context.observations.frontier_active_leaf_count).toBe(1);
+    expect(focusTask.context.observations.frontier_review_leaf_count).toBe(2);
+    expect(focusTask.context.observations.parallel_work_gap).toBe(
+      "The current focus carries 1 active, 2 review, 0 waiting, and 0 runnable leaves.",
+    );
+    expect(focusTask.context.review_task_ids).toEqual([
+      "domain/live-review-20260717",
+      "focus-live-frontier-20260717",
+    ]);
   });
 });

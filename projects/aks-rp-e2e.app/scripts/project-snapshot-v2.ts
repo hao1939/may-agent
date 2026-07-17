@@ -24,9 +24,10 @@ import {
   type SnapshotAttemptHeartbeat,
   type SnapshotDeliveryGap,
   type SnapshotLoop,
-  type SnapshotReview,
   type SnapshotSession,
 } from "../workflows/lib/project-snapshot-v2.ts";
+import { snapshotReviewsFromRuntimeReviewerRowsV2 } from "../workflows/lib/project-snapshot-capture-v2.ts";
+import { readReviewerLedgerRowsV2 } from "../workflows/lib/project-review-delivery-v2.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -162,19 +163,6 @@ function parseAssignments(path: string): SnapshotAssignment[] {
     if (!taskId || !attemptId || !sessionId || !worker || !assignedAt)
       return [];
     return [{ taskId, taskRevision, attemptId, sessionId, worker, assignedAt }];
-  });
-}
-
-function parseReviews(path: string): SnapshotReview[] {
-  return readJsonLines(path).flatMap((row) => {
-    const taskId = text(row.task_id ?? row.taskId);
-    const taskRevision =
-      nonNegativeInteger(row.task_revision ?? row.taskRevision) ?? 0;
-    const attemptId = text(row.attempt_id ?? row.attemptId);
-    const decision = text(row.decision);
-    const ts = text(row.ts);
-    if (!taskId || !attemptId || !decision || !ts) return [];
-    return [{ taskId, taskRevision, attemptId, decision, ts }];
   });
 }
 
@@ -457,7 +445,9 @@ export function captureProjectSnapshotV2(options: CliOptions) {
   );
   const tree = loadTree(treePath);
   const assignments = parseAssignments(assignmentPath);
-  const reviews = parseReviews(reviewPath);
+  const reviews = snapshotReviewsFromRuntimeReviewerRowsV2(
+    readReviewerLedgerRowsV2(options.appDir),
+  );
   const sessions = loadSessions(
     options.stateDbPath,
     referencedSessionIds(tree, assignments),
@@ -479,7 +469,9 @@ export function captureProjectSnapshotV2(options: CliOptions) {
       nowMs,
     ),
     sourceCoverage: {
-      assignments: existsSync(assignmentPath) ? "available" : "unavailable",
+      // The assignment outbox is created on demand. A missing file is the
+      // authoritative empty queue, not an unavailable runtime source.
+      assignments: "available",
       sessions: stateDbAvailable ? "available" : "unavailable",
       reviews: "available",
       controllers: loopSourcesAvailable ? "available" : "unavailable",
@@ -609,6 +601,11 @@ function formatSummary(
   for (const finding of snapshot.invariants) {
     invariantCounts[finding.type] = (invariantCounts[finding.type] ?? 0) + 1;
   }
+  const pendingActionCounts: Record<string, number> = {};
+  for (const action of snapshot.pendingActions) {
+    const key = `${action.kind}:${action.status}`;
+    pendingActionCounts[key] = (pendingActionCounts[key] ?? 0) + 1;
+  }
   const sourceEntries = Object.values(snapshot.sourceMeta ?? {});
   const controllerMatches = result.healthParity.controllers.filter(
     (controller) => controller.matches,
@@ -620,6 +617,7 @@ function formatSummary(
     `mirror: active=${snapshot.mirrorDrift.active.matches} review=${snapshot.mirrorDrift.review.matches} waiting=${snapshot.mirrorDrift.waiting.matches} runnable=${snapshot.mirrorDrift.runnable.matches}`,
     `health: counts=${result.healthParity.counts.matches} controllers=${controllerMatches}/${result.healthParity.controllers.length}`,
     `sources: available=${sourceEntries.filter((source) => source.available).length} missing=${sourceEntries.filter((source) => !source.available).length}`,
+    `handoffs: ${JSON.stringify(pendingActionCounts)}`,
     `invariants: ${JSON.stringify(invariantCounts)}`,
     `read-only: by-construction; inputs=${noWriteVerification.interpretation}${
       noWriteVerification.changedPaths.length > 0

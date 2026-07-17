@@ -21,7 +21,6 @@ import {
   readTask,
   readTaskTree,
   rejectTaskReview as sdkRejectTaskReview,
-  requeueStaleActiveTasks as sdkRequeueStaleActiveTasks,
   projectRuntimePaths,
   taskState,
   repairTaskTreeRollups as sdkRepairTaskTreeRollups,
@@ -269,12 +268,58 @@ export function rejectTaskReview(
 
 export function requeueStaleActiveTasks(
   config: TaskTreeConfig,
-  input: Parameters<typeof sdkRequeueStaleActiveTasks>[1],
-): ReturnType<typeof sdkRequeueStaleActiveTasks> {
-  return sdkRequeueStaleActiveTasks(
-    withProjectTaskTreeMutationGuard(config),
-    input,
-  );
+  input: {
+    taskIds: string[];
+    reason?: string;
+    freshSession?: boolean;
+  },
+): string[] {
+  const uniqueIds = [...new Set(input.taskIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return [];
+  const guardedConfig = withProjectTaskTreeMutationGuard(config);
+  return withTreeLock(guardedConfig, () => {
+    const tree = readTaskTree(guardedConfig);
+    const requeued: string[] = [];
+    const now = new Date().toISOString();
+    for (const taskId of uniqueIds) {
+      const task = tree.tasks[taskId];
+      if (!task || !isLeaf(task) || taskState(task) !== "active") continue;
+      const priorSessionId =
+        typeof task.session_id === "string" && task.session_id.trim()
+          ? task.session_id.trim()
+          : undefined;
+      const priorAttemptId = traceString(task, "current_attempt_id");
+      task.status = "backlog";
+      task.state = "backlog";
+      if (input.freshSession) task.session_id = undefined;
+      task.trace = {
+        ...(task.trace ?? {}),
+        stale_active_requeued_at: now,
+        stale_active_requeue_reason: input.reason ?? "session-not-running",
+        stale_active_fresh_session: input.freshSession === true,
+        previous_attempt_id: priorAttemptId || undefined,
+        previous_session_id: priorSessionId,
+        current_attempt_id: undefined,
+        worker_started_attempt_id: undefined,
+        worker_started_at: undefined,
+      };
+      requeued.push(task.id);
+    }
+    if (requeued.length > 0) {
+      tree.active_task_ids = Object.values(tree.tasks)
+        .filter((task) => isLeaf(task) && taskState(task) === "active")
+        .map((task) => task.id)
+        .sort((a, b) => a.localeCompare(b));
+      tree.active_task_id = tree.active_task_ids[0] ?? null;
+      saveTaskTreeWithKanbanSnapshot(guardedConfig, tree);
+      appendToolJournal(guardedConfig, {
+        kind: "stale_active_tasks_requeued",
+        task_ids: requeued,
+        reason: input.reason ?? "session-not-running",
+      });
+    }
+    return requeued;
+  });
 }
 
 export function updateTaskOutputs(
@@ -418,8 +463,17 @@ export function updateTaskText(
   return sdkUpdateTaskText(withProjectTaskTreeMutationGuard(config), input);
 }
 
+export type StructuralTaskReadout = {
+  id: string;
+  owner: string | null;
+  state: string;
+  kind: string | null;
+  parent_id: string | null;
+};
+
 export type AppTaskTreeSummary = TaskTreeSummary & {
   active_structural_task_ids: string[];
+  active_structural_tasks: StructuralTaskReadout[];
   active_count_explanation: string;
   backlog_structural_task_ids: string[];
   backlog_count_explanation: string;
@@ -619,18 +673,46 @@ function hasAppFrontierSuppression(
   );
 }
 
-function structuralTaskIdsByState(
+function structuralTasksByState(
   tree: TaskTree,
   state: string,
   frontierIds: string[],
-): string[] {
+): TaskNode[] {
   const frontierSet = new Set(frontierIds);
   return Object.values(tree.tasks)
     .filter((task) => taskState(task) === state)
     .filter((task) => !isLeaf(task))
     .filter((task) => !frontierSet.has(task.id))
-    .map((task) => task.id)
-    .sort((a, b) => a.localeCompare(b));
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function structuralTaskIdsByState(
+  tree: TaskTree,
+  state: string,
+  frontierIds: string[],
+): string[] {
+  return structuralTasksByState(tree, state, frontierIds).map(
+    (task) => task.id,
+  );
+}
+
+function structuralTaskReadouts(tasks: TaskNode[]): StructuralTaskReadout[] {
+  return tasks.map((task) => ({
+    id: task.id,
+    owner:
+      typeof task.owner === "string" && task.owner.trim().length > 0
+        ? task.owner.trim()
+        : null,
+    state: taskState(task),
+    kind:
+      typeof task.kind === "string" && task.kind.trim().length > 0
+        ? task.kind.trim()
+        : null,
+    parent_id:
+      typeof task.parent_id === "string" && task.parent_id.trim().length > 0
+        ? task.parent_id.trim()
+        : null,
+  }));
 }
 
 export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
@@ -656,11 +738,12 @@ export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
     (taskId) => !suppression.nonReviewableDurableLoops.has(taskId),
   );
   const frontierBlocked = snapshot.frontier.blocked;
-  const structuralActiveTaskIds = structuralTaskIdsByState(
+  const structuralActiveTasks = structuralTasksByState(
     tree,
     "active",
     frontierActive,
   );
+  const structuralActiveTaskIds = structuralActiveTasks.map((task) => task.id);
   const structuralBacklogTaskIds = structuralTaskIdsByState(tree, "backlog", [
     ...snapshot.frontier.runnable,
     ...snapshot.frontier.waiting,
@@ -670,9 +753,16 @@ export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
     "blocked",
     frontierBlocked,
   );
+  const activeStructuralTaskReadouts = structuralTaskReadouts(
+    structuralActiveTasks,
+  );
   const activeCountExplanation =
-    structuralActiveTaskIds.length > 0
-      ? `tree_counts.active counts all active task nodes, including non-leaf structural ancestors; counts.active counts only active leaves; frontier.active lists live active frontier leaves/controllers after app-level suppression. Current non-frontier active structural task ids: ${structuralActiveTaskIds.join(", ")}.`
+    activeStructuralTaskReadouts.length > 0
+      ? `tree_counts.active counts all active task nodes, including non-leaf structural ancestors; counts.active counts only active leaves; frontier.active lists live active frontier leaves/controllers after app-level suppression. Current non-frontier active structural task ids: ${activeStructuralTaskReadouts
+          .map((task) =>
+            task.owner ? `${task.id}(owner=${task.owner})` : task.id,
+          )
+          .join(", ")}.`
       : "tree_counts.active, counts.active, and frontier.active currently agree on live active work semantics.";
   const backlogCountExplanation =
     structuralBacklogTaskIds.length > 0
@@ -699,6 +789,7 @@ export function summarizeTaskTree(config: TaskTreeConfig): AppTaskTreeSummary {
       active: frontierActive.length,
     },
     active_structural_task_ids: structuralActiveTaskIds,
+    active_structural_tasks: activeStructuralTaskReadouts,
     active_count_explanation: activeCountExplanation,
     backlog_structural_task_ids: structuralBacklogTaskIds,
     backlog_count_explanation: backlogCountExplanation,
@@ -1130,8 +1221,19 @@ function blockerRecord(task: TaskNode): Record<string, unknown> | null {
     : null;
 }
 
+function childReviewResultText(childIds: string[]): string {
+  return `Child review pending: ${childIds.join(", ") || "review work"}.`;
+}
+
 function childBlockedResultText(childIds: string[]): string {
   return `Blocked on child task(s): ${childIds.join(", ")}.`;
+}
+
+function usesChildReviewResultText(task: TaskNode): boolean {
+  return (
+    typeof task.result === "string" &&
+    /^Child review pending:\s*/.test(task.result)
+  );
 }
 
 function usesChildBlockedResultText(task: TaskNode): boolean {
@@ -1139,6 +1241,45 @@ function usesChildBlockedResultText(task: TaskNode): boolean {
     typeof task.result === "string" &&
     /^Blocked on child task\(s\):\s*/.test(task.result)
   );
+}
+
+function repairChildReviewParentResults(config: TaskTreeConfig): string[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const repaired: string[] = [];
+
+    for (const task of Object.values(tree.tasks)) {
+      if (!usesChildReviewResultText(task)) continue;
+
+      const reviewChildIds = normalizeStringArray(task.children).filter(
+        (childId) => nodeState(tree.tasks[childId]) === "review",
+      );
+      const blockedChildIds = normalizeStringArray(task.children).filter(
+        (childId) => nodeState(tree.tasks[childId]) === "blocked",
+      );
+      const expected =
+        reviewChildIds.length > 0
+          ? childReviewResultText(reviewChildIds)
+          : blockedChildIds.length > 0
+            ? childBlockedResultText(blockedChildIds)
+            : null;
+      if (!expected || task.result === expected) continue;
+      task.result = expected;
+      repaired.push(task.id);
+    }
+
+    if (repaired.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "child_review_parent_results_repaired",
+        task_ids: repaired,
+        reason:
+          "parent result text refreshed from current review or blocked children",
+      });
+    }
+
+    return repaired;
+  });
 }
 
 function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
@@ -1974,6 +2115,7 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
   typeof sdkRepairTaskTreeRollups
 > & {
   reopenedDurableLoopRoots: string[];
+  repairedChildReviewParentResults: string[];
   repairedChildBlockedParentResults: string[];
   repairedLegacyFocusApprovalStates: string[];
   repairedProjectRootGoal: boolean;
@@ -1985,6 +2127,8 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
   const postLegacyResult = repairedLegacyFocusApprovalStates.length
     ? sdkRepairTaskTreeRollups(config)
     : initialResult;
+  const repairedChildReviewParentResults =
+    repairChildReviewParentResults(config);
   const repairedChildBlockedParentResults =
     repairChildBlockedParentResults(config);
   const reopenedDurableLoopRoots = reopenIncompleteDurableLoopRoots(config);
@@ -1996,6 +2140,7 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
       repairedProjectRootGoal ||
       repairedLegacyFocusApprovalStates.length > 0 ||
       reopenedDurableLoopRoots.length > 0 ||
+      repairedChildReviewParentResults.length > 0 ||
       repairedChildBlockedParentResults.length > 0,
     repaired: [
       ...new Set([
@@ -2006,6 +2151,11 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
           from: "needs_approval",
           to: "blocked",
         })),
+        ...repairedChildReviewParentResults.map((taskId) => ({
+          taskId,
+          from: "child-review",
+          to: "backlog",
+        })),
         ...repairedChildBlockedParentResults.map((taskId) => ({
           taskId,
           from: "child-blocked",
@@ -2014,6 +2164,7 @@ export function repairTaskTreeRollups(config: TaskTreeConfig): ReturnType<
       ]),
     ],
     reopenedDurableLoopRoots,
+    repairedChildReviewParentResults,
     repairedChildBlockedParentResults,
     repairedLegacyFocusApprovalStates,
     repairedProjectRootGoal,
@@ -2294,10 +2445,19 @@ export type BlockedActionWarning = {
   blocker?: string;
 };
 
+export type ReadyPathFrontierMaterialization = {
+  status: "none" | "covered" | "gap";
+  generated_at?: string;
+  ready_count: number;
+  represented_ready_path_ids: string[];
+  unrepresented_ready_path_ids: string[];
+};
+
 export type AksTaskPlanningPacket = TaskPlanningPacket & {
   condition_owned_task_ids?: string[];
   project_hygiene_warnings?: ProjectHygieneWarning[];
   blocked_action_warnings?: BlockedActionWarning[];
+  ready_path_frontier_materialization?: ReadyPathFrontierMaterialization;
   project_snapshot?: {
     version: "project-snapshot-v2";
     captured_at: string;
@@ -2984,8 +3144,6 @@ function isSupersededCompactSourceWitnessCarrier(task: TaskNode): boolean {
 
 function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
   const waitingForType = blockerWaitingForType(task);
-  if (waitingForType !== "blocker.resolved") return false;
-
   const isSupportedHolder =
     isFeatureCompactExactWait(task) ||
     task.id.startsWith("hold-spec-") ||
@@ -3007,45 +3165,91 @@ function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
     ]) || /wait-[a-z0-9-]*family[a-z0-9-]*/.test(text);
   if (!exactSharedFamilyReferenced) return false;
 
-  const noLocalSuccessorJudgment =
+  if (waitingForType === "blocker.resolved") {
+    const noLocalSuccessorJudgment =
+      includesAny(text, [
+        "no sharper successor",
+        "no local successor",
+        "no truthful local successor",
+        "no sharper same-lineage successor",
+        "no evidence requiring replacement with a sharper successor",
+        "no sharper setup",
+      ]) &&
+      includesAny(text, [
+        "truthful",
+        "same-surface retry",
+        "alternate-environment",
+        "replacement with a sharper successor",
+        "setup",
+        "escalation",
+      ]);
+    if (noLocalSuccessorJudgment) return true;
+
+    const passiveCoveredHolderJudgment =
+      includesAny(text, [
+        "passive trio representation",
+        "passive holder",
+        "do not treat it as the mover",
+        "do not treat it as mover",
+        "still governs",
+        "owner-contradiction holder",
+        "reviewed-exception/domain evidence ceiling",
+      ]) &&
+      includesAny(text, [
+        "single live shared",
+        "single live shared automatic/managedsystem capacity-family wait",
+        "exact owner-contradiction holder",
+        "accepted reviewed-exception/domain evidence ceiling",
+        "keep one exact compact trio holder",
+        "fallback review still sees the same trio",
+      ]);
+
+    return passiveCoveredHolderJudgment;
+  }
+
+  const blocker = task.blocker;
+  if (!blocker || typeof blocker !== "object" || Array.isArray(blocker)) {
+    return false;
+  }
+  const waitingFor = (blocker as Record<string, unknown>).waiting_for;
+  if (
+    !waitingFor ||
+    typeof waitingFor !== "object" ||
+    Array.isArray(waitingFor)
+  ) {
+    return false;
+  }
+  const waitingForTaskId = (waitingFor as Record<string, unknown>).taskId;
+  if (
+    typeof waitingForTaskId !== "string" ||
+    !waitingForTaskId.startsWith("wait-shared-")
+  ) {
+    return false;
+  }
+
+  const context = taskContext(task);
+  const governedFrontierTaskIds = new Set([
+    ...normalizeStringArray(context.frontierTaskIds),
+    ...normalizeStringArray(context.compactFrontierTaskIds),
+  ]);
+  if (!governedFrontierTaskIds.has(waitingForTaskId)) return false;
+
+  return (
     includesAny(text, [
-      "no sharper successor",
-      "no local successor",
-      "no truthful local successor",
-      "no sharper same-lineage successor",
-      "no evidence requiring replacement with a sharper successor",
-      "no sharper setup",
+      "compact-facing projection",
+      "feature-facing projection",
+      "governing family wait",
+      "shared family reconciliation path",
+      "only the projection of wait-shared-",
     ]) &&
     includesAny(text, [
-      "truthful",
-      "same-surface retry",
-      "alternate-environment",
-      "replacement with a sharper successor",
-      "setup",
-      "escalation",
-    ]);
-  if (noLocalSuccessorJudgment) return true;
-
-  const passiveCoveredHolderJudgment =
-    includesAny(text, [
-      "passive trio representation",
-      "passive holder",
-      "do not treat it as the mover",
-      "do not treat it as mover",
-      "still governs",
-      "owner-contradiction holder",
-      "reviewed-exception/domain evidence ceiling",
-    ]) &&
-    includesAny(text, [
-      "single live shared",
-      "single live shared automatic/managedsystem capacity-family wait",
-      "exact owner-contradiction holder",
-      "accepted reviewed-exception/domain evidence ceiling",
-      "keep one exact compact trio holder",
-      "fallback review still sees the same trio",
-    ]);
-
-  return passiveCoveredHolderJudgment;
+      "do not broad-rerun",
+      "do not carry a duplicate feature-local environment wait",
+      "without reopening a feature-local environment blocker",
+      "instead of a generic local environment wait",
+      "environment umbrella",
+    ])
+  );
 }
 
 function isFocusPlanApprovalWait(task: TaskNode): boolean {
@@ -3109,17 +3313,41 @@ function isRepresentedBlockedFrontier(task: TaskNode): boolean {
     "exact represented carriers",
     "exact represented carrier",
   ];
-  if (!includesAny(text, representedSignals)) {
-    return false;
-  }
-  return (
+  const classicRepresentedShape =
+    includesAny(text, representedSignals) &&
     includesAny(text, [
       "materially changes",
       "remains the exact",
       "still controls",
       "represented by ",
-    ]) && includesAny(text, ["frontier", "carrier", "represented blocker"])
-  );
+    ]) &&
+    includesAny(text, ["frontier", "carrier", "represented blocker"]);
+  if (classicRepresentedShape) return true;
+
+  const compactResidualSplitShape =
+    (task.id.startsWith("hold-compact-") ||
+      task.parent_id === "aks-feature-compact-loop") &&
+    includesAny(text, [
+      "exact residual wait plus active remediation",
+      "keep this residual holder blocked only while active task",
+    ]) &&
+    includesAny(text, [
+      "wait-shared-",
+      "live shared",
+      "owner-arbitration waits preserve",
+      "remaining blocked members",
+    ]) &&
+    includesAny(text, [
+      "do not widen back into a broad",
+      "without reopening a broad rerun",
+    ]) &&
+    includesAny(text, [
+      "materially changes the exact residual",
+      "yields a runnable next step",
+      "still-blocked compact residual members",
+    ]);
+
+  return compactResidualSplitShape;
 }
 
 function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
@@ -3482,6 +3710,8 @@ export function planningPacket(config: TaskTreeConfig): AksTaskPlanningPacket {
     done: snapshot.frontier.counts.done,
   };
   packet.frontier = frontier;
+  packet.ready_path_frontier_materialization =
+    readyPathFrontierMaterialization(config);
   if (conditionOwnedTaskIds.length > 0) {
     packet.condition_owned_task_ids = conditionOwnedTaskIds;
   } else {
@@ -3590,17 +3820,16 @@ function findArtifactStem(
   return null;
 }
 
-function openTaskAlreadyCoversPath(
+function openTaskAlreadyCoversSignals(
   tree: TaskTree,
-  path: KnowledgeFeaturePath,
-  stem: string | null,
+  signals: string[],
 ): boolean {
-  const signals = [path.id, path.featureId, stem]
+  const normalizedSignals = signals
     .filter((value): value is string => Boolean(value))
     .map((value) => value.toLowerCase());
-  if (signals.length === 0) return false;
+  if (normalizedSignals.length === 0) return false;
   return Object.values(tree.tasks).some((task) => {
-    if (task.status === "done") return false;
+    if (taskState(task) === "done") return false;
     const haystack = JSON.stringify({
       id: task.id,
       goal: task.goal,
@@ -3610,8 +3839,93 @@ function openTaskAlreadyCoversPath(
       context: task.context,
       blocker: task.blocker,
     }).toLowerCase();
-    return signals.some((signal) => haystack.includes(signal));
+    return normalizedSignals.some((signal) => haystack.includes(signal));
   });
+}
+
+function openTaskAlreadyCoversPath(
+  tree: TaskTree,
+  path: KnowledgeFeaturePath,
+  stem: string | null,
+): boolean {
+  return openTaskAlreadyCoversSignals(tree, [path.id, path.featureId, stem]);
+}
+
+function readyPathSummaryEntries(
+  projectDir: string,
+): Array<{ id: string; featureId?: string; specId?: string }> {
+  const summary = readJsonFile<{ generatedAt?: unknown; paths?: unknown }>(
+    join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+    {},
+  );
+  const paths = Array.isArray(summary.paths) ? summary.paths : [];
+  return paths.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const record = entry as Record<string, unknown>;
+    if (record.status !== "ready") return [];
+    const id = typeof record.id === "string" ? record.id.trim() : "";
+    if (!id) return [];
+    return [
+      {
+        id,
+        featureId:
+          typeof record.featureId === "string" && record.featureId.trim()
+            ? record.featureId.trim()
+            : undefined,
+        specId:
+          typeof record.specId === "string" && record.specId.trim()
+            ? record.specId.trim()
+            : undefined,
+      },
+    ];
+  });
+}
+
+export function readyPathFrontierMaterialization(
+  config: TaskTreeConfig,
+): ReadyPathFrontierMaterialization {
+  const readyPaths = readyPathSummaryEntries(config.projectDir);
+  const summary = readJsonFile<{ generatedAt?: unknown }>(
+    join(config.projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+    {},
+  );
+  if (readyPaths.length === 0) {
+    return {
+      status: "none",
+      generated_at:
+        typeof summary.generatedAt === "string" ? summary.generatedAt : undefined,
+      ready_count: 0,
+      represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: [],
+    };
+  }
+
+  const tree = readTaskTree(config);
+  const representedReadyPathIds: string[] = [];
+  const unrepresentedReadyPathIds: string[] = [];
+  for (const path of readyPaths) {
+    const represented = openTaskAlreadyCoversSignals(tree, [
+      path.id,
+      path.featureId,
+      path.specId,
+    ]);
+    (represented ? representedReadyPathIds : unrepresentedReadyPathIds).push(
+      path.id,
+    );
+  }
+
+  return {
+    status: unrepresentedReadyPathIds.length === 0 ? "covered" : "gap",
+    generated_at:
+      typeof summary.generatedAt === "string" ? summary.generatedAt : undefined,
+    ready_count: readyPaths.length,
+    represented_ready_path_ids: representedReadyPathIds.sort((a, b) =>
+      a.localeCompare(b),
+    ),
+    unrepresented_ready_path_ids: unrepresentedReadyPathIds.sort((a, b) =>
+      a.localeCompare(b),
+    ),
+  };
 }
 
 function nextAvailableTaskId(tree: TaskTree, baseId: string): string {

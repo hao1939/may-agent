@@ -10,6 +10,7 @@ import {
   taskTreeConfig,
 } from "../workflows/lib/task-tree-tools.ts";
 import { buildProjectSnapshotV2 } from "../workflows/lib/project-snapshot-v2.ts";
+import { captureRuntimeProjectSnapshotV2 } from "../workflows/lib/project-snapshot-capture-v2.ts";
 import {
   readTaskTree,
   type TaskNode,
@@ -19,6 +20,7 @@ import {
   parseTriggerEvent,
   triggerString,
 } from "../workflows/lib/workflow-input.ts";
+import { specStateSelfRepresentsExactFrontier } from "../workflows/lib/spec-loop-frontier.ts";
 import { loadSpecs } from "../workflows/lib/spec-loop-store.ts";
 
 type ModelStatus = {
@@ -53,16 +55,6 @@ type PlannerRun = {
   ts?: string;
   durationMs?: number;
   result?: string;
-};
-
-type TaskReviewerRun = {
-  ts?: string;
-  result?: string;
-  task_id?: string;
-  taskId?: string;
-  attempt_id?: string;
-  attemptId?: string;
-  decision?: string;
 };
 
 type ReviewApplyCoverage = {
@@ -194,6 +186,10 @@ const stateDbPath = resolve(
   process.env.MAY_DB_PATH ??
     join(effectiveAppDir, "..", "..", ".state", "may.db"),
 );
+const sessionsDirPath = resolve(
+  process.env.MAY_SESSIONS_DIR ??
+    join(effectiveAppDir, "..", "..", ".state", "sessions"),
+);
 const desiredParallelism = Number.parseInt(
   process.env.AKS_RP_E2E_DESIRED_PARALLELISM ?? "1",
   10,
@@ -206,8 +202,14 @@ const sessionStartGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "300000",
   10,
 );
-const reviewApplyGraceMs = Number.parseInt(
-  process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS ?? "600000",
+const reviewApplicationGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS ??
+    process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS ??
+    "300000",
+  10,
+);
+const terminalSessionCompletionGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS ?? "600000",
   10,
 );
 const now = Date.now();
@@ -490,6 +492,25 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   );
 }
 
+function blockedWaitSpecConflictScopes(task: TaskNode): string[] {
+  const blocker = recordValue(task.blocker);
+  const waitingFor = recordValue(blocker.waiting_for);
+  const scopes = new Set<string>();
+  const collect = (value: unknown) => {
+    if (typeof value !== "string") return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    scopes.add(trimmed.startsWith("spec:") ? trimmed : `spec:${trimmed}`);
+  };
+
+  collect(stringRecordField(waitingFor, ["specId", "spec_id"]));
+  const specIds = waitingFor.specIds ?? waitingFor.spec_ids;
+  if (Array.isArray(specIds)) {
+    for (const specId of specIds) collect(specId);
+  }
+  return [...scopes];
+}
+
 function taskCoversBlockedOverdueWait(
   candidate: TaskNode,
   blockedTask: TaskNode,
@@ -521,22 +542,43 @@ function taskCoversBlockedOverdueWait(
     return true;
   }
 
+  const blockedSpecScopes = blockedWaitSpecConflictScopes(blockedTask);
+  if (
+    blockedSpecScopes.length > 0 &&
+    taskConflictScopes(candidate).some((scope) =>
+      blockedSpecScopes.includes(scope.trim()),
+    )
+  ) {
+    return true;
+  }
+
   const scope = blockedOverdueScope(blockedTask.parent_id);
   if (!scope) return false;
   const aliases = blockedOverdueScopeAliases(scope);
   return taskConflictScopes(candidate).some((conflictScope) => {
+    const normalizedScope = conflictScope.trim();
+    if (normalizedScope === `ops:blocked-overdue:${scope}`) {
+      return true;
+    }
     if (
-      conflictScope === `ops:blocked-overdue:${scope}` ||
-      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`)
+      scope !== "project" &&
+      normalizedScope.startsWith(`ops:blocked-overdue:${scope}:`)
+    ) {
+      return true;
+    }
+    if (
+      scope === "project" &&
+      blockedTaskId &&
+      normalizedScope === `ops:blocked-overdue:project:${blockedTaskId}`
     ) {
       return true;
     }
     return aliases.some(
       (alias) =>
-        conflictScope === `ops:${alias}-overdue-blocked-frontier` ||
-        conflictScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
-        conflictScope === `ops:${alias}-overdue-frontier` ||
-        conflictScope.startsWith(`ops:${alias}-overdue-frontier-`),
+        normalizedScope === `ops:${alias}-overdue-blocked-frontier` ||
+        normalizedScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
+        normalizedScope === `ops:${alias}-overdue-frontier` ||
+        normalizedScope.startsWith(`ops:${alias}-overdue-frontier-`),
     );
   });
 }
@@ -903,8 +945,31 @@ function taskCounts() {
   const activeOrReviewTasks = tasks.filter((task) =>
     ["active", "review"].includes(taskState(task)),
   );
+  const registeredConditionSubjects = new Set(
+    projectSnapshot.conditions
+      .filter((condition) => condition.source === "registry")
+      .map(
+        (condition) =>
+          `${condition.subject.id}:${condition.subject.revision}`,
+      ),
+  );
   const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
     (task, index) => {
+      const taskIdValue = typeof task.id === "string" ? task.id : "";
+      const taskRevision =
+        typeof task.revision === "number" && Number.isInteger(task.revision)
+          ? task.revision
+          : 0;
+      // Registry-owned Conditions have their own due observation, fallback,
+      // delivery acknowledgement, and resolved-still-blocking invariants.
+      // Keeping them in this compatibility metric gives the planner a second
+      // recovery authority over the same wait.
+      if (
+        taskIdValue &&
+        registeredConditionSubjects.has(`${taskIdValue}:${taskRevision}`)
+      ) {
+        return [];
+      }
       const blocker = recordValue(task.blocker);
       const fallbackAt = Date.parse(
         stringRecordField(blocker, ["fallback_at", "fallbackAt"]),
@@ -916,7 +981,7 @@ function taskCounts() {
       if (!Number.isFinite(overdueAt) || overdueAt > now) {
         return [];
       }
-      const taskId = typeof task.id === "string" ? task.id.toLowerCase() : "";
+      const taskId = taskIdValue.toLowerCase();
       const hasActiveRecovery =
         taskId &&
         activeOrReviewTasks.some((candidate) =>
@@ -1131,26 +1196,17 @@ function taskReviewNotAppliedDetails(): Array<{
   reviewedAt: string;
   coverage?: ReviewApplyCoverage;
 }> {
-  const tree = loadTaskTree();
-  const latestReviewByAttempt = new Map<string, TaskReviewerRun>();
-  for (const row of readJsonl<TaskReviewerRun>(
-    join(effectiveAppDir, ".state", "task-reviewer-runs.jsonl"),
-  )) {
-    if (row.result !== "project.task.reviewed") continue;
-    const taskId = (row.task_id ?? row.taskId ?? "").trim();
-    const attemptId = (row.attempt_id ?? row.attemptId ?? "").trim();
-    if (!taskId || !attemptId) continue;
-    const reviewedMs = row.ts ? Date.parse(row.ts) : Number.NaN;
-    if (Number.isFinite(reviewedMs) && now - reviewedMs <= reviewApplyGraceMs) {
-      continue;
-    }
-    const key = `${taskId}:${attemptId}`;
-    const existing = latestReviewByAttempt.get(key);
-    const existingMs = existing?.ts ? Date.parse(existing.ts) : Number.NaN;
-    if (!existing || (Number.isFinite(reviewedMs) && reviewedMs > existingMs)) {
-      latestReviewByAttempt.set(key, row);
-    }
-  }
+  const config = runtimeTaskTreeConfig();
+  const captured = captureRuntimeProjectSnapshotV2({
+    appDir: effectiveAppDir,
+    treePath: config.treePath,
+    stateDbPath,
+    projectId: "aks-rp-e2e",
+    nowMs: now,
+    reviewApplicationGraceMs,
+  });
+  if (!captured) return [];
+  const { snapshot, tree } = captured;
 
   const offenders: Array<{
     taskId: string;
@@ -1159,23 +1215,35 @@ function taskReviewNotAppliedDetails(): Array<{
     reviewedAt: string;
     coverage?: ReviewApplyCoverage;
   }> = [];
-  for (const task of Object.values(tree.tasks ?? {})) {
-    if (taskState(task) !== "review") continue;
-    const taskId = typeof task.id === "string" ? task.id.trim() : "";
-    const attemptId =
-      typeof task.trace?.current_attempt_id === "string"
-        ? task.trace.current_attempt_id.trim()
-        : "";
-    if (!taskId || !attemptId) continue;
-    const review = latestReviewByAttempt.get(`${taskId}:${attemptId}`);
-    if (!review) continue;
-    const coverage = reviewApplyCoverage({ tree, taskId, attemptId });
-    if (coverage) continue;
+  for (const finding of snapshot.invariants) {
+    if (finding.type !== "review-decision-not-applied") continue;
+    const review = snapshot.reviews.find(
+      (candidate) =>
+        candidate.taskId === finding.subject.id &&
+        candidate.taskRevision === finding.subject.revision &&
+        candidate.deliveryState === "decision-pending-apply",
+    );
+    if (
+      !review?.attemptId ||
+      !review.latestDecision ||
+      !review.latestDecisionAt
+    ) {
+      continue;
+    }
+    const coverage = reviewApplyCoverage({
+      tree,
+      taskId: review.taskId,
+      attemptId: review.attemptId,
+    });
+    // Revision-0 compatibility work may have been applied through a historical
+    // manual repair path. V2 work must satisfy its exact task/revision/attempt
+    // postcondition and cannot be hidden by a prose/reference heuristic.
+    if (review.taskRevision === 0 && coverage) continue;
     offenders.push({
-      taskId,
-      attemptId,
-      decision: (review.decision ?? "unknown").trim() || "unknown",
-      reviewedAt: review.ts ?? "",
+      taskId: review.taskId,
+      attemptId: review.attemptId,
+      decision: review.latestDecision,
+      reviewedAt: review.latestDecisionAt,
     });
   }
   return offenders.sort((left, right) =>
@@ -1954,7 +2022,10 @@ function specLoopRecoveryStats(): {
     const groupStatus = status === "pending" ? "pending" : status;
     if (
       !represented.has(`${groupStatus}:${specFamily(specId)}`) &&
-      !exactSpecLoopOwnerTaskId({ tree, state, specId })
+      !exactSpecLoopOwnerTaskId({ tree, state, specId }) &&
+      !specStateSelfRepresentsExactFrontier(
+        spec as Parameters<typeof specStateSelfRepresentsExactFrontier>[0],
+      )
     ) {
       recoveryUnowned += 1;
       recoveryUnownedSpecIds.push(specId);
@@ -2026,6 +2097,125 @@ function unpublishedGitChangeCount(repoDir: string): number {
   return gitStatusEntryCount(repoDir) + gitOriginLocalOnlyCommitCount(repoDir);
 }
 
+function normalizeProcessText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function sessionTranscriptPath(sessionId: string): string | null {
+  const livePath = join(sessionsDirPath, sessionId, "session.jsonl");
+  if (existsSync(livePath)) return livePath;
+  const historyPath = join(
+    sessionsDirPath,
+    "history",
+    sessionId,
+    "session.jsonl",
+  );
+  return existsSync(historyPath) ? historyPath : null;
+}
+
+function unresolvedBashToolCommands(sessionId: string): string[] {
+  const transcriptPath = sessionTranscriptPath(sessionId);
+  if (!transcriptPath) return [];
+  const entries = readJsonl<Record<string, unknown>>(transcriptPath);
+  const unresolved = new Map<string, string>();
+
+  for (const entry of entries) {
+    const resolvedToolCallId =
+      typeof entry.toolCallId === "string" ? entry.toolCallId.trim() : "";
+    if (resolvedToolCallId) unresolved.delete(resolvedToolCallId);
+
+    if (!Array.isArray(entry.content)) continue;
+    for (const chunk of entry.content) {
+      if (!chunk || typeof chunk !== "object") continue;
+      const part = chunk as Record<string, unknown>;
+      if (part.type !== "toolCall") continue;
+      const toolName = typeof part.name === "string" ? part.name.trim() : "";
+      const toolCallId = typeof part.id === "string" ? part.id.trim() : "";
+      const command =
+        typeof (part.arguments as Record<string, unknown> | undefined)
+          ?.command === "string"
+          ? (
+              (part.arguments as Record<string, unknown>).command as string
+            ).trim()
+          : "";
+      if (!toolCallId || toolName !== "bash" || !command) continue;
+      unresolved.set(toolCallId, command);
+    }
+  }
+
+  return [...unresolved.values()];
+}
+
+function toolCommandNeedles(command: string): string[] {
+  const normalized = normalizeProcessText(command);
+  if (!normalized) return [];
+
+  const needles = new Set<string>();
+  if (normalized.length <= 220) needles.add(normalized);
+  else {
+    needles.add(normalized.slice(0, 220));
+    needles.add(normalized.slice(-220));
+  }
+
+  for (const match of normalized.matchAll(
+    /(?:^|[\s=])(\/[^\s"'`|;&()<>]+|\.\.?\/[^\s"'`|;&()<>]+)/g,
+  )) {
+    const token = match[1]?.trim();
+    if (token && token.length >= 16) needles.add(token);
+  }
+
+  for (const match of normalized.matchAll(/\b[A-Za-z0-9._-]{8,}\b/g)) {
+    const token = match[0];
+    if (/^\d+$/.test(token) ? token.length >= 6 : token.length >= 12) {
+      needles.add(token);
+    }
+  }
+
+  return [...needles]
+    .sort((left, right) => right.length - left.length)
+    .slice(0, 8);
+}
+
+function sessionHasLiveBashToolProcess(sessionId: string): boolean {
+  const commands = unresolvedBashToolCommands(sessionId);
+  if (commands.length === 0) return false;
+
+  let psOutput = "";
+  try {
+    const result = spawnSync("ps", ["-ww", "-eo", "args="], {
+      encoding: "utf-8",
+    });
+    if (result.status !== 0) return false;
+    psOutput = result.stdout;
+  } catch {
+    return false;
+  }
+
+  const processes = psOutput
+    .split(/\r?\n/)
+    .map((line) => normalizeProcessText(line))
+    .filter(Boolean);
+
+  return commands.some((command) => {
+    const normalizedCommand = normalizeProcessText(command);
+    if (!normalizedCommand) return false;
+    const needles = toolCommandNeedles(normalizedCommand);
+
+    return processes.some((processArgs) => {
+      if (!processArgs || processArgs === normalizedCommand) return false;
+      if (processArgs.includes(normalizedCommand)) return true;
+
+      let matchCount = 0;
+      for (const needle of needles) {
+        if (!processArgs.includes(needle)) continue;
+        matchCount++;
+        if (needle.length >= 48 || matchCount >= 2) return true;
+      }
+      return false;
+    });
+  });
+}
+
 function countReplays(): number {
   return listFiles(join(projectDir, "replays"), (path) => {
     const rel = path.slice(join(projectDir, "replays").length + 1);
@@ -2035,12 +2225,19 @@ function countReplays(): number {
 
 function sessionRestartReasonFromRow(
   row: Record<string, unknown> | null,
+  sessionIdOverride?: string | null,
 ): string | null {
   if (!row) return "session-not-running";
   if (row.status !== "running") return "session-not-running";
   if (row.outcome === "error" || row.outcome === "interrupted")
     return `session-${row.outcome}`;
 
+  const sessionId =
+    typeof sessionIdOverride === "string" && sessionIdOverride.trim()
+      ? sessionIdOverride.trim()
+      : typeof row.sessionId === "string" && row.sessionId.trim()
+        ? row.sessionId.trim()
+        : "";
   const startedAt =
     typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
       ? row.startedAt
@@ -2055,10 +2252,29 @@ function sessionRestartReasonFromRow(
     staleSince !== null &&
     Date.now() - staleSince > staleActiveNoActivityMs
   ) {
+    if (sessionId && sessionHasLiveBashToolProcess(sessionId)) return null;
     return "session-no-activity";
   }
 
   return null;
+}
+
+function sessionFinishedWithinTerminalCompletionGrace(
+  row: Record<string, unknown> | null,
+): boolean {
+  if (!row || row.status === "running") return false;
+  const endedAt =
+    typeof row.endedAt === "number" && Number.isFinite(row.endedAt)
+      ? row.endedAt
+      : typeof row.lastActivityAt === "number" &&
+          Number.isFinite(row.lastActivityAt)
+        ? row.lastActivityAt
+        : typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
+          ? row.startedAt
+          : null;
+  return (
+    endedAt !== null && Date.now() - endedAt <= terminalSessionCompletionGraceMs
+  );
 }
 
 function sessionRestartReason(sessionId: string): string | null {
@@ -2068,27 +2284,29 @@ function sessionRestartReason(sessionId: string): string | null {
     const row = db
       .query(
         `
-      select status, outcome, opCount, startedAt, lastActivityAt
+      select status, outcome, opCount, startedAt, lastActivityAt, endedAt
       from sessions
       where sessionId = ?
       limit 1
     `,
       )
       .get(sessionId) as Record<string, unknown> | null;
-    return sessionRestartReasonFromRow(row);
+    if (sessionFinishedWithinTerminalCompletionGrace(row)) return null;
+    return sessionRestartReasonFromRow(row, sessionId);
   } catch {
     try {
       const row = db
         .query(
           `
-        select status
+        select status, startedAt, lastActivityAt, endedAt
         from sessions
         where sessionId = ?
         limit 1
       `,
         )
         .get(sessionId) as Record<string, unknown> | null;
-      return sessionRestartReasonFromRow(row);
+      if (sessionFinishedWithinTerminalCompletionGrace(row)) return null;
+      return sessionRestartReasonFromRow(row, sessionId);
     } catch {
       return "session-not-running";
     }
@@ -2661,6 +2879,7 @@ function activeTaskRestartReason(task: TaskNode): string | null {
       currentAttemptId,
       sessionId,
     );
+    if (sessionFinishedWithinTerminalCompletionGrace(workerRow)) return null;
     const workerReason = sessionRestartReasonFromRow(workerRow);
     if (workerReason === null) return null;
     if (workerReason !== "session-not-running") return workerReason;
@@ -2674,6 +2893,7 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     }
 
     const featureRow = activeTaskFeatureReferenceSessionRow(task);
+    if (sessionFinishedWithinTerminalCompletionGrace(featureRow)) return null;
     const featureReason = sessionRestartReasonFromRow(featureRow);
     if (featureReason === null) return null;
     if (featureReason !== "session-not-running") return featureReason;

@@ -237,6 +237,8 @@ function context(input: {
   maxConcurrent?: number;
   sessionStartGraceMs?: number;
   supervisorV2?: "off" | "review-handoff-revisioned";
+  pendingActionRedeliveryV2?:
+    "off" | "review-application-revisioned" | "review-handoffs-revisioned";
   supervisorAttemptV2?: "off" | "shadow";
   conditionV2?: "off" | "exact-ado-revisioned";
   conditionAdoptionV2?: "off" | "exact-task";
@@ -253,6 +255,9 @@ function context(input: {
       `maxConcurrent: ${input.maxConcurrent ?? 3}`,
       `sessionStartGraceMs: ${input.sessionStartGraceMs ?? 60000}`,
       `supervisorV2: ${input.supervisorV2 ?? "review-handoff-revisioned"}`,
+      ...(input.pendingActionRedeliveryV2
+        ? [`pendingActionRedeliveryV2: ${input.pendingActionRedeliveryV2}`]
+        : []),
       ...(input.supervisorAttemptV2
         ? [`supervisorAttemptV2: ${input.supervisorAttemptV2}`]
         : []),
@@ -401,8 +406,8 @@ describe("project execution watchdog", () => {
     const projectJson = JSON.parse(
       await readFile(join(projectDir, ".state", "project-state.json"), "utf8"),
     );
-    expect(projectJson.currentFocus.activeTaskIds).toEqual([
-      "active-task",
+    expect(projectJson.currentFocus.activeTaskIds).toEqual(["active-task"]);
+    expect(projectJson.currentFocus.focusMission.reviewTaskIds).toEqual([
       "review-task",
     ]);
     expect(String(projectJson.currentFocus.nextAction)).toContain(
@@ -850,6 +855,11 @@ describe("project execution watchdog", () => {
 
   test("recovers an active task when the worker session finished but workflow bookkeeping was interrupted", async () => {
     const projectDir = await makeProject();
+    const conditionTaskId = "condition-wait";
+    const conditionRunId = "172500011";
+    const conditionId = `condition:pipeline:ado:${conditionRunId}:terminal`;
+    const conditionDue = new Date(Date.now() - 60_000).toISOString();
+    const conditionFallback = new Date(Date.now() + 60 * 60_000).toISOString();
     for (const [directory, collection] of [
       ["spec-loop", "specs"],
       ["feature-reference-loop", "features"],
@@ -919,10 +929,43 @@ describe("project execution watchdog", () => {
             worker_started_attempt_id: "attempt-1",
           },
         }),
+        [conditionTaskId]: task(conditionTaskId, "blocked", {
+          revision: 1,
+          context: { controlPlaneVersion: 2, conditionId },
+          blocker: {
+            condition_id: conditionId,
+            condition: `Wait for Azure DevOps run ${conditionRunId}.`,
+            next_check_at: conditionDue,
+            fallback_at: conditionFallback,
+          },
+        }),
       },
       {
         active_task_id: "active-task",
         active_task_ids: ["active-task"],
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: `pipeline:ado:${conditionRunId}:terminal`,
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "open",
+            backend: "ado",
+            runId: conditionRunId,
+            runUrl: `https://dev.azure.com/example/${conditionRunId}`,
+            subject: { kind: "task", id: conditionTaskId, revision: 1 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: conditionDue,
+            fallbackAt: conditionFallback,
+            fallbackAction: "escalate",
+            createdAt: conditionDue,
+            updatedAt: conditionDue,
+          },
+        },
       },
     );
 
@@ -930,18 +973,35 @@ describe("project execution watchdog", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await execute(
-      context({
-        projectDir,
-        stateDbPath,
-        supervisorAttemptV2: "shadow",
-        dispatched,
+    setPipelineBackendForTests({
+      resolve: () => ({ ok: true }),
+      getRun: () => ({
+        status: "inProgress",
+        conclusion: null,
+        url: `https://dev.azure.com/example/${conditionRunId}`,
       }),
-    );
+    });
+    let result;
+    try {
+      result = await execute(
+        context({
+          projectDir,
+          stateDbPath,
+          supervisorAttemptV2: "shadow",
+          conditionV2: "exact-ado-revisioned",
+          dispatched,
+        }),
+      );
+    } finally {
+      setPipelineBackendForTests(null);
+    }
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog recovered completed active task(s): active-task.",
+      `Watchdog refreshed nonterminal Azure DevOps wait check(s): ${conditionTaskId}.`,
+    );
+    expect(result.message).toContain(
+      "Also recovered completed active task(s): active-task.",
     );
     expect(dispatched.map((event) => event.type)).toEqual([
       "project.task.completed",
@@ -963,6 +1023,12 @@ describe("project execution watchdog", () => {
     );
     expect(updated.tasks["active-task"].state).toBe("review");
     expect(updated.tasks["active-task"].trace.last_worker_result).toBe("done");
+    expect(updated.conditions[conditionId].lastObservation).toMatchObject({
+      status: "inProgress",
+    });
+    expect(
+      Date.parse(updated.conditions[conditionId].nextCheckAt),
+    ).toBeGreaterThan(Date.now());
     const journal = await readFile(
       join(projectDir, ".state", "journal.jsonl"),
       "utf8",
@@ -1276,6 +1342,119 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("does not flag a running future-window poll task stale before its poll window opens", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_future_poll",
+      status: "running",
+      opCount: 12,
+      startedAt: Date.now() - 60_000,
+      lastActivityAt: Date.now() - 60_000,
+    });
+    await writeTree(
+      projectDir,
+      {
+        "future-poll-task": task("future-poll-task", "active", {
+          session_id: "s_future_poll",
+          goal: "At or after 2099-06-26T12:00:00Z, re-poll exact Azure DevOps run 172519985 for spec.planned-maintenance.configuration-crud-lifecycle.",
+          trace: {
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "future-poll-task",
+        active_task_ids: ["future-poll-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, stateDbPath, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${stateDbPath}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toEqual([
+      {
+        type: "project.owner.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          target: { project: "aks-rp-e2e" },
+          reason: "watchdog-capacity-underfilled",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+        },
+      },
+    ]);
+  });
+
+  test("still flags a future-window poll task after its poll window opens if the session stays idle", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_overdue_future_poll",
+      status: "running",
+      opCount: 12,
+      startedAt: Date.now() - 60_000,
+      lastActivityAt: Date.now() - 60_000,
+    });
+    await writeTree(
+      projectDir,
+      {
+        "future-poll-task": task("future-poll-task", "active", {
+          session_id: "s_overdue_future_poll",
+          goal: "At or after 2001-01-01T00:00:00Z, re-poll exact Azure DevOps run 172519985 for spec.planned-maintenance.configuration-crud-lifecycle.",
+          trace: {
+            worker_started_at: new Date(Date.now() - 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "future-poll-task",
+        active_task_ids: ["future-poll-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, stateDbPath, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${stateDbPath}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [
+          { taskId: "future-poll-task", reason: "session-no-activity" },
+        ],
+      },
+    });
+  });
+
   test("does not mutate repeatedly stale active leaves", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
@@ -1381,6 +1560,71 @@ describe("project execution watchdog", () => {
         },
       },
     ]);
+  });
+
+  test("does not treat an open session.start lineage as stale before its liveness window expires", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer
+      );
+      create table events (
+        id integer primary key autoincrement,
+        event_type text not null,
+        data text,
+        timestamp integer not null
+      );
+    `);
+    db.query(
+      "insert into events (event_type, data, timestamp) values (?, ?, ?)",
+    ).run(
+      "session.start",
+      JSON.stringify({
+        sessionId: "s_runtime_missing_but_started",
+        attemptId: "attempt-1",
+        taskId: "active-task",
+      }),
+      Date.now() - 9 * 60_000,
+    );
+    db.close();
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_runtime_missing_but_started",
+          trace: {
+            current_attempt_id: "attempt-1",
+            assigned_at: new Date(Date.now() - 13 * 60_000).toISOString(),
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, maxConcurrent: 1, dispatched }),
+    );
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog skipped: 1 active task(s) still have running attempts.",
+    });
+    expect(dispatched).toEqual([]);
   });
 
   test("treats single-spec verifier with live spec-loop heartbeat as active even without runtime session row", async () => {
@@ -2094,6 +2338,62 @@ describe("project execution watchdog", () => {
     });
   });
 
+  test("does not report unrelated project overdue owner action as covered by an exact project wait scope", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_exact_project_wait_repair", "running");
+    await writeTree(projectDir, {
+      "exact-project-wait-repair": task("exact-project-wait-repair", "active", {
+        goal: "Repair one exact project wait without masking the rest.",
+        session_id: "s_exact_project_wait_repair",
+        conflict_scope: ["ops:blocked-overdue:project:covered-project-wait"],
+      }),
+      "covered-project-wait": task("covered-project-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for covered project return.",
+          waiting_for: { type: "owner.response" },
+          owner: "aks-explorer",
+          resume_condition: "Resume when the covered project return is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the covered project wait.",
+        },
+      }),
+      "uncovered-project-wait": task("uncovered-project-wait", "blocked", {
+        blocker: {
+          condition: "Waiting for unrelated project return.",
+          waiting_for: { type: "owner.response" },
+          owner: "aks-explorer",
+          resume_condition:
+            "Resume when the unrelated project return is known.",
+          resume_at: "2001-01-01T00:00:00.000Z",
+          fallback_at: "2001-01-02T00:00:00.000Z",
+          fallback_action: "Check the unrelated project wait.",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-blocked-frontier-review",
+        overdueOwnerActionCount: 1,
+        overdueOwnerActions: [
+          expect.objectContaining({ taskId: "uncovered-project-wait" }),
+        ],
+      },
+    });
+  });
+
   test("does not report spec-loop overdue owner action when legacy scoped recovery work is active", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
@@ -2242,6 +2542,67 @@ describe("project execution watchdog", () => {
         reason: "watchdog-blocked-frontier-review",
         overdueOwnerActionCount: 0,
         overdueOwnerActions: [],
+      },
+    });
+  });
+
+  test("treats matching wait spec conflict scope on a review task as active recovery work", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    await writeTree(projectDir, {
+      "ops/review-rp-regional-quota-guard": task(
+        "ops/review-rp-regional-quota-guard",
+        "review",
+        {
+          goal: "Review the same-spec duplicate-fix-forward guard.",
+          owner: "app-ops",
+          conflict_scope: ["spec:spec.rp-regional-quota.public-create-path"],
+        },
+      ),
+      "reconcile-spec-loop-pending-rp-regional-quota": task(
+        "reconcile-spec-loop-pending-rp-regional-quota",
+        "blocked",
+        {
+          goal: "Carry the exact public create-path wait.",
+          owner: "aks-explorer",
+          blocker: {
+            condition:
+              "Waiting for the same quota-exhausted public create path.",
+            waiting_for: {
+              type: "azure.quota.exhausted",
+              specId: "spec.rp-regional-quota.public-create-path",
+            },
+            owner: "aks-explorer",
+            resume_condition:
+              "Resume when the exact same-spec quota surface changes.",
+            resume_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2001-01-02T00:00:00.000Z",
+            fallback_action:
+              "Refresh the exact wait from current quota evidence.",
+          },
+        },
+      ),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-review-pending",
+        reviewCount: 1,
+        reviewTasks: [
+          {
+            taskId: "ops/review-rp-regional-quota-guard",
+          },
+        ],
       },
     });
   });
@@ -2584,6 +2945,178 @@ describe("project execution watchdog", () => {
     );
   });
 
+  test("Project Supervisor V2 records a first common-runner completion delivery", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          worker_started_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_summary: "Current completion claim.",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        dispatched,
+        pendingActionRedeliveryV2: "review-handoffs-revisioned",
+      }),
+    );
+
+    expect(result.message).toContain(
+      "Project Supervisor V2 review handoff action dispatched and recorded for review-task",
+    );
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.task.completed",
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.tasks["review-task"].trace.pendingActionDeliveryReceiptsV2,
+    ).toEqual([
+      expect.objectContaining({
+        actionKind: "completion-review-delivery",
+        attempt: 1,
+        status: "accepted",
+      }),
+    ]);
+  });
+
+  test("Project Supervisor V2 redelivers accepted or failed completion attempt one exactly once", async () => {
+    for (const priorStatus of ["accepted", "failed"] as const) {
+      const projectDir = await makeProject();
+      await writeFile(
+        join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+        "",
+        "utf8",
+      );
+      const actionKey = "completion-review-delivery:review-task:2:attempt-2";
+      await writeTree(projectDir, {
+        "review-task": task("review-task", "review", {
+          revision: 2,
+          context: { controlPlaneVersion: 2 },
+          trace: {
+            current_attempt_id: "attempt-2",
+            worker_started_attempt_id: "attempt-2",
+            last_worker_result: "done",
+            last_worker_summary: "Current completion claim.",
+            last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+            pendingActionDeliveryReceiptsV2: [
+              {
+                version: "project-pending-action-delivery-v2",
+                actionKey,
+                actionKind: "completion-review-delivery",
+                attempt: 1,
+                status: priorStatus,
+                recordedAt: "2026-06-20T00:00:01.000Z",
+              },
+            ],
+          },
+        }),
+      });
+
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      await execute(
+        context({
+          projectDir,
+          dispatched,
+          pendingActionRedeliveryV2: "review-handoffs-revisioned",
+        }),
+      );
+      expect(dispatched.map((event) => event.type)).toEqual([
+        "project.task.completed",
+      ]);
+      const tree = JSON.parse(
+        await readFile(
+          join(projectDir, ".state", "tasks", "tree.json"),
+          "utf8",
+        ),
+      );
+      expect(
+        tree.tasks["review-task"].trace.pendingActionDeliveryReceiptsV2.map(
+          (receipt: { attempt: number; status: string }) => [
+            receipt.attempt,
+            receipt.status,
+          ],
+        ),
+      ).toEqual([
+        [1, priorStatus],
+        [2, "accepted"],
+      ]);
+    }
+  });
+
+  test("Project Supervisor V2 stops completion redelivery at the shared attempt budget", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      "",
+      "utf8",
+    );
+    const actionKey = "completion-review-delivery:review-task:2:attempt-2";
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          worker_started_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+          pendingActionDeliveryReceiptsV2: [1, 2].map((attempt) => ({
+            version: "project-pending-action-delivery-v2",
+            actionKey,
+            actionKind: "completion-review-delivery",
+            attempt,
+            status: "failed",
+            recordedAt: `2026-06-20T00:00:0${attempt}.000Z`,
+          })),
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        dispatched,
+        pendingActionRedeliveryV2: "review-handoffs-revisioned",
+      }),
+    );
+    expect(dispatched).toEqual([]);
+    expect(result.message).toContain(
+      "review handoff dispatch failed and consumed its bounded action budget",
+    );
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(
+      tree.tasks["review-task"].trace.pendingActionDeliveryReceiptsV2,
+    ).toHaveLength(2);
+  });
+
   test("keeps compatibility revision zero on legacy review recovery even when the review source is available", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -2718,6 +3251,203 @@ describe("project execution watchdog", () => {
         reason: "project-supervisor-v2-reemit-reviewed",
       },
     });
+  });
+
+  test("Project Supervisor V2 does not redeliver during initial review application grace", async () => {
+    const projectDir = await makeProject();
+    const reviewedAt = new Date(Date.now() - 60_000).toISOString();
+    const acceptedAt = new Date(Date.now() - 59_000).toISOString();
+    const actionKey =
+      "review-application-delivery:review-task:2:attempt-2:review-fresh";
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      [
+        {
+          ts: reviewedAt,
+          workflow: "task-reviewer",
+          result: "project.task.reviewed",
+          delivery_status: "pending",
+          review_id: "review-fresh",
+          task_id: "review-task",
+          task_revision: 2,
+          attempt_id: "attempt-2",
+          decision: "accept",
+          confidence: "high",
+          summary: "The fresh decision is still being applied.",
+          findings: [],
+          feedback: [],
+          suggestedFollowups: [],
+          artifacts: [],
+          verification: [],
+          events: [],
+        },
+        {
+          ts: acceptedAt,
+          workflow: "task-reviewer",
+          result: "pending-action-delivery-v2",
+          version: "project-pending-action-delivery-v2",
+          action_key: actionKey,
+          action_kind: "review-application-delivery",
+          delivery_attempt: 1,
+          delivery_status: "accepted",
+          recorded_at: acceptedAt,
+          review_id: "review-fresh",
+          task_id: "review-task",
+          task_revision: 2,
+          attempt_id: "attempt-2",
+        },
+      ]
+        .map((row) => JSON.stringify(row))
+        .join("\n") + "\n",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    await execute(
+      context({
+        projectDir,
+        dispatched,
+        pendingActionRedeliveryV2: "review-application-revisioned",
+      }),
+    );
+
+    expect(
+      dispatched.some((event) => event.type === "project.task.reviewed"),
+    ).toBe(false);
+    const rows = (
+      await readFile(
+        join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+        "utf8",
+      )
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(
+      rows.filter(
+        (row) =>
+          row.result === "pending-action-delivery-v2" &&
+          row.workflow === "project-execution-watchdog",
+      ),
+    ).toEqual([]);
+  });
+
+  test("Project Supervisor V2 can redeliver through the shared pending-action receipt path after application grace", async () => {
+    const projectDir = await makeProject();
+    const actionKey =
+      "review-application-delivery:review-task:2:attempt-2:review-42";
+    await writeFile(
+      join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+      [
+        {
+          ts: "2026-07-16T04:01:00.000Z",
+          workflow: "task-reviewer",
+          result: "project.task.reviewed",
+          delivery_status: "pending",
+          review_id: "review-42",
+          task_id: "review-task",
+          task_revision: 2,
+          attempt_id: "attempt-2",
+          decision: "accept",
+          confidence: "high",
+          summary: "The exact claim is accepted.",
+          findings: [],
+          feedback: [],
+          suggestedFollowups: [],
+          artifacts: [],
+          verification: [],
+          events: [],
+        },
+        {
+          ts: "2026-07-16T04:01:01.000Z",
+          workflow: "task-reviewer",
+          result: "pending-action-delivery-v2",
+          version: "project-pending-action-delivery-v2",
+          action_key: actionKey,
+          action_kind: "review-application-delivery",
+          delivery_attempt: 1,
+          delivery_status: "accepted",
+          recorded_at: "2026-07-16T04:01:01.000Z",
+          review_id: "review-42",
+          task_id: "review-task",
+          task_revision: 2,
+          attempt_id: "attempt-2",
+        },
+      ]
+        .map((row) => JSON.stringify(row))
+        .join("\n") + "\n",
+      "utf8",
+    );
+    await writeTree(projectDir, {
+      "review-task": task("review-task", "review", {
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "attempt-2",
+          last_worker_result: "done",
+          last_worker_completed_at: "2026-06-20T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        dispatched,
+        pendingActionRedeliveryV2: "review-application-revisioned",
+      }),
+    );
+    expect(result.message).toContain(
+      "Project Supervisor V2 review handoff action dispatched and recorded for review-task",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        reviewId: "review-42",
+        reason: "project-supervisor-v2-reemit-reviewed",
+      },
+    });
+    const rows = (
+      await readFile(
+        join(projectDir, ".state", "task-reviewer-runs.jsonl"),
+        "utf8",
+      )
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(
+      rows
+        .filter((row) => row.result === "pending-action-delivery-v2")
+        .map((row) => [
+          row.workflow,
+          row.delivery_attempt,
+          row.delivery_status,
+        ]),
+    ).toEqual([
+      ["task-reviewer", 1, "accepted"],
+      ["project-execution-watchdog", 2, "accepted"],
+    ]);
   });
 
   test("Project Supervisor V2 does not treat a provider dispatch failure as a review decision", async () => {
@@ -2994,7 +3724,7 @@ describe("project execution watchdog", () => {
     });
   });
 
-  test("re-emits terminal pipeline wait review through task reviewer", async () => {
+  test("requeues terminal pipeline wait review for task-worker artifact inspection", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "terminal-run-review": task("terminal-run-review", "review", {
@@ -3010,6 +3740,7 @@ describe("project execution watchdog", () => {
               "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
             namedSpecIds: ["spec.example"],
           },
+          workflow: "fix-forward",
         },
       }),
     });
@@ -3023,32 +3754,132 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog re-emitted completion for review task(s): terminal-run-review.",
+        "Watchdog requeued stale terminal-review leaf/leaves for task-worker assignment: terminal-run-review.",
     });
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
-      type: "project.task.completed",
+      type: "project.task.assigned",
       payload: {
         taskId: "terminal-run-review",
-        attemptId: "a_terminal-run-review_123456789_terminal_wait_review",
-        result: "blocked",
-        summary:
-          "Azure DevOps pipeline run 123456789 is terminal; inspect returned artifacts.",
-        review: {
-          required: true,
-          reason: "watchdog-recovered-terminal-pipeline-wait-review",
-        },
+        requested_by: "project-execution-watchdog",
+        continuation: "terminal-pipeline-artifact-review",
       },
     });
     const tree = JSON.parse(
       await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
     );
+    expect(tree.tasks["terminal-run-review"].state).toBe("active");
     expect(tree.tasks["terminal-run-review"].trace.current_attempt_id).toBe(
-      "a_terminal-run-review_123456789_terminal_wait_review",
+      dispatched[0].payload.attemptId,
+    );
+    expect(
+      tree.tasks["terminal-run-review"].context.terminalPipelineWaitReview,
+    ).toMatchObject({
+      runId: "123456789",
+      runConclusion: "failure",
+    });
+  });
+
+  test("requeues stale terminal fix-forward review state instead of re-emitting a synthetic completion", async () => {
+    const projectDir = await makeProject();
+    const staleAttemptId =
+      "a_reconcile-compact-loop-package-partial_172352561_terminal_wait_review";
+    await writeTree(projectDir, {
+      "reconcile-compact-loop-package-partial": task(
+        "reconcile-compact-loop-package-partial",
+        "review",
+        {
+          parent_id: "aks-feature-compact-loop",
+          result:
+            "Wrote a fresh attempt-specific fix-forward evidence memo for the network-cni package-partial compact frontier.",
+          context: {
+            terminalPipelineWaitReview: {
+              runId: "172352561",
+              runStatus: "completed",
+              runConclusion: "failure",
+              runUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172352561",
+              namedSpecIds: [
+                "spec.network-cni.azure-overlay-dual-stack-windows2022",
+              ],
+            },
+            workflow: "fix-forward",
+          },
+          trace: {
+            current_attempt_id: staleAttemptId,
+            previous_attempt_id:
+              "a_reconcile-compact-loop-package-partial_20260716105642",
+            last_worker_result: "done",
+            last_worker_summary:
+              "Stale fix-forward summary without structured terminal review fields.",
+            last_worker_completed_at: "2026-07-16T11:27:27.407Z",
+            review_rejected_at: "2026-07-16T11:28:08.547Z",
+            review_reject_reason:
+              "Missing workflowResult.details.fixForward / terminal structured fields.",
+          },
+        },
+      ),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog requeued stale terminal-review leaf/leaves for task-worker assignment: reconcile-compact-loop-package-partial.",
+    });
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.assigned",
+      payload: {
+        taskId: "reconcile-compact-loop-package-partial",
+        requested_by: "project-execution-watchdog",
+        continuation: "terminal-pipeline-artifact-review",
+      },
+    });
+    expect(
+      dispatched.some((event) => event.type === "project.task.completed"),
+    ).toBe(false);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, ".state", "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["reconcile-compact-loop-package-partial"]).toMatchObject({
+      state: "active",
+      context: {
+        terminalPipelineWaitReview: {
+          runId: "172352561",
+          runConclusion: "failure",
+        },
+      },
+      trace: {
+        previous_attempt_id: staleAttemptId,
+        terminal_review_requeue_reason:
+          "terminal wait review needs a real worker artifact inspection before reviewer handoff",
+      },
+    });
+    expect(
+      tree.tasks["reconcile-compact-loop-package-partial"].trace
+        .current_attempt_id,
+    ).toBe(dispatched[0].payload.attemptId);
+    expect(
+      tree.tasks["reconcile-compact-loop-package-partial"].trace
+        .current_attempt_id,
+    ).not.toBe(staleAttemptId);
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"terminal_review_worker_requeue"');
+    expect(journal).not.toContain(
+      '"kind":"watchdog_review_completion_reemitted"',
     );
   });
 
-  test("moves blocked Azure DevOps wait to review when the run is terminal", async () => {
+  test("converts blocked Azure DevOps wait into task-worker artifact review execution when the run is terminal", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "wait-dev-infra-core-ado-run-123456789-result": task(
@@ -3083,20 +3914,15 @@ describe("project execution watchdog", () => {
       expect(result).toEqual({
         status: "done",
         message:
-          "Watchdog moved terminal Azure DevOps wait(s) to review: wait-dev-infra-core-ado-run-123456789-result. Re-emitted completion for reviewer handoff: wait-dev-infra-core-ado-run-123456789-result.",
+          "Watchdog converted terminal Azure DevOps wait(s) into worker artifact-review execution: wait-dev-infra-core-ado-run-123456789-result. Dispatched task-worker assignment(s): wait-dev-infra-core-ado-run-123456789-result.",
       });
       expect(dispatched).toHaveLength(1);
       expect(dispatched[0]).toMatchObject({
-        type: "project.task.completed",
+        type: "project.task.assigned",
         payload: {
           taskId: "wait-dev-infra-core-ado-run-123456789-result",
-          attemptId:
-            "a_wait-dev-infra-core-ado-run-123456789-result_123456789_terminal_wait_review",
-          result: "blocked",
-          review: {
-            required: true,
-            reason: "watchdog-recovered-review-completion-trigger",
-          },
+          requested_by: "project-execution-watchdog",
+          continuation: "terminal-pipeline-artifact-review",
         },
       });
       const tree = JSON.parse(
@@ -3106,14 +3932,14 @@ describe("project execution watchdog", () => {
         ),
       );
       const task = tree.tasks["wait-dev-infra-core-ado-run-123456789-result"];
-      expect(task.state).toBe("review");
+      expect(task.state).toBe("active");
       expect(task.context.terminalPipelineWaitReview).toMatchObject({
         runId: "123456789",
         runStatus: "completed",
         runConclusion: "failure",
       });
       expect(task.trace.current_attempt_id).toBe(
-        "a_wait-dev-infra-core-ado-run-123456789-result_123456789_terminal_wait_review",
+        dispatched[0].payload.attemptId,
       );
       expect(task.trace.terminal_wait_review_attempt_created_by).toBe(
         "project-execution-watchdog",

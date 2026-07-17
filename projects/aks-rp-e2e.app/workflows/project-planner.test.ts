@@ -3,9 +3,10 @@ import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   assignTask,
+  listRunnableBacklogTaskIds,
   peekTaskAssignments,
   taskTreeConfig,
 } from "./lib/task-tree-tools.ts";
@@ -154,6 +155,171 @@ function config(appDir: string, projectDir: string) {
   });
 }
 
+function runGit(projectDir: string, args: string[]): string {
+  const result = Bun.spawnSync({
+    cmd: ["git", "-C", projectDir, ...args],
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  if (!result.success) {
+    throw new Error(
+      `git ${args.join(" ")} failed: ${Buffer.from(result.stderr).toString("utf8")}`,
+    );
+  }
+  return Buffer.from(result.stdout).toString("utf8").trim();
+}
+
+async function initOriginDevRepo(projectDir: string) {
+  await writeFile(join(projectDir, "README.md"), "# planner fixture\n", "utf8");
+  runGit(projectDir, ["init"]);
+  runGit(projectDir, ["config", "user.email", "planner@example.test"]);
+  runGit(projectDir, ["config", "user.name", "Planner Test"]);
+  runGit(projectDir, ["add", "."]);
+  runGit(projectDir, ["commit", "-m", "base"]);
+  const baseCommit = runGit(projectDir, ["rev-parse", "HEAD"]);
+  runGit(projectDir, ["branch", "-M", "dev"]);
+  runGit(projectDir, ["update-ref", "refs/remotes/origin/dev", baseCommit]);
+  return { baseCommit };
+}
+
+async function createRepoCommit(
+  projectDir: string,
+  relativePath: string,
+  content: string,
+  message: string,
+) {
+  const absolutePath = join(projectDir, relativePath);
+  await mkdir(dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, content, "utf8");
+  runGit(projectDir, ["add", relativePath]);
+  runGit(projectDir, ["commit", "-m", message]);
+  return runGit(projectDir, ["rev-parse", "HEAD"]);
+}
+
+async function writeNormalizationTerminalReviewTree(input: {
+  appDir: string;
+  waitTaskId: string;
+  sourceTaskId: string;
+  attemptId: string;
+  specId: string;
+  runId: string;
+  runUrl: string;
+  sourceCommit: string;
+  baseCommit: string;
+  changedFile: string;
+  existingPublicationTask?: {
+    id: string;
+    goal: string;
+    acceptance: string[];
+    context?: Record<string, unknown>;
+  };
+}) {
+  const parentId = "domain/normalize-scenario-tests-repo-frontier-20260715";
+  const reviewTaskChildren = [input.waitTaskId];
+  if (input.existingPublicationTask) {
+    reviewTaskChildren.push(input.existingPublicationTask.id);
+  }
+  await writeFile(
+    resolveTaskTreePath(input.appDir),
+    `${JSON.stringify(
+      {
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        updated_at: new Date().toISOString(),
+        tasks: {
+          project: {
+            id: "project",
+            state: "active",
+            status: "active",
+            children: [parentId],
+            goal: "project",
+            outputs: ["tasks/tree.json"],
+            acceptance: ["done"],
+          },
+          [parentId]: {
+            id: parentId,
+            parent_id: "project",
+            state: "active",
+            status: "active",
+            kind: "domain_root",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: reviewTaskChildren,
+            goal: "Normalize scenario tests repo frontier.",
+            outputs: ["evidence/archive/frontier.md"],
+            acceptance: ["frontier stays visible"],
+          },
+          [input.waitTaskId]: {
+            id: input.waitTaskId,
+            parent_id: parentId,
+            state: "review",
+            status: "review",
+            kind: "domain_leaf",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: [],
+            goal: `Review terminal Azure DevOps run ${input.runId} for ${input.specId}.`,
+            outputs: ["runs/test-results/result.json"],
+            acceptance: ["Return the exact terminal same-run verdict."],
+            conflict_scope: [`spec:${input.specId}`, `ado-run:${input.runId}`],
+            session_id: `s_${input.waitTaskId}`,
+            context: {
+              acceptedQueuedPipelineRun: {
+                sourceTaskId: input.sourceTaskId,
+                sourceAttemptId: "attempt-normalize-1",
+                runId: input.runId,
+                runUrl: input.runUrl,
+                specIds: [input.specId],
+                baseRef: "origin/dev",
+                baseCommit: input.baseCommit,
+                sourceVersion: input.sourceCommit,
+                sourceCommit: input.sourceCommit,
+                firstParentCommits: [input.sourceCommit],
+                changedFiles: [input.changedFile],
+                worktreePath: "/tmp/normalization-wt",
+              },
+              terminalPipelineWaitReview: {
+                runId: input.runId,
+                runUrl: input.runUrl,
+                namedSpecIds: [input.specId],
+              },
+            },
+            trace: {
+              current_attempt_id: input.attemptId,
+              last_worker_result: "done",
+              last_worker_summary: `reviewed run ${input.runId}`,
+            },
+          },
+          ...(input.existingPublicationTask
+            ? {
+                [input.existingPublicationTask.id]: {
+                  id: input.existingPublicationTask.id,
+                  parent_id: parentId,
+                  state: "backlog",
+                  status: "backlog",
+                  kind: "domain_leaf",
+                  priority: "P1",
+                  owner: "aks-explorer",
+                  children: [],
+                  goal: input.existingPublicationTask.goal,
+                  outputs: ["../aks-rp-e2e/origin/dev"],
+                  acceptance: input.existingPublicationTask.acceptance,
+                  conflict_scope: ["branch:origin/dev", `spec:${input.specId}`],
+                  context: input.existingPublicationTask.context,
+                },
+              }
+            : {}),
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 async function writeReviewTree(
   appDir: string,
   input: {
@@ -163,6 +329,7 @@ async function writeReviewTree(
     status?: string;
     context?: Record<string, unknown>;
     conflictScope?: string[];
+    outputs?: string[];
     extraTasks?: Record<string, any>;
   } = {},
 ) {
@@ -200,7 +367,7 @@ async function writeReviewTree(
             owner: "aks-explorer",
             children: [],
             goal: "Review me",
-            outputs: ["runs/test-results/review-task.json"],
+            outputs: input.outputs ?? ["runs/test-results/review-task.json"],
             acceptance: ["review accepted"],
             conflict_scope: input.conflictScope ?? ["scope.review-task"],
             context: input.context,
@@ -439,6 +606,108 @@ describe("project owner workflow", () => {
     );
   });
 
+  test("compacts blocked-frontier trigger and packet payloads in owner prompts", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const blockedTaskIds = Array.from(
+      { length: 6 },
+      (_, index) => `blocked-${index + 1}`,
+    );
+    const tasks = Object.fromEntries(
+      blockedTaskIds.map((taskId, index) => [
+        taskId,
+        {
+          id: taskId,
+          parent_id: "project",
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: `Blocked task ${index + 1}`,
+          outputs: [`evidence/archive/${taskId}.md`],
+          acceptance: ["done"],
+          blocker: {
+            condition: `Wait for exact returned proof ${index + 1} ${"x".repeat(220)}`,
+            next_check_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2099-01-01T00:00:00.000Z",
+          },
+        },
+      ]),
+    );
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: blockedTaskIds,
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            ...tasks,
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        agentResult: { status: "success", message: "EVENT_REVIEW: compacted" },
+        trigger: planningTrigger({
+          reason: "watchdog-blocked-frontier-review",
+          blockedTasks: blockedTaskIds.map((taskId, index) => ({
+            taskId,
+            owner: "external",
+            waitType: "blocker.resolved",
+            nextCheckAt: "2001-01-01T00:00:00.000Z",
+            fallbackAt: "2099-01-01T00:00:00.000Z",
+            blocker: {
+              condition: `Wait for exact returned proof ${index + 1} ${"y".repeat(220)}`,
+              category: "external-wait",
+              owner: "external",
+            },
+          })),
+          overdueOwnerActions: blockedTaskIds.map((taskId, index) => ({
+            taskId,
+            owner: "external",
+            watchAt: "2001-01-01T00:00:00.000Z",
+            recoveryRequired: `Recovery required ${index + 1} ${"z".repeat(220)}`,
+          })),
+          blockedCount: blockedTaskIds.length,
+          blockedOverdueCount: blockedTaskIds.length,
+          blockedMissingWatchCount: 0,
+          overdueOwnerActionCount: blockedTaskIds.length,
+        }),
+      }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    for (const prompt of prompts) {
+      expect(prompt).toContain('"blockedTasks_omitted_count": 1');
+      expect(prompt).toContain('"overdueOwnerActions_omitted_count": 1');
+      expect(prompt).toContain('"sample_blocked_leaf_ids_omitted_count": 3');
+      expect(prompt).toContain('"sample_blockers_omitted_count": 2');
+    }
+  });
+
   test("acknowledges an exact Condition fallback only after owner planning completes", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const taskId = "wait-condition-fallback";
@@ -592,6 +861,110 @@ describe("project owner workflow", () => {
       "Replayed already acknowledged Condition fallback event",
     );
     expect(prompts).toHaveLength(4);
+  });
+
+  test("acknowledges a settled exact Condition fallback without rerunning owner planning", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId = "wait-condition-settled";
+    const conditionId = "condition:pipeline:ado:172500003:terminal";
+    const recoveryKey = `condition-fallback:${conditionId}:1`;
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify({
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        tasks: {
+          project: {
+            id: "project",
+            state: "active",
+            children: [taskId],
+            goal: "project",
+            outputs: ["tasks/tree.json"],
+            acceptance: ["done"],
+          },
+          [taskId]: {
+            id: taskId,
+            revision: 1,
+            parent_id: "project",
+            state: "review",
+            children: [],
+            owner: "aks-explorer",
+            goal: "Review the exact run artifact.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["Inspect the terminal artifact."],
+            context: { controlPlaneVersion: 2, conditionId },
+            blocker: {
+              condition: "Wait for run 172500003.",
+              condition_id: conditionId,
+            },
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            version: "project-condition-v2",
+            id: conditionId,
+            causeKey: "pipeline:ado:172500003:terminal",
+            class: "external",
+            type: "pipeline.run.terminal",
+            status: "resolved",
+            backend: "ado",
+            runId: "172500003",
+            runUrl: "https://dev.azure.com/example/172500003",
+            subject: { kind: "task", id: taskId, revision: 1 },
+            owner: "ado",
+            observer: "project-execution-watchdog",
+            observationMethod: "exact run",
+            resumeCondition: "run is terminal",
+            nextCheckAt: "2026-07-16T06:00:00.000Z",
+            fallbackAt: "2026-07-16T06:10:00.000Z",
+            fallbackAction: "escalate",
+            createdAt: "2026-07-16T06:00:00.000Z",
+            updatedAt: "2026-07-16T06:12:00.000Z",
+            fallbackExecution: {
+              recoveryKey,
+              claimId: `${recoveryKey}:claim`,
+              status: "dispatched",
+              attempts: 1,
+              claimedAt: "2026-07-16T06:10:00.000Z",
+              leaseExpiresAt: "2026-07-16T06:15:00.000Z",
+              observation: { status: "failed" },
+              dispatchedAt: "2026-07-16T06:10:01.000Z",
+            },
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        extraTaskLines: ["conditionV2: exact-ado-revisioned"],
+        trigger: conditionFallbackTrigger({
+          reason: "condition-overdue-fallback",
+          conditionId,
+          recoveryKey,
+          taskId,
+          taskRevision: 1,
+        }),
+      }),
+    );
+
+    expect(result.message).toContain(
+      "Acknowledged settled Condition fallback event",
+    );
+    expect(prompts).toHaveLength(0);
+    const stored = await readTaskTreeJson(appDir);
+    expect(stored.conditions[conditionId].fallbackExecution).toMatchObject({
+      status: "acknowledged",
+      attempts: 1,
+      acknowledgedBy: "project-planner",
+    });
   });
 
   test("does not apply a reviewed event from an older task revision", async () => {
@@ -1078,6 +1451,335 @@ describe("project owner workflow", () => {
     }
   });
 
+  test("adds recovered stale blocked-task lineage to blocked-frontier planner prompts through live done replacements", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await mkdir(join(appDir, ".state", "tasks", "archive"), {
+      recursive: true,
+    });
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "active-task",
+                "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+                "domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b",
+                "hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710",
+                "wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703",
+                "fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review",
+                "domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Keep active work present so planning runs.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705":
+              {
+                id: "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "human",
+                children: [],
+                goal: "Hold the exact row37 owner-decision lineage.",
+                outputs: ["evidence/archive/row37.md"],
+                acceptance: ["done"],
+                blocker: {
+                  condition: "Waiting for the exact owner decision.",
+                  category: "external-wait",
+                  owner: "human",
+                  next_check_at: "2026-07-16T19:16:10.043Z",
+                  resume_at: "2026-07-16T19:16:10.043Z",
+                  fallback_at: "2026-07-17T19:16:10.043Z",
+                },
+              },
+            "domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b":
+              {
+                id: "domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "external",
+                children: [],
+                goal: "Current live network-cni same-run wait.",
+                outputs: ["evidence/archive/network-cni-live.md"],
+                acceptance: ["done"],
+                blocker: {
+                  condition: "Same-run wait remains live.",
+                  category: "external-wait",
+                  owner: "external",
+                  next_check_at: "2026-07-16T20:24:24Z",
+                  fallback_at: "2026-07-17T20:24:24Z",
+                },
+              },
+            "hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710":
+              {
+                id: "hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Current live network-cni Calico carrier.",
+                outputs: ["evidence/archive/network-cni-calico.md"],
+                acceptance: ["done"],
+                blocker: {
+                  condition: "Calico frontier still governs.",
+                  category: "external-wait",
+                  owner: "aks-explorer",
+                  next_check_at: "2026-07-16T20:24:24Z",
+                  fallback_at: "2026-07-17T20:24:24Z",
+                },
+              },
+            "wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703":
+              {
+                id: "wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Current live subnet-authorization carrier.",
+                outputs: ["evidence/archive/network-cni-subnet.md"],
+                acceptance: ["done"],
+                blocker: {
+                  condition: "Subnet authorization still governs.",
+                  category: "external-wait",
+                  owner: "aks-explorer",
+                  next_check_at: "2026-07-16T20:24:24Z",
+                  fallback_at: "2026-07-17T20:24:24Z",
+                },
+              },
+            "fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review":
+              {
+                id: "fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review",
+                parent_id: "project",
+                state: "review",
+                status: "review",
+                resolution: "replaced",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Intermediate live rerun review carrier.",
+                outputs: ["evidence/archive/net-integration-rerun.md"],
+                acceptance: ["done"],
+                trace: {
+                  review_summary:
+                    "Replaced the overdue blocked wait with active same-lineage review task domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716 so the next check happens as runnable work instead of another passive timer.",
+                },
+                context: {
+                  acceptance_note:
+                    "Replaced the overdue blocked wait with active same-lineage review task domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716 so the next check happens as runnable work instead of another passive timer.",
+                },
+              },
+            "domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716":
+              {
+                id: "domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716",
+                parent_id: "project",
+                state: "review",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Current live same-lineage terminal review handoff.",
+                outputs: [
+                  "evidence/archive/review-ado-run-172566609-net-integration-outbound-migration-natgw-to-lb-20260716.md",
+                ],
+                acceptance: ["done"],
+              },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(
+        appDir,
+        ".state",
+        "tasks",
+        "archive",
+        "done-leaves-20260716194741760.json",
+      ),
+      `${JSON.stringify(
+        {
+          version: 1,
+          tasks: [
+            {
+              id: "hold-compact-network-cni-package-partial-frontier-20260716r",
+              state: "done",
+              status: "done",
+              goal: "Old network-cni family holder.",
+              context: {
+                acceptance_note:
+                  "Replaced by hold-compact-network-cni-package-partial-frontier-20260716s so the compact family wait now points only at the current downstream carriers.",
+              },
+            },
+            {
+              id: "hold-compact-network-cni-package-partial-frontier-20260716s",
+              state: "done",
+              status: "done",
+              goal: "Intermediate network-cni family holder.",
+              trace: {
+                compact_holder_projection_replacement_task_ids: [
+                  "domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b",
+                  "hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710",
+                  "wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703",
+                ],
+                review_summary:
+                  "Closed stale compact holder projection because network-cni is now represented by domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b, hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710, wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703.",
+              },
+              result:
+                "Closed stale compact holder projection because network-cni is now represented by domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b, hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710, wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703.",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(
+        appDir,
+        ".state",
+        "tasks",
+        "archive",
+        "done-leaves-20260716195133998.json",
+      ),
+      `${JSON.stringify(
+        {
+          version: 1,
+          tasks: [
+            {
+              id: "fix-net-integration-outbound-migration-natgw-to-lb-run-172534702-escalate",
+              state: "done",
+              status: "done",
+              goal: "Old generic escalation holder.",
+              context: {
+                acceptance_note:
+                  "Replaced the generic reviewed-blocker placeholder with exact same-lineage wait task fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review.",
+              },
+              trace: {
+                review_summary:
+                  "Replaced the generic reviewed-blocker placeholder with exact same-lineage wait task fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review.",
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        prompts,
+        trigger: planningTrigger({
+          reason: "watchdog-blocked-frontier-review",
+          blockedTasks: [
+            {
+              taskId:
+                "hold-compact-network-cni-package-partial-frontier-20260716r",
+              nextCheckAt: "2026-07-16T19:47:55.745Z",
+              resumeAt: "2026-07-16T19:00:00Z",
+              fallbackAt: "2026-07-17T08:52:27.237Z",
+            },
+            {
+              taskId:
+                "fix-net-integration-outbound-migration-natgw-to-lb-run-172534702-escalate",
+              nextCheckAt: "2026-07-16T19:49:26.332Z",
+              fallbackAt: "2026-07-17T19:39:26.332Z",
+            },
+            {
+              taskId:
+                "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+              nextCheckAt: "2026-07-16T19:16:10.043Z",
+              resumeAt: "2026-07-16T19:16:10.043Z",
+              fallbackAt: "2026-07-17T19:16:10.043Z",
+            },
+          ],
+          blockedCount: 3,
+          blockedOverdueCount: 3,
+          blockedMissingWatchCount: 0,
+          overdueOwnerActions: [
+            {
+              taskId:
+                "hold-spec-row37-managed-aad-lifecycle-contradiction-owner-20260705",
+              owner: "human",
+              watchAt: "2026-07-16T19:16:10.043Z",
+              recoveryRequired:
+                "Next-check window passed without active/review recovery work.",
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(prompts).toHaveLength(2);
+    for (const prompt of prompts) {
+      expect(prompt).toContain(
+        "Recovered stale blocked-task trigger lineage for this wake",
+      );
+      expect(prompt).toContain(
+        '"triggerTaskId": "hold-compact-network-cni-package-partial-frontier-20260716r"',
+      );
+      expect(prompt).toContain(
+        '"domain/review-network-cni-azure-overlay-dual-stack-windows2022-clean-ado-run-172513552-blocked-20260716b"',
+      );
+      expect(prompt).toContain(
+        '"hold-spec-network-cni-vm-prerelease-calico-eno-row192-196-frontier-20260710"',
+      );
+      expect(prompt).toContain(
+        '"wait-serverless-virtual-nodes-shared-subnet-authorization-family-20260703"',
+      );
+      expect(prompt).toContain(
+        '"triggerTaskId": "fix-net-integration-outbound-migration-natgw-to-lb-run-172534702-escalate"',
+      );
+      expect(prompt).toContain('"replacementTaskIds": [');
+      expect(prompt).toContain(
+        '"domain/review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-terminal-20260716"',
+      );
+      expect(prompt).toContain(
+        '"replacementSummary": "Replaced the generic reviewed-blocker placeholder with exact same-lineage wait task fix-net-integration-outbound-migration-natgw-to-lb-run-172566609-review."',
+      );
+    }
+  });
+
   test("does not apply accepted reviews with missing durable evidence validation note", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir);
@@ -1162,6 +1864,112 @@ describe("project owner workflow", () => {
         attemptId: "attempt-2",
         result: "blocked",
         summary: "Replay a fresh review cycle for the exact current wait.",
+      }),
+    });
+  });
+
+  test("canonicalizes reviewed project.task.completed repair events from data.taskId when target is omitted", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "ops/reconcile-current-preflight-validation-active-carrier-20260716",
+      attemptId:
+        "a_ops_reconcile-current-preflight-validation-active-carrier-20260716_20260716172310",
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: [
+            "ops/reconcile-current-preflight-validation-active-carrier-20260716",
+          ],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result":
+          {
+            id: "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+            parent_id: "project",
+            state: "active",
+            status: "active",
+            kind: "domain_leaf",
+            priority: "P2",
+            owner: "app-ops",
+            children: [],
+            goal: "Retire the duplicate wait after review.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["done"],
+          },
+      },
+    });
+    const emitted: Array<Record<string, unknown>> = [];
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        emitted,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "ops/reconcile-current-preflight-validation-active-carrier-20260716",
+          attemptId:
+            "a_ops_reconcile-current-preflight-validation-active-carrier-20260716_20260716172310",
+          decision: "accept",
+          summary:
+            "Retire the duplicate preflight wait through the canonical completion event.",
+          events: [
+            {
+              type: "project.task.completed",
+              owner: "agent:app-ops",
+              data: {
+                project: "aks-rp-e2e",
+                taskId:
+                  "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+                task_id:
+                  "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+                attemptId: "attempt-wait-1",
+                attempt_id: "attempt-wait-1",
+                result: "done",
+                claim: "done",
+                summary:
+                  "Retire the duplicate preflight wait after same-lineage success was already accepted.",
+                review: {
+                  required: true,
+                  reason: "duplicate-terminal-pipeline-wait-reconciliation",
+                },
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.message).toContain(
+      "Applied accept review for ops/reconcile-current-preflight-validation-active-carrier-20260716",
+    );
+    expect(result.message).toContain("Emitted 1 reviewed event transition");
+    expect(
+      tree.tasks[
+        "ops/reconcile-current-preflight-validation-active-carrier-20260716"
+      ].state,
+    ).toBe("done");
+    expect(emitted).toContainEqual({
+      type: "project.task.completed",
+      owner: "agent:app-ops",
+      target: {
+        project: "aks-rp-e2e",
+        taskId:
+          "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+      },
+      data: expect.objectContaining({
+        project: "aks-rp-e2e",
+        taskId:
+          "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+        attemptId: "attempt-wait-1",
+        result: "done",
       }),
     });
   });
@@ -1543,6 +2351,18 @@ describe("project owner workflow", () => {
                   runUrl:
                     "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171529560",
                   specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
+                  baseRef: "origin/dev",
+                  baseCommit: "8422b22c0e121f4894f08c6c39e881783f367e6f",
+                  sourceVersion: "fe20302c4bc12708e539f011985a718db4bba5ef",
+                  sourceCommit: "fe20302c4bc12708e539f011985a718db4bba5ef",
+                  firstParentCommits: [
+                    "fe20302c4bc12708e539f011985a718db4bba5ef",
+                  ],
+                  changedFiles: [
+                    "features/kms/tests/kms-v2plus-enable-pmk-from-v2-public.test.ts",
+                  ],
+                  worktreePath:
+                    "/app/projects/aks-rp-e2e/workspace/kms-v2plus-enable-pmk-clean-wt",
                 },
               },
             },
@@ -1567,8 +2387,256 @@ describe("project owner workflow", () => {
       specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
       sourceTaskId:
         "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+      baseRef: "origin/dev",
+      baseCommit: "8422b22c0e121f4894f08c6c39e881783f367e6f",
+      sourceVersion: "fe20302c4bc12708e539f011985a718db4bba5ef",
+      sourceCommit: "fe20302c4bc12708e539f011985a718db4bba5ef",
+    });
+    expect(wait.context.acceptedQueuedPipelineRun).toMatchObject({
+      baseRef: "origin/dev",
+      baseCommit: "8422b22c0e121f4894f08c6c39e881783f367e6f",
+      sourceVersion: "fe20302c4bc12708e539f011985a718db4bba5ef",
+      sourceCommit: "fe20302c4bc12708e539f011985a718db4bba5ef",
+      firstParentCommits: ["fe20302c4bc12708e539f011985a718db4bba5ef"],
+      changedFiles: [
+        "features/kms/tests/kms-v2plus-enable-pmk-from-v2-public.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/kms-v2plus-enable-pmk-clean-wt",
     });
     expect(JSON.stringify(wait)).not.toContain("171501538");
+  });
+
+  const normalizationPlannerMixedFixtures = [
+    {
+      runId: "172532763",
+      taskId: "domain/repair-rp-preflight-validation-refined-contract-20260716",
+      conflictScope: ["spec:spec.rp-cluster-lifecycle.preflight-validation"],
+      summary: "Reviewer accepted a mixed preflight rerun.",
+      specId: "spec.rp-cluster-lifecycle.preflight-validation",
+      branch:
+        "refs/heads/aks-explorer/normalize-private-cluster-peconn-lifecycle-20260716",
+      sourceCommit: "01e6e17a7427305beb0dd7b65ce6902d93af0c63",
+      changedFiles: [
+        "features/net-integration/compact/staging.plan.json",
+        "features/net-integration/specs/net-integration-outbound-migration-natgw-to-lb.json",
+      ],
+    },
+    {
+      runId: "172519831",
+      taskId: "domain/repair-storage-csi-disk-pvc-isolated-lineage-20260716",
+      conflictScope: ["spec:spec.storage-csi.disk-pvc"],
+      summary: "Reviewer accepted a mixed Disk rerun.",
+      specId: "spec.storage-csi.disk-pvc",
+      branch: "refs/heads/aks-explorer/normalize-storage-csi-disk-pvc-20260716",
+      sourceCommit: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+      changedFiles: [
+        "features/planned-maintenance/tests/planned-maintenance-configuration-crud-lifecycle.test.ts",
+      ],
+    },
+    {
+      runId: "172519985",
+      taskId:
+        "domain/repair-planned-maintenance-configuration-crud-isolated-lineage-20260716",
+      conflictScope: [
+        "spec:spec.planned-maintenance.configuration-crud-lifecycle",
+      ],
+      summary: "Reviewer accepted a mixed Planned rerun.",
+      specId: "spec.planned-maintenance.configuration-crud-lifecycle",
+      branch:
+        "refs/heads/aks-explorer/normalize-planned-maintenance-configuration-20260716",
+      sourceCommit: "0f1e2d3c4b5a69788796a5b4c3d2e1f012345678",
+      changedFiles: [
+        "features/disable-ssh/tests/disable-ssh-vmss-cleanup.test.ts",
+      ],
+    },
+    {
+      runId: "172519192",
+      taskId:
+        "domain/repair-disable-ssh-vmss-cleanup-isolated-lineage-20260716",
+      conflictScope: ["spec:spec.disable-ssh.vmss-cleanup"],
+      summary: "Reviewer accepted a mixed Disable SSH rerun.",
+      specId: "spec.disable-ssh.vmss-cleanup",
+      branch:
+        "refs/heads/aks-explorer/normalize-disable-ssh-vmss-cleanup-20260716",
+      sourceCommit: "1234567890abcdef1234567890abcdef12345678",
+      changedFiles: ["features/storage-csi/tests/storage-csi-disk-pvc.test.ts"],
+    },
+  ];
+
+  test.each(normalizationPlannerMixedFixtures)(
+    "rejects accepted normalization queued runs without isolated worktree lineage: run $runId",
+    async ({
+      runId,
+      taskId,
+      conflictScope,
+      summary,
+      specId,
+      branch,
+      sourceCommit,
+      changedFiles,
+    }) => {
+      const { appDir, projectDir } = await makeWorkspace();
+      await writeReviewTree(appDir, {
+        taskId,
+        conflictScope,
+      });
+      const tree = await readTaskTreeJson(appDir);
+      tree.tasks.project.children = [
+        "domain/normalize-scenario-tests-repo-frontier-20260715",
+      ];
+      tree.tasks["domain/normalize-scenario-tests-repo-frontier-20260715"] = {
+        id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        parent_id: "project",
+        state: "active",
+        status: "active",
+        kind: "domain",
+        priority: "P1",
+        owner: "aks-explorer",
+        children: [taskId],
+        goal: "Normalize scenario tests repo frontier.",
+        outputs: ["evidence/archive/frontier.md"],
+        acceptance: ["frontier stays visible"],
+      };
+      tree.tasks[taskId].parent_id =
+        "domain/normalize-scenario-tests-repo-frontier-20260715";
+      await writeFile(
+        resolveTaskTreePath(appDir),
+        `${JSON.stringify(tree, null, 2)}\n`,
+        "utf8",
+      );
+
+      const result = await execute(
+        plannerContext({
+          appDir,
+          projectDir,
+          trigger: reviewedTrigger({
+            project: "aks-rp-e2e",
+            taskId,
+            attemptId: "attempt-1",
+            decision: "accept",
+            summary,
+            findings: [
+              "validation-note:normalization-isolated-worktree-lineage-present",
+            ],
+            completion: {
+              workflowResult: {
+                status: "partial",
+                details: {
+                  queuedRun: {
+                    backend: "ado",
+                    runId,
+                    runUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
+                    specIds: [specId],
+                    branch,
+                    sourceVersion: sourceCommit,
+                    sourceCommit,
+                    changedFiles,
+                  },
+                },
+              },
+            },
+          }),
+        }),
+      );
+
+      const updated = await readTaskTreeJson(appDir);
+      expect(result.message).toContain("Did not apply accept review");
+      expect(result.message).toContain(
+        `queued normalization run ${runId} lacks isolated-worktree lineage proof`,
+      );
+      expect(updated.tasks[taskId].state).toBe("review");
+    },
+  );
+
+  test("accepts virtualmachines normalization lineage when task outputs prove the virtualmachines-agentpool root", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "domain/normalize-direct-virtualmachines-spot-pool-eviction-20260717";
+    await writeReviewTree(appDir, {
+      taskId,
+      conflictScope: ["spec:spec.virtualmachines.spot-pool-eviction"],
+      outputs: [
+        "../aks-rp-e2e/features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction.test.ts",
+        "../aks-rp-e2e/features/virtualmachines-agentpool/specs/virtualmachines-spot-pool-eviction.json",
+      ],
+    });
+    const tree = await readTaskTreeJson(appDir);
+    tree.tasks.project.children = [
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+    ];
+    tree.tasks["domain/normalize-scenario-tests-repo-frontier-20260715"] = {
+      id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      parent_id: "project",
+      state: "active",
+      status: "active",
+      kind: "domain",
+      priority: "P1",
+      owner: "aks-explorer",
+      children: [taskId],
+      goal: "Normalize scenario tests repo frontier.",
+      outputs: ["evidence/archive/frontier.md"],
+      acceptance: ["frontier stays visible"],
+    };
+    tree.tasks[taskId].parent_id =
+      "domain/normalize-scenario-tests-repo-frontier-20260715";
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Reviewer accepted the clean virtualmachines isolated rerun.",
+          findings: [
+            "validation-note:normalization-isolated-worktree-lineage-present",
+          ],
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "172557989",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172557989",
+                  specIds: ["spec.virtualmachines.spot-pool-eviction"],
+                  branch:
+                    "refs/heads/aks-explorer/normalize-direct-virtualmachines-spot-pool-eviction-20260717",
+                  sourceVersion: "cbd263dec702348ae8352ab9c39ffce3c70a18a0",
+                  sourceCommit: "cbd263dec702348ae8352ab9c39ffce3c70a18a0",
+                  baseRef: "origin/dev",
+                  baseCommit: "ed9bcf570e84a874d6117bf20f68f759fe5cd476",
+                  firstParentCommits: [
+                    "cbd263dec702348ae8352ab9c39ffce3c70a18a0",
+                  ],
+                  changedFiles: [
+                    "features/virtualmachines-agentpool/specs/virtualmachines-spot-pool-eviction.json",
+                    "features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction.test.ts",
+                  ],
+                  worktreePath:
+                    "/app/projects/aks-rp-e2e/workspace/normalize-direct-virtualmachines-spot-pool-eviction-20260717-wt",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const updated = await readTaskTreeJson(appDir);
+    expect(result.message).toContain(`Applied accept review for ${taskId}`);
+    expect(result.message).toContain("created pipeline wait");
+    expect(updated.tasks[taskId]?.state).not.toBe("review");
   });
 
   test("accepted queued rerun retargets stale review-gated publication holders to the successor wait", async () => {
@@ -1710,6 +2778,888 @@ describe("project owner workflow", () => {
     });
   });
 
+  test("accepted queued rerun does not retarget unrelated review-gated publication holders", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "domain/execute-localdns-westus2-managed-cluster-capacity-recovery-rerun-20260716",
+      conflictScope: [
+        "feature:localdns",
+        "spec:spec.localdns.cluster-topology",
+        "spec:spec.localdns.os-arch-matrix",
+      ],
+      extraTasks: {
+        "domain/publish-localdns-review-visible-20260716": {
+          id: "domain/publish-localdns-review-visible-20260716",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Keep the current localdns repo slice unpublished until the live review lineage returns a publication-safe decision.",
+          outputs: [],
+          acceptance: [
+            "Consume the structured publication-safe decision produced by wait-old-localdns-run for spec.localdns.cluster-topology, spec.localdns.os-arch-matrix before publishing or superseding any repo slice.",
+          ],
+          conflict_scope: [
+            "feature:localdns",
+            "spec:spec.localdns.cluster-topology",
+            "spec:spec.localdns.os-arch-matrix",
+          ],
+          blocker: {
+            condition:
+              "The current publication holder truthfully waits on live review wait wait-old-localdns-run, which is tracking exact same-spec ADO run 172500000 for spec.localdns.cluster-topology, spec.localdns.os-arch-matrix.",
+            category: "external-wait",
+            owner: "aks-explorer",
+            blocked_at: "2026-07-16T20:40:00Z",
+            waiting_for: {
+              type: "blocker.resolved",
+              taskId: "domain/publish-localdns-review-visible-20260716",
+            },
+          },
+        },
+        "domain/publish-rp-regional-quota-review-visible-20260716": {
+          id: "domain/publish-rp-regional-quota-review-visible-20260716",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Keep the accepted rp-regional-quota repo slice unpublished while its own review lineage remains unresolved.",
+          outputs: [],
+          acceptance: [
+            "Consume the structured publication-safe decision produced by wait-rp-regional-quota-run for spec.rp-regional-quota.public-create-path before publishing or superseding any repo slice.",
+          ],
+          conflict_scope: [
+            "feature:rp-regional-quota",
+            "spec:spec.rp-regional-quota.public-create-path",
+          ],
+          blocker: {
+            condition:
+              "The current publication holder truthfully waits on live review wait wait-rp-regional-quota-run, which is tracking exact same-spec ADO run 172346097 for spec.rp-regional-quota.public-create-path.",
+            category: "external-wait",
+            owner: "aks-explorer",
+            blocked_at: "2026-07-16T01:11:53.765Z",
+            waiting_for: {
+              type: "blocker.resolved",
+              taskId:
+                "domain/publish-rp-regional-quota-review-visible-20260716",
+              reviewedTaskId:
+                "fix-rp-regional-quota-public-create-path-run-172346097",
+            },
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain/execute-localdns-westus2-managed-cluster-capacity-recovery-rerun-20260716",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Worker evidence satisfies the localdns rerun contract and queued the successor same-spec verification run.",
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "172578126",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172578126",
+                  specIds: [
+                    "spec.localdns.cluster-topology",
+                    "spec.localdns.os-arch-matrix",
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const localdnsHolder =
+      tree.tasks["domain/publish-localdns-review-visible-20260716"];
+    const quotaHolder =
+      tree.tasks["domain/publish-rp-regional-quota-review-visible-20260716"];
+
+    expect(result.status).toBe("done");
+    expect(localdnsHolder.acceptance[0]).toContain(
+      "wait-localdns-cluster-topology-ado-run-172578126-result",
+    );
+    expect(localdnsHolder.blocker.waiting_for).toMatchObject({
+      governingWaitTaskId:
+        "wait-localdns-cluster-topology-ado-run-172578126-result",
+      sourceTaskId:
+        "domain/execute-localdns-westus2-managed-cluster-capacity-recovery-rerun-20260716",
+      runId: "172578126",
+      specIds: [
+        "spec.localdns.cluster-topology",
+        "spec.localdns.os-arch-matrix",
+      ],
+    });
+    expect(quotaHolder.acceptance[0]).toContain("wait-rp-regional-quota-run");
+    expect(quotaHolder.acceptance[0]).not.toContain(
+      "wait-localdns-cluster-topology-ado-run-172578126-result",
+    );
+    expect(quotaHolder.blocker.waiting_for).not.toMatchObject({
+      governingWaitTaskId:
+        "wait-localdns-cluster-topology-ado-run-172578126-result",
+      sourceTaskId:
+        "domain/execute-localdns-westus2-managed-cluster-capacity-recovery-rerun-20260716",
+    });
+  });
+
+  const normalizationPublicationPassFixtures = [
+    {
+      runId: "172547976",
+      specId: "spec.network-cni.cilium-dataplane",
+      waitTaskId: "wait-network-cni-cilium-dataplane-ado-run-172547976-result",
+      sourceTaskId:
+        "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+      changedFile:
+        "features/network-cni/tests/network-cni-cilium-dataplane.test.ts",
+      preexistingPublicationId:
+        "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+    },
+    {
+      runId: "172546953",
+      specId: "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+      waitTaskId:
+        "wait-rp-cluster-lifecycle-new-vnet-vm-prerelease-ado-run-172546953-result",
+      sourceTaskId:
+        "domain/normalize-direct-rp-new-vnet-vm-prerelease-20260717",
+      changedFile:
+        "features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.test.ts",
+    },
+    {
+      runId: "172546869",
+      specId: "spec.rp-nodepool-lifecycle.multi-agentpool-runner",
+      waitTaskId:
+        "wait-rp-nodepool-lifecycle-multi-agentpool-runner-ado-run-172546869-result",
+      sourceTaskId:
+        "domain/normalize-direct-rp-multi-agentpool-runner-20260717",
+      changedFile:
+        "features/rp-nodepool-lifecycle/tests/rp-nodepool-lifecycle-multi-agentpool-runner.test.ts",
+    },
+    {
+      runId: "172549775",
+      specId: "spec.kms.v2plus-enable-pmk-from-v2-public",
+      waitTaskId:
+        "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-172549775-result",
+      sourceTaskId:
+        "domain/normalize-direct-kms-v2plus-enable-pmk-from-v2-public-20260717",
+      changedFile:
+        "features/kms/tests/kms-v2plus-enable-pmk-from-v2-public.test.ts",
+    },
+  ] as const;
+
+  test.each(normalizationPublicationPassFixtures)(
+    "accepted normalization live pass ensures one publication successor: run $runId",
+    async ({
+      runId,
+      specId,
+      waitTaskId,
+      sourceTaskId,
+      changedFile,
+      preexistingPublicationId,
+    }) => {
+      const { appDir, projectDir } = await makeWorkspace();
+      const { baseCommit } = await initOriginDevRepo(projectDir);
+      const sourceCommit = await createRepoCommit(
+        projectDir,
+        changedFile,
+        `// ${runId}\n`,
+        `fixture ${runId}`,
+      );
+      const runUrl = `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`;
+
+      await writeNormalizationTerminalReviewTree({
+        appDir,
+        waitTaskId,
+        sourceTaskId,
+        attemptId: `attempt-${runId}`,
+        specId,
+        runId,
+        runUrl,
+        sourceCommit,
+        baseCommit,
+        changedFile,
+        ...(preexistingPublicationId
+          ? {
+              existingPublicationTask: {
+                id: preexistingPublicationId,
+                goal:
+                  `Publish the already reviewed normalization for ${specId} from exact live-tested commit ${sourceCommit} / ` +
+                  `ADO run ${runId} onto current origin/dev. Use an isolated publication worktree. Preserve the tested commit in dev ancestry with a clean merge; do not cherry-pick or alter tested scenario content. If merge conflicts require content changes, stop publication and queue a replacement exact-commit live run instead. Run local admission/strict guards on the merged tree, push only as a fast-forward update, and prove origin/dev contains the tested commit.`,
+                acceptance: [
+                  `origin/dev contains ${sourceCommit} as an ancestor after a fast-forward push, and the strict inventory decreases without introducing any plain carrier.`,
+                ],
+                context: {
+                  normalizationPublication: {
+                    specId,
+                    runId,
+                    runUrl,
+                    sourceCommit,
+                    sourceTaskId,
+                    targetBranch: "origin/dev",
+                  },
+                },
+              },
+            }
+          : {}),
+      });
+      await writeSpecLoopState(appDir, {
+        [specId]: {
+          status: "pending",
+          attempts: 1,
+          taskId: waitTaskId,
+          lastRunId: runId,
+          lastRunUrl: runUrl,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-07-17T00:00:00.000Z",
+          failureClass: null,
+          diagnosis: null,
+        },
+      });
+
+      const result = await execute(
+        plannerContext({
+          appDir,
+          projectDir,
+          trigger: reviewedTrigger({
+            project: "aks-rp-e2e",
+            taskId: waitTaskId,
+            attemptId: `attempt-${runId}`,
+            decision: "accept",
+            summary: `Same-run live pass for ${specId}.`,
+            completion: {
+              workflowResult: {
+                resultVersion: "workflow-result-v1",
+                workflow: "spec-result-review",
+                status: "done",
+                subject: { kind: "task", id: waitTaskId },
+                details: {
+                  runId,
+                  runUrl,
+                  resultPath: `runs/test-results/${runId}.json`,
+                  specResults: [
+                    {
+                      specId,
+                      runId,
+                      resultPath: `runs/test-results/${runId}.json`,
+                      specStatus: "pass",
+                      reason: "live pass",
+                      artifactRefs: [`runs/test-results/${runId}.json`],
+                      liveVerified: true,
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        }),
+      );
+
+      const tree = await readTaskTreeJson(appDir);
+      const publicationTasks = Object.values(tree.tasks).filter(
+        (task: any) =>
+          Array.isArray(task.conflict_scope) &&
+          task.conflict_scope.includes("branch:origin/dev") &&
+          task.conflict_scope.includes(`spec:${specId}`),
+      ) as any[];
+      expect(result.status).toBe("done");
+      expect(tree.tasks[waitTaskId].state).toBe("done");
+      expect(publicationTasks).toHaveLength(1);
+      expect(publicationTasks[0]).toMatchObject({
+        owner: "aks-explorer",
+        parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      });
+      expect(publicationTasks[0].goal).toContain(sourceCommit);
+      expect(publicationTasks[0].goal).toContain(`ADO run ${runId}`);
+      expect(publicationTasks[0].goal).toContain(
+        "If merge conflicts require content changes",
+      );
+      expect(publicationTasks[0].acceptance).toContain(
+        `origin/dev contains ${sourceCommit} as an ancestor after a fast-forward push, and the strict inventory decreases without introducing any plain carrier.`,
+      );
+      expect(
+        publicationTasks[0].context.normalizationPublication,
+      ).toMatchObject({
+        specId,
+        runId,
+        sourceCommit,
+        sourceTaskId,
+        targetBranch: "origin/dev",
+      });
+      if (preexistingPublicationId) {
+        expect(publicationTasks[0].id).toBe(preexistingPublicationId);
+      }
+
+      const replay = await execute(
+        plannerContext({
+          appDir,
+          projectDir,
+          trigger: reviewedTrigger({
+            project: "aks-rp-e2e",
+            taskId: waitTaskId,
+            attemptId: `attempt-${runId}`,
+            decision: "accept",
+            summary: `Same-run live pass for ${specId}.`,
+            completion: {
+              workflowResult: {
+                resultVersion: "workflow-result-v1",
+                workflow: "spec-result-review",
+                status: "done",
+                subject: { kind: "task", id: waitTaskId },
+                details: {
+                  runId,
+                  runUrl,
+                  resultPath: `runs/test-results/${runId}.json`,
+                  specResults: [
+                    {
+                      specId,
+                      runId,
+                      resultPath: `runs/test-results/${runId}.json`,
+                      specStatus: "pass",
+                      reason: "live pass",
+                      artifactRefs: [`runs/test-results/${runId}.json`],
+                      liveVerified: true,
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        }),
+      );
+      const replayTree = await readTaskTreeJson(appDir);
+      const replayPublicationTasks = Object.values(replayTree.tasks).filter(
+        (task: any) =>
+          Array.isArray(task.conflict_scope) &&
+          task.conflict_scope.includes("branch:origin/dev") &&
+          task.conflict_scope.includes(`spec:${specId}`),
+      ) as any[];
+      expect(replay.status).toBe("done");
+      expect(replayPublicationTasks).toHaveLength(1);
+    },
+  );
+
+  test("accepted normalization live pass keeps downstream publication leaves gated on the unresolved first publication step", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const { baseCommit } = await initOriginDevRepo(projectDir);
+    const chain = [
+      {
+        runId: "172547976",
+        specId: "spec.network-cni.cilium-dataplane",
+        waitTaskId:
+          "wait-network-cni-cilium-dataplane-ado-run-172547976-result",
+        sourceTaskId:
+          "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+        changedFile:
+          "features/network-cni/tests/network-cni-cilium-dataplane.test.ts",
+      },
+      {
+        runId: "172546953",
+        specId: "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+        waitTaskId:
+          "wait-rp-cluster-lifecycle-new-vnet-vm-prerelease-ado-run-172546953-result",
+        sourceTaskId:
+          "domain/normalize-direct-rp-new-vnet-vm-prerelease-20260717",
+        changedFile:
+          "features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease.test.ts",
+      },
+      {
+        runId: "172546869",
+        specId: "spec.rp-nodepool-lifecycle.multi-agentpool-runner",
+        waitTaskId:
+          "wait-rp-nodepool-lifecycle-multi-agentpool-runner-ado-run-172546869-result",
+        sourceTaskId:
+          "domain/normalize-direct-rp-multi-agentpool-runner-20260717",
+        changedFile:
+          "features/rp-nodepool-lifecycle/tests/rp-nodepool-lifecycle-multi-agentpool-runner.test.ts",
+      },
+      {
+        runId: "172549775",
+        specId: "spec.kms.v2plus-enable-pmk-from-v2-public",
+        waitTaskId:
+          "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-172549775-result",
+        sourceTaskId:
+          "domain/normalize-direct-kms-v2plus-enable-pmk-from-v2-public-20260717",
+        changedFile:
+          "features/kms/tests/kms-v2plus-enable-pmk-from-v2-public.test.ts",
+      },
+    ] as const;
+
+    const commits = new Map<string, string>();
+    for (const entry of chain) {
+      commits.set(
+        entry.runId,
+        await createRepoCommit(
+          projectDir,
+          entry.changedFile,
+          `// ${entry.runId}\n`,
+          `fixture ${entry.runId}`,
+        ),
+      );
+    }
+
+    const tasks: Record<string, any> = {
+      project: {
+        id: "project",
+        state: "active",
+        status: "active",
+        children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+        goal: "project",
+        outputs: ["tasks/tree.json"],
+        acceptance: ["done"],
+      },
+      "domain/normalize-scenario-tests-repo-frontier-20260715": {
+        id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        parent_id: "project",
+        state: "active",
+        status: "active",
+        kind: "domain_root",
+        priority: "P1",
+        owner: "aks-explorer",
+        children: chain.map((entry) => entry.waitTaskId),
+        goal: "Normalize scenario tests repo frontier.",
+        outputs: ["evidence/archive/frontier.md"],
+        acceptance: ["frontier stays visible"],
+      },
+    };
+    for (const entry of chain) {
+      tasks[entry.waitTaskId] = {
+        id: entry.waitTaskId,
+        parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        state: "review",
+        status: "review",
+        kind: "domain_leaf",
+        priority: "P1",
+        owner: "aks-explorer",
+        children: [],
+        goal: `Review terminal Azure DevOps run ${entry.runId} for ${entry.specId}.`,
+        outputs: ["runs/test-results/result.json"],
+        acceptance: ["Return the exact terminal same-run verdict."],
+        conflict_scope: [`spec:${entry.specId}`, `ado-run:${entry.runId}`],
+        session_id: `s_${entry.waitTaskId}`,
+        context: {
+          acceptedQueuedPipelineRun: {
+            sourceTaskId: entry.sourceTaskId,
+            sourceAttemptId: `attempt-${entry.runId}`,
+            runId: entry.runId,
+            runUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${entry.runId}`,
+            specIds: [entry.specId],
+            baseRef: "origin/dev",
+            baseCommit,
+            sourceVersion: commits.get(entry.runId),
+            sourceCommit: commits.get(entry.runId),
+            firstParentCommits: [commits.get(entry.runId)],
+            changedFiles: [entry.changedFile],
+            worktreePath: "/tmp/normalization-wt",
+          },
+          terminalPipelineWaitReview: {
+            runId: entry.runId,
+            runUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${entry.runId}`,
+            namedSpecIds: [entry.specId],
+          },
+        },
+        trace: {
+          current_attempt_id: `attempt-${entry.runId}`,
+          last_worker_result: "done",
+          last_worker_summary: `reviewed run ${entry.runId}`,
+        },
+      };
+    }
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          tasks,
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeSpecLoopState(
+      appDir,
+      Object.fromEntries(
+        chain.map((entry) => [
+          entry.specId,
+          {
+            status: "pending",
+            attempts: 1,
+            taskId: entry.waitTaskId,
+            lastRunId: entry.runId,
+            lastRunUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${entry.runId}`,
+            lastResultPath: null,
+            lastPrUrl: null,
+            updatedAt: "2026-07-17T00:00:00.000Z",
+            failureClass: null,
+            diagnosis: null,
+          },
+        ]),
+      ),
+    );
+
+    for (const entry of chain) {
+      const runUrl = `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${entry.runId}`;
+      const result = await execute(
+        plannerContext({
+          appDir,
+          projectDir,
+          trigger: reviewedTrigger({
+            project: "aks-rp-e2e",
+            taskId: entry.waitTaskId,
+            attemptId: `attempt-${entry.runId}`,
+            decision: "accept",
+            summary: `Same-run live pass for ${entry.specId}.`,
+            completion: {
+              workflowResult: {
+                resultVersion: "workflow-result-v1",
+                workflow: "spec-result-review",
+                status: "done",
+                subject: { kind: "task", id: entry.waitTaskId },
+                details: {
+                  runId: entry.runId,
+                  runUrl,
+                  resultPath: `runs/test-results/${entry.runId}.json`,
+                  specResults: [
+                    {
+                      specId: entry.specId,
+                      runId: entry.runId,
+                      resultPath: `runs/test-results/${entry.runId}.json`,
+                      specStatus: "pass",
+                      reason: "live pass",
+                      artifactRefs: [`runs/test-results/${entry.runId}.json`],
+                      liveVerified: true,
+                      sourceCommit: commits.get(entry.runId),
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        }),
+      );
+      expect(result.status).toBe("done");
+    }
+
+    const tree = await readTaskTreeJson(appDir);
+    const publicationIds = [
+      "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+      "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717",
+      "domain/publish-verified-rp-nodepool-lifecycle-multi-agentpool-runner-normalization-20260717",
+      "domain/publish-verified-kms-v2plus-enable-pmk-from-v2-public-normalization-20260717",
+    ];
+    for (const publicationId of publicationIds) {
+      expect(tree.tasks[publicationId]).toBeTruthy();
+    }
+    expect(tree.tasks[publicationIds[1]].depends_on).toEqual([
+      publicationIds[0],
+    ]);
+    expect(tree.tasks[publicationIds[2]].depends_on).toEqual([
+      publicationIds[0],
+      publicationIds[1],
+    ]);
+    expect(tree.tasks[publicationIds[3]].depends_on).toEqual([
+      publicationIds[0],
+      publicationIds[1],
+      publicationIds[2],
+    ]);
+    const runnable = listRunnableBacklogTaskIds(config(appDir, projectDir), 20);
+    expect(runnable).not.toContain(publicationIds[1]);
+    expect(runnable).not.toContain(publicationIds[2]);
+    expect(runnable).not.toContain(publicationIds[3]);
+  });
+
+  test("reviewed publication follow-up retargets downstream publication leaves to the live successor", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      project_lifecycle: "active",
+      root_task_id: "project",
+      updated_at: new Date().toISOString(),
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          status: "active",
+          children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "domain/normalize-scenario-tests-repo-frontier-20260715": {
+          id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          kind: "domain_root",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [
+            "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+            "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717",
+          ],
+          goal: "Normalize scenario tests repo frontier.",
+          outputs: ["evidence/archive/frontier.md"],
+          acceptance: ["frontier stays visible"],
+        },
+        "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717":
+          {
+            id: "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+            parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+            state: "review",
+            status: "review",
+            kind: "domain_leaf",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Publish the already reviewed normalization for spec.network-cni.cilium-dataplane from exact live-tested commit f4d2ba463b8d14e92ba770876bcc6cb05e81119a / ADO run 172547976 onto current origin/dev. Use an isolated publication worktree.",
+            outputs: ["../aks-rp-e2e/origin/dev"],
+            acceptance: [
+              "origin/dev contains f4d2ba463b8d14e92ba770876bcc6cb05e81119a as an ancestor after a fast-forward push, and the strict inventory decreases without introducing any plain carrier.",
+            ],
+            conflict_scope: [
+              "branch:origin/dev",
+              "spec:spec.network-cni.cilium-dataplane",
+            ],
+            context: {
+              normalizationPublication: {
+                specId: "spec.network-cni.cilium-dataplane",
+                runId: "172547976",
+                sourceCommit: "f4d2ba463b8d14e92ba770876bcc6cb05e81119a",
+                targetBranch: "origin/dev",
+              },
+            },
+            trace: {
+              created_at: "2026-07-17T04:56:43.304Z",
+              current_attempt_id: "attempt-cilium-publish",
+            },
+          },
+        "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717":
+          {
+            id: "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717",
+            parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+            state: "backlog",
+            status: "backlog",
+            kind: "domain_leaf",
+            priority: "P1",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Publish the already reviewed normalization for spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease from exact live-tested commit 64fc8a3f57f3f6b9d80be3290dbeb040183b9d5f / ADO run 172546953 onto current origin/dev. Use an isolated publication worktree.",
+            outputs: ["../aks-rp-e2e/origin/dev"],
+            acceptance: [
+              "origin/dev contains 64fc8a3f57f3f6b9d80be3290dbeb040183b9d5f as an ancestor after a fast-forward push, and the strict inventory decreases without introducing any plain carrier.",
+            ],
+            conflict_scope: [
+              "branch:origin/dev",
+              "spec:spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+            ],
+            depends_on: [
+              "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+            ],
+            context: {
+              normalizationPublication: {
+                specId:
+                  "spec.rp-cluster-lifecycle.new-vnet-lifecycle-vm-prerelease",
+                runId: "172546953",
+                sourceCommit: "64fc8a3f57f3f6b9d80be3290dbeb040183b9d5f",
+                targetBranch: "origin/dev",
+              },
+            },
+            trace: {
+              created_at: "2026-07-17T04:56:43.601Z",
+            },
+          },
+      },
+    } as any;
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain/publish-verified-network-cni-cilium-dataplane-normalization-20260717",
+          attemptId: "attempt-cilium-publish",
+          decision: "followup",
+          summary:
+            "Publication must stay blocked behind a concrete runtime-data-policy clearance successor.",
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            idBase:
+              "domain/clear-runtime-data-policy-blocker-for-cilium-dataplane-publication-20260717",
+            parentId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+            owner: "aks-explorer",
+            goal: "Clear the runtime-data-policy blocker, then retry cilium publication from fresh origin/dev.",
+            outputs: ["../aks-rp-e2e/origin/dev"],
+            acceptance: [
+              "The blocker is cleared or exactly adjudicated before retrying publication.",
+            ],
+            conflictScopes: [
+              "branch:origin/dev",
+              "spec:spec.network-cni.cilium-dataplane",
+            ],
+          },
+        }),
+      }),
+    );
+
+    const updated = await readTaskTreeJson(appDir);
+    const successor =
+      updated.tasks[
+        "domain/clear-runtime-data-policy-blocker-for-cilium-dataplane-publication-20260717"
+      ];
+    const downstream =
+      updated.tasks[
+        "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717"
+      ];
+    expect(result.status).toBe("done");
+    expect(successor).toBeTruthy();
+    expect(downstream.depends_on).toEqual([
+      "domain/clear-runtime-data-policy-blocker-for-cilium-dataplane-publication-20260717",
+    ]);
+    const runnable = listRunnableBacklogTaskIds(config(appDir, projectDir), 20);
+    expect(runnable).not.toContain(
+      "domain/publish-verified-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-normalization-20260717",
+    );
+  });
+
+  test("accepted failed normalization live result creates fix-forward and never publication", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const { baseCommit } = await initOriginDevRepo(projectDir);
+    const runId = "172546766";
+    const specId = "spec.windows.node-pool-create-virtualmachines";
+    const sourceCommit = await createRepoCommit(
+      projectDir,
+      "features/windows/tests/windows-node-pool-create-virtualmachines.test.ts",
+      "// windows runtime failure\n",
+      "fixture windows fail",
+    );
+    const runUrl =
+      "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172546766";
+
+    await writeNormalizationTerminalReviewTree({
+      appDir,
+      waitTaskId:
+        "wait-windows-node-pool-create-virtualmachines-ado-run-172546766-result",
+      sourceTaskId:
+        "domain/normalize-direct-windows-node-pool-create-virtualmachines-20260717",
+      attemptId: "attempt-172546766",
+      specId,
+      runId,
+      runUrl,
+      sourceCommit,
+      baseCommit,
+      changedFile:
+        "features/windows/tests/windows-node-pool-create-virtualmachines.test.ts",
+    });
+    await writeSpecLoopState(appDir, {
+      [specId]: {
+        status: "pending",
+        attempts: 1,
+        taskId:
+          "wait-windows-node-pool-create-virtualmachines-ado-run-172546766-result",
+        lastRunId: runId,
+        lastRunUrl: runUrl,
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-17T00:00:00.000Z",
+        failureClass: null,
+        diagnosis: null,
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "wait-windows-node-pool-create-virtualmachines-ado-run-172546766-result",
+          attemptId: "attempt-172546766",
+          decision: "accept",
+          summary: "Terminal Windows direct-runtime failure returned.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: {
+                kind: "task",
+                id: "wait-windows-node-pool-create-virtualmachines-ado-run-172546766-result",
+              },
+              details: {
+                runId,
+                runUrl,
+                resultPath: `runs/test-results/${runId}.json`,
+                specResults: [
+                  {
+                    specId,
+                    runId,
+                    resultPath: `runs/test-results/${runId}.json`,
+                    specStatus: "error",
+                    reason: "Bun is not defined",
+                    artifactRefs: [`runs/test-results/${runId}.json`],
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const publicationTasks = Object.values(tree.tasks).filter(
+      (task: any) =>
+        Array.isArray(task.conflict_scope) &&
+        task.conflict_scope.includes("branch:origin/dev") &&
+        task.conflict_scope.includes(`spec:${specId}`),
+    );
+    const fixForwardTask = Object.values(tree.tasks).find(
+      (task: any) =>
+        typeof task.id === "string" &&
+        task.id.startsWith(
+          "fix-windows-node-pool-create-virtualmachines-run-172546766",
+        ),
+    ) as any;
+
+    expect(result.status).toBe("done");
+    expect(publicationTasks).toHaveLength(0);
+    expect(fixForwardTask).toBeTruthy();
+    expect(fixForwardTask.goal).toContain(specId);
+  });
+
   test("accepted task review does not dedupe queued run from existing prose", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -1807,6 +3757,109 @@ describe("project owner workflow", () => {
     expect(result.message).toContain(
       "Applied accept review for repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun.",
     );
+    expect(
+      tree.tasks[
+        "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result"
+      ],
+    ).toBeUndefined();
+  });
+
+  test("accepted task review ignores placeholder queued Azure DevOps lineage", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "ops/repair-fix-forward-structured-result-contract-20260717",
+      owner: "app-ops",
+      conflictScope: ["app:queued-pipeline-wait-placeholder"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId: "ops/repair-fix-forward-structured-result-contract-20260717",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted review keeps the stale placeholder completion for audit only.",
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "Azure DevOps run id",
+                  runUrl: "Azure DevOps run URL, if known",
+                  specIds: ["exact spec ids covered by this run"],
+                  sourceVersion: "commit sha when known",
+                  metadataPath: "local dispatch metadata path when available",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Applied accept review for ops/repair-fix-forward-structured-result-contract-20260717.",
+    );
+    expect(result.message).not.toContain("created pipeline wait");
+    expect(
+      tree.tasks[
+        "wait-exact-spec-ids-covered-by-this-run-ado-run-azure-devops-run-id-result"
+      ],
+    ).toBeUndefined();
+  });
+
+  test("accepted task review rejects queued Azure DevOps placeholders even when run id/spec ids are concrete", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId:
+        "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+      conflictScope: ["spec:kms.v2plus-enable-pmk-from-v2-public"],
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun",
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Accepted review keeps a stale templated queued-run envelope that must not create a wait.",
+          completion: {
+            workflowResult: {
+              status: "partial",
+              details: {
+                queuedRun: {
+                  backend: "ado",
+                  runId: "171529560",
+                  runUrl: "Azure DevOps run URL, if known",
+                  specIds: ["spec.kms.v2plus-enable-pmk-from-v2-public"],
+                  sourceVersion: "commit sha when known",
+                  metadataPath: "local dispatch metadata path when available",
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Applied accept review for repair-spec-kms-v2plus-enable-pmk-from-v2-public-https-keyid-and-rerun.",
+    );
+    expect(result.message).not.toContain("created pipeline wait");
     expect(
       tree.tasks[
         "wait-kms-v2plus-enable-pmk-from-v2-public-ado-run-171529560-result"
@@ -2008,6 +4061,94 @@ describe("project owner workflow", () => {
       status: "fail",
       runId: "171349474",
       reason: "0/3 claims passed.",
+    });
+  });
+
+  test("uses details.specId when a spec-result review has a task subject", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "domain/repoll-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069-terminal-artifact-review";
+    const specId = "spec.net-integration.nsg-route-table-in-use-vm-prerelease";
+    await writeReviewTree(appDir, {
+      taskId,
+      conflictScope: ["ado-run:172659069", `spec:${specId}`],
+    });
+    await writeSpecLoopState(appDir, {
+      [specId]: {
+        status: "pending",
+        attempts: 1,
+        taskId,
+        lastRunId: "172659069",
+        lastRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172659069",
+        lastResultPath: null,
+        lastPrUrl: null,
+        updatedAt: "2026-07-17T10:22:24.658Z",
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        extraTaskLines: [
+          "revisionV2: fix-forward-first-nonpass-run",
+          "revisionV2RunId: 172659069",
+        ],
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary: "The task-scoped artifact review accepted the exact fail.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: { kind: "task", id: taskId },
+              details: {
+                specId,
+                runId: "172659069",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172659069",
+                resultPath:
+                  "runs/test-results/test-172659069/tests/net-integration-nsg-route-table-in-use-vm-prerelease.json",
+                specStatus: "fail",
+                reason: "Cluster create failed: HTTP 400",
+                liveVerified: true,
+                liveClusterObserved: true,
+                specResults: [],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const state = JSON.parse(
+      await readFile(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
+    );
+    expect(result.message).toContain(
+      `recorded structured verifier result for ${specId}`,
+    );
+    expect(state.specs[specId].review.acceptedRunId).toBe("172659069");
+    const fixTask =
+      tree.tasks[
+        "fix-net-integration-nsg-route-table-in-use-vm-prerelease-run-172659069"
+      ];
+    expect(fixTask).toMatchObject({
+      revision: 1,
+      context: {
+        controlPlaneVersion: 2,
+        revisionCanaryV2: {
+          mode: "fix-forward-first-nonpass-run",
+          specId,
+          sourceRunId: "172659069",
+          initialRevision: 1,
+        },
+      },
     });
   });
 
@@ -3427,6 +5568,96 @@ describe("project owner workflow", () => {
     ).toHaveLength(1);
   });
 
+  test("keeps V2 task-tree followups blocked when their goal starts with a future at-or-after window", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "domain/review-future-window-followup",
+      revision: 2,
+      conflictScope: ["ado-run:172566609"],
+      extraTasks: {
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: [],
+        },
+      },
+    });
+    const before = await readTaskTreeJson(appDir);
+    before.tasks.project.children.push("lane");
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(before, null, 2)}\n`,
+      "utf8",
+    );
+
+    const trigger = reviewedTrigger({
+      taskId: "domain/review-future-window-followup",
+      taskRevision: 2,
+      attemptId: "attempt-1",
+      decision: "followup",
+      summary:
+        "Carry the exact ADO re-poll follow-up, but not before its 22:00Z window.",
+      reviewAction: {
+        actionKind: "task-tree-followup",
+        idBase:
+          "domain/wait-review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-fallback-poll-20260716",
+        parentId: "lane",
+        owner: "aks-explorer",
+        goal: "At or after 2099-06-26T22:00:00Z, re-poll Azure DevOps run 172566609 and classify only the same-lineage result.",
+        outputs: [
+          "evidence/archive/review-ado-run-172566609-net-integration-outbound-migration-natgw-to-lb-fallback-poll-20260716.md",
+        ],
+        acceptance: [
+          "Checks the exact ADO run only at or after 2099-06-26T22:00:00Z.",
+        ],
+        conflictScopes: ["ado-run:172566609"],
+      },
+    });
+    const first = await execute(
+      plannerContext({ appDir, projectDir, trigger }),
+    );
+
+    expect(first.message).toContain("Applied V2 task-tree follow-up review");
+    let updated = await readTaskTreeJson(appDir);
+    expect(updated.tasks["domain/review-future-window-followup"].state).toBe(
+      "done",
+    );
+    expect(
+      updated.tasks[
+        "domain/wait-review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-fallback-poll-20260716"
+      ],
+    ).toMatchObject({
+      state: "blocked",
+      owner: "aks-explorer",
+      blocker: {
+        owner: "aks-explorer",
+        resume_at: "2099-06-26T22:00:00Z",
+        next_check_at: "2099-06-26T22:00:00Z",
+      },
+    });
+
+    const plannerPass = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+    expect(plannerPass.status).toBe("done");
+    updated = await readTaskTreeJson(appDir);
+    expect(
+      updated.tasks[
+        "domain/wait-review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-fallback-poll-20260716"
+      ].state,
+    ).toBe("blocked");
+    expect(
+      updated.tasks[
+        "domain/wait-review-net-integration-outbound-migration-natgw-to-lb-ado-run-172566609-fallback-poll-20260716"
+      ].trace?.assigned_at,
+    ).toBeUndefined();
+  });
+
   test("turns create-domain-followup reviews into direct domain successor tasks", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -3718,6 +5949,103 @@ describe("project owner workflow", () => {
     expect(task.trace.requeued_by).toBeUndefined();
   });
 
+  test("preserves blocked task-tree-followup holders that were restored into exact reviewed-exception waits", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "hold-spec-windows-runner-pipeline-harness-virtualmachines-pipeline-only-reviewed-exception-20260717";
+    await writeReviewTree(appDir, {
+      taskId,
+      status: "blocked",
+      owner: "aks-explorer",
+      context: {
+        reviewedTask: {
+          taskId:
+            "domain/reclassify-windows-runner-pipeline-harness-mounted-source-boundary-20260717",
+          attemptId:
+            "a_domain_reclassify-windows-runner-pipeline-harness-mounted-source-boundary-20260717_20260717010821",
+          decision: "followup",
+          summary:
+            "The worker satisfied the domain evidence requirements and produced the exact replacement holder proposal.",
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            idBase: taskId,
+            parentId: "aks-spec-verification-loop",
+            owner: "aks-explorer",
+            goal: "Create the exact current blocked holder that preserves spec.windows.runner-pipeline-harness-virtualmachines as a source-check-only / pipeline-only reviewed-exception boundary, replacing archived wait-windows-nonlive-carriers-authoring-or-source-change-20260702 as the runner-harness residual lineage and keeping unchanged live reruns blocked until mounted source or exact carrier authoring materially changes.",
+          },
+          suggestedFollowups: [
+            "Create the exact current blocked holder that preserves spec.windows.runner-pipeline-harness-virtualmachines as a source-check-only / pipeline-only reviewed-exception boundary, replacing archived wait-windows-nonlive-carriers-authoring-or-source-change-20260702 as the runner-harness residual lineage and keeping unchanged live reruns blocked until mounted source or exact carrier authoring materially changes.",
+          ],
+        },
+        acceptance_note:
+          "App repair restored this task id as the live blocked reviewed-exception holder.",
+      },
+      conflictScope: [
+        "spec:spec.windows.runner-pipeline-harness-virtualmachines",
+      ],
+    });
+    const treeBefore = await readTaskTreeJson(appDir);
+    treeBefore.tasks[taskId].goal =
+      "Create the exact current blocked holder that preserves spec.windows.runner-pipeline-harness-virtualmachines as a source-check-only / pipeline-only reviewed-exception boundary, replacing archived wait-windows-nonlive-carriers-authoring-or-source-change-20260702 as the runner-harness residual lineage and keeping unchanged live reruns blocked until mounted source or exact carrier authoring materially changes.";
+    treeBefore.tasks[taskId].blocker = {
+      condition:
+        "Mounted and checked-in evidence still preserves spec.windows.runner-pipeline-harness-virtualmachines as an intentionally nonlive reviewed-exception carrier.",
+      category: "blocked-wait",
+      owner: "aks-explorer",
+      blocked_at: "2026-07-17T01:56:53.953Z",
+      waiting_for: {
+        type: "blocker.resolved",
+        taskId,
+      },
+      observed_by: {
+        workflow: "project-planner",
+        schedule: "blocked-frontier-app-ops-review",
+        trigger: "project.owner.requested",
+      },
+      observation_method:
+        "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+      next_check_at: "2026-07-17T18:30:00.000Z",
+      resume_condition:
+        "Resume only when authoritative mounted source or exact checked-in carrier authoring materially changes this boundary.",
+      fallback_at: "2026-07-18T00:30:00.000Z",
+      fallback_action:
+        "If the boundary is still unchanged at fallback, keep or refresh this exact reviewed-exception holder from the latest same-lineage evidence and do not reopen an unchanged live rerun.",
+      resume_at: "2026-07-17T18:30:00.000Z",
+    };
+    treeBefore.tasks[taskId].trace = {
+      current_attempt_id:
+        "a_hold-spec-windows-runner-pipeline-harness-virtualmachines-pipeline-only-reviewed-exception-20260717_20260717011427",
+      blocked_wait_restored_at: "2026-07-17T01:56:53.953Z",
+      blocked_wait_restore_summary:
+        "Restored the reviewed-exception holder in place after the archived wait was replaced.",
+    };
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(treeBefore, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task = tree.tasks[taskId];
+    expect(result.status).toBe("done");
+    expect(task.state).toBe("blocked");
+    expect(task.goal).toContain("exact current blocked holder");
+    expect(task.blocker?.category).toBe("blocked-wait");
+    expect(task.blocker?.waiting_for?.type).toBe("blocker.resolved");
+    expect(task.trace.blocked_wait_restored_at).toBe(
+      "2026-07-17T01:56:53.953Z",
+    );
+    expect(task.trace.requeued_by).toBeUndefined();
+  });
+
   test("requeues existing reviewed-blocked successors when the blocker is project-side publication work", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {
@@ -3762,6 +6090,93 @@ describe("project owner workflow", () => {
       tree.tasks[
         "verify-bootstrap-profile-cache-direct-api-version-rerun-blocked"
       ];
+    expect(result.status).toBe("done");
+    expect(["backlog", "active"]).toContain(task.state);
+    expect(task.blocker).toBeUndefined();
+    expect(task.goal).toContain("origin/dev contains the API-version repair");
+    expect(task.trace.requeued_by).toBe("project-planner");
+  });
+
+  test("requeues reviewed publication blockers after refresh-blocked-wait restores the exact wait", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "verify-bootstrap-profile-cache-direct-api-version-rerun-blocked";
+    await writeReviewTree(appDir, {
+      taskId,
+      status: "blocked",
+      context: {
+        featureKey: "bootstrap-profile",
+        loopTaskId: "aks-feature-compact-loop",
+        reviewedTask: {
+          taskId: "verify-bootstrap-profile-cache-direct-api-version-rerun",
+          attemptId: "attempt-1",
+          decision: "blocked",
+          summary:
+            "No truthful staging rerun was dispatched because commit 1fca94a3c is not on trusted origin/dev.",
+          findings: [
+            "git rev-list proves the repair commit is ahead of origin/dev and no remote branch contains it.",
+          ],
+          feedback: [
+            "No retry of the same verification is useful until the repair commit or equivalent descendant is published to the staging-visible origin/dev ref.",
+          ],
+          reviewAction: {
+            actionKind: "publish-domain-repair-and-rerun",
+          },
+          suggestedFollowups: [
+            "After origin/dev contains the API-version repair, run the required local policy checks and queue exactly one spec.bootstrap-profile-byo-acr.cache-direct-cache-switch rerun.",
+          ],
+        },
+      },
+      conflictScope: ["feature-compact:bootstrap-profile"],
+    });
+    const treeBefore = await readTaskTreeJson(appDir);
+    treeBefore.tasks[taskId].blocker = {
+      condition:
+        "Trusted origin/dev still lacks the reviewed API-version repair commit, so the exact rerun wait remains unresolved.",
+      category: "blocked-wait",
+      owner: "aks-explorer",
+      blocked_at: "2026-07-17T02:08:51.448Z",
+      waiting_for: {
+        type: "blocker.resolved",
+        taskId,
+      },
+      observed_by: {
+        workflow: "project-planner",
+        schedule: "blocked-frontier-app-ops-review",
+        trigger: "project.owner.requested",
+      },
+      observation_method:
+        "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+      next_check_at: "2026-07-17T18:30:00.000Z",
+      resume_condition:
+        "Resume after origin/dev contains the API-version repair, the required local checks pass, and exactly one bounded rerun is ready to queue.",
+      fallback_at: "2026-07-18T00:30:00.000Z",
+      fallback_action:
+        "If the publication wait is still unchanged at fallback, refresh the exact wait with current source evidence or replace it with the next narrower follow-up.",
+    };
+    treeBefore.tasks[taskId].trace = {
+      current_attempt_id:
+        "a_verify-bootstrap-profile-cache-direct-api-version-rerun-blocked_20260717020854",
+      blocked_wait_refreshed_at: "2026-07-17T02:08:51.448Z",
+      blocked_wait_refresh_summary:
+        "Refresh blocked wait kept the exact origin/dev publication blocker current while preserving the same reviewed rerun lineage.",
+    };
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(treeBefore, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task = tree.tasks[taskId];
     expect(result.status).toBe("done");
     expect(["backlog", "active"]).toContain(task.state);
     expect(task.blocker).toBeUndefined();
@@ -4330,6 +6745,178 @@ describe("project owner workflow", () => {
     expect(task.conflict_scope).not.toContain(
       "ado-run:local-check-2026-07-16T02:53:10.696Z",
     );
+  });
+
+  test("suppresses duplicate fix-forward creation when a live exact wait already represents the same spec/run lineage", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeSpecLoopState(appDir, {
+      "spec.rp-regional-quota.public-create-path": {
+        status: "error",
+      },
+    });
+    await writeReviewTree(appDir, {
+      taskId: "ops/apply-current-focus-review-frontier-metadata-drift-20260716",
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: [
+            "ops/apply-current-focus-review-frontier-metadata-drift-20260716",
+            "reconcile-spec-loop-pending-rp-regional-quota",
+          ],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "ops/apply-current-focus-review-frontier-metadata-drift-20260716": {
+          id: "ops/apply-current-focus-review-frontier-metadata-drift-20260716",
+          parent_id: "project",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "app-ops",
+          children: [],
+          goal: "Repair only focus metadata.",
+          outputs: [
+            "evidence/archive/ops-apply-current-focus-review-frontier-metadata-drift-20260716.md",
+          ],
+          acceptance: ["repair accepted"],
+          conflict_scope: ["focus:current-frontier"],
+          context: {
+            currentRepairKind: "focus-frontier-metadata",
+          },
+          session_id: "s_task_ops_apply_current_focus_review",
+          result: "worker result",
+          trace: {
+            current_attempt_id:
+              "a_ops_apply-current-focus-review-frontier-metadata-drift-20260716_20260717000243",
+            last_worker_result: "done",
+            last_worker_summary: "worker says done",
+          },
+        },
+        "reconcile-spec-loop-pending-rp-regional-quota": {
+          id: "reconcile-spec-loop-pending-rp-regional-quota",
+          parent_id: "project",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Carry the single exact wait for the public create-path carrier.",
+          outputs: [".state/spec-loop/state.json"],
+          acceptance: ["stay the only same-lineage wait"],
+          conflict_scope: [
+            "spec-loop-followup:pending:rp-regional-quota",
+            "feature:rp-regional-quota",
+            "ado-run:172346097",
+          ],
+          context: {
+            workflow: "fix-forward",
+            representedSpecIds: ["spec.rp-regional-quota.public-create-path"],
+            acceptedQueuedPipelineRun: {
+              runId: "172346097",
+              runUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172346097",
+              specIds: [],
+            },
+            exactWaitSpecId: "spec.rp-regional-quota.public-create-path",
+            exactWaitRunId: "172346097",
+          },
+          blocker: {
+            condition: "Existing exact wait already represents this run.",
+            category: "external-wait",
+            owner: "aks-explorer",
+            blocked_at: "2026-07-16T01:35:33.203Z",
+            waiting_for: {
+              type: "azure.quota.exhausted",
+              taskId: "reconcile-spec-loop-pending-rp-regional-quota",
+              specId: "spec.rp-regional-quota.public-create-path",
+            },
+            observed_by: {
+              workflow: "project-planner",
+            },
+            observation_method: "blocked frontier review",
+            next_check_at: "2026-07-17T20:30:00Z",
+            resume_condition:
+              "Resume only when the same surface exhausts again.",
+            fallback_at: "2026-07-17T23:30:00Z",
+            fallback_action: "Refresh only this exact wait.",
+          },
+          trace: {
+            current_attempt_id: undefined,
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "ops/apply-current-focus-review-frontier-metadata-drift-20260716",
+          attemptId:
+            "a_ops_apply-current-focus-review-frontier-metadata-drift-20260716_20260717000243",
+          decision: "accept",
+          summary:
+            "Focus metadata repair is complete; review also cites the current non-pass public-create-path result.",
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "spec-result-review",
+              status: "done",
+              subject: {
+                kind: "task",
+                id: "ops/apply-current-focus-review-frontier-metadata-drift-20260716",
+              },
+              details: {
+                specId: "spec.rp-regional-quota.public-create-path",
+                runId: "172346097",
+                runUrl:
+                  "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172346097",
+                resultPath:
+                  "workspace/review-rp-regional-quota-public-create-path-run-172346097/result.json",
+                specStatus: "error",
+                reason:
+                  "status=error and probeEvidence.status=blocked because preflight.target-usage found managedClusters=40/161.",
+                specResults: [
+                  {
+                    specId: "spec.rp-regional-quota.public-create-path",
+                    runId: "172346097",
+                    resultPath:
+                      "workspace/review-rp-regional-quota-public-create-path-run-172346097/result.json",
+                    specStatus: "error",
+                    reason:
+                      "status=error and probeEvidence.status=blocked because preflight.target-usage found managedClusters=40/161.",
+                    artifactRefs: [
+                      "workspace/review-rp-regional-quota-public-create-path-run-172346097/result.json",
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(
+      tree.tasks["fix-rp-regional-quota-public-create-path-run-172346097"],
+    ).toBeUndefined();
+    expect(
+      tree.tasks["reconcile-spec-loop-pending-rp-regional-quota"].state,
+    ).toBe("blocked");
+    expect(
+      tree.tasks["reconcile-spec-loop-pending-rp-regional-quota"].context
+        .exactWaitRunId,
+    ).toBe("172346097");
   });
 
   test("does not let non-fix-forward app repair tasks become exact pipeline wait carriers", async () => {
@@ -4910,6 +7497,8 @@ describe("project owner workflow", () => {
       id: `path.synthetic-${index}`,
       status: index % 2 === 0 ? "unknown" : "blocked",
       rootCauseClass: "runtime",
+      label: `Synthetic path ${index} ${"l".repeat(240)}`,
+      retestCondition: `Retry synthetic path ${index} when ${"r".repeat(260)}`,
     }));
     await writeFile(
       join(projectDir, "model", "knowledge-map", "model.json"),
@@ -4936,6 +7525,9 @@ describe("project owner workflow", () => {
                 "review-4",
                 "review-5",
                 "review-6",
+                "blocked-parent-a",
+                "blocked-parent-b",
+                "blocked-parent-c",
               ],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -4960,6 +7552,44 @@ describe("project owner workflow", () => {
                     )}`,
                   },
                 },
+              ]),
+            ),
+            ...Object.fromEntries(
+              ["a", "b", "c"].flatMap((suffix) => [
+                [
+                  `blocked-parent-${suffix}`,
+                  {
+                    id: `blocked-parent-${suffix}`,
+                    parent_id: "project",
+                    state: "backlog",
+                    kind: "domain_parent",
+                    priority: "P2",
+                    children: Array.from(
+                      { length: 4 },
+                      (_, index) => `blocked-${suffix}-${index + 1}`,
+                    ),
+                    goal: `Blocked parent ${suffix} ${"g".repeat(260)}`,
+                    outputs: [`evidence/archive/blocked-parent-${suffix}.md`],
+                    acceptance: ["done"],
+                  },
+                ],
+                ...Array.from({ length: 4 }, (_, index) => [
+                  `blocked-${suffix}-${index + 1}`,
+                  {
+                    id: `blocked-${suffix}-${index + 1}`,
+                    parent_id: `blocked-parent-${suffix}`,
+                    state: "blocked",
+                    kind: "domain_leaf",
+                    priority: "P2",
+                    children: [],
+                    goal: `Blocked task ${suffix}-${index + 1}`,
+                    blocker: `Blocked ${suffix}-${index + 1} because ${"b".repeat(320)}`,
+                    outputs: [
+                      `evidence/archive/blocked-${suffix}-${index + 1}.md`,
+                    ],
+                    acceptance: ["done"],
+                  },
+                ]),
               ]),
             ),
           },
@@ -4995,10 +7625,17 @@ describe("project owner workflow", () => {
 
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(2);
-    expect(prompts[1]).toContain('"omitted_non_passing_paths": 20');
-    expect(prompts[1]).toContain('"review_omitted_count": 1');
+    expect(prompts[0].length).toBeLessThan(20000);
+    expect(prompts[1].length).toBeLessThan(30000);
+    expect(prompts[1]).toContain('"omitted_non_passing_paths": 52');
+    expect(prompts[1]).toContain('"review_omitted_count": 2');
+    expect(prompts[1]).toContain('"parent_groups_omitted_count": 2');
+    expect(prompts[1]).toContain('"sample_blockers_omitted_count": 2');
+    expect(prompts[1]).toContain('"non_passing_status_counts"');
     expect(prompts[1]).not.toContain('"id": "path.synthetic-59"');
     expect(prompts[1]).not.toContain(`Summary 1 ${"y".repeat(520)}`);
+    expect(prompts[1]).not.toContain("b".repeat(220));
+    expect(prompts[1]).not.toContain("l".repeat(220));
   });
 
   test("runs owner review when worker results are pending even with runnable backlog work", async () => {
@@ -5303,6 +7940,139 @@ describe("project owner workflow", () => {
       "utf8",
     );
     expect(plannerRuns).toContain('"steps":["quick-refill"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("quick-refill materializes a durable ready-path frontier gap problem before owner review", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const taskId = `ops/repair-ready-model-path-frontier-refill-gap-${today}`;
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-17T12:35:54.702Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["existing-blocked-holder"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "existing-blocked-holder": {
+              id: "existing-blocked-holder",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Preserve an unrelated exact blocked wait.",
+              outputs: ["evidence/archive/existing-blocked-holder.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Waiting for unrelated returned proof.",
+                resume_condition: "Returned proof lands.",
+                next_check_at: "2099-01-02T00:00:00.000Z",
+                fallback_at: "2099-01-03T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "opsWorker: app-ops",
+        "maxConcurrent: 1",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("quick-refill assigned 1 task");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.assigned",
+      payload: {
+        taskId,
+      },
+    });
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(tree.tasks[taskId]).toMatchObject({
+      state: "active",
+      owner: "app-ops",
+      conflict_scope: ["ops:ready-model-path-frontier-refill"],
+      context: {
+        readyPathFrontierGap: true,
+      },
+    });
+    expect(tree.tasks[taskId].context.readyPathFrontierMaterialization).toMatchObject({
+      status: "gap",
+      ready_count: 1,
+      unrepresented_ready_path_ids: ["path.feature-a.ready"],
+    });
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["quick-refill"]');
+    expect(plannerRuns).toContain(`"assigned_task_ids":["${taskId}"]`);
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
@@ -7867,6 +10637,168 @@ describe("project owner workflow", () => {
     }
   });
 
+  test("skips owner session for stale-active watchdog review when the cited task is running even if unrelated review work remains", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dbPath = join(appDir, ".state", "may.db");
+    await mkdir(join(appDir, ".state"), { recursive: true });
+    const db = new Database(dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        agent text not null,
+        task text not null,
+        status text not null,
+        kind text,
+        source text,
+        parentSessionId text,
+        requestId text,
+        workflowRunId text,
+        projectId text,
+        startedAt integer not null,
+        endedAt integer,
+        error text,
+        outcome text,
+        opCount integer default 0,
+        stepLabel text,
+        lastActivityAt integer
+      )
+    `);
+    db.query(
+      `insert into sessions (
+        sessionId, agent, task, status, kind, source, startedAt, outcome, opCount, stepLabel, lastActivityAt
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "s_task_active-task",
+      "aks-explorer",
+      "active task still running",
+      "running",
+      "call",
+      "workflow:task-worker",
+      Date.now() - 30_000,
+      "running",
+      4,
+      "aks-explorer",
+      Date.now() - 2_000,
+    );
+    db.close();
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "review-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "review-task": {
+              id: "review-task",
+              parent_id: "project",
+              state: "review",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Unrelated review work.",
+              outputs: ["evidence/archive/review-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const priorDb = process.env.MAY_DB_PATH;
+    process.env.MAY_DB_PATH = dbPath;
+    try {
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 5",
+          "## Trigger Event",
+          "```json",
+          JSON.stringify({
+            type: "project.owner.requested",
+            data: {
+              project: "aks-rp-e2e",
+              reason: "watchdog-stale-active-review",
+              staleActiveTasks: [
+                { taskId: "active-task", reason: "session-not-running" },
+              ],
+            },
+          }),
+          "```",
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, task: string) => {
+          prompts.push(task);
+          return { status: "success", message: "should not run" };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(result.message).toContain("false positive");
+      expect(result.message).toContain("currently running runtime session");
+      expect(prompts).toHaveLength(0);
+      expect(dispatched).toHaveLength(0);
+
+      const plannerRuns = await readFile(
+        join(appDir, ".state", "planner-runs.jsonl"),
+        "utf8",
+      );
+      expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+      expect(plannerRuns).toContain(
+        "currently running runtime session after live-tree revalidation",
+      );
+      expect(plannerRuns).toContain('"ran_agent":false');
+    } finally {
+      if (priorDb === undefined) delete process.env.MAY_DB_PATH;
+      else process.env.MAY_DB_PATH = priorDb;
+    }
+  });
+
   test("skips owner session for no-work metric wake when the only frontier work is a running active task", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const dbPath = join(appDir, ".state", "may.db");
@@ -8488,6 +11420,160 @@ describe("project owner workflow", () => {
       '"steps":["task-reviewed-apply","quick-refill"]',
     );
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("adopts legacy self-parented queued-run followups into the existing exact wait", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+      attemptId:
+        "a_domain_normalize-direct-network-cni-cilium-dataplane-20260717_20260716172031",
+      extraTasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          status: "backlog",
+          children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["done"],
+        },
+        "domain/normalize-scenario-tests-repo-frontier-20260715": {
+          id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          parent_id: "project",
+          state: "active",
+          status: "active",
+          kind: "domain_root",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [
+            "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+            "wait-network-cni-cilium-dataplane-ado-run-172547976-result",
+          ],
+          goal: "normalization frontier",
+          outputs: ["evidence/archive/"],
+          acceptance: ["done"],
+        },
+        "domain/normalize-direct-network-cni-cilium-dataplane-20260717": {
+          id: "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+          parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          state: "review",
+          status: "review",
+          kind: "domain_leaf",
+          priority: "P1",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Normalize the direct network-cni scenario.",
+          outputs: [
+            "features/network-cni/tests/network-cni-cilium-dataplane.test.ts",
+          ],
+          acceptance: ["review accepted"],
+          conflict_scope: ["spec:spec.network-cni.cilium-dataplane"],
+          session_id: "s_task_network_cni_review",
+          result: "worker result",
+          trace: {
+            current_attempt_id:
+              "a_domain_normalize-direct-network-cni-cilium-dataplane-20260717_20260716172031",
+            last_worker_result: "partial",
+            last_worker_summary: "queued run 172547976",
+          },
+        },
+        "wait-network-cni-cilium-dataplane-ado-run-172547976-result": {
+          id: "wait-network-cni-cilium-dataplane-ado-run-172547976-result",
+          parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          state: "blocked",
+          status: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "aks-explorer",
+          children: [],
+          goal: "Wait for Azure DevOps run 172547976.",
+          outputs: ["runs/test-results/"],
+          acceptance: ["The returned artifact is inspected."],
+          conflict_scope: [
+            "spec:spec.network-cni.cilium-dataplane",
+            "ado-run:172547976",
+          ],
+          blocker: {
+            condition: "Wait for Azure DevOps run 172547976.",
+            owner: "ado",
+            resume_condition:
+              "Resume when Azure DevOps run 172547976 is terminal and its artifacts are available.",
+          },
+          context: {
+            acceptedQueuedPipelineRun: {
+              sourceTaskId:
+                "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+              runId: "172547976",
+              runUrl:
+                "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172547976",
+              specIds: ["spec.network-cni.cilium-dataplane"],
+            },
+          },
+        },
+      },
+    });
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId:
+            "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+          attemptId:
+            "a_domain_normalize-direct-network-cni-cilium-dataplane-20260717_20260716172031",
+          decision: "followup",
+          summary:
+            "The normalization task must now hand off to exact run review.",
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            idBase:
+              "domain/review-network-cni-cilium-dataplane-ado-run-172547976-20260716",
+            parentId:
+              "domain/normalize-direct-network-cni-cilium-dataplane-20260717",
+            owner: "aks-explorer",
+            goal: "Review terminal Azure DevOps run 172547976 for spec.network-cni.cilium-dataplane.",
+            outputs: ["runs/test-results/"],
+            acceptance: ["The exact per-spec artifact is inspected."],
+            conflictScopes: ["spec:spec.network-cni.cilium-dataplane"],
+          },
+          completion: {
+            workflowResult: {
+              details: {
+                queuedRun: {
+                  runId: "172547976",
+                  runUrl:
+                    "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172547976",
+                  specIds: ["spec.network-cni.cilium-dataplane"],
+                },
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Applied legacy queued-run follow-up review for domain/normalize-direct-network-cni-cilium-dataplane-20260717; using exact pipeline wait wait-network-cni-cilium-dataplane-ado-run-172547976-result.",
+    );
+    expect(
+      tree.tasks[
+        "domain/normalize-direct-network-cni-cilium-dataplane-20260717"
+      ].state,
+    ).toBe("done");
+    expect(
+      tree.tasks["wait-network-cni-cilium-dataplane-ado-run-172547976-result"]
+        .state,
+    ).toBe("blocked");
+    expect(
+      tree.tasks[
+        "domain/review-network-cni-cilium-dataplane-ado-run-172547976-20260716"
+      ],
+    ).toBeUndefined();
   });
 
   test("skips owner session for stale watchdog-runnable-backlog packets even when unrelated blocked leaves exist", async () => {
@@ -9176,6 +12262,121 @@ describe("project owner workflow", () => {
     expect(prompts).toHaveLength(0);
   });
 
+  test("skips blocked-overdue metric wake when active ops repair shares offender wait spec conflict scope", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-rp-regional-quota-guard",
+          active_task_ids: ["ops/repair-rp-regional-quota-guard"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "ops/repair-rp-regional-quota-guard",
+                "reconcile-spec-loop-pending-rp-regional-quota",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-rp-regional-quota-guard": {
+              id: "ops/repair-rp-regional-quota-guard",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              session_id: "s_task_ops_repair_rp_regional_quota_guard",
+              children: [],
+              goal: "Repair the duplicate-fix-forward guard for rp-regional-quota.",
+              outputs: [
+                "evidence/archive/ops-repair-rp-regional-quota-guard.md",
+              ],
+              acceptance: ["done"],
+              conflict_scope: [
+                "spec:spec.rp-regional-quota.public-create-path",
+              ],
+            },
+            "reconcile-spec-loop-pending-rp-regional-quota": {
+              id: "reconcile-spec-loop-pending-rp-regional-quota",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Carry the exact public create-path wait.",
+              outputs: [
+                "evidence/archive/reconcile-spec-loop-pending-rp-regional-quota.md",
+              ],
+              acceptance: ["done"],
+              blocker: {
+                condition:
+                  "Waiting for the exact same-spec quota-exhausted public create-path proof.",
+                waiting_for: {
+                  type: "azure.quota.exhausted",
+                  specId: "spec.rp-regional-quota.public-create-path",
+                },
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "metric.breach",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "open-alert-updated",
+            metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+            offenderTaskIds: ["reconcile-spec-loop-pending-rp-regional-quota"],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(result.message).toContain("ops/repair-rp-regional-quota-guard");
+    expect(prompts).toHaveLength(0);
+  });
+
   test("does not skip blocked-overdue metric wake when active ops repair covers different offenders", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -9304,6 +12505,127 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["event-review","planning-update"]');
     expect(plannerRuns).toContain('"ran_agent":true');
+  });
+
+  test("does not treat an exact project wait conflict scope as broad blocked-overdue coverage", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "ops/repair-one-project-wait",
+          active_task_ids: ["ops/repair-one-project-wait"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "ops/repair-one-project-wait",
+                "covered-wait",
+                "uncovered-wait",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ops/repair-one-project-wait": {
+              id: "ops/repair-one-project-wait",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              session_id: "s_task_ops_repair_one_project_wait",
+              children: [],
+              goal: "Repair one exact overdue project wait.",
+              outputs: ["evidence/archive/ops-repair-one-project-wait.md"],
+              acceptance: ["done"],
+              conflict_scope: ["ops:blocked-overdue:project:covered-wait"],
+            },
+            "covered-wait": {
+              id: "covered-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal: "Covered blocked wait.",
+              outputs: ["evidence/archive/covered-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Covered wait.",
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+            "uncovered-wait": {
+              id: "uncovered-wait",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "app-ops",
+              children: [],
+              goal: "Uncovered blocked wait.",
+              outputs: ["evidence/archive/uncovered-wait.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "Uncovered wait.",
+                fallback_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "metric.breach",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "open-alert-updated",
+            metricId: "aks-rp-e2e.process.blocked.overdue-unworked-count",
+            offenderTaskIds: ["uncovered-wait"],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "owner reviewed" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Agent ran event-review");
+    expect(result.message).not.toContain(
+      "Blocked-overdue metric wake is already under active app-ops repair",
+    );
+    expect(prompts.length).toBeGreaterThan(0);
   });
 
   test("skips owner session for scheduled blocked-frontier future-wait review when active ops repair already covers the frontier", async () => {

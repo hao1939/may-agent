@@ -12772,6 +12772,149 @@ describe("feature compact loop", () => {
     });
   });
 
+  test("controller does not reopen exact pipeline waits already restored after accepted terminal review", async () => {
+    const projectDir = await makeProject();
+    await writeRootTree(projectDir);
+    const treePath = resolveTaskTreePath(projectDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["aks-feature-compact-loop"].children = [
+      "wait-compact-windows-run",
+    ];
+    tree.tasks["wait-compact-windows-run"] = {
+      id: "wait-compact-windows-run",
+      parent_id: "aks-feature-compact-loop",
+      state: "blocked",
+      status: "blocked",
+      priority: "P1",
+      children: [],
+      goal: "Preserve the exact windows compact wait after accepted terminal review.",
+      inputs: ["feature:windows", "ADO run: 123456789"],
+      outputs: [],
+      acceptance: ["Keep the exact family-level wait truthful."],
+      forbidden: [],
+      conflict_scope: ["feature-compact:windows", "ado-run:123456789"],
+      depends_on: [],
+      context: {
+        featureCompactExactWait: true,
+        featureKey: "windows",
+        acceptedQueuedPipelineRun: {
+          sourceTaskId: "wait-compact-windows-run",
+          runId: "123456789",
+          runUrl:
+            "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+          specIds: ["spec.windows.node-pool-create"],
+          summary:
+            "Only one exact spec passed; keep the same family-level wait.",
+        },
+      },
+      blocker: {
+        category: "external-wait",
+        owner: "ado",
+        condition:
+          "Azure DevOps run 123456789 remains the exact external wait for this compact family.",
+        waiting_for: {
+          type: "ado.pipeline_run.completed",
+          runId: "123456789",
+          specIds: ["spec.windows.node-pool-create"],
+        },
+        observed_by: {
+          workflow: "project-execution-watchdog",
+          trigger: "project.task.reviewed",
+        },
+        next_check_at: "2099-01-01T00:00:00.000Z",
+        resume_condition:
+          "Resume when Azure DevOps run 123456789 is terminal and its artifacts are available for exact compact result inspection.",
+        fallback_at: "2099-01-02T00:00:00.000Z",
+        fallback_action:
+          "Refresh the exact wait only if newer same-lineage evidence appears.",
+      },
+      trace: {
+        review_summary:
+          "Accepted terminal artifact review: only spec.windows.node-pool-create passed, so keep the exact windows compact wait.",
+        exact_pipeline_wait_restored_at: "2026-07-17T04:00:31.254Z",
+        exact_pipeline_wait_run_id: "123456789",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    await mkdir(join(projectDir, ".state", "spec-loop"), { recursive: true });
+    await writeFile(
+      join(projectDir, ".state", "spec-loop", "state.json"),
+      `${JSON.stringify(
+        {
+          specs: {
+            "spec.windows.node-pool-create": {
+              status: "pass",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const statePath = join(
+      projectDir,
+      ".state",
+      "feature-compact-loop",
+      "state.json",
+    );
+    const { state } = loadFeatureCompactLoopState({
+      appDir: projectDir,
+      projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      windowSize: 1,
+      statePath,
+    });
+    updateFeatureCompactItem(state, "windows", {
+      status: "blocked",
+      taskId: "wait-compact-windows-run",
+      waitingFor: {
+        type: "ado.pipeline_run.completed",
+        runId: "123456789",
+      },
+    });
+    saveFeatureCompactLoopState(statePath, state);
+
+    const result = harvestTerminalCompactGitHubWaits({
+      config: config(projectDir),
+      projectDir,
+      appDir: projectDir,
+      loopTaskId: "aks-feature-compact-loop",
+      state,
+      client: { kind: "gh" },
+      limit: 10,
+      getRun: (runId) => ({
+        databaseId: Number(runId),
+        status: "completed",
+        conclusion: "success",
+        url: "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=123456789",
+        displayTitle: "Compact windows staging",
+      }),
+    });
+
+    expect(result.harvestedTaskIds).toEqual([]);
+    const updated = JSON.parse(await readFile(treePath, "utf8"));
+    expect(updated.tasks["wait-compact-windows-run"]).toMatchObject({
+      state: "blocked",
+      status: "blocked",
+      trace: {
+        exact_pipeline_wait_restored_at: "2026-07-17T04:00:31.254Z",
+        exact_pipeline_wait_run_id: "123456789",
+      },
+    });
+    expect(updated.tasks["wait-compact-windows-run"].blocker).toMatchObject({
+      waiting_for: {
+        runId: "123456789",
+      },
+    });
+    expect(
+      updated.tasks["wait-compact-windows-run"].context
+        .terminalPipelineWaitReview,
+    ).toBeUndefined();
+  });
+
   test("controller refreshes overdue nonterminal compact waits in place", async () => {
     const projectDir = await makeProject();
     await writeRootTree(projectDir);

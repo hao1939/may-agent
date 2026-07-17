@@ -51,7 +51,7 @@ function usage(): never {
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
   bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked] [--blocker "..."] [--blocker-json '{"condition":"..."}'] [--blocker-category external-wait] [--blocker-owner human] [--resume-condition "..."] [--resume-at ISO] [--next-check-at ISO] [--fallback-at ISO] [--fallback-action "..."]
-  bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal] [--review-decision accept|followup|blocked|escalate]
+  bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal] [--review-decision accept|followup|blocked|escalate] [--task-revision N] [--attempt-id <attempt-id>]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
   bun run task-tree drain-assignments
@@ -91,6 +91,16 @@ function numberOption(name: string, fallback: number): number {
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function optionalIntegerOption(name: string): number | undefined {
+  const raw = option(name);
+  if (raw === undefined) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Invalid ${name} ${raw}; expected an integer`);
+  }
+  return parsed;
 }
 
 function hasFlag(name: string): boolean {
@@ -314,7 +324,10 @@ function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
   if (!text && blocker) return false;
 
   const condition = stringField(blocker, ["condition"]) || conditionText(text);
-  const existingWaitingFor = objectField(blocker, ["waiting_for", "waitingFor"]);
+  const existingWaitingFor = objectField(blocker, [
+    "waiting_for",
+    "waitingFor",
+  ]);
   const existingOwner = stringField(blocker, ["owner"]);
   const shouldUseAdoOwner =
     stringField(existingWaitingFor, ["type"]) ===
@@ -367,9 +380,7 @@ function normalizeBlockedTaskContract(task: TaskNode, now: string): boolean {
   (task as { blocker?: unknown }).blocker = {
     ...(blockerForContract ?? {}),
     condition,
-    category:
-      stringField(blockerForContract, ["category"]) ||
-      "external-wait",
+    category: stringField(blockerForContract, ["category"]) || "external-wait",
     owner,
     blocked_at: blockedAt,
     waiting_for:
@@ -617,6 +628,8 @@ if (command === "summary") {
     JSON.stringify(
       markTaskDone(config, {
         taskId,
+        taskRevision: optionalIntegerOption("--task-revision"),
+        attemptId: option("--attempt-id"),
         summary,
         resolution: option("--resolution"),
         reviewDecision: option("--review-decision"),

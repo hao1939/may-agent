@@ -119,6 +119,42 @@ function sortedUnique(values: string[]): string[] {
   );
 }
 
+type FutureWindowFollowupGate = {
+  resumeAt: string;
+  nextCheckAt: string;
+  fallbackAt: string;
+  blockerCondition: string;
+  resumeCondition: string;
+};
+
+function futureWindowFollowupGate(input: {
+  action: TaskTreeFollowupActionV2;
+  reviewedTaskId: string;
+  now: string;
+}): FutureWindowFollowupGate | null {
+  const match = input.action.goal.match(
+    /^\s*At or after\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\b/i,
+  );
+  const resumeAt = match?.[1]?.trim();
+  if (!resumeAt) return null;
+  const resumeMs = Date.parse(resumeAt);
+  const nowMs = Date.parse(input.now);
+  if (
+    !Number.isFinite(resumeMs) ||
+    !Number.isFinite(nowMs) ||
+    resumeMs <= nowMs
+  ) {
+    return null;
+  }
+  return {
+    resumeAt,
+    nextCheckAt: resumeAt,
+    fallbackAt: new Date(resumeMs + 6 * 60 * 60 * 1000).toISOString(),
+    blockerCondition: `Future-window task-tree follow-up created from reviewed task ${input.reviewedTaskId}; do not start before its named review window opens. ${input.action.goal.trim()}`,
+    resumeCondition: input.action.goal.trim(),
+  };
+}
+
 function actionFingerprint(action: TaskTreeFollowupActionV2): string {
   return createHash("sha256")
     .update(
@@ -352,11 +388,16 @@ export function applyTaskTreeFollowupReviewV2(
     }
 
     const now = new Date().toISOString();
+    const futureWindowGate = futureWindowFollowupGate({
+      action: input.action,
+      reviewedTaskId: source.id,
+      now,
+    });
     const successor: TaskNode = existing ?? {
       id: input.action.idBase,
       revision: 0,
       parent_id: input.action.parentId,
-      state: "backlog",
+      state: futureWindowGate ? "blocked" : "backlog",
       kind: input.action.kind?.trim() || source.kind || "domain_leaf",
       priority: source.priority,
       owner: input.action.owner,
@@ -392,6 +433,40 @@ export function applyTaskTreeFollowupReviewV2(
         command_key: key,
       },
     };
+    if (futureWindowGate) {
+      successor.state = "blocked";
+      delete successor.status;
+      successor.blocker = {
+        condition: futureWindowGate.blockerCondition,
+        category: "external-wait",
+        owner: input.action.owner,
+        blocked_at: now,
+        waiting_for: {
+          type: "blocker.resolved",
+          reviewedTaskId: source.id,
+          reviewedAttemptId: input.attemptId,
+          successorTaskId: successor.id,
+          source: "project.task.reviewed",
+        },
+        observed_by: {
+          workflow: "project-planner",
+          trigger: "project.task.reviewed",
+        },
+        observation_method:
+          "Project planner created this future-window task-tree follow-up from the review result; keep it blocked until the named review window opens, then refresh or replace it with the exact same-lineage next step.",
+        resume_at: futureWindowGate.resumeAt,
+        next_check_at: futureWindowGate.nextCheckAt,
+        resume_condition: futureWindowGate.resumeCondition,
+        fallback_at: futureWindowGate.fallbackAt,
+        fallback_action:
+          "If the review window passes without stronger same-lineage evidence, refresh this exact wait or replace it with the narrower follow-up instead of dispatching early.",
+      };
+      successor.trace = {
+        ...(record(successor.trace) ?? {}),
+        blocked_contract_seeded_at: now,
+        blocked_contract_seeded_by: "work.applyReview.v2",
+      };
+    }
     tree.tasks[successor.id] = successor;
     const parent = tree.tasks[input.action.parentId];
     parent.children = sortedUnique([

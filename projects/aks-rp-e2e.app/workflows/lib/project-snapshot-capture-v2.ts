@@ -17,6 +17,7 @@ import {
   type SnapshotReview,
   type SnapshotSession,
 } from "./project-snapshot-v2.ts";
+import { readReviewerLedgerRowsV2 } from "./project-review-delivery-v2.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -40,6 +41,7 @@ export type RuntimeProjectSnapshotOptionsV2 = {
   sessionStartGraceMs?: number;
   staleNoActivityMs?: number;
   reviewGraceMs?: number;
+  reviewApplicationGraceMs?: number;
 };
 
 function record(value: unknown): JsonRecord {
@@ -102,7 +104,7 @@ function parseAssignments(path: string): SnapshotAssignment[] {
   });
 }
 
-function snapshotReviewFromRow(
+export function snapshotReviewFromRuntimeReviewerRowV2(
   row: RuntimeReviewerRowV2,
 ): SnapshotReview | null {
   if (row.result !== "project.task.reviewed") return null;
@@ -123,10 +125,64 @@ function snapshotReviewFromRow(
   };
 }
 
-function parseReviews(rows: RuntimeReviewerRowV2[]): SnapshotReview[] {
+export function snapshotReviewsFromRuntimeReviewerRowsV2(
+  rows: RuntimeReviewerRowV2[],
+): SnapshotReview[] {
+  const receipts = new Map<
+    string,
+    {
+      status: "accepted" | "failed";
+      attempts: number;
+      acceptedAt: string | null;
+    }
+  >();
+  for (const row of rows) {
+    const result = text(row.result);
+    if (
+      result !== "project.task.reviewed.delivery-accepted" &&
+      result !== "project.task.reviewed.delivery-failed" &&
+      result !== "pending-action-delivery-v2"
+    ) {
+      continue;
+    }
+    const reviewId = text(row.review_id ?? row.reviewId);
+    const statusValue = text(row.delivery_status ?? row.status);
+    if (!reviewId || (statusValue !== "accepted" && statusValue !== "failed")) {
+      continue;
+    }
+    const prior = receipts.get(reviewId);
+    const attempt = nonNegativeInteger(row.delivery_attempt ?? row.attempt);
+    receipts.set(reviewId, {
+      status: statusValue,
+      attempts: Math.max(prior?.attempts ?? 0, attempt ?? 1),
+      acceptedAt:
+        statusValue === "accepted"
+          ? text(row.recorded_at ?? row.recordedAt ?? row.ts)
+          : (prior?.acceptedAt ?? null),
+    });
+  }
   return rows.flatMap((row) => {
-    const review = snapshotReviewFromRow(row);
-    return review ? [review] : [];
+    const review = snapshotReviewFromRuntimeReviewerRowV2(row);
+    if (!review) return [];
+    const reviewId = snapshotReviewIdentityV2(review);
+    const receipt = reviewId ? receipts.get(reviewId) : null;
+    const sourceStatus = text(row.delivery_status);
+    const legacyAccepted = sourceStatus === null;
+    return [
+      {
+        ...review,
+        actionDeliveryStatus:
+          receipt?.status ??
+          (legacyAccepted
+            ? "accepted"
+            : sourceStatus === "pending"
+              ? "pending"
+              : "unknown"),
+        actionDeliveryAttempts: receipt?.attempts ?? (legacyAccepted ? 1 : 0),
+        actionAcceptedAt:
+          receipt?.acceptedAt ?? (legacyAccepted ? review.ts : null),
+      },
+    ];
   });
 }
 
@@ -397,8 +453,8 @@ export function captureRuntimeProjectSnapshotV2(
     JSON.parse(readFileSync(options.treePath, "utf8")) as TaskTree,
   );
   const assignments = parseAssignments(assignmentPath);
-  const reviewerRows = readJsonLines(reviewPath);
-  const reviews = parseReviews(reviewerRows);
+  const reviewerRows = readReviewerLedgerRowsV2(options.appDir);
+  const reviews = snapshotReviewsFromRuntimeReviewerRowsV2(reviewerRows);
   const sessionCapture = loadSessions(
     options.stateDbPath,
     referencedSessionIds(tree, assignments),
@@ -438,7 +494,9 @@ export function captureRuntimeProjectSnapshotV2(
       attemptHeartbeats: loopCapture.heartbeats,
       deliveryGaps: deliveryCapture.gaps,
       sourceCoverage: {
-        assignments: existsSync(assignmentPath) ? "available" : "unavailable",
+        // The assignment outbox is created on demand; no file means the
+        // authoritative queue is empty.
+        assignments: "available",
         sessions: sessionCapture.available ? "available" : "unavailable",
         reviews: existsSync(reviewPath) ? "available" : "unavailable",
         controllers: loopCapture.available ? "available" : "unavailable",
@@ -449,6 +507,7 @@ export function captureRuntimeProjectSnapshotV2(
       sessionStartGraceMs: options.sessionStartGraceMs,
       staleNoActivityMs: options.staleNoActivityMs,
       reviewGraceMs: options.reviewGraceMs,
+      reviewApplicationGraceMs: options.reviewApplicationGraceMs,
       sourceMeta,
     }),
   };
@@ -465,7 +524,7 @@ export function findRuntimeReviewerRowV2(
 ): RuntimeReviewerRowV2 | null {
   for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index]!;
-    const review = snapshotReviewFromRow(row);
+    const review = snapshotReviewFromRuntimeReviewerRowV2(row);
     if (!review) continue;
     if (
       review.taskId === input.taskId &&

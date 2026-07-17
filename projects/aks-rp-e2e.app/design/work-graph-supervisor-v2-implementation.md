@@ -1,6 +1,8 @@
 # Work Graph And Project Supervisor V2 — Implementation Breakdown
 
-Status: implementation in progress; revisioned review-handoff canary is live
+Status: implementation in progress; shared read consumers are live, the exact
+ADO Condition authority canary is closed, and review-application delivery plus
+application-only redelivery are live for the revisioned V2 cohort
 
 Progress:
 
@@ -8,10 +10,11 @@ Progress:
 - Slice 1: complete — stable live shadow parity, health/controller comparison,
   source fingerprints, and read-only verification.
 - Slice 2: revision-safe envelopes are fixture-tested. Broad runtime cutover is
-  deferred, while one exact-run single-successor creation canary is armed behind
-  `revisionV2: fix-forward-first-nonpass-run` for repaired batch run
-  `172484121`. At most the first deterministic non-pass result from that run
-  starts at revision `1`; other work retains revision `0`. See
+  deferred. The exact-run single-successor canary for `172653860` created one
+  natural revision-1, `controlPlaneVersion: 2` WorkItem after earlier exact
+  passes and a task-subject/spec-id parser correction. Its review application
+  completed and the spent creation selector was removed; other new work retains
+  revision `0`. See
   `design/work-graph-v2-slice2-review.md`.
 - Slice 3: first fully structured `task-tree-followup` command canary is
   source-complete and fixture-tested; incomplete actions remain compatible.
@@ -31,11 +34,17 @@ Progress:
   continuation waited safely for capacity, the exact revision-1 review task ran
   and was accepted, and the one-time adoption selector was removed. See
   `design/work-graph-v2-slices4-5-review.md`.
+  A second exact Condition for run `172493879` subsequently passed due-only
+  observation, scheduled-owner exclusion, complete compatibility reprojection,
+  stable fallback redelivery, dedicated typed-lane acknowledgement, terminal
+  resolution, continuation assignment, worker review, and archival. This
+  closes the exact single-subject ADO authority gate; broader Condition
+  families remain pending.
 - Slice 6: source-complete — project health, project readout, selected
   task/process metrics, planner packets, and Kanban cards consume the V2
   frontier. Snapshot source coverage and task/revision/attempt-correlated
-  controller liveness are implemented and fixture-tested. Runtime cutover
-  remains deferred.
+  controller liveness are implemented, fixture-tested, and live. Compatibility
+  mirrors remain readable while their writers drain family by family.
 - Slice 7: review-handoff supervisor canary is live for revisioned work and
   fixture-tested. Compatibility revision `0`, unavailable review sources, and
   no-attempt terminal waits retain the legacy path. The watchdog manifest sets
@@ -785,7 +794,134 @@ delivery. New fallback actions emit typed
 `project.condition.fallback.requested` events to a dedicated
 single-concurrency planner handler. Legacy generic owner events remain readable
 for buffered compatibility, while new actions no longer compete with the broad
-owner-event backlog. Live acknowledgement through this lane remains pending.
+owner-event backlog.
+
+Typed canary event `3320112` passed the live delivery gate. It was accepted by
+the direct route, ran handler `aks-rp-e2e-condition-fallback-planner`, completed
+planner workflow `wr_1784206975931_fsaf`, and durably acknowledged the original
+fallback action at `13:06:35Z` with `attempts: 2`. The run had become terminal
+at `13:01:24Z`, so Condition resolution and assignment continuation happened
+first. The fallback planner then treated its event as a stale correlated wake,
+performed no duplicate polling or continuation, and still acknowledged the
+delivery obligation. This is the desired idempotent late-delivery behavior.
+
+`ProjectSnapshotV2` also exposes overdue fallback delivery as a stable
+invariant. A dispatched action past `acknowledgementDueAt` is warning severity
+before the retry budget is exhausted and critical at three attempts;
+acknowledgement closes the finding, while external Condition resolution alone
+does not hide an already-dispatched obligation. The invariant observes the
+postcondition rather than inferring success from event acceptance.
+
+Transfer 1 now has its first read-only implementation. The shared
+`PendingActionV2` projection normalizes five existing source-owned handoffs:
+assignment delivery, completion-to-review, review-to-application, Condition
+continuation, and Condition fallback. It stores only stable identity, a payload
+reference/digest, lifecycle state, delivery policy, and postcondition; it does
+not copy payloads or take writer authority. `unknown` is explicit when positive
+transport evidence is absent, and `maxAttempts: null` exposes an existing
+unbounded policy instead of inventing a budget.
+
+A stable live capture at `13:36:47Z` matched health/frontier parity and mapped
+two accepted assignments to two missing-attempt findings, two pending
+completion actions to two missing-review findings, and three pending review
+applications to three unapplied-decision findings. Two in-grace completion
+handoffs remained `unknown`. The shadow also corrected optional-outbox empty
+semantics and suppressed superseded archived Condition continuations before any
+writer consumes this view.
+
+The next Transfer 1 source boundary is also implemented without writer cutover:
+task reviewer records the immutable decision and stable `review_id` before
+dispatching `project.task.reviewed`, then appends a separate accepted/failed
+delivery receipt. An injected transport failure leaves the source decision
+discoverable by snapshot capture as one pending review-application action. The
+planner remains the sole application writer; moving delivery to the common
+runner was the next gated step.
+
+That immediate delivery gate is now source-armed behind
+`pendingActionV2: review-application-revisioned`. Only positive-revision,
+`controlPlaneVersion: 2` review work uses `deliverPendingActionV2`; all other
+work retains legacy dispatch. The keyed runner writes generic accepted/failed
+receipts, suppresses accepted replay, and bounds delivery at two attempts.
+Snapshot capture correlates new receipts and interprets pre-migration reviewer
+rows as accepted compatibility deliveries. Exact run `172653860` produced the
+first natural V2 WorkItem. Its revision-1 review persisted decision
+`988eb75cb1cc1b262be02eeb`, recorded accepted PendingAction attempt `1` at
+`2026-07-17T10:50:17.771Z`, and satisfied the separate planner application
+postcondition at `10:50:28.594Z`. The same WorkItem is now revision `2`, blocked
+on exact Condition `condition:pipeline:ado:172669197:terminal`.
+
+Supervisor redelivery now uses the same source implementation behind the
+application-only `pendingActionRedeliveryV2: review-application-revisioned`
+gate. Immediate reviewer delivery and
+watchdog redelivery share `project-review-delivery-v2.ts`, generic receipts,
+and the two-attempt runner policy. A replay fixture converts an accepted
+attempt `1` into exactly one accepted attempt `2`. The app manifest enables
+only this application redelivery after the natural immediate-delivery canary;
+completion redelivery remains off.
+
+Completion-to-review immediate delivery is also source-armed behind the
+default-off handler mode `pendingActionV2: completion-review-revisioned`.
+Positive-revision `controlPlaneVersion: 2` work persists its normal completion
+fact first, dispatches the stable completion action through the shared runner,
+and stores only the generic receipt in the task completion trace. The payload
+remains the task-owned completion record. Snapshot projection distinguishes
+accepted delivery from the matching reviewer-decision postcondition and keeps
+the V2 budget at two attempts while compatibility cohorts retain their
+existing one-action projection. Accepted, failed, replay, snapshot, revision-0,
+and non-V2 fixtures pass. The manifest now enables this mode after the earlier
+review-application and application-redelivery gates passed.
+
+The supervisor side is source-armed behind the combined default-off mode
+`pendingActionRedeliveryV2: review-handoffs-revisioned`. Completion recovery
+constructs the same action from the snapshot, reads the task-owned receipts,
+and redelivers accepted or failed attempt `1` as attempt `2`; no-receipt
+recovery records attempt `1`, and a pre-existing two-attempt history is
+exhausted without dispatch. The older
+`review-application-revisioned` mode intentionally remains application-only,
+allowing the two writer cutovers to stay independently observable. The live
+manifest enables that narrow mode and not `review-handoffs-revisioned`.
+
+The first runtime observation after immediate completion delivery was enabled
+found an adjacent legacy-authority leak rather than a handoff failure. The
+compatibility overdue-blocked metric treated the registry-owned run `172669197`
+Condition as unworked from its old blocker `fallback_at` and prompted a generic
+planner repair even though the Condition fallback was acknowledged and its next
+observation was scheduled. Registered task/revision subjects are now excluded
+from that compatibility metric; their objective failures remain represented by
+the Condition invariants in ProjectSnapshot V2. The focused metric/snapshot
+suite passes and the live metric reports no offenders.
+
+Review application also has an explicit initial five-minute grace. The
+reviewer decision and its pending action are visible immediately, but snapshot
+invariants and supervisor claims do not classify that action as lost while the
+planner may still be applying the accepted event. The pending action `dueAt`,
+snapshot invariant threshold, supervisor capture, immediate delivery adapter,
+and redelivery adapter share that value. This is intentionally distinct from
+the 15-minute completion-to-review grace. Unit and watchdog fixtures cover
+fresh action visibility without recovery, transition to an overdue invariant,
+and redelivery only after the application deadline.
+
+The legacy metrics adapter now consumes the snapshot
+`review-decision-not-applied` invariant instead of reparsing reviewer rows with
+an independent deadline. Revision-0 manual-repair coverage remains a bounded
+compatibility suppression; V2 findings require their exact postcondition.
+Review application and terminal task-worker completion also have separately
+named grace settings, so session tolerance cannot alter review recovery
+timing. Focused metric fixtures cover fresh grace, overdue application,
+revision-0 compatibility, and V2 fail-closed behavior.
+
+The runtime capture and CLI live-shadow capture also share one reviewer-ledger
+projection function and the same ledger reader. The CLI-local receipt parser
+was deleted. A parity fixture requires both capture surfaces to produce the
+same revisioned review projection and accepted pending action from one source
+decision/receipt pair, preventing audit and supervisor views from diverging.
+
+The watchdog's proven fairness overlap is closed in source: terminal-session
+completion recovery and due exact Condition reconciliation now both run before
+the tick returns. A combined fixture requires the terminal completion event and
+the Condition observation/advanced next check in one invocation. This is a
+bounded correction for the active canary, not yet the general fair-lane
+supervisor scheduler planned for Slice 8.
 
 ### Work
 

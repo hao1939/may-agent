@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import {
   resolveTaskTreePath,
   type WorkflowContext,
@@ -42,13 +42,21 @@ function packetAbsolutePath(input: {
   const raw = input.packetPath.trim();
   if (!raw) return null;
 
-  const candidates = [
-    raw,
-    join(input.projectDir, raw),
-    join(input.appDir, raw),
-    resolve(input.appDir, raw),
-    resolve(input.projectDir, raw),
-  ];
+  const candidates = raw.startsWith("/")
+    ? [
+        raw,
+        join(input.projectDir, raw),
+        join(input.appDir, raw),
+        resolve(input.appDir, raw),
+        resolve(input.projectDir, raw),
+      ]
+    : [
+        join(input.projectDir, raw),
+        join(input.appDir, raw),
+        resolve(input.appDir, raw),
+        resolve(input.projectDir, raw),
+        raw,
+      ];
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate;
@@ -57,14 +65,25 @@ function packetAbsolutePath(input: {
 }
 
 function packetRepoPath(input: {
+  appDir: string;
   projectDir: string;
   absolutePath: string;
 }): string {
-  const normalizedProject = `${resolve(input.projectDir)}/`;
   const normalizedPacket = resolve(input.absolutePath);
-  if (normalizedPacket.startsWith(normalizedProject)) {
-    return normalizedPacket.slice(normalizedProject.length);
+  const roots = [input.projectDir, input.appDir].map((root) => resolve(root));
+
+  for (const root of roots) {
+    const relativePath = relative(root, normalizedPacket).replace(/\\/g, "/");
+    if (
+      relativePath &&
+      relativePath !== "." &&
+      !relativePath.startsWith("../") &&
+      relativePath !== ".."
+    ) {
+      return relativePath;
+    }
   }
+
   return normalizedPacket;
 }
 
@@ -88,6 +107,25 @@ function approvalDispatchLedgerPath(appDir: string): string {
   return join(appDir, ".state", "approval-dispatch-runs.jsonl");
 }
 
+function isTrustedDispatchLedgerRow(parsed: {
+  workflow?: unknown;
+  result?: unknown;
+  correlationKey?: unknown;
+  packetAbsolutePath?: unknown;
+}): boolean {
+  if (
+    parsed.workflow !== "approval-dispatch" ||
+    parsed.result !== "message.created"
+  ) {
+    return false;
+  }
+
+  return (
+    typeof parsed.packetAbsolutePath === "string" &&
+    parsed.packetAbsolutePath.startsWith("/")
+  );
+}
+
 function hasPriorDispatchForCorrelation(input: {
   appDir: string;
   correlationKey: string;
@@ -105,11 +143,11 @@ function hasPriorDispatchForCorrelation(input: {
           workflow?: unknown;
           result?: unknown;
           correlationKey?: unknown;
+          packetAbsolutePath?: unknown;
         };
         if (
-          parsed.workflow === "approval-dispatch" &&
           parsed.correlationKey === input.correlationKey &&
-          parsed.result === "message.created"
+          isTrustedDispatchLedgerRow(parsed)
         ) {
           return true;
         }
@@ -206,6 +244,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const repoPacketPath = packetRepoPath({
+    appDir,
     projectDir,
     absolutePath: absolutePacketPath,
   });
@@ -271,7 +310,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       {
         id: "approve",
         label: "Approve",
-        effect: "Accept the exact requested action and let planner/app-ops continue.",
+        effect:
+          "Accept the exact requested action and let planner/app-ops continue.",
       },
       {
         id: "adjust",

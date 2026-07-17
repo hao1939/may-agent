@@ -543,9 +543,10 @@ function safeAttemptSegment(value: string): string {
 }
 
 function isPipelineCompletionWaitType(value: string): boolean {
-  return ["ado.pipeline_run.completed", "github.workflow_run.completed"].includes(
-    value,
-  );
+  return [
+    "ado.pipeline_run.completed",
+    "github.workflow_run.completed",
+  ].includes(value);
 }
 
 function runIdFromCompactWaitTask(task: TaskNode): string {
@@ -588,6 +589,13 @@ function runIdFromCompactWaitTask(task: TaskNode): string {
     }
   }
   return "";
+}
+
+function settledExactPipelineWaitRunId(task: TaskNode): string {
+  const trace = taskTrace(task);
+  const restoredAt = stringField(trace, "exact_pipeline_wait_restored_at");
+  if (!restoredAt) return "";
+  return stringField(trace, "exact_pipeline_wait_run_id");
 }
 
 function terminalCompactGitHubWaitCandidates(input: {
@@ -701,6 +709,7 @@ export function harvestTerminalCompactGitHubWaits(input: {
       const status = taskStatus(child);
       if (status !== "blocked" && status !== "waiting") continue;
       if (runIdFromCompactWaitTask(child) !== candidate.runId) continue;
+      if (settledExactPipelineWaitRunId(child) === candidate.runId) continue;
 
       const previousBlocker = child.blocker;
       child.status = "review";
@@ -816,8 +825,7 @@ export function harvestTerminalCompactGitHubWaits(input: {
       resumeCondition:
         stringField(blocker, "resume_condition") ||
         `Resume when Azure DevOps run ${candidate.runId} is terminal and its artifacts are available for exact compact result inspection.`,
-      summary:
-        `Feature compact controller refreshed nonterminal Azure DevOps wait ${task.id} after observing run ${candidate.runId} still status=${runStatus}.`,
+      summary: `Feature compact controller refreshed nonterminal Azure DevOps wait ${task.id} after observing run ${candidate.runId} still status=${runStatus}.`,
       category: stringField(blocker, "category") || "external-wait",
       owner: stringField(blocker, "owner") || task.owner,
       waitingFor: recordValue(blocker.waiting_for) ?? undefined,
@@ -876,10 +884,7 @@ function featureKeysRepresentedByTask(input: {
     const explicitFeatureKeys = context[contextKey];
     if (!Array.isArray(explicitFeatureKeys)) continue;
     for (const explicitFeatureKey of explicitFeatureKeys) {
-      if (
-        typeof explicitFeatureKey === "string" &&
-        explicitFeatureKey.trim()
-      ) {
+      if (typeof explicitFeatureKey === "string" && explicitFeatureKey.trim()) {
         keys.add(explicitFeatureKey.trim());
       }
     }
@@ -1126,10 +1131,7 @@ function compactFollowupGroups(
     ) {
       continue;
     }
-    if (
-      blockedNeedsFollowup &&
-      input.actionableFeatureKeys?.has(featureKey)
-    ) {
+    if (blockedNeedsFollowup && input.actionableFeatureKeys?.has(featureKey)) {
       updateFeatureCompactItem(state, featureKey, {
         lastSupportWorkFingerprint: featureWorkFingerprint,
       });
@@ -3612,9 +3614,7 @@ function taskIsCanonicalPipelineWait(
   const waitingFor = recordValue(blocker?.waiting_for);
   const waitingType =
     typeof waitingFor?.type === "string" ? waitingFor.type : "";
-  const waitingRunId = String(
-    waitingFor?.runId ?? waitingFor?.run_id ?? "",
-  );
+  const waitingRunId = String(waitingFor?.runId ?? waitingFor?.run_id ?? "");
   if (
     (status === "blocked" || status === "waiting") &&
     waitingRunId === runId &&
@@ -3683,9 +3683,7 @@ function reconcileActiveReadySubsetPipelineWaits(input: {
         },
         observation_method:
           "The compact controller polls the structured ADO run id and moves this exact wait to review when the run becomes terminal.",
-        next_check_at: new Date(
-          now.getTime() + 10 * 60 * 1000,
-        ).toISOString(),
+        next_check_at: new Date(now.getTime() + 10 * 60 * 1000).toISOString(),
         resume_condition: `Resume when Azure DevOps run ${runId} is terminal and its artifacts are available.`,
         fallback_at: new Date(
           now.getTime() + input.waitTimeoutMinutes * 60 * 1000,
@@ -3739,12 +3737,18 @@ function reconcileActiveReadySubsetPipelineWaits(input: {
         });
         createdTaskIds.push(waitTaskId);
       } catch (error) {
-        if (!(error instanceof Error) || !error.message.includes("already exists")) {
+        if (
+          !(error instanceof Error) ||
+          !error.message.includes("already exists")
+        ) {
           throw error;
         }
         tree = readTaskTree(input.config);
         carrier = tree.tasks[waitTaskId];
-        if (carrier && !taskIsCanonicalPipelineWait(carrier, runId, input.loopTaskId)) {
+        if (
+          carrier &&
+          !taskIsCanonicalPipelineWait(carrier, runId, input.loopTaskId)
+        ) {
           withTreeLock(input.config, () => {
             const repairTree = readTaskTree(input.config);
             const staleCarrier = repairTree.tasks[waitTaskId];
@@ -4537,10 +4541,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? openChildCount(postProjectionLoopTask, postProjectionTree.tasks)
         : 0,
       openSupportChildren: postProjectionLoopTask
-        ? openSupportChildCount(postProjectionLoopTask, postProjectionTree.tasks)
+        ? openSupportChildCount(
+            postProjectionLoopTask,
+            postProjectionTree.tasks,
+          )
         : 0,
       blockedWaitChildren: postProjectionLoopTask
-        ? blockedWaitChildCount(postProjectionLoopTask, postProjectionTree.tasks)
+        ? blockedWaitChildCount(
+            postProjectionLoopTask,
+            postProjectionTree.tasks,
+          )
         : 0,
       blockedWaitFeatureKeys: postProjectionLoopTask
         ? blockedWaitFeatureKeys(

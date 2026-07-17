@@ -126,7 +126,19 @@ describe("Project Supervisor V2 review handoff", () => {
         ts: "2026-07-16T04:01:00.000Z",
       },
     ];
-    const pendingApply = snapshot(config, BASE + 61_000, reviews);
+    const freshApply = snapshot(config, BASE + 61_000, reviews);
+    expect(
+      freshApply.invariants.some(
+        (finding) => finding.type === "review-decision-not-applied",
+      ),
+    ).toBe(false);
+    expect(
+      claimNextReviewHandoffActionV2(config, freshApply, {
+        now: "2026-07-16T04:01:01.000Z",
+      }),
+    ).toMatchObject({ claimed: false });
+
+    const pendingApply = snapshot(config, BASE + 6 * 60_000 + 1_000, reviews);
     const pendingFinding = pendingApply.invariants.find(
       (finding) => finding.type === "review-decision-not-applied",
     );
@@ -134,7 +146,7 @@ describe("Project Supervisor V2 review handoff", () => {
       /^review-decision-not-applied:review-task:2:attempt-2:[a-f0-9]{24}$/,
     );
     const reviewedClaim = claimNextReviewHandoffActionV2(config, pendingApply, {
-      now: "2026-07-16T04:01:01.000Z",
+      now: "2026-07-16T04:06:01.000Z",
     });
     expect(reviewedClaim).toMatchObject({
       claimed: true,

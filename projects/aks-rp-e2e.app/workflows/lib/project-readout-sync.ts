@@ -91,8 +91,15 @@ function isSuppressedReadoutRepairLeaf(task: TaskNode | undefined): boolean {
     !!reviewedTask &&
     typeof reviewedTask === "object" &&
     !Array.isArray(reviewedTask);
+  const selfScopedFocusMetadataRepair =
+    /refresh only the current focus metadata surfaces/i.test(goal) ||
+    /current focus metadata surfaces that still advertise/i.test(goal);
 
-  return hasReviewedTask || /non-repair frontier/i.test(goal);
+  return (
+    hasReviewedTask ||
+    /non-repair frontier/i.test(goal) ||
+    selfScopedFocusMetadataRepair
+  );
 }
 
 function filterSuppressedReadoutRepairIds(
@@ -199,6 +206,9 @@ function stringArrayValue(
 
 type RootContractReadout = {
   scope: string;
+  controllerTaskId: string;
+  controllerOwner: string | null;
+  controllerState: string;
   excludesTaskId: string | null;
   scopedRepairTaskIds: string[];
   acceptedPublicationLeafId: string | null;
@@ -329,6 +339,13 @@ function projectRootContractReadout(
 
   return {
     scope,
+    controllerTaskId: projectTask.id,
+    controllerOwner:
+      typeof projectTask.owner === "string" &&
+      projectTask.owner.trim().length > 0
+        ? projectTask.owner.trim()
+        : null,
+    controllerState: nodeState(projectTask),
     excludesTaskId,
     scopedRepairTaskIds,
     acceptedPublicationLeafId,
@@ -504,6 +521,17 @@ type ReadoutParityBundle = {
   proposalReason: string;
 };
 
+function buildFrontierBands(input: {
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const { activeTaskIds, reviewTaskIds, waitingTaskIds, runnableTaskIds } =
+    input;
+  return `active=[${formatFrontierIds(activeTaskIds)}], review=[${formatFrontierIds(reviewTaskIds)}], waiting=[${formatFrontierIds(waitingTaskIds)}], runnable=[${formatFrontierIds(runnableTaskIds)}]`;
+}
+
 function buildFrontierVector(input: {
   counts: SyncProjectReadoutResult["counts"];
   activeTaskIds: string[];
@@ -511,14 +539,227 @@ function buildFrontierVector(input: {
   waitingTaskIds: string[];
   runnableTaskIds: string[];
 }): string {
-  const {
-    counts,
-    activeTaskIds,
-    reviewTaskIds,
-    waitingTaskIds,
-    runnableTaskIds,
-  } = input;
-  return `active=[${formatFrontierIds(activeTaskIds)}], review=[${formatFrontierIds(reviewTaskIds)}], waiting=[${formatFrontierIds(waitingTaskIds)}], runnable=[${formatFrontierIds(runnableTaskIds)}], blocked=${counts.blocked}`;
+  const { counts, ...bands } = input;
+  return `${buildFrontierBands(bands)}, blocked=${counts.blocked}`;
+}
+
+function buildFocusMissionSuccessCriterion(input: {
+  rootContract: boolean;
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const scope = input.rootContract
+    ? "current controller-visible root frontier"
+    : "current controller-visible frontier";
+  return `Focus metadata and mirrored runtime focusMission surfaces represent the ${scope} as ${buildFrontierBands(input)}.`;
+}
+
+function buildFocusProposalLearnedFrontier(input: {
+  rootContract: boolean;
+  counts: SyncProjectReadoutResult["counts"];
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const scope = input.rootContract
+    ? "current controller-visible root frontier"
+    : "current controller-visible frontier";
+  return `The ${scope} is ${buildFrontierVector(input)}. Summary/frontier/packet should follow these live leaf ids rather than stale completed-review projections.`;
+}
+
+function buildFocusProposalParallelLeafs(
+  counts: SyncProjectReadoutResult["counts"],
+): string {
+  return `Parallel work is concrete: ${counts.active} active, ${counts.review} review, ${counts.waiting} waiting, ${counts.runnable} runnable. Owner-loop throughput should come from these exact live frontier leaves.`;
+}
+
+function normalizedStringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function refreshFocusProposalNarrative(input: {
+  proposalContext: ProjectStateRecord;
+  counts: SyncProjectReadoutResult["counts"];
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+  rootContract: boolean;
+}): void {
+  const successCriteria = normalizedStringList(
+    input.proposalContext.success_criteria,
+  );
+  if (successCriteria.length > 0) {
+    input.proposalContext.success_criteria = [
+      buildFocusMissionSuccessCriterion(input),
+      ...successCriteria.slice(1),
+    ];
+  }
+
+  const progressReview = objectValue(input.proposalContext.progress_review);
+  const answers = objectValue(progressReview.answers);
+  const learned = normalizedStringList(answers.learned_or_verified);
+  if (learned.length > 0) {
+    answers.learned_or_verified = [
+      buildFocusProposalLearnedFrontier(input),
+      ...learned.slice(1),
+    ];
+  }
+  if (typeof answers.parallel_leafs === "string") {
+    answers.parallel_leafs = buildFocusProposalParallelLeafs(input.counts);
+  }
+  if (Object.keys(answers).length > 0) {
+    progressReview.answers = answers;
+    input.proposalContext.progress_review = progressReview;
+  }
+}
+
+function refreshFocusMissionNarrative(input: {
+  focusMission: ProjectStateRecord;
+  counts: SyncProjectReadoutResult["counts"];
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+  rootContract: boolean;
+}): void {
+  const successCriteria = normalizedStringList(
+    input.focusMission.successCriteria,
+  );
+  input.focusMission.successCriteria =
+    successCriteria.length > 0
+      ? [buildFocusMissionSuccessCriterion(input), ...successCriteria.slice(1)]
+      : [buildFocusMissionSuccessCriterion(input)];
+}
+
+function buildFocusBranchGoal(input: {
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  return `Keep one visible 12-24h focus branch aligned to the current live frontier excluding this metadata-repair leaf: ${buildFrontierBands(input)}, while preserving existing blocked lineage and avoiding new cloud work from bookkeeping alone.`;
+}
+
+function buildFocusBranchAcceptanceCriterion(input: {
+  rootContract: boolean;
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const scope = input.rootContract
+    ? "controller-visible current root frontier"
+    : "controller-visible current frontier";
+  return `This focus branch is the single visible 12-24h mission and truthfully represents the ${scope}: ${buildFrontierBands(input)}.`;
+}
+
+function buildFocusProgressReviewSummary(input: {
+  rootContract: boolean;
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const scope = input.rootContract
+    ? "current controller-visible root frontier"
+    : "current controller-visible frontier";
+  return `The focus branch is refreshed to the ${scope} ${buildFrontierBands(input)}. The visible branch must track live active/review leaves rather than stale completed-review projections.`;
+}
+
+function buildFocusProgressReviewEvidence(input: {
+  rootContract: boolean;
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+}): string {
+  const scope = input.rootContract
+    ? "current controller-visible root frontier"
+    : "current controller-visible frontier";
+  return `Focus progress review refreshed stale focus-branch frontier metadata to ${scope} ${buildFrontierBands(input)}.`;
+}
+
+function buildFocusObservationParallelGap(
+  counts: SyncProjectReadoutResult["counts"],
+): string {
+  return `The current focus carries ${counts.active} active, ${counts.review} review, ${counts.waiting} waiting, and ${counts.runnable} runnable leaves.`;
+}
+
+function refreshLiveFocusTaskMetadata(input: {
+  focusTask: TaskNode;
+  counts: SyncProjectReadoutResult["counts"];
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  waitingTaskIds: string[];
+  runnableTaskIds: string[];
+  blockedTaskIds: string[];
+  rootContract: boolean;
+}): void {
+  input.focusTask.goal = buildFocusBranchGoal(input);
+
+  const acceptance = normalizedStringList(input.focusTask.acceptance);
+  if (acceptance.length > 0) {
+    input.focusTask.acceptance = [
+      buildFocusBranchAcceptanceCriterion(input),
+      ...acceptance.slice(1),
+    ];
+  }
+
+  const context = objectValue(input.focusTask.context);
+  context.active_task_ids = input.activeTaskIds;
+  context.review_task_ids = input.reviewTaskIds;
+  context.waiting_task_ids = input.waitingTaskIds;
+  context.runnable_task_ids = input.runnableTaskIds;
+  context.linked_blocked_task_ids = input.blockedTaskIds;
+  context.live_review_frontier_task_ids = input.reviewTaskIds;
+  context.excluded_review_task_ids = [];
+  refreshFocusProposalNarrative({
+    proposalContext: context,
+    counts: input.counts,
+    activeTaskIds: input.activeTaskIds,
+    reviewTaskIds: input.reviewTaskIds,
+    waitingTaskIds: input.waitingTaskIds,
+    runnableTaskIds: input.runnableTaskIds,
+    rootContract: input.rootContract,
+  });
+
+  const progressReview = objectValue(context.progress_review);
+  if (Object.keys(progressReview).length > 0) {
+    if (typeof progressReview.summary === "string") {
+      progressReview.summary = buildFocusProgressReviewSummary(input);
+    }
+    const evidence = normalizedStringList(progressReview.evidence);
+    if (evidence.length > 0) {
+      progressReview.evidence = [
+        buildFocusProgressReviewEvidence(input),
+        ...evidence.slice(1),
+      ];
+    }
+    context.progress_review = progressReview;
+  }
+
+  const observations = objectValue(context.observations);
+  if (Object.keys(observations).length > 0) {
+    observations.frontier_active_leaf_count = input.counts.active;
+    observations.frontier_review_leaf_count = input.counts.review;
+    observations.frontier_waiting_leaf_count = input.counts.waiting;
+    observations.frontier_runnable_leaf_count = input.counts.runnable;
+    observations.frontier_blocked_leaf_count = input.counts.blocked;
+    observations.parallel_work_gap = buildFocusObservationParallelGap(
+      input.counts,
+    );
+    observations.structural_status =
+      "Focus metadata now mirrors the live controller-visible frontier instead of stale completed-review projections.";
+    context.observations = observations;
+  }
+
+  input.focusTask.context = context;
 }
 
 function buildFrontierSentence(input: {
@@ -603,19 +844,25 @@ function rootContractBlockedLineageSentence(root: RootContractReadout): string {
   return `Preserved blocked carrier lineage remains ${blockedLineage}. Exact top-level blocked steward waits remain ${topLevelBlocked}.`;
 }
 
+function rootControllerSentence(root: RootContractReadout): string {
+  return root.controllerOwner
+    ? `Structural controller ${root.controllerTaskId} remains ${root.controllerState} and owned by ${root.controllerOwner}.`
+    : `Structural controller ${root.controllerTaskId} remains ${root.controllerState}.`;
+}
+
 function buildRootContractCurrentStateSummary(input: {
   updatedAt: string;
   root: RootContractReadout;
   counts: SyncProjectReadoutResult["counts"];
 }): string {
   const { updatedAt, root, counts } = input;
-  return `Project-root readout at ${updatedAt} mirrors project.context.current_root_readout (${root.scope}): app-ops follow-through active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}], blocked=${counts.blocked}. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
+  return `Project-root readout at ${updatedAt} mirrors project.context.current_root_readout (${root.scope}): ${rootControllerSentence(root)} app-ops follow-through active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}], blocked=${counts.blocked}. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
 }
 
 function buildRootContractCurrentFocusSummary(
   root: RootContractReadout,
 ): string {
-  return `Current root-frontier follow-through is active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}]. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
+  return `Current root-frontier follow-through is active=[${formatFrontierIds(root.activeTaskIdsExcludingSelf)}], review=[${formatFrontierIds(root.reviewTaskIds)}], waiting=[${formatFrontierIds(root.waitingTaskIds)}], runnable=[${formatFrontierIds(root.runnableTaskIds)}]. ${rootControllerSentence(root)} ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
 }
 
 function buildRootContractNextAction(root: RootContractReadout): string {
@@ -638,7 +885,7 @@ function buildRootContractParityBundle(input: {
       waitingTaskIds: root.waitingTaskIds,
       runnableTaskIds: root.runnableTaskIds,
     },
-  )}. ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
+  )}. ${rootControllerSentence(root)} ${rootContractPublicationSentence(root)} ${rootContractBlockedLineageSentence(root)}`;
   return {
     frontierSentence,
     focusReviewNote: `Readout sync refreshed the current top-level root contract. ${frontierSentence}`,
@@ -760,6 +1007,11 @@ export function syncProjectReadout(
         ...runnableTaskIds,
       ])
     : liveFocusIds;
+  const representedActiveTaskIds = rootContract
+    ? activeTaskIds
+    : activeTaskIds.length > 0
+      ? activeTaskIds
+      : liveFocusIds;
   const proposedTaskIds = rootContract
     ? unique([...visibleFocusIds, ...rootContract.blockedLineageIds])
     : allLiveIds;
@@ -825,22 +1077,31 @@ export function syncProjectReadout(
         activeTaskIds,
         blockedDisposition: disposition,
       });
-  currentFocus.activeTaskIds = rootContract ? activeTaskIds : liveFocusIds;
+  currentFocus.activeTaskIds = representedActiveTaskIds;
   currentFocus.proposedTaskIds = proposedTaskIds;
   currentFocus.snapshot = snapshotMetadata;
-  if (rootContract) {
-    const currentFocusMission = objectValue(currentFocus.focusMission);
-    currentFocusMission.activeTaskIds = activeTaskIds;
-    currentFocusMission.reviewTaskIds = reviewTaskIds;
-    currentFocusMission.liveReviewFrontierTaskIds = reviewTaskIds;
-    currentFocusMission.excludedReviewTaskIds = [];
-    delete currentFocusMission.exclusionRule;
-    delete currentFocusMission.exclusionReason;
-    currentFocusMission.waitingTaskIds = waitingTaskIds;
-    currentFocusMission.runnableTaskIds = runnableTaskIds;
-    currentFocusMission.linkedBlockedTaskIds = rootContract.blockedLineageIds;
-    currentFocus.focusMission = currentFocusMission;
-  }
+  const currentFocusMission = objectValue(currentFocus.focusMission);
+  currentFocusMission.activeTaskIds = representedActiveTaskIds;
+  currentFocusMission.reviewTaskIds = reviewTaskIds;
+  currentFocusMission.liveReviewFrontierTaskIds = reviewTaskIds;
+  currentFocusMission.excludedReviewTaskIds = [];
+  delete currentFocusMission.exclusionRule;
+  delete currentFocusMission.exclusionReason;
+  currentFocusMission.waitingTaskIds = waitingTaskIds;
+  currentFocusMission.runnableTaskIds = runnableTaskIds;
+  currentFocusMission.linkedBlockedTaskIds = rootContract
+    ? rootContract.blockedLineageIds
+    : liveLeaves.blocked;
+  refreshFocusMissionNarrative({
+    focusMission: currentFocusMission,
+    counts,
+    activeTaskIds: representedActiveTaskIds,
+    reviewTaskIds,
+    waitingTaskIds,
+    runnableTaskIds,
+    rootContract: !!rootContract,
+  });
+  currentFocus.focusMission = currentFocusMission;
   currentFocusReview.reviewedAt = nowIso;
   currentFocusReview.result = "updated";
   currentFocusReview.note = parityBundle.focusReviewNote;
@@ -902,6 +1163,15 @@ export function syncProjectReadout(
       proposalContext.blocked_task_ids = rootContract.blockedLineageIds;
       proposalContext.linked_blocked_task_ids = rootContract.blockedLineageIds;
       proposalContext.proposed_task_ids = proposedTaskIds;
+      refreshFocusProposalNarrative({
+        proposalContext,
+        counts,
+        activeTaskIds,
+        reviewTaskIds,
+        waitingTaskIds,
+        runnableTaskIds,
+        rootContract: true,
+      });
       currentFocusProposal.context = proposalContext;
 
       const currentRootReadout = objectValue(
@@ -912,6 +1182,9 @@ export function syncProjectReadout(
       currentRootReadout.snapshot_captured_at = projectSnapshot.capturedAt;
       currentRootReadout.source_tree_updated_at = projectSnapshot.treeUpdatedAt;
       currentRootReadout.contract_scope = rootContract.scope;
+      currentRootReadout.controller_task_id = rootContract.controllerTaskId;
+      currentRootReadout.controller_owner = rootContract.controllerOwner;
+      currentRootReadout.controller_state = rootContract.controllerState;
       currentRootReadout.excludes_task_id =
         rootContract.scopedRepairTaskIds[0] ?? rootContract.excludesTaskId;
       currentRootReadout.active_task_ids_excluding_self =
@@ -940,6 +1213,24 @@ export function syncProjectReadout(
       currentRootReadout.accepted_publication_leaf_archived_at =
         rootContract.acceptedPublicationLeafArchivedAt;
       projectContext.current_root_readout = currentRootReadout;
+
+      const liveFocusTask =
+        focusPlan?.id && lockedTree.tasks[focusPlan.id]
+          ? lockedTree.tasks[focusPlan.id]
+          : null;
+      if (liveFocusTask && nodeState(liveFocusTask) !== "done") {
+        refreshLiveFocusTaskMetadata({
+          focusTask: liveFocusTask,
+          counts,
+          activeTaskIds,
+          reviewTaskIds,
+          waitingTaskIds,
+          runnableTaskIds,
+          blockedTaskIds: rootContract.blockedLineageIds,
+          rootContract: true,
+        });
+        liveFocusTask.updated_at = nowIso;
+      }
     }
     projectContext.current_focus_proposal = currentFocusProposal;
     projectTask.summary = rootContract

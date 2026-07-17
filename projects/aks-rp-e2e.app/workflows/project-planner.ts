@@ -6,6 +6,7 @@
  * already-clear backlog dispatch.
  */
 
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { Database } from "bun:sqlite";
@@ -27,6 +28,7 @@ import {
   planningPacket,
   peekTaskAssignments,
   readTask,
+  readyPathFrontierMaterialization,
   refreshBlockedWait,
   rejectTaskReview,
   repairTaskTreeRollups,
@@ -65,6 +67,7 @@ import {
   sourceDir,
   triggerBlock,
   triggerValue,
+  type TriggerEvent,
 } from "./lib/workflow-input.ts";
 import {
   defaultSpecLoopStatePath,
@@ -181,6 +184,19 @@ type ReviewedTaskLineageContext = {
   projectCurrentFocusId?: string;
   projectCurrentFocusReason?: string;
   projectCurrentFocusEvidencePath?: string;
+};
+
+type BlockedTriggerTaskLineageContext = {
+  triggerTaskId: string;
+  source: "live" | "archive" | "missing";
+  liveState?: string;
+  liveGoal?: string;
+  archiveFile?: string;
+  archivedState?: string;
+  archivedGoal?: string;
+  archivedResolution?: string;
+  replacementTaskIds?: string[];
+  replacementSummary?: string;
 };
 
 function isLoopOwnedChildTask(config: TaskTreeConfig, taskId: string): boolean {
@@ -374,6 +390,90 @@ function plannerWorkerForTask(
   return input.worker;
 }
 
+function openReadyPathFrontierMaterializationProblemTaskId(
+  config: TaskTreeConfig,
+): string | null {
+  const tree = readTaskTree(config);
+  const match = Object.values(tree.tasks).find((task) => {
+    const state = String(task.status ?? task.state ?? "");
+    if (state === "done") return false;
+    return Array.isArray(task.conflict_scope)
+      ? task.conflict_scope.includes("ops:ready-model-path-frontier-refill")
+      : false;
+  });
+  return match?.id ?? null;
+}
+
+function ensureReadyPathFrontierMaterializationProblem(
+  config: TaskTreeConfig,
+): string | null {
+  const packet = planningPacket(config);
+  if (packet.frontier.runnable.length > 0) return null;
+  if ((packet.frontier.waiting ?? []).length > 0) return null;
+  if (packet.active_task_ids.length > 0) return null;
+
+  const materialization =
+    packet.ready_path_frontier_materialization ??
+    readyPathFrontierMaterialization(config);
+  if (materialization.ready_count <= 0 || materialization.status !== "gap") {
+    return null;
+  }
+
+  const existingTaskId = openReadyPathFrontierMaterializationProblemTaskId(config);
+  if (existingTaskId) return existingTaskId;
+
+  const baseTaskId = `ops/repair-ready-model-path-frontier-refill-gap-${todayStamp()}`;
+  const taskId = readTask(config, baseTaskId)
+    ? uniqueTaskId(config, baseTaskId)
+    : baseTaskId;
+  const uncovered = materialization.unrepresented_ready_path_ids;
+  const sample = uncovered.slice(0, 6).join(", ");
+  const goal =
+    `Repair the ready-model/frontier materialization gap: path-summary still reports ${materialization.ready_count} ready path(s), ` +
+    "but the live controller frontier has zero runnable/active/waiting leaves and not every ready path has a current same-lineage carrier or exact wait.";
+  createTask(config, {
+    id: taskId,
+    parentId: "project",
+    state: "backlog",
+    kind: "domain_leaf",
+    priority: "P1",
+    owner: "app-ops",
+    workflow: "default-task-worker",
+    goal,
+    inputs: [
+      `Ready path summary generated at: ${materialization.generated_at ?? "unknown"}`,
+      `Ready path count: ${materialization.ready_count}`,
+      `Unrepresented ready paths: ${uncovered.join(", ") || "none"}`,
+    ],
+    outputs: [
+      `.state/ops/repair-ready-model-path-frontier-refill-gap-${todayStamp()}.md`,
+    ],
+    acceptance: [
+      "The note identifies which ready paths still lack a current same-lineage carrier or exact wait.",
+      "Planner/task-tree integration is repaired or an exact durable wait/problem representation is created for each uncovered ready path.",
+      "A follow-up frontier check no longer leaves readyCount>0 with zero runnable/active/waiting leaves unless every ready path is truthfully represented by current exact carriers/waits.",
+    ],
+    conflict_scope: ["ops:ready-model-path-frontier-refill"],
+    context: {
+      readyPathFrontierMaterialization: materialization,
+      readyPathFrontierGap: true,
+      readyPathSample: uncovered.slice(0, 12),
+      createdBy: "project-planner",
+      creationTrigger: "ready-path-frontier-materialization-gap",
+      sampleUnrepresentedReadyPaths: sample || undefined,
+    },
+  });
+  appendToolJournal(config, {
+    kind: "ready_path_frontier_materialization_gap_task_created",
+    task_id: taskId,
+    ready_count: materialization.ready_count,
+    unrepresented_ready_path_ids: uncovered,
+    reason:
+      "path-summary still reports ready work but the live controller frontier has no runnable/active/waiting leaves and some ready paths have no current live carrier",
+  });
+  return taskId;
+}
+
 type ReviewDecision = "accept" | "redo" | "followup" | "blocked" | "escalate";
 
 type ReviewedEvent = {
@@ -483,10 +583,10 @@ function compactTaskDetailForPrompt(
   }
 
   if (typeof compact.goal === "string") {
-    compact.goal = truncateText(compact.goal, 360);
+    compact.goal = truncateText(compact.goal, 240);
   }
   if (typeof compact.blocker === "string") {
-    compact.blocker = truncateText(compact.blocker, 360);
+    compact.blocker = truncateText(compact.blocker, 220);
   }
   if (Array.isArray(compact.outputs)) {
     compact.outputs = compact.outputs.slice(0, 3);
@@ -521,13 +621,301 @@ function compactTaskDetailForPrompt(
     if (typeof compactTrace.last_worker_summary === "string") {
       compactTrace.last_worker_summary = truncateText(
         compactTrace.last_worker_summary,
-        360,
+        220,
       );
     }
     compact.trace = compactTrace;
   }
 
   return compact;
+}
+
+function truncatePromptText(value: unknown, maxLength = 240): unknown {
+  if (typeof value !== "string") return value;
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function compactBlockedFrontierGroupForPrompt(entry: unknown): unknown {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    return entry;
+  }
+
+  const source = entry as Record<string, unknown>;
+  const compact: Record<string, unknown> = {};
+  for (const key of Object.keys(source)) {
+    const value = source[key];
+    if (typeof value === "number" || typeof value === "boolean") {
+      compact[key] = value;
+    } else if (typeof value === "string") {
+      compact[key] = truncatePromptText(
+        value,
+        key === "parent_goal" ? 180 : 160,
+      );
+    }
+  }
+
+  for (const key of ["sample_blocked_leaf_ids", "task_ids"]) {
+    const values = source[key];
+    if (!Array.isArray(values)) continue;
+    const itemLimit = 3;
+    compact[key] = values.slice(0, itemLimit).map((value) => {
+      if (typeof value === "string") return truncatePromptText(value, 120);
+      return value;
+    });
+    if (values.length > itemLimit) {
+      compact[`${key}_omitted_count`] = values.length - itemLimit;
+    }
+  }
+
+  for (const key of ["sample_blockers", "sample_goals"]) {
+    const values = source[key];
+    if (!Array.isArray(values)) continue;
+    const itemLimit = 1;
+    compact[key] = values
+      .slice(0, itemLimit)
+      .map((value) => truncatePromptText(value, 180));
+    if (values.length > itemLimit) {
+      compact[`${key}_omitted_count`] = values.length - itemLimit;
+    }
+  }
+
+  return compact;
+}
+
+function compactBlockedFrontierSummaryForPrompt(summary: unknown): unknown {
+  if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+    return summary;
+  }
+  const compact = JSON.parse(JSON.stringify(summary)) as Record<
+    string,
+    unknown
+  >;
+
+  const parentGroups = Array.isArray(compact.parent_groups)
+    ? compact.parent_groups
+    : [];
+  if (parentGroups.length > 0) {
+    const limit = 1;
+    compact.parent_groups = parentGroups
+      .slice(0, limit)
+      .map(compactBlockedFrontierGroupForPrompt);
+    if (parentGroups.length > limit) {
+      compact.parent_groups_omitted_count = parentGroups.length - limit;
+    }
+  }
+
+  const repeatedGroups = Array.isArray(compact.repeated_blocker_groups)
+    ? compact.repeated_blocker_groups
+    : [];
+  if (repeatedGroups.length > 0) {
+    const limit = 2;
+    compact.repeated_blocker_groups = repeatedGroups
+      .slice(0, limit)
+      .map(compactBlockedFrontierGroupForPrompt);
+    if (repeatedGroups.length > limit) {
+      compact.repeated_blocker_groups_omitted_count =
+        repeatedGroups.length - limit;
+    }
+  }
+
+  return compact;
+}
+
+function compactModelStatusPathForPrompt(entry: unknown): unknown {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    return entry;
+  }
+
+  const path = entry as Record<string, unknown>;
+  const compact: Record<string, unknown> = {};
+  for (const key of [
+    "id",
+    "status",
+    "rootCauseClass",
+    "root_cause_class",
+    "verdictFinal",
+    "verdict_final",
+    "label",
+    "retestCondition",
+    "retest_condition",
+  ]) {
+    if (path[key] === undefined) continue;
+    compact[key] =
+      key === "label"
+        ? truncatePromptText(path[key], 160)
+        : key === "retestCondition" || key === "retest_condition"
+          ? truncatePromptText(path[key], 180)
+          : path[key];
+  }
+  return compact;
+}
+
+function compactModelStatusSummaryForPrompt(summary: unknown): unknown {
+  if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+    return summary;
+  }
+
+  const compact = JSON.parse(JSON.stringify(summary)) as Record<
+    string,
+    unknown
+  >;
+  const nonPassingPaths = Array.isArray(compact.non_passing_paths)
+    ? compact.non_passing_paths
+    : [];
+  if (nonPassingPaths.length === 0) return compact;
+
+  const statusCounts: Record<string, number> = {};
+  const rootCauseCounts: Record<string, number> = {};
+  for (const entry of nonPassingPaths) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const path = entry as Record<string, unknown>;
+    const status = stringValue(path.status);
+    if (status) statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+    const rootCause = stringValue(path.rootCauseClass ?? path.root_cause_class);
+    if (rootCause) {
+      rootCauseCounts[rootCause] = (rootCauseCounts[rootCause] ?? 0) + 1;
+    }
+  }
+
+  const limit = 8;
+  compact.non_passing_paths = nonPassingPaths
+    .slice(0, limit)
+    .map(compactModelStatusPathForPrompt);
+  if (nonPassingPaths.length > limit) {
+    compact.omitted_non_passing_paths = nonPassingPaths.length - limit;
+  }
+  if (Object.keys(statusCounts).length > 0) {
+    compact.non_passing_status_counts = statusCounts;
+  }
+  if (Object.keys(rootCauseCounts).length > 0) {
+    compact.non_passing_root_cause_counts = rootCauseCounts;
+  }
+
+  return compact;
+}
+
+function compactOverdueOwnerActionForPrompt(entry: unknown): unknown {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+  const action = entry as Record<string, unknown>;
+  return {
+    taskId: action.taskId,
+    owner: action.owner,
+    watchAt: action.watchAt,
+    nextCheckAt: action.nextCheckAt,
+    resumeAt: action.resumeAt,
+    fallbackAt: action.fallbackAt,
+    recoveryRequired: truncatePromptText(action.recoveryRequired),
+    fallbackAction: truncatePromptText(action.fallbackAction),
+  };
+}
+
+function compactBlockedTaskTriggerEntryForPrompt(entry: unknown): unknown {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+  const task = entry as Record<string, unknown>;
+  const blocker =
+    task.blocker &&
+    typeof task.blocker === "object" &&
+    !Array.isArray(task.blocker)
+      ? (task.blocker as Record<string, unknown>)
+      : null;
+  return {
+    taskId: task.taskId,
+    parentId: task.parentId,
+    owner: task.owner,
+    waitType: task.waitType,
+    updatedAt: task.updatedAt,
+    resumeAt: task.resumeAt,
+    nextCheckAt: task.nextCheckAt,
+    fallbackAt: task.fallbackAt,
+    resumeCondition: truncatePromptText(task.resumeCondition),
+    fallbackAction: truncatePromptText(task.fallbackAction),
+    blocker: blocker
+      ? {
+          condition: truncatePromptText(blocker.condition),
+          category: blocker.category,
+          owner: blocker.owner,
+          resume_condition: truncatePromptText(blocker.resume_condition),
+          next_check_at: blocker.next_check_at,
+          fallback_at: blocker.fallback_at,
+        }
+      : undefined,
+  };
+}
+
+function compactTriggerEventForPrompt(
+  event: TriggerEvent | null,
+): TriggerEvent | null {
+  if (!event) return null;
+  const compact = JSON.parse(JSON.stringify(event)) as TriggerEvent;
+  const data =
+    compact.data &&
+    typeof compact.data === "object" &&
+    !Array.isArray(compact.data)
+      ? (compact.data as Record<string, unknown>)
+      : null;
+  if (!data) return compact;
+
+  if (Array.isArray(data.blockedTasks)) {
+    const limit = 5;
+    const blockedTasks = data.blockedTasks;
+    data.blockedTasks = blockedTasks
+      .slice(0, limit)
+      .map(compactBlockedTaskTriggerEntryForPrompt);
+    if (blockedTasks.length > limit) {
+      data.blockedTasks_omitted_count = blockedTasks.length - limit;
+    }
+  }
+
+  if (Array.isArray(data.overdueOwnerActions)) {
+    const limit = 5;
+    const overdue = data.overdueOwnerActions;
+    data.overdueOwnerActions = overdue
+      .slice(0, limit)
+      .map(compactOverdueOwnerActionForPrompt);
+    if (overdue.length > limit) {
+      data.overdueOwnerActions_omitted_count = overdue.length - limit;
+    }
+  }
+
+  if (
+    data.blockedFrontierSummary &&
+    typeof data.blockedFrontierSummary === "object" &&
+    !Array.isArray(data.blockedFrontierSummary)
+  ) {
+    data.blockedFrontierSummary = compactBlockedFrontierSummaryForPrompt(
+      data.blockedFrontierSummary,
+    );
+  }
+
+  for (const key of ["summary", "message"]) {
+    data[key] = truncatePromptText(data[key], 320);
+  }
+
+  for (const key of ["findings", "feedback", "verification", "artifacts"]) {
+    const values = data[key];
+    if (!Array.isArray(values)) continue;
+    const limit = 6;
+    data[key] = values
+      .slice(0, limit)
+      .map((value) => truncatePromptText(value));
+    if (values.length > limit) {
+      data[`${key}_omitted_count`] = values.length - limit;
+    }
+  }
+
+  return compact;
+}
+
+function compactTriggerBlockForPrompt(raw: string): string {
+  const event = compactTriggerEventForPrompt(parseTriggerEvent(raw));
+  if (!event) return raw;
+  return [
+    "## Trigger Event",
+    "```json",
+    JSON.stringify(event, null, 2),
+    "```",
+  ].join("\n");
 }
 
 function compactPlannerPacketForPrompt(
@@ -566,7 +954,7 @@ function compactPlannerPacketForPrompt(
               return !conditionOwned.has(taskId);
             })
           : entries;
-      const limit = key === "review" ? 5 : 3;
+      const limit = key === "review" ? 4 : 2;
       frontierDetails[key] = actionableEntries
         .slice(0, limit)
         .map((entry) =>
@@ -599,7 +987,7 @@ function compactPlannerPacketForPrompt(
                 typeof taskId !== "string" || !conditionOwned.has(taskId),
             )
           : ids;
-      const limit = key === "blocked" ? 20 : 40;
+      const limit = key === "blocked" ? 12 : 24;
       frontier[key] = actionableIds.slice(0, limit);
       if (actionableIds.length > limit)
         omitted[key] = actionableIds.length - limit;
@@ -609,22 +997,56 @@ function compactPlannerPacketForPrompt(
     }
   }
 
-  const modelStatusSummary =
+  if (Array.isArray(compact.overdueOwnerActions)) {
+    const limit = 5;
+    const overdue = compact.overdueOwnerActions;
+    compact.overdueOwnerActions = overdue
+      .slice(0, limit)
+      .map(compactOverdueOwnerActionForPrompt);
+    if (overdue.length > limit) {
+      compact.overdueOwnerActions_omitted_count = overdue.length - limit;
+    }
+  }
+
+  if (
+    compact.blocked_frontier_summary &&
+    typeof compact.blocked_frontier_summary === "object" &&
+    !Array.isArray(compact.blocked_frontier_summary)
+  ) {
+    compact.blocked_frontier_summary = compactBlockedFrontierSummaryForPrompt(
+      compact.blocked_frontier_summary,
+    );
+  }
+
+  const projectHygieneWarnings = Array.isArray(compact.project_hygiene_warnings)
+    ? compact.project_hygiene_warnings
+    : [];
+  if (projectHygieneWarnings.length > 0) {
+    const limit = 5;
+    compact.project_hygiene_warnings = projectHygieneWarnings
+      .slice(0, limit)
+      .map((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          return entry;
+        }
+        const warning = { ...(entry as Record<string, unknown>) };
+        warning.message = truncatePromptText(warning.message);
+        return warning;
+      });
+    if (projectHygieneWarnings.length > limit) {
+      compact.project_hygiene_warnings_omitted_count =
+        projectHygieneWarnings.length - limit;
+    }
+  }
+
+  if (
     compact.model_status_summary &&
     typeof compact.model_status_summary === "object" &&
     !Array.isArray(compact.model_status_summary)
-      ? (compact.model_status_summary as Record<string, unknown>)
-      : null;
-  if (modelStatusSummary) {
-    const nonPassingPaths = modelStatusSummary.non_passing_paths;
-    if (Array.isArray(nonPassingPaths)) {
-      const limit = 40;
-      modelStatusSummary.non_passing_paths = nonPassingPaths.slice(0, limit);
-      if (nonPassingPaths.length > limit) {
-        modelStatusSummary.omitted_non_passing_paths =
-          nonPassingPaths.length - limit;
-      }
-    }
+  ) {
+    compact.model_status_summary = compactModelStatusSummaryForPrompt(
+      compact.model_status_summary,
+    );
   }
 
   return compact;
@@ -761,6 +1183,206 @@ function reviewedTaskLineageBlock(
 ): string {
   if (!lineage) return "";
   return `\n\nRecovered reviewed-task lineage for this wake:\n\nUse this recovered lineage as current trigger context. If the reviewed task was already compacted into a done-leaf archive, treat that accepted lineage as settled history for the blocked-only refill decision instead of as missing live work.\n\n\`\`\`json\n${JSON.stringify(lineage, null, 2)}\n\`\`\``;
+}
+
+function archivedTaskMatchesForPlanner(
+  config: TaskTreeConfig,
+  taskId: string,
+): Array<{ archiveFile: string; task: TaskNode }> {
+  const matches: Array<{ archiveFile: string; task: TaskNode }> = [];
+  for (const archiveFile of archivedDoneLeafFilesForPlanner(config)) {
+    let parsed: { tasks?: TaskNode[] };
+    try {
+      parsed = JSON.parse(readFileSync(archiveFile, "utf8")) as {
+        tasks?: TaskNode[];
+      };
+    } catch {
+      continue;
+    }
+    const task = Array.isArray(parsed.tasks)
+      ? parsed.tasks.find((candidate) => candidate.id === taskId)
+      : undefined;
+    if (task) {
+      matches.push({
+        archiveFile: archiveFile.replace(`${config.appDir}/`, ""),
+        task,
+      });
+    }
+  }
+  return matches;
+}
+
+function replacementTaskIdsFromText(value: string): string[] {
+  const replacements: string[] = [];
+  const replacedBy = value.match(/Replaced by\s+([A-Za-z0-9_./:-]+)/i);
+  if (replacedBy?.[1]) replacements.push(replacedBy[1]);
+  const replacedWithTask = value.match(
+    /with\s+(?:(?:exact|active)\s+same-lineage\s+)?(?:(?:wait|review)\s+)?task\s+([A-Za-z0-9_./:-]+)/i,
+  );
+  if (replacedWithTask?.[1]) replacements.push(replacedWithTask[1]);
+  const representedBy = value.match(/represented by\s+(.+?)(?:\.|$)/i);
+  if (representedBy?.[1]) {
+    for (const token of representedBy[1]
+      .split(/,|\sand\s/)
+      .map((part) => part.trim().replace(/[.`]/g, ""))
+      .filter(Boolean)) {
+      if (/[/.:-]/.test(token) || token.includes("-")) {
+        replacements.push(token);
+      }
+    }
+  }
+  return [...new Set(replacements)];
+}
+
+function replacementTaskIdsFromTask(task: TaskNode): string[] {
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
+  const context =
+    task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context)
+      ? (task.context as Record<string, unknown>)
+      : {};
+  const explicit = Array.isArray(
+    trace.compact_holder_projection_replacement_task_ids,
+  )
+    ? trace.compact_holder_projection_replacement_task_ids
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && !!value.trim(),
+        )
+        .map((value) => value.trim())
+    : [];
+  const textCandidates = [
+    stringValue(task.result),
+    stringValue(trace.review_summary),
+    stringValue(context.acceptance_note),
+  ].filter(
+    (value): value is string => typeof value === "string" && !!value.trim(),
+  );
+  const fromText = textCandidates.flatMap((value) =>
+    replacementTaskIdsFromText(value),
+  );
+  return [...new Set([...explicit, ...fromText])];
+}
+
+function liveTaskShouldResolveThroughReplacement(task: TaskNode): boolean {
+  const state = taskState(task as NonNullable<ReturnType<typeof readTask>>);
+  const resolution = stringValue(task.resolution);
+  return state === "done" || resolution === "replaced";
+}
+
+function resolveBlockedTriggerTaskReplacementIds(
+  config: TaskTreeConfig,
+  taskId: string,
+): string[] {
+  const queue = [taskId];
+  const visited = new Set<string>();
+  const live = new Set<string>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    const liveTask = readTask(config, current);
+    if (liveTask) {
+      const replacementTaskIds = replacementTaskIdsFromTask(liveTask);
+      if (
+        replacementTaskIds.length > 0 &&
+        liveTaskShouldResolveThroughReplacement(liveTask)
+      ) {
+        for (const replacementId of replacementTaskIds) {
+          if (!visited.has(replacementId)) queue.push(replacementId);
+        }
+        continue;
+      }
+      live.add(current);
+      continue;
+    }
+
+    for (const match of archivedTaskMatchesForPlanner(config, current)) {
+      for (const replacementId of replacementTaskIdsFromTask(match.task)) {
+        if (!visited.has(replacementId)) queue.push(replacementId);
+      }
+    }
+  }
+
+  live.delete(taskId);
+  return [...live].sort((left, right) => left.localeCompare(right));
+}
+
+function recoverBlockedTriggerTaskLineage(
+  config: TaskTreeConfig,
+  rawTask: string,
+): BlockedTriggerTaskLineageContext[] {
+  const blockedTasks = triggerBlockedTasks(rawTask);
+  return blockedTasks.flatMap<BlockedTriggerTaskLineageContext>(
+    (blockedTask) => {
+      const liveTask = readTask(config, blockedTask.taskId);
+      if (liveTask && taskState(liveTask) === "blocked") return [];
+
+      const archiveMatches = archivedTaskMatchesForPlanner(
+        config,
+        blockedTask.taskId,
+      );
+      if (archiveMatches.length === 0) {
+        return [
+          {
+            triggerTaskId: blockedTask.taskId,
+            source: "missing",
+          },
+        ];
+      }
+
+      const match = archiveMatches[archiveMatches.length - 1];
+      const replacementTaskIds = resolveBlockedTriggerTaskReplacementIds(
+        config,
+        blockedTask.taskId,
+      );
+      const trace =
+        match.task.trace &&
+        typeof match.task.trace === "object" &&
+        !Array.isArray(match.task.trace)
+          ? (match.task.trace as Record<string, unknown>)
+          : {};
+      const context =
+        match.task.context &&
+        typeof match.task.context === "object" &&
+        !Array.isArray(match.task.context)
+          ? (match.task.context as Record<string, unknown>)
+          : {};
+      const replacementSummary =
+        stringValue(trace.review_summary) ||
+        stringValue(context.acceptance_note) ||
+        stringValue(match.task.result);
+
+      return [
+        {
+          triggerTaskId: blockedTask.taskId,
+          source: "archive",
+          archiveFile: match.archiveFile,
+          archivedState: taskState(match.task),
+          archivedGoal: match.task.goal,
+          archivedResolution:
+            typeof match.task.resolution === "string"
+              ? match.task.resolution
+              : undefined,
+          ...(replacementTaskIds.length > 0 ? { replacementTaskIds } : {}),
+          ...(replacementSummary ? { replacementSummary } : {}),
+        },
+      ];
+    },
+  );
+}
+
+function blockedTriggerTaskLineageBlock(
+  lineage: BlockedTriggerTaskLineageContext[],
+): string {
+  if (lineage.length === 0) return "";
+  return `\n\nRecovered stale blocked-task trigger lineage for this wake:\n\nUse this recovered lineage instead of trusting stale trigger ids. When a blocked-frontier trigger cites an archived or missing task, prefer the current live replacement ids below and treat the trigger id as historical lineage only.\n\n\`\`\`json\n${JSON.stringify(lineage, null, 2)}\n\`\`\``;
 }
 
 function timeoutFromEnv(name: string, fallbackMs: number): number {
@@ -1071,6 +1693,7 @@ function buildPlannerPrompt(input: {
   wakeReason: string | null;
   aggressivePush: boolean;
   conditionOwnedTaskIds: string[];
+  config: TaskTreeConfig;
 }): string {
   const singleAssignmentWakeGuidance = [
     "task-completed",
@@ -1356,7 +1979,9 @@ ${JSON.stringify(
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
-${input.trigger}`.trim();
+${compactTriggerBlockForPrompt(input.trigger)}${blockedTriggerTaskLineageBlock(
+    recoverBlockedTriggerTaskLineage(input.config, input.trigger),
+  )}`.trim();
 }
 
 function buildEventReviewPrompt(input: {
@@ -1369,6 +1994,7 @@ function buildEventReviewPrompt(input: {
   humanSteering: Record<string, unknown>[];
   reviewedTaskLineage: ReviewedTaskLineageContext | null;
   conditionOwnedTaskIds: string[];
+  config: TaskTreeConfig;
 }): string {
   return `Planner Event Review Step
 
@@ -1434,7 +2060,9 @@ ${JSON.stringify(
 \`\`\`
 ${humanSteeringBlock(input.humanSteering)}
 
-${input.trigger}
+${compactTriggerBlockForPrompt(input.trigger)}${blockedTriggerTaskLineageBlock(
+    recoverBlockedTriggerTaskLineage(input.config, input.trigger),
+  )}
 
 Finish with a short section starting with EVENT_REVIEW:.`.trim();
 }
@@ -1723,7 +2351,73 @@ type QueuedPipelineRun = {
   runId: string;
   specIds: string[];
   runUrl: string;
+  target?: string;
+  branch?: string;
+  sourceVersion?: string;
+  metadataPath?: string;
+  baseRef?: string;
+  baseCommit?: string;
+  sourceCommit?: string;
+  firstParentCommits?: string[];
+  changedFiles?: string[];
+  worktreePath?: string;
 };
+
+const STRUCTURED_RESULT_TEMPLATE_TEXTS = new Set([
+  "exact spec id, or empty when specresults is used",
+  "azure devops run id",
+  "azure devops run url, if known",
+  "exact result.json path or aggregate result path",
+  "short artifact-backed verdict",
+  "resource group observed in the artifact, if applicable",
+  "cluster name observed in the artifact, if applicable",
+  "exact artifact/result/evidence refs",
+  "exact spec ids covered by this run",
+  "target profile",
+  "branch or ref used",
+  "commit sha when known",
+  "local dispatch metadata path when available",
+  "exact subject id",
+  "specific root-cause diagnosis or the exact missing fact",
+  "pipeline/run id or empty when unavailable",
+  "result artifact path or empty when unavailable",
+  "phase or empty",
+  "assertion or empty",
+  "short excerpt or empty",
+  "current input fingerprint or empty",
+  "current error fingerprint or empty",
+  "files changed, if any",
+  "verification run id or empty",
+  "verification result path or empty",
+  "why this next action is the smallest truthful move",
+  "pass | fail | error",
+  "pass | fail | error | not-run",
+  "done | rerun-after-change | create-domain-repair | create-ops-repair | exact-wait | escalate",
+  "spec | compact-feature | feature-family",
+  "request-shape-invalid | test-code-bug | compact-plan-conflict | pipeline-infrastructure | missing-result-artifact | product-behavior-mismatch | capacity-exhausted | needs-diagnosis | other-known-class",
+]);
+
+function normalizedStructuredResultText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isStructuredResultTemplateText(value: unknown): boolean {
+  const text = stringValue(value);
+  if (!text) return false;
+  return STRUCTURED_RESULT_TEMPLATE_TEXTS.has(
+    normalizedStructuredResultText(text),
+  );
+}
+
+function isConcreteStructuredResultText(value: unknown): boolean {
+  const text = stringValue(value);
+  return Boolean(text) && !isStructuredResultTemplateText(text);
+}
+
+function isOptionalConcreteStructuredResultText(value: unknown): boolean {
+  const text = stringValue(value);
+  return !text || !isStructuredResultTemplateText(text);
+}
 
 type ExactPipelineWait = {
   runId: string;
@@ -1738,6 +2432,31 @@ type ExactExternalWait = {
   diagnosis: string;
   sourceRunId: string;
   sourceRunUrl: string;
+};
+
+type NormalizationPublicationCandidate = {
+  specId: string;
+  runId: string;
+  runUrl: string;
+  sourceCommit: string;
+  sourceTaskId: string;
+  sourceAttemptId: string;
+};
+
+type NormalizationPublicationTaskInfo = {
+  taskId: string;
+  parentId: string;
+  targetBranch: string;
+  createdAtMs: number;
+};
+
+type NormalizationPublicationLineage = {
+  rootTaskId: string;
+  gateTaskId: string;
+  parentId: string;
+  targetBranch: string;
+  createdAtMs: number;
+  depth: number;
 };
 
 function fixForwardExactWaitPayload(
@@ -1776,6 +2495,39 @@ function fixForwardExactWaitPayload(
       "Reviewed fix-forward evidence says the same exact wait remains.",
     specIds: [...ids].sort((a, b) => a.localeCompare(b)),
   };
+}
+
+const NORMALIZATION_ISOLATED_WORKTREE_ROOT =
+  "domain/normalize-scenario-tests-repo-frontier-20260715";
+
+function taskHasAncestorId(
+  config: TaskTreeConfig,
+  taskId: string,
+  ancestorId: string,
+): boolean {
+  let currentId: string | undefined = taskId;
+  const seen = new Set<string>();
+  while (currentId && !seen.has(currentId)) {
+    if (currentId === ancestorId) return true;
+    seen.add(currentId);
+    const task = readTask(config, currentId);
+    currentId =
+      task && typeof task.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id.trim()
+        : undefined;
+  }
+  return false;
+}
+
+function normalizationIsolatedWorktreeRequired(
+  config: TaskTreeConfig,
+  taskId: string,
+): boolean {
+  return taskHasAncestorId(
+    config,
+    taskId,
+    NORMALIZATION_ISOLATED_WORKTREE_ROOT,
+  );
 }
 
 function looksLikeLocalVerificationRunId(runId: string): boolean {
@@ -1940,7 +2692,8 @@ function acceptedSpecVerifierResults(
 
   if (rawSpecResults.length === 0) {
     const specId =
-      stringValue(subject?.id) || stringValue(details.specId) || "";
+      stringValue(details.specId) ||
+      (stringValue(subject?.kind) === "spec" ? stringValue(subject?.id) : "");
     const loopStatus = normalizeSpecVerifierStatus(details.specStatus);
     const resultPath = aggregateResultPath;
     if (
@@ -2076,10 +2829,81 @@ function applyAcceptedSpecVerifierResults(input: {
   return acceptedSpecIds;
 }
 
+function taskRepresentsSpecRunLineage(input: {
+  task: TaskNode;
+  specId: string;
+  runId: string;
+}): boolean {
+  const context = taskContext(input.task);
+  const source = objectValue(context.sourceSpecResult);
+  const sourceSpecId = stringValue(source?.specId);
+  const sourceRunId = stringValue(source?.runId);
+  if (sourceSpecId && sourceRunId) {
+    return (
+      (sourceSpecId === input.specId && sourceRunId === input.runId) ||
+      taskConflictScopes(input.task).includes(
+        `fix-forward:${input.specId}:${input.runId}`,
+      )
+    );
+  }
+
+  const representedSpecIds = new Set<string>();
+  if (stringValue(context.specId)) {
+    representedSpecIds.add(ensureSpecId(stringValue(context.specId)));
+  }
+  for (const value of stringList(context.representedSpecIds)) {
+    representedSpecIds.add(ensureSpecId(value));
+  }
+  if (stringValue(context.exactWaitSpecId)) {
+    representedSpecIds.add(ensureSpecId(stringValue(context.exactWaitSpecId)));
+  }
+
+  const blocker = objectValue(input.task.blocker);
+  const waitingFor = objectValue(blocker?.waiting_for);
+  if (stringValue(waitingFor?.specId)) {
+    representedSpecIds.add(ensureSpecId(stringValue(waitingFor?.specId)));
+  }
+  for (const value of stringList(waitingFor?.specIds)) {
+    representedSpecIds.add(ensureSpecId(value));
+  }
+
+  const acceptedQueued = objectValue(context.acceptedQueuedPipelineRun);
+  for (const value of stringList(acceptedQueued?.specIds)) {
+    representedSpecIds.add(ensureSpecId(value));
+  }
+  const exactExternalWait = objectValue(context.exactExternalWait);
+  for (const value of stringList(exactExternalWait?.specIds)) {
+    representedSpecIds.add(ensureSpecId(value));
+  }
+
+  const runIds = new Set(
+    [
+      stringValue(acceptedQueued?.runId),
+      stringValue(context.exactWaitRunId),
+      stringValue(exactExternalWait?.sourceRunId),
+      stringValue(waitingFor?.runId),
+      stringValue(waitingFor?.sourceRunId),
+    ].filter(Boolean),
+  );
+
+  if (
+    representedSpecIds.has(input.specId) &&
+    (runIds.has(input.runId) ||
+      taskConflictScopes(input.task).includes(`ado-run:${input.runId}`))
+  ) {
+    return true;
+  }
+
+  return taskConflictScopes(input.task).includes(
+    `fix-forward:${input.specId}:${input.runId}`,
+  );
+}
+
 function openSpecResultFixForwardExists(input: {
   config: TaskTreeConfig;
   specId: string;
   runId: string;
+  excludeTaskId?: string;
 }): boolean {
   const tree = readTaskTree(input.config);
   const openStates = new Set([
@@ -2092,11 +2916,13 @@ function openSpecResultFixForwardExists(input: {
   for (const task of Object.values(tree.tasks ?? {})) {
     const state = taskState(task);
     if (!openStates.has(state)) continue;
-    const context = taskContext(task);
-    const source = objectValue(context.sourceSpecResult);
+    if (input.excludeTaskId && task.id === input.excludeTaskId) continue;
     if (
-      stringValue(source?.specId) === input.specId &&
-      stringValue(source?.runId) === input.runId
+      taskRepresentsSpecRunLineage({
+        task,
+        specId: input.specId,
+        runId: input.runId,
+      })
     ) {
       return true;
     }
@@ -2146,6 +2972,7 @@ function createAcceptedSpecResultFixForwardTasks(input: {
         config: input.config,
         specId: result.specId,
         runId: result.runId,
+        excludeTaskId: input.task.id,
       })
     ) {
       continue;
@@ -2267,7 +3094,8 @@ function specIdsFromStructuredQueuedRun(
   for (const value of structuredSpecIds) {
     if (typeof value !== "string") continue;
     const specId = value.trim();
-    if (specId) ids.add(specId.startsWith("spec.") ? specId : `spec.${specId}`);
+    if (!specId || isStructuredResultTemplateText(specId)) continue;
+    ids.add(specId.startsWith("spec.") ? specId : `spec.${specId}`);
   }
   for (const scope of taskStringList(task, "conflict_scope")) {
     if (!scope.startsWith("spec:")) continue;
@@ -2276,6 +3104,119 @@ function specIdsFromStructuredQueuedRun(
     ids.add(scoped.startsWith("spec.") ? scoped : `spec.${scoped}`);
   }
   return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function queuedRunStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+}
+
+function hasValidQueuedPipelineRunPayload(
+  queuedRun: Record<string, unknown> | null,
+): boolean {
+  if (!queuedRun) return false;
+  const runId = stringValue(queuedRun.runId) || stringValue(queuedRun.run_id);
+  const runUrl =
+    stringValue(queuedRun.runUrl) || stringValue(queuedRun.run_url);
+  const specIds = queuedRunStringList(queuedRun.specIds ?? queuedRun.spec_ids);
+  return Boolean(
+    isConcreteStructuredResultText(runId) &&
+    specIds.length > 0 &&
+    specIds.every((specId) => !isStructuredResultTemplateText(specId)) &&
+    isOptionalConcreteStructuredResultText(runUrl) &&
+    isOptionalConcreteStructuredResultText(queuedRun.target) &&
+    isOptionalConcreteStructuredResultText(queuedRun.branch) &&
+    isOptionalConcreteStructuredResultText(queuedRun.sourceVersion) &&
+    isOptionalConcreteStructuredResultText(queuedRun.source_version) &&
+    isOptionalConcreteStructuredResultText(queuedRun.metadataPath) &&
+    isOptionalConcreteStructuredResultText(queuedRun.metadata_path),
+  );
+}
+
+function featureRootsFromPaths(paths: string[]): string[] {
+  const roots = new Set<string>();
+  for (const path of paths) {
+    const match = path.match(/(?:^|\/)features\/([^/]+)\//);
+    if (match?.[1]) roots.add(match[1]);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function expectedNormalizationFeatureRootsForTask(
+  task: NonNullable<ReturnType<typeof readTask>>,
+): string[] {
+  const roots = new Set<string>();
+  for (const specId of taskConflictScopes(task)) {
+    if (!specId.startsWith("spec:")) continue;
+    const normalized = specId.slice("spec:".length).trim();
+    const ensured = ensureSpecId(normalized);
+    const featureRoot = ensured.slice("spec.".length).split(".")[0]?.trim();
+    if (featureRoot) roots.add(featureRoot);
+  }
+  for (const root of featureRootsFromPaths(taskStringList(task, "outputs"))) {
+    roots.add(root);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function changedFileFeatureRoots(changedFiles: string[]): string[] {
+  const roots = new Set<string>();
+  for (const file of changedFiles) {
+    const match = file.match(/^features\/([^/]+)\//);
+    if (match?.[1]) roots.add(match[1]);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function normalizationQueuedRunInvariantIssues(input: {
+  task: NonNullable<ReturnType<typeof readTask>>;
+  queuedRun: QueuedPipelineRun;
+}): string[] {
+  const issues: string[] = [];
+  if ((input.queuedRun.baseRef ?? "") !== "origin/dev") {
+    issues.push(`baseRef:${input.queuedRun.baseRef ?? "missing"}`);
+  }
+  if (!input.queuedRun.baseCommit) issues.push("baseCommit:missing");
+  if (!input.queuedRun.sourceVersion) issues.push("sourceVersion:missing");
+  if (!input.queuedRun.sourceCommit) issues.push("sourceCommit:missing");
+  if (
+    input.queuedRun.sourceVersion &&
+    input.queuedRun.sourceCommit &&
+    input.queuedRun.sourceVersion !== input.queuedRun.sourceCommit
+  ) {
+    issues.push(`sourceVersion:${input.queuedRun.sourceVersion}`);
+    issues.push(`sourceCommit:${input.queuedRun.sourceCommit}`);
+  }
+  if (!input.queuedRun.firstParentCommits?.length) {
+    issues.push("firstParentCommits:missing");
+  } else if (
+    input.queuedRun.sourceCommit &&
+    input.queuedRun.firstParentCommits[
+      input.queuedRun.firstParentCommits.length - 1
+    ] !== input.queuedRun.sourceCommit
+  ) {
+    issues.push(
+      `firstParentTail:${input.queuedRun.firstParentCommits[input.queuedRun.firstParentCommits.length - 1]}`,
+    );
+  }
+  if (!input.queuedRun.changedFiles?.length) {
+    issues.push("changedFiles:missing");
+  }
+  if (!input.queuedRun.worktreePath) issues.push("worktreePath:missing");
+
+  const expectedRoots = expectedNormalizationFeatureRootsForTask(input.task);
+  const changedRoots = changedFileFeatureRoots(
+    input.queuedRun.changedFiles ?? [],
+  );
+  const unexpectedRoots = changedRoots.filter(
+    (root) => expectedRoots.length > 0 && !expectedRoots.includes(root),
+  );
+  for (const root of unexpectedRoots) {
+    issues.push(`unexpectedFeature:${root}`);
+  }
+  return issues;
 }
 
 function queuedPipelineRunFromAcceptedReview(input: {
@@ -2289,17 +3230,53 @@ function queuedPipelineRunFromAcceptedReview(input: {
     objectValue(details?.queuedPipelineRun) ??
     objectValue(details?.acceptedQueuedPipelineRun);
 
+  if (!hasValidQueuedPipelineRunPayload(structuredQueued)) return null;
+
   const runId =
     stringValue(structuredQueued?.runId) ||
     stringValue(structuredQueued?.run_id);
-  if (!runId) return null;
   const specIds = specIdsFromStructuredQueuedRun(structuredQueued, input.task);
-  const runUrl =
+  if (specIds.length === 0) return null;
+  const explicitRunUrl =
     stringValue(structuredQueued?.runUrl) ||
     stringValue(structuredQueued?.run_url) ||
-    stringValue(details?.runUrl) ||
+    stringValue(details?.runUrl);
+  if (!isOptionalConcreteStructuredResultText(explicitRunUrl)) return null;
+  const runUrl =
+    explicitRunUrl ||
     `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`;
-  return { runId, specIds, runUrl };
+  return {
+    runId,
+    specIds,
+    runUrl,
+    target: stringValue(structuredQueued?.target),
+    branch: stringValue(structuredQueued?.branch),
+    sourceVersion:
+      stringValue(structuredQueued?.sourceVersion) ||
+      stringValue(structuredQueued?.source_version),
+    metadataPath:
+      stringValue(structuredQueued?.metadataPath) ||
+      stringValue(structuredQueued?.metadata_path),
+    baseRef:
+      stringValue(structuredQueued?.baseRef) ||
+      stringValue(structuredQueued?.base_ref),
+    baseCommit:
+      stringValue(structuredQueued?.baseCommit) ||
+      stringValue(structuredQueued?.base_commit),
+    sourceCommit:
+      stringValue(structuredQueued?.sourceCommit) ||
+      stringValue(structuredQueued?.source_commit),
+    firstParentCommits: queuedRunStringList(
+      structuredQueued?.firstParentCommits ??
+        structuredQueued?.first_parent_commits,
+    ),
+    changedFiles: queuedRunStringList(
+      structuredQueued?.changedFiles ?? structuredQueued?.changed_files,
+    ),
+    worktreePath:
+      stringValue(structuredQueued?.worktreePath) ||
+      stringValue(structuredQueued?.worktree_path),
+  };
 }
 
 function slugForTaskId(value: string): string {
@@ -2312,10 +3289,527 @@ function slugForTaskId(value: string): string {
   );
 }
 
-function openPipelineWaitExists(
+function currentOriginDevContainsCommit(
+  projectDir: string,
+  commit: string,
+): boolean {
+  if (!projectDir || !commit) return false;
+  const repoProbe = spawnSync(
+    "git",
+    ["-C", projectDir, "rev-parse", "--git-dir"],
+    {
+      stdio: "ignore",
+    },
+  );
+  if (repoProbe.status !== 0) return false;
+
+  const refProbe = spawnSync(
+    "git",
+    ["-C", projectDir, "rev-parse", "--verify", "origin/dev"],
+    { stdio: "ignore" },
+  );
+  if (refProbe.status !== 0) return false;
+
+  const ancestorProbe = spawnSync(
+    "git",
+    ["-C", projectDir, "merge-base", "--is-ancestor", commit, "origin/dev"],
+    { stdio: "ignore" },
+  );
+  return ancestorProbe.status === 0;
+}
+
+function todayStamp(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+function matchingSpecResultEntry(
+  details: Record<string, unknown> | null,
+  specId: string,
+  runId: string,
+): Record<string, unknown> | null {
+  if (!details || !Array.isArray(details.specResults)) return null;
+  for (const entry of details.specResults) {
+    const record = objectValue(entry);
+    if (!record) continue;
+    const entrySpecId = ensureSpecId(
+      stringValue(record.specId) || stringValue(record.id),
+    );
+    const entryRunId = stringValue(record.runId) || stringValue(details.runId);
+    if (entrySpecId === specId && entryRunId === runId) return record;
+  }
+  return null;
+}
+
+function normalizationPublicationSpecId(task: TaskNode): string {
+  const publication = objectValue(taskContext(task).normalizationPublication);
+  const explicitSpecId = ensureSpecId(stringValue(publication?.specId));
+  if (explicitSpecId) return explicitSpecId;
+  const scopedSpecId = taskConflictScopes(task)
+    .find((scope) => scope.startsWith("spec:"))
+    ?.slice("spec:".length);
+  return scopedSpecId ? ensureSpecId(scopedSpecId) : "";
+}
+
+function normalizationPublicationTaskInfo(
+  task: TaskNode,
+): NormalizationPublicationTaskInfo | null {
+  if (!task.parent_id) return null;
+  const publication = objectValue(taskContext(task).normalizationPublication);
+  const goal = taskGoalText(task);
+  const hasPublicationGoal = goal.startsWith(
+    "Publish the already reviewed normalization ",
+  );
+  if (!hasPublicationGoal) return null;
+  if (!taskConflictScopes(task).includes("branch:origin/dev")) return null;
+  if (!normalizationPublicationSpecId(task)) return null;
+
+  const targetBranch = stringValue(publication?.targetBranch) || "origin/dev";
+  if (targetBranch !== "origin/dev") return null;
+
+  const createdAtMs = Date.parse(stringValue(taskTrace(task).created_at));
+  return {
+    taskId: task.id,
+    parentId: task.parent_id,
+    targetBranch,
+    createdAtMs: Number.isFinite(createdAtMs)
+      ? createdAtMs
+      : Number.MAX_SAFE_INTEGER,
+  };
+}
+
+function normalizationPublicationLineageForTask(
+  tree: ReturnType<typeof readTaskTree>,
+  taskId: string,
+  seen = new Set<string>(),
+): NormalizationPublicationLineage | null {
+  if (!taskId || seen.has(taskId)) return null;
+  seen.add(taskId);
+  const task = tree.tasks[taskId];
+  if (!task) return null;
+
+  const publication = normalizationPublicationTaskInfo(task);
+  if (publication) {
+    return {
+      rootTaskId: publication.taskId,
+      gateTaskId: taskId,
+      parentId: publication.parentId,
+      targetBranch: publication.targetBranch,
+      createdAtMs: publication.createdAtMs,
+      depth: 0,
+    };
+  }
+
+  const reviewedTaskId = stringValue(
+    objectValue(taskContext(task).reviewedTask)?.taskId,
+  );
+  if (!reviewedTaskId) return null;
+  const upstream = normalizationPublicationLineageForTask(
+    tree,
+    reviewedTaskId,
+    seen,
+  );
+  if (!upstream) return null;
+  return {
+    ...upstream,
+    gateTaskId: taskId,
+    depth: upstream.depth + 1,
+  };
+}
+
+function normalizationPublicationGateLineages(input: {
+  tree: ReturnType<typeof readTaskTree>;
+  parentId: string;
+  targetBranch: string;
+}): NormalizationPublicationLineage[] {
+  const lineages = new Map<string, NormalizationPublicationLineage>();
+  for (const task of Object.values(input.tree.tasks ?? {})) {
+    if (!OPEN_FRONTIER_STATES.has(taskState(task))) continue;
+    const lineage = normalizationPublicationLineageForTask(input.tree, task.id);
+    if (!lineage) continue;
+    if (lineage.parentId !== input.parentId) continue;
+    if (lineage.targetBranch !== input.targetBranch) continue;
+    const current = lineages.get(lineage.rootTaskId);
+    if (
+      !current ||
+      lineage.depth > current.depth ||
+      (lineage.depth === current.depth &&
+        lineage.gateTaskId.localeCompare(current.gateTaskId) < 0)
+    ) {
+      lineages.set(lineage.rootTaskId, lineage);
+    }
+  }
+  return [...lineages.values()].sort((left, right) => {
+    if (left.createdAtMs !== right.createdAtMs) {
+      return left.createdAtMs - right.createdAtMs;
+    }
+    return left.rootTaskId.localeCompare(right.rootTaskId);
+  });
+}
+
+function sameNormalizationPublicationParentDependency(input: {
+  tree: ReturnType<typeof readTaskTree>;
+  parentId: string;
+  targetBranch: string;
+  dependencyId: string;
+}): boolean {
+  if (!input.dependencyId) return false;
+  const dependencyLineage = normalizationPublicationLineageForTask(
+    input.tree,
+    input.dependencyId,
+  );
+  if (dependencyLineage) {
+    return (
+      dependencyLineage.parentId === input.parentId &&
+      dependencyLineage.targetBranch === input.targetBranch
+    );
+  }
+
+  const dependencyTask = input.tree.tasks[input.dependencyId];
+  if (!dependencyTask || dependencyTask.parent_id !== input.parentId) {
+    return false;
+  }
+  return Boolean(
+    objectValue(taskContext(dependencyTask).acceptedQueuedPipelineRun),
+  );
+}
+
+function retargetNormalizationPublicationFollowerDependencies(input: {
+  config: TaskTreeConfig;
+  sourceTaskId: string;
+  successorTaskId: string;
+}): string[] {
+  if (!input.sourceTaskId || !input.successorTaskId) return [];
+  const tree = readTaskTree(input.config);
+  const sourceLineage = normalizationPublicationLineageForTask(
+    tree,
+    input.sourceTaskId,
+  );
+  if (!sourceLineage) return [];
+
+  const updatedTaskIds: string[] = [];
+  withTreeLock(input.config, () => {
+    const mutableTree = readTaskTree(input.config);
+    for (const task of Object.values(mutableTree.tasks ?? {})) {
+      if (!OPEN_FRONTIER_STATES.has(taskState(task))) continue;
+      if (task.id === input.sourceTaskId || task.id === input.successorTaskId) {
+        continue;
+      }
+      const lineage = normalizationPublicationLineageForTask(
+        mutableTree,
+        task.id,
+      );
+      if (!lineage) continue;
+      if (lineage.parentId !== sourceLineage.parentId) continue;
+      if (lineage.targetBranch !== sourceLineage.targetBranch) continue;
+      const existingDeps = Array.isArray(task.depends_on)
+        ? task.depends_on
+            .map((value) => (typeof value === "string" ? value.trim() : ""))
+            .filter(Boolean)
+        : [];
+      if (!existingDeps.includes(input.sourceTaskId)) continue;
+      const desiredDeps = sortedUnique(
+        existingDeps.map((dependencyId) =>
+          dependencyId === input.sourceTaskId
+            ? input.successorTaskId
+            : dependencyId,
+        ),
+      );
+      if (
+        desiredDeps.length === existingDeps.length &&
+        desiredDeps.every((value, index) => value === existingDeps[index])
+      ) {
+        continue;
+      }
+      task.depends_on = desiredDeps;
+      updatedTaskIds.push(task.id);
+    }
+    if (updatedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(input.config, mutableTree);
+    }
+  });
+
+  if (updatedTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "normalization_publication_followers_retargeted",
+      source_task_id: input.sourceTaskId,
+      successor_task_id: input.successorTaskId,
+      updated_task_ids: updatedTaskIds,
+    });
+  }
+  return updatedTaskIds.sort((left, right) => left.localeCompare(right));
+}
+
+function reconcileNormalizationPublicationGateDependencies(input: {
+  config: TaskTreeConfig;
+  taskId: string;
+}): string[] {
+  const tree = readTaskTree(input.config);
+  const lineage = normalizationPublicationLineageForTask(tree, input.taskId);
+  if (!lineage) return [];
+
+  const updatedTaskIds: string[] = [];
+  withTreeLock(input.config, () => {
+    const mutableTree = readTaskTree(input.config);
+    const gateLineages = normalizationPublicationGateLineages({
+      tree: mutableTree,
+      parentId: lineage.parentId,
+      targetBranch: lineage.targetBranch,
+    });
+    if (gateLineages.length === 0) return;
+
+    const gateTaskIds = gateLineages.map((entry) => entry.gateTaskId);
+    for (const [index, gateLineage] of gateLineages.entries()) {
+      const task = mutableTree.tasks[gateLineage.gateTaskId];
+      if (!task) continue;
+      const existingDeps = Array.isArray(task.depends_on)
+        ? task.depends_on
+            .map((value) => (typeof value === "string" ? value.trim() : ""))
+            .filter(Boolean)
+        : [];
+      const preservedDeps = existingDeps.filter(
+        (dependencyId) =>
+          !sameNormalizationPublicationParentDependency({
+            tree: mutableTree,
+            parentId: lineage.parentId,
+            targetBranch: lineage.targetBranch,
+            dependencyId,
+          }),
+      );
+      const desiredDeps = sortedUnique([
+        ...preservedDeps,
+        ...gateTaskIds.slice(0, index),
+      ]);
+      const currentDeps = sortedUnique(existingDeps);
+      if (
+        currentDeps.length === desiredDeps.length &&
+        currentDeps.every((value, offset) => value === desiredDeps[offset])
+      ) {
+        continue;
+      }
+      task.depends_on = desiredDeps;
+      updatedTaskIds.push(task.id);
+    }
+    if (updatedTaskIds.length > 0) {
+      saveTaskTreeWithKanbanSnapshot(input.config, mutableTree);
+    }
+  });
+
+  if (updatedTaskIds.length > 0) {
+    appendToolJournal(input.config, {
+      kind: "normalization_publication_gate_dependencies_reconciled",
+      task_id: input.taskId,
+      parent_id: lineage.parentId,
+      target_branch: lineage.targetBranch,
+      updated_task_ids: updatedTaskIds,
+    });
+  }
+  return updatedTaskIds.sort((left, right) => left.localeCompare(right));
+}
+
+function normalizationPublicationCandidate(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  attemptId: string;
+  result: AcceptedSpecVerifierResult;
+  workflowResult: Record<string, unknown>;
+}): NormalizationPublicationCandidate | null {
+  if (!normalizationIsolatedWorktreeRequired(input.config, input.task.id)) {
+    return null;
+  }
+  if (input.result.loopStatus !== "pass") return null;
+
+  const context = taskContext(input.task);
+  const acceptedQueued = objectValue(context.acceptedQueuedPipelineRun);
+  const details = objectValue(input.workflowResult.details);
+  const perSpec = matchingSpecResultEntry(
+    details,
+    input.result.specId,
+    input.result.runId,
+  );
+  const sourceCommit =
+    stringValue(perSpec?.sourceCommit) ||
+    stringValue(perSpec?.source_commit) ||
+    stringValue(perSpec?.sourceVersion) ||
+    stringValue(perSpec?.source_version) ||
+    stringValue(details?.sourceCommit) ||
+    stringValue(details?.source_commit) ||
+    stringValue(details?.sourceVersion) ||
+    stringValue(details?.source_version) ||
+    stringValue(acceptedQueued?.sourceCommit) ||
+    stringValue(acceptedQueued?.source_commit) ||
+    stringValue(acceptedQueued?.sourceVersion) ||
+    stringValue(acceptedQueued?.source_version);
+  if (!sourceCommit) return null;
+  if (currentOriginDevContainsCommit(input.config.projectDir, sourceCommit)) {
+    return null;
+  }
+
+  return {
+    specId: input.result.specId,
+    runId: input.result.runId,
+    runUrl: input.result.runUrl,
+    sourceCommit,
+    sourceTaskId: stringValue(acceptedQueued?.sourceTaskId) || input.task.id,
+    sourceAttemptId:
+      stringValue(acceptedQueued?.sourceAttemptId) || input.attemptId,
+  };
+}
+
+function taskRepresentsNormalizationPublication(input: {
+  task: TaskNode;
+  candidate: NormalizationPublicationCandidate;
+}): boolean {
+  const context = taskContext(input.task);
+  const publication = objectValue(context.normalizationPublication);
+  const text = taskSearchText(input.task);
+  const taskScopes = new Set(taskConflictScopes(input.task));
+  const normalizedSpecId = ensureSpecId(input.candidate.specId);
+  return (
+    taskScopes.has("branch:origin/dev") &&
+    text.includes("publish") &&
+    text.includes("origin/dev") &&
+    (stringValue(publication?.sourceCommit) === input.candidate.sourceCommit ||
+      text.includes(input.candidate.sourceCommit.toLowerCase())) &&
+    (stringValue(publication?.runId) === input.candidate.runId ||
+      text.includes(input.candidate.runId.toLowerCase())) &&
+    (stringValue(publication?.specId) === normalizedSpecId ||
+      taskScopes.has(`spec:${normalizedSpecId}`) ||
+      text.includes(normalizedSpecId.toLowerCase()) ||
+      text.includes(normalizedSpecId.replace(/^spec\./, "").toLowerCase()))
+  );
+}
+
+function openNormalizationPublicationTaskId(
+  config: TaskTreeConfig,
+  candidate: NormalizationPublicationCandidate,
+): string | null {
+  const tree = readTaskTree(config);
+  for (const task of Object.values(tree.tasks ?? {})) {
+    if (!OPEN_FRONTIER_STATES.has(taskState(task))) continue;
+    if (taskRepresentsNormalizationPublication({ task, candidate })) {
+      return task.id;
+    }
+  }
+  return null;
+}
+
+function ensureNormalizationPublicationTask(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  attemptId: string;
+  candidate: NormalizationPublicationCandidate;
+}): string | null {
+  if (!input.task.parent_id) return null;
+  const existing = openNormalizationPublicationTaskId(
+    input.config,
+    input.candidate,
+  );
+  const taskId = (() => {
+    if (existing) return existing;
+
+    const id = uniqueTaskId(
+      input.config,
+      `domain/publish-verified-${slugForTaskId(input.candidate.specId)}-normalization-${todayStamp()}`,
+    );
+    createTask(input.config, {
+      id,
+      parentId: input.task.parent_id,
+      state: "backlog",
+      kind: "domain_leaf",
+      priority: taskPriority(input.task),
+      owner: input.task.owner,
+      goal:
+        `Publish the already reviewed normalization for ${input.candidate.specId} from exact live-tested commit ${input.candidate.sourceCommit} / ` +
+        `ADO run ${input.candidate.runId} onto current origin/dev. Use an isolated publication worktree. ` +
+        "Preserve the tested commit in dev ancestry with a clean merge; do not cherry-pick or alter tested scenario content. " +
+        "If merge conflicts require content changes, stop publication and queue a replacement exact-commit live run instead. " +
+        "Run local admission/strict guards on the merged tree, push only as a fast-forward update, and prove origin/dev contains the tested commit.",
+      inputs: [
+        `Reviewed pass task: ${input.task.id}`,
+        `Queued by task: ${input.candidate.sourceTaskId}`,
+        `Attempt: ${input.attemptId}`,
+        `Spec: ${input.candidate.specId}`,
+        `ADO run: ${input.candidate.runId}`,
+        `Exact source commit: ${input.candidate.sourceCommit}`,
+      ],
+      outputs: ["../aks-rp-e2e/origin/dev"],
+      acceptance: [
+        `ADO run ${input.candidate.runId} and exact source commit ${input.candidate.sourceCommit} remain the authoritative same-run live pass proof for ${input.candidate.specId}.`,
+        "The publication worktree starts from current origin/dev and merges the tested commit without modifying its scenario content; any content conflict causes a replacement-run path rather than an untested merge.",
+        "Local direct scenario guard, spec check, private-source policy, live-admission policy, and repository checks pass on the merged tree.",
+        `origin/dev contains ${input.candidate.sourceCommit} as an ancestor after a fast-forward push, and the strict inventory decreases without introducing any plain carrier.`,
+      ],
+      conflict_scope: ["branch:origin/dev", `spec:${input.candidate.specId}`],
+      context: {
+        normalizationPublication: {
+          specId: input.candidate.specId,
+          runId: input.candidate.runId,
+          runUrl: input.candidate.runUrl,
+          sourceCommit: input.candidate.sourceCommit,
+          sourceTaskId: input.candidate.sourceTaskId,
+          sourceAttemptId: input.candidate.sourceAttemptId,
+          targetBranch: "origin/dev",
+        },
+        representedSpecIds: [input.candidate.specId],
+      },
+    });
+    appendToolJournal(input.config, {
+      kind: "normalization_publication_task_created",
+      task_id: id,
+      source_task_id: input.task.id,
+      spec_id: input.candidate.specId,
+      run_id: input.candidate.runId,
+      source_commit: input.candidate.sourceCommit,
+    });
+    return id;
+  })();
+  reconcileNormalizationPublicationGateDependencies({
+    config: input.config,
+    taskId,
+  });
+  return taskId;
+}
+
+function ensureNormalizationPublicationTasks(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  attemptId: string;
+  workflowResult: Record<string, unknown>;
+  results: AcceptedSpecVerifierResult[];
+}): string[] {
+  const taskIds = new Set<string>();
+  for (const result of input.results) {
+    const candidate = normalizationPublicationCandidate({
+      config: input.config,
+      task: input.task,
+      attemptId: input.attemptId,
+      result,
+      workflowResult: input.workflowResult,
+    });
+    if (!candidate) continue;
+    const taskId = ensureNormalizationPublicationTask({
+      config: input.config,
+      task: input.task,
+      attemptId: input.attemptId,
+      candidate,
+    });
+    if (taskId) taskIds.add(taskId);
+  }
+  return [...taskIds].sort((left, right) => left.localeCompare(right));
+}
+
+const OPEN_FRONTIER_STATES = new Set([
+  "active",
+  "backlog",
+  "blocked",
+  "review",
+  "waiting",
+]);
+
+function openPipelineWaitTaskId(
   config: TaskTreeConfig,
   runId: string,
-): boolean {
+): string | null {
   const tree = readTaskTree(config);
   const openStates = new Set([
     "active",
@@ -2331,6 +3825,12 @@ function openPipelineWaitExists(
     const blocker = objectValue(task.blocker);
     const waitingFor = objectValue(blocker?.waiting_for);
     const trace = objectValue(task.trace);
+    const acceptedQueuedPipelineRun = objectValue(
+      context.acceptedQueuedPipelineRun,
+    );
+    const terminalPipelineWaitReview = objectValue(
+      context.terminalPipelineWaitReview,
+    );
     const structuredRunIds = [
       stringValue(context.runId),
       stringValue(context.workflowRunId),
@@ -2338,14 +3838,25 @@ function openPipelineWaitExists(
       stringValue(context.lastRunId),
       stringValue(context.acceptedQueuedPipelineRunId),
       stringValue(context.accepted_queued_pipeline_run_id),
+      stringValue(acceptedQueuedPipelineRun?.runId),
+      stringValue(acceptedQueuedPipelineRun?.run_id),
+      stringValue(terminalPipelineWaitReview?.runId),
+      stringValue(terminalPipelineWaitReview?.run_id),
       stringValue(waitingFor?.runId),
       stringValue(waitingFor?.run_id),
       stringValue(trace?.runId),
       stringValue(trace?.workflowRunId),
     ].filter(Boolean);
-    if (structuredRunIds.includes(runId)) return true;
+    if (structuredRunIds.includes(runId)) return task.id;
   }
-  return false;
+  return null;
+}
+
+function openPipelineWaitExists(
+  config: TaskTreeConfig,
+  runId: string,
+): boolean {
+  return openPipelineWaitTaskId(config, runId) !== null;
 }
 
 function specFeatureToken(specId: string): string {
@@ -2431,7 +3942,6 @@ function publicationHolderMatchesQueuedWait(input: {
 
   const text = taskSearchText(input.task);
   const taskScopes = new Set(taskConflictScopes(input.task));
-  const sourceScopes = new Set(taskConflictScopes(input.sourceTask));
   const sourceReviewedTaskId = stringValue(
     objectValue(taskContext(input.sourceTask).reviewedTask)?.taskId,
   );
@@ -2448,9 +3958,7 @@ function publicationHolderMatchesQueuedWait(input: {
   return tokens.some((token) => {
     if (token.startsWith("spec:")) return taskScopes.has(token);
     if (token.startsWith("feature:")) {
-      return (
-        taskScopes.has(token) || sourceScopes.has(token) || text.includes(token)
-      );
+      return taskScopes.has(token) || text.includes(token);
     }
     return text.includes(token);
   });
@@ -2621,6 +4129,27 @@ function createAcceptedQueuedPipelineWait(input: {
         runUrl: input.queuedRun.runUrl,
         specIds: input.queuedRun.specIds,
         summary: input.summary,
+        ...(input.queuedRun.baseRef
+          ? { baseRef: input.queuedRun.baseRef }
+          : {}),
+        ...(input.queuedRun.baseCommit
+          ? { baseCommit: input.queuedRun.baseCommit }
+          : {}),
+        ...(input.queuedRun.sourceVersion
+          ? { sourceVersion: input.queuedRun.sourceVersion }
+          : {}),
+        ...(input.queuedRun.sourceCommit
+          ? { sourceCommit: input.queuedRun.sourceCommit }
+          : {}),
+        ...(input.queuedRun.firstParentCommits?.length
+          ? { firstParentCommits: input.queuedRun.firstParentCommits }
+          : {}),
+        ...(input.queuedRun.changedFiles?.length
+          ? { changedFiles: input.queuedRun.changedFiles }
+          : {}),
+        ...(input.queuedRun.worktreePath
+          ? { worktreePath: input.queuedRun.worktreePath }
+          : {}),
       },
       terminalPipelineWaitReview: {
         runId: input.queuedRun.runId,
@@ -2657,6 +4186,18 @@ function createAcceptedQueuedPipelineWait(input: {
         specIds: input.queuedRun.specIds,
         sourceTaskId: input.task.id,
         sourceAttemptId: input.attemptId,
+        ...(input.queuedRun.baseRef
+          ? { baseRef: input.queuedRun.baseRef }
+          : {}),
+        ...(input.queuedRun.baseCommit
+          ? { baseCommit: input.queuedRun.baseCommit }
+          : {}),
+        ...(input.queuedRun.sourceVersion
+          ? { sourceVersion: input.queuedRun.sourceVersion }
+          : {}),
+        ...(input.queuedRun.sourceCommit
+          ? { sourceCommit: input.queuedRun.sourceCommit }
+          : {}),
       },
       observed_by: {
         workflow: "project-execution-watchdog",
@@ -2792,6 +4333,67 @@ function restoreReviewedTerminalWaitToBlocked(input: {
     fallbackAction,
   });
   return runId;
+}
+
+function applyLegacyQueuedWaitFollowupReview(input: {
+  config: TaskTreeConfig;
+  task: NonNullable<ReturnType<typeof readTask>>;
+  trigger: ReturnType<typeof parseTriggerEvent>;
+  decision: ReviewDecision;
+  taskRevision: number;
+  attemptId: string;
+  summary: string;
+  reviewAction: ReviewAction | null;
+}): {
+  handled: true;
+  applied: true;
+  decision: ReviewDecision;
+  taskId: string;
+  successorTaskId: string;
+  message: string;
+} | null {
+  if (input.decision !== "accept" && input.decision !== "followup") {
+    return null;
+  }
+  if (input.reviewAction?.actionKind !== "task-tree-followup") return null;
+  if (input.reviewAction.parentId !== input.task.id) return null;
+
+  const queuedRun = queuedPipelineRunFromAcceptedReview({
+    trigger: input.trigger,
+    task: input.task,
+  });
+  if (!queuedRun) return null;
+
+  const waitTaskId =
+    openPipelineWaitTaskId(input.config, queuedRun.runId) ??
+    createAcceptedQueuedPipelineWait({
+      config: input.config,
+      task: input.task,
+      attemptId: input.attemptId,
+      summary: input.summary,
+      queuedRun,
+    });
+  if (!waitTaskId) return null;
+
+  markTaskDone(input.config, {
+    taskId: input.task.id,
+    taskRevision: input.taskRevision,
+    attemptId: input.attemptId,
+    summary:
+      input.summary ||
+      `Accepted queued-run follow-up is now represented by ${waitTaskId}.`,
+    reviewDecision: input.decision,
+  });
+  return {
+    handled: true,
+    applied: true,
+    decision: input.decision,
+    taskId: input.task.id,
+    successorTaskId: waitTaskId,
+    message:
+      `Applied legacy queued-run follow-up review for ${input.task.id}; ` +
+      `using exact pipeline wait ${waitTaskId}.`,
+  };
 }
 
 function restoreReviewedExactPipelineWaitToBlocked(input: {
@@ -3303,6 +4905,31 @@ function acknowledgeConditionFallbackEventV2(input: {
   });
 }
 
+function settledConditionFallbackEventV2(input: {
+  config: TaskTreeConfig;
+  correlation: ConditionFallbackEventCorrelationV2;
+}): { settled: boolean; reason?: string } {
+  const tree = readTaskTree(input.config);
+  const condition = conditionRegistry(tree)[input.correlation.conditionId];
+  if (!condition) {
+    return { settled: true, reason: "Condition no longer exists" };
+  }
+  if (condition.status !== "open") {
+    return {
+      settled: true,
+      reason: `Condition is already ${condition.status}`,
+    };
+  }
+  const subjectTask = tree.tasks[input.correlation.taskId];
+  if (subjectTask && taskState(subjectTask) !== "blocked") {
+    return {
+      settled: true,
+      reason: `Subject task is already ${taskState(subjectTask)}`,
+    };
+  }
+  return { settled: false };
+}
+
 function normalizedPlannerTrigger(
   config: TaskTreeConfig,
   rawTask: string,
@@ -3729,6 +5356,26 @@ function blockedWaitLineageKeys(task: TaskNode): string[] {
   );
 }
 
+function blockedWaitSpecConflictScopes(task: TaskNode): string[] {
+  const blocker = objectValue(task.blocker);
+  const waitingFor = objectValue(blocker?.waiting_for);
+  const scopes = new Set<string>();
+  const collect = (value: unknown) => {
+    const normalized = stringValue(value);
+    if (!normalized) return;
+    scopes.add(
+      normalized.startsWith("spec:") ? normalized : `spec:${normalized}`,
+    );
+  };
+
+  collect(waitingFor?.specId ?? waitingFor?.spec_id);
+  for (const value of [waitingFor?.specIds, waitingFor?.spec_ids]) {
+    if (!Array.isArray(value)) continue;
+    for (const specId of value) collect(specId);
+  }
+  return [...scopes];
+}
+
 function blockedWaitOverdueAt(task: TaskNode): number | null {
   const blocker = objectValue(task.blocker);
   const overdueAt = [
@@ -3778,22 +5425,43 @@ function taskCoversBlockedOverdueWait(
     return true;
   }
 
+  const blockedSpecScopes = blockedWaitSpecConflictScopes(blockedTask);
+  if (
+    blockedSpecScopes.length > 0 &&
+    taskConflictScopes(candidate).some((scope) =>
+      blockedSpecScopes.includes(scope.trim()),
+    )
+  ) {
+    return true;
+  }
+
   const scope = blockedOverdueScope(blockedTask.parent_id);
   if (!scope) return false;
   const aliases = blockedOverdueScopeAliases(scope);
   return taskConflictScopes(candidate).some((conflictScope) => {
+    const normalizedScope = conflictScope.trim();
+    if (normalizedScope === `ops:blocked-overdue:${scope}`) {
+      return true;
+    }
     if (
-      conflictScope === `ops:blocked-overdue:${scope}` ||
-      conflictScope.startsWith(`ops:blocked-overdue:${scope}:`)
+      scope !== "project" &&
+      normalizedScope.startsWith(`ops:blocked-overdue:${scope}:`)
+    ) {
+      return true;
+    }
+    if (
+      scope === "project" &&
+      blockedTaskId &&
+      normalizedScope === `ops:blocked-overdue:project:${blockedTaskId}`
     ) {
       return true;
     }
     return aliases.some(
       (alias) =>
-        conflictScope === `ops:${alias}-overdue-blocked-frontier` ||
-        conflictScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
-        conflictScope === `ops:${alias}-overdue-frontier` ||
-        conflictScope.startsWith(`ops:${alias}-overdue-frontier-`),
+        normalizedScope === `ops:${alias}-overdue-blocked-frontier` ||
+        normalizedScope.startsWith(`ops:${alias}-overdue-blocked-frontier-`) ||
+        normalizedScope === `ops:${alias}-overdue-frontier` ||
+        normalizedScope.startsWith(`ops:${alias}-overdue-frontier-`),
     );
   });
 }
@@ -3981,6 +5649,19 @@ type ReviewAction = {
 
 function taskIdLeaf(id: string): string {
   return id.split("/").filter(Boolean).pop() || id;
+}
+
+function futureAtOrAfterGoalIso(text: string): string | null {
+  const match = text.match(
+    /^\s*At or after\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\b/i,
+  );
+  const iso = match?.[1]?.trim();
+  if (!iso) return null;
+  const resumeMs = Date.parse(iso);
+  if (!Number.isFinite(resumeMs) || resumeMs <= Date.now()) {
+    return null;
+  }
+  return iso;
 }
 
 function reviewActionFromValue(value: unknown): ReviewAction | null {
@@ -4211,12 +5892,17 @@ function reviewedEventsFromValue(value: unknown): {
         invalid.push(`events[${index}].data.project`);
         return;
       }
-      if (!completionTarget || !stringValue(completionTarget.taskId)) {
-        invalid.push(`events[${index}].target.taskId`);
-        return;
-      }
       if (!completionTaskId) {
         invalid.push(`events[${index}].data.taskId`);
+        return;
+      }
+      const normalizedCompletionTarget = {
+        ...(completionTarget ?? {}),
+        project: completionProject,
+        taskId: completionTaskId,
+      };
+      if (!stringValue(normalizedCompletionTarget.taskId)) {
+        invalid.push(`events[${index}].target.taskId`);
         return;
       }
       if (!completionAttemptId) {
@@ -4238,8 +5924,14 @@ function reviewedEventsFromValue(value: unknown): {
       events.push({
         type,
         owner: normalizedOwner,
-        target: completionTarget,
-        data,
+        target: normalizedCompletionTarget,
+        data: {
+          ...data,
+          project: completionProject,
+          taskId: completionTaskId,
+          task_id: completionTaskId,
+          target: normalizedCompletionTarget,
+        },
       });
       return;
     }
@@ -4346,6 +6038,7 @@ function reviewedBlockedProjectAction(input: {
 
   if (input.action.actionKind === "task-tree-followup") {
     const sourceId = input.task?.id ? taskIdLeaf(input.task.id) : "review";
+    const resumeAt = futureAtOrAfterGoalIso(input.action.goal || "");
     return {
       goal:
         input.action.goal ||
@@ -4364,7 +6057,23 @@ function reviewedBlockedProjectAction(input: {
             "The exact planner-owned task-tree mutation is applied through supported app mechanisms, or an explicit evidence-backed rejection is recorded.",
             "The affected branch records the resulting successor, refreshed holder, or rejected mutation with the next exact verification step.",
           ],
-      state: "backlog",
+      state: resumeAt ? "blocked" : "backlog",
+      blockerOwner: input.action.owner || input.task?.owner || "app-ops",
+      blockerCategory: "external-wait",
+      resumeAt,
+      nextCheckAt: resumeAt,
+      fallbackAt: resumeAt
+        ? new Date(Date.parse(resumeAt) + 6 * 60 * 60 * 1000).toISOString()
+        : undefined,
+      fallbackAction:
+        "If the review window passes without stronger same-lineage evidence, refresh this exact wait or replace it with the narrower follow-up instead of dispatching early.",
+      resumeCondition:
+        input.action.goal ||
+        firstText(input.suggestedFollowups) ||
+        `Resume the exact planner-owned task-tree follow-up for ${input.task?.id ?? "unknown"} at the named window.`,
+      blockerCondition: resumeAt
+        ? `Future-window successor created from reviewed task ${input.task?.id ?? "unknown"}; do not start before its named review window opens. ${input.action.goal || firstText(input.suggestedFollowups) || ""}`.trim()
+        : undefined,
     };
   }
 
@@ -4615,7 +6324,13 @@ function createReviewedSuccessor(input: {
       saveTaskTreeWithKanbanSnapshot(input.config, tree);
     });
   }
-  if (!shouldBlockSuccessor) return id;
+  if (!shouldBlockSuccessor) {
+    reconcileNormalizationPublicationGateDependencies({
+      config: input.config,
+      taskId: id,
+    });
+    return id;
+  }
 
   withTreeLock(input.config, () => {
     const tree = readTaskTree(input.config);
@@ -4664,7 +6379,25 @@ function createReviewedSuccessor(input: {
     };
     saveTaskTreeWithKanbanSnapshot(input.config, tree);
   });
+  reconcileNormalizationPublicationGateDependencies({
+    config: input.config,
+    taskId: id,
+  });
   return id;
+}
+
+function shouldPreserveReviewedBlockedWait(input: {
+  blocker: Record<string, unknown> | null;
+  reviewAction: ReviewAction | null;
+}): boolean {
+  const waitingFor = objectValue(input.blocker?.waiting_for);
+  if (stringValue(input.blocker?.category) !== "blocked-wait") {
+    return false;
+  }
+  if (stringValue(waitingFor?.type) !== "blocker.resolved") {
+    return false;
+  }
+  return input.reviewAction?.actionKind === "task-tree-followup";
 }
 
 function requeueReviewedBlockedProjectActions(
@@ -4710,6 +6443,9 @@ function requeueReviewedBlockedProjectActions(
       });
       if (!action) continue;
       if (reviewAction?.actionKind === "app-state-repair") {
+        continue;
+      }
+      if (shouldPreserveReviewedBlockedWait({ blocker, reviewAction })) {
         continue;
       }
       if (action.state === "blocked") {
@@ -4812,17 +6548,28 @@ function applyReviewedTaskEvent(
       summary,
       action: v2FollowupAction,
     });
-    return {
-      handled: true,
-      applied: command.applied,
-      decision,
-      taskId,
-      successorTaskId: command.successorTaskId,
-      events: command.applied ? reviewedEvents.events : undefined,
-      message: command.applied
-        ? `${command.replayed ? "Replayed" : "Applied"} V2 task-tree follow-up review for ${taskId}; exact successor ${command.successorTaskId}.`
-        : `Did not apply V2 task-tree follow-up review for ${taskId}: ${command.reason}`,
-    };
+    if (command.applied) {
+      if (command.successorTaskId) {
+        retargetNormalizationPublicationFollowerDependencies({
+          config,
+          sourceTaskId: taskId,
+          successorTaskId: command.successorTaskId,
+        });
+        reconcileNormalizationPublicationGateDependencies({
+          config,
+          taskId: command.successorTaskId,
+        });
+      }
+      return {
+        handled: true,
+        applied: true,
+        decision,
+        taskId,
+        successorTaskId: command.successorTaskId,
+        events: reviewedEvents.events,
+        message: `${command.replayed ? "Replayed" : "Applied"} V2 task-tree follow-up review for ${taskId}; exact successor ${command.successorTaskId}.`,
+      };
+    }
   }
 
   const task = readTask(config, taskId);
@@ -4880,6 +6627,21 @@ function applyReviewedTaskEvent(
       message: `Ignored stale reviewed event for ${taskId}: attempt ${attemptId} is not current.`,
     };
   }
+
+  const legacyQueuedWaitFollowup = applyLegacyQueuedWaitFollowupReview({
+    config,
+    task,
+    trigger,
+    decision,
+    taskRevision: reviewedTaskRevision,
+    attemptId,
+    summary,
+    reviewAction,
+  });
+  if (legacyQueuedWaitFollowup) {
+    return legacyQueuedWaitFollowup;
+  }
+
   const exactPipelineWait = reviewedExactPipelineWait({ trigger, task });
   if (
     exactPipelineWait &&
@@ -5069,21 +6831,55 @@ function applyReviewedTaskEvent(
       trigger,
     });
     const acceptedSpecIdSet = new Set(acceptedSpecIds);
+    const acceptedResultSubset = acceptedResults.filter((result) =>
+      acceptedSpecIdSet.has(result.specId),
+    );
     const fixForwardTaskIds = acceptedSpecIds.length
       ? createAcceptedSpecResultFixForwardTasks({
           config,
           task,
           attemptId,
-          results: acceptedResults.filter((result) =>
-            acceptedSpecIdSet.has(result.specId),
-          ),
+          results: acceptedResultSubset,
           revisionV2SpecId,
           revisionV2RunId,
         })
       : [];
+    const normalizationPublicationTaskIds =
+      acceptedResultSubset.length > 0 && workflowResult
+        ? ensureNormalizationPublicationTasks({
+            config,
+            task,
+            attemptId,
+            workflowResult,
+            results: acceptedResultSubset,
+          })
+        : [];
     const queuedRun = acceptedSpecIds.length
       ? null
       : queuedPipelineRunFromAcceptedReview({ trigger, task });
+    if (queuedRun && normalizationIsolatedWorktreeRequired(config, task.id)) {
+      const isolationIssues = normalizationQueuedRunInvariantIssues({
+        task,
+        queuedRun,
+      });
+      if (isolationIssues.length > 0) {
+        return rejectAcceptOnInvariant({
+          config,
+          taskId,
+          attemptId,
+          invariant: "normalization.accept.requires-isolated-worktree-lineage",
+          summary: `Accept cannot close ${taskId}: queued normalization run ${queuedRun.runId} lacks isolated-worktree lineage proof (${isolationIssues.join(", ")}).`,
+          details: {
+            queuedRun,
+            reviewerDecision: decision,
+            findings,
+            feedback,
+            suggestedFollowups,
+            isolationIssues,
+          },
+        });
+      }
+    }
     const queuedWaitTaskId = queuedRun
       ? createAcceptedQueuedPipelineWait({
           config,
@@ -5104,7 +6900,8 @@ function applyReviewedTaskEvent(
     const acceptedReviewActionTaskId =
       acceptedReviewAction &&
       !queuedWaitTaskId &&
-      fixForwardTaskIds.length === 0
+      fixForwardTaskIds.length === 0 &&
+      normalizationPublicationTaskIds.length === 0
         ? createReviewedSuccessor({
             config,
             task,
@@ -5134,15 +6931,24 @@ function applyReviewedTaskEvent(
       successorTaskId:
         acceptedReviewActionTaskId ??
         queuedWaitTaskId ??
+        normalizationPublicationTaskIds[0] ??
         fixForwardTaskIds[0] ??
         undefined,
       events: reviewedEvents.events,
       message: acceptedSpecIds.length
-        ? `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}${
-            fixForwardTaskIds.length
-              ? ` and created ${fixForwardTaskIds.length} fix-forward task(s): ${fixForwardTaskIds.join(", ")}`
-              : ""
-          }.`
+        ? [
+            `Applied accept review for ${taskId}; recorded structured verifier result for ${acceptedSpecIds.join(", ")}.`,
+            ...(normalizationPublicationTaskIds.length > 0
+              ? [
+                  `Ensured ${normalizationPublicationTaskIds.length} normalization publication task(s): ${normalizationPublicationTaskIds.join(", ")}.`,
+                ]
+              : []),
+            ...(fixForwardTaskIds.length > 0
+              ? [
+                  `Created ${fixForwardTaskIds.length} fix-forward task(s): ${fixForwardTaskIds.join(", ")}.`,
+                ]
+              : []),
+          ].join(" ")
         : queuedWaitTaskId
           ? `Applied accept review for ${taskId}; created pipeline wait ${queuedWaitTaskId}.`
           : acceptedReviewActionTaskId
@@ -5290,6 +7096,15 @@ function applyReviewedTaskEvent(
     resolution: decision === "followup" ? "completed" : "replaced",
     summary: `Reviewer decision ${decision}; successor ${successorTaskId}: ${summary}`,
     reviewDecision: decision,
+  });
+  retargetNormalizationPublicationFollowerDependencies({
+    config,
+    sourceTaskId: taskId,
+    successorTaskId,
+  });
+  reconcileNormalizationPublicationGateDependencies({
+    config,
+    taskId: successorTaskId,
   });
   return {
     handled: true,
@@ -5650,7 +7465,7 @@ function settledActiveNoopResult(input: {
       );
     }) &&
     noHumanSteering &&
-    hasOnlyActiveFrontier
+    input.packet.frontier.runnable.length === 0
   ) {
     return "Watchdog stale-active review was a false positive: every cited stale-active task still has a currently running runtime session after live-tree revalidation.";
   }
@@ -6433,6 +8248,41 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   requeueReviewedBlockedProjectActions(config);
   syncPlannerProjectReadout(config);
+  const settledFallback = fallbackEvent.correlation
+    ? settledConditionFallbackEventV2({
+        config,
+        correlation: fallbackEvent.correlation,
+      })
+    : { settled: false as const };
+  if (fallbackEvent.correlation && settledFallback.settled) {
+    const fallbackAcknowledgement = acknowledgeConditionFallbackEventV2({
+      config,
+      mode: conditionV2,
+      correlation: fallbackEvent.correlation,
+    });
+    const finalRepair = repairTaskTreeRollups(config);
+    syncPlannerProjectReadout(config);
+    const packet = planningPacket(config);
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status: fallbackAcknowledgement.applied ? "settled" : "error",
+      ran_agent: false,
+      steps: ["condition-fallback-settled-ack"],
+      trigger: triggerBlock(ctx.task),
+      packet,
+      human_steering: humanSteering,
+      repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
+      active_task_ids: packet.active_task_ids,
+      result: fallbackAcknowledgement.applied
+        ? `Acknowledged settled Condition fallback event for ${fallbackEvent.correlation.conditionId}: ${settledFallback.reason ?? "already settled"}.`
+        : `Failed to acknowledge settled Condition fallback event for ${fallbackEvent.correlation.conditionId}: ${fallbackAcknowledgement.reason ?? "unknown reason"}.`,
+    });
+    return ctx.done(
+      fallbackAcknowledgement.applied
+        ? `Acknowledged settled Condition fallback event for ${fallbackEvent.correlation.conditionId}; ${settledFallback.reason ?? "owner planning was not needed"}.`
+        : `Condition fallback event was already settled but acknowledgement failed: ${fallbackAcknowledgement.reason ?? "unknown reason"}.`,
+    );
+  }
   ensureResolvedPipelineConditionAssignmentsV2(config, {
     mode: conditionV2,
   });
@@ -6654,6 +8504,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : stallReviewedApply.message,
     );
   }
+  ensureReadyPathFrontierMaterializationProblem(config);
   const quickControllerPulses = assignPlannerRunnableBacklogTasks(config, {
     worker,
     domainWorker,
@@ -6853,7 +8704,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       sessionId: eventReviewSessionId,
       timeoutMs: timeoutFromEnv(
         "AKS_RP_E2E_PLANNER_EVENT_REVIEW_TIMEOUT_MS",
-        180_000,
+        240_000,
       ),
       prompt: buildEventReviewPrompt({
         appDir,
@@ -6867,6 +8718,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         conditionOwnedTaskIds: openExactConditionSubjectIdsV2(
           readTaskTree(config),
         ),
+        config,
       }),
     });
     packet = planningPacket(config);
@@ -6897,6 +8749,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         conditionOwnedTaskIds: openExactConditionSubjectIdsV2(
           readTaskTree(config),
         ),
+        config,
       }),
     });
   } catch (err) {

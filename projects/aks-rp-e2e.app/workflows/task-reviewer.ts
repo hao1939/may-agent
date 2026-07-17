@@ -7,7 +7,7 @@
  * must not mutate the task tree.
  */
 
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { isAbsolute, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -26,6 +26,18 @@ import {
   triggerString,
   triggerValue,
 } from "./lib/workflow-input.ts";
+import {
+  deliverPendingActionV2,
+  reviewApplicationPendingActionV2,
+  type PendingActionDeliveryResultV2,
+} from "./lib/project-pending-actions-v2.ts";
+import {
+  appendPendingActionDeliveryReceiptV2,
+  appendReviewerLedgerRowV2,
+  pendingActionDeliveryReceiptsV2,
+  readReviewerLedgerRowsV2,
+} from "./lib/project-review-delivery-v2.ts";
+import { featureScenarioCarrierViolationsForTaskOutputs } from "./lib/feature-scenario-carrier-contract.ts";
 
 export const name = "task-reviewer";
 export const description =
@@ -97,6 +109,35 @@ function taskContextString(task: TaskNode, key: string): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
 
+const NORMALIZATION_ISOLATED_WORKTREE_ROOT =
+  "domain/normalize-scenario-tests-repo-frontier-20260715";
+
+function taskHasAncestorId(
+  tree: ReturnType<typeof readTaskTree>,
+  taskId: string,
+  ancestorId: string,
+): boolean {
+  let currentId: string | undefined = taskId;
+  const seen = new Set<string>();
+  while (currentId && !seen.has(currentId)) {
+    if (currentId === ancestorId) return true;
+    seen.add(currentId);
+    const task = tree.tasks[currentId];
+    currentId =
+      task && typeof task.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id.trim()
+        : undefined;
+  }
+  return false;
+}
+
+function requiresNormalizationIsolatedWorktreeReview(
+  tree: ReturnType<typeof readTaskTree>,
+  taskId: string,
+): boolean {
+  return taskHasAncestorId(tree, taskId, NORMALIZATION_ISOLATED_WORKTREE_ROOT);
+}
+
 function isFixForwardTask(task: TaskNode): boolean {
   return taskContextString(task, "workflow") === "fix-forward";
 }
@@ -155,6 +196,35 @@ function reviewedEvents(value: unknown): ReviewedEvent[] {
     if (!type || !data) return [];
     const owner = textValue(event?.owner);
     const target = recordValue(event?.target);
+
+    if (type === "project.task.completed") {
+      const project = textValue(data.project) || textValue(target?.project);
+      const taskId =
+        textValue(data.taskId) ||
+        textValue(data.task_id) ||
+        textValue(target?.taskId);
+      if (!project || !taskId) return [];
+      const normalizedTarget = {
+        ...(target ?? {}),
+        project,
+        taskId,
+      };
+      return [
+        {
+          type,
+          ...(owner ? { owner } : {}),
+          target: normalizedTarget,
+          data: {
+            ...data,
+            project,
+            taskId,
+            task_id: taskId,
+            target: normalizedTarget,
+          },
+        },
+      ];
+    }
+
     return [
       {
         type,
@@ -448,6 +518,245 @@ function workflowResultDetails(
 
 function textValue(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function queuedRunDetails(
+  completion: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const details = workflowResultDetails(completion);
+  return (
+    recordValue(details.queuedRun) ??
+    recordValue(details.queuedPipelineRun) ??
+    recordValue(details.acceptedQueuedPipelineRun)
+  );
+}
+
+function specIdRoots(specId: string): string[] {
+  const normalized = specId.startsWith("spec.") ? specId.slice(5) : specId;
+  const root = normalized.split(".")[0]?.trim();
+  return root ? [root] : [];
+}
+
+function featureRootsFromPaths(paths: string[]): string[] {
+  const roots = new Set<string>();
+  for (const path of paths) {
+    const match = path.match(/(?:^|\/)features\/([^/]+)\//);
+    if (match?.[1]) roots.add(match[1]);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function expectedNormalizationFeatureRoots(task: TaskNode): string[] {
+  const roots = new Set<string>();
+  for (const scope of stringList(task.conflict_scope)) {
+    if (!scope.startsWith("spec:")) continue;
+    for (const root of specIdRoots(scope.slice("spec:".length).trim())) {
+      roots.add(root);
+    }
+  }
+  for (const input of stringList(task.inputs)) {
+    const trimmed = input.trim();
+    if (!trimmed.startsWith("spec:")) continue;
+    for (const root of specIdRoots(trimmed.slice("spec:".length).trim())) {
+      roots.add(root);
+    }
+  }
+  for (const root of featureRootsFromPaths(stringList(task.outputs))) {
+    roots.add(root);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function changedFileFeatureRoots(changedFiles: string[]): string[] {
+  const roots = new Set<string>();
+  for (const file of changedFiles) {
+    const match = file.match(/^features\/([^/]+)\//);
+    if (match?.[1]) roots.add(match[1]);
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+
+function normalizationQueuedRunValidationNotes(input: {
+  task: TaskNode;
+  completion: Record<string, unknown>;
+}): ReviewValidationNotes {
+  const queuedRun = queuedRunDetails(input.completion);
+  if (!queuedRun) return emptyValidationNotes();
+
+  const findings: string[] = [];
+  const feedback: string[] = [];
+  const runId = textValue(queuedRun.runId) || textValue(queuedRun.run_id);
+  const baseRef = textValue(queuedRun.baseRef) || textValue(queuedRun.base_ref);
+  const baseCommit =
+    textValue(queuedRun.baseCommit) || textValue(queuedRun.base_commit);
+  const sourceVersion =
+    textValue(queuedRun.sourceVersion) || textValue(queuedRun.source_version);
+  const sourceCommit =
+    textValue(queuedRun.sourceCommit) || textValue(queuedRun.source_commit);
+  const firstParentCommits = stringList(
+    queuedRun.firstParentCommits ?? queuedRun.first_parent_commits,
+  );
+  const changedFiles = stringList(
+    queuedRun.changedFiles ?? queuedRun.changed_files,
+  );
+  const worktreePath =
+    textValue(queuedRun.worktreePath) || textValue(queuedRun.worktree_path);
+
+  if (baseRef !== "origin/dev") {
+    findings.push("normalization-isolation-base-ref-not-origin-dev");
+    findings.push(`baseRef:${baseRef || "missing"}`);
+  }
+  if (!baseCommit) findings.push("normalization-isolation-base-commit-missing");
+  if (!sourceVersion) {
+    findings.push("normalization-isolation-source-version-missing");
+  }
+  if (!sourceCommit) {
+    findings.push("normalization-isolation-source-commit-missing");
+  }
+  if (sourceVersion && sourceCommit && sourceVersion !== sourceCommit) {
+    findings.push("normalization-isolation-source-version-mismatch");
+    findings.push(`sourceVersion:${sourceVersion}`);
+    findings.push(`sourceCommit:${sourceCommit}`);
+  }
+  if (firstParentCommits.length === 0) {
+    findings.push("normalization-isolation-first-parent-commits-missing");
+  } else if (
+    sourceCommit &&
+    firstParentCommits[firstParentCommits.length - 1] !== sourceCommit
+  ) {
+    findings.push("normalization-isolation-first-parent-tail-mismatch");
+    findings.push(
+      `firstParentTail:${firstParentCommits[firstParentCommits.length - 1]}`,
+    );
+  }
+  if (changedFiles.length === 0) {
+    findings.push("normalization-isolation-changed-files-missing");
+  }
+  if (!worktreePath) {
+    findings.push("normalization-isolation-worktree-path-missing");
+  }
+
+  const expectedRoots = expectedNormalizationFeatureRoots(input.task);
+  const changedRoots = changedFileFeatureRoots(changedFiles);
+  const unexpectedRoots = changedRoots.filter(
+    (root) => expectedRoots.length > 0 && !expectedRoots.includes(root),
+  );
+  if (unexpectedRoots.length > 0) {
+    findings.push("normalization-isolation-unexpected-feature-root");
+    findings.push(`expectedFeatures:${expectedRoots.join(",") || "missing"}`);
+    for (const root of unexpectedRoots) {
+      findings.push(`unexpectedFeature:${root}`);
+    }
+  }
+
+  if (findings.length === 0) {
+    return {
+      findings: [
+        "validation-note:normalization-isolated-worktree-lineage-present",
+        ...(runId ? [`run:${runId}`] : []),
+        ...(baseCommit ? [`baseCommit:${baseCommit}`] : []),
+        ...(sourceCommit ? [`sourceCommit:${sourceCommit}`] : []),
+        `changedFiles:${changedFiles.length}`,
+      ],
+      feedback: [],
+      suggestedFollowups: [],
+    };
+  }
+
+  feedback.push(
+    "Redo the normalization dispatch from a task-specific isolated worktree based on current origin/dev and return QUEUED_PIPELINE_RUN with baseRef/baseCommit/sourceCommit/firstParentCommits/changedFiles/worktreePath proving the queued sourceVersion is the reviewed isolated commit only.",
+  );
+  return {
+    findings: [
+      "normalization-isolation-contract-invalid",
+      ...(runId ? [`run:${runId}`] : []),
+      ...findings,
+    ],
+    feedback,
+    suggestedFollowups: [],
+  };
+}
+
+function normalizationIsolationHardFailure(review: StructuredReview): boolean {
+  return review.findings.some(
+    (finding) =>
+      finding === "normalization-isolation-contract-invalid" ||
+      finding.startsWith("normalization-isolation-"),
+  );
+}
+
+function enforceNormalizationIsolationDecision(
+  review: StructuredReview,
+): StructuredReview {
+  if (
+    review.decision !== "accept" ||
+    !normalizationIsolationHardFailure(review)
+  ) {
+    return review;
+  }
+  return {
+    ...review,
+    decision: "redo",
+    confidence: "high",
+    summary:
+      "Normalization queued run is missing isolated-worktree lineage proof or still points at mixed ancestry, so the worker result cannot be accepted.",
+    feedback: [
+      ...review.feedback,
+      "Reject this normalization queued-run result until the worker proves an origin/dev-based isolated worktree, matching sourceVersion/sourceCommit, ordered first-parent commits, and in-scope changed files.",
+    ],
+  };
+}
+
+function featureScenarioCarrierValidationNotes(input: {
+  projectDir: string;
+  task: TaskNode;
+}): ReviewValidationNotes {
+  const violations = featureScenarioCarrierViolationsForTaskOutputs({
+    projectDir: input.projectDir,
+    outputPaths: stringList(input.task.outputs),
+  });
+  if (violations.length === 0) return emptyValidationNotes();
+
+  return {
+    findings: violations.flatMap((violation) => [
+      violation.code,
+      `scenario:${violation.scenarioBase}`,
+      ...violation.files.map((file) => `file:${file}`),
+    ]),
+    feedback: [
+      ...violations.map((violation) => violation.summary),
+      "Redo the feature authoring so one direct feature-owned .test.ts file carries the scenario, controller-visible spec/model/coverage surfaces point only at that .test.ts path, and any plain .ts helpers remain non-scenario support modules.",
+    ],
+    suggestedFollowups: [],
+  };
+}
+
+function featureScenarioCarrierHardFailure(review: StructuredReview): boolean {
+  return review.findings.some((finding) =>
+    finding.startsWith("feature-scenario-carrier-"),
+  );
+}
+
+function enforceFeatureScenarioCarrierDecision(
+  review: StructuredReview,
+): StructuredReview {
+  if (
+    !featureScenarioCarrierHardFailure(review) ||
+    review.decision === "redo"
+  ) {
+    return review;
+  }
+  return {
+    ...review,
+    decision: "redo",
+    confidence: "high",
+    summary:
+      "Feature scenario authoring output still introduces or preserves a plain scenario carrier instead of one direct .test.ts owner.",
+    feedback: [
+      ...review.feedback,
+      "Reject this result until the worker removes the plain scenario carrier, stops wrapper-only .test.ts launchers, and keeps maintained references on the direct .test.ts path only.",
+    ],
+  };
 }
 
 function fixForwardMissingFields(
@@ -773,6 +1082,9 @@ function terminalPipelineStructuredResultIssues(
 function validationNotesForCompletion(
   task: TaskNode,
   completion: Record<string, unknown>,
+  input: {
+    normalizationIsolatedWorktreeRequired?: boolean;
+  } = {},
 ): ReviewValidationNotes {
   let notes = emptyValidationNotes();
   const summary = completionSummary(completion);
@@ -938,6 +1250,12 @@ function validationNotesForCompletion(
       });
     }
   }
+  if (input.normalizationIsolatedWorktreeRequired) {
+    notes = mergeValidationNotes(
+      notes,
+      normalizationQueuedRunValidationNotes({ task, completion }),
+    );
+  }
   return notes;
 }
 
@@ -958,6 +1276,7 @@ function buildReviewPrompt(input: {
   completion: Record<string, unknown>;
   validationNotes: ReviewValidationNotes;
   trigger: string;
+  normalizationIsolatedWorktreeRequired?: boolean;
 }): string {
   return `Task Review Mode
 
@@ -1013,6 +1332,41 @@ classification, diagnosis, minimumDiagnosisPacket, verification, nextAction,
 and nextActionReason. If the worker reported a tool, agent, pipeline, provider,
 or artifact failure, review that as workflow/process failure, not AKS product
 proof.
+
+${
+  input.normalizationIsolatedWorktreeRequired
+    ? `For tasks under ${NORMALIZATION_ISOLATED_WORKTREE_ROOT}, reject any queued
+normalization rerun that does not prove an isolated origin/dev-based worktree
+through structured QUEUED_PIPELINE_RUN lineage. Accept queued normalization runs
+only when the structured result includes baseRef=origin/dev, baseCommit,
+sourceCommit, sourceVersion, ordered firstParentCommits ending at sourceCommit,
+and changedFiles/worktreePath for the isolated task worktree. If sourceVersion
+!= sourceCommit, if the branch still points at a shared contaminated root
+worktree, or if changed files show a different scenario family than the task,
+choose redo rather than accept. Observed mixed fixtures such as Preflight
+172532763, Disk 172519831, Planned 172519985, and Disable SSH 172519192
+should fail this contract; clean isolated lineage examples such as 172513552,
+172513872, 172515477, 172517379, and 172518211 should pass it.
+
+For a terminal same-run live pass under this normalization frontier, do not
+treat the pass as closure by itself when the exact tested sourceCommit is still
+outside current origin/dev. Keep one exact publication successor alive until the
+tested commit is proven in origin/dev ancestry with strict inventory decrease.
+If merge-conflict resolution changes scenario content, require a replacement
+exact-commit live verification instead of accepting an untested publication.
+Non-pass/error results stay on fix-forward and never publication.
+
+`
+    : ""
+}
+For feature scenario authoring or normalization tasks, accept only one direct
+feature-owned .test.ts scenario carrier per authored scenario. Reject a result
+that adds a new plain features/*/tests/*.ts scenario carrier, keeps or creates a
+wrapper .test.ts whose only purpose is spawning a sibling plain carrier, or
+repoints maintained spec/model/coverage surfaces to a plain scenario carrier.
+Ordinary support modules remain allowed when they are not scenario carriers.
+Legacy plain carriers may remain as untouched migration inventory, but a worker
+must not preserve them as the active authored scenario output for the task.
 
 For shared runtime repairs, review the cited implementation against the
 existing design contract and sibling success paths, not only the new regression
@@ -1161,16 +1515,60 @@ export function isTransientReviewerFailure(text: string): boolean {
 }
 
 function appendReviewRun(appDir: string, entry: Record<string, unknown>): void {
-  const path = join(appDir, ".state", "task-reviewer-runs.jsonl");
-  mkdirSync(join(appDir, ".state"), { recursive: true });
-  appendFileSync(
-    path,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      workflow: "task-reviewer",
-      ...entry,
-    })}\n`,
-  );
+  appendReviewerLedgerRowV2(appDir, "task-reviewer", entry);
+}
+
+function reviewDecisionId(input: {
+  taskId: string;
+  taskRevision: number;
+  attemptId: string;
+  review: StructuredReview;
+}): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        taskId: input.taskId,
+        taskRevision: input.taskRevision,
+        attemptId: input.attemptId,
+        review: input.review,
+      }),
+    )
+    .digest("hex")
+    .slice(0, 24);
+}
+
+type PersistedReviewDecisionV2 = {
+  reviewId: string;
+  reviewedAt: string;
+  review: StructuredReview;
+};
+
+function persistedReviewDecisionV2(
+  rows: Array<Record<string, unknown>>,
+  input: { taskId: string; taskRevision: number; attemptId: string },
+): PersistedReviewDecisionV2 | null {
+  for (const row of rows) {
+    if (
+      row.result !== "project.task.reviewed" ||
+      row.task_id !== input.taskId ||
+      row.task_revision !== input.taskRevision ||
+      row.attempt_id !== input.attemptId ||
+      typeof row.review_id !== "string" ||
+      !row.review_id.trim() ||
+      typeof row.ts !== "string" ||
+      !row.review ||
+      typeof row.review !== "object" ||
+      Array.isArray(row.review)
+    ) {
+      continue;
+    }
+    return {
+      reviewId: row.review_id,
+      reviewedAt: row.ts,
+      review: structuredReviewFromText(JSON.stringify(row.review)),
+    };
+  }
+  return null;
 }
 
 function emitTaskReviewed(
@@ -1179,6 +1577,8 @@ function emitTaskReviewed(
     task: TaskNode;
     taskRevision: number;
     attemptId: string;
+    reviewId: string;
+    reviewedAt: string;
     completion: Record<string, unknown>;
     review: StructuredReview;
   },
@@ -1192,6 +1592,10 @@ function emitTaskReviewed(
     task_revision: input.taskRevision,
     attemptId: input.attemptId,
     attempt_id: input.attemptId,
+    reviewId: input.reviewId,
+    review_id: input.reviewId,
+    reviewedAt: input.reviewedAt,
+    reviewed_at: input.reviewedAt,
     decision: input.review.decision,
     confidence: input.review.confidence,
     summary: input.review.summary,
@@ -1215,6 +1619,71 @@ function emitTaskReviewed(
   });
 }
 
+function deliverReviewApplicationDecisionV2(input: {
+  ctx: WorkflowContext;
+  appDir: string;
+  task: TaskNode;
+  taskRevision: number;
+  attemptId: string;
+  completion: Record<string, unknown>;
+  reviewId: string;
+  reviewedAt: string;
+  review: StructuredReview;
+}): PendingActionDeliveryResultV2 | null {
+  const action = reviewApplicationPendingActionV2(
+    {
+      taskId: input.task.id,
+      taskRevision: input.taskRevision,
+      attemptId: input.attemptId,
+      completedAt:
+        typeof taskTrace(input.task).last_worker_completed_at === "string"
+          ? (taskTrace(input.task).last_worker_completed_at as string)
+          : input.reviewedAt,
+      latestDecision: input.review.decision,
+      latestDecisionId: input.reviewId,
+      latestDecisionAt: input.reviewedAt,
+      deliveryState: "decision-pending-apply",
+      actionDeliveryStatus: "pending",
+      actionDeliveryAttempts: 0,
+      actionAcceptedAt: null,
+    },
+    5 * 60_000,
+  );
+  if (!action) return null;
+  const delivery = deliverPendingActionV2({
+    action,
+    now: new Date().toISOString(),
+    priorReceipts: pendingActionDeliveryReceiptsV2(
+      readReviewerLedgerRowsV2(input.appDir),
+      action.key,
+    ),
+    dispatch: () =>
+      emitTaskReviewed(input.ctx, {
+        task: input.task,
+        taskRevision: input.taskRevision,
+        attemptId: input.attemptId,
+        reviewId: input.reviewId,
+        reviewedAt: input.reviewedAt,
+        completion: input.completion,
+        review: input.review,
+      }),
+  });
+  if (delivery.receipt) {
+    appendPendingActionDeliveryReceiptV2(
+      input.appDir,
+      "task-reviewer",
+      delivery.receipt,
+      {
+        reviewId: input.reviewId,
+        taskId: input.task.id,
+        taskRevision: input.taskRevision,
+        attemptId: input.attemptId,
+      },
+    );
+  }
+  return delivery;
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
@@ -1224,6 +1693,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     field(ctx.task, "agent") ??
     ctx.agent ??
     "aks-reviewer";
+  const pendingActionV2 = field(ctx.task, "pendingActionV2");
 
   if (trigger?.type !== "project.task.completed") {
     return ctx.done(
@@ -1250,6 +1720,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   const tree = readTaskTree(config);
   const task = tree.tasks[taskId];
+  const normalizationIsolatedWorktreeRequired =
+    requiresNormalizationIsolatedWorktreeReview(tree, taskId);
   if (!task) {
     appendReviewRun(appDir, {
       result: "ignored",
@@ -1321,7 +1793,57 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence_refs: triggerValue(trigger, "evidence_refs"),
         };
 
-  let validationNotes = validationNotesForCompletion(task, completion);
+  const usePendingActionDelivery =
+    pendingActionV2 === "review-application-revisioned" &&
+    completedTaskRevision > 0 &&
+    taskContext(task).controlPlaneVersion === 2;
+  if (usePendingActionDelivery) {
+    const persisted = persistedReviewDecisionV2(
+      readReviewerLedgerRowsV2(appDir),
+      {
+        taskId,
+        taskRevision: completedTaskRevision,
+        attemptId,
+      },
+    );
+    if (persisted) {
+      const delivery = deliverReviewApplicationDecisionV2({
+        ctx,
+        appDir,
+        task,
+        taskRevision: completedTaskRevision,
+        attemptId,
+        completion,
+        ...persisted,
+      });
+      if (!delivery) {
+        return ctx.done(
+          `Task reviewer could not reconstruct persisted pending review delivery for ${taskId}.`,
+        );
+      }
+      if (!delivery.accepted) {
+        return ctx.done(
+          `Task reviewer persisted pending-action delivery for ${taskId} did not complete: ${delivery.reason}.`,
+        );
+      }
+      return ctx.done(
+        delivery.replayed
+          ? `Task reviewer replay found accepted review delivery for ${taskId} attempt ${attemptId} from the persisted decision.`
+          : `Task reviewer redelivered persisted review ${persisted.reviewId} for ${taskId} attempt ${attemptId} through PendingAction V2.`,
+      );
+    }
+  }
+
+  let validationNotes = validationNotesForCompletion(task, completion, {
+    normalizationIsolatedWorktreeRequired,
+  });
+  validationNotes = mergeValidationNotes(
+    validationNotes,
+    featureScenarioCarrierValidationNotes({
+      projectDir,
+      task,
+    }),
+  );
   validationNotes = mergeValidationNotes(
     validationNotes,
     missingEvidenceValidationNotes({
@@ -1343,6 +1865,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         completion,
         validationNotes,
         trigger: triggerBlock(ctx.task),
+        normalizationIsolatedWorktreeRequired,
       }),
     });
   } catch (error) {
@@ -1354,34 +1877,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const reviewText = resultText(reviewerResult);
   const review = completeReviewCorrectionContract(
     task,
-    appendValidationNotesToReview(
-      structuredReviewFromText(reviewText),
-      validationNotes,
+    enforceFeatureScenarioCarrierDecision(
+      enforceNormalizationIsolationDecision(
+        appendValidationNotesToReview(
+          structuredReviewFromText(reviewText),
+          validationNotes,
+        ),
+      ),
     ),
   );
-  try {
-    emitTaskReviewed(ctx, {
-      task,
-      taskRevision: completedTaskRevision,
-      attemptId,
-      completion,
-      review,
-    });
-  } catch {
-    appendReviewRun(appDir, {
-      result: "dispatch-failed",
-      task_id: taskId,
-      task_revision: completedTaskRevision,
-      attempt_id: attemptId,
-      review,
-    });
-    return ctx.done(
-      `Task reviewer could not dispatch project.task.reviewed for ${taskId}.`,
-    );
-  }
-
+  const reviewedAt = new Date().toISOString();
+  const reviewId = reviewDecisionId({
+    taskId,
+    taskRevision: completedTaskRevision,
+    attemptId,
+    review,
+  });
   appendReviewRun(appDir, {
+    ts: reviewedAt,
     result: "project.task.reviewed",
+    delivery_status: "pending",
+    review_id: reviewId,
     task_id: taskId,
     task_revision: completedTaskRevision,
     attempt_id: attemptId,
@@ -1395,6 +1911,67 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     verification: review.verification,
     events: review.events,
     ...(review.reviewAction ? { reviewAction: review.reviewAction } : {}),
+    review,
+  });
+  if (usePendingActionDelivery) {
+    const delivery = deliverReviewApplicationDecisionV2({
+      ctx,
+      appDir,
+      task,
+      taskRevision: completedTaskRevision,
+      attemptId,
+      completion,
+      reviewId,
+      reviewedAt,
+      review,
+    });
+    if (!delivery) {
+      return ctx.done(
+        `Task reviewer could not construct pending review delivery for ${taskId}.`,
+      );
+    }
+    if (!delivery.accepted) {
+      return ctx.done(
+        `Task reviewer pending-action delivery for ${taskId} did not complete: ${delivery.reason}.`,
+      );
+    }
+    return ctx.done(
+      delivery.replayed
+        ? `Task reviewer replay found accepted review delivery for ${taskId} attempt ${attemptId}.`
+        : `Task reviewer delivered ${review.decision} review for ${taskId} attempt ${attemptId} through PendingAction V2.`,
+    );
+  }
+  try {
+    emitTaskReviewed(ctx, {
+      task,
+      taskRevision: completedTaskRevision,
+      attemptId,
+      reviewId,
+      reviewedAt,
+      completion,
+      review,
+    });
+  } catch {
+    appendReviewRun(appDir, {
+      result: "project.task.reviewed.delivery-failed",
+      review_id: reviewId,
+      task_id: taskId,
+      task_revision: completedTaskRevision,
+      attempt_id: attemptId,
+      delivery_status: "failed",
+    });
+    return ctx.done(
+      `Task reviewer could not dispatch project.task.reviewed for ${taskId}.`,
+    );
+  }
+
+  appendReviewRun(appDir, {
+    result: "project.task.reviewed.delivery-accepted",
+    review_id: reviewId,
+    task_id: taskId,
+    task_revision: completedTaskRevision,
+    attempt_id: attemptId,
+    delivery_status: "accepted",
   });
   return ctx.done(
     `Task reviewer emitted ${review.decision} review for ${taskId} attempt ${attemptId}.`,

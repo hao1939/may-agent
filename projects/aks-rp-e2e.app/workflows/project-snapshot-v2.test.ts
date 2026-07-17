@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { captureProjectSnapshotV2 } from "../scripts/project-snapshot-v2.ts";
+import { captureRuntimeProjectSnapshotV2 } from "./lib/project-snapshot-capture-v2.ts";
 import {
   buildProjectSnapshotV2,
   compareFrontiersV2,
@@ -365,6 +366,7 @@ describe("ProjectSnapshot V2", () => {
           attemptId: "attempt-decision",
           decision: "accepted",
           ts: "2026-07-16T03:30:00.000Z",
+          actionDeliveryStatus: "pending",
         },
       ],
     });
@@ -382,6 +384,100 @@ describe("ProjectSnapshot V2", () => {
       "review-decision-not-applied",
       "review-delivery-missing",
     ]);
+    expect(
+      result.pendingActions.map((action) => [
+        action.kind,
+        action.subject.taskId,
+        action.status,
+      ]),
+    ).toEqual([
+      ["completion-review-delivery", "missing-review", "pending"],
+      ["completion-review-delivery", "within-grace", "unknown"],
+      ["review-application-delivery", "decision-pending", "pending"],
+    ]);
+  });
+
+  test("projects a fresh review application action without racing its initial grace", () => {
+    const result = snapshot(
+      tree([
+        task("decision-pending", "review", {
+          parent_id: "project",
+          revision: 2,
+          trace: {
+            current_attempt_id: "attempt-decision",
+            last_worker_completed_at: "2026-07-16T03:30:00.000Z",
+          },
+        }),
+      ]),
+      {
+        reviewApplicationGraceMs: 5 * 60_000,
+        reviews: [
+          {
+            taskId: "decision-pending",
+            taskRevision: 2,
+            attemptId: "attempt-decision",
+            decision: "accepted",
+            ts: "2026-07-16T03:59:00.000Z",
+            actionDeliveryStatus: "accepted",
+            actionDeliveryAttempts: 1,
+            actionAcceptedAt: "2026-07-16T03:59:01.000Z",
+          },
+        ],
+      },
+    );
+
+    expect(result.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "review-application-delivery",
+        status: "accepted",
+        postcondition: expect.objectContaining({
+          dueAt: "2026-07-16T04:04:00.000Z",
+        }),
+      }),
+    );
+    expect(
+      result.invariants.some(
+        (finding) => finding.type === "review-decision-not-applied",
+      ),
+    ).toBe(false);
+  });
+
+  test("reports an unapplied review decision after application grace", () => {
+    const taskTree = tree([
+      task("decision-pending", "review", {
+        parent_id: "project",
+        revision: 2,
+        trace: {
+          current_attempt_id: "attempt-decision",
+          last_worker_completed_at: "2026-07-16T03:30:00.000Z",
+        },
+      }),
+    ]);
+    const reviews = [
+      {
+        taskId: "decision-pending",
+        taskRevision: 2,
+        attemptId: "attempt-decision",
+        decision: "accepted",
+        ts: "2026-07-16T03:54:59.000Z",
+        actionDeliveryStatus: "accepted" as const,
+        actionDeliveryAttempts: 1,
+        actionAcceptedAt: "2026-07-16T03:55:00.000Z",
+      },
+    ];
+
+    const result = snapshot(taskTree, {
+      reviewApplicationGraceMs: 5 * 60_000,
+      reviews,
+    });
+    expect(
+      result.invariants.find(
+        (finding) => finding.type === "review-decision-not-applied",
+      ),
+    ).toMatchObject({
+      subject: { kind: "task", id: "decision-pending", revision: 2 },
+      automaticAction: "none",
+    });
   });
 
   test("ignores a decision older than the current terminal-review epoch", () => {
@@ -492,6 +588,166 @@ describe("ProjectSnapshot V2", () => {
       waitingFor: { backend: "ado", runId: "172459471" },
       issues: [],
     });
+  });
+
+  test("reports an overdue unacknowledged Condition fallback with a stable recovery key", () => {
+    const taskTree = tree([
+      task("verify", "blocked", {
+        parent_id: "project",
+        revision: 3,
+        blocker: {
+          condition: "compatibility projection",
+          condition_id: "condition:pipeline:ado:172459471:terminal",
+        },
+      }),
+    ]) as TaskTree & { conditions: Record<string, unknown> };
+    taskTree.conditions = {
+      "condition:pipeline:ado:172459471:terminal": {
+        version: "project-condition-v2",
+        id: "condition:pipeline:ado:172459471:terminal",
+        causeKey: "pipeline:ado:172459471:terminal",
+        class: "external",
+        type: "pipeline.run.terminal",
+        status: "open",
+        subject: { kind: "task", id: "verify", revision: 3 },
+        fallbackExecution: {
+          status: "dispatched",
+          attempts: 2,
+          acknowledgementDueAt: "2026-07-16T03:59:59.000Z",
+        },
+      },
+    };
+
+    const first = snapshot(taskTree);
+    const second = snapshot(taskTree);
+    const finding = first.invariants.find(
+      (candidate) => candidate.type === "condition-fallback-delivery-overdue",
+    );
+
+    expect(finding).toMatchObject({
+      recoveryKey:
+        "condition-fallback-delivery:condition:pipeline:ado:172459471:terminal:3",
+      severity: "warning",
+      subject: { kind: "task", id: "verify", revision: 3 },
+      automaticAction: "none",
+    });
+    expect(
+      second.invariants.find(
+        (candidate) => candidate.type === "condition-fallback-delivery-overdue",
+      ),
+    ).toEqual(finding);
+    expect(first.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "condition-fallback-delivery",
+        status: "accepted",
+        delivery: expect.objectContaining({ attempts: 2, maxAttempts: 3 }),
+      }),
+    );
+  });
+
+  test("does not report an acknowledged resolved Condition fallback as overdue", () => {
+    const taskTree = tree([
+      task("verify", "blocked", {
+        parent_id: "project",
+        revision: 3,
+      }),
+    ]) as TaskTree & { conditions: Record<string, unknown> };
+    taskTree.conditions = {
+      "condition:pipeline:ado:42:terminal": {
+        version: "project-condition-v2",
+        id: "condition:pipeline:ado:42:terminal",
+        causeKey: "pipeline:ado:42:terminal",
+        type: "pipeline.run.terminal",
+        status: "resolved",
+        subject: { kind: "task", id: "verify", revision: 3 },
+        fallbackExecution: {
+          status: "acknowledged",
+          attempts: 2,
+          acknowledgementDueAt: "2026-07-16T03:45:00.000Z",
+          acknowledgedAt: "2026-07-16T03:50:00.000Z",
+        },
+      },
+    };
+
+    const result = snapshot(taskTree);
+    expect(
+      result.invariants.some(
+        (finding) => finding.type === "condition-fallback-delivery-overdue",
+      ),
+    ).toBe(false);
+    expect(
+      result.pendingActions.some(
+        (action) => action.kind === "condition-fallback-delivery",
+      ),
+    ).toBe(false);
+  });
+
+  test("keeps an overdue fallback visible after its Condition resolves", () => {
+    const taskTree = tree([
+      task("verify", "active", {
+        parent_id: "project",
+        revision: 3,
+      }),
+    ]) as TaskTree & { conditions: Record<string, unknown> };
+    taskTree.conditions = {
+      "condition:pipeline:ado:42:terminal": {
+        version: "project-condition-v2",
+        id: "condition:pipeline:ado:42:terminal",
+        causeKey: "pipeline:ado:42:terminal",
+        type: "pipeline.run.terminal",
+        status: "resolved",
+        subject: { kind: "task", id: "verify", revision: 3 },
+        fallbackExecution: {
+          status: "dispatched",
+          attempts: 2,
+          acknowledgementDueAt: "2026-07-16T03:45:00.000Z",
+        },
+      },
+    };
+
+    const result = snapshot(taskTree);
+    expect(
+      result.invariants.find(
+        (finding) => finding.type === "condition-fallback-delivery-overdue",
+      ),
+    ).toMatchObject({ severity: "warning" });
+  });
+
+  test("escalates an overdue Condition fallback after its bounded retry budget", () => {
+    const taskTree = tree([
+      task("verify", "blocked", {
+        parent_id: "project",
+        revision: 3,
+      }),
+    ]) as TaskTree & { conditions: Record<string, unknown> };
+    taskTree.conditions = {
+      "condition:pipeline:ado:42:terminal": {
+        version: "project-condition-v2",
+        id: "condition:pipeline:ado:42:terminal",
+        causeKey: "pipeline:ado:42:terminal",
+        type: "pipeline.run.terminal",
+        status: "open",
+        subject: { kind: "task", id: "verify", revision: 3 },
+        fallbackExecution: {
+          status: "dispatched",
+          attempts: 3,
+          acknowledgementDueAt: "2026-07-16T03:45:00.000Z",
+        },
+      },
+    };
+
+    const result = snapshot(taskTree);
+    expect(
+      result.invariants.find(
+        (finding) => finding.type === "condition-fallback-delivery-overdue",
+      ),
+    ).toMatchObject({ severity: "critical" });
+    expect(result.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "condition-fallback-delivery",
+        status: "exhausted",
+      }),
+    );
   });
 
   test("finds a resolved Condition whose subject is still blocked", () => {
@@ -633,13 +889,58 @@ describe("ProjectSnapshot V2", () => {
     await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
     await mkdir(projectDir, { recursive: true });
     const treePath = join(appDir, ".state", "tasks", "tree.json");
+    const reviewedAt = new Date().toISOString();
     await writeFile(
       treePath,
       `${JSON.stringify(
-        tree([task("ready", "backlog", { parent_id: "project" })]),
+        tree([
+          task("ready", "backlog", { parent_id: "project" }),
+          task("review", "review", {
+            parent_id: "project",
+            revision: 2,
+            context: { controlPlaneVersion: 2 },
+            trace: {
+              current_attempt_id: "attempt-review",
+              last_worker_completed_at: "2026-07-16T03:30:00.000Z",
+            },
+          }),
+        ]),
         null,
         2,
       )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, ".state", "task-reviewer-runs.jsonl"),
+      [
+        {
+          ts: reviewedAt,
+          result: "project.task.reviewed",
+          delivery_status: "pending",
+          review_id: "review-2",
+          task_id: "review",
+          task_revision: 2,
+          attempt_id: "attempt-review",
+          decision: "accept",
+        },
+        {
+          ts: reviewedAt,
+          result: "pending-action-delivery-v2",
+          version: "project-pending-action-delivery-v2",
+          action_key:
+            "review-application-delivery:review:2:attempt-review:review-2",
+          action_kind: "review-application-delivery",
+          delivery_attempt: 1,
+          delivery_status: "accepted",
+          recorded_at: reviewedAt,
+          review_id: "review-2",
+          task_id: "review",
+          task_revision: 2,
+          attempt_id: "attempt-review",
+        },
+      ]
+        .map((row) => JSON.stringify(row))
+        .join("\n") + "\n",
       "utf8",
     );
     const before = await readFile(treePath, "utf8");
@@ -663,9 +964,26 @@ describe("ProjectSnapshot V2", () => {
       size: before.length,
     });
     expect(result.snapshot.sourceMeta?.[treePath].fingerprint).toHaveLength(64);
+    const runtime = captureRuntimeProjectSnapshotV2({
+      appDir,
+      treePath,
+      stateDbPath: join(root, "missing.db"),
+      projectId: "fixture",
+    });
+    expect(runtime?.snapshot.reviews).toEqual(result.snapshot.reviews);
+    expect(runtime?.snapshot.pendingActions).toEqual(
+      result.snapshot.pendingActions,
+    );
+    expect(result.snapshot.pendingActions).toContainEqual(
+      expect.objectContaining({
+        key: "review-application-delivery:review:2:attempt-review:review-2",
+        status: "accepted",
+        delivery: expect.objectContaining({ attempts: 1 }),
+      }),
+    );
     expect(result.snapshot.coverage).toMatchObject({
       tree: "available",
-      assignments: "unavailable",
+      assignments: "available",
       sessions: "unavailable",
       reviews: "available",
       controllers: "unavailable",

@@ -5,6 +5,11 @@ import {
   type TaskNode,
   type TaskTree,
 } from "./task-tree-store.ts";
+import {
+  pendingActionDeliveryReceiptsFromSourceV2,
+  projectPendingActionsV2,
+  type PendingActionV2,
+} from "./project-pending-actions-v2.ts";
 
 export const PROJECT_SNAPSHOT_V2 = "project-snapshot-v2" as const;
 
@@ -37,6 +42,9 @@ export type SnapshotReview = {
   attemptId: string;
   decision: string;
   ts: string;
+  actionDeliveryStatus?: "pending" | "accepted" | "failed" | "unknown";
+  actionDeliveryAttempts?: number;
+  actionAcceptedAt?: string | null;
 };
 
 export type SnapshotDeliveryGap = {
@@ -96,6 +104,7 @@ export type ProjectSnapshotV2Input = {
   sessionStartGraceMs?: number;
   staleNoActivityMs?: number;
   reviewGraceMs?: number;
+  reviewApplicationGraceMs?: number;
   sourceMeta?: Record<
     string,
     {
@@ -156,6 +165,12 @@ export type ReviewProjectionV2 = {
   latestDecision: string | null;
   latestDecisionId: string | null;
   latestDecisionAt: string | null;
+  actionDeliveryStatus: "pending" | "accepted" | "failed" | "unknown";
+  actionDeliveryAttempts: number;
+  actionAcceptedAt: string | null;
+  completionDeliveryStatus: "pending" | "accepted" | "failed" | "unknown";
+  completionDeliveryAttempts: number;
+  completionAcceptedAt: string | null;
   deliveryState:
     "within-grace" | "missing" | "decision-pending-apply" | "unknown";
 };
@@ -180,6 +195,25 @@ export type ConditionCandidateV2 = {
   nextCheckAt: string | null;
   fallbackAt: string | null;
   fallbackAction: string | null;
+  fallbackExecution: {
+    recoveryKey: string | null;
+    claimId: string | null;
+    status: string | null;
+    attempts: number | null;
+    claimedAt: string | null;
+    leaseExpiresAt: string | null;
+    dispatchedAt: string | null;
+    acknowledgementDueAt: string | null;
+    acknowledgedAt: string | null;
+  } | null;
+  continuation: {
+    recoveryKey: string | null;
+    status: string | null;
+    createdAt: string | null;
+    assignedAt: string | null;
+    assignmentAttemptId: string | null;
+    assignmentSessionId: string | null;
+  } | null;
   waitingFor: Record<string, unknown> | null;
   issues: string[];
   legacyTaskId: string;
@@ -194,6 +228,7 @@ export type InvariantTypeV2 =
   | "review-delivery-missing"
   | "review-decision-not-applied"
   | "blocked-condition-incomplete"
+  | "condition-fallback-delivery-overdue"
   | "resolved-condition-still-blocking"
   | "controller-record-unrepresented"
   | "continuation-delivery-gap";
@@ -233,6 +268,7 @@ export type ProjectSnapshotV2 = {
   attempts: AttemptProjectionV2[];
   reviews: ReviewProjectionV2[];
   conditions: ConditionCandidateV2[];
+  pendingActions: PendingActionV2[];
   controllers: SnapshotLoop[];
   deliveryGaps: SnapshotDeliveryGap[];
   mirrorDrift: MirrorDriftV2;
@@ -263,6 +299,7 @@ export const INVARIANT_SOURCE_REQUIREMENTS_V2: Record<
   "review-delivery-missing": ["tree", "reviews"],
   "review-decision-not-applied": ["tree", "reviews"],
   "blocked-condition-incomplete": ["tree"],
+  "condition-fallback-delivery-overdue": ["tree"],
   "resolved-condition-still-blocking": ["tree"],
   "controller-record-unrepresented": ["tree", "controllers"],
   "continuation-delivery-gap": ["delivery"],
@@ -565,6 +602,8 @@ function legacyCondition(task: TaskNode): ConditionCandidateV2 {
     nextCheckAt,
     fallbackAt,
     fallbackAction,
+    fallbackExecution: null,
+    continuation: null,
     waitingFor,
     issues,
     legacyTaskId: task.id,
@@ -591,6 +630,38 @@ function registeredCondition(value: unknown): ConditionCandidateV2 | null {
   const backend = text(condition.backend);
   const runId = text(condition.runId);
   const runUrl = text(condition.runUrl);
+  const fallbackExecutionValue = record(condition.fallbackExecution);
+  const fallbackAttempts = fallbackExecutionValue.attempts;
+  const fallbackExecution = Object.keys(fallbackExecutionValue).length
+    ? {
+        recoveryKey: text(fallbackExecutionValue.recoveryKey),
+        claimId: text(fallbackExecutionValue.claimId),
+        status: text(fallbackExecutionValue.status),
+        attempts:
+          typeof fallbackAttempts === "number" &&
+          Number.isInteger(fallbackAttempts) &&
+          fallbackAttempts >= 0
+            ? fallbackAttempts
+            : null,
+        claimedAt: text(fallbackExecutionValue.claimedAt),
+        leaseExpiresAt: text(fallbackExecutionValue.leaseExpiresAt),
+        dispatchedAt: text(fallbackExecutionValue.dispatchedAt),
+        acknowledgementDueAt: text(fallbackExecutionValue.acknowledgementDueAt),
+        acknowledgedAt: text(fallbackExecutionValue.acknowledgedAt),
+      }
+    : null;
+  const continuationValue = record(condition.continuation);
+  const continuationAssignment = record(continuationValue.assignment);
+  const continuation = Object.keys(continuationValue).length
+    ? {
+        recoveryKey: text(continuationValue.recoveryKey),
+        status: text(continuationValue.status),
+        createdAt: text(continuationValue.createdAt),
+        assignedAt: text(continuationValue.assignedAt),
+        assignmentAttemptId: text(continuationAssignment.attemptId),
+        assignmentSessionId: text(continuationAssignment.sessionId),
+      }
+    : null;
   return {
     id,
     causeKey,
@@ -607,6 +678,8 @@ function registeredCondition(value: unknown): ConditionCandidateV2 | null {
     nextCheckAt: text(condition.nextCheckAt),
     fallbackAt: text(condition.fallbackAt),
     fallbackAction: text(condition.fallbackAction),
+    fallbackExecution,
+    continuation,
     waitingFor: backend || runId || runUrl ? { backend, runId, runUrl } : null,
     issues: [],
     legacyTaskId: subjectId,
@@ -865,6 +938,20 @@ function projectReviews(input: {
       currentAttemptId,
       completedAt,
     );
+    const completionActionKey = currentAttemptId
+      ? `completion-review-delivery:${taskId}:${revision(task)}:${currentAttemptId}`
+      : null;
+    const completionReceipts = completionActionKey
+      ? pendingActionDeliveryReceiptsFromSourceV2(
+          trace.pendingActionDeliveryReceiptsV2,
+          completionActionKey,
+          "completion-review-delivery",
+        )
+      : [];
+    const acceptedCompletionReceipt = completionReceipts.find(
+      (receipt) => receipt.status === "accepted",
+    );
+    const latestCompletionReceipt = completionReceipts.at(-1);
     const completedMs = timestampMs(completedAt);
     const withinGrace =
       completedMs !== null && input.nowMs - completedMs <= input.reviewGraceMs;
@@ -885,6 +972,17 @@ function projectReviews(input: {
       latestDecision: latest?.decision ?? null,
       latestDecisionId: snapshotReviewIdentityV2(latest),
       latestDecisionAt: latest?.ts ?? null,
+      actionDeliveryStatus: latest?.actionDeliveryStatus ?? "unknown",
+      actionDeliveryAttempts: latest?.actionDeliveryAttempts ?? 0,
+      actionAcceptedAt: latest?.actionAcceptedAt ?? null,
+      completionDeliveryStatus: acceptedCompletionReceipt
+        ? "accepted"
+        : (latestCompletionReceipt?.status ?? "unknown"),
+      completionDeliveryAttempts: completionReceipts.reduce(
+        (maximum, receipt) => Math.max(maximum, receipt.attempt),
+        0,
+      ),
+      completionAcceptedAt: acceptedCompletionReceipt?.recordedAt ?? null,
       deliveryState,
     };
   });
@@ -962,6 +1060,8 @@ function buildInvariants(input: {
   conditions: ConditionCandidateV2[];
   loops: SnapshotLoop[];
   deliveryGaps: SnapshotDeliveryGap[];
+  nowMs: number;
+  reviewApplicationGraceMs: number;
 }): InvariantFindingV2[] {
   const canEvaluate = (type: InvariantTypeV2): boolean =>
     INVARIANT_SOURCE_REQUIREMENTS_V2[type].every(
@@ -1033,6 +1133,14 @@ function buildInvariants(input: {
     : []) {
     if (review.deliveryState === "within-grace") continue;
     const hasDecision = review.deliveryState === "decision-pending-apply";
+    const decisionAtMs = Date.parse(review.latestDecisionAt ?? "");
+    if (
+      hasDecision &&
+      Number.isFinite(decisionAtMs) &&
+      decisionAtMs + input.reviewApplicationGraceMs > input.nowMs
+    ) {
+      continue;
+    }
     const type: InvariantTypeV2 = hasDecision
       ? "review-decision-not-applied"
       : "review-delivery-missing";
@@ -1056,6 +1164,26 @@ function buildInvariants(input: {
   }
 
   for (const condition of input.conditions) {
+    const fallbackExecution = condition.fallbackExecution;
+    const acknowledgementDueMs = Date.parse(
+      fallbackExecution?.acknowledgementDueAt ?? "",
+    );
+    if (
+      fallbackExecution?.status === "dispatched" &&
+      Number.isFinite(acknowledgementDueMs) &&
+      acknowledgementDueMs <= input.nowMs
+    ) {
+      findings.push({
+        type: "condition-fallback-delivery-overdue",
+        recoveryKey: `condition-fallback-delivery:${condition.id}:${condition.subject.revision}`,
+        severity:
+          (fallbackExecution.attempts ?? 0) >= 3 ? "critical" : "warning",
+        subject: condition.subject,
+        message: `Condition ${condition.id} fallback delivery remains unacknowledged after ${fallbackExecution.attempts ?? 0} dispatch attempt(s).`,
+        taskIds: [condition.subject.id],
+        automaticAction: "none",
+      });
+    }
     if (condition.status === "resolved") {
       const subject = taskById(input.tree, condition.subject.id);
       if (
@@ -1154,6 +1282,8 @@ export function buildProjectSnapshotV2(
   const loops = input.loops ?? [];
   const attemptHeartbeats = input.attemptHeartbeats ?? [];
   const deliveryGaps = input.deliveryGaps ?? [];
+  const reviewGraceMs = input.reviewGraceMs ?? 15 * 60_000;
+  const reviewApplicationGraceMs = input.reviewApplicationGraceMs ?? 5 * 60_000;
   const frontier = buildFrontier(input.tree);
   const attempts = projectAttempts({
     tree: input.tree,
@@ -1172,7 +1302,7 @@ export function buildProjectSnapshotV2(
     reviews,
     reviewsAvailable: coverage.reviews === "available",
     nowMs,
-    reviewGraceMs: input.reviewGraceMs ?? 15 * 60_000,
+    reviewGraceMs,
   });
   const registeredConditions = Object.values(input.tree.conditions ?? {})
     .map(registeredCondition)
@@ -1191,6 +1321,21 @@ export function buildProjectSnapshotV2(
   const conditions = [...registeredConditions, ...legacyConditions].sort(
     (left, right) => left.id.localeCompare(right.id),
   );
+  const pendingActions = projectPendingActionsV2({
+    nowMs,
+    reviewGraceMs,
+    reviewApplicationGraceMs,
+    attempts,
+    reviews: reviewProjections,
+    conditions: conditions.map((condition) => ({
+      ...condition,
+      subjectState: taskById(input.tree, condition.subject.id)
+        ? taskState(taskById(input.tree, condition.subject.id)!)
+        : "absent",
+    })),
+  }).filter(
+    (action) => action.status !== "satisfied" && action.status !== "superseded",
+  );
   const mirrorDrift = buildMirrorDrift(input.tree, frontier);
   const invariants = buildInvariants({
     tree: input.tree,
@@ -1201,6 +1346,8 @@ export function buildProjectSnapshotV2(
     conditions,
     loops,
     deliveryGaps,
+    nowMs,
+    reviewApplicationGraceMs,
   });
 
   return {
@@ -1214,6 +1361,7 @@ export function buildProjectSnapshotV2(
     attempts,
     reviews: reviewProjections,
     conditions,
+    pendingActions,
     controllers: [...loops].sort((left, right) =>
       left.taskId.localeCompare(right.taskId),
     ),

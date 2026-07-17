@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { exactBlockedWaitStewardshipProgress } from "../workflows/lib/durable-loop-wait-stewardship.ts";
+import { directFeatureScenarioCarrierViolations } from "../workflows/lib/feature-scenario-carrier-contract.ts";
 import { resolveTaskTreePath } from "@may-agent/sdk";
 
 type AgentConfig = {
@@ -363,6 +364,12 @@ function validateNoTrackedProjectAppRuntimeFiles(): void {
   );
 }
 
+function domainWorkspacePath(projectApp: ProjectApp): string {
+  return projectApp.workspace?.localPath
+    ? resolve(appDir, projectApp.workspace.localPath)
+    : "";
+}
+
 function validateProjectAndApp(
   projectJson: ProjectJson | null,
   projectApp: ProjectApp,
@@ -398,9 +405,7 @@ function validateProjectAndApp(
     );
   }
 
-  const domainPath = projectApp.workspace?.localPath
-    ? resolve(appDir, projectApp.workspace.localPath)
-    : "";
+  const domainPath = domainWorkspacePath(projectApp);
   if (domainPath && !existsSync(domainPath))
     fail(`domain workspace does not exist: ${domainPath}`);
   if (domainPath && !existsSync(join(domainPath, "runner", "spec-runner.ts"))) {
@@ -416,6 +421,17 @@ function validateProjectAndApp(
   if (domainPath && existsSync(join(domainPath, "agents"))) {
     warn(
       "domain workspace still contains agents/; app-control agent workspace belongs in aks-rp-e2e.app/agents/",
+    );
+  }
+}
+
+function validateFeatureScenarioCarrierContracts(projectApp: ProjectApp): void {
+  const domainPath = domainWorkspacePath(projectApp);
+  if (!domainPath || !existsSync(domainPath)) return;
+  const violations = directFeatureScenarioCarrierViolations(domainPath);
+  for (const violation of violations) {
+    fail(
+      `${violation.code}: ${violation.summary} (${violation.files.join(", ")})`,
     );
   }
 }
@@ -938,9 +954,7 @@ function validateTaskTree(
     const state = taskState(task);
     const rolledUp = rolledUpParentState(task);
     if (state !== rolledUp) {
-      warn(
-        `task ${taskId} state ${state} has child rollup hint ${rolledUp}`,
-      );
+      warn(`task ${taskId} state ${state} has child rollup hint ${rolledUp}`);
     }
   }
 
@@ -1069,6 +1083,7 @@ const owner = inferOwner(projectJson);
 const workflowNames = listWorkflowNames();
 
 validateProjectAndApp(projectJson, projectApp, owner);
+validateFeatureScenarioCarrierContracts(projectApp);
 validateWorkflowHandlers(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);

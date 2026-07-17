@@ -6,6 +6,7 @@ type WorkflowHandler = {
   accepts?: EventSelector[];
   handler?: {
     workflow?: string;
+    task?: string;
   };
   emits?: string[];
 };
@@ -244,13 +245,34 @@ describe("app event contract", () => {
       "aks-rp-e2e-project-planner",
       "aks-rp-e2e-reviewed-task-applier",
     ]) {
-      expect(handler(name).handler?.task).toContain(
-        "revisionV2: fix-forward-first-nonpass-run",
-      );
-      expect(handler(name).handler?.task).toContain(
-        "revisionV2RunId: 172484121",
-      );
+      expect(handler(name).handler?.task).not.toContain("revisionV2:");
+      expect(handler(name).handler?.task).not.toContain("revisionV2RunId:");
     }
+  });
+
+  test("manifest opts only revisioned review handoffs into PendingAction V2 delivery", () => {
+    expect(handler("aks-rp-e2e-task-reviewer").handler?.task).toContain(
+      "pendingActionV2: review-application-revisioned",
+    );
+    expect(handler("aks-rp-e2e-task-execution-worker").handler?.task).toContain(
+      "pendingActionV2: completion-review-revisioned",
+    );
+    expect(handler("aks-rp-e2e-task-reviewer").handler?.task).not.toContain(
+      "pendingActionV2: completion-review-revisioned",
+    );
+    for (const name of [
+      "aks-rp-e2e-project-planner",
+      "aks-rp-e2e-reviewed-task-applier",
+      "aks-rp-e2e-project-watchdog",
+    ]) {
+      expect(handler(name).handler?.task).not.toContain("pendingActionV2:");
+    }
+    expect(handler("aks-rp-e2e-project-watchdog").handler?.task).toContain(
+      "pendingActionRedeliveryV2: review-application-revisioned",
+    );
+    expect(handler("aks-rp-e2e-project-watchdog").handler?.task).not.toContain(
+      "pendingActionRedeliveryV2: review-handoffs-revisioned",
+    );
   });
 
   test("worker and controllers own their targeted task events", () => {

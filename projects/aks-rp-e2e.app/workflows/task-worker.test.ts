@@ -14,6 +14,7 @@ import {
 } from "./default-task-worker.ts";
 import { buildTaskTreeConfig } from "./default-task-worker.ts";
 import { execute } from "./task-worker.ts";
+import { captureRuntimeProjectSnapshotV2 } from "./lib/project-snapshot-capture-v2.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-task-worker-"));
@@ -21,6 +22,17 @@ async function makeProject() {
   await mkdir(join(dir, "tasks"), { recursive: true });
   await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
+}
+
+async function makeSplitWorkspace() {
+  const root = await mkdtemp(join(tmpdir(), "aks-task-worker-split-"));
+  const appDir = join(root, "app");
+  const projectDir = join(root, "project");
+  await mkdir(join(appDir, ".state"), { recursive: true });
+  await mkdir(join(appDir, "tasks"), { recursive: true });
+  await mkdir(projectDir, { recursive: true });
+  await writeFile(join(appDir, ".state", "journal.jsonl"), "", "utf8");
+  return { appDir, projectDir };
 }
 
 function eventBlock(event: Record<string, unknown>): string {
@@ -45,6 +57,94 @@ function assignedEvent(assignment: TaskAssignment): Record<string, unknown> {
     project: "aks-rp-e2e",
     ...assignment,
   };
+}
+
+async function runCompletionDeliveryFixture(input: {
+  revision: number;
+  controlPlaneVersion: number;
+  pendingActionV2?: "completion-review-revisioned";
+  rejectDispatch?: boolean;
+}) {
+  const projectDir = await makeProject();
+  await writeFile(
+    resolveTaskTreePath(projectDir),
+    `${JSON.stringify(
+      {
+        version: 1,
+        project: "aks-rp-e2e",
+        project_lifecycle: "active",
+        root_task_id: "project",
+        updated_at: new Date().toISOString(),
+        tasks: {
+          project: {
+            id: "project",
+            state: "active",
+            children: ["completion-task"],
+          },
+          "completion-task": {
+            id: "completion-task",
+            parent_id: "project",
+            state: "backlog",
+            revision: input.revision,
+            context: { controlPlaneVersion: input.controlPlaneVersion },
+            kind: "domain_leaf",
+            workflow: "spec-runner",
+            owner: "aks-explorer",
+            children: [],
+            goal: "Complete through one durable handoff.",
+            inputs: [],
+            outputs: ["evidence/completion.md"],
+            acceptance: ["The completion is reviewable."],
+            forbidden: [],
+            conflict_scope: ["completion:fixture"],
+            depends_on: [],
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  const assignment = assignTask(config(projectDir), {
+    taskId: "completion-task",
+  });
+  const dispatched: Array<{
+    type: string;
+    payload: Record<string, unknown>;
+  }> = [];
+  const result = await execute({
+    task: [
+      `app: ${projectDir}`,
+      `project: ${projectDir}`,
+      "agent: aks-explorer",
+      "maxConcurrent: 1",
+      ...(input.pendingActionV2
+        ? [`pendingActionV2: ${input.pendingActionV2}`]
+        : []),
+      eventBlock(assignedEvent(assignment)),
+    ].join("\n"),
+    agent: "aks-explorer",
+    done: (message: string) => ({ status: "done", message }),
+    escalate: (message: string) => ({ status: "escalated", message }),
+    emit() {},
+    dispatchEvent(type: string, payload: Record<string, unknown>) {
+      if (input.rejectDispatch && type === "project.task.completed") {
+        throw new Error("injected completion delivery failure");
+      }
+      dispatched.push({ type, payload });
+    },
+    runAgent: async () => ({ status: "error" }),
+    runAgentSession: async () => ({
+      status: "error",
+      message: "Completion fixture requires owner review.",
+    }),
+    summarize: () => "",
+  } as any);
+  const tree = JSON.parse(
+    await readFile(resolveTaskTreePath(projectDir), "utf8"),
+  );
+  return { projectDir, assignment, dispatched, result, tree };
 }
 
 describe("task worker", () => {
@@ -255,6 +355,103 @@ describe("task worker", () => {
     );
     expect(observedPrompt).toContain(
       "Completing that proposal is the normal worker/reviewer boundary",
+    );
+  });
+
+  test("tells domain workers to keep one direct .test.ts scenario carrier", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["domain-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain-task": {
+              id: "domain-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              workflow: "spec-runner",
+              children: [],
+              goal: "Author one new feature scenario.",
+              inputs: [],
+              outputs: [
+                "features/net-integration/tests/net-integration-example.test.ts",
+                "features/net-integration/specs/net-integration-example.json",
+              ],
+              acceptance: ["One direct carrier remains."],
+              conflict_scope: ["spec:spec.net-integration.example"],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "domain-task",
+    });
+    let observedPrompt = "";
+
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, prompt: string) => {
+        observedPrompt = prompt;
+        return {
+          status: "success",
+          finishResult: { status: "success" },
+          message: "completed",
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedPrompt).toContain("Feature scenario authoring contract");
+    expect(observedPrompt).toContain(
+      "Every newly authored or materially rewritten feature scenario must be one",
+    );
+    expect(observedPrompt).toContain(
+      "Do not add a new plain features/*/tests/*.ts scenario carrier.",
+    );
+    expect(observedPrompt).toContain(
+      "Do not keep or create a wrapper .test.ts whose only purpose is spawning a",
+    );
+    expect(observedPrompt).toContain(
+      "keep them on the direct .test.ts carrier only.",
+    );
+    expect(observedPrompt).toContain(
+      "Ordinary support modules remain allowed when they are not scenario carriers.",
     );
   });
 
@@ -1127,6 +1324,338 @@ FIX_FORWARD_RESULT:
     ).toBe(true);
   });
 
+  test("captures structured fix-forward result from app-root relative deliverable when app and domain roots differ", async () => {
+    const { appDir, projectDir } = await makeSplitWorkspace();
+    const deliverableRelPath = "evidence/archive/fix-forward-from-app.md";
+    await mkdir(join(appDir, "evidence", "archive"), { recursive: true });
+    await writeFile(
+      join(appDir, deliverableRelPath),
+      `# deliverable\n\nFIX_FORWARD_RESULT:\n\
+\`\`\`json\n{\n  "workflow": "fix-forward",\n  "subject": { "kind": "feature-family", "id": "kms" },\n  "classification": "other-known-class",\n  "diagnosis": "The app-root relative deliverable carries the structured result.",\n  "minimumDiagnosisPacket": {\n    "target": "staging",\n    "branch": "dev",\n    "runId": "28819401584",\n    "resultPath": "evidence/archive/fix-forward-from-app.md",\n    "failingPhase": "review",\n    "failingAssertion": "same frontier remains",\n    "requestOrResponseExcerpt": "unchanged exact wait",\n    "referencesChecked": ["state.json"],\n    "inputFingerprint": "",\n    "errorFingerprint": ""\n  },\n  "changedFiles": ["evidence/archive/fix-forward-from-app.md"],\n  "verification": {\n    "runId": "",\n    "resultPath": "evidence/archive/fix-forward-from-app.md",\n    "status": "not-run"\n  },\n  "nextAction": "exact-wait",\n  "nextActionReason": "The app deliverable itself is the authoritative structured packet."\n}\n\`\`\`\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["fix-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "fix-task": {
+              id: "fix-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Fix one failed spec.",
+              inputs: ["spec:one"],
+              outputs: ["evidence/archive/"],
+              acceptance: ["Fix-forward result is structured"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+                subjectKind: "spec-family",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(
+      taskTreeConfig({
+        appDir,
+        projectDir,
+        worker: "aks-explorer",
+        maxConcurrent: 1,
+      }),
+      { taskId: "fix-task" },
+    );
+    const dispatched: Array<{ type: string; payload: Record<string, any> }> =
+      [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "Reviewed the family and wrote app-root evidence.",
+        finishResult: {
+          status: "success",
+          summary: "Reviewed the family and wrote app-root evidence.",
+          deliverables: [{ path: deliverableRelPath }],
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(
+      dispatched[0].payload.workflowResult.details.fixForward,
+    ).toMatchObject({
+      workflow: "fix-forward",
+      classification: "other-known-class",
+      nextAction: "exact-wait",
+    });
+    expect(
+      dispatched[0].payload.workflowResult.details
+        .fixForwardStructuredResultPresent,
+    ).toBe(true);
+    expect(
+      dispatched[0].payload.workflowResult.details.fixForward,
+    ).toMatchObject({
+      subject: { kind: "feature-family", id: "kms" },
+      diagnosis:
+        "The app-root relative deliverable carries the structured result.",
+      minimumDiagnosisPacket: {
+        runId: "28819401584",
+        resultPath: "evidence/archive/fix-forward-from-app.md",
+      },
+      verification: {
+        resultPath: "evidence/archive/fix-forward-from-app.md",
+        status: "not-run",
+      },
+      nextActionReason:
+        "The app deliverable itself is the authoritative structured packet.",
+    });
+  });
+
+  test("ignores placeholder structured-result templates from source-code deliverables", async () => {
+    const { appDir, projectDir } = await makeSplitWorkspace();
+    await mkdir(join(appDir, "workflows"), { recursive: true });
+    const deliverableRelPath = "workflows/source-template.ts";
+    await writeFile(
+      join(appDir, deliverableRelPath),
+      `export const template = String.raw\`
+FIX_FORWARD_RESULT:
+\`\`\`json
+{
+  "workflow": "fix-forward",
+  "subject": {
+    "kind": "spec | compact-feature | feature-family",
+    "id": "exact subject id"
+  },
+  "classification": "request-shape-invalid | test-code-bug | compact-plan-conflict | pipeline-infrastructure | missing-result-artifact | product-behavior-mismatch | capacity-exhausted | needs-diagnosis | other-known-class",
+  "diagnosis": "specific root-cause diagnosis or the exact missing fact",
+  "minimumDiagnosisPacket": {
+    "target": "target profile",
+    "branch": "branch",
+    "runId": "pipeline/run id or empty when unavailable",
+    "resultPath": "result artifact path or empty when unavailable",
+    "failingPhase": "phase or empty",
+    "failingAssertion": "assertion or empty",
+    "requestOrResponseExcerpt": "short excerpt or empty",
+    "referencesChecked": ["official/API/design/source references checked"],
+    "inputFingerprint": "current input fingerprint or empty",
+    "errorFingerprint": "current error fingerprint or empty"
+  },
+  "changedFiles": ["files changed, if any"],
+  "verification": {
+    "runId": "verification run id or empty",
+    "resultPath": "verification result path or empty",
+    "status": "pass | fail | error | not-run"
+  },
+  "nextAction": "done | rerun-after-change | create-domain-repair | create-ops-repair | exact-wait | escalate",
+  "nextActionReason": "why this next action is the smallest truthful move"
+}
+\`\`\`
+
+SPEC_RESULT_REVIEW:
+\`\`\`json
+{
+  "workflow": "spec-result-review",
+  "specId": "exact spec id, or empty when specResults is used",
+  "runId": "Azure DevOps run id",
+  "runUrl": "Azure DevOps run URL, if known",
+  "resultPath": "exact result.json path or aggregate result path",
+  "specStatus": "pass | fail | error",
+  "reason": "short artifact-backed verdict",
+  "liveVerified": true,
+  "liveClusterObserved": true,
+  "resourceGroup": "resource group observed in the artifact, if applicable",
+  "clusterName": "cluster name observed in the artifact, if applicable",
+  "artifactRefs": ["exact artifact/result/evidence refs"],
+  "specResults": []
+}
+\`\`\`
+
+QUEUED_PIPELINE_RUN:
+\`\`\`json
+{
+  "backend": "ado",
+  "runId": "Azure DevOps run id",
+  "runUrl": "Azure DevOps run URL",
+  "specIds": ["exact spec ids covered by this run"],
+  "target": "target profile",
+  "branch": "branch or ref used",
+  "sourceVersion": "commit sha when known",
+  "metadataPath": "local dispatch metadata path when available"
+}
+\`\`\`
+\`;
+`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["repair-task", "fix-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "repair-task": {
+              id: "repair-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair packaging without terminal review context.",
+              inputs: [],
+              outputs: ["evidence/archive/repair.md"],
+              acceptance: ["No placeholder packets are emitted"],
+              forbidden: [],
+              conflict_scope: ["ops:test"],
+              depends_on: [],
+            },
+            "fix-task": {
+              id: "fix-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Fix one failed spec.",
+              inputs: ["spec:one"],
+              outputs: ["evidence/archive/fix.md"],
+              acceptance: ["No placeholder packets are emitted"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+              context: {
+                workflow: "fix-forward",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    for (const taskId of ["repair-task", "fix-task"]) {
+      const assignment = assignTask(
+        taskTreeConfig({
+          appDir,
+          projectDir,
+          worker: "aks-explorer",
+          maxConcurrent: 1,
+        }),
+        { taskId },
+      );
+      const dispatched: Array<{ type: string; payload: Record<string, any> }> =
+        [];
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-explorer",
+          "maxConcurrent: 1",
+          eventBlock(assignedEvent(assignment)),
+        ].join("\n"),
+        agent: "aks-explorer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async () => ({
+          status: "success",
+          message:
+            "Cited an app workflow source file for implementation context.",
+          finishResult: {
+            status: "success",
+            deliverables: [{ path: deliverableRelPath }],
+          },
+        }),
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].payload.workflowResult.workflow).toBe(
+        "default-task-worker",
+      );
+      expect(dispatched[0].payload.workflowResult.details.taskClaim).toBe(
+        "done",
+      );
+      expect(
+        dispatched[0].payload.workflowResult.details.specResultReview,
+      ).toBe(undefined);
+      expect(dispatched[0].payload.workflowResult.details.queuedRun).toBe(
+        undefined,
+      );
+      if (taskId === "fix-task") {
+        expect(dispatched[0].payload.workflowResult.details.fixForward).toBe(
+          null,
+        );
+        expect(
+          dispatched[0].payload.workflowResult.details
+            .fixForwardStructuredResultPresent,
+        ).toBe(false);
+      }
+    }
+  });
+
   test("captures structured queued pipeline run from normal domain task output", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -1231,6 +1760,151 @@ QUEUED_PIPELINE_RUN:
         target: "staging",
         branch: "dev",
       },
+    });
+  });
+
+  test("normalization frontier tasks require isolated worktree lineage in queued pipeline output", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "active",
+              kind: "domain",
+              priority: "P1",
+              children: [
+                "domain/repair-rp-preflight-validation-refined-contract-20260716",
+              ],
+              goal: "Normalize scenario tests repo frontier.",
+              inputs: [],
+              outputs: ["evidence/archive/frontier.md"],
+              acceptance: ["frontier stays visible"],
+              forbidden: [],
+              conflict_scope: ["domain:normalize-scenarios"],
+              depends_on: [],
+            },
+            "domain/repair-rp-preflight-validation-refined-contract-20260716": {
+              id: "domain/repair-rp-preflight-validation-refined-contract-20260716",
+              parent_id:
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Repair RP preflight validation and queue one isolated rerun.",
+              inputs: ["spec:spec.rp-cluster-lifecycle.preflight-validation"],
+              outputs: ["evidence/archive/preflight-rerun.md"],
+              acceptance: ["Isolated rerun metadata is returned"],
+              forbidden: [],
+              conflict_scope: [
+                "spec:spec.rp-cluster-lifecycle.preflight-validation",
+              ],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), {
+      taskId: "domain/repair-rp-preflight-validation-refined-contract-20260716",
+    });
+    const dispatched: Array<{ type: string; payload: Record<string, any> }> =
+      [];
+    let observedPrompt = "";
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, prompt: string) => {
+        observedPrompt = prompt;
+        return {
+          status: "success",
+          finishResult: { status: "success" },
+          message: `Queued one isolated rerun.
+
+QUEUED_PIPELINE_RUN:
+\`\`\`json
+{
+  "backend": "ado",
+  "runId": "172532900",
+  "runUrl": "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172532900",
+  "specIds": ["spec.rp-cluster-lifecycle.preflight-validation"],
+  "target": "staging",
+  "branch": "refs/heads/aks-explorer/repair-rp-preflight-validation-clean-20260716",
+  "sourceVersion": "abc123abc123abc123abc123abc123abc123abcd",
+  "metadataPath": "workspace/repair-rp-preflight-validation-refined-contract-20260716/metadata.json",
+  "baseRef": "origin/dev",
+  "baseCommit": "def456def456def456def456def456def456def4",
+  "sourceCommit": "abc123abc123abc123abc123abc123abc123abcd",
+  "firstParentCommits": ["abc123abc123abc123abc123abc123abc123abcd"],
+  "changedFiles": ["features/rp-cluster-lifecycle/tests/rp-preflight-validation.test.ts"],
+  "worktreePath": "/app/projects/aks-rp-e2e/workspace/rp-preflight-validation-clean-20260716-wt"
+}
+\`\`\``,
+        };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(observedPrompt).toContain(
+      "Normalization isolated-worktree dispatch contract",
+    );
+    expect(observedPrompt).toContain("task-specific isolated git worktree");
+    expect(observedPrompt).toContain("baseCommit");
+    expect(observedPrompt).toContain("firstParentCommits");
+    expect(observedPrompt).toContain("changedFiles");
+    expect(dispatched).toHaveLength(1);
+    expect(
+      dispatched[0].payload.workflowResult.details.queuedRun,
+    ).toMatchObject({
+      runId: "172532900",
+      baseRef: "origin/dev",
+      baseCommit: "def456def456def456def456def456def456def4",
+      sourceCommit: "abc123abc123abc123abc123abc123abc123abcd",
+      firstParentCommits: ["abc123abc123abc123abc123abc123abc123abcd"],
+      changedFiles: [
+        "features/rp-cluster-lifecycle/tests/rp-preflight-validation.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/rp-preflight-validation-clean-20260716-wt",
     });
   });
 
@@ -1482,6 +2156,135 @@ SPEC_RESULT_REVIEW:
       specStatus: "error",
       liveClusterObserved: true,
       specResultReviewStructuredResultPresent: true,
+    });
+  });
+
+  test("captures structured spec result review from app-root relative deliverable when app and domain roots differ", async () => {
+    const { appDir, projectDir } = await makeSplitWorkspace();
+    const deliverableRelPath =
+      "evidence/archive/spec-result-review-from-app.md";
+    await mkdir(join(appDir, "evidence", "archive"), { recursive: true });
+    await writeFile(
+      join(appDir, deliverableRelPath),
+      `# spec result review\n\nSPEC_RESULT_REVIEW:\n\
+\`\`\`json\n{\n  "workflow": "spec-result-review",\n  "specId": "spec.two",\n  "runId": "171800999",\n  "runUrl": "https://dev.azure.com/example/_build/results?buildId=171800999",\n  "resultPath": "evidence/archive/spec-result-review-from-app.md",\n  "specStatus": "error",\n  "reason": "Artifact result.json reports cluster create timeout.",\n  "liveVerified": false,\n  "liveClusterObserved": true,\n  "resourceGroup": "rg-spec-two",\n  "clusterName": "aks-spec-two",\n  "artifactRefs": ["runs/test-results/spec.two/result.json"],\n  "specResults": [\n    {\n      "specId": "spec.two",\n      "runId": "171800999",\n      "resultPath": "runs/test-results/spec.two/result.json",\n      "specStatus": "error",\n      "reason": "Artifact result.json reports cluster create timeout.",\n      "liveVerified": false,\n      "liveClusterObserved": true,\n      "resourceGroup": "rg-spec-two",\n      "clusterName": "aks-spec-two",\n      "artifactRefs": ["runs/test-results/spec.two/result.json"],\n      "specResults": []\n    }\n  ]\n}\n\`\`\`\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["wait-review-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "wait-review-task": {
+              id: "wait-review-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Review terminal ADO run result for one spec.",
+              inputs: ["run:171800999", "spec:spec.two"],
+              outputs: ["evidence/archive/spec-two-review.md"],
+              acceptance: ["Structured result review is returned"],
+              forbidden: [],
+              conflict_scope: ["spec:spec.two"],
+              depends_on: [],
+              context: {
+                terminalPipelineWaitReview: {
+                  backend: "ado",
+                  runId: "171800999",
+                  specIds: ["spec.two"],
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(
+      taskTreeConfig({
+        appDir,
+        projectDir,
+        worker: "aks-explorer",
+        maxConcurrent: 1,
+      }),
+      {
+        taskId: "wait-review-task",
+      },
+    );
+    const dispatched: Array<{ type: string; payload: Record<string, any> }> =
+      [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: "Reviewed terminal run and wrote app-root evidence.",
+        finishResult: {
+          status: "success",
+          deliverables: [{ path: deliverableRelPath }],
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].payload.workflowResult.workflow).toBe(
+      "spec-result-review",
+    );
+    expect(dispatched[0].payload.workflowResult.details).toMatchObject({
+      workflow: "spec-result-review",
+      specId: "spec.two",
+      runId: "171800999",
+      resultPath: "evidence/archive/spec-result-review-from-app.md",
+      specStatus: "error",
+      reason: "Artifact result.json reports cluster create timeout.",
+      artifactRefs: ["runs/test-results/spec.two/result.json"],
+      liveClusterObserved: true,
+      specResultReviewStructuredResultPresent: true,
+      specResults: [
+        expect.objectContaining({
+          specId: "spec.two",
+          runId: "171800999",
+          resultPath: "runs/test-results/spec.two/result.json",
+          specStatus: "error",
+          reason: "Artifact result.json reports cluster create timeout.",
+          artifactRefs: ["runs/test-results/spec.two/result.json"],
+        }),
+      ],
     });
   });
 
@@ -2764,6 +3567,107 @@ SPEC_RESULT_REVIEW:
           "Worker runtime error: session ended with status=error before any usable assistant output or structured finish summary.",
       },
     });
+  });
+
+  test("delivers revisioned V2 completion through a source-owned pending-action receipt", async () => {
+    const fixture = await runCompletionDeliveryFixture({
+      revision: 2,
+      controlPlaneVersion: 2,
+      pendingActionV2: "completion-review-revisioned",
+    });
+
+    expect(fixture.result.message).toContain(
+      "PendingAction V2 completion delivery: pending action delivery was accepted.",
+    );
+    expect(fixture.dispatched.map((event) => event.type)).toEqual([
+      "project.task.completed",
+    ]);
+    const receipts =
+      fixture.tree.tasks["completion-task"].trace
+        .pendingActionDeliveryReceiptsV2;
+    expect(receipts).toEqual([
+      expect.objectContaining({
+        version: "project-pending-action-delivery-v2",
+        actionKey: `completion-review-delivery:completion-task:2:${fixture.assignment.attemptId}`,
+        actionKind: "completion-review-delivery",
+        attempt: 1,
+        status: "accepted",
+      }),
+    ]);
+
+    const captured = captureRuntimeProjectSnapshotV2({
+      appDir: fixture.projectDir,
+      treePath: resolveTaskTreePath(fixture.projectDir),
+      stateDbPath: join(fixture.projectDir, "missing.db"),
+      projectId: "aks-rp-e2e",
+    });
+    expect(captured?.snapshot.pendingActions).toContainEqual(
+      expect.objectContaining({
+        key: `completion-review-delivery:completion-task:2:${fixture.assignment.attemptId}`,
+        status: "accepted",
+        delivery: expect.objectContaining({ attempts: 1, maxAttempts: 2 }),
+      }),
+    );
+  });
+
+  test("retains a failed revisioned completion delivery for bounded retry", async () => {
+    const fixture = await runCompletionDeliveryFixture({
+      revision: 2,
+      controlPlaneVersion: 2,
+      pendingActionV2: "completion-review-revisioned",
+      rejectDispatch: true,
+    });
+
+    expect(fixture.dispatched).toEqual([]);
+    expect(fixture.result.message).toContain(
+      "PendingAction V2 completion delivery: pending action delivery failed.",
+    );
+    expect(
+      fixture.tree.tasks["completion-task"].trace
+        .pendingActionDeliveryReceiptsV2,
+    ).toEqual([
+      expect.objectContaining({
+        actionKind: "completion-review-delivery",
+        attempt: 1,
+        status: "failed",
+        error: "project.task.completed dispatch was not accepted",
+      }),
+    ]);
+    const captured = captureRuntimeProjectSnapshotV2({
+      appDir: fixture.projectDir,
+      treePath: resolveTaskTreePath(fixture.projectDir),
+      stateDbPath: join(fixture.projectDir, "missing.db"),
+      projectId: "aks-rp-e2e",
+    });
+    expect(captured?.snapshot.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "completion-review-delivery",
+        status: "pending",
+        delivery: expect.objectContaining({ attempts: 1, maxAttempts: 2 }),
+      }),
+    );
+  });
+
+  test("keeps completion pending-action delivery off outside the explicit V2 cohort", async () => {
+    for (const input of [
+      { revision: 0, controlPlaneVersion: 2 },
+      { revision: 2, controlPlaneVersion: 0 },
+    ]) {
+      const fixture = await runCompletionDeliveryFixture({
+        ...input,
+        pendingActionV2: "completion-review-revisioned",
+      });
+      expect(fixture.dispatched.map((event) => event.type)).toEqual([
+        "project.task.completed",
+      ]);
+      expect(
+        fixture.tree.tasks["completion-task"].trace
+          .pendingActionDeliveryReceiptsV2,
+      ).toBeUndefined();
+      expect(fixture.result.message).not.toContain(
+        "PendingAction V2 completion delivery",
+      );
+    }
   });
 
   test("ignores duplicate assignment events for the same started attempt", async () => {

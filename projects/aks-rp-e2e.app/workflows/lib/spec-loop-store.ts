@@ -348,12 +348,11 @@ export function loadSpecLoopState(input: {
   windowSize: number;
   statePath?: string;
   prioritySpecIds?: string[];
+  refreshFromProject?: boolean;
 }): { state: SpecLoopState; path: string; created: boolean } {
   const path = input.statePath ?? defaultSpecLoopStatePath(input.appDir);
   const now = new Date().toISOString();
   if (existsSync(path)) {
-    const catalogSpecs = loadSpecs(input.projectDir);
-    const specsById = new Map(catalogSpecs.map((spec) => [spec.id, spec]));
     const state = readJson<SpecLoopState>(path, {
       loopTaskId: input.loopTaskId,
       windowSize: input.windowSize,
@@ -366,36 +365,42 @@ export function loadSpecLoopState(input: {
     state.prioritySpecIds =
       input.prioritySpecIds ?? devInfraCorePrioritySpecIds(input.projectDir);
     state.specs ||= {};
-    for (const specId of Object.keys(state.specs)) {
-      if (!specsById.has(specId)) delete state.specs[specId];
+
+    if (input.refreshFromProject !== false) {
+      const catalogSpecs = loadSpecs(input.projectDir);
+      const specsById = new Map(catalogSpecs.map((spec) => [spec.id, spec]));
+      for (const specId of Object.keys(state.specs)) {
+        if (!specsById.has(specId)) delete state.specs[specId];
+      }
+      for (const spec of catalogSpecs) {
+        state.specs[spec.id] ??= {
+          status: "pending",
+          taskId: null,
+          attempts: 0,
+          lastRunId: null,
+          lastRunUrl: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          lastWorkflowLoopKey: null,
+          lastDispatchMetadataPath: null,
+          failureClass: null,
+          diagnosis: null,
+          inputFingerprint: null,
+          errorFingerprint: null,
+          activeAttemptId: null,
+          activeTaskSessionId: null,
+          activeWorkflowRunId: null,
+          heartbeatAt: null,
+          updatedAt: now,
+        };
+        state.specs[spec.id] = applyCatalogDisposition(
+          state.specs[spec.id],
+          spec,
+          now,
+        );
+      }
     }
-    for (const spec of catalogSpecs) {
-      state.specs[spec.id] ??= {
-        status: "pending",
-        taskId: null,
-        attempts: 0,
-        lastRunId: null,
-        lastRunUrl: null,
-        lastResultPath: null,
-        lastPrUrl: null,
-        lastWorkflowLoopKey: null,
-        lastDispatchMetadataPath: null,
-        failureClass: null,
-        diagnosis: null,
-        inputFingerprint: null,
-        errorFingerprint: null,
-        activeAttemptId: null,
-        activeTaskSessionId: null,
-        activeWorkflowRunId: null,
-        heartbeatAt: null,
-        updatedAt: now,
-      };
-      state.specs[spec.id] = applyCatalogDisposition(
-        state.specs[spec.id],
-        spec,
-        now,
-      );
-    }
+
     for (const spec of Object.values(state.specs)) {
       spec.taskId ??= null;
       if (String(spec.status) === "blocked") spec.status = "error";

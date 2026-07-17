@@ -32,6 +32,14 @@ import {
 } from "./lib/task-tree-tools.ts";
 import { syncProjectReadout } from "./lib/project-readout-sync.ts";
 import {
+  completionReviewPendingActionV2,
+  deliverPendingActionV2,
+} from "./lib/project-pending-actions-v2.ts";
+import {
+  appendCompletionReviewDeliveryReceiptV2,
+  completionReviewDeliveryReceiptsV2,
+} from "./lib/project-completion-delivery-v2.ts";
+import {
   field,
   maxConcurrent,
   parseTriggerEvent,
@@ -102,6 +110,18 @@ type QueuedPipelineRunResult = {
   source_version?: unknown;
   metadataPath?: unknown;
   metadata_path?: unknown;
+  baseRef?: unknown;
+  base_ref?: unknown;
+  baseCommit?: unknown;
+  base_commit?: unknown;
+  sourceCommit?: unknown;
+  source_commit?: unknown;
+  firstParentCommits?: unknown;
+  first_parent_commits?: unknown;
+  changedFiles?: unknown;
+  changed_files?: unknown;
+  worktreePath?: unknown;
+  worktree_path?: unknown;
 };
 
 type SessionWorkflowContext = WorkflowContext & {
@@ -130,13 +150,63 @@ function normalizedFinishDeliverablePaths(result: unknown): string[] {
   ];
 }
 
-function resolveDeliverableTexts(result: unknown): string[] {
+function normalizedDeliverableRoots(input: {
+  appDir?: string;
+  projectDir?: string;
+}): string[] {
+  return [input.appDir, input.projectDir, "/app/projects/aks-rp-e2e"]
+    .filter(
+      (root): root is string =>
+        typeof root === "string" && Boolean(root.trim()),
+    )
+    .map((root) => root.trim())
+    .filter((root, index, roots) => roots.indexOf(root) === index);
+}
+
+const STRUCTURED_RESULT_SOURCE_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".go",
+  ".py",
+  ".rb",
+  ".java",
+  ".cs",
+  ".sh",
+  ".ps1",
+]);
+
+function shouldInspectDeliverableForStructuredResult(
+  deliverablePath: string,
+): boolean {
+  const normalized = deliverablePath.trim().toLowerCase();
+  const lastSlash = normalized.lastIndexOf("/");
+  const lastDot = normalized.lastIndexOf(".");
+  const extension = lastDot > lastSlash ? normalized.slice(lastDot) : "";
+  return !STRUCTURED_RESULT_SOURCE_EXTENSIONS.has(extension);
+}
+
+function resolveDeliverableTexts(
+  result: unknown,
+  roots?: {
+    appDir?: string;
+    projectDir?: string;
+  },
+): string[] {
   const texts: string[] = [];
+  const deliverableRoots = normalizedDeliverableRoots(roots ?? {});
   for (const deliverablePath of normalizedFinishDeliverablePaths(result)) {
-    const absolutePath = isAbsolute(deliverablePath)
-      ? deliverablePath
-      : resolve("/app/projects/aks-rp-e2e", deliverablePath);
-    if (!existsSync(absolutePath)) continue;
+    if (!shouldInspectDeliverableForStructuredResult(deliverablePath)) continue;
+    const candidatePaths = isAbsolute(deliverablePath)
+      ? [deliverablePath]
+      : deliverableRoots.map((root) => resolve(root, deliverablePath));
+    const absolutePath = candidatePaths.find((candidate) =>
+      existsSync(candidate),
+    );
+    if (!absolutePath) continue;
     try {
       const text = readFileSync(absolutePath, "utf8").trim();
       if (text) texts.push(text);
@@ -188,26 +258,35 @@ function resultTextCandidates(result: unknown): string[] {
 
 function fixForwardResultFromSessionResult(
   result: unknown,
+  roots?: {
+    appDir?: string;
+    projectDir?: string;
+  },
 ): FixForwardResult | null {
   for (const candidate of [
     ...resultTextCandidates(result),
-    ...resolveDeliverableTexts(result),
+    ...resolveDeliverableTexts(result, roots),
   ]) {
     const parsed = parseFixForwardResult(candidate);
-    if (parsed) return parsed;
+    if (isValidFixForwardResult(parsed)) return parsed;
   }
   return null;
 }
 
 function specResultReviewFromSessionResult(
   result: unknown,
+  roots?: {
+    appDir?: string;
+    projectDir?: string;
+  },
+  task?: TaskNode,
 ): SpecResultReview | null {
   for (const candidate of [
     ...resultTextCandidates(result),
-    ...resolveDeliverableTexts(result),
+    ...resolveDeliverableTexts(result, roots),
   ]) {
     const parsed = parseSpecResultReview(candidate);
-    if (parsed) return parsed;
+    if (isValidSpecResultReview(parsed, task)) return parsed;
   }
   return null;
 }
@@ -240,6 +319,259 @@ function recordValue(value: unknown): Record<string, unknown> | null {
 
 function textValue(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function stringListValue(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+const STRUCTURED_RESULT_TEMPLATE_TEXTS = new Set([
+  "exact spec id, or empty when specresults is used",
+  "azure devops run id",
+  "azure devops run url, if known",
+  "exact result.json path or aggregate result path",
+  "short artifact-backed verdict",
+  "resource group observed in the artifact, if applicable",
+  "cluster name observed in the artifact, if applicable",
+  "exact artifact/result/evidence refs",
+  "exact spec ids covered by this run",
+  "target profile",
+  "branch or ref used",
+  "commit sha when known",
+  "local dispatch metadata path when available",
+  "exact subject id",
+  "specific root-cause diagnosis or the exact missing fact",
+  "pipeline/run id or empty when unavailable",
+  "result artifact path or empty when unavailable",
+  "phase or empty",
+  "assertion or empty",
+  "short excerpt or empty",
+  "current input fingerprint or empty",
+  "current error fingerprint or empty",
+  "files changed, if any",
+  "verification run id or empty",
+  "verification result path or empty",
+  "why this next action is the smallest truthful move",
+  "pass | fail | error",
+  "pass | fail | error | not-run",
+  "done | rerun-after-change | create-domain-repair | create-ops-repair | exact-wait | escalate",
+  "spec | compact-feature | feature-family",
+  "request-shape-invalid | test-code-bug | compact-plan-conflict | pipeline-infrastructure | missing-result-artifact | product-behavior-mismatch | capacity-exhausted | needs-diagnosis | other-known-class",
+]);
+
+function normalizedStructuredResultText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isStructuredResultTemplateText(value: unknown): boolean {
+  const text = textValue(value);
+  if (!text) return false;
+  const normalized = normalizedStructuredResultText(text);
+  return STRUCTURED_RESULT_TEMPLATE_TEXTS.has(normalized);
+}
+
+function isConcreteStructuredResultText(value: unknown): boolean {
+  const text = textValue(value);
+  return Boolean(text) && !isStructuredResultTemplateText(text);
+}
+
+function isOptionalConcreteStructuredResultText(value: unknown): boolean {
+  const text = textValue(value);
+  return !text || !isStructuredResultTemplateText(text);
+}
+
+function hasValidArtifactRefs(value: unknown): boolean {
+  const refs = stringListValue(value)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return (
+    refs.length > 0 &&
+    refs.every((item) => !isStructuredResultTemplateText(item))
+  );
+}
+
+function expectedTerminalReview(task: TaskNode): {
+  runId: string;
+  specIds: string[];
+} {
+  const context = taskContext(task);
+  const trace = taskTrace(task);
+  const waitReview =
+    recordValue(context.terminalPipelineWaitReview) ??
+    recordValue(context.terminalGitHubWaitReview);
+  const runId =
+    textValue(waitReview?.runId) ||
+    textValue(waitReview?.run_id) ||
+    textValue(trace.terminal_pipeline_wait_run_id) ||
+    textValue(trace.terminal_github_wait_run_id);
+  const specIds = [
+    ...new Set(
+      stringListValue(waitReview?.specIds ?? waitReview?.spec_ids)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
+  return { runId, specIds };
+}
+
+function specResultEntries(
+  review: SpecResultReview,
+): Array<Record<string, unknown>> {
+  return Array.isArray(review.specResults)
+    ? review.specResults
+        .map((entry) => recordValue(entry))
+        .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    : [];
+}
+
+function isValidSpecResultReviewEntry(
+  entry: Record<string, unknown>,
+  expectedRunId = "",
+): boolean {
+  const runId = textValue(entry.runId);
+  const specId = textValue(entry.specId);
+  const resultPath = textValue(entry.resultPath);
+  const specStatus = textValue(entry.specStatus || entry.status);
+  const reason = textValue(entry.reason);
+  const liveVerified = entry.liveVerified;
+  return (
+    isConcreteStructuredResultText(runId) &&
+    (!expectedRunId || runId === expectedRunId) &&
+    isConcreteStructuredResultText(specId) &&
+    isConcreteStructuredResultText(resultPath) &&
+    ["pass", "fail", "error"].includes(specStatus) &&
+    isConcreteStructuredResultText(reason) &&
+    hasValidArtifactRefs(entry.artifactRefs) &&
+    (specStatus !== "pass" || liveVerified === true)
+  );
+}
+
+function isValidFixForwardResult(
+  value: FixForwardResult | null,
+): value is FixForwardResult {
+  if (!value) return false;
+  const subject = recordValue(value.subject);
+  const minimumDiagnosisPacket = recordValue(value.minimumDiagnosisPacket);
+  const verification = recordValue(value.verification);
+  const nextAction = textValue(value.nextAction);
+  return Boolean(
+    subject &&
+    isConcreteStructuredResultText(subject.kind) &&
+    isConcreteStructuredResultText(subject.id) &&
+    isConcreteStructuredResultText(value.classification) &&
+    isConcreteStructuredResultText(value.diagnosis) &&
+    minimumDiagnosisPacket &&
+    isOptionalConcreteStructuredResultText(minimumDiagnosisPacket.target) &&
+    isOptionalConcreteStructuredResultText(minimumDiagnosisPacket.branch) &&
+    isOptionalConcreteStructuredResultText(minimumDiagnosisPacket.runId) &&
+    isOptionalConcreteStructuredResultText(minimumDiagnosisPacket.resultPath) &&
+    isOptionalConcreteStructuredResultText(
+      minimumDiagnosisPacket.failingPhase,
+    ) &&
+    isOptionalConcreteStructuredResultText(
+      minimumDiagnosisPacket.failingAssertion,
+    ) &&
+    isOptionalConcreteStructuredResultText(
+      minimumDiagnosisPacket.requestOrResponseExcerpt,
+    ) &&
+    stringListValue(minimumDiagnosisPacket.referencesChecked).every(
+      (item) => !isStructuredResultTemplateText(item),
+    ) &&
+    isOptionalConcreteStructuredResultText(
+      minimumDiagnosisPacket.inputFingerprint,
+    ) &&
+    isOptionalConcreteStructuredResultText(
+      minimumDiagnosisPacket.errorFingerprint,
+    ) &&
+    verification &&
+    isOptionalConcreteStructuredResultText(verification.runId) &&
+    isOptionalConcreteStructuredResultText(verification.resultPath) &&
+    ["pass", "fail", "error", "not-run"].includes(
+      textValue(verification.status),
+    ) &&
+    [
+      "done",
+      "rerun-after-change",
+      "create-domain-repair",
+      "create-ops-repair",
+      "exact-wait",
+      "escalate",
+    ].includes(nextAction) &&
+    isConcreteStructuredResultText(value.nextActionReason),
+  );
+}
+
+function isValidSpecResultReview(
+  value: SpecResultReview | null,
+  task?: TaskNode,
+): value is SpecResultReview {
+  if (!value) return false;
+  const runId = textValue(value.runId);
+  const specId = textValue(value.specId);
+  const resultPath = textValue(value.resultPath);
+  const specStatus = textValue(value.specStatus || value.status);
+  const reason = textValue(value.reason);
+  const liveVerified = value.liveVerified;
+  const aggregateValid =
+    isConcreteStructuredResultText(runId) &&
+    (specId === "" || isConcreteStructuredResultText(specId)) &&
+    isConcreteStructuredResultText(resultPath) &&
+    ["pass", "fail", "error"].includes(specStatus) &&
+    isConcreteStructuredResultText(reason) &&
+    hasValidArtifactRefs(value.artifactRefs) &&
+    (specStatus !== "pass" || liveVerified === true);
+  if (!aggregateValid) return false;
+
+  const entries = specResultEntries(value);
+  if (
+    Array.isArray(value.specResults) &&
+    entries.length !== value.specResults.length
+  ) {
+    return false;
+  }
+  if (!entries.every((entry) => isValidSpecResultReviewEntry(entry, runId))) {
+    return false;
+  }
+
+  if (!task) return true;
+  const expected = expectedTerminalReview(task);
+  if (expected.runId && runId !== expected.runId) return false;
+  if (expected.specIds.length === 0) return true;
+  if (entries.length > 0) {
+    return expected.specIds.every((expectedSpecId) =>
+      entries.some(
+        (entry) =>
+          textValue(entry.specId) === expectedSpecId &&
+          textValue(entry.runId) === expected.runId,
+      ),
+    );
+  }
+  return expected.specIds.includes(specId);
+}
+
+function isValidQueuedPipelineRunResult(
+  value: QueuedPipelineRunResult | null,
+): value is QueuedPipelineRunResult {
+  if (!value) return false;
+  const runId = textValue(value.runId) || textValue(value.run_id);
+  const runUrl = textValue(value.runUrl) || textValue(value.run_url);
+  const specIds = stringListValue(value.specIds ?? value.spec_ids)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return Boolean(
+    isConcreteStructuredResultText(runId) &&
+    specIds.length > 0 &&
+    specIds.every((item) => !isStructuredResultTemplateText(item)) &&
+    isOptionalConcreteStructuredResultText(runUrl) &&
+    isOptionalConcreteStructuredResultText(value.target) &&
+    isOptionalConcreteStructuredResultText(value.branch) &&
+    isOptionalConcreteStructuredResultText(value.sourceVersion) &&
+    isOptionalConcreteStructuredResultText(value.source_version) &&
+    isOptionalConcreteStructuredResultText(value.metadataPath) &&
+    isOptionalConcreteStructuredResultText(value.metadata_path),
+  );
 }
 
 function taskContextString(task: TaskNode, key: string): string {
@@ -535,15 +867,48 @@ function parseQueuedPipelineRun(text: string): QueuedPipelineRunResult | null {
   );
 }
 
+const NORMALIZATION_ISOLATED_WORKTREE_ROOT =
+  "domain/normalize-scenario-tests-repo-frontier-20260715";
+
+function taskHasAncestorId(
+  tree: ReturnType<typeof readTaskTree>,
+  taskId: string,
+  ancestorId: string,
+): boolean {
+  let currentId: string | undefined = taskId;
+  const seen = new Set<string>();
+  while (currentId && !seen.has(currentId)) {
+    if (currentId === ancestorId) return true;
+    seen.add(currentId);
+    const task = tree.tasks[currentId];
+    currentId =
+      task && typeof task.parent_id === "string" && task.parent_id.trim()
+        ? task.parent_id.trim()
+        : undefined;
+  }
+  return false;
+}
+
+function requiresNormalizationIsolatedWorktreeContract(
+  tree: ReturnType<typeof readTaskTree>,
+  taskId: string,
+): boolean {
+  return taskHasAncestorId(tree, taskId, NORMALIZATION_ISOLATED_WORKTREE_ROOT);
+}
+
 function queuedPipelineRunFromSessionResult(
   result: unknown,
+  roots?: {
+    appDir?: string;
+    projectDir?: string;
+  },
 ): QueuedPipelineRunResult | null {
   for (const candidate of [
     ...resultTextCandidates(result),
-    ...resolveDeliverableTexts(result),
+    ...resolveDeliverableTexts(result, roots),
   ]) {
     const parsed = parseQueuedPipelineRun(candidate);
-    if (parsed) return parsed;
+    if (isValidQueuedPipelineRunResult(parsed)) return parsed;
   }
   return null;
 }
@@ -659,6 +1024,7 @@ function buildWorkerPrompt(input: {
   sourceDir: string;
   task: unknown;
   attemptId: string;
+  requiresNormalizationIsolatedWorktreeContract?: boolean;
 }): string {
   const task = input.task as TaskNode;
   const previousReview = recordValue(taskTrace(task).review_reject);
@@ -709,6 +1075,37 @@ QUEUED_PIPELINE_RUN:
   "metadataPath": "local dispatch metadata path when available"
 }
 \`\`\`
+`
+      : "";
+  const normalizationIsolatedWorktreeInstructions =
+    input.requiresNormalizationIsolatedWorktreeContract
+      ? `
+Normalization isolated-worktree dispatch contract:
+- This task sits under ${NORMALIZATION_ISOLATED_WORKTREE_ROOT}. If you change or
+  verify a migration and need to push/dispatch, do that work only from a
+  task-specific isolated git worktree created from the current \
+  origin/dev ref. Reuse the task-specific worktree only when it still points at
+  the same task lineage and you re-prove the base/source facts before push.
+- Never commit, push, or queue a normalization verification run from the shared
+  /app/projects/aks-rp-e2e root worktree.
+- Before push/dispatch, record the exact isolation proof: baseRef=origin/dev,
+  baseCommit, sourceCommit, the first-parent commit list from baseCommit..HEAD,
+  and the changed-file set from the isolated worktree. If the first-parent
+  lineage or changed files show unrelated normalization work, stop and finish
+  partial/failure instead of queuing a pipeline run.
+- The reviewed commit for this task must match the queued run sourceVersion.
+  If sourceVersion differs from sourceCommit, the run is invalid for this task.
+- Include these fields in QUEUED_PIPELINE_RUN so reviewer/planner can judge the
+  isolation without parsing prose.
+
+For this normalization lineage, use QUEUED_PIPELINE_RUN with the extra fields:
+
+a) set \`baseRef\` to \`origin/dev\`
+b) set \`baseCommit\` to the origin/dev commit used to create or refresh the isolated worktree
+c) set \`sourceCommit\` to the exact reviewed commit you pushed/dispatched
+d) set \`firstParentCommits\` to the ordered first-parent commits from \`baseCommit..sourceCommit\`
+e) set \`changedFiles\` to the exact repo-relative changed-file set proved in the isolated worktree
+f) set \`worktreePath\` when you created or reused a task-specific worktree path
 `
       : "";
   const terminalPipelineReviewInstructions =
@@ -937,6 +1334,19 @@ official docs, public API specs, accepted design docs, and live test results.
 Use the domain workspace as the place where runnable specs, scenario tests,
 runner code, compact plans, workflow YAML, and feature knowledge are fixed.
 
+Feature scenario authoring contract:
+- Every newly authored or materially rewritten feature scenario must be one
+  direct feature-owned .test.ts file.
+- Do not add a new plain features/*/tests/*.ts scenario carrier.
+- Do not keep or create a wrapper .test.ts whose only purpose is spawning a
+  sibling plain .ts carrier.
+- When you touch maintained spec/model/coverage surfaces for a scenario (for
+  example spec probeRef or implementation.path, packet replay refs, or compact
+  scenarioTestPath/replay), keep them on the direct .test.ts carrier only.
+- Existing legacy plain carriers may remain as migration inventory, but do not
+  preserve them as the active authored scenario output for this task.
+- Ordinary support modules remain allowed when they are not scenario carriers.
+
 App: ${input.appDir}
 Domain workspace: ${input.projectDir}
 Source workspace: ${input.sourceDir}
@@ -955,6 +1365,7 @@ rooted at ${input.appDir} unless the task explicitly gives an absolute path or
 names the domain workspace.
 
 ${livePipelineDispatchInstructions}
+${normalizationIsolatedWorktreeInstructions}
 
 For spec-loop or compact-loop repair tasks, the app is only the organizer. If
 the root cause is test code, generated tests, runner behavior, compact planner,
@@ -1192,6 +1603,15 @@ export function emitTaskCompleted(
     // Local test contexts may not provide a real dispatcher.
   }
   return completionDispatched;
+}
+
+function controlPlaneVersion(task: TaskNode): number {
+  return task.context &&
+    typeof task.context === "object" &&
+    !Array.isArray(task.context) &&
+    task.context.controlPlaneVersion === 2
+    ? 2
+    : 0;
 }
 
 export function taskAttemptId(task: TaskNode): string {
@@ -1522,6 +1942,11 @@ async function runAssignedMode(
   });
   if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
+  const requiresNormalizationContract =
+    requiresNormalizationIsolatedWorktreeContract(
+      readTaskTree(config),
+      task.id,
+    );
 
   const result = await runTaskAgent({
     ctx,
@@ -1534,17 +1959,27 @@ async function runAssignedMode(
       sourceDir: sourceRoot,
       task,
       attemptId,
+      requiresNormalizationIsolatedWorktreeContract:
+        requiresNormalizationContract,
     }),
   });
   const message = sessionSummaryForCompletion(result);
   const claim = workerResultFromSession(result, message);
   const evidence = resultEvidence(result);
+  const deliverableRoots = { appDir, projectDir };
   const fixForwardResult = isFixForwardTask(task)
-    ? fixForwardResultFromSessionResult(result)
+    ? fixForwardResultFromSessionResult(result, deliverableRoots)
     : null;
   const terminalPipelineWaitReview = hasTerminalPipelineWaitReview(task);
-  const specResultReview = specResultReviewFromSessionResult(result);
-  const queuedPipelineRun = queuedPipelineRunFromSessionResult(result);
+  const specResultReview = specResultReviewFromSessionResult(
+    result,
+    deliverableRoots,
+    task,
+  );
+  const queuedPipelineRun = queuedPipelineRunFromSessionResult(
+    result,
+    deliverableRoots,
+  );
   const fixForwardDetails = isFixForwardTask(task)
     ? {
         fixForward: fixForwardResult,
@@ -1604,16 +2039,84 @@ async function runAssignedMode(
     // Keep worker completion durable even if compact project.json readout sync
     // fails; planner/watchdog can resync on their next pulse.
   }
-  emitTaskCompleted(ctx, completedTask, {
+  const completionEvent = {
     taskRevision: assignedTaskRevision,
     attemptId,
     result: claim,
     summary,
     evidence,
     workflowResult: structuredResult,
-  });
+  };
+  let pendingActionMessage = "";
+  const usePendingActionDelivery =
+    field(ctx.task, "pendingActionV2") === "completion-review-revisioned" &&
+    assignedTaskRevision > 0 &&
+    controlPlaneVersion(completedTask) === 2;
+  if (usePendingActionDelivery) {
+    const completedAt =
+      typeof completedTask.trace?.last_worker_completed_at === "string"
+        ? completedTask.trace.last_worker_completed_at
+        : null;
+    const action = completionReviewPendingActionV2(
+      {
+        taskId: completedTask.id,
+        taskRevision: assignedTaskRevision,
+        controlPlaneVersion: 2,
+        attemptId,
+        completedAt,
+        latestDecision: null,
+        latestDecisionId: null,
+        latestDecisionAt: null,
+        deliveryState: "within-grace",
+        completionDeliveryStatus: "pending",
+        completionDeliveryAttempts: 0,
+        completionAcceptedAt: null,
+      },
+      15 * 60_000,
+    );
+    if (action) {
+      const delivery = deliverPendingActionV2({
+        action,
+        now: new Date().toISOString(),
+        priorReceipts: completionReviewDeliveryReceiptsV2(
+          completedTask,
+          action.key,
+        ),
+        dispatch: () => {
+          if (!emitTaskCompleted(ctx, completedTask, completionEvent)) {
+            throw new Error("project.task.completed dispatch was not accepted");
+          }
+        },
+      });
+      if (delivery.receipt) {
+        const persisted = appendCompletionReviewDeliveryReceiptV2(config, {
+          taskId: completedTask.id,
+          taskRevision: assignedTaskRevision,
+          attemptId,
+          receipt: delivery.receipt,
+        });
+        if (!persisted) {
+          appendToolJournal(config, {
+            kind: "pending_action_delivery_receipt_not_persisted",
+            action_key: action.key,
+            action_kind: action.kind,
+            task_id: completedTask.id,
+            task_revision: assignedTaskRevision,
+            attempt_id: attemptId,
+          });
+        }
+      }
+      pendingActionMessage = ` PendingAction V2 completion delivery: ${delivery.reason}.`;
+    } else {
+      emitTaskCompleted(ctx, completedTask, completionEvent);
+      pendingActionMessage =
+        " PendingAction V2 completion delivery could not be constructed; legacy dispatch was used.";
+    }
+  } else {
+    emitTaskCompleted(ctx, completedTask, completionEvent);
+  }
   return ctx.done(
-    `Task worker handled ${task.id} attempt ${attemptId}; result is ${claim}. Agent result: ${message}`,
+    `Task worker handled ${task.id} attempt ${attemptId}; result is ${claim}. Agent result: ${message}${pendingActionMessage}`,
   );
 }
 

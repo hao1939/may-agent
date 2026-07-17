@@ -16,6 +16,7 @@ const scriptPath = resolve(
 
 type TreeTask = {
   id?: string;
+  revision?: number;
   parent_id?: string;
   state?: string;
   goal?: string;
@@ -36,8 +37,10 @@ async function makeFixture() {
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
   const dbPath = join(root, "may.db");
+  const sessionsDir = join(root, ".state", "sessions");
 
   await mkdir(join(appDir, "tasks"), { recursive: true });
+  await mkdir(sessionsDir, { recursive: true });
   await mkdir(join(appDir, ".state", "spec-loop"), { recursive: true });
   await mkdir(join(appDir, ".state", "tasks", "archive"), {
     recursive: true,
@@ -78,7 +81,7 @@ async function makeFixture() {
     )}\n`,
   );
 
-  return { root, appDir, projectDir, dbPath };
+  return { root, appDir, projectDir, dbPath, sessionsDir };
 }
 
 async function writeFeatureOwnedSpec(
@@ -100,6 +103,7 @@ async function writeTree(
   appDir: string,
   activeTask: Record<string, unknown>,
   extraTasks: Record<string, TreeTask> = {},
+  conditions: Record<string, unknown> = {},
 ) {
   await writeFile(
     resolveTaskTreePath(appDir),
@@ -111,6 +115,7 @@ async function writeTree(
         root_task_id: "project",
         active_task_id: "active-task",
         active_task_ids: ["active-task"],
+        conditions,
         tasks: {
           project: {
             id: "project",
@@ -295,9 +300,59 @@ function writeWorkflowRun(
   db.close();
 }
 
+async function writeSessionTranscript(
+  fixture: Awaited<ReturnType<typeof makeFixture>>,
+  input: {
+    sessionId: string;
+    command: string;
+    toolCallId?: string;
+  },
+) {
+  const sessionDir = join(fixture.sessionsDir, input.sessionId);
+  await mkdir(sessionDir, { recursive: true });
+  await writeFile(
+    join(sessionDir, "session.jsonl"),
+    `${JSON.stringify({
+      role: "assistant",
+      content: [
+        {
+          type: "toolCall",
+          id: input.toolCallId ?? "call_live_bash",
+          name: "bash",
+          arguments: {
+            command: input.command,
+            timeout: 1800,
+          },
+        },
+      ],
+      timestamp: Date.now(),
+    })}\n`,
+  );
+}
+
 async function metricValue(
   fixture: Awaited<ReturnType<typeof makeFixture>>,
   metricId: string,
+  ...extraArgs: string[]
+): Promise<string> {
+  return metricValueWithGrace(
+    fixture,
+    metricId,
+    {
+      reviewApplicationMs: 1000,
+      terminalSessionMs: 1000,
+    },
+    ...extraArgs,
+  );
+}
+
+async function metricValueWithGrace(
+  fixture: Awaited<ReturnType<typeof makeFixture>>,
+  metricId: string,
+  grace: {
+    reviewApplicationMs: number;
+    terminalSessionMs: number;
+  },
   ...extraArgs: string[]
 ): Promise<string> {
   return (
@@ -307,8 +362,12 @@ async function metricValue(
         AKS_RP_E2E_APP_DIR: fixture.appDir,
         PROJECT_DIR: fixture.projectDir,
         MAY_DB_PATH: fixture.dbPath,
+        MAY_SESSIONS_DIR: fixture.sessionsDir,
         AKS_RP_E2E_STALE_ACTIVE_MS: "1000",
-        AKS_RP_E2E_REVIEW_APPLY_GRACE_MS: "1000",
+        AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS: String(
+          grace.reviewApplicationMs,
+        ),
+        AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS: String(grace.terminalSessionMs),
       })
       .quiet()
       .text()
@@ -750,6 +809,44 @@ describe("project metrics", () => {
       ),
     ).toBe("0");
 
+    const projectExactScopeOnly = await makeFixture();
+    await writeTree(
+      projectExactScopeOnly.appDir,
+      {
+        goal: "Repair one exact overdue project wait without masking unrelated waits.",
+        conflict_scope: ["ops:blocked-overdue:project:blocked-project-wait-a"],
+      },
+      {
+        "blocked-project-wait-a": {
+          id: "blocked-project-wait-a",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for exact owner return A.",
+          blocker: overdueBlocker,
+        },
+        "blocked-project-wait-b": {
+          id: "blocked-project-wait-b",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for unrelated owner return B.",
+          blocker: overdueBlocker,
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        projectExactScopeOnly,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        "--json",
+      ).then((raw) => JSON.parse(raw)),
+    ).toMatchObject({
+      value: 1,
+      sampleSize: 1,
+      note: JSON.stringify({ offenderTaskIds: ["blocked-project-wait-b"] }),
+    });
+
     const legacyScopedAudit = await makeFixture();
     await writeTree(
       legacyScopedAudit.appDir,
@@ -899,6 +996,43 @@ describe("project metrics", () => {
       ),
     ).toBe("0");
 
+    const reviewSpecScopedRecovery = await makeFixture();
+    await writeTree(
+      reviewSpecScopedRecovery.appDir,
+      { goal: "Review the duplicate-fix-forward guard for rp-regional-quota." },
+      {
+        "ops/review-rp-regional-quota-guard": {
+          id: "ops/review-rp-regional-quota-guard",
+          parent_id: "project",
+          state: "review",
+          children: [],
+          goal: "Review the same-spec duplicate-fix-forward guard.",
+          owner: "app-ops",
+          conflict_scope: ["spec:spec.rp-regional-quota.public-create-path"],
+        },
+        "reconcile-spec-loop-pending-rp-regional-quota": {
+          id: "reconcile-spec-loop-pending-rp-regional-quota",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Carry the exact public create-path wait.",
+          blocker: {
+            ...overdueBlocker,
+            waiting_for: {
+              type: "azure.quota.exhausted",
+              specId: "spec.rp-regional-quota.public-create-path",
+            },
+          },
+        },
+      },
+    );
+    expect(
+      await metricValue(
+        reviewSpecScopedRecovery,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+      ),
+    ).toBe("0");
+
     const dueResumeWithFutureFallback = await makeFixture();
     await writeTree(
       dueResumeWithFutureFallback.appDir,
@@ -926,6 +1060,68 @@ describe("project metrics", () => {
         "aks-rp-e2e.process.blocked.overdue-nonhuman-unworked-count",
       ),
     ).toBe("0");
+  });
+
+  test("does not give the compatibility overdue metric recovery authority over a registry Condition", async () => {
+    const fixture = await makeFixture();
+    const taskId = "revisioned-condition-wait";
+    const conditionId = "condition:pipeline:ado:172669197:terminal";
+    await writeTree(
+      fixture.appDir,
+      { goal: "Unrelated active work." },
+      {
+        [taskId]: {
+          id: taskId,
+          revision: 2,
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for the exact pipeline Condition.",
+          context: { controlPlaneVersion: 2, conditionId },
+          blocker: {
+            condition_id: conditionId,
+            waiting_for: { type: "ado.pipeline_run.completed", runId: "172669197" },
+            resume_condition: "Resume when the exact run is terminal.",
+            owner: "ado",
+            resume_at: "2001-01-01T00:00:00.000Z",
+            fallback_at: "2001-01-02T00:00:00.000Z",
+            fallback_action: "Use the Condition fallback policy.",
+          },
+        },
+      },
+      {
+        [conditionId]: {
+          version: "project-condition-v2",
+          id: conditionId,
+          causeKey: "pipeline:ado:172669197:terminal",
+          class: "external",
+          type: "pipeline.run.terminal",
+          status: "open",
+          subject: { kind: "task", id: taskId, revision: 2 },
+          owner: "ado",
+          observer: "project-execution-watchdog",
+          nextCheckAt: "2999-01-01T00:00:00.000Z",
+          fallbackAt: "2001-01-02T00:00:00.000Z",
+          fallbackExecution: {
+            status: "acknowledged",
+            attempts: 1,
+            acknowledgedAt: "2001-01-03T00:00:00.000Z",
+          },
+        },
+      },
+    );
+
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.blocked.overdue-unworked-count",
+        "--json",
+      ).then((raw) => JSON.parse(raw)),
+    ).toMatchObject({
+      value: 0,
+      sampleSize: 0,
+      note: JSON.stringify({ offenderTaskIds: [] }),
+    });
   });
 
   test("counts review decisions that were emitted but not applied to the live review task", async () => {
@@ -966,6 +1162,42 @@ describe("project metrics", () => {
         reviewedAt,
       },
     ]);
+  });
+
+  test("does not count a fresh review decision during snapshot application grace", async () => {
+    const fixture = await makeFixture();
+    const reviewedAt = new Date(Date.now() - 10_000).toISOString();
+    await writeTree(fixture.appDir, {
+      state: "review",
+      revision: 2,
+      context: { controlPlaneVersion: 2 },
+      trace: {
+        current_attempt_id: "a_review_task_2",
+        last_worker_completed_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    });
+    await writeFile(
+      join(fixture.appDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: reviewedAt,
+        workflow: "task-reviewer",
+        result: "project.task.reviewed",
+        task_id: "active-task",
+        task_revision: 2,
+        attempt_id: "a_review_task_2",
+        decision: "accept",
+      })}\n`,
+    );
+
+    const raw = await metricValueWithGrace(
+      fixture,
+      "aks-rp-e2e.process.task.review-not-applied-count",
+      { reviewApplicationMs: 5 * 60_000, terminalSessionMs: 1000 },
+      "--json",
+    );
+    const sample = JSON.parse(raw);
+    expect(sample.value).toBe(0);
+    expect(JSON.parse(sample.note).reviews).toEqual([]);
   });
 
   test("does not count stale review residue once a non-metric manual apply path explicitly references the reviewed task", async () => {
@@ -1032,6 +1264,60 @@ describe("project metrics", () => {
     expect(note.reviews).toEqual([]);
   });
 
+  test("does not let a legacy reference heuristic hide an overdue V2 review postcondition", async () => {
+    const fixture = await makeFixture();
+    const reviewedAt = new Date(Date.now() - 10_000).toISOString();
+    await writeTree(
+      fixture.appDir,
+      {
+        state: "review",
+        revision: 2,
+        context: { controlPlaneVersion: 2 },
+        trace: {
+          current_attempt_id: "a_review_task_2",
+          last_worker_completed_at: new Date(Date.now() - 60_000).toISOString(),
+        },
+      },
+      {
+        "legacy-reference": {
+          id: "legacy-reference",
+          parent_id: "project",
+          state: "done",
+          children: [],
+          goal: "Historical repair mentions active-task without applying its exact revisioned review command.",
+        },
+      },
+    );
+    await writeFile(
+      join(fixture.appDir, ".state", "task-reviewer-runs.jsonl"),
+      `${JSON.stringify({
+        ts: reviewedAt,
+        workflow: "task-reviewer",
+        result: "project.task.reviewed",
+        task_id: "active-task",
+        task_revision: 2,
+        attempt_id: "a_review_task_2",
+        decision: "accept",
+      })}\n`,
+    );
+
+    const raw = await metricValue(
+      fixture,
+      "aks-rp-e2e.process.task.review-not-applied-count",
+      "--json",
+    );
+    const sample = JSON.parse(raw);
+    expect(sample.value).toBe(1);
+    expect(JSON.parse(sample.note).reviews).toEqual([
+      {
+        taskId: "active-task",
+        attemptId: "a_review_task_2",
+        decision: "accept",
+        reviewedAt,
+      },
+    ]);
+  });
+
   test("flags running active task with stale activity even after prior ops", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, { session_id: "s_stalled_after_ops" });
@@ -1051,6 +1337,83 @@ describe("project metrics", () => {
     ).toBe("1");
     expect(
       await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps"),
+    ).toBe("1");
+  });
+
+  test("treats stale running task-worker session as healthy while its long-running bash tool process is still alive", async () => {
+    const fixture = await makeFixture();
+    const sessionId = "s_task_active-task";
+    const heartbeatDir = join(
+      fixture.projectDir,
+      "workspace",
+      "live-tool-liveness-fixture",
+    );
+    const heartbeatPath = join(heartbeatDir, "heartbeat.txt");
+    const command = [
+      "set -euo pipefail",
+      `mkdir -p '${heartbeatDir}'`,
+      `for i in $(seq 1 20); do date -u +%s > '${heartbeatPath}'; sleep 1; done`,
+    ].join("; ");
+
+    await writeTree(fixture.appDir, { session_id: sessionId });
+    writeSession(fixture.dbPath, {
+      sessionId,
+      status: "running",
+      opCount: 40,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now() - 10_000,
+      source: "workflow:task-worker",
+    });
+    await writeSessionTranscript(fixture, { sessionId, command });
+
+    const liveProcess = Bun.spawn(["/bin/bash", "-lc", command], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+
+    try {
+      await Bun.sleep(200);
+      expect(
+        await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+      ).toBe("0");
+      expect(
+        await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+      ).toBe("0");
+      expect(
+        await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
+      ).toBe("0");
+    } finally {
+      liveProcess.kill();
+      await liveProcess.exited;
+    }
+  });
+
+  test("still flags stale running task-worker session when transcript shows bash but no live process remains", async () => {
+    const fixture = await makeFixture();
+    const sessionId = "s_task_active-task";
+    const command = [
+      "set -euo pipefail",
+      `mkdir -p '${join(fixture.projectDir, "workspace", "dead-tool-fixture")}'`,
+      `echo done > '${join(fixture.projectDir, "workspace", "dead-tool-fixture", "complete.txt")}'`,
+      "sleep 1",
+    ].join("; ");
+
+    await writeTree(fixture.appDir, { session_id: sessionId });
+    writeSession(fixture.dbPath, {
+      sessionId,
+      status: "running",
+      opCount: 40,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now() - 10_000,
+      source: "workflow:task-worker",
+    });
+    await writeSessionTranscript(fixture, { sessionId, command });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
     ).toBe("1");
   });
 
@@ -1673,6 +2036,81 @@ describe("project metrics", () => {
     expect(
       await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
     ).toBe("0");
+  });
+
+  test("does not count retry-drained self-represented nonlive residue as unowned work", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "aks-spec-verification-loop": {
+          id: "aks-spec-verification-loop",
+          parent_id: "project",
+          state: "backlog",
+          workflow: "spec-loop-controller",
+          children: [],
+          goal: "Keep spec verification moving.",
+          context: { maxDirectAttemptsPerSpec: 3 },
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now() + 60_000,
+    });
+    await writeFeatureOwnedSpec(fixture.projectDir, {
+      id: "spec.windows-gpu.vm-prerelease-matrix",
+      status: "draft",
+      specState: "reviewed-exception",
+    });
+    await writeSpecLoopState(fixture, {
+      "spec.windows-gpu.vm-prerelease-matrix": {
+        status: "pending",
+        attempts: 3,
+        lastRunId: "28420012066",
+        lastRunUrl: "https://example.test/runs/28420012066",
+        lastResultPath: "/tmp/windows-gpu-vm-prerelease-matrix/result.json",
+        taskId: null,
+        terminalDisposition: true,
+        successorDisposition: "intentional-lineage-only-nonlive",
+        successorEvidencePath:
+          "/tmp/evidence/archive/writeback-windows-gpu-vms-legacy-retirement-20260715.md",
+        successorStateReason:
+          "Accepted writeback moved current-source follow-up to the authored VMSS successors, so the legacy VirtualMachines branch remains only as a no-unchanged-rerun historical boundary.",
+        resumeCondition:
+          "Resume only if upstream source restores a distinct legacy VirtualMachines contract or exact same-surface evidence materially changes that historical branch. Do not rerun unchanged.",
+        review: {
+          classification: "intentional_lineage_only_nonlive",
+          reviewedAt: new Date().toISOString(),
+        },
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.spec.retry-exhausted-count"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.spec.recovery-unowned-count"),
+    ).toBe("0");
+    const unowned = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.unowned-work-count",
+        "--json",
+      ),
+    ) as { value: number; note?: string };
+    expect(unowned.value).toBe(0);
+    const note = JSON.parse(unowned.note ?? "{}") as {
+      recoveryUnownedSpecIds?: string[];
+    };
+    expect(note.recoveryUnownedSpecIds ?? []).not.toContain(
+      "spec.windows-gpu.vm-prerelease-matrix",
+    );
   });
 
   test("does not count retry-drained loop records when an active repair task names the exact spec", async () => {
@@ -2447,7 +2885,9 @@ describe("project metrics", () => {
     writeSession(fixture.dbPath, {
       sessionId: "s_done",
       status: "done",
-      startedAt: Date.now() - 10_000,
+      startedAt: Date.now() - 20_000,
+      lastActivityAt: Date.now() - 10_000,
+      endedAt: Date.now() - 10_000,
     });
     writeProjectTaskPair(fixture.dbPath, {
       taskId: "already-done",
@@ -2592,12 +3032,21 @@ describe("project metrics", () => {
       PROJECT_DIR: process.env.PROJECT_DIR,
       MAY_DB_PATH: process.env.MAY_DB_PATH,
       AKS_RP_E2E_STALE_ACTIVE_MS: process.env.AKS_RP_E2E_STALE_ACTIVE_MS,
+      AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS:
+        process.env.AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS,
+      AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS:
+        process.env.AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS,
+      AKS_RP_E2E_REVIEW_APPLY_GRACE_MS:
+        process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS,
     };
     process.chdir("/app");
     process.env.AKS_RP_E2E_APP_DIR = fixture.appDir;
     process.env.PROJECT_DIR = fixture.projectDir;
     process.env.MAY_DB_PATH = fixture.dbPath;
     process.env.AKS_RP_E2E_STALE_ACTIVE_MS = "1000";
+    process.env.AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS = "1000";
+    process.env.AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS = "1000";
+    process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS = "1000";
     try {
       const { create } =
         await import("../../../agents/may/handlers/metrics-snapshot.ts");
@@ -2664,7 +3113,7 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
-  test("treats completed task-worker task as stale after session ends", async () => {
+  test("treats completed task-worker task as healthy during terminal-session completion grace", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, {
       session_id: "s_task_active-task",
@@ -2692,16 +3141,79 @@ describe("project metrics", () => {
       "done",
       null,
       5,
-      Date.now() - 120_000,
-      Date.now() - 90_000,
-      Date.now() - 90_000,
+      Date.now() - 2_000,
+      Date.now() - 500,
+      Date.now() - 500,
       "workflow:task-worker",
       'Task Worker Mode\n\nAssigned task:\n```json\n{\n  "id": "active-task"\n}\n```',
     );
     db.close();
 
     expect(
-      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+      await metricValueWithGrace(
+        fixture,
+        "aks-rp-e2e.task.stale-active-count",
+        { reviewApplicationMs: 1000, terminalSessionMs: 10 * 60_000 },
+      ),
+    ).toBe("0");
+    expect(
+      await metricValueWithGrace(
+        fixture,
+        "aks-rp-e2e.task.stale-active-with-gaps",
+        { reviewApplicationMs: 1000, terminalSessionMs: 10 * 60_000 },
+      ),
+    ).toBe("0");
+  });
+
+  test("treats completed task-worker task as stale after terminal-session completion grace expires", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_task_active-task",
+      trace: {
+        assigned_at: new Date(Date.now() - 360_000).toISOString(),
+        worker_started_at: new Date(Date.now() - 350_000).toISOString(),
+      },
+    });
+    const db = new Database(fixture.dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer,
+        endedAt integer,
+        source text,
+        task text
+      )
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_task_active-task",
+      "done",
+      null,
+      5,
+      Date.now() - 720_000,
+      Date.now() - 700_000,
+      Date.now() - 700_000,
+      "workflow:task-worker",
+      'Task Worker Mode\n\nAssigned task:\n```json\n{\n  "id": "active-task"\n}\n```',
+    );
+    db.close();
+
+    expect(
+      await metricValueWithGrace(
+        fixture,
+        "aks-rp-e2e.task.stale-active-count",
+        { reviewApplicationMs: 1000, terminalSessionMs: 10 * 60_000 },
+      ),
+    ).toBe("1");
+    expect(
+      await metricValueWithGrace(
+        fixture,
+        "aks-rp-e2e.task.stale-active-with-gaps",
+        { reviewApplicationMs: 1000, terminalSessionMs: 10 * 60_000 },
+      ),
     ).toBe("1");
   });
 

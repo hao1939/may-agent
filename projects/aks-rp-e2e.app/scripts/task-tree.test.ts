@@ -230,8 +230,7 @@ describe("task-tree CLI", () => {
     tree.tasks.project.rollup_summary =
       "stale repo-local VM prerelease parity sweep";
     tree.tasks.project.context = {
-      rollup_summary:
-        "truthful blocked-only approval wait stewardship summary",
+      rollup_summary: "truthful blocked-only approval wait stewardship summary",
     };
     await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
@@ -287,6 +286,90 @@ describe("task-tree CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(`${result.stdout}${result.stderr}`).toContain(
       "active with current started attempt attempt-active-1",
+    );
+  });
+
+  test("mark-done accepts explicit task revision and attempt correlation", async () => {
+    const fixture = await makeFixture();
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf-8")) as {
+      tasks: Record<string, Record<string, unknown>>;
+    };
+    tree.tasks.project.children.push("review-task");
+    tree.tasks["review-task"] = {
+      id: "review-task",
+      parent_id: "project",
+      state: "review",
+      revision: 2,
+      kind: "domain_leaf",
+      priority: "P2",
+      owner: "aks-explorer",
+      children: [],
+      goal: "Reviewed task awaiting accepted close.",
+      outputs: ["evidence/archive/review-task.md"],
+      acceptance: ["review accepted"],
+      forbidden: [],
+      conflict_scope: ["feature:review"],
+      depends_on: [],
+      trace: {
+        current_attempt_id: "attempt-review-2",
+      },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    const missingCorrelation = await runTaskTree(
+      [
+        "mark-done",
+        "review-task",
+        "--summary",
+        "accepted review without correlation should fail",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(missingCorrelation.exitCode).toBe(1);
+    expect(
+      `${missingCorrelation.stdout}${missingCorrelation.stderr}`,
+    ).toContain("requires taskRevision 2");
+
+    const correlated = await runTaskTree(
+      [
+        "mark-done",
+        "review-task",
+        "--summary",
+        "accepted review with explicit correlation succeeds",
+        "--task-revision",
+        "2",
+        "--attempt-id",
+        "attempt-review-2",
+      ],
+      {
+        ...process.env,
+        APP_DIR: fixture.appDir,
+        PROJECT_DIR: fixture.projectDir,
+        WORKER: "aks-explorer",
+      },
+    );
+
+    expect(correlated.exitCode).toBe(0);
+    const parsed = JSON.parse(correlated.stdout) as {
+      state?: string;
+      done_at?: string;
+      context?: { acceptance_note?: string };
+      trace?: { review_summary?: string };
+    };
+    expect(parsed.state).toBe("done");
+    expect(parsed.done_at).toBeTruthy();
+    expect(parsed.context?.acceptance_note).toBe(
+      "accepted review with explicit correlation succeeds",
+    );
+    expect(parsed.trace?.review_summary).toBe(
+      "accepted review with explicit correlation succeeds",
     );
   });
 

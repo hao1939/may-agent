@@ -532,6 +532,184 @@ describe("check-integrity durable loop contracts", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
   });
 
+  test("rejects direct feature carriers that still preserve wrapper-plus-plain scenario files", async () => {
+    const fixture = await makeFixture();
+    const domainDir = resolve(fixture.appDir, "..", "aks-rp-e2e");
+
+    await mkdir(join(domainDir, "features", "net-integration", "tests"), {
+      recursive: true,
+    });
+    await mkdir(join(domainDir, "features", "net-integration", "specs"), {
+      recursive: true,
+    });
+    await mkdir(join(domainDir, "features", "net-integration", "packets"), {
+      recursive: true,
+    });
+    await mkdir(join(domainDir, "features", "net-integration", "compact"), {
+      recursive: true,
+    });
+
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-row166.test.ts",
+      ),
+      [
+        'import { execFile } from "node:child_process";',
+        'const legacySiblingFsPath = "features/net-integration/tests/net-integration-row166.ts";',
+        'const replayPath = "features/net-integration/tests/net-integration-row166.ts";',
+        "void console.log(legacySiblingFsPath);",
+        'void execFile("bun", [replayPath]);',
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-row166.ts",
+      ),
+      [
+        "#!/usr/bin/env bun",
+        'const probeName = "net-integration-row166";',
+        'const specId = "spec.net-integration.row166";',
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "specs",
+        "net-integration-row166.json",
+      ),
+      `${JSON.stringify(
+        {
+          id: "spec.net-integration.row166",
+          probeRef:
+            "features/net-integration/tests/net-integration-row166.test.ts",
+          implementation: {
+            path: "features/net-integration/tests/net-integration-row166.test.ts",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "packets",
+        "net-integration-row166.yaml",
+      ),
+      [
+        "probeRef: features/net-integration/tests/net-integration-row166.ts",
+        "replayRef: features/net-integration/tests/net-integration-row166.ts",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "compact",
+        "staging.plan.json",
+      ),
+      `${JSON.stringify(
+        {
+          scenarioTestPath:
+            "features/net-integration/tests/net-integration-row166.ts",
+          replay: "features/net-integration/tests/net-integration-row166.ts",
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "feature-scenario-carrier-wrapper-plus-plain",
+    );
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "feature-scenario-carrier-maintained-surface-points-plain",
+    );
+  });
+
+  test("allows ordinary support modules beside a direct feature carrier", async () => {
+    const fixture = await makeFixture();
+    const domainDir = resolve(fixture.appDir, "..", "aks-rp-e2e");
+
+    await mkdir(join(domainDir, "features", "net-integration", "tests"), {
+      recursive: true,
+    });
+    await mkdir(join(domainDir, "features", "net-integration", "specs"), {
+      recursive: true,
+    });
+
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-clean.test.ts",
+      ),
+      'export const directVitestPath = "features/net-integration/tests/net-integration-clean.test.ts";\n',
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "tests",
+        "shared-support.ts",
+      ),
+      'export function sharedSupport() { return "ok"; }\n',
+      "utf8",
+    );
+    await writeFile(
+      join(
+        domainDir,
+        "features",
+        "net-integration",
+        "specs",
+        "net-integration-clean.json",
+      ),
+      `${JSON.stringify(
+        {
+          id: "spec.net-integration.clean",
+          probeRef:
+            "features/net-integration/tests/net-integration-clean.test.ts",
+          implementation: {
+            path: "features/net-integration/tests/net-integration-clean.test.ts",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
+  });
+
   test("rejects git-tracked project-app runtime files", async () => {
     const fixture = await makeFixture();
     execFileSync("git", ["init"], { cwd: fixture.root });

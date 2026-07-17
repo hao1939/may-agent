@@ -1,9 +1,11 @@
 import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk";
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute as executePlanner } from "./project-planner.ts";
+import { captureRuntimeProjectSnapshotV2 } from "./lib/project-snapshot-capture-v2.ts";
 import { execute, isTransientReviewerFailure } from "./task-reviewer.ts";
 
 async function makeWorkspace() {
@@ -224,6 +226,7 @@ describe("task reviewer", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
+    let decisionPersistedBeforeDispatch = false;
 
     const result = await execute({
       task: [
@@ -237,6 +240,10 @@ describe("task reviewer", () => {
       escalate: (message: string) => ({ status: "escalated", message }),
       emit() {},
       dispatchEvent(type: string, payload: Record<string, unknown>) {
+        decisionPersistedBeforeDispatch = readFileSync(
+          join(appDir, ".state", "task-reviewer-runs.jsonl"),
+          "utf8",
+        ).includes('"delivery_status":"pending"');
         dispatched.push({ type, payload });
       },
       runAgent: async () => ({ status: "success" }),
@@ -282,11 +289,13 @@ describe("task reviewer", () => {
       "planner validates and emits accepted reviewed events",
     );
     expect(dispatched).toHaveLength(1);
+    expect(decisionPersistedBeforeDispatch).toBe(true);
     expect(dispatched[0]).toMatchObject({
       type: "project.task.reviewed",
       payload: {
         taskId: "review-task",
         attemptId: "attempt-1",
+        reviewId: expect.any(String),
         decision: "accept",
         confidence: "high",
         summary: "Live GitHub proof satisfies the task.",
@@ -315,7 +324,244 @@ describe("task reviewer", () => {
       join(appDir, ".state", "task-reviewer-runs.jsonl"),
       "utf8",
     );
-    expect(runs).toContain('"result":"project.task.reviewed"');
+    const rows = runs
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      result: "project.task.reviewed",
+      delivery_status: "pending",
+      review_id: expect.any(String),
+    });
+    expect(rows[1]).toMatchObject({
+      result: "project.task.reviewed.delivery-accepted",
+      delivery_status: "accepted",
+      review_id: rows[0].review_id,
+    });
+  });
+
+  test("retains a reviewer decision for replay when reviewed-event delivery fails", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(completionEvent()),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {
+        throw new Error("injected reviewed-event delivery failure");
+      },
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary: "The durable reviewer decision must survive delivery loss.",
+        }),
+      }),
+    } as any);
+
+    expect(result.message).toContain(
+      "could not dispatch project.task.reviewed",
+    );
+    const rows = (
+      await readFile(join(appDir, ".state", "task-reviewer-runs.jsonl"), "utf8")
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      result: "project.task.reviewed",
+      delivery_status: "pending",
+      decision: "accept",
+      review_id: expect.any(String),
+    });
+    expect(rows[1]).toMatchObject({
+      result: "project.task.reviewed.delivery-failed",
+      delivery_status: "failed",
+      review_id: rows[0].review_id,
+    });
+
+    const captured = captureRuntimeProjectSnapshotV2({
+      appDir,
+      treePath: resolveTaskTreePath(appDir),
+      stateDbPath: join(appDir, ".state", "missing.db"),
+      projectId: "fixture",
+      nowMs: Date.now(),
+    });
+    expect(captured.snapshot.reviews[0]).toMatchObject({
+      taskId: "review-task",
+      latestDecision: "accept",
+      latestDecisionId: rows[0].review_id,
+      deliveryState: "decision-pending-apply",
+    });
+    expect(captured.snapshot.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "review-application-delivery",
+        status: "pending",
+        payloadRef: expect.objectContaining({ id: rows[0].review_id }),
+      }),
+    );
+  });
+
+  test("uses the keyed PendingAction V2 delivery path only for revisioned cohort work", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      revision: 2,
+      context: { controlPlaneVersion: 2 },
+    });
+    let dispatches = 0;
+    let reviewRuns = 0;
+    const context = () =>
+      ({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-reviewer",
+          "pendingActionV2: review-application-revisioned",
+          triggerEvent(completionEvent({ taskRevision: 2 })),
+        ].join("\n"),
+        agent: "aks-reviewer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {
+          dispatches += 1;
+        },
+        runAgentSession: async () => {
+          reviewRuns += 1;
+          return {
+            status: "success",
+            message: reviewMessage({
+              decision: "accept",
+              summary: "The same keyed review should be delivered once.",
+            }),
+          };
+        },
+      }) as any;
+
+    const first = await execute(context());
+    const replay = await execute(context());
+
+    expect(first.message).toContain("through PendingAction V2");
+    expect(replay.message).toContain("replay found accepted review delivery");
+    expect(dispatches).toBe(1);
+    expect(reviewRuns).toBe(1);
+    const rows = (
+      await readFile(join(appDir, ".state", "task-reviewer-runs.jsonl"), "utf8")
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    const receipts = rows.filter(
+      (row) => row.result === "pending-action-delivery-v2",
+    );
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]).toMatchObject({
+      version: "project-pending-action-delivery-v2",
+      action_kind: "review-application-delivery",
+      delivery_attempt: 1,
+      delivery_status: "accepted",
+    });
+    expect(
+      rows.some(
+        (row) => row.result === "project.task.reviewed.delivery-accepted",
+      ),
+    ).toBe(false);
+    const captured = captureRuntimeProjectSnapshotV2({
+      appDir,
+      treePath: resolveTaskTreePath(appDir),
+      stateDbPath: join(appDir, ".state", "missing.db"),
+      projectId: "fixture",
+      nowMs: Date.now(),
+    });
+    expect(captured.snapshot.pendingActions).toContainEqual(
+      expect.objectContaining({
+        kind: "review-application-delivery",
+        status: "accepted",
+        delivery: expect.objectContaining({ attempts: 1, maxAttempts: 2 }),
+      }),
+    );
+  });
+
+  test("reuses the persisted V2 decision when dispatch succeeded but its receipt was lost", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir, {
+      revision: 3,
+      context: { controlPlaneVersion: 2 },
+    });
+    let dispatches = 0;
+    let reviewRuns = 0;
+    const context = () =>
+      ({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-reviewer",
+          "pendingActionV2: review-application-revisioned",
+          triggerEvent(completionEvent({ taskRevision: 3 })),
+        ].join("\n"),
+        agent: "aks-reviewer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent() {
+          dispatches += 1;
+        },
+        runAgentSession: async () => {
+          reviewRuns += 1;
+          return {
+            status: "success",
+            message: reviewMessage({
+              decision: "accept",
+              summary: "Persist this decision before delivery.",
+            }),
+          };
+        },
+      }) as any;
+
+    await execute(context());
+    const ledgerPath = join(appDir, ".state", "task-reviewer-runs.jsonl");
+    const decisionRows = (await readFile(ledgerPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((row) => row.result === "project.task.reviewed");
+    expect(decisionRows).toHaveLength(1);
+    await writeFile(
+      ledgerPath,
+      `${decisionRows.map((row) => JSON.stringify(row)).join("\n")}\n`,
+    );
+
+    const replay = await execute(context());
+
+    expect(replay.message).toContain("redelivered persisted review");
+    expect(reviewRuns).toBe(1);
+    expect(dispatches).toBe(2);
+    const rows = (await readFile(ledgerPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(
+      rows.filter((row) => row.result === "project.task.reviewed"),
+    ).toHaveLength(1);
+    expect(
+      rows.filter((row) => row.result === "pending-action-delivery-v2"),
+    ).toEqual([
+      expect.objectContaining({
+        action_key: `review-application-delivery:review-task:3:attempt-1:${decisionRows[0].review_id}`,
+        delivery_attempt: 1,
+        delivery_status: "accepted",
+      }),
+    ]);
   });
 
   test("accepts completion trigger whose embedded summary contains fenced FIX_FORWARD_RESULT", async () => {
@@ -559,6 +805,85 @@ describe("task reviewer", () => {
     );
     expect(tree.tasks["review-task"].state).toBe("done");
     expect(prompts).toHaveLength(0);
+  });
+
+  test("canonicalizes reviewed project.task.completed events before planner consumption", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(completionEvent()),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary:
+            "The bounded duplicate-wait repair is ready for planner apply.",
+          events: [
+            {
+              type: "project.task.completed",
+              owner: "agent:app-ops",
+              data: {
+                project: "aks-rp-e2e",
+                taskId:
+                  "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+                task_id:
+                  "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+                attemptId: "attempt-wait-1",
+                attempt_id: "attempt-wait-1",
+                result: "done",
+                summary:
+                  "Retire the duplicate preflight wait after same-lineage success was already accepted.",
+              },
+            },
+          ],
+        }),
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        events: [
+          {
+            type: "project.task.completed",
+            owner: "agent:app-ops",
+            target: {
+              project: "aks-rp-e2e",
+              taskId:
+                "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+            },
+            data: expect.objectContaining({
+              taskId:
+                "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+              target: {
+                project: "aks-rp-e2e",
+                taskId:
+                  "wait-rp-cluster-lifecycle-preflight-validation-ado-run-172540314-result",
+              },
+            }),
+          },
+        ],
+      },
+    });
   });
 
   test("annotates accepted completion that cites missing durable evidence memo", async () => {
@@ -1003,6 +1328,290 @@ describe("task reviewer", () => {
     });
   });
 
+  test("forces redo for wrapper .test.ts plus plain scenario carrier outputs", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+
+    const treePath = resolveTaskTreePath(appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["review-task"].goal = "Author one direct feature scenario.";
+    tree.tasks["review-task"].outputs = [
+      "features/net-integration/tests/net-integration-row166.test.ts",
+      "features/net-integration/tests/net-integration-row166.ts",
+      "features/net-integration/specs/net-integration-row166.json",
+      "features/net-integration/packets/net-integration-row166.yaml",
+      "features/net-integration/compact/staging.plan.json",
+    ];
+    tree.tasks["review-task"].acceptance = [
+      "One direct .test.ts scenario carrier remains.",
+    ];
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    await mkdir(join(projectDir, "features", "net-integration", "tests"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "net-integration", "specs"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "net-integration", "packets"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "net-integration", "compact"), {
+      recursive: true,
+    });
+
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-row166.test.ts",
+      ),
+      [
+        'import { execFile } from "node:child_process";',
+        'const replayPath = "features/net-integration/tests/net-integration-row166.ts";',
+        'void execFile("bun", [replayPath]);',
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-row166.ts",
+      ),
+      [
+        "#!/usr/bin/env bun",
+        'const probeName = "net-integration-row166";',
+        'const specId = "spec.net-integration.row166";',
+        "console.log(probeName, specId);",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "specs",
+        "net-integration-row166.json",
+      ),
+      `${JSON.stringify(
+        {
+          id: "spec.net-integration.row166",
+          probeRef:
+            "features/net-integration/tests/net-integration-row166.test.ts",
+          implementation: {
+            path: "features/net-integration/tests/net-integration-row166.test.ts",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "packets",
+        "net-integration-row166.yaml",
+      ),
+      [
+        "probeRef: features/net-integration/tests/net-integration-row166.ts",
+        "replayRef: features/net-integration/tests/net-integration-row166.ts",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "compact",
+        "staging.plan.json",
+      ),
+      `${JSON.stringify(
+        {
+          scenarioTestPath:
+            "features/net-integration/tests/net-integration-row166.ts",
+          replay: "features/net-integration/tests/net-integration-row166.ts",
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(completionEvent()),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary: "Looked fine from a quick read.",
+        }),
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "redo",
+        confidence: "high",
+        findings: expect.arrayContaining([
+          "feature-scenario-carrier-plain-output",
+          "feature-scenario-carrier-maintained-surface-points-plain",
+          "feature-scenario-carrier-direct-has-plain-sibling",
+          "feature-scenario-carrier-wrapper-plus-plain",
+          "scenario:features/net-integration/tests/net-integration-row166",
+        ]),
+      },
+    });
+  });
+
+  test("allows ordinary support modules beside a direct scenario carrier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeTree(appDir);
+
+    const treePath = resolveTaskTreePath(appDir);
+    const tree = JSON.parse(await readFile(treePath, "utf8"));
+    tree.tasks["review-task"].goal =
+      "Author one direct feature scenario with helper support code.";
+    tree.tasks["review-task"].outputs = [
+      "features/net-integration/tests/net-integration-clean.test.ts",
+      "features/net-integration/tests/support-common.ts",
+      "features/net-integration/specs/net-integration-clean.json",
+    ];
+    tree.tasks["review-task"].acceptance = ["Direct carrier remains."];
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    await mkdir(join(projectDir, "features", "net-integration", "tests"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "features", "net-integration", "specs"), {
+      recursive: true,
+    });
+
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "tests",
+        "net-integration-clean.test.ts",
+      ),
+      'export const directVitestPath = "features/net-integration/tests/net-integration-clean.test.ts";\n',
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "tests",
+        "support-common.ts",
+      ),
+      'export function supportCommon() { return "ok"; }\n',
+      "utf8",
+    );
+    await writeFile(
+      join(
+        projectDir,
+        "features",
+        "net-integration",
+        "specs",
+        "net-integration-clean.json",
+      ),
+      `${JSON.stringify(
+        {
+          id: "spec.net-integration.clean",
+          probeRef:
+            "features/net-integration/tests/net-integration-clean.test.ts",
+          implementation: {
+            path: "features/net-integration/tests/net-integration-clean.test.ts",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-reviewer",
+        triggerEvent(completionEvent()),
+      ].join("\n"),
+      agent: "aks-reviewer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message: reviewMessage({
+          decision: "accept",
+          summary:
+            "One direct scenario carrier and one support helper are present.",
+        }),
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.reviewed",
+      payload: {
+        taskId: "review-task",
+        decision: "accept",
+      },
+    });
+    expect(dispatched[0].payload.findings).not.toEqual(
+      expect.arrayContaining([
+        "feature-scenario-carrier-plain-output",
+        "feature-scenario-carrier-wrapper-plus-plain",
+      ]),
+    );
+  });
+
   test("emits reviewer followup when task only recommended a task-tree mutation", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeTree(appDir, {
@@ -1070,6 +1679,483 @@ describe("task reviewer", () => {
       "Create a concrete planner/app-ops successor to apply the recommended task-tree mutation, or record why no mutation is needed.",
     );
   });
+
+  const normalizationMixedFixtures = [
+    {
+      runId: "172532763",
+      taskGoal: "Repair RP preflight validation and queue one isolated rerun.",
+      specId: "spec.rp-cluster-lifecycle.preflight-validation",
+      evidencePath: "evidence/archive/preflight.md",
+      summary: "Queued the preflight rerun.",
+      branch:
+        "refs/heads/aks-explorer/normalize-private-cluster-peconn-lifecycle-20260716",
+      sourceCommit: "01e6e17a7427305beb0dd7b65ce6902d93af0c63",
+      changedFiles: [
+        "features/net-integration/compact/staging.plan.json",
+        "features/net-integration/specs/net-integration-outbound-migration-natgw-to-lb.json",
+        "features/net-integration/tests/net-integration-outbound-migration-natgw-to-lb.test.ts",
+      ],
+      unexpectedFeature: "net-integration",
+    },
+    {
+      runId: "172519831",
+      taskGoal:
+        "Normalize storage-csi Disk PVC scenario and queue one isolated rerun.",
+      specId: "spec.storage-csi.disk-pvc",
+      evidencePath: "evidence/archive/storage-csi-disk.md",
+      summary: "Queued the mixed Disk rerun.",
+      branch: "refs/heads/aks-explorer/normalize-storage-csi-disk-pvc-20260716",
+      sourceCommit: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+      changedFiles: [
+        "features/planned-maintenance/tests/planned-maintenance-configuration-crud-lifecycle.test.ts",
+      ],
+      unexpectedFeature: "planned-maintenance",
+    },
+    {
+      runId: "172519985",
+      taskGoal:
+        "Normalize planned-maintenance configuration CRUD lifecycle and queue one isolated rerun.",
+      specId: "spec.planned-maintenance.configuration-crud-lifecycle",
+      evidencePath: "evidence/archive/planned-maintenance.md",
+      summary: "Queued the mixed Planned rerun.",
+      branch:
+        "refs/heads/aks-explorer/normalize-planned-maintenance-configuration-20260716",
+      sourceCommit: "0f1e2d3c4b5a69788796a5b4c3d2e1f012345678",
+      changedFiles: [
+        "features/disable-ssh/tests/disable-ssh-vmss-cleanup.test.ts",
+      ],
+      unexpectedFeature: "disable-ssh",
+    },
+    {
+      runId: "172519192",
+      taskGoal:
+        "Normalize Disable SSH VMSS cleanup scenario and queue one isolated rerun.",
+      specId: "spec.disable-ssh.vmss-cleanup",
+      evidencePath: "evidence/archive/disable-ssh.md",
+      summary: "Queued the mixed Disable SSH rerun.",
+      branch:
+        "refs/heads/aks-explorer/normalize-disable-ssh-vmss-cleanup-20260716",
+      sourceCommit: "1234567890abcdef1234567890abcdef12345678",
+      changedFiles: ["features/storage-csi/tests/storage-csi-disk-pvc.test.ts"],
+      unexpectedFeature: "storage-csi",
+    },
+  ];
+
+  test.each(normalizationMixedFixtures)(
+    "forces redo for mixed normalization queued runs without isolated worktree lineage: run $runId",
+    async ({
+      runId,
+      taskGoal,
+      specId,
+      evidencePath,
+      summary,
+      branch,
+      sourceCommit,
+      changedFiles,
+      unexpectedFeature,
+    }) => {
+      const { appDir, projectDir } = await makeWorkspace();
+      await writeFile(
+        resolveTaskTreePath(appDir),
+        `${JSON.stringify(
+          {
+            version: 1,
+            project: "aks-rp-e2e",
+            project_lifecycle: "active",
+            root_task_id: "project",
+            updated_at: new Date().toISOString(),
+            active_task_id: null,
+            active_task_ids: [],
+            tasks: {
+              project: {
+                id: "project",
+                state: "active",
+                children: [
+                  "domain/normalize-scenario-tests-repo-frontier-20260715",
+                ],
+                goal: "project",
+                outputs: ["tasks/tree.json"],
+                acceptance: ["done"],
+              },
+              "domain/normalize-scenario-tests-repo-frontier-20260715": {
+                id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+                parent_id: "project",
+                state: "active",
+                kind: "domain",
+                priority: "P1",
+                children: ["review-task"],
+                goal: "Normalize scenario tests repo frontier.",
+                outputs: ["evidence/archive/frontier.md"],
+                acceptance: ["frontier stays visible"],
+              },
+              "review-task": {
+                id: "review-task",
+                parent_id:
+                  "domain/normalize-scenario-tests-repo-frontier-20260715",
+                state: "review",
+                kind: "domain_leaf",
+                workflow: "default-task-worker",
+                priority: "P1",
+                children: [],
+                goal: taskGoal,
+                inputs: [`spec:${specId}`],
+                outputs: [evidencePath],
+                acceptance: ["Queue only one isolated rerun."],
+                forbidden: [],
+                conflict_scope: [`spec:${specId}`],
+                depends_on: [],
+                trace: {
+                  current_attempt_id: "attempt-1",
+                  last_worker_result: "partial",
+                  last_worker_summary: "Queued one rerun.",
+                },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
+
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const prompts: string[] = [];
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-reviewer",
+          triggerEvent(
+            completionEvent({
+              result: "partial",
+              summary,
+              workflowResult: {
+                resultVersion: "workflow-result-v1",
+                workflow: "default-task-worker",
+                status: "partial",
+                subject: { kind: "task", id: "review-task" },
+                artifacts: [evidencePath],
+                details: {
+                  queuedRun: {
+                    backend: "ado",
+                    runId,
+                    runUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
+                    specIds: [specId],
+                    target: "staging",
+                    branch,
+                    sourceVersion: sourceCommit,
+                    sourceCommit,
+                    changedFiles,
+                    metadataPath: `workspace/${runId}/metadata.json`,
+                  },
+                },
+              },
+            }),
+          ),
+        ].join("\n"),
+        agent: "aks-reviewer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "success",
+            message: reviewMessage({
+              decision: "accept",
+              summary: "Queued rerun looks acceptable.",
+            }),
+          };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(prompts[0]).toContain(
+        "For tasks under domain/normalize-scenario-tests-repo-frontier-20260715",
+      );
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].payload.decision).toBe("redo");
+      expect(dispatched[0].payload.summary).toContain(
+        "missing isolated-worktree lineage proof",
+      );
+      expect(dispatched[0].payload.findings).toContain(
+        "normalization-isolation-contract-invalid",
+      );
+      expect(dispatched[0].payload.findings).toContain(`run:${runId}`);
+      expect(dispatched[0].payload.findings).toContain(
+        "normalization-isolation-base-ref-not-origin-dev",
+      );
+      expect(dispatched[0].payload.findings).toContain(
+        `unexpectedFeature:${unexpectedFeature}`,
+      );
+    },
+  );
+
+  const normalizationCleanFixtures = [
+    {
+      runId: "172513552",
+      taskGoal:
+        "Normalize network-cni Windows2022 scenario and queue one clean rerun.",
+      specId: "spec.network-cni.azure-overlay-dual-stack-windows2022",
+      evidencePath: "evidence/archive/network-cni.md",
+      summary: "Queued the clean network-cni rerun.",
+      branch:
+        "refs/heads/aks-explorer/network-cni-windows2022-direct-clean-20260716",
+      sourceCommit: "d0e3ef8c61e078883756e805f980778dd1921b99",
+      changedFiles: [
+        "features/network-cni/tests/network-cni-azure-overlay-dual-stack-windows2022.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/network-cni-windows2022-direct-clean-20260716-wt",
+    },
+    {
+      runId: "172513872",
+      taskGoal:
+        "Normalize storage-csi Disk PVC scenario and queue one clean rerun.",
+      specId: "spec.storage-csi.disk-pvc",
+      evidencePath: "evidence/archive/storage-csi-disk.md",
+      summary: "Queued the clean storage-csi Disk rerun.",
+      branch:
+        "refs/heads/aks-explorer/storage-csi-disk-pvc-direct-clean-20260716",
+      sourceCommit: "4c71fcb9be96ecfba4cf1ad55b8df760924e1c11",
+      changedFiles: ["features/storage-csi/tests/storage-csi-disk-pvc.test.ts"],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/storage-csi-disk-pvc-direct-clean-20260716-wt",
+    },
+    {
+      runId: "172515477",
+      taskGoal:
+        "Normalize planned-maintenance configuration CRUD lifecycle and queue one clean rerun.",
+      specId: "spec.planned-maintenance.configuration-crud-lifecycle",
+      evidencePath: "evidence/archive/planned-maintenance.md",
+      summary: "Queued the clean planned-maintenance rerun.",
+      branch:
+        "refs/heads/aks-explorer/planned-maintenance-direct-clean-20260716",
+      sourceCommit: "8f52b9ad8f1d7c6772f6ee5906f14cc7af3c5b64",
+      changedFiles: [
+        "features/planned-maintenance/tests/planned-maintenance-configuration-crud-lifecycle.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/planned-maintenance-direct-clean-20260716-wt",
+    },
+    {
+      runId: "172517379",
+      taskGoal:
+        "Normalize Disable SSH VMSS cleanup scenario and queue one clean rerun.",
+      specId: "spec.disable-ssh.vmss-cleanup",
+      evidencePath: "evidence/archive/disable-ssh.md",
+      summary: "Queued the clean Disable SSH rerun.",
+      branch:
+        "refs/heads/aks-explorer/disable-ssh-vmss-cleanup-direct-clean-20260716",
+      sourceCommit: "2c95d3f1c80e6d6248d0e7fd2bc3e2c4217490ee",
+      changedFiles: [
+        "features/disable-ssh/tests/disable-ssh-vmss-cleanup.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/disable-ssh-vmss-cleanup-direct-clean-20260716-wt",
+    },
+    {
+      runId: "172518211",
+      taskGoal:
+        "Repair RP preflight validation and queue one clean isolated rerun.",
+      specId: "spec.rp-cluster-lifecycle.preflight-validation",
+      evidencePath: "evidence/archive/preflight.md",
+      summary: "Queued the clean preflight rerun.",
+      branch:
+        "refs/heads/aks-explorer/rp-preflight-validation-direct-clean-20260716",
+      sourceCommit: "5ea4ae94e4fdad61d34fcac9cb6ee17f52de9c10",
+      changedFiles: [
+        "features/rp-cluster-lifecycle/tests/rp-preflight-validation.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/rp-preflight-validation-direct-clean-20260716-wt",
+    },
+    {
+      runId: "172557989",
+      taskGoal:
+        "Normalize spec.virtualmachines.spot-pool-eviction under the refined direct-authoring contract.",
+      specId: "spec.virtualmachines.spot-pool-eviction",
+      evidencePath:
+        "evidence/archive/normalize-direct-virtualmachines-spot-pool-eviction-20260717-current-validation.md",
+      summary: "Queued the clean virtualmachines spot-pool rerun.",
+      branch:
+        "refs/heads/aks-explorer/normalize-direct-virtualmachines-spot-pool-eviction-20260717",
+      sourceCommit: "cbd263dec702348ae8352ab9c39ffce3c70a18a0",
+      changedFiles: [
+        "features/virtualmachines-agentpool/specs/virtualmachines-spot-pool-eviction.json",
+        "features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction.test.ts",
+      ],
+      worktreePath:
+        "/app/projects/aks-rp-e2e/workspace/normalize-direct-virtualmachines-spot-pool-eviction-20260717-wt",
+      taskOutputs: [
+        "../aks-rp-e2e/features/virtualmachines-agentpool/tests/virtualmachines-spot-pool-eviction.test.ts",
+        "../aks-rp-e2e/features/virtualmachines-agentpool/specs/virtualmachines-spot-pool-eviction.json",
+      ],
+    },
+  ];
+
+  test.each(normalizationCleanFixtures)(
+    "accepts clean normalization queued runs with isolated lineage proof: run $runId",
+    async ({
+      runId,
+      taskGoal,
+      specId,
+      evidencePath,
+      summary,
+      branch,
+      sourceCommit,
+      changedFiles,
+      worktreePath,
+      taskOutputs,
+    }) => {
+      const { appDir, projectDir } = await makeWorkspace();
+      await writeFile(
+        resolveTaskTreePath(appDir),
+        `${JSON.stringify(
+          {
+            version: 1,
+            project: "aks-rp-e2e",
+            project_lifecycle: "active",
+            root_task_id: "project",
+            updated_at: new Date().toISOString(),
+            active_task_id: null,
+            active_task_ids: [],
+            tasks: {
+              project: {
+                id: "project",
+                state: "active",
+                children: [
+                  "domain/normalize-scenario-tests-repo-frontier-20260715",
+                ],
+                goal: "project",
+                outputs: ["tasks/tree.json"],
+                acceptance: ["done"],
+              },
+              "domain/normalize-scenario-tests-repo-frontier-20260715": {
+                id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+                parent_id: "project",
+                state: "active",
+                kind: "domain",
+                priority: "P1",
+                children: ["review-task"],
+                goal: "Normalize scenario tests repo frontier.",
+                outputs: ["evidence/archive/frontier.md"],
+                acceptance: ["frontier stays visible"],
+              },
+              "review-task": {
+                id: "review-task",
+                parent_id:
+                  "domain/normalize-scenario-tests-repo-frontier-20260715",
+                state: "review",
+                kind: "domain_leaf",
+                workflow: "default-task-worker",
+                priority: "P1",
+                children: [],
+                goal: taskGoal,
+                inputs: [`spec:${specId}`],
+                outputs: taskOutputs ?? [evidencePath],
+                acceptance: ["Queue only one isolated rerun."],
+                forbidden: [],
+                conflict_scope: [`spec:${specId}`],
+                depends_on: [],
+                trace: {
+                  current_attempt_id: "attempt-1",
+                  last_worker_result: "partial",
+                  last_worker_summary: "Queued one clean rerun.",
+                },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
+
+      const prompts: string[] = [];
+      const dispatched: Array<{
+        type: string;
+        payload: Record<string, unknown>;
+      }> = [];
+      const result = await execute({
+        task: [
+          `app: ${appDir}`,
+          `project: ${projectDir}`,
+          "agent: aks-reviewer",
+          triggerEvent(
+            completionEvent({
+              result: "partial",
+              summary,
+              workflowResult: {
+                resultVersion: "workflow-result-v1",
+                workflow: "default-task-worker",
+                status: "partial",
+                subject: { kind: "task", id: "review-task" },
+                artifacts: [evidencePath],
+                details: {
+                  queuedRun: {
+                    backend: "ado",
+                    runId,
+                    runUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${runId}`,
+                    specIds: [specId],
+                    target: "staging",
+                    branch,
+                    sourceVersion: sourceCommit,
+                    sourceCommit,
+                    baseRef: "origin/dev",
+                    baseCommit: "8422b22c0e121f4894f08c6c39e881783f367e6f",
+                    firstParentCommits: [sourceCommit],
+                    changedFiles,
+                    worktreePath,
+                    metadataPath: `workspace/${runId}/metadata.json`,
+                  },
+                },
+              },
+            }),
+          ),
+        ].join("\n"),
+        agent: "aks-reviewer",
+        done: (message: string) => ({ status: "done", message }),
+        escalate: (message: string) => ({ status: "escalated", message }),
+        emit() {},
+        dispatchEvent(type: string, payload: Record<string, unknown>) {
+          dispatched.push({ type, payload });
+        },
+        runAgent: async () => ({ status: "success" }),
+        runAgentSession: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "success",
+            message: reviewMessage({
+              decision: "accept",
+              summary: "The clean isolated rerun is reviewable.",
+              findings: ["worker returned isolated lineage proof"],
+            }),
+          };
+        },
+        summarize: () => "",
+      } as any);
+
+      expect(result.status).toBe("done");
+      expect(prompts[0]).toContain(
+        "For a terminal same-run live pass under this normalization frontier, do not",
+      );
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].payload.decision).toBe("accept");
+      expect(dispatched[0].payload.findings).toContain(
+        "validation-note:normalization-isolated-worktree-lineage-present",
+      );
+      expect(dispatched[0].payload.findings).toContain(`run:${runId}`);
+    },
+  );
 
   test("adds validation note when terminal pipeline wait lacks structured result", async () => {
     const { appDir, projectDir } = await makeWorkspace();

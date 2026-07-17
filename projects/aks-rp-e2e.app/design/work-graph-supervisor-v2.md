@@ -1,14 +1,18 @@
 # Work Graph And Project Supervisor V2
 
-Status: approved model; staged implementation in progress, revisioned
-review-handoff canary live
+Status: approved model; staged implementation in progress, shared reads live,
+exact ADO Condition authority canary closed, and revisioned review-handoff
+canary live
 
 Implementation status is tracked in
 `design/work-graph-supervisor-v2-implementation.md`. The shared snapshot/read
-convergence is live. The first two-stage review-handoff supervisor canary is
-live only for revisioned work behind an explicit mode gate; compatibility
-revision `0` remains on the legacy path after the first live observation proved
-that its recycled phase/attempt identities are unsafe for V2 authority.
+convergence is live. The selected exact ADO Condition cohort has also completed
+its authority gate through mechanical ownership, fallback acknowledgement,
+terminal continuation, and review. The first two-stage review-handoff
+supervisor canary is live only for revisioned work behind an explicit mode
+gate; compatibility revision `0` remains on the legacy path after the first
+live observation proved that its recycled phase/attempt identities are unsafe
+for V2 authority.
 
 ## Review Decision
 

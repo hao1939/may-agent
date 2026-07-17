@@ -141,6 +141,169 @@ describe("approval-dispatch workflow", () => {
     expect(runs).toContain('"expectedResponse"');
   });
 
+  test("normalizes absolute app-workspace evidence/archive packets to repo-relative packet paths", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath = "evidence/archive/app-rooted-approval-packet.md";
+    const appPacketPath = join(appDir, packetPath);
+    await mkdir(join(appDir, "evidence", "archive"), { recursive: true });
+    await writeFile(
+      appPacketPath,
+      "# app-rooted packet\n\nRoute this exact approval.\n",
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        triggerEvent({
+          type: "project.approval.requested",
+          project: "aks-rp-e2e",
+          packetPath: appPacketPath,
+          pathId: "path.rp-nodepool-lifecycle.rollback",
+          requestedAction: "Route this exact rollback-history environment ask",
+          reason: "App-owned evidence packet should still dispatch.",
+        }),
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Approval dispatch emitted message.created",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "message.created",
+      payload: {
+        packetPath,
+        packetAbsolutePath: appPacketPath,
+        pathId: "path.rp-nodepool-lifecycle.rollback",
+        approvalId:
+          "aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-app-rooted-approval-packet.md",
+        waitId:
+          "wait:aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-app-rooted-approval-packet.md",
+        approval: {
+          packetPath,
+        },
+      },
+    });
+
+    const runs = await readFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      "utf8",
+    );
+    expect(runs).toContain('"result":"message.created"');
+    expect(runs).toContain(`"packetPath":"${packetPath}"`);
+    expect(runs).toContain(appPacketPath);
+  });
+
+  test("ignores malformed local-only ledger rows when deciding duplicate suppression", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath =
+      "evidence/archive/ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md";
+    await mkdir(join(appDir, "evidence", "archive"), { recursive: true });
+    await writeFile(
+      join(appDir, packetPath),
+      "# exact packet\n\nRoute this exact rollback-history environment ask.\n",
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      [
+        JSON.stringify({
+          ts: "2026-07-16T19:25:04.292Z",
+          workflow: "approval-dispatch",
+          result: "message.created",
+          packetPath,
+          packetAbsolutePath: packetPath,
+          pathId: "path.rp-nodepool-lifecycle.rollback",
+          requestedAction:
+            "Route this exact rollback-history environment ask through the human:operator lane for spec.rp-nodepool-lifecycle.rollback.",
+          approvalId:
+            "aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md",
+          correlationKey:
+            "aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md",
+        }),
+      ].join("\n") + "\n",
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        triggerEvent({
+          type: "project.approval.requested",
+          project: "aks-rp-e2e",
+          packetPath,
+          pathId: "path.rp-nodepool-lifecycle.rollback",
+          requestedAction:
+            "Route this exact rollback-history environment ask through the human:operator lane for spec.rp-nodepool-lifecycle.rollback.",
+          reason:
+            "Re-emit only when prior duplicate proof was local-only ledger contamination.",
+        }),
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Approval dispatch emitted message.created",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "message.created",
+      payload: {
+        packetPath,
+        packetAbsolutePath: join(appDir, packetPath),
+        pathId: "path.rp-nodepool-lifecycle.rollback",
+      },
+    });
+
+    const runs = await readFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      "utf8",
+    );
+    expect(runs).toContain(
+      '"packetAbsolutePath":"evidence/archive/ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md"',
+    );
+    expect(runs).toContain(
+      `"packetAbsolutePath":"${join(appDir, packetPath)}"`,
+    );
+    expect(runs).not.toContain('"result":"duplicate-suppressed"');
+  });
+
   test("suppresses duplicate message.created for the same approval lineage", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const packetPath = "evidence/archive/network-cni-approval-packet.md";
