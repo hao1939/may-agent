@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   opCount         INTEGER DEFAULT 0,
   lastActivityAt  INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_sess_agent ON sessions(agent);
+CREATE INDEX IF NOT EXISTS idx_sess_agent_started ON sessions(agent, startedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_status ON sessions(status);
 CREATE INDEX IF NOT EXISTS idx_sess_parent ON sessions(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId);
@@ -409,7 +409,7 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_wfr_status ON workflow_runs(status);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
-CREATE INDEX IF NOT EXISTS idx_wfr_project ON workflow_runs(projectId);
+CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, startedAt DESC);
 `;
 
 export function applyDbSchema(db: SqliteDb): void {

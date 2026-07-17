@@ -82,9 +82,7 @@ export function writeSessionResult(
   sessionId: string,
   result: Record<string, unknown>,
 ): ArtifactDescriptor {
-  const activeRef = `sessions/${sessionId}/result.json`;
-  const historyRef = `sessions/history/${sessionId}/result.json`;
-  const ref = existsSync(join(persistDir, "sessions", "history", sessionId)) ? historyRef : activeRef;
+  const ref = `sessions/${sessionId}/result.json`;
   return writeJsonArtifact(persistDir, ref, {
     schemaVersion: 1,
     sessionId,

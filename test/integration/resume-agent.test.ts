@@ -442,14 +442,14 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(interrupted).toEqual([]);
   });
 
-  it("does not scan archived sessions during stale recovery", () => {
-    const archivedDir = join(persistDir, "sessions", "history", "archived-running");
-    mkdirSync(archivedDir, { recursive: true });
+  it("does not scan unmarked terminal records during stale recovery", () => {
+    const terminalDir = join(persistDir, "sessions", "unmarked-running");
+    mkdirSync(terminalDir, { recursive: true });
     writeFileSync(
-      join(archivedDir, "meta.json"),
+      join(terminalDir, "meta.json"),
       JSON.stringify({
         agent: "agent-a",
-        task: "archived task",
+        task: "unmarked task",
         status: "running",
         startedAt: Date.now() - 60000,
       } satisfies PersistedSession),

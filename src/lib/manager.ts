@@ -21,7 +21,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   rmSync,
   statSync,
@@ -43,15 +42,15 @@ import {
   appendSessionMessage,
   sessionOutputDir,
   readSessionMessages,
-  readArchivedSessionMessages,
   readCompactedMessages,
   saveCompactedMessages,
   rewriteSessionMessages,
   loadActiveSessionMetas,
-  unarchiveSession,
+  listActiveSessionIds,
+  markSessionActive,
+  markSessionInactive,
   RegistryStore,
   sessionDir,
-  archiveSession,
 } from "./persistence.js";
 import { createCompactionTransform } from "./compaction.js";
 import {
@@ -424,7 +423,6 @@ export class SubagentManager {
     opts: {
       source: string;
       injectUserMessage?: string;
-      unarchive?: boolean;
       resetDbRow?: boolean;
       timeoutMs?: number;
       trace?: EventTrace;
@@ -432,14 +430,6 @@ export class SubagentManager {
       outputSchema?: TSchema;
     },
   ): void {
-    if (opts.unarchive) {
-      try {
-        unarchiveSession(this._persistDir, sessionId);
-      } catch {
-        /* best-effort */
-      }
-    }
-
     const resumeMessages = this.buildResumeMessages(sessionId);
 
     if (opts.injectUserMessage) {
@@ -569,6 +559,7 @@ export class SubagentManager {
 
     // Setup persistence
     ensureSessionDir(this._persistDir, sessionId);
+    markSessionActive(this._persistDir, sessionId);
     mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
     writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
 
@@ -674,9 +665,7 @@ export class SubagentManager {
       this._sessions.delete(sessionId);
       const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
       this._registry.updateSessionStatus(sessionId, "error", reason);
-      try {
-        unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
-      } catch {}
+      markSessionInactive(this._persistDir, sessionId);
       throw err;
     }
 
@@ -733,6 +722,7 @@ export class SubagentManager {
         opCount: session.toolCalls,
         lastActivityAt: Date.now(),
       });
+      markSessionInactive(this._persistDir, sessionId);
       if (!wasRunning) {
         this._sessions.delete(sessionId);
         this.idlePromises.delete(sessionId);
@@ -826,7 +816,7 @@ export class SubagentManager {
   result(sessionId: string): TaskResult {
     const completed = this.completedResults.get(sessionId);
     if (completed) return completed;
-    return this.resultFromArchive(sessionId);
+    return this.resultFromStoredSession(sessionId);
   }
 
   getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
@@ -849,8 +839,7 @@ export class SubagentManager {
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
 
-    let messages = readSessionMessages(this._persistDir, sessionId);
-    if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
+    const messages = readSessionMessages(this._persistDir, sessionId);
     return messages.slice(-normalizedLimit);
   }
 
@@ -981,35 +970,30 @@ export class SubagentManager {
           endedAt: persisted.endedAt ?? Date.now(),
           error: persisted.error,
         });
+        markSessionInactive(this._persistDir, sessionId);
       }
     }
 
-    const sessionsRoot = join(this._persistDir, "sessions");
-    if (existsSync(sessionsRoot)) {
-      try {
-        for (const dirName of readdirSync(sessionsRoot)) {
-          if (dirName === "history") continue;
-          const sentinelPath = join(sessionsRoot, dirName, "[STARTED]");
-          if (!existsSync(sentinelPath)) continue;
-          const persisted = activeSessions[dirName];
-          if (!persisted) {
-            try {
-              unlinkSync(sentinelPath);
-            } catch {}
-            continue;
-          }
-          const kind = persisted.kind ?? "job";
-          if (kindFilter && !kindFilter.has(kind)) continue;
-          if (persisted.status === "running" || persisted.status === "idle") {
-            stale.set(dirName, persisted);
-          }
-          try {
-            unlinkSync(sentinelPath);
-          } catch {}
+    try {
+      for (const dirName of listActiveSessionIds(this._persistDir)) {
+        const sentinelPath = join(sessionDir(this._persistDir, dirName), "[STARTED]");
+        if (!existsSync(sentinelPath)) continue;
+        const persisted = activeSessions[dirName];
+        if (!persisted) {
+          markSessionInactive(this._persistDir, dirName);
+          continue;
         }
-      } catch (err) {
-        log("warn", `[manager] Error scanning stale sentinels: ${err instanceof Error ? err.message : String(err)}`);
+        const kind = persisted.kind ?? "job";
+        if (kindFilter && !kindFilter.has(kind)) continue;
+        if (persisted.status === "running" || persisted.status === "idle") {
+          stale.set(dirName, persisted);
+        }
+        try {
+          unlinkSync(sentinelPath);
+        } catch {}
       }
+    } catch (err) {
+      log("warn", `[manager] Error scanning stale sentinels: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     for (const [sessionId, persisted] of Object.entries(activeSessions)) {
@@ -1033,6 +1017,7 @@ export class SubagentManager {
         const error = "Clean start (fresh)";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        markSessionInactive(this._persistDir, sessionId);
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
         continue;
       }
@@ -1042,6 +1027,7 @@ export class SubagentManager {
         const error = resumeDecision.reason ?? "Stale session skipped by startup recovery policy";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        markSessionInactive(this._persistDir, sessionId);
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
         continue;
       }
@@ -1050,6 +1036,7 @@ export class SubagentManager {
         const error = "Process restarted (agent not registered)";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        markSessionInactive(this._persistDir, sessionId);
         this.emitSessionResumeFailed(sessionId, persisted, error, "agent_not_registered", false);
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
         continue;
@@ -1060,9 +1047,7 @@ export class SubagentManager {
           source: persisted.source ?? "resumeStaleSessions",
           // No injectUserMessage: keep the synthetic "Process restarted..."
           // tail injected by buildResumeMessages.
-          // No unarchive: stale sessions are not archived (their session dir
-          // is still live; only the sentinel needs cleanup).
-          // No resetDbRow: manager.run reseats the row.
+          // manager.run reuses the permanent session directory and reseats the DB row.
         });
         try {
           unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
@@ -1075,9 +1060,7 @@ export class SubagentManager {
         const error = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        try {
-          unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
-        } catch {}
+        markSessionInactive(this._persistDir, sessionId);
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
       }
     }
@@ -1157,7 +1140,6 @@ export class SubagentManager {
     this.executeResume(sessionId, meta, {
       source: opts?.source ?? "resume",
       injectUserMessage: message,
-      unarchive: true,
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
       trace: opts?.trace,
@@ -1403,14 +1385,14 @@ export class SubagentManager {
     const initialMeta = this._registry.getSession(sessionId);
     if (!initialMeta) throw new Error(`Session "${sessionId}" not found`);
     if (initialMeta.status !== "running" && initialMeta.status !== "idle") {
-      return this.resultFromArchive(sessionId);
+      return this.resultFromStoredSession(sessionId);
     }
 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const meta = this._registry.getSession(sessionId);
       if (meta && meta.status !== "running" && meta.status !== "idle") {
-        return this.resultFromArchive(sessionId);
+        return this.resultFromStoredSession(sessionId);
       }
       if (initialMeta.instance) {
         const identity = readIdentity(this._persistDir, initialMeta.instance);
@@ -1418,10 +1400,10 @@ export class SubagentManager {
           await new Promise((resolve) => setTimeout(resolve, 500));
           const finalMeta = this._registry.getSession(sessionId);
           if (finalMeta && finalMeta.status !== "running" && finalMeta.status !== "idle") {
-            return this.resultFromArchive(sessionId);
+            return this.resultFromStoredSession(sessionId);
           }
           this._registry.updateSessionStatus(sessionId, "error", "Process exited without completing");
-          return this.resultFromArchive(sessionId);
+          return this.resultFromStoredSession(sessionId);
         }
       }
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
@@ -1443,9 +1425,8 @@ export class SubagentManager {
   }
 
   private buildResumeMessages(sessionId: string): AgentMessage[] {
-    let messages =
+    const messages =
       readCompactedMessages(this._persistDir, sessionId) ?? readSessionMessages(this._persistDir, sessionId);
-    if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
     const repaired = messages.slice();
     const last = repaired[repaired.length - 1] as any;
     const pendingToolCalls =
@@ -1492,14 +1473,13 @@ export class SubagentManager {
     };
   }
 
-  private resultFromArchive(sessionId: string): TaskResult {
+  private resultFromStoredSession(sessionId: string): TaskResult {
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
     if (persisted.status === "running" || persisted.status === "idle") {
       throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
     }
-    let messages = readSessionMessages(this._persistDir, sessionId);
-    if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
+    const messages = readSessionMessages(this._persistDir, sessionId);
     const finishResult = extractFinishParams(messages as any[]);
     return {
       sessionId,
@@ -1892,11 +1872,7 @@ export class SubagentManager {
       this.clearTurnTraces(session);
     }
 
-    if (session.autoClose === "immediate") {
-      try {
-        archiveSession(this._persistDir, sessionId);
-      } catch {}
-    }
+    markSessionInactive(this._persistDir, sessionId);
 
     return {
       sessionId,
@@ -2020,6 +1996,7 @@ export class SubagentManager {
     }
     session.status = "running";
     session.lastError = undefined;
+    markSessionActive(this._persistDir, sessionId);
     try {
       writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
     } catch {
@@ -2158,6 +2135,7 @@ export class SubagentManager {
         ...(trace ? { trace } : {}),
       } as any);
       this.clearTurnTraces(session);
+      markSessionInactive(this._persistDir, sessionId);
       if (errorText) throw new Error(errorText);
       throw new Error(`Session "${sessionId}" interrupted`);
     }

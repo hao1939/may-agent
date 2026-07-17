@@ -151,7 +151,7 @@ describe("getSessionTree()", () => {
     expect(leafNode.children).toEqual([]);
   });
 
-  it("works with mixed active and archived sessions", () => {
+  it("works with mixed active and terminal sessions", () => {
     // Set up archived (completed) parent via registry, and an active child via run()
     const registry = new RegistryStore(persistDir);
     const archivedParentSid = "s_archived_parent";
@@ -173,7 +173,7 @@ describe("getSessionTree()", () => {
       tools: [],
     });
 
-    // Start an active child session whose parent is the archived session
+    // Start an active child session whose parent is the terminal session
     const childSid = manager.run("worker", "child task", { parentSessionId: archivedParentSid });
 
     // Parent is archived (in registry only), child is active
