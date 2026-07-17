@@ -1,0 +1,145 @@
+{
+  "workflow": "task-tree-followup",
+  "intent": "add-two-domain-successors-and-represent-archived-rp-run-wait-truthfully",
+  "applyFrom": "planner-app-owner-mode",
+  "reasonWorkerDidNotApply": "Task Worker Mode forbids child-task creation, routing, and planner-owned tree mutation from this session; this file records the exact follow-up the planner should add instead.",
+  "reviewedTaskId": "reconcile-unpublished-domain-repo-slices-20260717-domain-followup",
+  "plannerApplyScript": "/app/projects/aks-rp-e2e.app/evidence/archive/reconcile-unpublished-domain-repo-slices-20260717-domain-followup.proposal.sh",
+  "sourceEvidence": [
+    "/app/projects/aks-rp-e2e/evidence/archive/reconcile-unpublished-domain-repo-slices-20260717.md",
+    "/app/projects/aks-rp-e2e/evidence/archive/wait-rp-regional-quota-public-create-path-ado-run-172614503-result-20260717.md",
+    "/app/projects/aks-rp-e2e.app/tasks/tree.json",
+    "/app/projects/aks-rp-e2e.app/.state/tasks/archive/done-leaves-20260717030725024.json"
+  ],
+  "reverifiedFacts": {
+    "treeUpdatedAt": "2026-07-17T03:16:52.210Z",
+    "localdnsBlockedHolder": {
+      "taskId": "hold-spec-localdns-autodefault-fresh-create-136-cilium-environment-frontier-20260714",
+      "exists": true,
+      "state": "blocked",
+      "pathId": "path.localdns.autodefault-fresh-create-1.36-cilium"
+    },
+    "rpBlockedCarrier": {
+      "taskId": "reconcile-spec-loop-pending-rp-regional-quota",
+      "exists": true,
+      "state": "blocked",
+      "specId": "spec.rp-regional-quota.public-create-path"
+    },
+    "secopsWait": {
+      "taskId": "wait-secops-fips-ubuntu-compat-ado-run-172628524-result",
+      "exists": true,
+      "state": "blocked",
+      "conflictScopeIncludes": "file:features/secops/tests/secops-fips-ubuntu-compat.ts"
+    },
+    "proposedLocaldnsSuccessorExists": false,
+    "proposedRpSuccessorExists": false,
+    "archivedDoneRpRunWait": {
+      "taskId": "wait-rp-regional-quota-public-create-path-ado-run-172614503-result",
+      "liveExists": false,
+      "archivedDone": true,
+      "archiveFile": "/app/projects/aks-rp-e2e.app/.state/tasks/archive/done-leaves-20260717030725024.json",
+      "archivedAt": "2026-07-17T03:07:25.024Z",
+      "parentId": "domain/normalize-scenario-tests-repo-frontier-20260715",
+      "state": "done",
+      "stillReferencedBy": "reconcile-spec-loop-pending-rp-regional-quota.blocker.condition"
+    }
+  },
+  "addTasks": [
+    {
+      "id": "domain/publish-localdns-autodefault-blocked-holder-writeback-20260717",
+      "parent_id": "project",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "goal": "Checkpoint the exact LocalDNS omitted-profile blocked-holder writeback already reflected by hold-spec-localdns-autodefault-fresh-create-136-cilium-environment-frontier-20260714, limited to features/localdns/packets/auto-default.yaml plus the 7 regenerated model/knowledge-map files.",
+      "inputs": [
+        "../aks-rp-e2e/evidence/archive/reconcile-spec-localdns-autodefault-fresh-create-136-cilium-environment-return-20260717.md",
+        "../aks-rp-e2e/evidence/archive/apply-localdns-autodefault-fresh-create-136-cilium-holder-refresh-20260717.md",
+        "live holder: hold-spec-localdns-autodefault-fresh-create-136-cilium-environment-frontier-20260714",
+        "reconciliation memo: ../aks-rp-e2e/evidence/archive/reconcile-unpublished-domain-repo-slices-20260717.md"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/features/localdns/packets/auto-default.yaml",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/evidence-index.md",
+        "../aks-rp-e2e/model/knowledge-map/views/evidence-matrix.json",
+        "../aks-rp-e2e/model/knowledge-map/views/graph-view.json",
+        "../aks-rp-e2e/model/knowledge-map/views/model.generated.md",
+        "../aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "../aks-rp-e2e/model/knowledge-map/views/status-summary.json",
+        "../aks-rp-e2e/evidence/archive/publish-localdns-autodefault-blocked-holder-writeback-20260717.md"
+      ],
+      "acceptance": [
+        "The isolated publish slice contains exactly the 8 LocalDNS/model files above and no RP-regional-quota or secops residue.",
+        "The model diff remains limited to path.localdns.autodefault-fresh-create-1.36-cilium plus its two new evidence ids.",
+        "The resulting commit/message truthfully says this is a blocked-holder writeback, not a reopened LocalDNS rerun or pass verdict."
+      ],
+      "conflict_scope": [
+        "file:features/localdns/packets/auto-default.yaml",
+        "file:model/knowledge-map/model.json",
+        "file:model/knowledge-map/views/evidence-index.md",
+        "file:model/knowledge-map/views/evidence-matrix.json",
+        "file:model/knowledge-map/views/graph-view.json",
+        "file:model/knowledge-map/views/model.generated.md",
+        "file:model/knowledge-map/views/path-summary.json",
+        "file:model/knowledge-map/views/status-summary.json",
+        "path:path.localdns.autodefault-fresh-create-1.36-cilium"
+      ]
+    },
+    {
+      "id": "domain/reconcile-rp-regional-quota-publication-surface-after-run-172614503-20260717",
+      "parent_id": "project",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "goal": "Resolve the unpublished RP regional quota public-create-path repo slice by choosing one truthful publication surface after reviewed run 172614503: either carry the 40/161 environment-wait verdict onto the normalized .test.ts lineage, or explicitly backport it onto the legacy .ts carrier without implying the live run executed that legacy surface.",
+      "inputs": [
+        "../aks-rp-e2e/evidence/archive/wait-rp-regional-quota-public-create-path-ado-run-172614503-result-20260717.md",
+        "archived exact wait: /app/projects/aks-rp-e2e.app/.state/tasks/archive/done-leaves-20260717030725024.json#wait-rp-regional-quota-public-create-path-ado-run-172614503-result",
+        "live blocked carrier: reconcile-spec-loop-pending-rp-regional-quota",
+        "workspace/normalize-direct-rp-regional-quota-public-create-path-20260717-wt/",
+        "reconciliation memo: ../aks-rp-e2e/evidence/archive/reconcile-unpublished-domain-repo-slices-20260717.md"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/features/rp-regional-quota.yaml",
+        "../aks-rp-e2e/features/rp-regional-quota/notes/public-create-path-target-selection-20260715.md",
+        "../aks-rp-e2e/features/rp-regional-quota/specs/rp-regional-quota-public-create-path.json",
+        "one truthful implementation carrier: ../aks-rp-e2e/features/rp-regional-quota/tests/rp-regional-quota-public-create-path.ts or ../aks-rp-e2e/features/rp-regional-quota/tests/rp-regional-quota-public-create-path.test.ts",
+        "../aks-rp-e2e/evidence/archive/reconcile-rp-regional-quota-publication-surface-after-run-172614503-20260717.md"
+      ],
+      "acceptance": [
+        "The worker first re-verifies and records that wait-rp-regional-quota-public-create-path-ado-run-172614503-result is absent from the live tree because it was rolled up done at /app/projects/aks-rp-e2e.app/.state/tasks/archive/done-leaves-20260717030725024.json, so run 172614503 must now be represented either by this successor's exact output or by one exact new live wait it explicitly proposes.",
+        "The chosen publish surface matches the reviewed run lineage or explicitly documents why it is a backport rather than the executed carrier.",
+        "The exact 40/161 environment-blocker verdict and rerun condition are preserved without reintroducing the stale 161/161 ready-to-rerun claim.",
+        "The outcome is either one checkpoint-ready exact slice or one exact blocked publication holder with the 4-file affected set and explicit resume condition."
+      ],
+      "conflict_scope": [
+        "spec:spec.rp-regional-quota.public-create-path",
+        "ado-run:172614503",
+        "file:features/rp-regional-quota.yaml",
+        "file:features/rp-regional-quota/notes/public-create-path-target-selection-20260715.md",
+        "file:features/rp-regional-quota/specs/rp-regional-quota-public-create-path.json",
+        "file:features/rp-regional-quota/tests/rp-regional-quota-public-create-path.ts",
+        "file:features/rp-regional-quota/tests/rp-regional-quota-public-create-path.test.ts"
+      ]
+    }
+  ],
+  "plannerRequiredCarrierRepair": {
+    "taskId": "reconcile-spec-loop-pending-rp-regional-quota",
+    "problem": "The live carrier blocker text still says the current same-spec companion follow-up is wait-rp-regional-quota-public-create-path-ado-run-172614503-result, but that task was rolled up done into /app/projects/aks-rp-e2e.app/.state/tasks/archive/done-leaves-20260717030725024.json and is absent from the live task map.",
+    "requiredAfterAdd": "Refresh the carrier so its companion reference points at domain/reconcile-rp-regional-quota-publication-surface-after-run-172614503-20260717 or another exact live replacement, rather than the archived wait id.",
+    "doNotDo": [
+      "Do not leave the stale wait-rp-regional-quota-public-create-path-ado-run-172614503-result reference in blocker text after adding the RP successor.",
+      "Do not create duplicate LocalDNS or secops follow-ups.",
+      "Do not publish the RP 4-file slice before the carrier mismatch between .ts and .test.ts is reconciled."
+    ]
+  },
+  "postApplyVerification": [
+    "The live task tree contains domain/publish-localdns-autodefault-blocked-holder-writeback-20260717 under parent project with the exact 8-file LocalDNS/model scope.",
+    "The live task tree contains domain/reconcile-rp-regional-quota-publication-surface-after-run-172614503-20260717 under parent project with conflict_scope covering spec.rp-regional-quota.public-create-path, ado-run:172614503, and both .ts/.test.ts carriers.",
+    "reconcile-spec-loop-pending-rp-regional-quota no longer names wait-rp-regional-quota-public-create-path-ado-run-172614503-result as its current live companion unless a new exact live wait with that id has been restored.",
+    "wait-secops-fips-ubuntu-compat-ado-run-172628524-result remains the sole exact live wait for the secops dirty file."
+  ]
+}

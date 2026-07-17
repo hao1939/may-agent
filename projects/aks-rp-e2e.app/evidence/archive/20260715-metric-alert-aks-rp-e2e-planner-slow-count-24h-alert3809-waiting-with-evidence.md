@@ -1,7 +1,7 @@
 # Metric alert triage — waiting_with_evidence — `aks-rp-e2e.planner.slow-count-24h`
 
-Date: 2026-07-16T00:44Z  
-Alert id: `3809`  
+Date: 2026-07-16T00:44Z
+Alert id: `3809`
 Metric id: `aks-rp-e2e.planner.slow-count-24h`
 Owner: `app-ops`
 
