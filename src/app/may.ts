@@ -17,6 +17,7 @@ import { createModelRegistry } from "./model-registry.js";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
+import { runMaintenanceMode } from "./modes/maintenance.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -35,6 +36,11 @@ const ROOTS = resolveRuntimeRoots(import.meta.url);
 const PROJECT_ROOT = ROOTS.projectRoot;
 const AGENTS_ROOT = ROOTS.agentsRoot;
 const PERSIST_DIR = ROOTS.persistDir;
+
+if (process.argv.includes("--maintenance") || process.argv.includes("--maintenance-once")) {
+  await runMaintenanceMode({ persistDir: PERSIST_DIR });
+  process.exit(0);
+}
 
 // ── Instance identity ───────────────────────────────────────────────────
 

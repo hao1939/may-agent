@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachDaemonEventSubscribers, attachEventPersistence } from "./daemon-events.js";
@@ -84,6 +84,12 @@ describe("canonical session terminal event", () => {
     expect(db.prepare(
       "SELECT COUNT(*) AS count FROM events WHERE event_type IN ('session.completed', 'session.receipt')",
     ).get()).toEqual({ count: 0 });
+    const session = db.prepare(
+      "SELECT result_ref, result_sha256, result_bytes FROM sessions WHERE sessionId = ?",
+    ).get(sessionId) as { result_ref: string; result_sha256: string; result_bytes: number };
+    expect(session.result_sha256).toHaveLength(64);
+    expect(session.result_bytes).toBeGreaterThan(0);
+    expect(existsSync(join(persistDir, session.result_ref))).toBe(true);
   });
 
   it("keeps one terminal trace row instead of tracing derivative copies", () => {
@@ -126,8 +132,8 @@ describe("canonical session terminal event", () => {
 
     const db = getDb(persistDir);
     const row = db.prepare(
-      "SELECT data, json_valid(data) AS valid FROM events WHERE event_type = 'session.end' AND json_extract(data, '$.sessionId') = ?",
-    ).get(sessionId) as { data: string; valid: number };
+      "SELECT data, body_ref, body_sha256, body_bytes, session_id, json_valid(data) AS valid FROM events WHERE event_type = 'session.end' AND session_id = ?",
+    ).get(sessionId) as { data: string; body_ref: string; body_sha256: string; body_bytes: number; session_id: string; valid: number };
     const data = JSON.parse(row.data);
 
     expect(row.valid).toBe(1);
@@ -142,6 +148,11 @@ describe("canonical session terminal event", () => {
     });
     expect(data.task).toContain("[TRUNCATED:");
     expect(data._truncated.originalLength).toBeGreaterThan(200_000);
+    expect(row.session_id).toBe(sessionId);
+    expect(row.body_sha256).toHaveLength(64);
+    expect(row.body_bytes).toBeGreaterThan(200_000);
+    const fullBody = JSON.parse(readFileSync(join(persistDir, row.body_ref), "utf8"));
+    expect(fullBody.task).toHaveLength(210_000);
   });
 
   it("keeps the valid JSON fallback within the persistence limit", () => {
@@ -172,7 +183,7 @@ describe("canonical session terminal event", () => {
     const data = JSON.parse(row.data);
 
     expect(row.valid).toBe(1);
-    expect(row.data.length).toBeLessThanOrEqual(200_000);
+    expect(row.data.length).toBeLessThanOrEqual(12_000);
     expect(data).toMatchObject({
       sessionId,
       agent: "test-agent",
