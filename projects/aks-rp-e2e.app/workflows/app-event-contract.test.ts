@@ -444,6 +444,60 @@ describe("app event contract", () => {
     }
   });
 
+  test("approval requests resolve to stable bounded dispatch tasks", () => {
+    const event = {
+      type: "project.approval.requested",
+      target: { project: projectId },
+      data: {
+        packetPath: "evidence/archive/network-cni-approval.md",
+        pathId: "path.network-cni",
+        requestedAction: "Approve one bounded replay",
+        approvalId: "approval-network-cni",
+        waitId: "wait-network-cni",
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "approval-dispatch",
+      priority: "P1",
+      input: event.data,
+      outputs: [".state/approval-dispatch-runs.jsonl"],
+    });
+    expect(resolveAksReconciliationTask(structuredClone(event))?.id).toBe(
+      first?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: {
+          ...event.data,
+          packetPath:
+            "/app/projects/aks-rp-e2e/evidence/archive/network-cni-approval.md",
+        },
+      })?.id,
+    ).toBe(first?.id);
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, pathId: "path.network-cni.changed" },
+      })?.id,
+    ).not.toBe(first?.id);
+
+    for (const missing of [
+      "packetPath",
+      "pathId",
+      "requestedAction",
+    ] as const) {
+      const data = { ...event.data };
+      delete data[missing];
+      expect(resolveAksReconciliationTask({ ...event, data })).toBeNull();
+    }
+  });
+
   test("completion events resolve to stable bounded review tasks", () => {
     const event = {
       type: "project.task.completed",
@@ -622,9 +676,17 @@ describe("app event contract", () => {
       accepts: [{ type: "project.stall.review.requested" }],
       emits: ["project.stall.reviewed", "project.task.tick"],
     });
-    expect(handler("aks-rp-e2e-approval-dispatch")).toMatchObject({
-      handler: { workflow: "approval-dispatch" },
-      accepts: [{ type: "project.approval.requested" }],
+    expect(taskRoute("aks-rp-e2e-task-approval-dispatch")).toMatchObject({
+      accepts: [
+        {
+          type: "project.approval.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["approval-dispatch"]).toMatchObject({
+      workflow: "approval-dispatch",
+      agent: "aks-explorer",
     });
   });
 
@@ -655,6 +717,15 @@ describe("app event contract", () => {
       accepts: [
         {
           type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(handlersForEvent("project.approval.requested")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-approval-dispatch")).toMatchObject({
+      accepts: [
+        {
+          type: "project.approval.requested",
           target: { project: projectId },
         },
       ],

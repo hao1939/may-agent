@@ -17,6 +17,22 @@ export const name = "approval-dispatch";
 export const description =
   "Emit a packet-linked human-facing approval message for an exact approval ask.";
 
+function finishApprovalDispatch(
+  ctx: WorkflowContext,
+  input: {
+    disposition: "converged" | "needs-owner";
+    summary: string;
+    evidence: string[];
+  },
+): WorkflowResult {
+  return ctx.done(input.summary, {
+    disposition: input.disposition,
+    summary: input.summary,
+    evidence: input.evidence,
+    actions: [],
+  });
+}
+
 function truncate(text: string, max = 1800): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
@@ -168,9 +184,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = parseTriggerEvent(ctx.task);
 
   if (trigger?.type !== "project.approval.requested") {
-    return ctx.done(
-      `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.requested.`,
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "needs-owner",
+      summary: `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.requested.`,
+      evidence: ["approval-dispatch:invalid-trigger"],
+    });
   }
 
   const packetPath =
@@ -220,9 +238,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       pathId,
       requestedAction,
     });
-    return ctx.done(
-      "Approval dispatch ignored: packetPath, pathId, and requestedAction are required.",
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "needs-owner",
+      summary:
+        "Approval dispatch ignored: packetPath, pathId, and requestedAction are required.",
+      evidence: ["approval-dispatch:missing-required-fields"],
+    });
   }
 
   const absolutePacketPath = packetAbsolutePath({
@@ -238,9 +259,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       pathId,
       requestedAction,
     });
-    return ctx.done(
-      `Approval dispatch ignored: packetPath ${packetPath} was not found under the app/domain workspace.`,
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "needs-owner",
+      summary: `Approval dispatch ignored: packetPath ${packetPath} was not found under the app/domain workspace.`,
+      evidence: [`approval-dispatch:${pathId}:packet-not-found`],
+    });
   }
 
   const repoPacketPath = packetRepoPath({
@@ -258,9 +281,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       pathId,
       requestedAction,
     });
-    return ctx.done(
-      `Approval dispatch ignored: packetPath ${packetPath} must resolve inside evidence/archive/.`,
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "needs-owner",
+      summary: `Approval dispatch ignored: packetPath ${packetPath} must resolve inside evidence/archive/.`,
+      evidence: [`approval-dispatch:${pathId}:packet-outside-evidence-archive`],
+    });
   }
 
   const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
@@ -280,9 +305,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       duplicateReason:
         "prior approval-dispatch ledger row already emitted message.created for this correlationKey",
     });
-    return ctx.done(
-      `Approval dispatch suppressed duplicate message.created for ${pathId} using ${repoPacketPath}.`,
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "converged",
+      summary: `Approval dispatch suppressed duplicate message.created for ${pathId} using ${repoPacketPath}.`,
+      evidence: [`approval-dispatch:${correlationKey}`],
+    });
   }
 
   const approvalId = explicitApprovalId || correlationKey;
@@ -408,9 +435,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       pathId,
       requestedAction,
     });
-    return ctx.done(
-      `Approval dispatch failed while emitting message.created for ${pathId}.`,
-    );
+    return finishApprovalDispatch(ctx, {
+      disposition: "needs-owner",
+      summary: `Approval dispatch failed while emitting message.created for ${pathId}.`,
+      evidence: [`approval-dispatch:${correlationKey}:dispatch-failed`],
+    });
   }
 
   appendDispatchRun(appDir, {
@@ -427,7 +456,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     target,
   });
 
-  return ctx.done(
-    `Approval dispatch emitted message.created for ${pathId} using ${repoPacketPath}.`,
-  );
+  return finishApprovalDispatch(ctx, {
+    disposition: "converged",
+    summary: `Approval dispatch emitted message.created for ${pathId} using ${repoPacketPath}.`,
+    evidence: [`approval-dispatch:${correlationKey}`],
+  });
 }

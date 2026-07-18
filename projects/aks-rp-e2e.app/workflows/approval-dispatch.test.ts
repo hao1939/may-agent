@@ -18,6 +18,45 @@ function triggerEvent(event: Record<string, unknown>): string {
 }
 
 describe("approval-dispatch workflow", () => {
+  test("returns owner fallback when the requested packet is unavailable", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.approval.requested",
+          project: "aks-rp-e2e",
+          packetPath: "evidence/archive/missing-packet.md",
+          pathId: "path.missing-packet",
+          requestedAction: "Review the missing packet",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result).toMatchObject({
+      output: {
+        disposition: "needs-owner",
+        summary: expect.stringContaining("was not found"),
+        evidence: ["approval-dispatch:path.missing-packet:packet-not-found"],
+        actions: [],
+      },
+    });
+  });
+
   test("emits packet-linked message.created record for an approval packet", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const packetPath = "evidence/archive/network-cni-approval-packet.md";
@@ -49,7 +88,11 @@ describe("approval-dispatch workflow", () => {
         }),
       ].join("\n"),
       agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
       escalate: (message: string) => ({ status: "escalated", message }),
       emit() {},
       dispatchEvent(type: string, payload: Record<string, unknown>) {
@@ -63,6 +106,18 @@ describe("approval-dispatch workflow", () => {
     expect(result.message).toContain(
       "Approval dispatch emitted message.created",
     );
+    expect(result).toMatchObject({
+      output: {
+        disposition: "converged",
+        summary: expect.stringContaining(
+          "Approval dispatch emitted message.created",
+        ),
+        evidence: [
+          "approval-dispatch:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        ],
+        actions: [],
+      },
+    });
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
       type: "message.created",

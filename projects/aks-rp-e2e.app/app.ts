@@ -101,6 +101,24 @@ function taskExecutionId(details: Record<string, unknown>): string {
   return `runtime/task-execution/${readable || "task"}-${digest}`;
 }
 
+function approvalDispatchId(details: Record<string, unknown>): string {
+  const pathId = detailString(details, "pathId", "path_id");
+  const rawPacketPath = detailString(details, "packetPath", "packet_path")
+    .replace(/\\/g, "/");
+  const archiveOffset = rawPacketPath.indexOf("evidence/archive/");
+  const packetPath =
+    archiveOffset >= 0 ? rawPacketPath.slice(archiveOffset) : rawPacketPath;
+  const digest = createHash("sha256")
+    .update(`${pathId}\0${packetPath}`)
+    .digest("hex")
+    .slice(0, 16);
+  const readable = pathId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/approval-dispatch/${readable || "approval"}-${digest}`;
+}
+
 function detailStrings(
   details: Record<string, unknown>,
   ...names: string[]
@@ -154,6 +172,37 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.approval.requested") {
+    const packetPath = detailString(details, "packetPath", "packet_path");
+    const pathId = detailString(details, "pathId", "path_id");
+    const requestedAction = detailString(
+      details,
+      "requestedAction",
+      "requested_action",
+    );
+    if (!packetPath || !pathId || !requestedAction) return null;
+    return {
+      id: approvalDispatchId(details),
+      parentId: "project",
+      outcome: `Deliver the exact approval packet for ${pathId} once through the human-facing message channel.`,
+      acceptance: [
+        "A packet-linked message.created event is durably emitted, or prior delivery for the same approval lineage is proven and duplicate delivery is suppressed.",
+        "The approval id, wait id, expected response, and resume condition are recorded in the approval-dispatch ledger.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "approval-dispatch",
+      input: {
+        packetPath,
+        pathId,
+        requestedAction,
+        approvalId: detailString(details, "approvalId", "approval_id"),
+        waitId: detailString(details, "waitId", "wait_id"),
+      },
+      outputs: [".state/approval-dispatch-runs.jsonl"],
+      priority: "P1",
+    };
+  }
   if (event.type === "project.task.assigned") {
     const assignedTaskId = detailString(details, "taskId", "task_id");
     const attemptId = detailString(details, "attemptId", "attempt_id");
@@ -484,6 +533,17 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "approval-dispatch": {
+      workflow: "approval-dispatch",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nagent: aks-explorer\nmaxAttempts: 1`,
+      timeoutMs: 600_000,
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e/runs/test-results/",
+      ],
+    },
     "task-execution": {
       workflow: "task-worker",
       agent: "aks-explorer",
@@ -527,6 +587,20 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-approval-dispatch",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Delivers each packet-linked approval request once through a bounded achieve task.",
+      accepts: [
+        {
+          type: "project.approval.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-execution",
       enabled: true,
@@ -783,32 +857,6 @@ export default defineProjectApp({
         ...taskTreeContext,
         "projects/aks-rp-e2e.app/project.json",
         "projects/aks-rp-e2e/README.md",
-      ],
-    },
-    {
-      name: "aks-rp-e2e-approval-dispatch",
-      type: "job",
-      enabled: true,
-      description:
-        "Dispatches one packet-linked human-facing approval message using the proven message.created path.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "approval-dispatch",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: aks-explorer\nmaxAttempts: 1`,
-        timeoutMs: 600_000,
-      },
-      accepts: [
-        {
-          type: "project.approval.requested",
-          target: { project: projectId },
-        },
-      ],
-      emits: ["message.created"],
-      context: [
-        ...taskTreeContext,
-        "projects/aks-rp-e2e.app/project.json",
-        "projects/aks-rp-e2e/runs/test-results/",
       ],
     },
   ],
