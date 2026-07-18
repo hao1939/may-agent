@@ -1246,12 +1246,14 @@ export async function execute(ctx: any) {
       );
       expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(knownWorkflowRuns);
 
-      bus.emit({
+      const waitingTrigger = {
         type: "project.work",
         source: "test",
         owner: "human:test",
         data: { project: "sample", itemId: "waiting" },
-      } as any);
+      } as any;
+      Object.defineProperty(waitingTrigger, EVENT_ROW_ID, { value: 74 });
+      bus.emit(waitingTrigger);
       await waitUntil(() =>
         events.some(
           (event) =>
@@ -1260,6 +1262,14 @@ export async function execute(ctx: any) {
             event.data?.disposition === "waiting",
         ),
       );
+      expect(
+        JSON.parse(
+          readFileSync(
+            join(appDir, ".state", "tasks", "tree.json"),
+            "utf8",
+          ),
+        ).tasks["work/waiting"].trace.reconciliation.trigger.eventId,
+      ).toBe(74);
       const waitingWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
 
       bus.emit({
