@@ -208,6 +208,10 @@ const reviewApplicationGraceMs = Number.parseInt(
     "300000",
   10,
 );
+const reviewCompletionRecoveryGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_REVIEW_RECOVERY_DELAY_MS ?? "900000",
+  10,
+);
 const terminalSessionCompletionGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS ?? "600000",
   10,
@@ -1320,11 +1324,11 @@ function terminalTaskWorkerWorkflowRunForAttempt(
         from workflow_runs
         where workflow = 'task-worker'
           and projectId = ?
+          and task like ?
         order by startedAt desc
-        limit 200
       `,
       )
-      .all("aks-rp-e2e") as Array<Record<string, unknown>>;
+      .all("aks-rp-e2e", `%${taskId}%`) as Array<Record<string, unknown>>;
     for (const row of rows) {
       const status = typeof row.status === "string" ? row.status.trim() : "";
       if (!status || status === "running") continue;
@@ -1412,6 +1416,50 @@ function representedArchivedDoneAssignmentMismatch(
   return true;
 }
 
+function reviewAssignmentMismatchWithinRecoveryGrace(
+  task: TaskNode,
+  attemptId: string | null,
+  nowMs = Date.now(),
+): boolean {
+  if (taskState(task) !== "review") return false;
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
+  const currentAttemptId =
+    typeof trace.current_attempt_id === "string"
+      ? trace.current_attempt_id.trim()
+      : typeof trace.previous_attempt_id === "string"
+        ? trace.previous_attempt_id.trim()
+        : "";
+  if (!currentAttemptId || !attemptId || currentAttemptId !== attemptId) {
+    return false;
+  }
+  const completedAt =
+    typeof trace.last_worker_completed_at === "string"
+      ? Date.parse(trace.last_worker_completed_at)
+      : Number.NaN;
+  return (
+    Number.isFinite(completedAt) &&
+    nowMs - completedAt < reviewCompletionRecoveryGraceMs
+  );
+}
+
+function runtimeReconciledBacklogTask(task: TaskNode | null | undefined): boolean {
+  if (!task || taskState(task) !== "backlog") return false;
+  const context =
+    task.context && typeof task.context === "object" && !Array.isArray(task.context)
+      ? (task.context as Record<string, unknown>)
+      : {};
+  const reconciliation =
+    context.reconciliation &&
+    typeof context.reconciliation === "object" &&
+    !Array.isArray(context.reconciliation)
+      ? (context.reconciliation as Record<string, unknown>)
+      : {};
+  return Object.keys(reconciliation).length > 0;
+}
+
 function openTaskAssignmentStateMismatchDetails(
   tree: TaskTree,
 ): AssignmentStateMismatchInfo[] {
@@ -1440,6 +1488,15 @@ function openTaskAssignmentStateMismatchDetails(
       const task = tree.tasks?.[taskId];
       const currentTaskState = task ? taskState(task) : null;
       if (!task || currentTaskState !== "active") {
+        if (runtimeReconciledBacklogTask(task)) {
+          continue;
+        }
+        if (
+          task &&
+          reviewAssignmentMismatchWithinRecoveryGrace(task, attemptId, now)
+        ) {
+          continue;
+        }
         const sessionInfo = assignmentStateMismatchSessionInfo(
           taskId,
           attemptId,
@@ -2044,13 +2101,65 @@ function gitStdout(repoDir: string, args: string[]): string | null {
   return result.stdout;
 }
 
-function gitStatusEntryCount(repoDir: string): number {
+type GitStatusEntry = {
+  x: string;
+  y: string;
+  path: string;
+};
+
+function gitStatusEntries(repoDir: string): GitStatusEntry[] {
   const stdout = gitStdout(repoDir, ["status", "--porcelain=v1"]);
-  if (stdout == null) return 0;
+  if (stdout == null) return [];
   return stdout
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
-    .filter(Boolean).length;
+    .filter(Boolean)
+    .map((line) => {
+      const x = line[0] ?? " ";
+      const y = line[1] ?? " ";
+      const rawPath = line.slice(3).trim();
+      const renameArrow = rawPath.indexOf(" -> ");
+      const path = renameArrow >= 0 ? rawPath.slice(renameArrow + 4) : rawPath;
+      return { x, y, path };
+    })
+    .filter((entry) => Boolean(entry.path));
+}
+
+function gitStatusEntryCount(repoDir: string): number {
+  return gitStatusEntries(repoDir).length;
+}
+
+function gitOriginVisiblePathObjectIds(repoDir: string, path: string): Set<string> {
+  const stdout = gitStdout(repoDir, [
+    "rev-list",
+    "--objects",
+    "--remotes=origin",
+    "--",
+    path,
+  ]);
+  if (stdout == null) return new Set();
+  return new Set(
+    stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => line.split(/\s+/, 1)[0] ?? "")
+      .filter(Boolean),
+  );
+}
+
+function gitWorktreeEntryVisibleOnOrigin(repoDir: string, entry: GitStatusEntry): boolean {
+  if (entry.x === "?" || entry.y === "?") return false;
+  if (entry.x === "D" || entry.y === "D") return false;
+  const blobId = gitStdout(repoDir, ["hash-object", entry.path])?.trim();
+  if (!blobId) return false;
+  return gitOriginVisiblePathObjectIds(repoDir, entry.path).has(blobId);
+}
+
+function gitInvisibleStatusEntryCount(repoDir: string): number {
+  return gitStatusEntries(repoDir).filter(
+    (entry) => !gitWorktreeEntryVisibleOnOrigin(repoDir, entry),
+  ).length;
 }
 
 function gitAheadOfUpstreamCount(repoDir: string): number {
@@ -2094,7 +2203,10 @@ function gitOriginLocalOnlyCommitCount(repoDir: string): number {
 }
 
 function unpublishedGitChangeCount(repoDir: string): number {
-  return gitStatusEntryCount(repoDir) + gitOriginLocalOnlyCommitCount(repoDir);
+  return (
+    gitInvisibleStatusEntryCount(repoDir) +
+    gitOriginLocalOnlyCommitCount(repoDir)
+  );
 }
 
 function normalizeProcessText(value: string): string {
@@ -2648,10 +2760,26 @@ function featureCompactLoopByTaskId(): Map<
   return byTaskId;
 }
 
+function isControllerSupportLeaf(task: TaskNode): boolean {
+  const workflow =
+    typeof task.workflow === "string" ? task.workflow.trim() : "";
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  if (task.kind === "focus_plan") return true;
+  if (
+    workflow === "focus-plan" ||
+    workflow === "project-watchdog" ||
+    workflow === "task-reviewer"
+  ) {
+    return true;
+  }
+  if (taskId.startsWith("runtime/owner-event/")) return true;
+  return false;
+}
+
 function countsAsExecutableActiveLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
   if (taskState(task) !== "active") return false;
-  if (task.kind === "focus_plan") return false;
+  if (isControllerSupportLeaf(task)) return false;
   return true;
 }
 
@@ -2739,13 +2867,27 @@ function assignmentNotConsumedDetails(): Array<{
   });
 }
 
+function reconciliationTriggerDataString(
+  task: TaskNode,
+  ...keys: string[]
+): string {
+  const trace = recordValue(task.trace);
+  const reconciliation = objectRecordField(trace, ["reconciliation"]);
+  const trigger = objectRecordField(reconciliation, ["trigger"]);
+  return (
+    stringRecordField(trigger, keys) ||
+    stringRecordField(objectRecordField(trigger, ["data"]), keys)
+  );
+}
+
 function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
-  const trace = task.trace ?? {};
+  const trace = recordValue(task.trace);
+  const reconciliation = objectRecordField(trace, ["reconciliation"]);
   const candidates = [
-    typeof trace.assigned_at === "string" ? trace.assigned_at : undefined,
-    typeof trace.worker_started_at === "string"
-      ? trace.worker_started_at
-      : undefined,
+    stringRecordField(trace, ["assigned_at"]),
+    stringRecordField(trace, ["worker_started_at"]),
+    stringRecordField(reconciliation, ["startedAt", "started_at"]),
+    reconciliationTriggerDataString(task, "assignedAt", "assigned_at"),
   ].filter((value): value is string => Boolean(value));
   for (const value of candidates) {
     const parsed = Date.parse(value);

@@ -609,6 +609,117 @@ describe("project metrics", () => {
     expect(note.staleWorkflowRuns).toEqual([]);
   });
 
+  test("attributes unowned work to the stale active controller instead of a parked blocked-only feature-compact root", async () => {
+    const fixture = await makeFixture();
+    const staleAssignedAt = new Date(Date.now() - 360_000).toISOString();
+    await writeTree(
+      fixture.appDir,
+      {
+        session_id: "s_running",
+      },
+      {
+        "domain/normalize-scenario-tests-repo-frontier-20260715": {
+          id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          parent_id: "project",
+          state: "active",
+          children: [],
+          goal: "Repair the remaining scenario-test normalization frontier.",
+          outputs: ["evidence/archive/normalize-controller.md"],
+          acceptance: ["Next exact normalization leaf exists."],
+          trace: {
+            assigned_at: staleAssignedAt,
+            current_attempt_id:
+              "a_domain_normalize-scenario-tests-repo-frontier-20260715_20260718090041",
+          },
+        },
+        "aks-feature-compact-loop": {
+          id: "aks-feature-compact-loop",
+          parent_id: "project",
+          state: "backlog",
+          workflow: "feature-compact-loop-controller",
+          children: ["wait-compact-external-signal"],
+          goal: "Keep feature compact verification truthful.",
+          outputs: [".state/feature-compact-loop/state.json"],
+          acceptance: ["Compact frontier stays represented."],
+          context: {
+            workflowProgress: {
+              completionReady: false,
+              noRefillNow: true,
+              reason:
+                "feature-compact loop has no runnable planner or support children; the remaining frontier is exact blocked wait stewardship until a stated resume signal lands",
+              pending: 0,
+              running: 0,
+              error: 0,
+              unrepresentedNonTerminalCount: 0,
+              openChildren: 0,
+              openSupportChildren: 0,
+              blockedWaitChildren: 1,
+            },
+          },
+        },
+        "wait-compact-external-signal": {
+          id: "wait-compact-external-signal",
+          parent_id: "aks-feature-compact-loop",
+          state: "blocked",
+          children: [],
+          goal: "Wait for an exact compact resume signal.",
+          outputs: ["evidence/archive/wait-compact.md"],
+          acceptance: ["Signal returned."],
+          blocker: {
+            category: "external-wait",
+            condition: "compact feature depends on an external signal",
+            waiting_for: { type: "github.workflow_run.completed" },
+            owner: "aks-explorer",
+            resume_condition: "Resume when the same compact signal returns.",
+            fallback_at: "2999-01-01T00:00:00.000Z",
+            fallback_action: "Recheck the compact wait.",
+          },
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now() + 60_000,
+    });
+
+    const raw = await metricValue(
+      fixture,
+      "aks-rp-e2e.process.unowned-work-count",
+      "--json",
+    );
+    const sample = JSON.parse(raw) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    const note = JSON.parse(sample.note ?? "{}") as {
+      staleActiveTaskIds?: string[];
+      staleActiveTaskSessions?: Array<{
+        taskId: string;
+        sessionId: string | null;
+        restartReason: string;
+      }>;
+      staleWorkflowRuns?: Array<{ runId: string }>;
+    };
+
+    expect(sample.value).toBe(1);
+    expect(sample.sampleSize).toBe(1);
+    expect(note.staleActiveTaskIds).toEqual([
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+    ]);
+    expect(note.staleActiveTaskSessions).toEqual([
+      {
+        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        sessionId: null,
+        restartReason: "missing-session",
+      },
+    ]);
+    expect(note.staleWorkflowRuns).toEqual([]);
+  });
+
   test("counts overdue blocked waits only after fallback and when no active recovery references them", async () => {
     const overdueBlocker = {
       waiting_for: { type: "workflow.completed" },
@@ -2366,6 +2477,56 @@ describe("project metrics", () => {
     ).toBe(1);
   });
 
+  test("ignores dirty tracked files whose current blob is already visible on another origin ref", async () => {
+    const fixture = await makeFixture();
+    const originDir = join(fixture.root, "origin.git");
+    await $`git init --bare ${originDir}`.quiet();
+    await $`git init -b feature`.cwd(fixture.projectDir).quiet();
+    await $`git config user.name "Test User"`.cwd(fixture.projectDir).quiet();
+    await $`git config user.email "test@example.com"`
+      .cwd(fixture.projectDir)
+      .quiet();
+    await $`git add .`.cwd(fixture.projectDir).quiet();
+    await $`git commit -m "base"`.cwd(fixture.projectDir).quiet();
+    await $`git remote add origin ${originDir}`.cwd(fixture.projectDir).quiet();
+    await $`git push -u origin feature`.cwd(fixture.projectDir).quiet();
+
+    await writeFile(
+      join(fixture.projectDir, "specs", "index.json"),
+      `${JSON.stringify(
+        {
+          specs: [
+            {
+              id: "visible-fixture",
+              status: "pass",
+              specState: "verified",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await $`git add specs/index.json`.cwd(fixture.projectDir).quiet();
+    await $`git commit -m "visible elsewhere"`.cwd(fixture.projectDir).quiet();
+    await $`git push origin HEAD:refs/heads/visible-branch`
+      .cwd(fixture.projectDir)
+      .quiet();
+    await $`git fetch origin visible-branch:refs/remotes/origin/visible-branch`
+      .cwd(fixture.projectDir)
+      .quiet();
+    await $`git reset --mixed HEAD~1`.cwd(fixture.projectDir).quiet();
+
+    expect(
+      Number(
+        await metricValue(
+          fixture,
+          "aks-rp-e2e.process.unpublished-change-count",
+        ),
+      ),
+    ).toBe(0);
+  });
+
   test("counts task tree root integrity problems", async () => {
     const fixture = await makeFixture();
     await writeFile(
@@ -2454,6 +2615,66 @@ describe("project metrics", () => {
         "aks-rp-e2e.process.integrity.task-tree-problem-count",
       ),
     ).toBe("1");
+  });
+
+  test("does not count a fresh review leaf assignment pair before watchdog recovery grace expires", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "review-task": {
+          id: "review-task",
+          parent_id: "project",
+          state: "review",
+          children: [],
+          goal: "Reviewer handoff is still within the supported recovery grace.",
+          outputs: ["evidence/archive/review-task.md"],
+          acceptance: ["Reviewer sees the completion."],
+          trace: {
+            current_attempt_id: "attempt-review",
+            worker_started_attempt_id: "attempt-review",
+            last_worker_result: "done",
+            last_worker_completed_at: new Date(
+              Date.now() - 5 * 60_000,
+            ).toISOString(),
+          },
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+    writeProjectTaskPair(fixture.dbPath, {
+      taskId: "review-task",
+      attemptId: "attempt-review",
+      status: "open",
+    });
+
+    const mismatch = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment-state-mismatch-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(mismatch.value).toBe(0);
+    expect(mismatch.sampleSize).toBe(0);
+    expect(JSON.parse(mismatch.note ?? "{}")).toEqual({ mismatches: [] });
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.integrity.task-tree-problem-count",
+      ),
+    ).toBe("0");
   });
 
   test("emits exact mismatch contributor and task-worker session linkage in json mode", async () => {
@@ -2661,6 +2882,175 @@ describe("project metrics", () => {
     );
   });
 
+  test("does not count archived replaced assignment pairs when the matching task-worker run is older than the latest 200 unrelated runs", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, {
+      session_id: "s_running",
+      kind: "focus_plan",
+    });
+    await writeArchivedDoneTask(fixture.appDir, {
+      taskId: "archived-followup",
+      attemptId: "attempt-1",
+      sessionId: "s_missing",
+      resolution: "replaced",
+      omitCurrentAttemptId: true,
+    });
+    writeWorkflowRun(fixture.dbPath, {
+      runId: "wr_finished_old_match",
+      workflow: "task-worker",
+      status: "done",
+      startedAt: Date.now() - 300_000,
+      task: [
+        "app: /tmp/app",
+        "project: /tmp/project",
+        "source: /tmp/source",
+        "",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.task.assigned",
+          data: {
+            project: "aks-rp-e2e",
+            taskId: "archived-followup",
+            attemptId: "attempt-1",
+            sessionId: "s_missing",
+            worker: "aks-explorer",
+            assignedAt: new Date(Date.now() - 300_000).toISOString(),
+          },
+        }),
+        "```",
+      ].join("\n"),
+    });
+    for (let index = 0; index < 250; index++) {
+      writeWorkflowRun(fixture.dbPath, {
+        runId: `wr_noise_${index}`,
+        workflow: "task-worker",
+        status: "done",
+        startedAt: Date.now() - 1_000 + index,
+        task: [
+          "app: /tmp/app",
+          "project: /tmp/project",
+          "source: /tmp/source",
+          "",
+          "## Trigger Event",
+          "```json",
+          JSON.stringify({
+            type: "project.task.assigned",
+            data: {
+              project: "aks-rp-e2e",
+              taskId: `unrelated-task-${index}`,
+              attemptId: `attempt-${index}`,
+              sessionId: `s_unrelated_${index}`,
+              worker: "aks-explorer",
+              assignedAt: new Date(Date.now() - 1_000 + index).toISOString(),
+            },
+          }),
+          "```",
+        ].join("\n"),
+      });
+    }
+    writeProjectTaskPair(fixture.dbPath, {
+      taskId: "archived-followup",
+      attemptId: "attempt-1",
+      status: "open",
+    });
+
+    const mismatch = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment-state-mismatch-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(mismatch.value).toBe(0);
+    expect(mismatch.sampleSize).toBe(0);
+    expect(JSON.parse(mismatch.note ?? "{}")).toEqual({ mismatches: [] });
+
+    const unowned = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.unowned-work-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(unowned.value).toBe(0);
+    expect(unowned.sampleSize).toBe(0);
+    expect(JSON.parse(unowned.note ?? "{}")).toEqual(
+      expect.objectContaining({
+        staleWorkflowRuns: [],
+        assignmentMismatchKeys: [],
+        assignmentMismatchTasks: [],
+      }),
+    );
+  });
+
+  test("does not count runtime-reconciled backlog watchdog pairs as assignment mismatches", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      {
+        session_id: "s_running",
+      },
+      {
+        "aks-project-runtime-health": {
+          id: "aks-project-runtime-health",
+          parent_id: "project",
+          state: "backlog",
+          owner: "app-ops",
+          workflow: "project-watchdog",
+          children: [],
+          goal: "Keep task delivery mechanically healthy.",
+          outputs: [".state/watchdog-runs.jsonl"],
+          acceptance: ["Each wake repairs only declared mechanical invariants."],
+          context: {
+            reconciliation: {
+              mode: "maintain",
+              handler: "workflow:project-watchdog",
+              trigger: {
+                type: "project.watchdog.check.requested",
+              },
+            },
+          },
+        },
+      },
+    );
+    writeProjectTaskPair(fixture.dbPath, {
+      taskId: "aks-project-runtime-health",
+      attemptId: "a_aks-project-runtime-health_20260718163921",
+      status: "open",
+    });
+
+    const mismatch = JSON.parse(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.assignment-state-mismatch-count",
+        "--json",
+      ),
+    ) as {
+      value: number;
+      sampleSize?: number;
+      note?: string;
+    };
+    expect(mismatch.value).toBe(0);
+    expect(mismatch.sampleSize).toBe(0);
+    expect(JSON.parse(mismatch.note ?? "{}")).toEqual({ mismatches: [] });
+
+    expect(
+      await metricValue(
+        fixture,
+        "aks-rp-e2e.process.integrity.task-tree-problem-count",
+      ),
+    ).toBe("0");
+  });
+
   test("does not count focus observation prose as a task-tree integrity problem", async () => {
     const fixture = await makeFixture();
     await writeTree(
@@ -2771,6 +3161,32 @@ describe("project metrics", () => {
         fixture,
         "aks-rp-e2e.process.assignment.not-consumed-count",
       ),
+    ).toBe("0");
+  });
+
+  test("does not count runtime task wrappers that only expose recent assignment timing through reconciliation trigger data", async () => {
+    const fixture = await makeFixture();
+    const assignedAt = new Date().toISOString();
+    await writeTree(fixture.appDir, {
+      workflow: "task-execution",
+      trace: {
+        reconciliation: {
+          startedAt: assignedAt,
+          trigger: {
+            assignedAt,
+            data: {
+              assignedAt,
+            },
+          },
+        },
+      },
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
     ).toBe("0");
   });
 
@@ -3083,7 +3499,7 @@ describe("project metrics", () => {
     }
   });
 
-  test("ignores active focus-plan leaves in stale active metrics", async () => {
+  test("ignores controller support leaves in stale active metrics", async () => {
     const fixture = await makeFixture();
     await writeTree(
       fixture.appDir,
@@ -3093,6 +3509,45 @@ describe("project metrics", () => {
         session_id: null,
       },
       {
+        "focus-review": {
+          id: "focus-review",
+          parent_id: "project",
+          state: "active",
+          workflow: "focus-plan",
+          children: [],
+          goal: "focus review",
+          outputs: [],
+          acceptance: [],
+        },
+        "runtime-health": {
+          id: "runtime-health",
+          parent_id: "project",
+          state: "active",
+          workflow: "project-watchdog",
+          children: [],
+          goal: "runtime health",
+          outputs: [],
+          acceptance: [],
+        },
+        "runtime/owner-event/example": {
+          id: "runtime/owner-event/example",
+          parent_id: "project",
+          state: "active",
+          children: [],
+          goal: "owner event",
+          outputs: [],
+          acceptance: [],
+        },
+        "runtime-review": {
+          id: "runtime-review",
+          parent_id: "project",
+          state: "active",
+          workflow: "task-reviewer",
+          children: [],
+          goal: "runtime review",
+          outputs: [],
+          acceptance: [],
+        },
         sibling: {
           id: "sibling",
           parent_id: "project",
