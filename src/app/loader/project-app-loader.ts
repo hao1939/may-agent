@@ -1280,6 +1280,18 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
           disposition: "attention",
           summary,
         });
+        opts.bus.emit({
+          type: "project.owner.requested",
+          source: `project-app:${descriptor.id}:task-reconciler`,
+          owner: `agent:${descriptor.owner}`,
+          target: { project: descriptor.id, taskId: wake.taskId },
+          data: {
+            project: descriptor.id,
+            taskId: wake.taskId,
+            reason: "task-reconciliation-recovery-attention",
+            summary,
+          },
+        } as AgentEvent);
       }
       continue;
     }
@@ -1305,6 +1317,18 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
           summary,
         },
       );
+      opts.bus.emit({
+        type: "project.owner.requested",
+        source: `project-app:${descriptor.id}:task-reconciler`,
+        owner: `agent:${descriptor.owner}`,
+        target: { project: descriptor.id, taskId: wake.taskId },
+        data: {
+          project: descriptor.id,
+          taskId: wake.taskId,
+          reason: "task-reconciliation-recovery-attention",
+          summary,
+        },
+      } as AgentEvent);
       continue;
     }
     void reconcileTaskRoute({
