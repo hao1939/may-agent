@@ -1,11 +1,13 @@
 # Proposal: App Task Reconciliation Model
 
 **Design status:** Pilot.
-**Implementation status:** The shared reconciler and `evaluation.app` cohort
-implement task routes, explicit workflow bindings, owner fallback, generation
-checks, short-lived achievement absorption, standing maintenance tasks, and
-read-only owner decisions followed by app-owned action application. Other apps
-still use their existing controllers and are not migrated by implication.
+**Implementation status:** The shared reconciler is in production.
+`evaluation.app`, `may-agent.app`, and `scout-knowledge-lib.app` route their
+organized work through task reconciliation. `aks-rp-e2e.app` is migrating by
+bounded cohorts; its feature-compact responsibility and reviewed-task
+application use the reconciler while the remaining legacy handlers retain
+authority for their existing cohorts. `gym.app` remains a direct immutable
+request/result pipeline pending extraction of the shared agent runner.
 
 ## Executive Decision
 
@@ -125,6 +127,8 @@ type Task = {
 
     parentId?: string;
     dependsOn?: string[];
+    outputs?: string[];
+    priority?: "P0" | "P1" | "P2" | "P3";
   };
 
   status: {
@@ -157,6 +161,65 @@ lifecycle.
 The phase vocabulary above is the logical target, not an immediate persistence
 cutover. Existing project apps may map `backlog`, `active`, `blocked`, `review`,
 and `done` at compatibility boundaries while the new authority model is proven.
+
+## Task Authoring Contract
+
+The shared SDK type is the schema authority. Project docs may explain their
+tasks, but must not define incompatible app-specific task shapes.
+
+| Field        | Authoring rule                                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | Stable business identity. Sanitized or shortened external identifiers retain a digest so distinct inputs cannot collide.               |
+| `parentId`   | Durable decomposition or containment only; it is not a scheduling edge.                                                                |
+| `outcome`    | One desired end state, written as an outcome rather than an activity such as "investigate" or "monitor".                               |
+| `acceptance` | One or more observable postconditions that can prove convergence from artifacts, records, events, or external state.                   |
+| `mode`       | `achieve` for a bounded outcome; `maintain` for standing desired state. No other task kind is needed.                                  |
+| `owner`      | Optional explicit accountability override. Otherwise ownership resolves from the nearest ancestor and then the app.                    |
+| `workflow`   | Optional explicit binding to a known reusable process. Absence means owner handling; an invalid binding is visible failure.            |
+| `input`      | Stable desired configuration needed by the handler. It participates in the spec hash and therefore must not contain wake observations. |
+| `outputs`    | Durable artifacts or records into which the outcome is absorbed. Do not list transient logs as project output.                         |
+| `dependsOn`  | True ordering constraints only. External facts and waits are Conditions, not dependency prose.                                         |
+| `priority`   | A bounded scheduling hint, not a substitute for ownership, acceptance, or a deadline.                                                  |
+
+Task status is not authored as intent. Event payloads, timestamps, metric
+samples, latest evidence, attempts, workflow runs, summaries, and current
+Condition values are observations. They belong in status or linked resources.
+Copying them into `input` creates a false generation on every wake and prevents
+the reconciler from distinguishing a changed goal from a changed observation.
+
+### Authoring Rules
+
+1. Start novel bounded work as an `achieve` task handled by the owner. Bind a
+   workflow only after the process and postconditions are stable enough to
+   reuse.
+2. Use `maintain` only for a responsibility that remains true after the current
+   pass. A successful pass means "nothing else is needed now," not permanent
+   completion.
+3. Give every task acceptance criteria that can be checked without trusting the
+   worker's prose. "Reviewed," "investigated," and "monitoring" are activities,
+   not sufficient postconditions.
+4. Keep event data in the trigger packet. Put only stable handler configuration
+   in task input.
+5. Represent a durable external wait with a Condition. A task may reference the
+   Condition but must not copy its changing observation into a blocker story.
+6. Keep completed migrations, incidents, and retired ideas out of seed trees.
+   Seed files contain only standing desired state; bounded completed work is
+   absorbed and compacted.
+7. Parent tasks express meaningful outcomes and acceptance. Their displayed
+   state is derived from children and linked ledgers; parent summaries are not
+   a second writable rollup authority.
+8. Prefer clear local code for one-off work. Promote proven repeated execution
+   into a workflow; do not add an envelope or abstraction merely to make unlike
+   tasks look uniform.
+9. A handler result is evidence, not self-approval. The app validates task
+   generation, action scope, Conditions, and declared postconditions before
+   changing observed state.
+
+Shared integrity checks should validate task intents, seed files, and live task
+resources against this contract. At minimum they reject missing outcomes or
+acceptance, unsupported modes, unstable or duplicate identities, invalid
+parents/workflow bindings, waits without Conditions, and status-only fields in
+authored task input.
 
 ## Ownership And Handler Resolution
 
@@ -536,6 +599,35 @@ Two limitations remain explicit:
 2. `SubagentManager` is still the durable infrastructure facade and Gym still
    enters through the full May binary. Extracting the shared agent runner and
    moving Gym to direct runner use remain separate runtime work.
+
+## Current Rollout And App Decisions
+
+Migration is based on work semantics, not on making every event look alike.
+
+| App                       | Current decision                                                           | Reason                                                                                                                                                                                                                             |
+| ------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `evaluation.app`          | Migrated; harden exact Condition authoring and owner-result quality.       | Session aftermath, scans, pipeline observation, project audits, and owner review all have durable desired-state identities.                                                                                                        |
+| `may-agent.app`           | Migrated organized work; retain small deterministic event adapters.        | Ops observations, digest creation, and owner review are standing responsibilities; comment persistence and event filtering are projections, not tasks.                                                                             |
+| `scout-knowledge-lib.app` | Migrated; keep independent source tasks and one owner fallback.            | Each source is a separate `maintain` task, digest and health are reusable workflows, and novel library maintenance belongs to Scout.                                                                                               |
+| `aks-rp-e2e.app`          | Continue cohort migration.                                                 | It has the largest duplicated control plane and therefore the largest benefit, but live attempts and AKS-specific Condition behavior require incremental replacement.                                                              |
+| `gym.app`                 | Do not task-migrate yet. Extract and reuse the neutral agent runner first. | Incident intake, benchmark execution, and review already form an immutable request/result pipeline. A task layer adds value only where deduplication, resumption, owner fallback, or desired-state observation is actually needed. |
+
+The first AKS cohorts validate both task modes. The feature-compact controller
+is a standing `maintain` task. Reviewed-task application is an `achieve` task
+whose stable identity is derived from the review identity. In production,
+review event `3489482` was claimed through
+`aks-rp-e2e-task-reviewed-application`, invoked
+`workflow:reviewed-task-applier`, and converged at event `3489531`. The task
+then left the live graph and retained only its bounded completion tombstone.
+
+The recommended next AKS boundary is task execution/review for a bounded
+cohort, because it can remove duplicated claim, generation, and result-apply
+mechanics while retaining the proven worker and reviewer workflows. Migrate
+the spec loop only after its watchdog-owned external waits are represented as
+exact Conditions. Do not recreate the already-complete feature-reference loop
+as standing backlog. Retire planner refill, watchdog, and stall-review overlap
+only after incident replay and live parity prove that the reconciler and
+Condition wake path cover the same recovery cases.
 
 ## Migration
 
