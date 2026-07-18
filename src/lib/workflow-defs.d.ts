@@ -70,8 +70,7 @@ type WorkflowEvent =
 
 /** Workflow result — either done or locally blocked. */
 type WorkflowResult =
-  | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown };
+  { type: "done"; summary: string; output?: unknown } | { type: "blocked"; reason: string; context?: unknown };
 
 /** Options for customizing the handoff summary. */
 interface HandoffOptions {
@@ -215,7 +214,7 @@ interface WorkflowContext {
   summarize(result: TaskResult, opts?: HandoffOptions): string;
 
   /** Mark workflow as done. */
-  done(summary: string): WorkflowResult;
+  done(summary: string, output?: unknown): WorkflowResult;
 
   /** Mark workflow as locally blocked. Does not emit escalation.created. */
   blocked(reason: string, context?: unknown): WorkflowResult;

@@ -1139,6 +1139,21 @@ export async function execute(ctx: any) {
 export const description = "Handle sample task exceptions";
 export async function execute(ctx: any) {
   ctx.dispatchEvent("test.task.owner", { task: ctx.task });
+  if (ctx.task.includes('"itemId": "action"')) {
+    return ctx.done("owner proposed child task", {
+      disposition: "converged",
+      summary: "owner proposed child task",
+      evidence: ["owner reviewed the task packet"],
+      actions: [{
+        kind: "create-task",
+        id: "owner-created-child",
+        parentId: "operations",
+        goal: "Apply owner proposal through the reconciler",
+        outputs: ["proof.md"],
+        acceptance: ["Child is applied atomically"]
+      }]
+    });
+  }
   return ctx.done("owner handled fallback");
 }
 `,
@@ -1209,6 +1224,22 @@ export async function execute(ctx: any) {
             event.data?.reason === "already-completed",
         ),
       );
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "action", ownerOnly: true },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/action" &&
+            event.data?.disposition === "converged" &&
+            event.data?.actionsApplied?.includes("created owner-created-child"),
+        ),
+      );
       expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(knownWorkflowRuns);
 
       bus.emit({
@@ -1254,6 +1285,10 @@ export async function execute(ctx: any) {
       expect(tree.tasks["work/known"]).toBeUndefined();
       expect(tree.tasks["work/owner"]).toBeUndefined();
       expect(tree.tasks["work/fallback"]).toBeUndefined();
+      expect(tree.tasks["owner-created-child"]).toMatchObject({
+        state: "backlog",
+        owner: "sample-owner",
+      });
       expect(tree.completions["work/known"].handler).toBe("workflow:known");
       expect(tree.completions["work/owner"].handler).toBe("owner:sample-owner");
       expect(tree.completions["work/fallback"].handler).toBe("owner:sample-owner");
