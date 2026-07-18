@@ -496,9 +496,34 @@ export function resolveAksReconciliationTask(
     };
   }
   const action = String(event.action ?? details.action ?? "");
-  if (event.type !== "project.task.tick" || action !== "feature-compact-loop") {
+  if (event.type !== "project.task.tick") {
     return null;
   }
+  if (action === "spec-loop") {
+    const taskId = taskIdFromEvent(event) || specLoopTaskId;
+    return {
+      id: taskId,
+      parentId: "project",
+      outcome:
+        "Verify every executable AKS E2E spec through the Azure DevOps staging pipeline, keeping every non-pass result represented by bounded repair, rerun, or an exact external wait.",
+      acceptance: [
+        "Every executable spec is pass in spec-loop state, or has a reviewed terminal escalation explaining why it cannot be made pass with bounded repo-local work.",
+        "Every fail or error has an exact root-cause classification and either a repair-and-rerun successor or an escalation with affected specs, attempted fixes, owner reason, and resume condition.",
+        "The controller maintains the configured bounded verifier frontier while pending or retryable specs exist.",
+        "No non-pass result is hidden as completion merely because direct retry budget was exhausted.",
+      ],
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "spec-loop-controller",
+      input: { maxConcurrent: projectPolicyMaxConcurrent },
+      outputs: [
+        ".state/spec-loop/state.json",
+        "../aks-rp-e2e/.state/spec-loop/state.json",
+      ],
+      priority: "P1",
+    };
+  }
+  if (action !== "feature-compact-loop") return null;
   const taskId = taskIdFromEvent(event) || featureCompactLoopTaskId;
   return {
     id: taskId,
@@ -772,6 +797,18 @@ export default defineProjectApp({
         "projects/aks-rp-e2e/runner/feature-compact.ts",
       ],
     },
+    "spec-loop-controller": {
+      workflow: "spec-loop-controller",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+      timeoutMs: 600_000,
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e/ci/feature-sets/dev-infra-core.txt",
+        "projects/aks-rp-e2e/features/",
+        "projects/aks-rp-e2e/design/specs/README.md",
+      ],
+    },
   },
 
   taskRoutes: [
@@ -924,6 +961,21 @@ export default defineProjectApp({
       resolve: resolveAksReconciliationTask,
     },
     {
+      name: "aks-rp-e2e-task-spec-loop",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Reconciles the standing single-spec verification responsibility through its bounded controller workflow.",
+      accepts: [
+        {
+          type: "project.task.tick",
+          target: { project: projectId },
+          actions: ["spec-loop"],
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
+    {
       name: "aks-rp-e2e-task-feature-compact-loop",
       enabled: true,
       maxConcurrentTriggers: 1,
@@ -937,37 +989,6 @@ export default defineProjectApp({
         },
       ],
       resolve: resolveAksReconciliationTask,
-    },
-  ],
-
-  workflowHandlers: [
-    {
-      name: "aks-rp-e2e-spec-loop-controller",
-      type: "job",
-      enabled: true,
-      description:
-        "Deterministic task controller. Pulses long-lived spec verification loop tasks and keeps their bounded child frontier filled.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "spec-loop-controller",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
-        timeoutMs: 600_000,
-      },
-      accepts: [
-        {
-          type: "project.task.tick",
-          target: { project: projectId },
-          actions: ["spec-loop"],
-        },
-      ],
-      emits: ["project.task.assigned"],
-      context: [
-        ...taskTreeContext,
-        "projects/aks-rp-e2e/ci/feature-sets/dev-infra-core.txt",
-        "projects/aks-rp-e2e/features/",
-        "projects/aks-rp-e2e/design/specs/README.md",
-      ],
     },
   ],
 

@@ -17,7 +17,12 @@ import {
   type SpecLoopState,
 } from "./lib/spec-loop-store.ts";
 import { specStateSelfRepresentsExactFrontier } from "./lib/spec-loop-frontier.ts";
-import { execute, harvestTerminalGitHubWaits } from "./spec-loop-controller.ts";
+import {
+  execute,
+  harvestTerminalGitHubWaits,
+  releaseContinuingController,
+  updateControllerWorkflowProgress,
+} from "./spec-loop-controller.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-spec-loop-"));
@@ -48,6 +53,75 @@ function config(projectDir: string, maxConcurrent = 5) {
 }
 
 describe("spec-loop-controller", () => {
+  test("leaves task lifecycle authority with an active reconciler attempt", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify({
+        root_task_id: "project",
+        active_task_id: "aks-spec-verification-loop",
+        active_task_ids: ["aks-spec-verification-loop"],
+        tasks: {
+          project: {
+            id: "project",
+            state: "backlog",
+            children: ["aks-spec-verification-loop"],
+          },
+          "aks-spec-verification-loop": {
+            id: "aks-spec-verification-loop",
+            parent_id: "project",
+            state: "active",
+            status: "active",
+            workflow: "spec-loop-controller",
+            children: [],
+            context: {},
+            trace: {
+              current_attempt_id: "legacy-attempt",
+              reconciliation: {
+                attemptId: "reconcile-attempt",
+                phase: "running",
+              },
+            },
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+
+    releaseContinuingController({
+      appDir: projectDir,
+      projectDir,
+      taskId: "aks-spec-verification-loop",
+      summary: "controller pulse",
+    });
+    updateControllerWorkflowProgress({
+      appDir: projectDir,
+      projectDir,
+      taskId: "aks-spec-verification-loop",
+      progress: {
+        completionReady: false,
+        noRefillNow: true,
+        reason: "exact waits remain",
+      },
+    });
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    const loop = tree.tasks["aks-spec-verification-loop"];
+    expect(loop.state).toBe("active");
+    expect(loop.trace.current_attempt_id).toBeUndefined();
+    expect(loop.trace.reconciliation).toMatchObject({
+      attemptId: "reconcile-attempt",
+      phase: "running",
+    });
+    expect(loop.context.workflowProgress).toMatchObject({
+      completionReady: false,
+      noRefillNow: true,
+    });
+    expect(tree.active_task_ids).toEqual(["aks-spec-verification-loop"]);
+  });
+
   test("moves blocked pipeline wait children to review when the referenced run is terminal", async () => {
     const projectDir = await makeProject();
     const now = new Date().toISOString();

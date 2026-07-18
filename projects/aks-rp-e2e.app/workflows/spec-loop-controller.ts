@@ -437,7 +437,24 @@ function findLoopTaskForCompletedChild(
   return null;
 }
 
-function releaseContinuingController(input: {
+function hasReconciliationAttempt(task: TaskNode): boolean {
+  const trace =
+    task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
+      ? (task.trace as Record<string, unknown>)
+      : {};
+  const reconciliation =
+    trace.reconciliation &&
+    typeof trace.reconciliation === "object" &&
+    !Array.isArray(trace.reconciliation)
+      ? (trace.reconciliation as Record<string, unknown>)
+      : {};
+  return (
+    typeof reconciliation.attemptId === "string" &&
+    reconciliation.attemptId.trim().length > 0
+  );
+}
+
+export function releaseContinuingController(input: {
   appDir: string;
   projectDir: string;
   taskId: string;
@@ -457,9 +474,12 @@ function releaseContinuingController(input: {
     const task = tree.tasks[input.taskId];
     if (!task) return;
     const now = new Date().toISOString();
-    task.status = "backlog";
-    task.state = "backlog";
-    task.blocker = undefined;
+    const reconcilerOwned = hasReconciliationAttempt(task);
+    if (!reconcilerOwned) {
+      task.status = "backlog";
+      task.state = "backlog";
+      task.blocker = undefined;
+    }
     task.trace = {
       ...(task.trace ?? {}),
       last_controller_pulse_at: now,
@@ -471,14 +491,16 @@ function releaseContinuingController(input: {
       current_attempt_id: undefined,
       worker_started_attempt_id: undefined,
     };
-    tree.active_task_ids = Object.values(tree.tasks)
-      .filter(
-        (candidate) =>
-          taskStatus(candidate) === "active" &&
-          (!candidate.children || candidate.children.length === 0),
-      )
-      .map((candidate) => candidate.id);
-    tree.active_task_id = tree.active_task_ids[0] ?? null;
+    if (!reconcilerOwned) {
+      tree.active_task_ids = Object.values(tree.tasks)
+        .filter(
+          (candidate) =>
+            taskStatus(candidate) === "active" &&
+            (!candidate.children || candidate.children.length === 0),
+        )
+        .map((candidate) => candidate.id);
+      tree.active_task_id = tree.active_task_ids[0] ?? null;
+    }
     saveTaskTreeWithKanbanSnapshot(config, tree);
     appendToolJournal(config, {
       kind: "task_controller_continuing",
@@ -2096,7 +2118,7 @@ function specLoopWorkflowProgress(input: {
   };
 }
 
-function updateControllerWorkflowProgress(input: {
+export function updateControllerWorkflowProgress(input: {
   appDir: string;
   projectDir: string;
   taskId: string;
@@ -2123,6 +2145,7 @@ function updateControllerWorkflowProgress(input: {
     const hasAssignedAttempt =
       typeof trace.current_attempt_id === "string" &&
       trace.current_attempt_id.trim().length > 0;
+    const reconcilerOwned = hasReconciliationAttempt(task);
     const holdReason =
       typeof input.progress.reason === "string" && input.progress.reason.trim()
         ? input.progress.reason.trim()
@@ -2135,7 +2158,7 @@ function updateControllerWorkflowProgress(input: {
       input.progress,
     );
 
-    if (input.progress.completionReady === false) {
+    if (input.progress.completionReady === false && !reconcilerOwned) {
       task.blocker = undefined;
       reopenControllerRootWhenIncomplete({
         task,

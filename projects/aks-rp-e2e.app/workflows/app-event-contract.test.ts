@@ -195,8 +195,8 @@ describe("app event contract", () => {
     expect(failures).toEqual([]);
   });
 
-  test("workflow handlers use the direct canonical event surface", () => {
-    expect(appManifest.workflowHandlers).toBeArray();
+  test("task routes use the declarative canonical event surface", () => {
+    expect(appManifest.workflowHandlers).toBeUndefined();
     expect(appManifest.onEvent).toBeUndefined();
   });
 
@@ -319,8 +319,7 @@ describe("app event contract", () => {
       workflow: "task-reviewer",
       agent: "aks-reviewer",
     });
-    expect(handler("aks-rp-e2e-spec-loop-controller")).toMatchObject({
-      handler: { workflow: "spec-loop-controller" },
+    expect(taskRoute("aks-rp-e2e-task-spec-loop")).toMatchObject({
       accepts: expect.arrayContaining([
         expect.objectContaining({
           type: "project.task.tick",
@@ -329,6 +328,11 @@ describe("app event contract", () => {
         }),
       ]),
     });
+    expect(appManifest.taskWorkflows?.["spec-loop-controller"]).toMatchObject({
+      workflow: "spec-loop-controller",
+      agent: "aks-explorer",
+    });
+    expect(appManifest.workflowHandlers).toBeUndefined();
     expect(
       (appManifest.workflowHandlers ?? []).some(
         (entry) => entry.name === "aks-rp-e2e-feature-reference-loop-controller",
@@ -364,7 +368,22 @@ describe("app event contract", () => {
     });
   });
 
-  test("feature compact wakes resolve to one stable maintain task", () => {
+  test("spec and feature compact wakes resolve to stable maintain tasks", () => {
+    expect(
+      resolveAksReconciliationTask({
+        type: "project.task.tick",
+        action: "spec-loop",
+        target: { project: projectId, taskId: "aks-spec-verification-loop" },
+        data: { reason: "test-wake" },
+      }),
+    ).toMatchObject({
+      id: "aks-spec-verification-loop",
+      parentId: "project",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "spec-loop-controller",
+      input: { maxConcurrent: 80 },
+    });
     expect(
       resolveAksReconciliationTask({
         type: "project.task.tick",
@@ -380,12 +399,6 @@ describe("app event contract", () => {
       workflow: "feature-compact-loop-controller",
       input: { maxConcurrent: 20 },
     });
-    expect(
-      resolveAksReconciliationTask({
-        type: "project.task.tick",
-        action: "spec-loop",
-      }),
-    ).toBeNull();
   });
 
   test("stall-review wakes resolve to one standing maintain task", () => {
