@@ -193,6 +193,32 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.focus.review.requested") {
+    const rawMode = detailString(details, "mode").toLowerCase();
+    const kind =
+      rawMode === "plan" || rawMode === "proposal" ? "proposal" : "review";
+    return {
+      id:
+        kind === "proposal"
+          ? "aks-focus-plan-strategy-review"
+          : "aks-focus-plan-progress-review",
+      parentId: "project",
+      outcome:
+        kind === "proposal"
+          ? "Keep the current mid-term project focus explicit, bounded, and approved when direction or risk changes."
+          : "Keep the active focus branch aligned with current project evidence and execution progress.",
+      acceptance: [
+        "Each accepted focus-review wake records one structured focus result in the focus-plan ledger.",
+        "App-ops receives the bounded continuation, and material direction changes preserve one exact human-approval lineage.",
+      ],
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "focus-plan",
+      input: { kind },
+      outputs: [".state/focus-plan-runs.jsonl"],
+      priority: "P1",
+    };
+  }
   if (event.type === "project.condition.fallback.requested") {
     const conditionId = detailString(details, "conditionId", "condition_id");
     const subjectTaskId = detailString(details, "taskId", "task_id");
@@ -608,6 +634,17 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "focus-plan": {
+      workflow: "focus-plan",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nagent: aks-explorer\nmaxConcurrent: 5`,
+      timeoutMs: 1_800_000,
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e/README.md",
+      ],
+    },
     "project-stall-review": {
       workflow: "project-stall-review",
       agent: "app-ops",
@@ -669,6 +706,20 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-focus-review",
+      enabled: true,
+      maxConcurrentTriggers: 2,
+      description:
+        "Reconciles standing strategy and progress review responsibilities independently.",
+      accepts: [
+        {
+          type: "project.focus.review.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-condition-fallback",
       enabled: true,
@@ -897,32 +948,6 @@ export default defineProjectApp({
         "projects/aks-rp-e2e/features/README.md",
         "projects/aks-rp-e2e/features/SCHEMA.md",
         "projects/aks-rp-e2e/features/",
-      ],
-    },
-    {
-      name: "aks-rp-e2e-focus-plan",
-      type: "job",
-      enabled: true,
-      description:
-        "Mid-term focus review and progress review. Keeps a visible focus branch current and asks for human approval when direction/risk changes.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "focus-plan",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: aks-explorer\nmaxConcurrent: 5`,
-        timeoutMs: 1_800_000,
-      },
-      accepts: [
-        {
-          type: "project.focus.review.requested",
-          target: { project: projectId },
-        },
-      ],
-      emits: ["project.owner.requested", "message.created"],
-      context: [
-        ...taskTreeContext,
-        "projects/aks-rp-e2e.app/project.json",
-        "projects/aks-rp-e2e/README.md",
       ],
     },
   ],

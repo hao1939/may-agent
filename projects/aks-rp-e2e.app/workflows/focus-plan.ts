@@ -468,7 +468,7 @@ function dispatchOwnerRequested(
     kind: "proposal" | "review";
     summary: string;
   },
-): void {
+): boolean {
   try {
     ctx.dispatchEvent("project.owner.requested", {
       target: { project: "aks-rp-e2e" },
@@ -483,8 +483,9 @@ function dispatchOwnerRequested(
           "Review the focus-plan result, reconcile the task tree, and keep assigning work inside the approved focus when possible.",
       },
     });
+    return true;
   } catch {
-    // Local tests may not provide a dispatcher.
+    return false;
   }
 }
 
@@ -639,8 +640,10 @@ function dispatchHumanApproval(
     title: string;
     summary: string;
   },
-): void {
-  if (input.result !== "needs_approval" && input.result !== "off_track") return;
+): boolean {
+  if (input.result !== "needs_approval" && input.result !== "off_track") {
+    return true;
+  }
 
   const plannerNext =
     extractMarker(input.summary, "OWNER_NEXT") ||
@@ -764,9 +767,26 @@ function dispatchHumanApproval(
       },
       dedupKey,
     });
+    return true;
   } catch {
-    // Local tests may not provide a dispatcher.
+    return false;
   }
+}
+
+function finishFocusReview(
+  ctx: WorkflowContext,
+  input: {
+    disposition: "converged" | "needs-owner";
+    summary: string;
+    evidence: string[];
+  },
+): WorkflowResult {
+  return ctx.done(input.summary, {
+    disposition: input.disposition,
+    summary: input.summary,
+    evidence: input.evidence,
+    actions: [],
+  });
 }
 
 function appendFocusRun(appDir: string, entry: Record<string, unknown>): void {
@@ -821,7 +841,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const summary = guarded.summary;
   const result = guarded.result;
   const title = extractMarker(summary, "FOCUS_PLAN_TITLE");
-  dispatchHumanApproval(ctx, {
+  const approvalDelivered = dispatchHumanApproval(ctx, {
     appDir,
     projectDir,
     config,
@@ -830,7 +850,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     title,
     summary,
   });
-  dispatchOwnerRequested(ctx, { result, kind, summary });
+  const ownerDelivered = dispatchOwnerRequested(ctx, {
+    result,
+    kind,
+    summary,
+  });
   appendFocusRun(appDir, {
     kind,
     trigger_type: triggerType ?? "manual",
@@ -839,7 +863,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     summary: truncate(summary, 4000),
   });
 
-  return ctx.done(
-    `Focus-plan ${kind} completed with result ${result}. Summary: ${summary}`,
-  );
+  const resultSummary = `Focus-plan ${kind} completed with result ${result}. Summary: ${summary}`;
+  return finishFocusReview(ctx, {
+    disposition:
+      approvalDelivered && ownerDelivered ? "converged" : "needs-owner",
+    summary: resultSummary,
+    evidence: [
+      `focus-plan:${kind}:${result}`,
+      ".state/focus-plan-runs.jsonl",
+    ],
+  });
 }

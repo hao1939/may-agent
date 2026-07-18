@@ -427,6 +427,39 @@ describe("app event contract", () => {
     expect(later?.id).toBe(first?.id);
   });
 
+  test("focus strategy and progress wakes reconcile independently", () => {
+    const proposal = resolveAksReconciliationTask({
+      type: "project.focus.review.requested",
+      target: { project: projectId },
+      data: { reason: "scheduled-mid-term-focus-plan", mode: "plan" },
+    });
+    const progress = resolveAksReconciliationTask({
+      type: "project.focus.review.requested",
+      target: { project: projectId },
+      data: { reason: "scheduled-focus-progress-review", mode: "progress" },
+    });
+
+    expect(proposal).toMatchObject({
+      id: "aks-focus-plan-strategy-review",
+      parentId: "project",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "focus-plan",
+      input: { kind: "proposal" },
+      priority: "P1",
+    });
+    expect(progress).toMatchObject({
+      id: "aks-focus-plan-progress-review",
+      parentId: "project",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "focus-plan",
+      input: { kind: "review" },
+      priority: "P1",
+    });
+    expect(progress?.id).not.toBe(proposal?.id);
+  });
+
   test("Condition fallbacks resolve once to the accountable owner", () => {
     const event = {
       type: "project.condition.fallback.requested",
@@ -780,6 +813,18 @@ describe("app event contract", () => {
       workflow: "approval-dispatch",
       agent: "aks-explorer",
     });
+    expect(taskRoute("aks-rp-e2e-task-focus-review")).toMatchObject({
+      accepts: [
+        {
+          type: "project.focus.review.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["focus-plan"]).toMatchObject({
+      workflow: "focus-plan",
+      agent: "aks-explorer",
+    });
   });
 
   test("handled events are declared by generated workflow handlers", () => {
@@ -829,6 +874,15 @@ describe("app event contract", () => {
       accepts: [
         {
           type: "project.approval.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(handlersForEvent("project.focus.review.requested")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-focus-review")).toMatchObject({
+      accepts: [
+        {
+          type: "project.focus.review.requested",
           target: { project: projectId },
         },
       ],

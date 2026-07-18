@@ -186,7 +186,11 @@ describe("focus-plan workflow", () => {
         }),
       ].join("\n"),
       agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
       escalate: (message: string) => ({ status: "escalated", message }),
       emit() {},
       dispatchEvent(type: string, payload: Record<string, unknown>) {
@@ -209,6 +213,19 @@ describe("focus-plan workflow", () => {
     expect(result.message).toContain('active_task_ids=["run-rest-spec-batch"]');
     expect(result.message).toContain("counts.blocked=0");
     expect(result.message).toContain("counts.backlog=0");
+    expect(result).toMatchObject({
+      output: {
+        disposition: "converged",
+        summary: expect.stringContaining(
+          "Focus-plan review completed with result updated",
+        ),
+        evidence: [
+          "focus-plan:review:updated",
+          ".state/focus-plan-runs.jsonl",
+        ],
+        actions: [],
+      },
+    });
     expect(dispatched.map((event) => event.type)).toEqual([
       "project.owner.requested",
     ]);
