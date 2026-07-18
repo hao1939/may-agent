@@ -658,9 +658,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  return ctx.done(
+  const summary =
     signals.length > 0
       ? `Ops health observer recorded ${signals.length} signal(s); owner wake emitted.`
-      : "Ops health observer recorded packet with no owner wake.",
-  );
+      : "Ops health observer recorded packet with no owner wake.";
+  return ctx.done(summary, {
+    disposition: "converged",
+    summary,
+    evidence: [`packet:${packetPath}`],
+    actions: [],
+  });
 }

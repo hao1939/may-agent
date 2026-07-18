@@ -6,10 +6,123 @@ import {
   readTaskTree,
   resolveTaskTreePath,
   taskState,
+  type ProjectAppTaskHandlerResult,
   type TaskTreeConfig,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
+
+const nonEmptyString = { type: "string", minLength: 1 } as const;
+const stringList = {
+  type: "array",
+  minItems: 1,
+  items: nonEmptyString,
+} as const;
+const expectedRevision = { type: "integer", minimum: 0 } as const;
+
+const ownerResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["disposition", "summary", "evidence", "actions"],
+  properties: {
+    disposition: {
+      type: "string",
+      enum: ["converged", "progressing", "waiting"],
+    },
+    summary: nonEmptyString,
+    evidence: {
+      type: "array",
+      maxItems: 12,
+      items: nonEmptyString,
+    },
+    actions: {
+      type: "array",
+      maxItems: 3,
+      items: {
+        oneOf: [
+          {
+            type: "object",
+            additionalProperties: false,
+            required: [
+              "kind",
+              "id",
+              "parentId",
+              "goal",
+              "outputs",
+              "acceptance",
+            ],
+            properties: {
+              kind: { const: "create-task" },
+              id: nonEmptyString,
+              parentId: nonEmptyString,
+              goal: nonEmptyString,
+              outputs: stringList,
+              acceptance: stringList,
+              priority: { type: "string", enum: ["P0", "P1", "P2", "P3"] },
+              owner: nonEmptyString,
+              workflow: nonEmptyString,
+            },
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["kind", "taskId", "expectedRevision"],
+            properties: {
+              kind: { const: "update-task" },
+              taskId: nonEmptyString,
+              expectedRevision,
+              goal: nonEmptyString,
+              outputs: stringList,
+              acceptance: stringList,
+            },
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["kind", "taskId", "expectedRevision", "summary"],
+            properties: {
+              kind: { const: "close-task" },
+              taskId: nonEmptyString,
+              expectedRevision,
+              summary: nonEmptyString,
+            },
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["kind", "taskId", "expectedRevision", "reason"],
+            properties: {
+              kind: { const: "unblock-task" },
+              taskId: nonEmptyString,
+              expectedRevision,
+              reason: nonEmptyString,
+            },
+          },
+        ],
+      },
+    },
+    conditions: {
+      type: "array",
+      maxItems: 3,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "observer"],
+        properties: {
+          id: nonEmptyString,
+          observer: nonEmptyString,
+          taskId: nonEmptyString,
+          expectedState: nonEmptyString,
+          fallback: nonEmptyString,
+        },
+      },
+    },
+  },
+} as const;
+
+type OwnerResult = ProjectAppTaskHandlerResult & {
+  disposition: "converged" | "progressing" | "waiting";
+};
 
 export const name = "platform-owner-review";
 export const description =
@@ -152,7 +265,9 @@ function recentEvents(
   return data;
 }
 
-function openPlatformInboxRows(ctx: WorkflowContext): Array<Record<string, unknown>> {
+function openPlatformInboxRows(
+  ctx: WorkflowContext,
+): Array<Record<string, unknown>> {
   const rows = new Map<number, Record<string, unknown>>();
   for (const owner of platformOwnerAliases) {
     const agent = owner.replace(/^agent:/, "");
@@ -355,22 +470,6 @@ function buildPacketSummary(packet: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-function resultSummary(result: unknown): string {
-  if (!result || typeof result !== "object") return String(result);
-  const record = result as {
-    summary?: unknown;
-    lastAssistantText?: unknown;
-    status?: unknown;
-    finishResult?: { summary?: unknown };
-  };
-  const text =
-    record.finishResult?.summary ??
-    record.summary ??
-    record.lastAssistantText ??
-    JSON.stringify(result);
-  return typeof text === "string" ? text : JSON.stringify(text);
-}
-
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const projectDir = field(ctx.task, "project") ?? "/app/projects/may-agent";
@@ -491,12 +590,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packetSummary,
     "",
     "Required owner judgment:",
-    "- If the packet shows real abnormal signals, update/assign task-tree work, fix the smallest root cause, or record the exact blocker.",
+    "- If the packet shows real abnormal signals, fix the smallest root cause, propose typed task actions, or record the exact blocker.",
     "- If project.json and the runtime project row disagree, treat that as a platform read-model/sync issue unless another session already fixed it.",
     "- Prefer project-local app workflow/design fixes over adding behavior to global May handlers.",
     "- Do not claim the platform is healthy or waiting from a narrow post-restart check while open alerts, recent failures, stale state, or evaluator findings remain.",
     "- NEVER write to the runtime DB (may.db) directly via bash/bun:sqlite. All state changes must go through ctx.emit() or the event system. Direct DB inserts violate runtime safety and will be flagged by the evaluator.",
     "- If you edit files, run focused checks and cite them before finish.",
+    "- The generic reconciler is the sole task-tree mutation authority. Never edit task-tree JSON, call task-tree mutation commands, or write task state through the database.",
+    "- Return task-tree changes only as typed actions in finish. Existing-task actions require the exact revision shown in the tree.",
+    "- Never mutate or create task ids beginning with runtime/; those standing responsibilities belong to the reconciler.",
+    "- You may edit May-agent-owned code and docs when that is the smallest useful domain step. Cite the resulting files and checks as evidence.",
+    "- Use progressing when a useful step landed but more work remains, converged when no further action is needed now, and waiting only for a named external fact with an exact Condition.",
+    "- An evidence-backed no-op is valid; return an empty actions array and explain why existing work already covers the signal.",
     "",
     "Start with these files:",
     `- ${packetPath}`,
@@ -510,13 +615,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const result = await ctx.runAgent(ownerAgent, prompt, {
     timeoutMs: 1_800_000,
+    schema: ownerResultSchema as never,
   });
-  const summary = resultSummary(result);
+  if (result.status === "error" || result.status === "interrupted") {
+    return ctx.blocked("Platform owner review session failed", {
+      sessionId: result.sessionId,
+      status: result.status,
+      summary: result.lastAssistantText,
+    });
+  }
+
+  const ownerResult = result.structuredResult as unknown as OwnerResult;
   ctx.emit({
     type: "project.owner.reviewed",
     project: "may-agent",
     owner: ownerAgent,
-    summary,
+    summary: ownerResult.summary,
+    disposition: ownerResult.disposition,
+    proposedActions: ownerResult.actions ?? [],
+    evidence: ownerResult.evidence,
   });
-  return ctx.done(summary);
+  return ctx.done(ownerResult.summary, ownerResult);
 }

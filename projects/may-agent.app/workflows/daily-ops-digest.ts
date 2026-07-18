@@ -400,5 +400,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  return ctx.done(`Daily ops digest generated: ${summary}`);
+  const resultSummary = `Daily ops digest generated: ${summary}`;
+  return ctx.done(resultSummary, {
+    disposition: "converged",
+    summary: resultSummary,
+    evidence: [`report:${reportPath}`],
+    actions: [],
+  });
 }

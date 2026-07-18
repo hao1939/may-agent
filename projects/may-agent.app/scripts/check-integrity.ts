@@ -4,6 +4,7 @@ import {
   normalizeTaskTreeInPlace,
   resolveTaskTreePath,
   type EventSelector,
+  type ProjectApp,
   type TaskTree,
 } from "@may-agent/sdk";
 import app from "../app";
@@ -64,11 +65,47 @@ function checkUnique(name: string, values: string[]): void {
   }
 }
 
+function checkTaskCapability(
+  label: string,
+  capability: {
+    workflow?: string;
+    task?: string;
+    timeoutMs?: number;
+    context?: string[];
+  },
+): void {
+  if (!capability.workflow?.trim()) {
+    addIssue("taskCapability.workflow", `${label} is missing workflow.`);
+  } else if (!pathExists(`workflows/${capability.workflow}.ts`)) {
+    addIssue(
+      "taskCapability.workflow.missing",
+      `${label} references missing workflow workflows/${capability.workflow}.ts.`,
+    );
+  }
+  if (!capability.task?.trim()) {
+    addIssue("taskCapability.task", `${label} is missing task.`);
+  }
+  if (
+    !Number.isFinite(capability.timeoutMs) ||
+    (capability.timeoutMs ?? 0) <= 0
+  ) {
+    addIssue("taskCapability.timeout", `${label} has invalid timeoutMs.`);
+  }
+  for (const contextPath of capability.context ?? []) {
+    if (!pathExists(contextPath)) {
+      addIssue(
+        "taskCapability.context.missing",
+        `${label} context file is missing: ${contextPath}`,
+      );
+    }
+  }
+}
+
 function checkManifest(): void {
   const events = eventSet();
   checkUnique("event", [...events]);
 
-  const workflowHandlers = app.workflowHandlers ?? [];
+  const workflowHandlers = (app as ProjectApp).workflowHandlers ?? [];
   checkUnique(
     "workflowHandler",
     workflowHandlers.map((handler) => handler.name),
@@ -113,8 +150,7 @@ function checkManifest(): void {
       );
     }
     for (const selector of handler.accepts as readonly EventSelector[]) {
-      const type =
-        typeof selector === "string" ? selector : selector.type;
+      const type = typeof selector === "string" ? selector : selector.type;
       handlerEvents.add(type);
       if (!events.has(type)) {
         addIssue(
@@ -128,6 +164,55 @@ function checkManifest(): void {
         addIssue(
           "workflowHandler.context.missing",
           `${handler.name} context file is missing: ${contextPath}`,
+        );
+      }
+    }
+  }
+
+  const taskRoutes = app.taskRoutes ?? [];
+  checkUnique(
+    "taskRoute",
+    taskRoutes.map((route) => route.name),
+  );
+  const taskRouteNames = new Set(taskRoutes.map((route) => route.name));
+  if (taskRoutes.length > 0 && !app.ownerEntry) {
+    addIssue(
+      "taskRoute.ownerEntry.missing",
+      "App declares taskRoutes without an ownerEntry fallback.",
+    );
+  }
+  if (app.ownerEntry) checkTaskCapability("ownerEntry", app.ownerEntry);
+  for (const [name, capability] of Object.entries(app.taskWorkflows ?? {})) {
+    checkTaskCapability(`taskWorkflows.${name}`, capability);
+  }
+  for (const route of taskRoutes) {
+    if (!route.enabled) continue;
+    if (!route.description?.trim()) {
+      addIssue(
+        "taskRoute.description",
+        `${route.name} is missing a description.`,
+      );
+    }
+    if (typeof route.resolve !== "function") {
+      addIssue("taskRoute.resolve", `${route.name} is missing resolve().`);
+    }
+    if (
+      route.maxConcurrentTriggers !== undefined &&
+      (!Number.isInteger(route.maxConcurrentTriggers) ||
+        route.maxConcurrentTriggers <= 0)
+    ) {
+      addIssue(
+        "taskRoute.concurrency",
+        `${route.name} has invalid maxConcurrentTriggers.`,
+      );
+    }
+    for (const selector of route.accepts as readonly EventSelector[]) {
+      const type = typeof selector === "string" ? selector : selector.type;
+      handlerEvents.add(type);
+      if (!events.has(type)) {
+        addIssue(
+          "taskRoute.event.undeclared",
+          `${route.name} listens to undeclared event ${type}.`,
         );
       }
     }
@@ -178,9 +263,13 @@ function checkManifest(): void {
   const externalEvents = new Set(graph?.externalEvents ?? []);
   const adapterEvents = new Set<string>();
   const emittedEvents = new Set<string>();
+  const graphHandlerNames = new Set([
+    ...workflowHandlerNames,
+    ...taskRouteNames,
+  ]);
 
   for (const [handlerName, details] of Object.entries(graph?.handlers ?? {})) {
-    if (!workflowHandlerNames.has(handlerName)) {
+    if (!graphHandlerNames.has(handlerName)) {
       addIssue(
         "eventGraph.handler.unknown",
         `eventGraph declares unknown handler ${handlerName}.`,

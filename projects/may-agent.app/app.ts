@@ -5,6 +5,7 @@ import {
   eventString,
   type ProjectAppContext,
   type ProjectAppEvent,
+  type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
@@ -31,6 +32,57 @@ function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
         ? (params as Record<string, unknown>)
         : {},
   };
+}
+
+export function resolveMayAgentTask(
+  event: Record<string, unknown>,
+): ProjectAppTaskIntent | null {
+  const details = eventDetails(event);
+  switch (event.type) {
+    case "project.ops_digest.tick":
+      return {
+        id: "runtime/daily-ops-digest",
+        parentId: "platform-ops-observe-act-loop",
+        outcome:
+          "Keep a current deterministic daily platform alert digest, notify the human, and request owner judgment only for actionable conditions.",
+        acceptance: [
+          "A current digest is recorded and delivered, with any actionable open, noisy, or ownerless condition routed to the platform owner.",
+        ],
+        mode: "maintain",
+        workflow: "daily-ops-digest",
+        input: details,
+        priority: "P1",
+      };
+    case "project.ops_health.tick":
+      return {
+        id: "runtime/ops-health-observer",
+        parentId: "platform-ops-observe-act-loop",
+        outcome:
+          "Keep a deterministic observation of platform operational health and request owner judgment only for meaningful signals.",
+        acceptance: [
+          "A current ops-health packet is recorded and meaningful signals produce one owner request without making owner judgments in the observer.",
+        ],
+        mode: "maintain",
+        workflow: "ops-health-review",
+        input: details,
+        priority: "P1",
+      };
+    case "project.owner.requested":
+      return {
+        id: "runtime/platform-owner-review",
+        parentId: "platform-system-review-feedback-loop",
+        outcome:
+          "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
+        acceptance: [
+          "The owner performs one useful platform step or records an evidence-backed no-op, with task-tree changes proposed as typed actions.",
+        ],
+        mode: "maintain",
+        input: details,
+        priority: "P1",
+      };
+    default:
+      return null;
+  }
 }
 
 function appendDiscussionRecord(
@@ -67,6 +119,14 @@ async function routePlatformEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  if (
+    event.type === "project.ops_health.tick" ||
+    event.type === "project.ops_digest.tick" ||
+    event.type === "project.owner.requested"
+  ) {
+    return ctx.noop(`${event.type} is handled by taskRoutes`);
+  }
+
   if (event.type === "project.comment.created") {
     const commentId = appendDiscussionRecord(ctx, event);
     return ctx.emit(ownerRequested("project-comment", { commentId }));
@@ -229,10 +289,6 @@ async function routePlatformEvent(
     );
   }
 
-  if (event.type === "project.owner.requested") {
-    return ctx.noop("handled by may-agent owner workflow handler");
-  }
-
   if (
     event.type === "project.owner.reviewed" ||
     event.type === "project.reviewed"
@@ -267,135 +323,114 @@ export default defineProjectApp({
       id: "platform-review",
       enabled: true,
       intervalMs: 21_600_000, // 6h — budget-aware: 4/day from this + 2/day from heartbeat = 6/day
-      emits: [{
-        type: "project.tick",
-        project: projectId,
-        lane: "platform-review",
-      }],
+      emits: [
+        {
+          type: "project.tick",
+          project: projectId,
+          lane: "platform-review",
+        },
+      ],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 43_200_000, // 12h — budget-aware: platform-review (6h, 4/day) + heartbeat (12h, 2/day) = 6/day matching sessionsPerDay budget
-      emits: [ownerRequested("owner-heartbeat", {
-        instruction:
-          "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
-        reviewChecklist: [
-          "Look for stale assumptions in the app/project design docs versus current runtime behavior.",
-          "Look for repeated alerts, failed handlers, unclosed owner loops, or app manifests that drifted from the event-owner model.",
-          "Look for task-tree bloat or done work that should be rolled up with durable meaning preserved.",
-          "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
-          "No-op is valid when existing tasks already cover the useful next work.",
-        ],
-      })],
+      emits: [
+        ownerRequested("owner-heartbeat", {
+          instruction:
+            "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
+          reviewChecklist: [
+            "Look for stale assumptions in the app/project design docs versus current runtime behavior.",
+            "Look for repeated alerts, failed handlers, unclosed owner loops, or app manifests that drifted from the event-owner model.",
+            "Look for task-tree bloat or done work that should be rolled up with durable meaning preserved.",
+            "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+            "No-op is valid when existing tasks already cover the useful next work.",
+          ],
+        }),
+      ],
     },
     {
       id: "ops-health-review",
       enabled: true,
       intervalMs: 3_600_000,
-      emits: [{
-        type: "project.ops_health.tick",
-        project: projectId,
-        lane: "ops-health-review",
-      }],
+      emits: [
+        {
+          type: "project.ops_health.tick",
+          project: projectId,
+          lane: "ops-health-review",
+        },
+      ],
     },
     {
       id: "daily-ops-digest",
       enabled: true,
       intervalMs: 86_400_000,
-      emits: [{
-        type: "project.ops_digest.tick",
-        project: projectId,
-        lane: "daily-ops-digest",
-      }],
+      emits: [
+        {
+          type: "project.ops_digest.tick",
+          project: projectId,
+          lane: "daily-ops-digest",
+        },
+      ],
     },
   ],
 
-  workflowHandlers: [
-    {
-      name: "may-agent-daily-ops-digest",
-      type: "job",
-      enabled: true,
-      description:
-        "Builds the deterministic daily platform alert digest, notifies the human, and wakes the project owner for open/noisy conditions.",
-      accepts: ["project.ops_digest.tick"],
-      handler: {
-        workflow: "daily-ops-digest",
-        includeEvent: true,
-        task: [
-          appTaskContext,
-          "persistent-task: skip",
-          "",
-          "You are entering the may-agent.app daily ops digest workflow.",
-          "Build the deterministic alert digest, notify the human with context, and wake the project owner only when open/noisy/missing-owner conditions need judgment.",
-        ].join("\n"),
-        timeoutMs: 120_000,
-      },
+  ownerEntry: {
+    workflow: "platform-owner-review",
+    task: `${appTaskContext}\npersistent-task: skip\nReview the reconciled May-agent platform responsibility and perform the smallest useful owner step.`,
+    timeoutMs: 1_800_000,
+    context: taskTreeContext,
+  },
+
+  taskWorkflows: {
+    "daily-ops-digest": {
+      workflow: "daily-ops-digest",
+      task: `${appTaskContext}\npersistent-task: skip\nBuild the deterministic daily alert digest and route only actionable conditions to the owner.`,
+      timeoutMs: 120_000,
       context: [
         ...taskTreeContext,
         "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
         "projects/may-agent.app/docs/2a-design/handler-audit.md",
       ],
     },
-    {
-      name: "may-agent-ops-health-review",
-      type: "job",
-      enabled: true,
-      description:
-        "Runs a deterministic ops-health observer packet and wakes the project owner only for meaningful signals.",
-      accepts: ["project.ops_health.tick"],
-      handler: {
-        workflow: "ops-health-review",
-        includeEvent: true,
-        task: [
-          appTaskContext,
-          "persistent-task: skip",
-          "",
-          "You are entering the may-agent.app ops-health observer workflow.",
-          "Build and record a deterministic health packet. Do not wake the project owner unless a meaningful signal needs owner judgment or closure.",
-        ].join("\n"),
-        timeoutMs: 180_000,
-      },
+    "ops-health-review": {
+      workflow: "ops-health-review",
+      task: `${appTaskContext}\npersistent-task: skip\nBuild and record the deterministic platform health packet without making owner judgments.`,
+      timeoutMs: 180_000,
       context: [
         ...taskTreeContext,
         "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
       ],
     },
+  },
+
+  taskRoutes: [
     {
-      name: "may-agent-project-planner",
-      type: "job",
+      name: "may-agent-task-daily-ops-digest",
       enabled: true,
+      maxConcurrentTriggers: 1,
       description:
-        "Wakes tech-lead as project owner to review the task tree, platform signals, and project-app design work.",
+        "Reconciles the standing deterministic daily platform digest.",
+      accepts: ["project.ops_digest.tick"],
+      resolve: resolveMayAgentTask,
+    },
+    {
+      name: "may-agent-task-ops-health",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Reconciles the standing deterministic platform health observer.",
+      accepts: ["project.ops_health.tick"],
+      resolve: resolveMayAgentTask,
+    },
+    {
+      name: "may-agent-task-owner",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Routes platform judgment and one-off work through the accountable owner entry.",
       accepts: ["project.owner.requested"],
-      handler: {
-        workflow: "platform-owner-review",
-        includeEvent: true,
-        task: [
-          appTaskContext,
-          "persistent-task: skip",
-          "",
-          "You are entering the may-agent.app local owner-review workflow. It will build a platform system-review packet before waking tech-lead.",
-          "",
-          "Before claiming the platform is healthy, build a compact system-review packet from live evidence:",
-          "- open metric alerts and recent metric judgments/recoveries",
-          "- recent handler.failed, session.resume_failed, subscriber.failed, message.delivery_failed, and agent.config_invalid events",
-          "- stale project DB rows versus project.json/task-tree state",
-          "- task-tree runnable/active/review/blocked state",
-          "- evaluator findings or human messages about shallow/misleading platform claims",
-          "- app integrity checks that are relevant to the triggered branch",
-          "",
-          "The local workflow owns packet collection; tech-lead owns judgment, task-tree updates, fixes, verification, and escalation.",
-          "",
-          "Scope discipline:",
-          "- Only commit files that are directly tied to the diagnosed root cause or task-tree updates in THIS project (may-agent.app).",
-          "- Do NOT commit unrelated files from other projects (aks-rp-e2e, scout, evaluation) just to clear guard dirtiness.",
-          "- If dirty files exist in other projects, note them as informational — their project owners are responsible for commits.",
-          "- Guard cleanup commits must be narrowly scoped: only .gitignore, project.json, or task tree files that THIS review session modified.",
-        ].join("\n"),
-        timeoutMs: 1_800_000,
-      },
-      context: taskTreeContext,
+      resolve: resolveMayAgentTask,
     },
   ],
 
@@ -418,18 +453,26 @@ export default defineProjectApp({
 
   eventGraph: {
     handlers: {
-      "may-agent-daily-ops-digest": {
-        emits: ["project.ops_digest.created", "project.owner.requested"],
+      "may-agent-task-daily-ops-digest": {
+        emits: [
+          "project.ops_digest.created",
+          "project.owner.requested",
+          "project.task.reconciled",
+        ],
         description:
           "Produces the daily alert digest, notifies the human, and wakes the project owner for open/noisy digest findings.",
       },
-      "may-agent-ops-health-review": {
-        emits: ["project.ops_health.observed", "project.owner.requested"],
+      "may-agent-task-ops-health": {
+        emits: [
+          "project.ops_health.observed",
+          "project.owner.requested",
+          "project.task.reconciled",
+        ],
         description:
           "Deterministically observes platform health and wakes the project owner only for meaningful signals.",
       },
-      "may-agent-project-planner": {
-        emits: ["project.owner.reviewed"],
+      "may-agent-task-owner": {
+        emits: ["project.owner.reviewed", "project.task.reconciled"],
         description:
           "Tech-lead reviews platform project state and updates task tree, docs, or code when useful.",
       },
@@ -485,6 +528,11 @@ export default defineProjectApp({
       "project.owner.reviewed",
       "project.ops_health.observed",
       "project.ops_digest.created",
+      "handler.workflow_dispatched",
+      "project.task.reconcile.started",
+      "project.task.reconcile.skipped",
+      "project.task.handler.unavailable",
+      "project.task.reconciled",
     ],
     intentionalCycles: [
       {
