@@ -9,6 +9,22 @@ const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
 const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
+const ownerEventTypes = new Set([
+  "project.owner.requested",
+  "project.comment.created",
+  "project.approval.submitted",
+  "project.test_run.completed",
+  "project.stall.reviewed",
+  "project.problem.resolved",
+  "project.problem.escalated",
+  "project.problem.inconclusive",
+  "escalation.resolved",
+  "escalation.dismissed",
+  "metric.breach",
+  "metric.recovered",
+  "learning.feedback",
+  "coverage.gap.detected",
+]);
 const appTaskContext =
   "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nsource: /app/sources/aks-rp";
 
@@ -139,6 +155,16 @@ function conditionFallbackId(details: Record<string, unknown>): string {
   return `runtime/condition-fallback/${readable || "condition"}-${digest}`;
 }
 
+function ownerEventTaskId(event: Record<string, unknown>): string {
+  const eventType = typeof event.type === "string" ? event.type : "event";
+  const eventId = event.eventId;
+  const readable = eventType
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/owner-event/${readable || "event"}-${String(eventId)}`;
+}
+
 function detailStrings(
   details: Record<string, unknown>,
   ...names: string[]
@@ -192,6 +218,31 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (ownerEventTypes.has(String(event.type ?? ""))) {
+    const eventId = event.eventId;
+    if (
+      typeof eventId !== "number" ||
+      !Number.isInteger(eventId) ||
+      eventId <= 0
+    ) {
+      return null;
+    }
+    const eventType = String(event.type);
+    return {
+      id: ownerEventTaskId(event),
+      parentId: "project",
+      outcome: `Disposition durable ${eventType} event ${eventId} through the accountable app owner exactly once.`,
+      acceptance: [
+        "App-ops records the event's semantic effect, explicit no-op, escalation, or required follow-up in durable project state.",
+        "Any resulting assignments or problem investigations are emitted through their canonical event paths.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      input: { eventType, eventId },
+      outputs: ["tasks/tree.json"],
+      priority: "P1",
+    };
+  }
   if (event.type === "project.focus.review.requested") {
     const rawMode = detailString(details, "mode").toLowerCase();
     const kind =
@@ -697,6 +748,37 @@ export default defineProjectApp({
 
   taskRoutes: [
     {
+      name: "aks-rp-e2e-task-owner-event",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Routes each durable semantic app event once to the accountable owner entry.",
+      accepts: [
+        { type: "project.owner.requested", target: { project: projectId } },
+        { type: "project.comment.created", target: { project: projectId } },
+        {
+          type: "project.approval.submitted",
+          target: { project: projectId },
+        },
+        { type: "project.test_run.completed", target: { project: projectId } },
+        { type: "project.stall.reviewed", target: { project: projectId } },
+        { type: "project.problem.resolved", target: { project: projectId } },
+        { type: "project.problem.escalated", target: { project: projectId } },
+        {
+          type: "project.problem.inconclusive",
+          target: { project: projectId },
+        },
+        { type: "escalation.resolved", owner: "agent:aks-explorer" },
+        { type: "escalation.dismissed", owner: "agent:aks-explorer" },
+        { type: "metric.breach", owner: "agent:app-ops" },
+        { type: "metric.recovered", owner: "agent:app-ops" },
+        { type: "learning.feedback", owner: "agent:aks-explorer" },
+        { type: "learning.feedback", owner: "agent:aks-reviewer" },
+        { type: "coverage.gap.detected", target: { project: projectId } },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
+    {
       name: "aks-rp-e2e-task-focus-review",
       enabled: true,
       maxConcurrentTriggers: 2,
@@ -817,47 +899,6 @@ export default defineProjectApp({
   ],
 
   workflowHandlers: [
-    {
-      name: "aks-rp-e2e-project-planner",
-      type: "job",
-      enabled: true,
-      description:
-        "App-ops planner. Wakes app-ops, applies task-tree decisions, and explicitly dispatches worker tasks.",
-      handler: {
-        workflow: "project-planner",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
-        timeoutMs: 3_600_000,
-      },
-      accepts: [
-        { type: "project.owner.requested", target: { project: projectId } },
-        { type: "project.comment.created", target: { project: projectId } },
-        {
-          type: "project.approval.submitted",
-          target: { project: projectId },
-        },
-        { type: "project.test_run.completed", target: { project: projectId } },
-        { type: "project.stall.reviewed", target: { project: projectId } },
-        { type: "project.problem.resolved", target: { project: projectId } },
-        { type: "project.problem.escalated", target: { project: projectId } },
-        {
-          type: "project.problem.inconclusive",
-          target: { project: projectId },
-        },
-        { type: "escalation.resolved", owner: "agent:aks-explorer" },
-        { type: "escalation.dismissed", owner: "agent:aks-explorer" },
-        { type: "metric.breach", owner: "agent:app-ops" },
-        { type: "metric.recovered", owner: "agent:app-ops" },
-        { type: "learning.feedback", owner: "agent:aks-explorer" },
-        { type: "learning.feedback", owner: "agent:aks-reviewer" },
-        { type: "coverage.gap.detected", target: { project: projectId } },
-      ],
-      emits: [
-        "project.task.assigned",
-        "project.problem.investigation.requested",
-      ],
-      context: taskTreeContext,
-    },
     {
       name: "aks-rp-e2e-project-watchdog",
       type: "job",
