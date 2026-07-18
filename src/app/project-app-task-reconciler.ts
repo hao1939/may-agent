@@ -43,7 +43,7 @@ export type ProjectAppConditionWake = {
 export type ProjectAppTaskAttemptRecovery = {
   taskId: string;
   intent: ProjectAppTaskIntent;
-  trigger: Record<string, unknown>;
+  trigger?: Record<string, unknown>;
 };
 
 const reconcilerRuntimeId = randomUUID();
@@ -305,12 +305,52 @@ export function recoverableProjectAppTaskAttempts(config: TaskTreeConfig): Proje
     return Object.values(tree.tasks).flatMap((task) => {
       if (taskState(task) !== "active" || !currentAttempt(task)) return [];
       const trace = reconciliationTrace(task);
-      if (trace.runtimeId === reconcilerRuntimeId || !isRecord(trace.trigger)) {
-        return [];
-      }
+      if (trace.runtimeId === reconcilerRuntimeId) return [];
       const intent = taskIntent(task);
-      return intent ? [{ taskId: task.id, intent, trigger: trace.trigger }] : [];
+      return intent
+        ? [
+            {
+              taskId: task.id,
+              intent,
+              ...(isRecord(trace.trigger) ? { trigger: trace.trigger } : {}),
+            },
+          ]
+        : [];
     });
+  });
+}
+
+export function releaseInterruptedProjectAppTaskAttempt(
+  config: TaskTreeConfig,
+  taskId: string,
+  summary: string,
+): boolean {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[taskId];
+    if (!task || taskState(task) !== "active" || !currentAttempt(task)) {
+      return false;
+    }
+    const trace = reconciliationTrace(task);
+    if (trace.runtimeId === reconcilerRuntimeId) return false;
+    const now = new Date().toISOString();
+    setTaskState(task, "review");
+    task.summary = summary;
+    task.trace = {
+      ...(task.trace ?? {}),
+      reconciliation: {
+        ...trace,
+        phase: "attention",
+        observedGeneration: taskRevision(task),
+        attemptId: undefined,
+        interruptedAt: now,
+        interruptionReason: "previous-runtime-attempt-not-recoverable",
+        summary,
+      },
+    };
+    refreshActiveTaskProjection(tree);
+    saveTaskTree(config, tree);
+    return true;
   });
 }
 
