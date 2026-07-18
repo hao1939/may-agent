@@ -36,12 +36,9 @@ export type EventSelector =
 export type ProjectAppContext = {
   workspacePath(path: string): string;
   workspaceCwd(): string;
-  /** @deprecated Use workspacePath(). */
-  projectPath(path: string): string;
   appPath(path: string): string;
   readJson<T = unknown>(path: string): Promise<T>;
   importModule<T = Record<string, unknown>>(path: string): Promise<T>;
-  startSession(input: { agent: string; task: string; timeoutMs?: number }): unknown;
   emit(event: ProjectAppEvent): unknown;
   noop(reason: string): unknown;
 };
@@ -58,26 +55,6 @@ export type ProjectAppAction =
       description: string;
       event(params: unknown): ProjectAppEvent;
     };
-
-export type ProjectWorkflowHandler = {
-  name: string;
-  type: "job";
-  enabled: boolean;
-  description: string;
-  maxConcurrentTriggers?: number;
-  /** Declarative selectors accepted by this workflow handler. */
-  accepts: EventSelector[];
-  emits?: string[];
-  handler: {
-    workflow: string;
-    agent?: string;
-    projectId?: string;
-    includeEvent?: boolean;
-    task: string;
-    timeoutMs: number;
-  };
-  context: string[];
-};
 
 export type ProjectAppTaskMode = "achieve" | "maintain";
 
@@ -180,8 +157,6 @@ export type ProjectApp = {
     cron?: string;
     emits: ProjectAppEvent[];
   }>;
-  /** Declarative workflow-backed event handlers. */
-  workflowHandlers?: ProjectWorkflowHandler[];
   /**
    * First-class owner entry for task reconciliation. A task without a bound
    * workflow, or a workflow that cannot handle its input, falls back here.
@@ -191,14 +166,11 @@ export type ProjectApp = {
   taskWorkflows?: Record<string, ProjectAppTaskCapability>;
   /** Event-to-task correlation. Task routes organize work; they do not execute it. */
   taskRoutes?: ProjectAppTaskRoute[];
-  /**
-   * Extra selectors for the imperative onEvent function. Workflow handlers
-   * declare their own subscriptions through workflowHandlers[].accepts.
-   */
+  /** Selectors delivered to onEvent. Task events belong in taskRoutes. */
   events?: EventSelector[];
   eventGraph?: {
-    /** Handler emit declarations for integrity checking. */
-    handlers?: Record<string, { emits?: string[]; description?: string }>;
+    /** Task-route output declarations for integrity checking. */
+    routes?: Record<string, { emits?: string[]; description?: string }>;
     /** Adapter declarations: event→emits for integrity checking. */
     adapters?: Array<{
       event: string;
@@ -212,14 +184,14 @@ export type ProjectApp = {
       reason: string;
     }>;
     limits?: {
-      maxHandlersPerEvent?: number;
+      maxRoutesPerEvent?: number;
     };
   };
   actions: Record<string, ProjectAppAction>;
   onEvent?: ProjectAppOnEvent;
 };
 
-export function defineProjectApp<T extends ProjectApp>(app: T): T {
+export function defineProjectApp(app: ProjectApp): ProjectApp {
   return app;
 }
 

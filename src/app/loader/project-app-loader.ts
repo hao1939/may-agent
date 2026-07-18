@@ -69,10 +69,6 @@ export interface ProjectAppLoaderOptions {
    * project-local agent.json. Returns true if registration succeeded.
    */
   registerLocalAgent?: (agentName: string, appDir: string, agentDir?: string) => Promise<boolean>;
-  /**
-   * Backward-compatible name for older callers. Prefer registerLocalAgent.
-   */
-  registerOwnerAgent?: (ownerName: string, appDir: string) => Promise<boolean>;
 }
 
 export interface ProjectAppWatcher {
@@ -315,7 +311,7 @@ function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
   sharedRoot: string;
 } {
   if (!opts.persistDir || !opts.agentsRoot || !opts.sharedRoot) {
-    throw new Error("Project app workflow handlers require persistDir, agentsRoot, and sharedRoot");
+    throw new Error("Project app task workflows require persistDir, agentsRoot, and sharedRoot");
   }
   return {
     persistDir: opts.persistDir,
@@ -351,9 +347,7 @@ function appWorkflowRuntimePaths(
 function flattenEvent(event: AgentEvent): Record<string, unknown> {
   const record = event as unknown as Record<string, unknown>;
   const data = isRecord(record.data) ? record.data : {};
-  const persistedEventId = (
-    event as AgentEvent & { [EVENT_ROW_ID]?: number }
-  )[EVENT_ROW_ID];
+  const persistedEventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
   return {
     ...data,
     ...record,
@@ -422,20 +416,6 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
   return typeof selector.type === "string" && selector.type.trim() ? selector.type.trim() : null;
 }
 
-function handlerAccepts(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): EventSelector[] {
-  return handler.accepts;
-}
-
-function handlerAcceptedEventTypes(handler: NonNullable<ProjectApp["workflowHandlers"]>[number]): string[] {
-  return [
-    ...new Set(
-      handlerAccepts(handler)
-        .map(eventTypeFromSelector)
-        .filter((type): type is string => Boolean(type)),
-    ),
-  ];
-}
-
 function isProjectScopedForApp(event: Record<string, unknown>, appId: string): boolean {
   const project = projectValue(event);
   return project === appId || project === `${appId}.app`;
@@ -460,27 +440,10 @@ function metricAlertId(event: Record<string, unknown>): number | string | null {
   return typeof alertId === "number" || typeof alertId === "string" ? alertId : null;
 }
 
-function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: string): boolean {
-  const owner = ownerValue(event);
-  const project = projectValue(event);
-  return isMetricFeedbackEvent(event) && (owner === appOwner || (!!project && owner === `project:${project}`));
-}
-
-function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
+function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
   if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
-  if (hasExplicitWorkflowHandler(app, event, appId)) return true;
   if (hasExplicitTaskRoute(app, event, appId)) return true;
-  return isOwnerMetricFeedbackForApp(event, appOwner);
-}
-
-function hasExplicitWorkflowHandler(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
-  return (
-    typeof event.type === "string" &&
-    (app.workflowHandlers ?? []).some((handler) => {
-      if (handler.enabled === false) return false;
-      return handlerAccepts(handler).some((selector) => matchesSelector(selector, event, appId));
-    })
-  );
+  return false;
 }
 
 function routeAccepts(route: ProjectAppTaskRoute): EventSelector[] {
@@ -508,20 +471,12 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
   return {
     workspacePath: (path: string) => resolve(descriptor.projectDir, path),
     workspaceCwd: () => descriptor.projectDir,
-    projectPath: (path: string) => resolve(descriptor.projectDir, path),
     appPath: (path: string) => resolve(descriptor.appDir, path),
     readJson: async <T = unknown>(path: string) => {
       const absolute = resolve(descriptor.appDir, path);
       return JSON.parse(readFileSync(absolute, "utf-8")) as T;
     },
     importModule: async <T = Record<string, unknown>>(path: string) => importRuntimeModule<T>(resolve(path)),
-    startSession: (input) =>
-      opts.manager.run(input.agent, input.task, {
-        source: "project-app",
-        kind: "job",
-        projectId: descriptor.id,
-        ...(input.timeoutMs ? { timeoutMs: input.timeoutMs } : {}),
-      }),
     emit: (event) => {
       const envelope = normalizeEvent(event, {
         source: `project-app:${descriptor.id}`,
@@ -532,24 +487,6 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
     },
     noop: (reason: string) => ({ type: "noop", reason }),
   };
-}
-
-function ownerFallbackTask(descriptor: ProjectAppDescriptor, event: Record<string, unknown>): string {
-  const metricFeedback = isMetricFeedbackEvent(event);
-  return [
-    `Project app: ${descriptor.id}`,
-    `App path: ${descriptor.appDir}`,
-    `Project path: ${descriptor.projectDir}`,
-    "",
-    metricFeedback
-      ? "A metric feedback event reached this app owner but no explicit app handler accepted it. Review the metric alert, decide whether the project/task tree, metric definition, or owner context needs to change, and take the smallest useful action."
-      : "A project-scoped event has no explicit app workflow handler. Review the event, decide whether the task tree, project model, or project artifacts need to change, and take the smallest useful action.",
-    "",
-    "## Event",
-    "```json",
-    JSON.stringify(event, null, 2),
-    "```",
-  ].join("\n");
 }
 
 function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): Cron {
@@ -578,10 +515,6 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
 
 function requiredAppAgentNames(descriptor: ProjectAppDescriptor): string[] {
   const names = new Set<string>([descriptor.owner]);
-  for (const handler of descriptor.app.workflowHandlers ?? []) {
-    const agentName = handler.handler.agent ?? descriptor.owner;
-    if (agentName.trim()) names.add(agentName.trim());
-  }
   const ownerEntryAgent = descriptor.app.ownerEntry?.agent;
   if (ownerEntryAgent?.trim()) names.add(ownerEntryAgent.trim());
   for (const capability of Object.values(descriptor.app.taskWorkflows ?? {})) {
@@ -600,14 +533,11 @@ async function ensureAppAgentRegistered(
   const agentDir = localAgentDir(descriptor.appDir, agentName);
   const registered = opts.registerLocalAgent
     ? await opts.registerLocalAgent(agentName, descriptor.appDir, agentDir)
-    : opts.registerOwnerAgent
-      ? await opts.registerOwnerAgent(agentName, descriptor.appDir)
-      : false;
+    : false;
 
   return registered || opts.manager.hasAgent(agentName);
 }
 
-const projectAppWorkflowSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 const projectAppTaskRouteSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 
@@ -648,124 +578,6 @@ function pruneProjectAppNames(
       byApp.delete(appId);
     }
   }
-}
-
-function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
-  let count = 0;
-  const currentNames = new Set<string>();
-  for (const handler of descriptor.app.workflowHandlers ?? []) {
-    currentNames.add(handler.name);
-    const workflow = handler.handler;
-    const agentName = workflow.agent ?? descriptor.owner;
-    const projectId = workflow.projectId ?? descriptor.id;
-    const entry: CronEntry = {
-      name: handler.name,
-      enabled: handler.enabled !== false,
-      description: handler.description,
-      maxConcurrentTriggers: handler.maxConcurrentTriggers,
-      on: handlerAcceptedEventTypes(handler),
-      context: handler.context,
-      agent: agentName,
-      handler: {
-        workflow: workflow.workflow,
-        agent: agentName,
-        projectId,
-        includeEvent: workflow.includeEvent,
-        task: workflow.task,
-        timeoutMs: workflow.timeoutMs,
-      },
-    };
-    // Register a workflow-backed handler so resolveMode() succeeds when
-    // event-subscribed entries are triggered from the bus.  Without this,
-    // crons that lack a handlerResolver (project-app owner crons) silently
-    // drop event-triggered dispatches because no JS handler is registered.
-    const workflowName = workflow.workflow;
-    const taskText = workflow.task;
-    const includeEvent = workflow.includeEvent;
-    const handlerName = handler.name;
-    cron.registerHandler(handlerName, async (event?: EventEnvelope) => {
-      if (event) {
-        const flattened = flattenEvent(event as unknown as AgentEvent);
-        if (!handlerAccepts(handler).some((selector) => matchesSelector(selector, flattened, descriptor.id))) return;
-      }
-      const runtime = requireWorkflowRuntimeOptions(opts);
-      const trace = childEventTrace(event);
-      const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
-      const task =
-        includeEvent && event
-          ? `${taskText}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``
-          : taskText;
-      opts.bus.emit({
-        type: "handler.workflow_dispatched",
-        source: `agent:${agentName}`,
-        owner: `agent:${agentName}`,
-        data: {
-          handler: handlerName,
-          workflow: workflowName,
-          source: agentName,
-          projectId,
-          workflowRunId: null,
-          status: "started",
-        },
-        ...(trace ? { trace } : {}),
-      } as AgentEvent);
-      const runtimeCtx = buildRuntimeCtx({
-        bus: opts.bus,
-        persistDir: runtime.persistDir,
-        projectRoot: opts.projectRoot,
-        agentsRoot: paths.agentsRoot,
-        sharedRoot: runtime.sharedRoot,
-        projectsRoot: opts.projectsRoot,
-        agentName,
-      });
-      const { result, runId } = await runWorkflowDirect({
-        workflowName,
-        task,
-        manager: opts.manager,
-        runtimeCtx,
-        agentName,
-        persistDir: runtime.persistDir,
-        workflowDir: paths.workflowDir,
-        projectWorkflowDir: paths.projectWorkflowDir,
-        guardsDir: paths.guardsDir,
-        sharedGuardsDir: paths.sharedGuardsDir,
-        projectId,
-        trace,
-      });
-      // Always emit the dispatch event for observability — even on failure.
-      opts.bus.emit({
-        type: "handler.workflow_dispatched",
-        source: `agent:${agentName}`,
-        owner: `agent:${agentName}`,
-        data: {
-          handler: handlerName,
-          workflow: workflowName,
-          source: agentName,
-          projectId,
-          workflowRunId: runId,
-          status: result.type === "done" ? "done" : "blocked",
-          summary: result.type === "done" ? result.summary : undefined,
-          reason: result.type === "blocked" ? result.reason : undefined,
-        },
-        ...(trace ? { trace } : {}),
-      } as AgentEvent);
-      // When the workflow is blocked, throw so cron's .catch() path fires. This triggers
-      // handler.failed + exponential backoff in drainQueuedEventTrigger,
-      // preventing tight error→drain→error cascades for opCount=0 session
-      // errors that runWorkflowDirect resolves instead of rejecting.
-      if (result.type !== "done") {
-        const reason = result.reason;
-        throw new Error(
-          `Workflow "${workflowName}" did not complete: type=${result.type}${reason ? `, reason=${reason}` : ""}`,
-        );
-      }
-    });
-    cron.addSyntheticEntry(entry);
-    count++;
-  }
-
-  rememberProjectAppNames(projectAppWorkflowSyntheticNamesByCron, cron, descriptor.id, currentNames);
-  return count;
 }
 
 type TaskCapabilityRun = {
@@ -1438,14 +1250,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           });
         }
       }
-      if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
-      const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
-      const hasAppEventHandler = typeof descriptor.app.onEvent === "function";
-      const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event, descriptor.id);
+      if (!shouldOfferToApp(descriptor.app, event, descriptor.id)) continue;
       const hasTaskRoute = hasExplicitTaskRoute(descriptor.app, event, descriptor.id);
-      const routedMetricFeedback =
-        isMetricFeedbackEvent(event) && (ownerMetricFeedback || hasWorkflowHandler || hasTaskRoute);
-      if (routedMetricFeedback) {
+      if (isMetricFeedbackEvent(event)) {
         const eventOwner = ownerValue(event);
         opts.bus.emit({
           type: "metric.feedback.routed",
@@ -1462,7 +1269,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           },
         } as AgentEvent);
       }
-      if (hasWorkflowHandler || hasTaskRoute) continue;
+      if (hasTaskRoute) continue;
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
@@ -1485,32 +1292,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           };
           if (result !== undefined) {
             closeInbox("app-onEvent");
-            return;
           }
-          if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
-
-          const sessionId = opts.manager.runAgent(descriptor.owner, ownerFallbackTask(descriptor, event), {
-            source: "project-app:fallback",
-            projectId: descriptor.id,
-            trace: childEventTrace(event),
-          });
-          const trace = childEventTrace(event);
-          opts.bus.emit({
-            type: "handler.workflow_dispatched",
-            source: "project-app-loader",
-            owner: `agent:${descriptor.owner}`,
-            data: {
-              handler: "project-owner-fallback",
-              workflow: "owner-session",
-              source: descriptor.owner,
-              projectId: descriptor.id,
-              workflowRunId: sessionId,
-              status: "started",
-              eventType: event.type,
-            },
-            ...(trace ? { trace } : {}),
-          } as AgentEvent);
-          closeInbox("owner-fallback-session");
         })
         .catch((err) => {
           opts.bus.emit({
@@ -1566,13 +1348,11 @@ export async function installProjectApps(
     const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
     activeAppIds.add(descriptor.id);
     activeCronAppIds.set(cron, activeAppIds);
-    entries += installWorkflowHandlers(opts, cron, descriptor);
     entries += installTaskRoutes(opts, cron, descriptor);
     entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }
 
-  pruneProjectAppNames(projectAppWorkflowSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
   pruneProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
   pruneProjectAppNames(projectAppScheduleSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
 
