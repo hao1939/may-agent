@@ -4,7 +4,13 @@
  * Called by cron with a source-specific task (arXiv, HN, XHS, GitHub).
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { existsSync, readFileSync } from "node:fs";
+import {
+  resolveTaskTreePath,
+  type ProjectAppTaskHandlerResult,
+  type WorkflowContext,
+  type WorkflowResult,
+} from "@may-agent/sdk";
 import {
   checkCircuitBreaker,
   recordCircuitOutcome,
@@ -33,10 +39,90 @@ Output contract:
 `;
 }
 
+function reconciliationPacket(task: string): Record<string, unknown> {
+  const marker = "## Reconciliation Task";
+  const markerIndex = task.indexOf(marker);
+  if (markerIndex < 0) return {};
+  const fenced = task.slice(markerIndex + marker.length);
+  const start = fenced.indexOf("```json");
+  if (start < 0) return {};
+  const jsonStart = start + "```json".length;
+  const end = fenced.indexOf("```", jsonStart);
+  if (end < 0) return {};
+  try {
+    const value = JSON.parse(fenced.slice(jsonStart, end).trim());
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+export function xhsWaitResult(
+  task: string,
+  tree: Record<string, unknown>,
+): ProjectAppTaskHandlerResult | null {
+  const packet = reconciliationPacket(task);
+  const input =
+    packet.input &&
+    typeof packet.input === "object" &&
+    !Array.isArray(packet.input)
+      ? (packet.input as Record<string, unknown>)
+      : {};
+  if (String(input.source ?? "").toLowerCase() !== "xhs") return null;
+
+  const tasks =
+    tree.tasks && typeof tree.tasks === "object" && !Array.isArray(tree.tasks)
+      ? (tree.tasks as Record<string, Record<string, unknown>>)
+      : {};
+  const blocker = tasks["xhs-cookie-refresh-blocked"];
+  const blockerState = String(blocker?.state ?? blocker?.status ?? "missing");
+  if (["done", "accepted", "superseded", "cancelled"].includes(blockerState)) {
+    return null;
+  }
+
+  const summary =
+    "XHS exploration is waiting for the existing cookie-refresh task; no source agent was started.";
+  return {
+    disposition: "waiting",
+    summary,
+    evidence: [
+      `xhs-cookie-refresh-blocked is ${blockerState}`,
+      "The source lane remains gated before agent dispatch.",
+    ],
+    actions: [],
+    conditions: [
+      {
+        id: "task-done:xhs-cookie-refresh-blocked",
+        observer: "project.task.reconciled",
+        taskId: "xhs-cookie-refresh-blocked",
+        expectedState: "done",
+      },
+    ],
+  };
+}
+
+function currentXhsWait(task: string): ProjectAppTaskHandlerResult | null {
+  const treePath = resolveTaskTreePath("/app/projects/scout-knowledge-lib.app");
+  if (!existsSync(treePath)) return null;
+  try {
+    return xhsWaitResult(
+      task,
+      JSON.parse(readFileSync(treePath, "utf-8")) as Record<string, unknown>,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
   const agentsRoot =
     ctx.agentsRoot || resolve(import.meta.dirname ?? ".", "../..");
+
+  const waiting = currentXhsWait(ctx.task);
+  if (waiting) return ctx.done(waiting.summary, waiting);
 
   // Circuit breaker + dedup
   const circuitBlock = checkCircuitBreaker(agentsRoot, agent);

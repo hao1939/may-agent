@@ -3,6 +3,7 @@ import {
   eventDetails,
   type ProjectAppContext,
   type ProjectAppEvent,
+  type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 
 const projectId = "scout-knowledge-lib";
@@ -36,11 +37,96 @@ function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   };
 }
 
+const scoutSources = new Set(["arxiv", "hn", "xhs", "github"]);
+
+export function resolveScoutTask(
+  event: Record<string, unknown>,
+): ProjectAppTaskIntent | null {
+  const details = eventDetails(event);
+  switch (event.type) {
+    case "scout.explore": {
+      const source = String(
+        details.researchSource ?? details.source ?? event.source ?? "",
+      ).toLowerCase();
+      if (!scoutSources.has(source)) return null;
+      return {
+        id: `explore-${source}`,
+        parentId: "ongoing-research",
+        outcome: `Continuously explore ${source} for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.`,
+        acceptance: [
+          "The source is checked without simulated data and useful findings update an existing note or a source-grounded finding.",
+        ],
+        mode: "maintain",
+        workflow: "scout-explore",
+        input: { ...details, source },
+        priority: source === "xhs" ? "P2" : "P1",
+      };
+    }
+    case "scout.digest":
+      return {
+        id: "daily-digest",
+        parentId: "ongoing-research",
+        outcome:
+          "Keep the daily Scout digest delivered and its working accumulator bounded.",
+        acceptance: [
+          "Current findings are delivered and archived, or the workflow records that there are no findings to send.",
+        ],
+        mode: "maintain",
+        workflow: "scout-daily-digest",
+        input: details,
+        priority: "P1",
+      };
+    case "scout.heartbeat":
+      return {
+        id: "cross-source-synthesis",
+        parentId: "ongoing-research",
+        outcome:
+          "Continuously connect source-grounded patterns across arXiv, HN, XHS, and GitHub into reusable knowledge.",
+        acceptance: [
+          "The workflow records a useful synthesis or a justified no-op without duplicating routine source exploration.",
+        ],
+        mode: "maintain",
+        workflow: "scout-heartbeat",
+        input: details,
+        priority: "P2",
+      };
+    case "project.library_health.tick":
+      return {
+        id: "runtime/library-health-observer",
+        parentId: "library-maintenance",
+        outcome:
+          "Keep a deterministic observation of the Scout library shape and wake its owner only for meaningful maintenance signals.",
+        acceptance: [
+          "A current library-health packet is recorded and meaningful signals produce one owner wake.",
+        ],
+        mode: "maintain",
+        workflow: "library-health",
+        input: details,
+        priority: "P1",
+      };
+    case "project.owner.requested":
+      return {
+        id: "library-maintenance",
+        parentId: "project",
+        outcome:
+          "Keep the Scout knowledge library coherent, source-grounded, navigable, and organized around its most useful next maintenance step.",
+        acceptance: [
+          "Scout performs one useful maintenance step or records an evidence-backed no-op without creating duplicate project work.",
+        ],
+        mode: "maintain",
+        input: details,
+        priority: "P1",
+      };
+    default:
+      return null;
+  }
+}
+
 async function routeScoutEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  // Workflow-handled events — noop in onEvent, cron dispatches them
+  // Task-targeted events are handled by the generic reconciler.
   if (
     event.type === "scout.heartbeat" ||
     event.type === "scout.explore" ||
@@ -48,7 +134,7 @@ async function routeScoutEvent(
     event.type === "project.library_health.tick" ||
     event.type === "project.owner.requested"
   ) {
-    return ctx.noop(`${event.type} is handled by workflowHandlers`);
+    return ctx.noop(`${event.type} is handled by taskRoutes`);
   }
 
   if (event.type === "project.comment.created") {
@@ -102,172 +188,189 @@ export default defineProjectApp({
       id: "scout-heartbeat",
       enabled: false, // disabled 2026-06-14: app-driven model replaces blind heartbeat. Cross-source synthesis becomes a task, not a timer.
       intervalMs: 1_800_000, // 30min
-      emits: [{
-        type: "scout.heartbeat",
-        project: projectId,
-      }],
+      emits: [
+        {
+          type: "scout.heartbeat",
+          project: projectId,
+        },
+      ],
     },
     {
       id: "owner-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
-      emits: [ownerRequested("owner-heartbeat", {
-        instruction:
-          "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
-        reviewChecklist: [
-          "Look for cross-source connections that should become library tasks, not ad hoc notes.",
-          "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
-          "Look for source schedules that are producing noise or leaving useful gaps.",
-          "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
-          "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
-        ],
-      })],
+      emits: [
+        ownerRequested("owner-heartbeat", {
+          instruction:
+            "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
+          reviewChecklist: [
+            "Look for cross-source connections that should become library tasks, not ad hoc notes.",
+            "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
+            "Look for source schedules that are producing noise or leaving useful gaps.",
+            "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+            "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
+          ],
+        }),
+      ],
     },
     {
       id: "scout-explore-arxiv",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      emits: [{
-        type: "scout.explore",
-        project: projectId,
-        source: "arxiv",
-      }],
+      emits: [
+        {
+          type: "scout.explore",
+          project: projectId,
+          source: "arxiv",
+        },
+      ],
     },
     {
       id: "scout-explore-hn",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      emits: [{
-        type: "scout.explore",
-        project: projectId,
-        source: "hn",
-      }],
+      emits: [
+        {
+          type: "scout.explore",
+          project: projectId,
+          source: "hn",
+        },
+      ],
     },
     {
       id: "scout-explore-xhs",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      emits: [{
-        type: "scout.explore",
-        project: projectId,
-        source: "xhs",
-      }],
+      emits: [
+        {
+          type: "scout.explore",
+          project: projectId,
+          source: "xhs",
+        },
+      ],
     },
     {
       id: "scout-explore-github",
       enabled: true,
       intervalMs: 3_600_000, // 1h
-      emits: [{
-        type: "scout.explore",
-        project: projectId,
-        source: "github",
-      }],
+      emits: [
+        {
+          type: "scout.explore",
+          project: projectId,
+          source: "github",
+        },
+      ],
     },
     {
       id: "scout-daily-digest",
       enabled: true,
       intervalMs: 86_400_000, // 24h
-      emits: [{
-        type: "scout.digest",
-        project: projectId,
-      }],
+      emits: [
+        {
+          type: "scout.digest",
+          project: projectId,
+        },
+      ],
     },
     {
       id: "library-health",
       enabled: true,
       intervalMs: 21_600_000, // 6h
-      emits: [{
-        type: "project.library_health.tick",
-        project: projectId,
-      }],
+      emits: [
+        {
+          type: "project.library_health.tick",
+          project: projectId,
+        },
+      ],
     },
   ],
 
-  workflowHandlers: [
-    {
-      name: "scout-heartbeat",
-      type: "job",
-      enabled: true,
-      description: "Scout creative heartbeat — synthesize, connect, discover.",
-      accepts: ["scout.heartbeat"],
-      handler: {
-        workflow: "scout-heartbeat",
-        agent: "scout",
-        includeEvent: true,
-        task: `${appTaskContext}\n[heartbeat] You are scout. Read your heartbeat.md and do your work.`,
-        timeoutMs: 1_800_000,
-      },
+  ownerEntry: {
+    workflow: "knowledge-planner",
+    task: `${appTaskContext}\nReview the reconciled Scout library-maintenance responsibility and perform the smallest useful owner step.`,
+    timeoutMs: 1_800_000,
+    context: taskTreeContext,
+  },
+
+  taskWorkflows: {
+    "scout-heartbeat": {
+      workflow: "scout-heartbeat",
+      agent: "scout",
+      task: `${appTaskContext}\n[heartbeat] Synthesize useful cross-source knowledge without duplicating routine exploration.`,
+      timeoutMs: 1_800_000,
       context: scoutContext,
     },
+    "scout-explore": {
+      workflow: "scout-explore",
+      agent: "scout",
+      task: `${appTaskContext}\nExplore the source named by the reconciliation input and update the Scout knowledge library when useful.`,
+      timeoutMs: 1_200_000,
+      context: scoutContext,
+    },
+    "scout-daily-digest": {
+      workflow: "scout-daily-digest",
+      agent: "scout",
+      task: `${appTaskContext}\nCompile today's research digest and send it to Hao when there are findings.`,
+      timeoutMs: 300_000,
+      context: scoutContext,
+    },
+    "library-health": {
+      workflow: "library-health",
+      task: [
+        appTaskContext,
+        "sharedKnowledge: /app/shared/knowledge",
+        "",
+        "Build and record a deterministic library-health packet.",
+        "Do not make content decisions here; wake Scout only when the packet contains signals that need owner judgment.",
+      ].join("\n"),
+      timeoutMs: 120_000,
+      context: taskTreeContext,
+    },
+  },
+
+  taskRoutes: [
     {
-      name: "scout-explore",
-      type: "job",
+      name: "scout-task-heartbeat",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description: "Reconciles the standing cross-source synthesis task.",
+      accepts: ["scout.heartbeat"],
+      resolve: resolveScoutTask,
+    },
+    {
+      name: "scout-task-explore",
       enabled: true,
       maxConcurrentTriggers: 2,
       description:
-        "Scout routine discovery — explore a source (arXiv, HN, XHS, GitHub) for new findings.",
+        "Reconciles one independent standing source-exploration task.",
       accepts: ["scout.explore"],
-      handler: {
-        workflow: "scout-explore",
-        agent: "scout",
-        includeEvent: true,
-        task: appTaskContext,
-        timeoutMs: 1_200_000,
-      },
-      context: scoutContext,
+      resolve: resolveScoutTask,
     },
     {
-      name: "scout-daily-digest",
-      type: "job",
+      name: "scout-task-digest",
       enabled: true,
-      description:
-        "Scout daily digest — compile findings and send to human via Telegram.",
+      maxConcurrentTriggers: 1,
+      description: "Reconciles the standing daily digest task.",
       accepts: ["scout.digest"],
-      handler: {
-        workflow: "scout-daily-digest",
-        agent: "scout",
-        includeEvent: true,
-        task: `${appTaskContext}\nCompile today's research digest and send to Hao.`,
-        timeoutMs: 300_000,
-      },
-      context: scoutContext,
+      resolve: resolveScoutTask,
     },
     {
-      name: "scout-knowledge-lib-planner",
-      type: "job",
+      name: "scout-task-library-health",
       enabled: true,
+      maxConcurrentTriggers: 1,
       description:
-        "Wakes Scout as project owner to review the knowledge-library task tree and perform the smallest useful maintenance step.",
-      accepts: ["project.owner.requested"],
-      handler: {
-        workflow: "knowledge-planner",
-        includeEvent: true,
-        task: appTaskContext,
-        timeoutMs: 1_800_000,
-      },
-      context: taskTreeContext,
-    },
-    {
-      name: "scout-library-health",
-      type: "job",
-      enabled: true,
-      description:
-        "Deterministically scans the Scout knowledge library shape and wakes Scout only for owner-judgment signals.",
+        "Reconciles the deterministic standing library-health observer.",
       accepts: ["project.library_health.tick"],
-      handler: {
-        workflow: "library-health",
-        includeEvent: true,
-        task: [
-          appTaskContext,
-          "sharedKnowledge: /app/shared/knowledge",
-          "persistent-task: skip",
-          "",
-          "Build and record a deterministic library-health packet.",
-          "Do not make content decisions here; wake Scout only when the packet contains signals that need owner judgment.",
-        ].join("\n"),
-        timeoutMs: 120_000,
-      },
-      context: taskTreeContext,
+      resolve: resolveScoutTask,
+    },
+    {
+      name: "scout-task-owner",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Routes Scout library-maintenance exceptions through the accountable owner entry.",
+      accepts: ["project.owner.requested"],
+      resolve: resolveScoutTask,
     },
   ],
 
@@ -286,27 +389,31 @@ export default defineProjectApp({
 
   eventGraph: {
     handlers: {
-      "scout-heartbeat": {
-        emits: ["project.knowledge.maintained"],
+      "scout-task-heartbeat": {
+        emits: ["project.knowledge.maintained", "project.task.reconciled"],
         description: "Scout creative session — synthesizes across sources.",
       },
-      "scout-explore": {
-        emits: ["project.knowledge.maintained"],
+      "scout-task-explore": {
+        emits: ["project.knowledge.maintained", "project.task.reconciled"],
         description:
           "Routine discovery from arXiv, HN, XHS, or GitHub. Writes findings to knowledge/.",
       },
-      "scout-daily-digest": {
-        emits: [],
+      "scout-task-digest": {
+        emits: ["project.task.reconciled"],
         description:
           "Compiles daily digest from workspace/digest/today.md and sends to human.",
       },
-      "scout-knowledge-lib-planner": {
-        emits: ["project.knowledge.maintained"],
+      "scout-task-owner": {
+        emits: ["project.knowledge.maintained", "project.task.reconciled"],
         description:
           "Reviews library task tree and updates the knowledge workspace.",
       },
-      "scout-library-health": {
-        emits: ["project.library_health.observed", "project.owner.requested"],
+      "scout-task-library-health": {
+        emits: [
+          "project.library_health.observed",
+          "project.owner.requested",
+          "project.task.reconciled",
+        ],
         description:
           "Observes library shape and wakes Scout for meaningful maintenance signals.",
       },
@@ -337,6 +444,11 @@ export default defineProjectApp({
     externalEvents: [
       "project.knowledge.maintained",
       "project.library_health.observed",
+      "handler.workflow_dispatched",
+      "project.task.reconcile.started",
+      "project.task.reconcile.skipped",
+      "project.task.handler.unavailable",
+      "project.task.reconciled",
     ],
     intentionalCycles: [
       {
