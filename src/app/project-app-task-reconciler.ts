@@ -46,6 +46,11 @@ export type ProjectAppTaskAttemptRecovery = {
   trigger?: Record<string, unknown>;
 };
 
+export type ProjectAppTaskRecoveryAttention = {
+  taskId: string;
+  summary: string;
+};
+
 const reconcilerRuntimeId = randomUUID();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -349,6 +354,53 @@ export function releaseInterruptedProjectAppTaskAttempt(
       },
     };
     refreshActiveTaskProjection(tree);
+    saveTaskTree(config, tree);
+    return true;
+  });
+}
+
+export function pendingProjectAppTaskRecoveryAttention(config: TaskTreeConfig): ProjectAppTaskRecoveryAttention[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    return Object.values(tree.tasks).flatMap((task) => {
+      const trace = reconciliationTrace(task);
+      if (
+        taskState(task) !== "review" ||
+        trace.phase !== "attention" ||
+        trace.interruptionReason !== "previous-runtime-attempt-not-recoverable" ||
+        trace.recoveryOwnerWokenAt
+      ) {
+        return [];
+      }
+      return [
+        {
+          taskId: task.id,
+          summary:
+            typeof task.summary === "string" && task.summary.trim()
+              ? task.summary
+              : `Interrupted reconciliation ${task.id} requires owner attention`,
+        },
+      ];
+    });
+  });
+}
+
+export function acknowledgeProjectAppTaskRecoveryAttention(config: TaskTreeConfig, taskId: string): boolean {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[taskId];
+    if (!task) return false;
+    const trace = reconciliationTrace(task);
+    if (trace.interruptionReason !== "previous-runtime-attempt-not-recoverable" || trace.recoveryOwnerWokenAt) {
+      return false;
+    }
+    task.trace = {
+      ...(task.trace ?? {}),
+      reconciliation: {
+        ...trace,
+        recoveryOwnerWokenAt: new Date().toISOString(),
+      },
+    };
     saveTaskTree(config, tree);
     return true;
   });
