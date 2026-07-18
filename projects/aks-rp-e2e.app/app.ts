@@ -80,10 +80,83 @@ function completionReviewId(details: Record<string, unknown>): string {
   return `runtime/task-review/${readable || "task"}-${digest}`;
 }
 
+function detailStrings(
+  details: Record<string, unknown>,
+  ...names: string[]
+): string[] {
+  for (const name of names) {
+    const value = details[name];
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+        .filter(Boolean)
+        .sort();
+    }
+  }
+  return [];
+}
+
+function problemInvestigationId(
+  event: Record<string, unknown>,
+  details: Record<string, unknown>,
+): string {
+  const problemKey = detailString(details, "problemKey", "problem_key");
+  const affectedTasks = detailStrings(
+    details,
+    "affectedTasks",
+    "affected_tasks",
+  );
+  const eventIdentity = event.id ?? event.eventId ?? event.event_id;
+  const digest = createHash("sha256")
+    .update(
+      eventIdentity === undefined
+        ? `${problemKey}\0${affectedTasks.join("\0")}`
+        : String(eventIdentity),
+    )
+    .digest("hex")
+    .slice(0, 16);
+  const readable = problemKey
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/problem-investigation/${readable || "problem"}-${digest}`;
+}
+
 export function resolveAksReconciliationTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
-  const details = eventDetails(event);
+  const baseDetails = eventDetails(event);
+  const params =
+    baseDetails.params &&
+    typeof baseDetails.params === "object" &&
+    !Array.isArray(baseDetails.params)
+      ? (baseDetails.params as Record<string, unknown>)
+      : {};
+  const details = { ...baseDetails, ...params };
+  if (event.type === "project.problem.investigation.requested") {
+    const problemKey = detailString(details, "problemKey", "problem_key");
+    if (!problemKey) return null;
+    const affectedTasks = detailStrings(
+      details,
+      "affectedTasks",
+      "affected_tasks",
+    );
+    return {
+      id: problemInvestigationId(event, details),
+      parentId: "project",
+      outcome: `Investigate problem ${problemKey} once and return an evidence-backed resolved, escalated, or inconclusive disposition.`,
+      acceptance: [
+        "The investigation records its root cause, action, verification, and exact planner continuation in the durable problem ledger.",
+        "Exactly one structured problem result is delivered to the planner without directly mutating the task tree.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "problem-solver",
+      input: { problemKey, affectedTasks },
+      outputs: [".state/problem-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   if (event.type === "project.task.completed") {
     const completedTaskId = detailString(details, "taskId", "task_id");
     const attemptId = detailString(details, "attemptId", "attempt_id");
@@ -357,6 +430,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "problem-solver": {
+      workflow: "problem-solver",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nmaxAttempts: 1`,
+      timeoutMs: 1_800_000,
+      context: taskTreeContext,
+    },
     "task-reviewer": {
       workflow: "task-reviewer",
       agent: "aks-reviewer",
@@ -386,6 +466,20 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-problem-investigation",
+      enabled: true,
+      maxConcurrentTriggers: 2,
+      description:
+        "Investigates each correlated project problem through a bounded achieve task.",
+      accepts: [
+        {
+          type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-completion-review",
       enabled: true,
@@ -506,32 +600,6 @@ export default defineProjectApp({
         { type: "project.task.assigned", target: { project: projectId } },
       ],
       emits: ["project.task.completed", "project.task.tick"],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-problem-solver",
-      type: "job",
-      enabled: true,
-      description:
-        "Focused problem resolver. Investigates blocked/failed work, fixes local causes when possible, and emits problem resolved/escalated for planner reconciliation.",
-      maxConcurrentTriggers: 2,
-      handler: {
-        workflow: "problem-solver",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxAttempts: 1`,
-        timeoutMs: 1_800_000,
-      },
-      accepts: [
-        {
-          type: "project.problem.investigation.requested",
-          target: { project: projectId },
-        },
-      ],
-      emits: [
-        "project.problem.resolved",
-        "project.problem.escalated",
-        "project.problem.inconclusive",
-      ],
       context: taskTreeContext,
     },
     {

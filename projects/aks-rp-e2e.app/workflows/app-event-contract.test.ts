@@ -482,6 +482,68 @@ describe("app event contract", () => {
     }
   });
 
+  test("problem requests resolve to independently replay-safe achieve tasks", () => {
+    const event = {
+      id: 42,
+      type: "project.problem.investigation.requested",
+      target: { project: projectId },
+      data: {
+        problemKey: "aks-rp-e2e:staging-arm-auth",
+        affectedTasks: ["task-b", "task-a"],
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "problem-solver",
+      priority: "P0",
+      input: {
+        problemKey: "aks-rp-e2e:staging-arm-auth",
+        affectedTasks: ["task-a", "task-b"],
+      },
+    });
+    expect(resolveAksReconciliationTask(structuredClone(event))?.id).toBe(
+      first?.id,
+    );
+    expect(resolveAksReconciliationTask({ ...event, id: 43 })?.id).not.toBe(
+      first?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        type: event.type,
+        data: event.data,
+      })?.id,
+    ).toBe(
+      resolveAksReconciliationTask({
+        type: event.type,
+        data: structuredClone(event.data),
+      })?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        type: event.type,
+        data: { affectedTasks: ["task-a"] },
+      }),
+    ).toBeNull();
+    expect(
+      resolveAksReconciliationTask(
+        actionEvent("investigate-problem", {
+          problemKey: "manual-problem",
+          affectedTasks: ["task-a"],
+        }),
+      ),
+    ).toMatchObject({
+      workflow: "problem-solver",
+      input: {
+        problemKey: "manual-problem",
+        affectedTasks: ["task-a"],
+      },
+    });
+  });
+
   test("stall review, problem, and approval workflows use explicit request events", () => {
     expect(handler("aks-rp-e2e-project-planner").emits).toEqual(
       expect.arrayContaining([
@@ -489,9 +551,17 @@ describe("app event contract", () => {
         "project.problem.investigation.requested",
       ]),
     );
-    expect(handler("aks-rp-e2e-problem-solver")).toMatchObject({
-      handler: { workflow: "problem-solver" },
-      accepts: [{ type: "project.problem.investigation.requested" }],
+    expect(taskRoute("aks-rp-e2e-task-problem-investigation")).toMatchObject({
+      accepts: [
+        {
+          type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["problem-solver"]).toMatchObject({
+      workflow: "problem-solver",
+      agent: "aks-explorer",
     });
     expect(handler("aks-rp-e2e-project-stall-review")).toMatchObject({
       handler: { workflow: "project-stall-review" },
@@ -516,6 +586,17 @@ describe("app event contract", () => {
     expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
       accepts: [
         { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+    });
+    expect(handlersForEvent("project.problem.investigation.requested")).toEqual(
+      [],
+    );
+    expect(taskRoute("aks-rp-e2e-task-problem-investigation")).toMatchObject({
+      accepts: [
+        {
+          type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
       ],
     });
     expect(handlersForEvent("project.stall.reviewed")).toEqual([
