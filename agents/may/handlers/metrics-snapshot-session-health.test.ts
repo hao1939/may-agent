@@ -208,16 +208,17 @@ describe("metrics-snapshot session health metrics", () => {
         now - 60_000,
       ],
     );
-    for (const [status, project, offset] of [
-      ["handled", "alpha", 18_000],
+    for (const [deliveryStatus, project, offset] of [
+      ["accepted", "alpha", 18_000],
       ["pending", "beta", 17_000],
     ] as const) {
       db.run(
-        "INSERT INTO events (event_type, source, status, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO events (event_type, source, delivery_status, accepted_at, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
         [
           "project.owner.requested",
           "evaluation.app",
-          status,
+          deliveryStatus,
+          deliveryStatus === "accepted" ? now - offset + 1_000 : null,
           JSON.stringify({
             project,
             reason: "evaluation-project-health-feedback",
@@ -226,16 +227,17 @@ describe("metrics-snapshot session health metrics", () => {
         ],
       );
     }
-    for (const [status, owner, offset] of [
-      ["handled", "agent:alpha", 16_000],
+    for (const [deliveryStatus, owner, offset] of [
+      ["accepted", "agent:alpha", 16_000],
       ["pending", "agent:beta", 15_000],
     ] as const) {
       db.run(
-        "INSERT INTO events (event_type, owner, status, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO events (event_type, owner, delivery_status, accepted_at, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
         [
           "learning.feedback",
           owner,
-          status,
+          deliveryStatus,
+          deliveryStatus === "accepted" ? now - offset + 1_000 : null,
           JSON.stringify({ findingId: "weak-verification" }),
           now - offset,
         ],
@@ -1165,6 +1167,44 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
         now - 2 * 60_000,
       ],
     );
+    const escalationRows = db
+      .prepare(
+        `SELECT id, timestamp, json_extract(data, '$.escalationId') AS escalationId
+           FROM events
+          WHERE event_type = 'escalation.created'
+            AND json_extract(data, '$.escalationId') IN ('esc_open_1', 'esc_open_2', 'esc_closed')`,
+      )
+      .all() as Array<{
+      id: number;
+      timestamp: number;
+      escalationId: string;
+    }>;
+    const resolvedEscalation = db
+      .prepare(
+        `SELECT id, timestamp
+           FROM events
+          WHERE event_type = 'escalation.resolved'
+            AND json_extract(data, '$.escalationId') = 'esc_closed'`,
+      )
+      .get() as { id: number; timestamp: number };
+    for (const escalation of escalationRows) {
+      const closed = escalation.escalationId === "esc_closed";
+      db.run(
+        `INSERT INTO event_pair_runs
+         (pair_name, correlation_key, open_event_id, close_event_id, owner, status,
+          opened_at, expected_close_at, closed_at)
+         VALUES ('escalation', ?, ?, ?, 'agent:may', ?, ?, ?, ?)`,
+        [
+          escalation.escalationId,
+          escalation.id,
+          closed ? resolvedEscalation.id : null,
+          closed ? "closed" : "open",
+          escalation.timestamp,
+          escalation.timestamp + 24 * 60 * 60_000,
+          closed ? resolvedEscalation.timestamp : null,
+        ],
+      );
+    }
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [

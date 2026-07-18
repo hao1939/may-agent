@@ -1653,17 +1653,9 @@ export const create: HandlerModule["create"] = (
         "escalation.pending-count",
         count(
           `SELECT COUNT(*) as c
-           FROM events created
-           WHERE created.event_type = 'escalation.created'
-             AND COALESCE(created.status, 'pending') NOT IN ('resolved', 'dismissed', 'handled')
-             AND json_valid(created.data)
-             AND NOT EXISTS (
-               SELECT 1
-               FROM events closed
-               WHERE closed.event_type IN ('escalation.resolved', 'escalation.dismissed')
-                 AND json_valid(closed.data)
-                 AND json_extract(closed.data, '$.escalationId') = json_extract(created.data, '$.escalationId')
-             )`,
+           FROM event_pair_runs
+           WHERE pair_name = 'escalation'
+             AND status IN ('open', 'orphan')`,
         ),
       );
     } catch (e) {
@@ -2011,7 +2003,7 @@ export const create: HandlerModule["create"] = (
            FROM events
           WHERE event_type = 'project.owner.requested'
             AND source = 'evaluation.app'
-            AND (accepted_at IS NOT NULL OR COALESCE(status, 'pending') IN ('handled', 'completed', 'resolved'))
+            AND delivery_status = 'accepted'
             AND timestamp > ?
             AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
         outcomeWindowStart,
@@ -2031,8 +2023,7 @@ export const create: HandlerModule["create"] = (
                FROM events
               WHERE event_type = 'project.owner.requested'
                 AND source = 'evaluation.app'
-                AND accepted_at IS NULL
-                AND COALESCE(status, 'pending') NOT IN ('handled', 'completed', 'resolved')
+                AND delivery_status IN ('pending', 'unhandled')
                 AND timestamp > ?
                 AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'`,
           )

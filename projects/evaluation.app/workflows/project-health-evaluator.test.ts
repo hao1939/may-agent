@@ -191,6 +191,30 @@ describe("project health evaluator escalation audit", () => {
     ]);
   });
 
+  test("queries escalation events using the current events schema", async () => {
+    const appDir = await makeAppDirWithTree({ tasks: {} });
+    const packet = escalationPacket(
+      {
+        query: {
+          sql: (sql: string) => {
+            expect(sql).not.toContain("e.status");
+            expect(sql).toContain("e.subject_status AS status");
+            return { rows: [] };
+          },
+        },
+      } as never,
+      {
+        targetProject: "evaluation.app",
+        targetAppDir: appDir,
+        targetDomainDir: appDir,
+        reason: "test",
+      },
+    );
+
+    expect(packet.rawQueryUnavailable).toBeUndefined();
+    expect(packet.counts).toMatchObject({ created: 0, open: 0, staleOpen: 0 });
+  });
+
   test("does not warn when approval dispatch deduplication is working", async () => {
     const appDir = await makeAppDirWithTree({ tasks: {} });
     await writeFile(

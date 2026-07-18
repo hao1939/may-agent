@@ -311,7 +311,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
 
   const recentAbnormalEvents = queryRows(ctx, () =>
     ctx.query.sql(
-      `SELECT id, event_type, source, owner, timestamp, status, data
+      `SELECT id, event_type, source, owner, timestamp,
+              delivery_status, accepted_by, accepted_at, data
          FROM events
         WHERE timestamp >= ?
           AND event_type IN (
@@ -330,7 +331,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
 
   const unknownProjectEvents = queryRows(ctx, () =>
     ctx.query.sql(
-      `SELECT id, event_type, source, owner, timestamp, status, data
+      `SELECT id, event_type, source, owner, timestamp,
+              delivery_status, accepted_by, accepted_at, data
          FROM events
         WHERE timestamp >= ?
           AND event_type LIKE 'project.%'
@@ -371,18 +373,15 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const staleEscalations = queryRows(ctx, () =>
     ctx.query.sql(
       `SELECT created.id, created.timestamp, created.owner, created.source, created.data
-         FROM events created
-        WHERE created.event_type = 'escalation.created'
+         FROM event_pair_runs pair
+         JOIN events created ON created.id = pair.open_event_id
+        WHERE pair.pair_name = 'escalation'
+          AND pair.status IN ('open', 'orphan')
+          AND created.event_type = 'escalation.created'
           AND created.timestamp < ?
           AND created.timestamp >= ?
           AND (json_extract(created.data, '$.sourceAgent') IS NULL
                OR json_extract(created.data, '$.sourceAgent') = ?)
-          AND NOT EXISTS (
-            SELECT 1
-              FROM events closed
-             WHERE closed.event_type IN ('escalation.resolved', 'escalation.dismissed')
-               AND json_extract(closed.data, '$.escalationId') = json_extract(created.data, '$.escalationId')
-          )
         ORDER BY created.timestamp ASC`,
       [staleEscalationCutoff, chronicallyStaleFloor, ownerAgent],
       { limit: 20 },

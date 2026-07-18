@@ -85,6 +85,38 @@ describe("ops-health-review", () => {
       .map((line) => JSON.parse(line));
   }
 
+  function pairLatestEscalation(
+    db: ReturnType<typeof setup>["db"],
+    escalationId: string,
+  ) {
+    const created = db
+      .prepare(
+        `SELECT id, owner, timestamp
+           FROM events
+          WHERE event_type = 'escalation.created'
+            AND json_extract(data, '$.escalationId') = ?
+          ORDER BY id DESC
+          LIMIT 1`,
+      )
+      .get(escalationId) as {
+      id: number;
+      owner: string | null;
+      timestamp: number;
+    };
+    db.run(
+      `INSERT INTO event_pair_runs
+       (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at)
+       VALUES ('escalation', ?, ?, ?, 'open', ?, ?)`,
+      [
+        escalationId,
+        created.id,
+        created.owner,
+        created.timestamp,
+        created.timestamp + 24 * 60 * 60_000,
+      ],
+    );
+  }
+
   it("records a quiet observation without waking the owner", async () => {
     const { appDir, emitted, ctx, close } = setup();
 
@@ -122,6 +154,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_stale");
 
     const result = await execute(ctx);
     close();
@@ -166,6 +199,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_replied");
     db.run(
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
@@ -321,6 +355,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_aks");
 
     // Another project-agent escalation
     db.run(
@@ -337,6 +372,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_scout");
 
     const result = await execute(ctx);
     close();
@@ -369,6 +405,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_platform");
 
     // Project-agent escalation that should be filtered out
     db.run(
@@ -385,6 +422,7 @@ describe("ops-health-review", () => {
         twoHoursAgo,
       ],
     );
+    pairLatestEscalation(db, "esc_aks2");
 
     await execute(ctx);
     close();

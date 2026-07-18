@@ -220,7 +220,7 @@ function buildReviewPacket(
   ]);
 
   // Lifecycle work comes from the canonical open owner inbox projection, not
-  // from legacy events.status values.
+  // from mutable fields on event rows.
   let openInboxRows: Array<Record<string, unknown>> = [];
   try {
     openInboxRows = openPlatformInboxRows(ctx);
