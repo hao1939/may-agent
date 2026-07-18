@@ -499,18 +499,40 @@ and one owner entry. Live evidence showed:
 - evaluator/judge terminal events were filtered before they could create
   self-evaluation tasks.
 
-A production owner-action canary then exercised the authority boundary twice.
-Generation 3 asked the owner to create a canary task; the evaluator session was
-persisted with `toolPolicy: readonly`, invoked only `finish`, returned a typed
-`create-task` action, and app code applied it. Generation 4 returned a typed
-`close-task` action with `expectedRevision: 0`; app code validated and applied
-the closure. The owner sessions made no direct file or task-tree mutation.
+A production owner-action canary first exercised the proposed authority
+boundary twice. Generation 3 asked the owner to create a canary task; the
+evaluator session was persisted with `toolPolicy: readonly`, invoked only
+`finish`, and returned a typed `create-task` action. Generation 4 returned a
+typed `close-task` action with `expectedRevision: 0`. The owner sessions made no
+direct file or task-tree mutation.
+
+The follow-up implementation removed the evaluation-specific action applier.
+Workflow completion now carries the structured handler result through the
+typed workflow runner. The generic reconciler verifies the task generation,
+attempt, and handler, validates the complete action batch, applies it, and
+records the reconciliation outcome under one task-tree lock and save. A stale
+claim exits before action validation or mutation, and one invalid action rejects
+the whole batch. The boundary enforces action scope, expected revision, a
+16-action budget, non-empty evidence, and protection for reconciler-owned
+`runtime/*` tasks. `progressing` and `waiting` also end their attempts through
+this boundary; `waiting` requires an identified Condition.
+
+The post-deployment production canary then exercised this generic boundary in
+both directions. Generation 5 used evaluator session `s_1784371353696_1` to
+propose creation of `atomic-owner-action-canary-20260718`; event `3470662`
+recorded `proposedActions`, and reconciliation event `3470665` recorded
+`actionsApplied: ["created atomic-owner-action-canary-20260718"]`. Generation 6
+used session `s_1784371415872_2` to propose its revision-checked closure; events
+`3470744` and `3470747` recorded the proposal and applied action respectively.
+Both sessions persisted `toolPolicy: readonly` and invoked only `finish`. The
+task state records `created_by` and `done_by` as
+`project-app-task-reconciler`, and no workflow-side task mutation occurred.
 
 Two limitations remain explicit:
 
-1. The pilot action applier is evaluation-app compatibility code over existing
-   task-tree commands. A generic atomic `HandlerResult.actions` command boundary
-   is still required before broad app migration.
+1. Condition identity validation and waiting-attempt termination have focused
+   coverage, but end-to-end Condition event materialization and affected-task
+   wake filtering are not yet proven in production.
 2. `SubagentManager` is still the durable infrastructure facade and Gym still
    enters through the full May binary. Extracting the shared agent runner and
    moving Gym to direct runner use remain separate runtime work.

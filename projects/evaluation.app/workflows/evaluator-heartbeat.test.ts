@@ -36,8 +36,8 @@ function context(result: Record<string, unknown>) {
           structuredResult: result,
         };
       },
-      done(summary: string) {
-        return { type: "done", summary };
+      done(summary: string, output?: unknown) {
+        return { type: "done", summary, output };
       },
       blocked(reason: string, detail?: unknown) {
         return { type: "blocked", reason, context: detail };
@@ -47,7 +47,7 @@ function context(result: Record<string, unknown>) {
 }
 
 describe("evaluation owner action boundary", () => {
-  it("runs owner judgment read-only and lets the app accept a no-op", async () => {
+  it("runs owner judgment read-only and returns a typed no-op to the reconciler", async () => {
     const harness = context({
       disposition: "converged",
       summary: "Existing tasks already cover the signal.",
@@ -61,9 +61,12 @@ describe("evaluation owner action boundary", () => {
     expect(harness.runOptions?.tools).toBe("readonly");
     expect(harness.runOptions?.schema).toBeDefined();
     expect(harness.emitted.at(-1)?.type).toBe("evaluation.owner_reviewed");
+    if (result.type === "done") {
+      expect((result.output as Record<string, unknown>).actions).toEqual([]);
+    }
   });
 
-  it("rejects owner attempts to mutate reconciler-owned runtime tasks", async () => {
+  it("returns proposed actions without applying them inside the workflow", async () => {
     const harness = context({
       disposition: "progressing",
       summary: "Change the controller task.",
@@ -80,9 +83,11 @@ describe("evaluation owner action boundary", () => {
 
     const result = await execute(harness.ctx);
 
-    expect(result).toMatchObject({
-      type: "blocked",
-      reason: "Evaluation owner actions were rejected",
-    });
+    expect(result.type).toBe("done");
+    if (result.type === "done") {
+      expect(result.output).toMatchObject({
+        actions: [{ kind: "close-task", taskId: "runtime/owner-review" }],
+      });
+    }
   });
 });

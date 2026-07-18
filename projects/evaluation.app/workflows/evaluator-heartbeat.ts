@@ -1,16 +1,8 @@
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import {
-  createTask,
-  markTaskDone,
-  readTask,
   resolveTaskTreePath,
-  taskRevision,
-  taskTreeConfig,
   Type,
-  unblockTask,
-  updateTaskOutputs,
-  updateTaskText,
+  type ProjectAppTaskHandlerResult,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
@@ -20,7 +12,6 @@ export const description = "evaluation app owner review.";
 
 const APP_DIR = "/app/projects/evaluation.app";
 const TASK_TREE_PATH = resolveTaskTreePath(APP_DIR);
-const DISCUSSION_PATH = join(APP_DIR, "discussion.md");
 
 const ownerResultSchema = Type.Object({
   disposition: Type.Union([
@@ -70,54 +61,13 @@ const ownerResultSchema = Type.Object({
         expectedRevision: Type.Integer({ minimum: 0 }),
         reason: Type.String({ minLength: 1 }),
       }),
-      Type.Object({
-        kind: Type.Literal("record-decision"),
-        text: Type.String({ minLength: 1 }),
-      }),
     ]),
     { maxItems: 3 },
   ),
 });
 
-type OwnerAction =
-  | {
-      kind: "create-task";
-      id: string;
-      parentId: string;
-      goal: string;
-      outputs: string[];
-      acceptance: string[];
-      priority?: "P0" | "P1" | "P2" | "P3";
-      owner?: string;
-      workflow?: string;
-    }
-  | {
-      kind: "update-task";
-      taskId: string;
-      expectedRevision: number;
-      goal?: string;
-      outputs?: string[];
-      acceptance?: string[];
-    }
-  | {
-      kind: "close-task";
-      taskId: string;
-      expectedRevision: number;
-      summary: string;
-    }
-  | {
-      kind: "unblock-task";
-      taskId: string;
-      expectedRevision: number;
-      reason: string;
-    }
-  | { kind: "record-decision"; text: string };
-
-type OwnerResult = {
+type OwnerResult = ProjectAppTaskHandlerResult & {
   disposition: "converged" | "progressing" | "waiting";
-  summary: string;
-  evidence: string[];
-  actions: OwnerAction[];
 };
 
 type TaskRecord = {
@@ -365,135 +315,6 @@ function runtimePacket(ctx: WorkflowContext): Record<string, unknown> {
   };
 }
 
-function ownerTaskConfig() {
-  return taskTreeConfig({
-    appDir: APP_DIR,
-    projectDir: APP_DIR,
-    worker: "evaluator",
-    maxConcurrent: 1,
-  });
-}
-
-function assertMutableTask(
-  action: Extract<OwnerAction, { taskId: string }>,
-): void {
-  if (action.taskId.startsWith("runtime/")) {
-    throw new Error(
-      `Owner actions cannot mutate reconciler task ${action.taskId}`,
-    );
-  }
-  const task = readTask(ownerTaskConfig(), action.taskId);
-  if (!task) throw new Error(`Owner action task not found: ${action.taskId}`);
-  const revision = taskRevision(task);
-  if (revision !== action.expectedRevision) {
-    throw new Error(
-      `Owner action for ${action.taskId} is stale: expected revision ${action.expectedRevision}, current ${revision}`,
-    );
-  }
-}
-
-function validateOwnerActions(actions: OwnerAction[]): void {
-  const ids = new Set<string>();
-  for (const action of actions) {
-    const identity =
-      action.kind === "create-task"
-        ? action.id
-        : "taskId" in action
-          ? action.taskId
-          : "discussion";
-    if (ids.has(identity)) {
-      throw new Error(`Owner result contains multiple actions for ${identity}`);
-    }
-    ids.add(identity);
-    if (action.kind === "create-task") {
-      if (action.id.startsWith("runtime/")) {
-        throw new Error(
-          "Owner actions cannot create reconciler-owned runtime tasks",
-        );
-      }
-      if (readTask(ownerTaskConfig(), action.id)) {
-        throw new Error(`Owner action task already exists: ${action.id}`);
-      }
-      if (!readTask(ownerTaskConfig(), action.parentId)) {
-        throw new Error(`Owner action parent not found: ${action.parentId}`);
-      }
-    } else if ("taskId" in action) {
-      assertMutableTask(action);
-      if (
-        action.kind === "update-task" &&
-        action.goal === undefined &&
-        action.outputs === undefined &&
-        action.acceptance === undefined
-      ) {
-        throw new Error(`Owner update for ${action.taskId} contains no change`);
-      }
-    }
-  }
-}
-
-function applyOwnerActions(actions: OwnerAction[]): string[] {
-  validateOwnerActions(actions);
-  const config = ownerTaskConfig();
-  const applied: string[] = [];
-  for (const action of actions) {
-    switch (action.kind) {
-      case "create-task":
-        createTask(config, {
-          id: action.id,
-          parentId: action.parentId,
-          goal: action.goal,
-          outputs: action.outputs,
-          acceptance: action.acceptance,
-          priority: action.priority,
-          owner: action.owner,
-          workflow: action.workflow,
-        });
-        applied.push(`created ${action.id}`);
-        break;
-      case "update-task":
-        if (action.goal !== undefined || action.acceptance !== undefined) {
-          updateTaskText(config, {
-            taskId: action.taskId,
-            goal: action.goal,
-            acceptance: action.acceptance,
-          });
-        }
-        if (action.outputs !== undefined) {
-          updateTaskOutputs(config, {
-            taskId: action.taskId,
-            outputs: action.outputs,
-          });
-        }
-        applied.push(`updated ${action.taskId}`);
-        break;
-      case "close-task":
-        markTaskDone(config, {
-          taskId: action.taskId,
-          taskRevision: action.expectedRevision,
-          summary: action.summary,
-        });
-        applied.push(`closed ${action.taskId}`);
-        break;
-      case "unblock-task":
-        unblockTask(config, {
-          taskId: action.taskId,
-          reason: action.reason,
-        });
-        applied.push(`unblocked ${action.taskId}`);
-        break;
-      case "record-decision":
-        appendFileSync(
-          DISCUSSION_PATH,
-          `\n## ${new Date().toISOString()} — owner review\n\n${action.text.trim()}\n`,
-          "utf-8",
-        );
-        applied.push("recorded owner decision");
-        break;
-    }
-  }
-  return applied;
-}
-
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = parseTrigger(String(ctx.task ?? ""));
   const packet = {
@@ -506,7 +327,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       "update-task",
       "close-task",
       "unblock-task",
-      "record-decision",
     ],
   };
 
@@ -523,7 +343,7 @@ Rules:
 - You are read-only. Do not write files, run shell commands, send messages, delegate work, or mutate the task tree. The app validates and applies only the typed actions in your finish result.
 - Propose a task-tree action only when the durable task model changes: task creation, goal/acceptance/output refinement, closing accepted work, or unblocking an exact wait.
 - Include expectedRevision from the packet for every mutation of an existing task. Never propose changes to reconciler-owned task ids beginning with runtime/.
-- Use record-decision when an owner judgment should be durable but does not need a tree edit.
+- A judgment that needs no tree edit remains durable in this reconciliation result; do not create a separate discussion write.
 - A no-op returns an empty actions array. Do not refresh summaries, context, evidence timestamps, or updated_at merely to record another unchanged observation.
 - If existing active tasks already cover the signal, say so and avoid churn.
 - Do not send direct human messages from this owner heartbeat. Human-facing project-health notifications are handled by the deduped project-health evaluator path.
@@ -557,16 +377,6 @@ ${JSON.stringify(packet, null, 2)}
   }
 
   const ownerResult = result.structuredResult as OwnerResult;
-  let applied: string[];
-  try {
-    applied = applyOwnerActions(ownerResult.actions);
-  } catch (err) {
-    return ctx.blocked("Evaluation owner actions were rejected", {
-      sessionId: result.sessionId,
-      error: err instanceof Error ? err.message : String(err),
-      proposedActions: ownerResult.actions,
-    });
-  }
 
   ctx.emit({
     type: "evaluation.owner_reviewed",
@@ -577,12 +387,10 @@ ${JSON.stringify(packet, null, 2)}
       lane: trigger?.lane ?? null,
       sessionId: result.sessionId,
       disposition: ownerResult.disposition,
-      applied,
+      proposedActions: ownerResult.actions ?? [],
       evidence: ownerResult.evidence,
     },
   });
 
-  return ctx.done(
-    `${ownerResult.summary}${applied.length ? ` Applied: ${applied.join(", ")}.` : " No app action was needed."}`,
-  );
+  return ctx.done(ownerResult.summary, ownerResult);
 }
