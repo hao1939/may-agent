@@ -4,10 +4,13 @@
 **Implementation status:** The shared reconciler is in production.
 `evaluation.app`, `may-agent.app`, and `scout-knowledge-lib.app` route their
 organized work through task reconciliation. `aks-rp-e2e.app` is migrating by
-bounded cohorts; its feature-compact responsibility and reviewed-task
-application use the reconciler while the remaining legacy handlers retain
-authority for their existing cohorts. `gym.app` remains a direct immutable
-request/result pipeline pending extraction of the shared agent runner.
+bounded cohorts. Feature-compact maintenance, task execution, completion
+review, reviewed-result application, problem investigation, approval dispatch,
+Condition owner fallback, stall review, and focus review now use the
+reconciler; legacy planner, watchdog, and unfinished loop responsibilities
+retain authority for their existing cohorts. `gym.app` remains a direct
+immutable request/result pipeline pending extraction of the shared agent
+runner.
 
 ## Executive Decision
 
@@ -641,6 +644,23 @@ cutover allowed an already-running legacy workflow to finish at event
 handoff, converged at `3491907`, passed through task review at `3491974`, and
 through reviewed-result application at `3492038`. The execution, review, and
 application tasks all left the live graph with bounded completion tombstones.
+
+The next bounded cohorts are represented directly by their semantics:
+
+- approval dispatch is an `achieve` task keyed by its path-and-packet approval
+  lineage, with malformed or failed delivery returning `needs-owner`;
+- each exact Condition fallback is an `achieve` task with no workflow binding,
+  proving that semantic recovery resolves through the accountable owner;
+- project stall review is one standing `maintain` task rather than a stream of
+  repeated review jobs; and
+- strategy and progress focus reviews are two independent `maintain` tasks
+  using the same learned focus workflow, while the focus branches they create
+  remain ordinary project tasks.
+
+These four cohorts have manifest, stable-identity, typed-result, syntax, and
+integrity coverage. Their natural-event production proof remains pending; the
+old direct handlers have been removed, so each event cohort still has only one
+authority during that observation window.
 
 The next recommended AKS boundary is the spec loop, but only after its
 watchdog-owned external waits are represented as exact Conditions. Do not
