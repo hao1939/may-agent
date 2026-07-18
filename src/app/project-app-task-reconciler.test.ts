@@ -450,4 +450,32 @@ describe("project app task reconciler state", () => {
       }),
     ).toMatchObject([{ conditionId: "task-done:dependency-1", taskId: "pipeline-monitor" }]);
   });
+
+  it("does not turn progressing advisory conditions into durable waits", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      deferProjectAppTask(config, claim, {
+        disposition: "progressing",
+        summary: "useful step landed; more work remains",
+        conditions: [
+          {
+            id: "advisory-follow-up",
+            observer: "future-review",
+            fallback: "review again later",
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied" });
+    const task = readTaskTree(config).tasks["pipeline-monitor"];
+    expect(task.state).toBe("backlog");
+    expect(task.blocker).toBeUndefined();
+    expect(readTaskTree(config).conditions?.["advisory-follow-up"]).toBeUndefined();
+  });
 });
