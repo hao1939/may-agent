@@ -1119,6 +1119,14 @@ function frontierIds(tree: TaskTree, status: string): string[] {
 function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
   if (!isLeaf(task)) return false;
   if (taskState(task) !== "backlog") return false;
+  const reconciliation = contextObject(task).reconciliation;
+  if (
+    reconciliation &&
+    typeof reconciliation === "object" &&
+    !Array.isArray(reconciliation)
+  ) {
+    return false;
+  }
   if (isPlanningTask(task)) return false;
   if (
     task.kind === "work" ||
