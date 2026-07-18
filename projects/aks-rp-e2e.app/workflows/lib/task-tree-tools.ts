@@ -3153,6 +3153,7 @@ function isFeatureCompactNonEnvironmentFrontier(task: TaskNode): boolean {
     "evidence.available",
     "azure.capacity.available",
     "environment.prerequisite.ready",
+    "alternate.execution-surface.review",
   ].includes(blockerWaitingForType(task));
 }
 

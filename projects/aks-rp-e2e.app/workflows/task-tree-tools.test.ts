@@ -3231,6 +3231,103 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for compact alternate execution-surface waits with separate send-proof metadata", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["compact-alternate-surface-frontier", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "compact-alternate-surface-frontier": {
+              id: "hold-compact-ccp-vpa-os-arch-variants-reviewed-exception-frontier",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Hold compact feature ccp-vpa-os-arch-variants on one exact same-lineage alternate execution-surface successor path while the identified checkin suites remain the governed frontier.",
+              outputs: ["evidence/archive/compact-alternate-surface-frontier.md"],
+              acceptance: [
+                "This compact holder remains blocked only while the named CCP and ARM64 checkin suites do not yet yield the governed same-lineage run or artifact evidence.",
+                "The separate owner-handoff packet send-proof gap stays nested metadata and does not redefine the compact frontier.",
+              ],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "ccp-vpa-os-arch-variants",
+                errorClass: "reviewed-exception",
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Do not rerun unchanged. Keep this holder blocked only on the exact alternate execution surfaces CCP CheckIn 398852 and ARM64 CheckIn 456531 while reviewed same-lineage evidence has not yet recovered authoritative runs or an exact reroute/permanent-ceiling decision. The prepared 459172 owner-handoff packet remains unsent, but that send-proof gap is preserved as separate metadata rather than the compact frontier itself.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "alternate.execution-surface.review",
+                  featureKey: "ccp-vpa-os-arch-variants",
+                  target: "staging",
+                  errorClass: "reviewed-exception",
+                  scope: "feature-compact",
+                  alternateExecutionSurfaces: [
+                    {
+                      pipelineId: "398852",
+                      scenarioBranches: ["Ubuntu", "AzureLinux"],
+                    },
+                    {
+                      pipelineId: "456531",
+                      scenarioBranches: ["Ubuntu_ARM64", "AzureLinux_ARM64"],
+                    },
+                  ],
+                  sendProofGap: {
+                    owner: "app-ops",
+                    type: "project.approval.requested",
+                    controllerVisibleSendProof: false,
+                    status: "prepared-but-unsent",
+                  },
+                },
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses environment-overblock warning for compact exact environment prerequisite waits", async () => {
     const projectDir = await makeProject();
     await writeFile(
