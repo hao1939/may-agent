@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   defineProjectApp,
   eventDetails,
@@ -31,10 +32,69 @@ function taskIdFromEvent(event: Record<string, unknown>): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function detailString(
+  details: Record<string, unknown>,
+  ...names: string[]
+): string {
+  for (const name of names) {
+    const value = details[name];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function reviewedApplicationId(details: Record<string, unknown>): string {
+  const taskId = detailString(details, "taskId", "task_id");
+  const reviewId = detailString(details, "reviewId", "review_id");
+  const attemptId = detailString(details, "attemptId", "attempt_id");
+  const decision = detailString(details, "decision");
+  const digest = createHash("sha256")
+    .update(reviewId || `${taskId}\0${attemptId}\0${decision}`)
+    .digest("hex")
+    .slice(0, 16);
+  const readable = taskId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/review-application/${readable || "task"}-${digest}`;
+}
+
 export function resolveAksReconciliationTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
   const details = eventDetails(event);
+  if (event.type === "project.task.reviewed") {
+    const reviewedTaskId = detailString(details, "taskId", "task_id");
+    const attemptId = detailString(details, "attemptId", "attempt_id");
+    const reviewId = detailString(details, "reviewId", "review_id");
+    const decision = detailString(details, "decision");
+    if (!reviewedTaskId || !attemptId || !decision) return null;
+    const revisionValue = details.taskRevision ?? details.task_revision;
+    const taskRevision = Number.isInteger(Number(revisionValue))
+      ? Number(revisionValue)
+      : null;
+    return {
+      id: reviewedApplicationId(details),
+      parentId: "project",
+      outcome: `Apply review ${reviewId || "decision"} for ${reviewedTaskId} attempt ${attemptId} exactly once.`,
+      acceptance: [
+        "The revision-checked review decision is applied, or it is recorded as stale or invalid without mutating newer task state.",
+        "Any resulting assignment, owner request, problem investigation, or escalation transition is emitted through the existing planner contract.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "reviewed-task-applier",
+      input: {
+        reviewedTaskId,
+        attemptId,
+        reviewId,
+        decision,
+        taskRevision,
+      },
+      outputs: [".state/tasks/tree.json", ".state/planner-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   const action = String(event.action ?? details.action ?? "");
   if (event.type !== "project.task.tick" || action !== "feature-compact-loop") {
     return null;
@@ -245,6 +305,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "reviewed-task-applier": {
+      workflow: "project-planner",
+      agent: "app-ops",
+      task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
+      timeoutMs: 600_000,
+      context: taskTreeContext,
+    },
     "feature-compact-loop-controller": {
       workflow: "feature-compact-loop-controller",
       agent: "aks-explorer",
@@ -260,6 +327,17 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-reviewed-application",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Applies each revisioned task-review result once through a bounded achieve task.",
+      accepts: [
+        { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-feature-compact-loop",
       enabled: true,
@@ -316,31 +394,6 @@ export default defineProjectApp({
       emits: [
         "project.task.assigned",
         "project.problem.investigation.requested",
-      ],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-reviewed-task-applier",
-      type: "job",
-      enabled: true,
-      description:
-        "Applies one structured task-review decision without waiting behind general planner sessions.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "project-planner",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
-        timeoutMs: 600_000,
-      },
-      accepts: [
-        { type: "project.task.reviewed", target: { project: projectId } },
-      ],
-      emits: [
-        "project.task.completed",
-        "project.task.assigned",
-        "project.problem.investigation.requested",
-        "escalation.resolved",
-        "escalation.dismissed",
       ],
       context: taskTreeContext,
     },

@@ -16,6 +16,12 @@ type TaskRoute = {
   accepts?: EventSelector[];
 };
 
+type TaskWorkflow = {
+  workflow?: string;
+  agent?: string;
+  task?: string;
+};
+
 type EventSelector =
   | string
   | {
@@ -37,7 +43,7 @@ const projectId = "aks-rp-e2e";
 const appManifest = app as {
   workflowHandlers?: WorkflowHandler[];
   taskRoutes?: TaskRoute[];
-  taskWorkflows?: Record<string, { workflow?: string; agent?: string }>;
+  taskWorkflows?: Record<string, TaskWorkflow>;
   ownerEntry?: { workflow?: string; agent?: string };
   schedules?: Schedule[];
   eventGraph?: Record<string, unknown> & {
@@ -194,31 +200,25 @@ describe("app event contract", () => {
     expect(appManifest.onEvent).toBeUndefined();
   });
 
-  test("owner workflow and fast handoff appliers use the planner workflow", () => {
+  test("owner and reviewed-task reconciliation use the planner workflow", () => {
     expect(handler("aks-rp-e2e-project-planner").handler?.workflow).toBe(
       "project-planner",
     );
-    expect(handler("aks-rp-e2e-reviewed-task-applier").handler?.workflow).toBe(
-      "project-planner",
-    );
+    expect(appManifest.taskWorkflows?.["reviewed-task-applier"]).toMatchObject({
+      workflow: "project-planner",
+      agent: "app-ops",
+    });
+    expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
+      accepts: [
+        { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+    });
     expect(
       handler("aks-rp-e2e-condition-fallback-planner").handler?.workflow,
     ).toBe("project-planner");
     expect(handlerEvents("aks-rp-e2e-condition-fallback-planner")).toEqual([
       "project.condition.fallback.requested",
     ]);
-    expect(handlerEvents("aks-rp-e2e-reviewed-task-applier")).toEqual([
-      "project.task.reviewed",
-    ]);
-    expect(handler("aks-rp-e2e-reviewed-task-applier")).toMatchObject({
-      emits: expect.arrayContaining([
-        "project.task.completed",
-        "project.task.assigned",
-        "escalation.resolved",
-        "escalation.dismissed",
-      ]),
-    });
-
     expect(handlerEvents("aks-rp-e2e-project-planner")).toEqual(
       expect.arrayContaining([
         "project.owner.requested",
@@ -242,7 +242,6 @@ describe("app event contract", () => {
   test("manifest explicitly opts only the bounded exact ADO Condition writers into V2", () => {
     for (const name of [
       "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-reviewed-task-applier",
       "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
@@ -252,19 +251,26 @@ describe("app event contract", () => {
     }
     for (const name of [
       "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-reviewed-task-applier",
       "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).not.toContain("conditionAdoptionV2:");
     }
-    for (const name of [
-      "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-reviewed-task-applier",
-    ]) {
-      expect(handler(name).handler?.task).not.toContain("revisionV2:");
-      expect(handler(name).handler?.task).not.toContain("revisionV2RunId:");
-    }
+    expect(
+      appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
+    ).toContain("conditionV2: exact-ado-revisioned");
+    expect(handler("aks-rp-e2e-project-planner").handler?.task).not.toContain(
+      "revisionV2:",
+    );
+    expect(handler("aks-rp-e2e-project-planner").handler?.task).not.toContain(
+      "revisionV2RunId:",
+    );
+    expect(
+      appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
+    ).not.toContain("revisionV2:");
+    expect(
+      appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
+    ).not.toContain("revisionV2RunId:");
   });
 
   test("manifest opts only revisioned review handoffs into PendingAction V2 delivery", () => {
@@ -279,11 +285,13 @@ describe("app event contract", () => {
     );
     for (const name of [
       "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-reviewed-task-applier",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).not.toContain("pendingActionV2:");
     }
+    expect(
+      appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
+    ).not.toContain("pendingActionV2:");
     expect(handler("aks-rp-e2e-project-watchdog").handler?.task).toContain(
       "pendingActionRedeliveryV2: review-application-revisioned",
     );
@@ -333,6 +341,15 @@ describe("app event contract", () => {
         }),
       ]),
     });
+    expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
+      accepts: [
+        { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["reviewed-task-applier"]).toMatchObject({
+      workflow: "project-planner",
+      agent: "app-ops",
+    });
     expect(
       appManifest.taskWorkflows?.["feature-compact-loop-controller"],
     ).toMatchObject({
@@ -369,6 +386,50 @@ describe("app event contract", () => {
     ).toBeNull();
   });
 
+  test("review events resolve to stable bounded achieve tasks", () => {
+    const event = {
+      type: "project.task.reviewed",
+      target: { project: projectId },
+      data: {
+        taskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        reviewId: "review-42",
+        decision: "accept",
+        taskRevision: 12,
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+    const replay = resolveAksReconciliationTask(structuredClone(event));
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "reviewed-task-applier",
+      priority: "P0",
+      input: {
+        reviewedTaskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        reviewId: "review-42",
+        decision: "accept",
+        taskRevision: 12,
+      },
+    });
+    expect(replay?.id).toBe(first?.id);
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, reviewId: "review-43" },
+      })?.id,
+    ).not.toBe(first?.id);
+
+    for (const missing of ["taskId", "attemptId", "decision"] as const) {
+      const data = { ...event.data };
+      delete data[missing];
+      expect(resolveAksReconciliationTask({ ...event, data })).toBeNull();
+    }
+  });
+
   test("stall review, problem, and approval workflows use explicit request events", () => {
     expect(handler("aks-rp-e2e-project-planner").emits).toEqual(
       expect.arrayContaining([
@@ -396,9 +457,12 @@ describe("app event contract", () => {
     expect(handlersForEvent("project.task.completed")).toEqual([
       "aks-rp-e2e-task-reviewer",
     ]);
-    expect(handlersForEvent("project.task.reviewed")).toEqual([
-      "aks-rp-e2e-reviewed-task-applier",
-    ]);
+    expect(handlersForEvent("project.task.reviewed")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
+      accepts: [
+        { type: "project.task.reviewed", target: { project: projectId } },
+      ],
+    });
     expect(handlersForEvent("project.stall.reviewed")).toEqual([
       "aks-rp-e2e-project-planner",
     ]);
