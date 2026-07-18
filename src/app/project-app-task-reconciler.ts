@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   ensureTaskTreeState,
+  isLeaf,
   projectRuntimePaths,
   readTaskTree,
   saveTaskTree,
@@ -93,9 +94,22 @@ export function taskReconciliationConfig(input: {
 
 function activeTaskIds(tree: TaskTree): string[] {
   return Object.values(tree.tasks)
-    .filter((task) => taskState(task) === "active")
+    .filter((task) => taskState(task) === "active" && (isLeaf(task) || isActiveWorkflowController(task)))
     .map((task) => task.id)
     .sort();
+}
+
+function isActiveWorkflowController(task: TaskNode): boolean {
+  if (isLeaf(task) || !task.workflow?.trim()) return false;
+  const progress = isRecord(task.context?.workflowProgress) ? task.context.workflowProgress : {};
+  if (progress.completionReady !== false) return false;
+  const trace = isRecord(task.trace) ? task.trace : {};
+  const legacyAttempt = trace.current_attempt_id;
+  const reconciliation = isRecord(trace.reconciliation) ? trace.reconciliation : {};
+  return Boolean(
+    (typeof legacyAttempt === "string" && legacyAttempt) ||
+    (typeof reconciliation.attemptId === "string" && reconciliation.attemptId),
+  );
 }
 
 function refreshActiveTaskProjection(tree: TaskTree): void {
