@@ -9,6 +9,7 @@ import {
   taskState,
   withTreeLock,
   type ProjectAppTaskIntent,
+  type ProjectAppTaskAction,
   type TaskNode,
   type TaskTree,
   type TaskTreeConfig,
@@ -252,15 +253,243 @@ function pruneCompletionTombstones(tree: TaskTree, limit = 1_000): void {
     .forEach(([taskId]) => delete tree.completions?.[taskId]);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireNonEmptyString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) throw new Error(`${label} requires a non-empty string`);
+  return value.trim();
+}
+
+function requireStringList(value: unknown, label: string): asserts value is string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    !value.every((entry) => typeof entry === "string" && entry.trim())
+  ) {
+    throw new Error(`${label} requires one or more non-empty strings`);
+  }
+}
+
+function requireExpectedRevision(value: unknown, label: string): void {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} requires a non-negative expectedRevision`);
+  }
+}
+
+function mutableActionTask(tree: TaskTree, action: Exclude<ProjectAppTaskAction, { kind: "create-task" }>): TaskNode {
+  if (action.taskId.startsWith("runtime/")) {
+    throw new Error(`Handler actions cannot mutate reconciler-owned task ${action.taskId}`);
+  }
+  const task = tree.tasks[action.taskId];
+  if (!task) throw new Error(`Handler action task not found: ${action.taskId}`);
+  const revision = taskRevision(task);
+  if (revision !== action.expectedRevision) {
+    throw new Error(
+      `Handler action for ${action.taskId} is stale: expected revision ${action.expectedRevision}, current ${revision}`,
+    );
+  }
+  return task;
+}
+
+function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): void {
+  if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
+  const identities = new Set<string>();
+  for (const rawAction of actions as unknown[]) {
+    if (!isRecord(rawAction)) throw new Error("Handler result contains a non-object action");
+    const kind = rawAction.kind;
+    if (!["create-task", "update-task", "close-task", "unblock-task"].includes(String(kind))) {
+      throw new Error(`Handler result contains an unsupported action kind: ${String(kind)}`);
+    }
+
+    const action = rawAction as unknown as ProjectAppTaskAction;
+    const identity = requireNonEmptyString(
+      action.kind === "create-task" ? action.id : action.taskId,
+      `Handler ${action.kind} action identity`,
+    );
+    if (identities.has(identity)) throw new Error(`Handler result contains multiple actions for ${identity}`);
+    identities.add(identity);
+
+    if (action.kind === "create-task") {
+      requireNonEmptyString(action.parentId, `Handler create action ${action.id} parentId`);
+      requireNonEmptyString(action.goal, `Handler create action ${action.id} goal`);
+      requireStringList(action.outputs, `Handler create action ${action.id} outputs`);
+      requireStringList(action.acceptance, `Handler create action ${action.id} acceptance`);
+      if (action.priority !== undefined && !["P0", "P1", "P2", "P3"].includes(action.priority)) {
+        throw new Error(`Handler create action ${action.id} has an invalid priority`);
+      }
+      if (action.owner !== undefined) requireNonEmptyString(action.owner, `Handler create action ${action.id} owner`);
+      if (action.workflow !== undefined) {
+        requireNonEmptyString(action.workflow, `Handler create action ${action.id} workflow`);
+      }
+      if (action.id.startsWith("runtime/")) {
+        throw new Error("Handler actions cannot create reconciler-owned runtime tasks");
+      }
+      if (tree.tasks[action.id]) throw new Error(`Handler action task already exists: ${action.id}`);
+      if (!tree.tasks[action.parentId]) throw new Error(`Handler action parent not found: ${action.parentId}`);
+      continue;
+    }
+
+    requireExpectedRevision(action.expectedRevision, `Handler ${action.kind} action ${action.taskId}`);
+    mutableActionTask(tree, action);
+    if (
+      action.kind === "update-task" &&
+      action.goal === undefined &&
+      action.outputs === undefined &&
+      action.acceptance === undefined
+    ) {
+      throw new Error(`Handler update for ${action.taskId} contains no change`);
+    }
+    if (action.kind === "update-task" && action.goal !== undefined) {
+      requireNonEmptyString(action.goal, `Handler update for ${action.taskId} goal`);
+    }
+    if (action.kind === "update-task" && action.outputs !== undefined) {
+      requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`);
+    }
+    if (action.kind === "update-task" && action.acceptance !== undefined) {
+      requireStringList(action.acceptance, `Handler update for ${action.taskId} acceptance`);
+    }
+    if (action.kind === "close-task") {
+      requireNonEmptyString(action.summary, `Handler close for ${action.taskId} summary`);
+    }
+    if (action.kind === "unblock-task") {
+      requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
+      if (taskState(mutableActionTask(tree, action)) !== "blocked") {
+        throw new Error(`Handler action task ${action.taskId} is not blocked`);
+      }
+    }
+  }
+}
+
+function validateConditions(
+  conditions: Array<Record<string, unknown>> | undefined,
+  input: { required: boolean; taskId: string },
+): void {
+  if (input.required && !conditions?.length) {
+    throw new Error(`Waiting result for ${input.taskId} requires at least one exact Condition`);
+  }
+  for (const condition of (conditions ?? []) as unknown[]) {
+    if (!isRecord(condition)) {
+      throw new Error(`Handler result for ${input.taskId} contains a non-object Condition`);
+    }
+    const id = condition.id ?? condition.conditionId;
+    requireNonEmptyString(id, `Handler result Condition for ${input.taskId} identity`);
+  }
+}
+
+function validateActionEvidence(taskId: string, evidence: string[] | undefined, actionCount: number): void {
+  if (actionCount > 0 && !evidence?.some((entry) => typeof entry === "string" && entry.trim())) {
+    throw new Error(`Handler actions for ${taskId} require non-empty evidence`);
+  }
+}
+
+function applyTaskActions(tree: TaskTree, claim: ProjectAppTaskClaim, actions: ProjectAppTaskAction[]): string[] {
+  validateTaskActions(tree, actions);
+  const now = new Date().toISOString();
+  const applied: string[] = [];
+  for (const action of actions) {
+    switch (action.kind) {
+      case "create-task": {
+        const parent = tree.tasks[action.parentId];
+        const task: TaskNode = {
+          id: action.id,
+          revision: 0,
+          parent_id: action.parentId,
+          state: "backlog",
+          kind: "domain_leaf",
+          priority: action.priority ?? "P2",
+          owner: action.owner ?? claim.owner,
+          workflow: action.workflow,
+          children: [],
+          goal: action.goal.trim(),
+          inputs: [],
+          outputs: [...action.outputs],
+          acceptance: [...action.acceptance],
+          forbidden: [],
+          trace: {
+            created_at: now,
+            created_by: "project-app-task-reconciler",
+            source_task_id: claim.taskId,
+            source_task_generation: claim.generation,
+          },
+        };
+        setTaskState(task, "backlog");
+        tree.tasks[task.id] = task;
+        parent.children = [...new Set([...(parent.children ?? []), task.id])];
+        applied.push(`created ${task.id}`);
+        break;
+      }
+      case "update-task": {
+        const task = tree.tasks[action.taskId];
+        if (action.goal !== undefined) task.goal = action.goal.trim();
+        if (action.outputs !== undefined) task.outputs = [...action.outputs];
+        if (action.acceptance !== undefined) task.acceptance = [...action.acceptance];
+        task.revision = taskRevision(task) + 1;
+        task.trace = {
+          ...(task.trace ?? {}),
+          updated_at: now,
+          updated_by: "project-app-task-reconciler",
+          source_task_id: claim.taskId,
+          source_task_generation: claim.generation,
+        };
+        applied.push(`updated ${task.id}`);
+        break;
+      }
+      case "close-task": {
+        const task = tree.tasks[action.taskId];
+        setTaskState(task, "done");
+        task.blocker = undefined;
+        task.resolution = task.resolution ?? "completed";
+        task.done_at = now;
+        task.done_by = "project-app-task-reconciler";
+        task.context = {
+          ...(task.context ?? {}),
+          acceptance_note: action.summary.trim(),
+        };
+        task.trace = {
+          ...(task.trace ?? {}),
+          reviewed_at: now,
+          reviewed_by: "project-app-task-reconciler",
+          review_summary: action.summary.trim(),
+          source_task_id: claim.taskId,
+          source_task_generation: claim.generation,
+        };
+        applied.push(`closed ${task.id}`);
+        break;
+      }
+      case "unblock-task": {
+        const task = tree.tasks[action.taskId];
+        setTaskState(task, "backlog");
+        task.blocker = undefined;
+        task.revision = taskRevision(task) + 1;
+        task.trace = {
+          ...(task.trace ?? {}),
+          unblocked_at: now,
+          unblocked_by: "project-app-task-reconciler",
+          unblock_reason: action.reason.trim(),
+          source_task_id: claim.taskId,
+          source_task_generation: claim.generation,
+        };
+        applied.push(`unblocked ${task.id}`);
+        break;
+      }
+    }
+  }
+  return applied;
+}
+
 export function completeProjectAppTask(
   config: TaskTreeConfig,
   claim: ProjectAppTaskClaim,
-  input: { summary: string },
-): "applied" | "stale" {
+  input: { summary: string; evidence?: string[]; actions?: ProjectAppTaskAction[] },
+): { status: "applied" | "stale"; actionsApplied: string[] } {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const task = matchingTask(tree, claim);
-    if (!task) return "stale";
+    if (!task) return { status: "stale", actionsApplied: [] };
+    validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
+    const actionsApplied = applyTaskActions(tree, claim, input.actions ?? []);
     const now = new Date().toISOString();
     if (claim.mode === "maintain") {
       setTaskState(task, "backlog");
@@ -274,6 +503,8 @@ export function completeProjectAppTask(
           attemptId: undefined,
           completedAt: now,
           summary: input.summary,
+          evidence: input.evidence ?? [],
+          actionsApplied,
         },
       };
     } else {
@@ -295,7 +526,65 @@ export function completeProjectAppTask(
     }
     refreshActiveTaskProjection(tree);
     saveTaskTree(config, tree);
-    return "applied";
+    return { status: "applied", actionsApplied };
+  });
+}
+
+export function deferProjectAppTask(
+  config: TaskTreeConfig,
+  claim: ProjectAppTaskClaim,
+  input: {
+    disposition: "progressing" | "waiting";
+    summary: string;
+    evidence?: string[];
+    actions?: ProjectAppTaskAction[];
+    conditions?: Array<Record<string, unknown>>;
+  },
+): { status: "applied" | "stale"; actionsApplied: string[] } {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = matchingTask(tree, claim);
+    if (!task) return { status: "stale", actionsApplied: [] };
+    validateConditions(input.conditions, { required: input.disposition === "waiting", taskId: claim.taskId });
+    validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
+    const actionsApplied = applyTaskActions(tree, claim, input.actions ?? []);
+    const now = new Date().toISOString();
+    setTaskState(task, input.disposition === "waiting" ? "blocked" : "backlog");
+    if (input.disposition === "waiting") {
+      const condition = input.conditions![0];
+      const conditionId =
+        typeof condition.id === "string"
+          ? condition.id
+          : typeof condition.conditionId === "string"
+            ? condition.conditionId
+            : undefined;
+      task.blocker = {
+        condition: conditionId ?? "exact reconciliation Condition",
+        condition_id: conditionId,
+        waiting_for: condition,
+        blocked_at: now,
+      };
+    } else {
+      task.blocker = undefined;
+    }
+    task.summary = input.summary;
+    task.trace = {
+      ...(task.trace ?? {}),
+      reconciliation: {
+        ...reconciliationTrace(task),
+        phase: input.disposition,
+        observedGeneration: claim.generation,
+        attemptId: undefined,
+        completedAt: now,
+        summary: input.summary,
+        evidence: input.evidence ?? [],
+        actionsApplied,
+        conditions: input.conditions ?? [],
+      },
+    };
+    refreshActiveTaskProjection(tree);
+    saveTaskTree(config, tree);
+    return { status: "applied", actionsApplied };
   });
 }
 

@@ -229,7 +229,7 @@ describe("workflow tool: typed execution", () => {
       `
       export const name = "typed";
       export const description = "Typed runner fixture";
-      export async function execute(ctx) { return ctx.done("typed result"); }
+      export async function execute(ctx) { return ctx.done("typed result", { disposition: "converged" }); }
     `,
     );
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
@@ -241,6 +241,7 @@ describe("workflow tool: typed execution", () => {
       type: "done",
       workflow: "typed",
       summary: "typed result",
+      output: { disposition: "converged" },
     });
 
     const serialized = await tool.execute("tc1", {
@@ -252,6 +253,7 @@ describe("workflow tool: typed execution", () => {
       type: "done",
       workflow: "typed",
       summary: "typed result",
+      output: { disposition: "converged" },
     });
   });
 });

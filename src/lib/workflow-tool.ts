@@ -639,7 +639,10 @@ export async function runWorkflowDirect(
   const parsed = await runner.run(opts.workflowName, opts.task);
 
   if (parsed.type === "done") {
-    return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId };
+    return {
+      result: { type: "done", summary: parsed.summary, output: parsed.output },
+      runId: parsed.workflowRunId,
+    };
   }
   if (parsed.type === "error") {
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
@@ -1413,7 +1416,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         return sub.result;
       },
 
-      done: (summary: string) => ({ type: "done" as const, summary }),
+      done: (summary: string, output?: unknown) => ({ type: "done" as const, summary, output }),
       blocked: (reason: string, context?: unknown) => ({ type: "blocked" as const, reason, context }),
 
       createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
@@ -1687,6 +1690,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           workflow: workflow.name,
           workflowRunId: runId,
           summary: result.summary,
+          output: result.output,
           steps: stepSummaries,
         };
         return toolResult;

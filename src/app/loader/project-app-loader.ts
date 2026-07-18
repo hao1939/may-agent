@@ -16,6 +16,7 @@ import {
   type ProjectAppEvent as AppEvent,
   type ProjectAppEventTarget as EventTarget,
   type ProjectAppTaskCapability,
+  type ProjectAppTaskHandlerResult,
   type ProjectAppTaskIntent,
   type ProjectAppTaskRoute,
 } from "@may-agent/sdk";
@@ -24,6 +25,7 @@ import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type EventBus } from ".
 import {
   claimProjectAppTask,
   completeProjectAppTask,
+  deferProjectAppTask,
   markProjectAppTaskAttention,
   taskReconciliationConfig,
   type ProjectAppTaskClaim,
@@ -752,10 +754,65 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
 }
 
 type TaskCapabilityRun = {
-  type: "done" | "blocked";
-  summary: string;
+  handlerResult: ProjectAppTaskHandlerResult;
   runId: string | null;
 };
+
+const taskDispositions = new Set(["converged", "progressing", "waiting", "needs-owner", "failed"]);
+
+function normalizeTaskHandlerResult(
+  output: unknown,
+  fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
+): ProjectAppTaskHandlerResult {
+  if (output === undefined && fallback.type === "done") {
+    return {
+      disposition: "converged",
+      summary: fallback.summary,
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+  if (!isRecord(output)) {
+    return {
+      disposition: "failed",
+      summary:
+        fallback.type === "blocked"
+          ? fallback.summary
+          : "Workflow returned an invalid task handler result: expected an object",
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+  const disposition = output.disposition;
+  const summary = output.summary;
+  const evidence = output.evidence;
+  const actions = output.actions;
+  const conditions = output.conditions;
+  if (
+    typeof disposition !== "string" ||
+    !taskDispositions.has(disposition) ||
+    typeof summary !== "string" ||
+    !summary.trim() ||
+    !Array.isArray(evidence) ||
+    !evidence.every((entry) => typeof entry === "string") ||
+    (actions !== undefined && !Array.isArray(actions)) ||
+    (conditions !== undefined && !Array.isArray(conditions))
+  ) {
+    return {
+      disposition: "failed",
+      summary: "Workflow returned an invalid task handler result envelope",
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+  return {
+    disposition: disposition as ProjectAppTaskHandlerResult["disposition"],
+    summary: summary.trim(),
+    evidence: [...evidence],
+    actions: (actions ?? []) as ProjectAppTaskHandlerResult["actions"],
+    conditions: (conditions ?? []) as ProjectAppTaskHandlerResult["conditions"],
+  };
+}
 
 async function runTaskCapability(input: {
   opts: ProjectAppLoaderOptions;
@@ -840,6 +897,11 @@ async function runTaskCapability(input: {
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
+    const handlerResult = normalizeTaskHandlerResult(done ? result.output : undefined, {
+      type: done ? "done" : "blocked",
+      summary,
+      runId,
+    });
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -854,11 +916,12 @@ async function runTaskCapability(input: {
         taskGeneration: claim.generation,
         workflowRunId: runId,
         status: done ? "done" : "blocked",
+        disposition: handlerResult.disposition,
         ...(done ? { summary } : { reason: summary }),
       },
       ...(trace ? { trace } : {}),
     } as AgentEvent);
-    return { type: done ? "done" : "blocked", summary, runId };
+    return { handlerResult, runId };
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
     opts.bus.emit({
@@ -879,7 +942,15 @@ async function runTaskCapability(input: {
       },
       ...(trace ? { trace } : {}),
     } as AgentEvent);
-    return { type: "blocked", summary, runId: null };
+    return {
+      handlerResult: {
+        disposition: "failed",
+        summary,
+        evidence: [],
+        actions: [],
+      },
+      runId: null,
+    };
   }
 }
 
@@ -954,14 +1025,20 @@ async function reconcileTaskRoute(input: {
   let primaryResult: TaskCapabilityRun;
   if (!primaryCapability) {
     primaryResult = {
-      type: "blocked",
-      summary: workflowKey ? `Task workflow is not declared: ${workflowKey}` : `App ${descriptor.id} has no ownerEntry`,
+      handlerResult: {
+        disposition: "needs-owner",
+        summary: workflowKey
+          ? `Task workflow is not declared: ${workflowKey}`
+          : `App ${descriptor.id} has no ownerEntry`,
+        evidence: [],
+        actions: [],
+      },
       runId: null,
     };
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
       generation: primary.generation,
       handler: primary.handler,
-      reason: primaryResult.summary,
+      reason: primaryResult.handlerResult.summary,
     });
   } else {
     primaryResult = await runTaskCapability({
@@ -974,21 +1051,59 @@ async function reconcileTaskRoute(input: {
     });
   }
 
-  if (primaryResult.type === "done") {
-    const apply = completeProjectAppTask(config, primary, { summary: primaryResult.summary });
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-      generation: primary.generation,
-      attemptId: primary.attemptId,
-      handler: primary.handler,
-      disposition: apply === "applied" ? "converged" : "stale",
-      summary: primaryResult.summary,
-      workflowRunId: primaryResult.runId,
-    });
-    return;
+  const primaryHandlerResult = primaryResult.handlerResult;
+  if (primaryHandlerResult.disposition === "converged") {
+    try {
+      const apply = completeProjectAppTask(config, primary, {
+        summary: primaryHandlerResult.summary,
+        evidence: primaryHandlerResult.evidence,
+        actions: primaryHandlerResult.actions,
+      });
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: primary.generation,
+        attemptId: primary.attemptId,
+        handler: primary.handler,
+        disposition: apply.status === "applied" ? "converged" : "stale",
+        summary: primaryHandlerResult.summary,
+        evidence: primaryHandlerResult.evidence,
+        actionsApplied: apply.actionsApplied,
+        workflowRunId: primaryResult.runId,
+      });
+      return;
+    } catch (error) {
+      primaryHandlerResult.disposition = "failed";
+      primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  if (primaryHandlerResult.disposition === "progressing" || primaryHandlerResult.disposition === "waiting") {
+    try {
+      const apply = deferProjectAppTask(config, primary, {
+        disposition: primaryHandlerResult.disposition,
+        summary: primaryHandlerResult.summary,
+        evidence: primaryHandlerResult.evidence,
+        actions: primaryHandlerResult.actions,
+        conditions: primaryHandlerResult.conditions,
+      });
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: primary.generation,
+        attemptId: primary.attemptId,
+        handler: primary.handler,
+        disposition: apply.status === "applied" ? primaryHandlerResult.disposition : "stale",
+        summary: primaryHandlerResult.summary,
+        evidence: primaryHandlerResult.evidence,
+        actionsApplied: apply.actionsApplied,
+        workflowRunId: primaryResult.runId,
+      });
+      return;
+    } catch (error) {
+      primaryHandlerResult.disposition = "failed";
+      primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
+    }
   }
 
   markProjectAppTaskAttention(config, primary, {
-    summary: primaryResult.summary,
+    summary: primaryHandlerResult.summary,
     reason: primaryCapability ? "handler-blocked" : "handler-unavailable",
   });
   if (!workflowKey || !descriptor.app.ownerEntry) {
@@ -997,7 +1112,7 @@ async function reconcileTaskRoute(input: {
       attemptId: primary.attemptId,
       handler: primary.handler,
       disposition: "attention",
-      summary: primaryResult.summary,
+      summary: primaryHandlerResult.summary,
     });
     return;
   }
@@ -1013,7 +1128,7 @@ async function reconcileTaskRoute(input: {
       generation: primary.generation,
       handler: primary.handler,
       disposition: "attention",
-      summary: primaryResult.summary,
+      summary: primaryHandlerResult.summary,
       fallback: fallback.kind,
     });
     return;
@@ -1034,24 +1149,63 @@ async function reconcileTaskRoute(input: {
     intent,
     claim: fallback,
     event,
-    fallbackReason: primaryResult.summary,
+    fallbackReason: primaryHandlerResult.summary,
   });
-  if (fallbackResult.type === "done") {
-    const apply = completeProjectAppTask(config, fallback, { summary: fallbackResult.summary });
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-      generation: fallback.generation,
-      attemptId: fallback.attemptId,
-      handler: fallback.handler,
-      disposition: apply === "applied" ? "converged" : "stale",
-      summary: fallbackResult.summary,
-      workflowRunId: fallbackResult.runId,
-      fallbackFrom: primary.handler,
-    });
-    return;
+  const fallbackHandlerResult = fallbackResult.handlerResult;
+  if (fallbackHandlerResult.disposition === "converged") {
+    try {
+      const apply = completeProjectAppTask(config, fallback, {
+        summary: fallbackHandlerResult.summary,
+        evidence: fallbackHandlerResult.evidence,
+        actions: fallbackHandlerResult.actions,
+      });
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: fallback.generation,
+        attemptId: fallback.attemptId,
+        handler: fallback.handler,
+        disposition: apply.status === "applied" ? "converged" : "stale",
+        summary: fallbackHandlerResult.summary,
+        evidence: fallbackHandlerResult.evidence,
+        actionsApplied: apply.actionsApplied,
+        workflowRunId: fallbackResult.runId,
+        fallbackFrom: primary.handler,
+      });
+      return;
+    } catch (error) {
+      fallbackHandlerResult.disposition = "failed";
+      fallbackHandlerResult.summary = `Owner actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  if (fallbackHandlerResult.disposition === "progressing" || fallbackHandlerResult.disposition === "waiting") {
+    try {
+      const apply = deferProjectAppTask(config, fallback, {
+        disposition: fallbackHandlerResult.disposition,
+        summary: fallbackHandlerResult.summary,
+        evidence: fallbackHandlerResult.evidence,
+        actions: fallbackHandlerResult.actions,
+        conditions: fallbackHandlerResult.conditions,
+      });
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+        generation: fallback.generation,
+        attemptId: fallback.attemptId,
+        handler: fallback.handler,
+        disposition: apply.status === "applied" ? fallbackHandlerResult.disposition : "stale",
+        summary: fallbackHandlerResult.summary,
+        evidence: fallbackHandlerResult.evidence,
+        actionsApplied: apply.actionsApplied,
+        workflowRunId: fallbackResult.runId,
+        fallbackFrom: primary.handler,
+      });
+      return;
+    } catch (error) {
+      fallbackHandlerResult.disposition = "failed";
+      fallbackHandlerResult.summary = `Owner result was rejected: ${error instanceof Error ? error.message : String(error)}`;
+    }
   }
 
   markProjectAppTaskAttention(config, fallback, {
-    summary: fallbackResult.summary,
+    summary: fallbackHandlerResult.summary,
     reason: "owner-entry-blocked",
   });
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1059,7 +1213,7 @@ async function reconcileTaskRoute(input: {
     attemptId: fallback.attemptId,
     handler: fallback.handler,
     disposition: "attention",
-    summary: fallbackResult.summary,
+    summary: fallbackHandlerResult.summary,
     fallbackFrom: primary.handler,
   });
 }

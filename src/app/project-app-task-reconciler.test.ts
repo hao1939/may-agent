@@ -6,6 +6,7 @@ import { readTaskTree } from "@may-agent/sdk";
 import {
   claimProjectAppTask,
   completeProjectAppTask,
+  deferProjectAppTask,
   markProjectAppTaskAttention,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
@@ -102,7 +103,7 @@ describe("project app task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(completeProjectAppTask(config, claim, { summary: "session evaluated" })).toBe("applied");
+    expect(completeProjectAppTask(config, claim, { summary: "session evaluated" }).status).toBe("applied");
     const tree = readTaskTree(config);
     expect(tree.tasks[claim.taskId]).toBeUndefined();
     expect(tree.tasks.operations.children).not.toContain(claim.taskId);
@@ -131,7 +132,7 @@ describe("project app task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(completeProjectAppTask(config, claim, { summary: "pipeline healthy" })).toBe("applied");
+    expect(completeProjectAppTask(config, claim, { summary: "pipeline healthy" }).status).toBe("applied");
     const task = readTaskTree(config).tasks[claim.taskId];
     expect(task).toMatchObject({ state: "backlog", reconcile_mode: "maintain", summary: "pipeline healthy" });
     expect((task.trace?.reconciliation as Record<string, unknown>)?.phase).toBe("converged");
@@ -166,7 +167,175 @@ describe("project app task reconciler state", () => {
       reason: "workflow-fallback",
     });
     if (fallback.kind !== "claimed") throw new Error("expected fallback claim");
-    expect(completeProjectAppTask(config, primary, { summary: "late primary result" })).toBe("stale");
-    expect(completeProjectAppTask(config, fallback, { summary: "owner handled exception" })).toBe("applied");
+    expect(
+      completeProjectAppTask(config, primary, {
+        summary: "late primary result",
+        actions: [
+          {
+            kind: "create-task",
+            id: "stale-action-must-not-apply",
+            parentId: "operations",
+            goal: "This task must not exist",
+            outputs: ["proof.md"],
+            acceptance: ["Never applied"],
+          },
+        ],
+      }).status,
+    ).toBe("stale");
+    expect(readTaskTree(config).tasks["stale-action-must-not-apply"]).toBeUndefined();
+    expect(completeProjectAppTask(config, fallback, { summary: "owner handled exception" }).status).toBe("applied");
+  });
+
+  it("applies handler actions atomically with reconciliation completion", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const applied = completeProjectAppTask(config, claim, {
+      summary: "owner proposed a bounded child",
+      evidence: ["owner packet reviewed"],
+      actions: [
+        {
+          kind: "create-task",
+          id: "owner-created-task",
+          parentId: "operations",
+          goal: "Verify the owner action boundary",
+          outputs: ["proof.md"],
+          acceptance: ["The reconciler creates this task"],
+        },
+      ],
+    });
+
+    expect(applied).toEqual({ status: "applied", actionsApplied: ["created owner-created-task"] });
+    const tree = readTaskTree(config);
+    expect(tree.tasks["owner-created-task"]).toMatchObject({
+      state: "backlog",
+      owner: "branch-owner",
+      revision: 0,
+    });
+    expect(tree.tasks.operations.children).toContain("owner-created-task");
+    expect((tree.tasks[claim.taskId].trace?.reconciliation as Record<string, unknown>)?.actionsApplied).toEqual([
+      "created owner-created-task",
+    ]);
+  });
+
+  it("rejects an invalid action batch without partially applying earlier actions", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "invalid batch",
+        evidence: ["batch validation test"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "must-roll-back",
+            parentId: "operations",
+            goal: "Must not be persisted",
+            outputs: ["proof.md"],
+            acceptance: ["No partial apply"],
+          },
+          {
+            kind: "close-task",
+            taskId: "missing-task",
+            expectedRevision: 0,
+            summary: "invalid",
+          },
+        ],
+      }),
+    ).toThrow("Handler action task not found: missing-task");
+    const tree = readTaskTree(config);
+    expect(tree.tasks["must-roll-back"]).toBeUndefined();
+    expect(tree.tasks[claim.taskId].state).toBe("active");
+  });
+
+  it("rejects malformed action payloads and blank evidence before mutation", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "invalid runtime payload",
+        evidence: ["  "],
+        actions: [
+          {
+            kind: "create-task",
+            id: "must-not-apply",
+            parentId: "operations",
+            goal: "Must not be persisted",
+            outputs: ["proof.md"],
+            acceptance: ["No partial apply"],
+          },
+        ],
+      }),
+    ).toThrow("require non-empty evidence");
+    expect(readTaskTree(config).tasks["must-not-apply"]).toBeUndefined();
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "invalid runtime payload",
+        evidence: ["runtime validation test"],
+        actions: [{ kind: "create-task", id: "bad-shape" } as never],
+      }),
+    ).toThrow("parentId requires a non-empty string");
+    expect(readTaskTree(config).tasks["bad-shape"]).toBeUndefined();
+    expect(readTaskTree(config).tasks[claim.taskId].state).toBe("active");
+  });
+
+  it("ends waiting attempts only with an exact Condition", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      deferProjectAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting without identity",
+      }),
+    ).toThrow("requires at least one exact Condition");
+    expect(readTaskTree(config).tasks[claim.taskId].state).toBe("active");
+
+    expect(() =>
+      deferProjectAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting with an ambiguous condition",
+        conditions: [{}],
+      }),
+    ).toThrow("Condition for pipeline-monitor identity requires a non-empty string");
+    expect(readTaskTree(config).tasks[claim.taskId].state).toBe("active");
+
+    const result = deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for the source session",
+      evidence: ["source session is still running"],
+      conditions: [{ id: "session-terminal:s_1", observer: "session.end" }],
+    });
+    expect(result.status).toBe("applied");
+    const task = readTaskTree(config).tasks[claim.taskId];
+    expect(task.state).toBe("blocked");
+    expect(task.blocker).toMatchObject({
+      condition: "session-terminal:s_1",
+      condition_id: "session-terminal:s_1",
+    });
+    expect((task.trace?.reconciliation as Record<string, unknown>)?.phase).toBe("waiting");
   });
 });
