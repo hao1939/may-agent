@@ -1243,27 +1243,47 @@ function usesChildBlockedResultText(task: TaskNode): boolean {
   );
 }
 
+function childResultTextUsesLiveChildLineage(task: TaskNode): boolean {
+  const blocker = blockerRecord(task);
+  return Boolean(
+    blocker?.category === "child-blocked" ||
+      usesChildReviewResultText(task) ||
+      usesChildBlockedResultText(task),
+  );
+}
+
+function liveChildResultText(task: TaskNode, tree: TaskTree): string | null {
+  const reviewChildIds = normalizeStringArray(task.children).filter(
+    (childId) => nodeState(tree.tasks[childId]) === "review",
+  );
+  const blockedChildIds = normalizeStringArray(task.children).filter(
+    (childId) => nodeState(tree.tasks[childId]) === "blocked",
+  );
+
+  if (nodeState(task) === "review" && reviewChildIds.length > 0) {
+    return childReviewResultText(reviewChildIds);
+  }
+  if (blockedChildIds.length > 0) {
+    return childBlockedResultText(blockedChildIds);
+  }
+  if (reviewChildIds.length > 0) {
+    return childReviewResultText(reviewChildIds);
+  }
+
+  return null;
+}
+
 function repairChildReviewParentResults(config: TaskTreeConfig): string[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const repaired: string[] = [];
 
     for (const task of Object.values(tree.tasks)) {
-      if (!usesChildReviewResultText(task)) continue;
+      if (!childResultTextUsesLiveChildLineage(task)) continue;
 
-      const reviewChildIds = normalizeStringArray(task.children).filter(
-        (childId) => nodeState(tree.tasks[childId]) === "review",
-      );
-      const blockedChildIds = normalizeStringArray(task.children).filter(
-        (childId) => nodeState(tree.tasks[childId]) === "blocked",
-      );
-      const expected =
-        reviewChildIds.length > 0
-          ? childReviewResultText(reviewChildIds)
-          : blockedChildIds.length > 0
-            ? childBlockedResultText(blockedChildIds)
-            : null;
-      if (!expected || task.result === expected) continue;
+      const expected = liveChildResultText(task, tree);
+      if (!expected || !/^Child review pending:\s*/.test(expected)) continue;
+      if (task.result === expected) continue;
       task.result = expected;
       repaired.push(task.id);
     }
@@ -1274,7 +1294,7 @@ function repairChildReviewParentResults(config: TaskTreeConfig): string[] {
         kind: "child_review_parent_results_repaired",
         task_ids: repaired,
         reason:
-          "parent result text refreshed from current review or blocked children",
+          "parent result text refreshed from current review children",
       });
     }
 
@@ -1288,20 +1308,14 @@ function repairChildBlockedParentResults(config: TaskTreeConfig): string[] {
     const repaired: string[] = [];
 
     for (const task of Object.values(tree.tasks)) {
-      const blocker = blockerRecord(task);
-      if (
-        blocker?.category !== "child-blocked" &&
-        !usesChildBlockedResultText(task)
-      ) {
+      if (!childResultTextUsesLiveChildLineage(task)) {
         continue;
       }
 
-      const blockedChildIds = normalizeStringArray(task.children).filter(
-        (childId) => nodeState(tree.tasks[childId]) === "blocked",
-      );
-      if (blockedChildIds.length === 0) continue;
-
-      const expected = childBlockedResultText(blockedChildIds);
+      const expected = liveChildResultText(task, tree);
+      if (!expected || !/^Blocked on child task\(s\):\s*/.test(expected)) {
+        continue;
+      }
       if (task.result === expected) continue;
       task.result = expected;
       repaired.push(task.id);
@@ -2306,6 +2320,45 @@ function implicitRollupArchivableChildIds(
     .slice(0, Math.max(0, limit));
 }
 
+function promoteOpenParentToActiveWhenChildrenActive(
+  config: TaskTreeConfig,
+  parentId: string,
+): boolean {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const parent = tree.tasks[parentId];
+    if (!parent) return false;
+
+    const currentState = nodeState(parent);
+    if (currentState === "active" || currentState === "done") {
+      return false;
+    }
+
+    const hasActiveChild = normalizeStringArray(parent.children).some(
+      (childId) => nodeState(tree.tasks[childId]) === "active",
+    );
+    if (!hasActiveChild) return false;
+
+    parent.state = "active";
+    parent.status = "active";
+    parent.trace = {
+      ...(recordValue(parent.trace) ?? {}),
+      active_child_rollup_repaired_at: new Date().toISOString(),
+      active_child_rollup_repaired_by: "task-tree-tool",
+      previous_state_before_active_child_rollup: currentState,
+    };
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "parent_active_child_rollup_repaired",
+      task_id: parent.id,
+      from: currentState,
+      to: "active",
+      reason: "explicit parent rollup left live active child frontier stored non-active",
+    });
+    return true;
+  });
+}
+
 export function rollupParent(
   config: TaskTreeConfig,
   input: RollupParentInput,
@@ -2349,11 +2402,20 @@ export function rollupParent(
           ...input,
           ...(implicitSelection ? { taskIds: selectedIds } : {}),
         });
+  const promotedToActive = promoteOpenParentToActiveWhenChildrenActive(
+    config,
+    input.parentId,
+  );
+
+  const nextResult = {
+    ...result,
+    changed: result.changed || promotedToActive,
+  };
 
   return protectedCount === undefined
-    ? result
+    ? nextResult
     : {
-        ...result,
+        ...nextResult,
         protected: protectedCount,
       };
 }
@@ -3241,6 +3303,9 @@ function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
       "governing family wait",
       "shared family reconciliation path",
       "only the projection of wait-shared-",
+      "keep this holder blocked until that shared wait returns",
+      "still depends on the live shared underlay/runtime-input family wait",
+      "governed by the shared underlay/runtime-input family wait",
     ]) &&
     includesAny(text, [
       "do not broad-rerun",
@@ -3248,6 +3313,9 @@ function isSharedFamilyCoveredHolder(task: TaskNode): boolean {
       "without reopening a feature-local environment blocker",
       "instead of a generic local environment wait",
       "environment umbrella",
+      "do not reopen an unchanged compact rerun",
+      "do not reopen an unchanged rerun",
+      "do not rerun unchanged",
     ])
   );
 }
@@ -3421,6 +3489,7 @@ function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
           isHumanOwnedExternalWait(task) ||
           isRepresentedBlockedFrontier(task) ||
           isFeatureCompactNonEnvironmentFrontier(task) ||
+          isSharedFamilyCoveredHolder(task) ||
           isSupersededCompactSourceWitnessCarrier(task) ||
           isFocusPlanApprovalWait(task) ||
           isDependentHumanApprovalWait(task) ||

@@ -3791,6 +3791,106 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses source-exactness-overblock warning for compact projections governed by exact shared-family waits", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["aks-feature-compact-loop", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              children: ["paf-shared-projection"],
+              goal: "compact loop",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "paf-shared-projection": {
+              id: "hold-compact-paf-throttling-reviewed-exception-frontier-owner-normalized-20260713",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              children: [],
+              goal: "Hold compact feature paf-throttling on the exact same-lineage compact frontier until the still-live shared underlay/runtime-input family wait returns and a reviewed dedicated-OOM execution surface is available. Do not reopen an unchanged compact rerun.",
+              outputs: ["evidence/archive/paf-shared-projection.md"],
+              acceptance: [
+                "This compact holder remains blocked only while the unchanged paf-throttling carrier still depends on the live shared underlay/runtime-input family wait wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708 plus a PAF-specific dedicated-OOM execution surface.",
+                "Resume only when the named shared family wait changes or reviewed same-lineage evidence identifies the accepted dedicated-OOM execution surface.",
+              ],
+              context: {
+                featureCompactExactWait: true,
+                featureKey: "paf-throttling",
+                errorClass: "reviewed-exception",
+                target: "staging",
+                frontierTaskIds: [
+                  "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
+                ],
+                compactFrontierTaskIds: [
+                  "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
+                ],
+              },
+              blocker: {
+                condition:
+                  "Keep this holder blocked until that shared wait returns and reviewed same-lineage evidence identifies the accepted dedicated-OOM execution surface. The prepared owner-handoff packet remains unsent, so there is still no controller-visible PAF owner-response wait. Do not reopen an unchanged compact rerun.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "project.approval.submitted",
+                  taskId:
+                    "wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708",
+                },
+                observed_by: {
+                  workflow: "feature-compact-loop-controller",
+                  trigger: "project.task.tick",
+                },
+                observation_method:
+                  "On each compact-loop tick, keep this holder aligned to wait-shared-underlay-runtime-input-family-upgrade-inclusive-20260708 until the shared underlay/runtime-input family materially changes.",
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses source-exactness-overblock warning for feature-compact exact non-environment frontiers", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -6100,6 +6200,109 @@ describe("task tree tools", () => {
     );
   });
 
+  test("rollup-parent keeps stored parent state active when live child frontier still has active work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["normalization-frontier"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "normalization-frontier": {
+              id: "normalization-frontier",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: ["done-child", "active-child", "review-child", "blocked-child"],
+              goal: "Keep the normalization frontier truthful.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["frontier stays aligned to live child work"],
+              result: "Child review pending: review-child.",
+            },
+            "done-child": {
+              id: "done-child",
+              parent_id: "normalization-frontier",
+              state: "done",
+              status: "done",
+              goal: "Archived completion.",
+              outputs: ["evidence/archive/done-child.md"],
+              acceptance: ["done"],
+            },
+            "active-child": {
+              id: "active-child",
+              parent_id: "normalization-frontier",
+              state: "active",
+              status: "active",
+              goal: "Current repair work.",
+              outputs: ["evidence/archive/active-child.md"],
+              acceptance: ["repair complete"],
+            },
+            "review-child": {
+              id: "review-child",
+              parent_id: "normalization-frontier",
+              state: "review",
+              status: "review",
+              goal: "Review current artifacts.",
+              outputs: ["evidence/archive/review-child.md"],
+              acceptance: ["review complete"],
+            },
+            "blocked-child": {
+              id: "blocked-child",
+              parent_id: "normalization-frontier",
+              state: "blocked",
+              status: "blocked",
+              goal: "Wait on external signal.",
+              outputs: ["evidence/archive/blocked-child.md"],
+              acceptance: ["signal returns"],
+              blocker: {
+                condition: "external signal required",
+                category: "external-wait",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = rollupParent(config(projectDir), {
+      parentId: "normalization-frontier",
+      summary: "Archive the completed child without demoting live active normalization work.",
+      taskIds: ["done-child"],
+    });
+
+    expect(result.archivedTaskIds).toEqual(["done-child"]);
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["done-child"]).toBeUndefined();
+    expect(tree.tasks["normalization-frontier"].children).toEqual([
+      "active-child",
+      "review-child",
+      "blocked-child",
+    ]);
+    expect(tree.tasks["normalization-frontier"].state).toBe("active");
+    expect(
+      tree.tasks["normalization-frontier"].status ??
+        tree.tasks["normalization-frontier"].state,
+    ).toBe("active");
+  });
+
   test("refuses parent rollup for durable loop roots even when completion-ready", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -6893,7 +7096,7 @@ describe("task tree tools", () => {
 
     const result = repairTaskTreeRollups(config(projectDir));
 
-    expect(result.repairedChildReviewParentResults).toContain(
+    expect(result.repairedChildBlockedParentResults).toContain(
       "normalization-frontier",
     );
     const tree = JSON.parse(
@@ -7004,6 +7207,82 @@ describe("task tree tools", () => {
       "Blocked on child task(s): new-wait.",
     );
     expect(tree.tasks.loop.result).toBe("Blocked on child task(s): spec-wait.");
+  });
+
+  test("repair-rollups refreshes blocked-child wording to live review children after the blocked wait is archived", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "review",
+              status: "review",
+              children: ["normalization-frontier"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "normalization-frontier": {
+              id: "normalization-frontier",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: ["review-a", "review-b"],
+              goal: "Keep the normalization frontier truthful.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["frontier reflects live children"],
+              result: "Blocked on child task(s): archived-wait.",
+              context: {
+                rollup_summary:
+                  "Only active terminal-review children remain; archived waits are history only.",
+              },
+            },
+            "review-a": {
+              id: "review-a",
+              parent_id: "normalization-frontier",
+              state: "review",
+              status: "review",
+              goal: "Inspect exact terminal pass artifacts.",
+              outputs: ["evidence/archive/review-a.md"],
+              acceptance: ["review complete"],
+            },
+            "review-b": {
+              id: "review-b",
+              parent_id: "normalization-frontier",
+              state: "review",
+              status: "review",
+              goal: "Inspect exact failed-run follow-through.",
+              outputs: ["evidence/archive/review-b.md"],
+              acceptance: ["review complete"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.repairedChildReviewParentResults).toContain(
+      "normalization-frontier",
+    );
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["normalization-frontier"].result).toBe(
+      "Child review pending: review-a, review-b.",
+    );
   });
 
   test("reopenControllerRootWhenIncomplete adds observer and fallback metadata for child-blocked stewardship", () => {
