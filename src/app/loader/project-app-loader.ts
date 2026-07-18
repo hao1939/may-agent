@@ -1020,7 +1020,7 @@ async function reconcileTaskRoute(input: {
     appOwner: descriptor.owner,
     handler: primaryHandler,
     reason: input.reason ?? event?.type ?? route.name,
-    trigger: event as unknown as Record<string, unknown> | undefined,
+    trigger: event ? flattened : undefined,
   });
   if (primary.kind !== "claimed") {
     const skip =
@@ -1144,7 +1144,7 @@ async function reconcileTaskRoute(input: {
     appOwner: descriptor.owner,
     handler: `owner:${primary.owner}`,
     reason: "workflow-fallback",
-    trigger: event as unknown as Record<string, unknown> | undefined,
+    trigger: event ? flattened : undefined,
   });
   if (fallback.kind !== "claimed") {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
