@@ -351,7 +351,17 @@ function appWorkflowRuntimePaths(
 function flattenEvent(event: AgentEvent): Record<string, unknown> {
   const record = event as unknown as Record<string, unknown>;
   const data = isRecord(record.data) ? record.data : {};
-  return { ...data, ...record, data };
+  const persistedEventId = (
+    event as AgentEvent & { [EVENT_ROW_ID]?: number }
+  )[EVENT_ROW_ID];
+  return {
+    ...data,
+    ...record,
+    data,
+    ...(Number.isInteger(persistedEventId) && Number(persistedEventId) > 0
+      ? { eventId: Number(persistedEventId) }
+      : {}),
+  };
 }
 
 function projectValue(event: Record<string, unknown>): string {

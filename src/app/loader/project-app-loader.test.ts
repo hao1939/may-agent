@@ -1115,7 +1115,7 @@ export async function execute(ctx: any) {
                 acceptance: ["Workflow completed"],
                 mode: "achieve",
                 ...(event.ownerOnly ? {} : { workflow: event.useMissing ? "missing" : "known" }),
-                input: { itemId: event.itemId }
+                input: { itemId: event.itemId, eventId: event.eventId }
               };
             }
           }]
@@ -1200,12 +1200,14 @@ export async function execute(ctx: any) {
       cron.subscribeToBus(bus);
       cron.start();
 
-      bus.emit({
+      const knownTrigger = {
         type: "project.work",
         source: "test",
         owner: "human:test",
         data: { project: "sample", itemId: "known" },
-      } as any);
+      } as any;
+      Object.defineProperty(knownTrigger, EVENT_ROW_ID, { value: 73 });
+      bus.emit(knownTrigger);
       await waitUntil(
         () =>
           events.some(
@@ -1222,6 +1224,10 @@ export async function execute(ctx: any) {
           )}`,
         );
       });
+      expect(
+        events.find((event) => event.type === "test.task.workflow")?.data
+          ?.task,
+      ).toContain('"eventId": 73');
 
       const knownWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
       bus.emit({
