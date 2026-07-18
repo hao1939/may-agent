@@ -27,6 +27,7 @@ import {
   completeProjectAppTask,
   deferProjectAppTask,
   markProjectAppTaskAttention,
+  observeProjectAppTaskConditions,
   taskReconciliationConfig,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
@@ -978,6 +979,7 @@ async function reconcileTaskRoute(input: {
   descriptor: ProjectAppDescriptor;
   route: ProjectAppTaskRoute;
   event?: EventEnvelope;
+  reason?: string;
 }): Promise<void> {
   const { opts, descriptor, route, event } = input;
   const flattened = event ? flattenEvent(event as unknown as AgentEvent) : {};
@@ -1003,13 +1005,18 @@ async function reconcileTaskRoute(input: {
     intent,
     appOwner: descriptor.owner,
     handler: primaryHandler,
-    reason: event?.type ?? route.name,
+    reason: input.reason ?? event?.type ?? route.name,
   });
   if (primary.kind !== "claimed") {
+    const skip =
+      primary.kind === "busy"
+        ? { reason: "attempt-active", attemptId: primary.attemptId }
+        : primary.kind === "waiting"
+          ? { reason: "conditions-open", conditionIds: primary.conditionIds }
+          : { reason: "already-completed", generation: primary.generation };
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", intent.id, {
       route: route.name,
-      reason: primary.kind === "busy" ? "attempt-active" : "already-completed",
-      ...(primary.kind === "busy" ? { attemptId: primary.attemptId } : { generation: primary.generation }),
+      ...skip,
     });
     return;
   }
@@ -1301,6 +1308,43 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   opts.bus.subscribe((rawEvent): void => {
     const event = flattenEvent(rawEvent);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
+      if (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner) {
+        const config = taskReconciliationConfig({
+          appDir: descriptor.appDir,
+          projectDir: descriptor.projectDir,
+          owner: descriptor.owner,
+          maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+        });
+        const conditionWakes = observeProjectAppTaskConditions(config, event);
+        for (const wake of conditionWakes) {
+          const route: ProjectAppTaskRoute = {
+            name: `condition:${wake.conditionId}`,
+            enabled: true,
+            description: `Resume ${wake.taskId} after Condition ${wake.conditionId} changed`,
+            accepts: [String(event.type ?? "")],
+            resolve: () => wake.intent,
+          };
+          void reconcileTaskRoute({
+            opts,
+            descriptor,
+            route,
+            event: rawEvent as EventEnvelope,
+            reason: wake.recovery ? `condition-recovery:${wake.conditionId}` : `condition:${wake.conditionId}`,
+          }).catch((err) => {
+            opts.bus.emit({
+              type: "handler.failed",
+              source: "cron",
+              owner: `agent:${descriptor.owner}`,
+              data: {
+                handler: route.name,
+                agent: descriptor.owner,
+                error: err instanceof Error ? err.message : String(err),
+                durationMs: 0,
+              },
+            });
+          });
+        }
+      }
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
       const hasAppEventHandler = typeof descriptor.app.onEvent === "function";

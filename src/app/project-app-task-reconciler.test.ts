@@ -8,6 +8,7 @@ import {
   completeProjectAppTask,
   deferProjectAppTask,
   markProjectAppTaskAttention,
+  observeProjectAppTaskConditions,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -323,6 +324,14 @@ describe("project app task reconciler state", () => {
     ).toThrow("Condition for pipeline-monitor identity requires a non-empty string");
     expect(readTaskTree(config).tasks[claim.taskId].state).toBe("active");
 
+    expect(() =>
+      deferProjectAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting without an observer",
+        conditions: [{ id: "session-terminal:s_1" }],
+      }),
+    ).toThrow("Condition session-terminal:s_1 observer requires a non-empty string");
+
     const result = deferProjectAppTask(config, claim, {
       disposition: "waiting",
       summary: "waiting for the source session",
@@ -337,5 +346,108 @@ describe("project app task reconciler state", () => {
       condition_id: "session-terminal:s_1",
     });
     expect((task.trace?.reconciliation as Record<string, unknown>)?.phase).toBe("waiting");
+    expect(readTaskTree(config).conditions?.["session-terminal:s_1"]).toMatchObject({
+      id: "session-terminal:s_1",
+      status: "open",
+      observer: "session.end",
+      waitingTaskId: "pipeline-monitor",
+      waitingTaskGeneration: 1,
+    });
+
+    const timerWake = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(timerWake).toMatchObject({
+      kind: "waiting",
+      taskId: "pipeline-monitor",
+      conditionIds: ["session-terminal:s_1"],
+    });
+
+    expect(
+      observeProjectAppTaskConditions(config, {
+        type: "session.end",
+        sessionId: "s_other",
+        status: "done",
+      }),
+    ).toEqual([]);
+
+    const wakes = observeProjectAppTaskConditions(config, {
+      type: "session.end",
+      sessionId: "s_1",
+      status: "done",
+      source: "test",
+    });
+    expect(wakes).toMatchObject([
+      {
+        conditionId: "session-terminal:s_1",
+        taskId: "pipeline-monitor",
+        recovery: false,
+        intent: { id: "pipeline-monitor", workflow: "known-workflow", mode: "maintain" },
+      },
+    ]);
+    expect(readTaskTree(config).conditions?.["session-terminal:s_1"]).toMatchObject({
+      status: "satisfied",
+      lastObservation: { eventType: "session.end", sessionId: "s_1", state: "done" },
+    });
+
+    const resumed = claimProjectAppTask(config, {
+      intent: wakes[0].intent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "condition:session-terminal:s_1",
+    });
+    expect(resumed.kind).toBe("claimed");
+    if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+    completeProjectAppTask(config, resumed, { summary: "session terminal observed" });
+    expect(readTaskTree(config).conditions?.["session-terminal:s_1"]).toMatchObject({
+      status: "resolved",
+    });
+    expect(readTaskTree(config).tasks["pipeline-monitor"].blocker).toBeUndefined();
+  });
+
+  it("filters task Conditions by subject and expected state", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for dependency completion",
+      conditions: [
+        {
+          id: "task-done:dependency-1",
+          observer: "project.task.reconciled",
+          taskId: "dependency-1",
+          expectedState: "done",
+        },
+      ],
+    });
+
+    expect(
+      observeProjectAppTaskConditions(config, {
+        type: "project.task.reconciled",
+        taskId: "dependency-2",
+        disposition: "converged",
+      }),
+    ).toEqual([]);
+    expect(
+      observeProjectAppTaskConditions(config, {
+        type: "project.task.reconciled",
+        taskId: "dependency-1",
+        disposition: "waiting",
+      }),
+    ).toEqual([]);
+    expect(
+      observeProjectAppTaskConditions(config, {
+        type: "project.task.reconciled",
+        taskId: "dependency-1",
+        disposition: "converged",
+      }),
+    ).toMatchObject([{ conditionId: "task-done:dependency-1", taskId: "pipeline-monitor" }]);
   });
 });
