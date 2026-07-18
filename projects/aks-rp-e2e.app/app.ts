@@ -119,6 +119,27 @@ function approvalDispatchId(details: Record<string, unknown>): string {
   return `runtime/approval-dispatch/${readable || "approval"}-${digest}`;
 }
 
+function conditionFallbackId(details: Record<string, unknown>): string {
+  const conditionId = detailString(details, "conditionId", "condition_id");
+  const recoveryKey = detailString(details, "recoveryKey", "recovery_key");
+  const revisionValue = details.taskRevision ?? details.task_revision;
+  const taskRevision =
+    typeof revisionValue === "number" &&
+    Number.isInteger(revisionValue) &&
+    revisionValue >= 0
+      ? revisionValue
+      : 0;
+  const digest = createHash("sha256")
+    .update(recoveryKey || `${conditionId}\0${taskRevision}`)
+    .digest("hex")
+    .slice(0, 16);
+  const readable = conditionId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/condition-fallback/${readable || "condition"}-${digest}`;
+}
+
 function detailStrings(
   details: Record<string, unknown>,
   ...names: string[]
@@ -172,6 +193,42 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.condition.fallback.requested") {
+    const conditionId = detailString(details, "conditionId", "condition_id");
+    const subjectTaskId = detailString(details, "taskId", "task_id");
+    if (!conditionId || !subjectTaskId) return null;
+    const revisionValue = details.taskRevision ?? details.task_revision;
+    const taskRevision =
+      typeof revisionValue === "number" &&
+      Number.isInteger(revisionValue) &&
+      revisionValue >= 0
+        ? revisionValue
+        : 0;
+    return {
+      id: conditionFallbackId(details),
+      parentId: "project",
+      outcome: `Judge the overdue fallback for Condition ${conditionId} exactly once and leave one durable owner disposition.`,
+      acceptance: [
+        "App-ops records whether the exact Condition is refreshed, repaired, escalated, or otherwise terminally dispositioned.",
+        "The fallback does not create a duplicate polling wait or replay already-completed work.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      input: {
+        conditionId,
+        subjectTaskId,
+        taskRevision,
+        recoveryKey: detailString(details, "recoveryKey", "recovery_key"),
+        fallbackAction: detailString(
+          details,
+          "fallbackAction",
+          "fallback_action",
+        ),
+      },
+      outputs: ["tasks/tree.json"],
+      priority: "P0",
+    };
+  }
   if (event.type === "project.stall.review.requested") {
     return {
       id: "aks-project-stall-review",
@@ -613,6 +670,20 @@ export default defineProjectApp({
 
   taskRoutes: [
     {
+      name: "aks-rp-e2e-task-condition-fallback",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Routes each exact Condition fallback identity once to the accountable owner.",
+      accepts: [
+        {
+          type: "project.condition.fallback.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
+    {
       name: "aks-rp-e2e-task-stall-review",
       enabled: true,
       maxConcurrentTriggers: 1,
@@ -744,28 +815,6 @@ export default defineProjectApp({
         "project.task.assigned",
         "project.problem.investigation.requested",
       ],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-condition-fallback-planner",
-      type: "job",
-      enabled: true,
-      description:
-        "Dedicated delivery lane for one correlated Condition fallback owner disposition.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "project-planner",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
-        timeoutMs: 1_200_000,
-      },
-      accepts: [
-        {
-          type: "project.condition.fallback.requested",
-          target: { project: projectId },
-        },
-      ],
-      emits: ["project.task.assigned", "project.owner.requested"],
       context: taskTreeContext,
     },
     {

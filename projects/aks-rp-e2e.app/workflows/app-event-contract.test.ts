@@ -44,7 +44,7 @@ const appManifest = app as {
   workflowHandlers?: WorkflowHandler[];
   taskRoutes?: TaskRoute[];
   taskWorkflows?: Record<string, TaskWorkflow>;
-  ownerEntry?: { workflow?: string; agent?: string };
+  ownerEntry?: { workflow?: string; agent?: string; task?: string };
   schedules?: Schedule[];
   eventGraph?: Record<string, unknown> & {
     externalEvents?: string[];
@@ -213,12 +213,18 @@ describe("app event contract", () => {
         { type: "project.task.reviewed", target: { project: projectId } },
       ],
     });
-    expect(
-      handler("aks-rp-e2e-condition-fallback-planner").handler?.workflow,
-    ).toBe("project-planner");
-    expect(handlerEvents("aks-rp-e2e-condition-fallback-planner")).toEqual([
-      "project.condition.fallback.requested",
-    ]);
+    expect(taskRoute("aks-rp-e2e-task-condition-fallback")).toMatchObject({
+      accepts: [
+        {
+          type: "project.condition.fallback.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(appManifest.ownerEntry).toMatchObject({
+      workflow: "project-planner",
+      agent: "app-ops",
+    });
     expect(handlerEvents("aks-rp-e2e-project-planner")).toEqual(
       expect.arrayContaining([
         "project.owner.requested",
@@ -242,7 +248,6 @@ describe("app event contract", () => {
   test("manifest explicitly opts only the bounded exact ADO Condition writers into V2", () => {
     for (const name of [
       "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).toContain(
@@ -251,11 +256,14 @@ describe("app event contract", () => {
     }
     for (const name of [
       "aks-rp-e2e-project-planner",
-      "aks-rp-e2e-condition-fallback-planner",
       "aks-rp-e2e-project-watchdog",
     ]) {
       expect(handler(name).handler?.task).not.toContain("conditionAdoptionV2:");
     }
+    expect(appManifest.ownerEntry?.task).toContain(
+      "conditionV2: exact-ado-revisioned",
+    );
+    expect(appManifest.ownerEntry?.task).not.toContain("conditionAdoptionV2:");
     expect(
       appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
     ).toContain("conditionV2: exact-ado-revisioned");
@@ -417,6 +425,59 @@ describe("app event contract", () => {
       priority: "P0",
     });
     expect(later?.id).toBe(first?.id);
+  });
+
+  test("Condition fallbacks resolve once to the accountable owner", () => {
+    const event = {
+      type: "project.condition.fallback.requested",
+      target: { project: projectId },
+      data: {
+        conditionId: "condition:pipeline:ado:172669197:terminal",
+        taskId: "verify-network-cni",
+        taskRevision: 2,
+        recoveryKey:
+          "condition-fallback:condition:pipeline:ado:172669197:terminal:2",
+        fallbackAction: "Refresh or escalate this exact Condition.",
+        observation: { status: "inProgress" },
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      priority: "P0",
+      input: {
+        conditionId: "condition:pipeline:ado:172669197:terminal",
+        subjectTaskId: "verify-network-cni",
+        taskRevision: 2,
+        recoveryKey:
+          "condition-fallback:condition:pipeline:ado:172669197:terminal:2",
+        fallbackAction: "Refresh or escalate this exact Condition.",
+      },
+    });
+    expect(first).not.toHaveProperty("workflow");
+    expect(resolveAksReconciliationTask(structuredClone(event))?.id).toBe(
+      first?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: {
+          ...event.data,
+          taskRevision: 3,
+          recoveryKey:
+            "condition-fallback:condition:pipeline:ado:172669197:terminal:3",
+        },
+      })?.id,
+    ).not.toBe(first?.id);
+
+    for (const missing of ["conditionId", "taskId"] as const) {
+      const data = { ...event.data };
+      delete data[missing];
+      expect(resolveAksReconciliationTask({ ...event, data })).toBeNull();
+    }
   });
 
   test("assignment events resolve to stable bounded execution tasks", () => {
@@ -748,6 +809,17 @@ describe("app event contract", () => {
       accepts: [
         {
           type: "project.problem.investigation.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(handlersForEvent("project.condition.fallback.requested")).toEqual(
+      [],
+    );
+    expect(taskRoute("aks-rp-e2e-task-condition-fallback")).toMatchObject({
+      accepts: [
+        {
+          type: "project.condition.fallback.requested",
           target: { project: projectId },
         },
       ],
