@@ -28,6 +28,7 @@ import {
   deferProjectAppTask,
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
+  recoverableProjectAppTaskAttempts,
   taskReconciliationConfig,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
@@ -1006,6 +1007,7 @@ async function reconcileTaskRoute(input: {
     appOwner: descriptor.owner,
     handler: primaryHandler,
     reason: input.reason ?? event?.type ?? route.name,
+    trigger: event as unknown as Record<string, unknown> | undefined,
   });
   if (primary.kind !== "claimed") {
     const skip =
@@ -1129,6 +1131,7 @@ async function reconcileTaskRoute(input: {
     appOwner: descriptor.owner,
     handler: `owner:${primary.owner}`,
     reason: "workflow-fallback",
+    trigger: event as unknown as Record<string, unknown> | undefined,
   });
   if (fallback.kind !== "claimed") {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1260,6 +1263,41 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
     });
     cron.addSyntheticEntry(entry);
     count++;
+  }
+  const recoveryConfig = taskReconciliationConfig({
+    appDir: descriptor.appDir,
+    projectDir: descriptor.projectDir,
+    owner: descriptor.owner,
+    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+  });
+  for (const wake of recoverableProjectAppTaskAttempts(recoveryConfig)) {
+    const flattened = flattenEvent(wake.trigger as unknown as AgentEvent);
+    const route = routes.find(
+      (candidate) =>
+        candidate.enabled !== false &&
+        routeAccepts(candidate).some((selector) => matchesSelector(selector, flattened, descriptor.id)) &&
+        candidate.resolve(flattened)?.id === wake.taskId,
+    );
+    if (!route) continue;
+    void reconcileTaskRoute({
+      opts,
+      descriptor,
+      route,
+      event: wake.trigger as unknown as EventEnvelope,
+      reason: `attempt-recovery:${wake.taskId}`,
+    }).catch((err) => {
+      opts.bus.emit({
+        type: "handler.failed",
+        source: "cron",
+        owner: `agent:${descriptor.owner}`,
+        data: {
+          handler: route.name,
+          agent: descriptor.owner,
+          error: err instanceof Error ? err.message : String(err),
+          durationMs: 0,
+        },
+      });
+    });
   }
   rememberProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, cron, descriptor.id, currentNames);
   return count;

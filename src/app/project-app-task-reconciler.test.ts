@@ -9,6 +9,7 @@ import {
   deferProjectAppTask,
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
+  recoverableProjectAppTaskAttempts,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -143,6 +144,54 @@ describe("project app task reconciler state", () => {
     const completed = readTaskTree(config);
     expect(completed.active_task_ids).toEqual([]);
     expect(completed.active_task_id).toBeNull();
+  });
+
+  it("recovers an interrupted attempt only from a previous runtime trigger", () => {
+    const { config } = fixture();
+    const first = claimProjectAppTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      trigger: {
+        type: "session.end",
+        data: { project: "sample", sessionId: "session-1" },
+      },
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    expect(recoverableProjectAppTaskAttempts(config)).toEqual([]);
+
+    const interrupted = readTaskTree(config);
+    const trace = interrupted.tasks[first.taskId].trace?.reconciliation as Record<string, unknown>;
+    trace.runtimeId = "previous-runtime";
+    saveTaskTree(config, interrupted);
+
+    const [recovery] = recoverableProjectAppTaskAttempts(config);
+    expect(recovery).toMatchObject({
+      taskId: first.taskId,
+      intent: { id: first.taskId },
+      trigger: {
+        type: "session.end",
+        data: { project: "sample", sessionId: "session-1" },
+      },
+    });
+
+    const reclaimed = claimProjectAppTask(config, {
+      intent: recovery.intent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      trigger: recovery.trigger,
+      reason: `attempt-recovery:${first.taskId}`,
+    });
+    expect(reclaimed).toMatchObject({
+      kind: "claimed",
+      taskId: first.taskId,
+      generation: first.generation,
+    });
+    if (reclaimed.kind !== "claimed") throw new Error("expected reclaim");
+    expect(reclaimed.attemptId).not.toBe(first.attemptId);
+    expect(
+      (readTaskTree(config).tasks[first.taskId].trace?.reconciliation as Record<string, unknown>).recoveredFromAttempt,
+    ).toBe(first.attemptId);
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
