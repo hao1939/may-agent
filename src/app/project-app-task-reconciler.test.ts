@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readTaskTree } from "@may-agent/sdk";
+import { readTaskTree, saveTaskTree } from "@may-agent/sdk";
 import {
   claimProjectAppTask,
   completeProjectAppTask,
@@ -122,6 +122,27 @@ describe("project app task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "completed", taskId: claim.taskId, generation: 1 });
     expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("evaluate:session-1");
+  });
+
+  it("keeps active parent rollups out of the executable projection", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const running = readTaskTree(config);
+    running.tasks.root.state = "active";
+    running.tasks.operations.state = "active";
+    saveTaskTree(config, running);
+
+    completeProjectAppTask(config, claim, { summary: "session evaluated" });
+
+    const completed = readTaskTree(config);
+    expect(completed.active_task_ids).toEqual([]);
+    expect(completed.active_task_id).toBeNull();
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
