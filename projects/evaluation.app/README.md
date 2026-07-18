@@ -4,8 +4,9 @@ Independently audits completed May-agent sessions and project apps. It identifie
 evidence-backed risks and improvement opportunities, reports actionable findings
 to responsible project owners, and notifies humans only when useful.
 
-This is a project-app: it owns the evaluation process and scoring criteria.
-The evaluator agent is a worker identity dispatched by this app.
+This is a project-app: it organizes the evaluation process, task state,
+workflow capabilities, and scoring criteria. The evaluator agent provides
+adaptive judgment and is the app's accountable fallback for unfamiliar work.
 Every project app remains responsible for its own domain goal and remediation.
 `evaluation.app` observes, judges, and reports; it does not become a second
 planner or fixer for the target project.
@@ -18,6 +19,7 @@ project/app sample -> collect evidence -> evaluate -> report -> deliver
 ```
 
 Four implemented lanes:
+
 1. **Session aftermath** — event-driven evaluation of completed sessions, plus
    one bounded backfill candidate every seven minutes
 2. **Pipeline monitor** — deterministic five-minute health checks that wake the
@@ -25,6 +27,21 @@ Four implemented lanes:
 3. **Deep eval** — explicit LLM-powered evaluation for selected sessions
 4. **Project/app audit** — delta-gated, independent review of target progress,
    risks, waits, recovery behavior, and escalation quality
+
+All four lanes use the task reconciliation model:
+
+```text
+event -> short-lived achieve task or standing maintain task
+      -> bound workflow, otherwise evaluator owner entry
+      -> structured workflow result
+      -> reconciler updates or absorbs the task
+```
+
+Session and explicit deep evaluations use short-lived tasks so independent
+events can run concurrently. Pipeline monitoring, backfill, owner review, and
+per-project audits use standing tasks that converge and wait for the next
+event. Completed short-lived tasks are removed from the live graph after their
+results are absorbed.
 
 ## Responsibility Boundary
 
@@ -51,8 +68,8 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 
 ## Layout
 
-- `app.ts` declares schedules, event routes, actions, and app-owned adapter
-  behavior.
+- `app.ts` declares schedules, event-to-task routes, workflow capabilities,
+  owner entry, actions, and bounded ingress adapters.
 - `workflows/` contains the app workflow entrypoints.
 - `agents/evaluator/` contains the evaluator worker identity and guidance.
 - `criteria/` contains scoring criteria and versioned methodology.
@@ -64,7 +81,8 @@ bun run check       # syntax, typecheck, and formatting
 bun run bundle      # build the app manifest and local workflows
 ```
 
-The v3 app manifest in `app.ts` owns schedules and event-to-handler routing.
+The app manifest in `app.ts` owns schedules, event-to-task correlation,
+workflow bindings, and owner fallback.
 Session aftermath runs only for `session.end`, bounded backfill, or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
 the five-minute pipeline schedule runs deterministic checks and emits an owner

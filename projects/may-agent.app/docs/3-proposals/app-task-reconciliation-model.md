@@ -1,9 +1,11 @@
 # Proposal: App Task Reconciliation Model
 
-**Design status:** Draft proposal.
-**Implementation status:** Not implemented as one coherent path. Existing
-project apps already provide tasks, owners, workflows, events, Conditions, and
-revisioned attempts, but route them through several app-specific controllers.
+**Design status:** Pilot.
+**Implementation status:** The shared reconciler and `evaluation.app` cohort
+implement task routes, explicit workflow bindings, owner fallback, generation
+checks, short-lived achievement absorption, standing maintenance tasks, and
+read-only owner decisions followed by app-owned action application. Other apps
+still use their existing controllers and are not migrated by implication.
 
 ## Executive Decision
 
@@ -31,15 +33,15 @@ a second runtime, a generic request lifecycle, or a new workflow engine.
 
 The public unit is the app. Internally, the pieces have distinct jobs:
 
-| Concept | Responsibility |
-| --- | --- |
-| App | Organizes goals, tasks, ownership, workflows, knowledge, events, permissions, and durable state. |
-| Task | Records one desired outcome, its relationships, and observed reconciliation state. |
-| Owner agent | Makes adaptive semantic decisions and is the guaranteed accountability fallback. |
-| Workflow | Preserves a learned, repeatable process for a known task shape. |
-| Skill | Gives an agent reusable judgment guidance inside a task or workflow step. |
-| Tool | Performs one atomic operation. |
-| Runtime | Delivers events, leases attempts, invokes capabilities, validates commands, persists state, and recovers mechanics. |
+| Concept     | Responsibility                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| App         | Organizes goals, tasks, ownership, workflows, knowledge, events, permissions, and durable state.                    |
+| Task        | Records one desired outcome, its relationships, and observed reconciliation state.                                  |
+| Owner agent | Makes adaptive semantic decisions and is the guaranteed accountability fallback.                                    |
+| Workflow    | Preserves a learned, repeatable process for a known task shape.                                                     |
+| Skill       | Gives an agent reusable judgment guidance inside a task or workflow step.                                           |
+| Tool        | Performs one atomic operation.                                                                                      |
+| Runtime     | Delivers events, leases attempts, invokes capabilities, validates commands, persists state, and recovers mechanics. |
 
 The compact rule is:
 
@@ -49,6 +51,53 @@ The compact rule is:
 The app owns the organization and its durable state. The owner agent authors
 semantic changes to that organization through typed decisions. App code does
 not become a second planner merely because it applies those decisions.
+
+## Agent Core And Infrastructure
+
+The reusable agent execution core has one dependency direction:
+
+```text
+model + prompt + context + supplied tools
+  -> run the agent loop
+  -> result + neutral execution notifications
+```
+
+It does not import the EventBus, task model, scheduler, metrics service, or
+SQLite helpers. Neutral notifications such as message produced, tool called,
+and run completed are observations of execution rather than application
+events. Infrastructure may subscribe to them to persist a transcript, update
+session metadata, emit application events, or collect evaluation evidence.
+
+This boundary does not prohibit database-backed capabilities. A supplied tool
+may read or mutate durable state through its explicit capability contract, and
+a skill may teach an agent when and how to use that tool. The execution core
+only knows the supplied tool interface; it does not know that the tool is
+implemented with SQLite, an EventBus command, a remote API, or an in-memory
+test double.
+
+```text
+agent execution core
+  -> invokes supplied capability interfaces
+
+autonomous infrastructure wrapper
+  -> supplies production tools
+  -> persists sessions and transcripts
+  -> translates neutral notifications into EventBus events
+  -> manages timeout, recovery, and durable run identity
+
+gym wrapper
+  -> supplies sandbox tools
+  -> collects transcript and scoring evidence
+```
+
+There is one agent implementation. Gym invokes it directly with lightweight
+observers; the autonomous system wraps it with durable infrastructure. Prompt
+construction and tool-policy resolution must also be shared so Gym does not
+approximate production behavior by duplicating runtime logic.
+
+`SubagentManager` may remain the compatibility facade while this boundary is
+extracted. Its durable session coordination belongs to the infrastructure
+wrapper, not to the agent execution core.
 
 ## One Task Resource
 
@@ -193,11 +242,7 @@ Owner agents and workflows return one app-level result envelope:
 ```ts
 type HandlerResult = {
   disposition:
-    | "converged"
-    | "progressing"
-    | "waiting"
-    | "needs-owner"
-    | "failed";
+    "converged" | "progressing" | "waiting" | "needs-owner" | "failed";
 
   summary: string;
   evidence: string[];
@@ -421,21 +466,54 @@ watchdog, stall review, three loop controllers, and focus-plan handling.
 
 The target mapping is:
 
-| Current AKS mechanism | Converged responsibility |
-| --- | --- |
-| Task-worker event adapter | Generic task reconciler invokes the resolved handler. |
-| Task reviewer and reviewed-task applier | Bound workflow contract or owner fallback, followed by generic command application. |
-| Planner dispatch, refill, and result-application mechanics | Generic reconciliation. |
-| Planner decomposition and strategy | Smaller owner-entry workflow. |
-| Watchdog and stall-review overlap | Reconciler delivery/attempt invariants plus exact Conditions. |
-| Spec/reference/compact loop controllers | Reusable `maintain` workflows with domain logic preserved. |
-| Blocked holder tasks and refresh schedules | Conditions and event-driven wakeup. |
-| Stored parent rollups | Derived projections. |
+| Current AKS mechanism                                      | Converged responsibility                                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Task-worker event adapter                                  | Generic task reconciler invokes the resolved handler.                               |
+| Task reviewer and reviewed-task applier                    | Bound workflow contract or owner fallback, followed by generic command application. |
+| Planner dispatch, refill, and result-application mechanics | Generic reconciliation.                                                             |
+| Planner decomposition and strategy                         | Smaller owner-entry workflow.                                                       |
+| Watchdog and stall-review overlap                          | Reconciler delivery/attempt invariants plus exact Conditions.                       |
+| Spec/reference/compact loop controllers                    | Reusable `maintain` workflows with domain logic preserved.                          |
+| Blocked holder tasks and refresh schedules                 | Conditions and event-driven wakeup.                                                 |
+| Stored parent rollups                                      | Derived projections.                                                                |
 
 This proposal does not claim that all existing workflow code disappears. The
 valuable spec verification, feature reference, compact planning, review, and
 repair experience stays. The change removes duplicated control-plane roles and
 makes that experience directly bindable to tasks.
+
+## Evaluation App Pilot Evidence
+
+The `evaluation.app` pilot was deployed on 2026-07-18. Seven direct workflow
+handlers were replaced by task routes, four explicit workflow capabilities,
+and one owner entry. Live evidence showed:
+
+- known session aftermath and pipeline work resolved through their bound
+  workflows without an owner turn;
+- unfamiliar owner work resolved through `owner:evaluator`;
+- concurrent session aftermath work used independent `achieve` tasks;
+- completed `achieve` tasks left the live graph and retained bounded
+  tombstones;
+- recurring pipeline and backfill responsibilities remained as `maintain`
+  tasks; and
+- evaluator/judge terminal events were filtered before they could create
+  self-evaluation tasks.
+
+A production owner-action canary then exercised the authority boundary twice.
+Generation 3 asked the owner to create a canary task; the evaluator session was
+persisted with `toolPolicy: readonly`, invoked only `finish`, returned a typed
+`create-task` action, and app code applied it. Generation 4 returned a typed
+`close-task` action with `expectedRevision: 0`; app code validated and applied
+the closure. The owner sessions made no direct file or task-tree mutation.
+
+Two limitations remain explicit:
+
+1. The pilot action applier is evaluation-app compatibility code over existing
+   task-tree commands. A generic atomic `HandlerResult.actions` command boundary
+   is still required before broad app migration.
+2. `SubagentManager` is still the durable infrastructure facade and Gym still
+   enters through the full May binary. Extracting the shared agent runner and
+   moving Gym to direct runner use remain separate runtime work.
 
 ## Migration
 
@@ -458,6 +536,9 @@ Migration must replace paths rather than add a permanent V3 layer:
    controller routes only after live parity and incident replay.
 10. Remove compatibility fields and old routes once no active attempt depends
     on them.
+11. Extract the May-specific agent runner from durable session coordination;
+    move Gym to the same runner with sandbox observers before deleting its
+    duplicated prompt construction.
 
 During migration, old and new paths may coexist only behind an explicit cohort
 gate. They must not both hold mutation authority for the same task generation.
@@ -484,6 +565,11 @@ The design is proven when:
     same domain input and result contract.
 12. Disabling the compatibility route for a migrated cohort does not change its
     accepted outcomes or evidence quality.
+13. The same agent runner produces equivalent prompt, tool policy, and result
+    behavior under Gym and autonomous infrastructure wrappers.
+14. The agent runner imports no EventBus, task, scheduler, metrics, or database
+    implementation; explicitly supplied tools may still provide those
+    capabilities.
 
 ## Non-Goals
 

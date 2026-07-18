@@ -2,14 +2,18 @@
 
 The task tree represents systemic evaluation work, not individual evaluations.
 
-Individual "evaluate session X" is a workflow execution that writes to the DB.
-It is NOT a task tree node.
+Individual "evaluate session X" work is represented by a short-lived
+`achieve` task while its workflow is running. After the evaluation result is
+absorbed into the evaluation store, the task leaves the live graph and only a
+minimal completion tombstone remains for deduplication.
 
-Individual "review project/app X once" is also a workflow execution that writes
-an evaluation report. It is NOT a task tree node unless the project/app
-evaluation process itself needs repair.
+Each watched project/app has one standing `maintain` task bound to the
+`project-health-evaluator` workflow. A scheduled or manual event reconciles that
+task; convergence means the current review is settled, not that future audits
+are disabled.
 
 The tree tracks:
+
 - Pipeline health (is aftermath keeping up?)
 - Criteria calibration (are scores consistent?)
 - Drift detection (are agents changing behavior?)
@@ -17,6 +21,16 @@ The tree tracks:
 - Strategy learning (what works?)
 - Project/app evaluation health (are target projects moving, and are
   human-facing reports/notifications accurate?)
+
+Task execution follows one rule:
+
+```text
+explicit task workflow -> reusable workflow
+no workflow or workflow exception -> evaluation.app owner entry
+```
+
+Events wake tasks. The task tree does not schedule them. Workflow runs and
+agent sessions remain runtime attempts linked to the task generation.
 
 Project/app evaluation is human-facing. Target apps own their domain work,
 self-recovery, and goal progress. `evaluation.app` checks whether that process
