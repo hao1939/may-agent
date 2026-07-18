@@ -164,4 +164,30 @@ describe("chat runtime policy", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("restricts readonly workflow sessions to observation tools and structured finish", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-readonly-policy-"));
+    const manager = new SubagentManager({ persistDir });
+    registerMay(manager);
+
+    const sessionId = manager.run("may", "review and propose", {
+      kind: "call",
+      requireFinish: true,
+      toolPolicy: "readonly",
+    });
+
+    try {
+      const session = activeSession(manager, sessionId);
+      const toolNames = session.agent.state.tools.map((t: AgentTool) => t.name);
+
+      expect(toolNames).toEqual(["query_db", "system_status", "read", "finish"]);
+      expect(toolNames).not.toContain("bash");
+      expect(toolNames).not.toContain("write");
+      expect(toolNames).not.toContain("message");
+      expect(session.toolPolicy).toBe("readonly");
+    } finally {
+      manager.cancel(sessionId);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });

@@ -79,6 +79,39 @@ export type ProjectWorkflowHandler = {
   context: string[];
 };
 
+export type ProjectAppTaskMode = "achieve" | "maintain";
+
+export type ProjectAppTaskIntent = {
+  id: string;
+  parentId: string;
+  outcome: string;
+  acceptance: string[];
+  mode: ProjectAppTaskMode;
+  owner?: string;
+  workflow?: string;
+  input?: Record<string, unknown>;
+  outputs?: string[];
+  dependsOn?: string[];
+  priority?: "P0" | "P1" | "P2" | "P3";
+};
+
+export type ProjectAppTaskCapability = {
+  workflow: string;
+  agent?: string;
+  task: string;
+  timeoutMs: number;
+  context: string[];
+};
+
+export type ProjectAppTaskRoute = {
+  name: string;
+  enabled: boolean;
+  description: string;
+  maxConcurrentTriggers?: number;
+  accepts: EventSelector[];
+  resolve(event: Record<string, unknown>): ProjectAppTaskIntent | null;
+};
+
 export type ProjectAppOnEvent = (ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown>;
 
 export type ProjectApp = {
@@ -106,6 +139,15 @@ export type ProjectApp = {
   }>;
   /** Declarative workflow-backed event handlers. */
   workflowHandlers?: ProjectWorkflowHandler[];
+  /**
+   * First-class owner entry for task reconciliation. A task without a bound
+   * workflow, or a workflow that cannot handle its input, falls back here.
+   */
+  ownerEntry?: ProjectAppTaskCapability;
+  /** Reusable workflow capabilities addressable from task.workflow. */
+  taskWorkflows?: Record<string, ProjectAppTaskCapability>;
+  /** Event-to-task correlation. Task routes organize work; they do not execute it. */
+  taskRoutes?: ProjectAppTaskRoute[];
   /**
    * Extra selectors for the imperative onEvent function. Workflow handlers
    * declare their own subscriptions through workflowHandlers[].accepts.

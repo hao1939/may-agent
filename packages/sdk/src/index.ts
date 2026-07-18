@@ -7,6 +7,8 @@
  */
 
 import type { Static, TSchema } from "@earendil-works/pi-ai";
+export { Type } from "@earendil-works/pi-ai";
+export type { Static, TSchema } from "@earendil-works/pi-ai";
 
 // ── SQLite-like DB surface ────────────────────────────────────────────
 
@@ -608,6 +610,7 @@ export interface TaskResult {
 
 export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
   timeoutMs?: number;
+  tools?: "full" | "readonly";
   skill?: string;
   schema?: S;
 }
@@ -970,6 +973,10 @@ export type {
   ProjectAppEventTarget,
   ProjectAppEventUrgency,
   ProjectAppOnEvent,
+  ProjectAppTaskCapability,
+  ProjectAppTaskIntent,
+  ProjectAppTaskMode,
+  ProjectAppTaskRoute,
   ProjectWorkflowHandler,
 } from "./project-app.js";
 
@@ -990,7 +997,13 @@ export {
   withTreeLock,
 } from "./project-task-tree-store.js";
 export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
-export type { TaskBlocker, TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
+export type {
+  TaskBlocker,
+  TaskCompletionTombstone,
+  TaskNode,
+  TaskTree,
+  TaskTreeConfig,
+} from "./project-task-tree-store.js";
 
 export {
   ensureTaskTreeState,

@@ -120,6 +120,8 @@ export interface RunOptions {
   requireFinish?: boolean;
   /** Caller-defined schema for the required finish().result payload. */
   outputSchema?: TSchema;
+  /** Restrict the supplied capabilities for this session. */
+  toolPolicy?: "full" | "readonly";
 }
 
 interface ActiveSession {
@@ -151,6 +153,7 @@ interface ActiveSession {
   loadedSkillHashes: Set<string>;
   requireFinish: boolean;
   outputSchema?: TSchema;
+  toolPolicy: "full" | "readonly";
 }
 
 type DispatchDedupDb = {
@@ -169,6 +172,8 @@ const CHAT_TOOL_DENYLIST = new Set([
   "workflow",
   "write",
 ]);
+
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status"]);
 
 function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
   return (
@@ -428,6 +433,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
+      toolPolicy?: "full" | "readonly";
     },
   ): void {
     const resumeMessages = this.buildResumeMessages(sessionId);
@@ -492,6 +498,7 @@ export class SubagentManager {
         trace: opts.trace,
         requireFinish: opts.requireFinish ?? meta.requireFinish,
         outputSchema: opts.outputSchema ?? meta.outputSchema,
+        toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -553,6 +560,7 @@ export class SubagentManager {
     const autoClose = opts?.autoClose ?? "immediate";
     const outputSchema = normalizePersistableSchema(opts?.outputSchema);
     const requireFinish = opts?.requireFinish === true || outputSchema !== undefined;
+    const toolPolicy = opts?.toolPolicy ?? "full";
     if (requireFinish && this.isPersistentChatPolicy(kind, autoClose)) {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
     }
@@ -575,6 +583,7 @@ export class SubagentManager {
     const sessionTools = this.resolveSessionTools(def, persistentChat, {
       requireFinish,
       outputSchema,
+      toolPolicy,
     });
     const agent = new Agent({
       initialState: {
@@ -623,6 +632,7 @@ export class SubagentManager {
       loadedSkillHashes: new Set(activation ? [activation.skill.contentHash] : []),
       requireFinish,
       outputSchema,
+      toolPolicy,
     };
 
     const existingMeta = this._registry.getSession(sessionId);
@@ -652,6 +662,7 @@ export class SubagentManager {
       orderId: opts?.orderId ?? existingMeta?.orderId,
       requireFinish,
       outputSchema: outputSchema ?? existingMeta?.outputSchema,
+      toolPolicy,
     });
 
     // Register before publishing session.start so synchronous subscribers see
@@ -879,6 +890,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
+      toolPolicy?: "full" | "readonly";
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
@@ -905,6 +917,7 @@ export class SubagentManager {
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
+      toolPolicy: opts?.toolPolicy,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
@@ -925,6 +938,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
+      toolPolicy?: "full" | "readonly";
     },
   ): string {
     return this.run(agentName, task, {
@@ -939,6 +953,7 @@ export class SubagentManager {
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
+      toolPolicy: opts?.toolPolicy,
     });
   }
 
@@ -1094,6 +1109,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
+      toolPolicy?: "full" | "readonly";
     },
   ): string {
     if (this._sessions.has(sessionId)) {
@@ -1145,6 +1161,7 @@ export class SubagentManager {
       trace: opts?.trace,
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
+      toolPolicy: opts?.toolPolicy,
     });
     return sessionId;
   }
@@ -1899,12 +1916,20 @@ export class SubagentManager {
   private resolveSessionTools(
     def: SubagentDefinition,
     persistentChat: boolean,
-    workflow?: { requireFinish: boolean; outputSchema?: TSchema },
+    workflow?: {
+      requireFinish: boolean;
+      outputSchema?: TSchema;
+      toolPolicy?: "full" | "readonly";
+    },
   ): AgentTool[] {
-    if (persistentChat) return def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name));
-    if (!workflow?.requireFinish) return def.tools;
+    let tools = persistentChat ? def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name)) : def.tools;
+    if (workflow?.toolPolicy === "readonly") {
+      tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
+    }
+    if (!workflow?.requireFinish) return tools;
 
     const baseFinish =
+      tools.find((tool) => tool.name === "finish") ??
       def.tools.find((tool) => tool.name === "finish") ??
       createFinishTool({
         agentName: def.name,
@@ -1913,9 +1938,9 @@ export class SubagentManager {
       });
     const finish = createWorkflowFinishTool(baseFinish, workflow.outputSchema);
 
-    const finishIndex = def.tools.findIndex((tool) => tool.name === "finish");
-    if (finishIndex < 0) return [...def.tools, finish];
-    return def.tools.map((tool, index) => (index === finishIndex ? finish : tool));
+    const finishIndex = tools.findIndex((tool) => tool.name === "finish");
+    if (finishIndex < 0) return [...tools, finish];
+    return tools.map((tool, index) => (index === finishIndex ? finish : tool));
   }
 
   private createSessionCompactionTransform(

@@ -104,6 +104,8 @@ export type WorkflowResult =
 
 export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
   timeoutMs?: number;
+  /** Restrict this agent step to observation tools plus finish(). */
+  tools?: "full" | "readonly";
   /** Explicit skill used by this workflow step. */
   skill?: string;
   /** Workflow-author-defined schema for finish().result. */
