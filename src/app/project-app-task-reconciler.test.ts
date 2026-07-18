@@ -7,8 +7,10 @@ import {
   claimProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
+  acknowledgeProjectAppTaskRecoveryAttention,
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
+  pendingProjectAppTaskRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   taskReconciliationConfig,
@@ -223,6 +225,14 @@ describe("project app task reconciler state", () => {
     });
     expect((released.tasks[claim.taskId].trace?.reconciliation as Record<string, unknown>).attemptId).toBeUndefined();
     expect(released.active_task_ids).not.toContain(claim.taskId);
+    expect(pendingProjectAppTaskRecoveryAttention(config)).toEqual([
+      {
+        taskId: claim.taskId,
+        summary: "trigger packet was not persisted",
+      },
+    ]);
+    expect(acknowledgeProjectAppTaskRecoveryAttention(config, claim.taskId)).toBe(true);
+    expect(pendingProjectAppTaskRecoveryAttention(config)).toEqual([]);
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
