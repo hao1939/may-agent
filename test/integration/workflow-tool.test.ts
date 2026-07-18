@@ -1030,7 +1030,7 @@ describe("workflow tool: structured agent results", () => {
         additionalProperties: false,
       };
       export async function execute(ctx) {
-        const review = await ctx.runAgent("reviewer", "review it", { schema: ReviewSchema });
+        const review = await ctx.runAgent("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
         return ctx.done(review.status + ":" + review.structuredResult.verdict);
       }
     `,
@@ -1064,6 +1064,7 @@ describe("workflow tool: structured agent results", () => {
     if (parsed.type === "done") expect(parsed.summary).toBe("done:pass");
     expect(receivedOpts?.requireFinish).toBe(true);
     expect(receivedOpts?.outputSchema).toMatchObject({ type: "object" });
+    expect(receivedOpts?.toolPolicy).toBe("readonly");
   });
 
   it("turns prose-only workflow completion into an error result", async () => {

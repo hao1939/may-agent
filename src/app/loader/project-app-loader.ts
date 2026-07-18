@@ -15,9 +15,19 @@ import {
   type ProjectAppContext,
   type ProjectAppEvent as AppEvent,
   type ProjectAppEventTarget as EventTarget,
+  type ProjectAppTaskCapability,
+  type ProjectAppTaskIntent,
+  type ProjectAppTaskRoute,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type EventBus } from "../event-bus.js";
+import {
+  claimProjectAppTask,
+  completeProjectAppTask,
+  markProjectAppTaskAttention,
+  taskReconciliationConfig,
+  type ProjectAppTaskClaim,
+} from "../project-app-task-reconciler.js";
 
 type ProjectReadModel = {
   id: string;
@@ -442,6 +452,7 @@ function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: s
 function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
   if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
   if (hasExplicitWorkflowHandler(app, event, appId)) return true;
+  if (hasExplicitTaskRoute(app, event, appId)) return true;
   return isOwnerMetricFeedbackForApp(event, appOwner);
 }
 
@@ -452,6 +463,27 @@ function hasExplicitWorkflowHandler(app: ProjectApp, event: Record<string, unkno
       if (handler.enabled === false) return false;
       return handlerAccepts(handler).some((selector) => matchesSelector(selector, event, appId));
     })
+  );
+}
+
+function routeAccepts(route: ProjectAppTaskRoute): EventSelector[] {
+  return route.accepts;
+}
+
+function routeAcceptedEventTypes(route: ProjectAppTaskRoute): string[] {
+  return [
+    ...new Set(
+      routeAccepts(route)
+        .map(eventTypeFromSelector)
+        .filter((type): type is string => Boolean(type)),
+    ),
+  ];
+}
+
+function hasExplicitTaskRoute(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
+  return (app.taskRoutes ?? []).some(
+    (route) =>
+      route.enabled !== false && routeAccepts(route).some((selector) => matchesSelector(selector, event, appId)),
   );
 }
 
@@ -533,6 +565,11 @@ function requiredAppAgentNames(descriptor: ProjectAppDescriptor): string[] {
     const agentName = handler.handler.agent ?? descriptor.owner;
     if (agentName.trim()) names.add(agentName.trim());
   }
+  const ownerEntryAgent = descriptor.app.ownerEntry?.agent;
+  if (ownerEntryAgent?.trim()) names.add(ownerEntryAgent.trim());
+  for (const capability of Object.values(descriptor.app.taskWorkflows ?? {})) {
+    if (capability.agent?.trim()) names.add(capability.agent.trim());
+  }
   return [...names];
 }
 
@@ -554,6 +591,7 @@ async function ensureAppAgentRegistered(
 }
 
 const projectAppWorkflowSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
+const projectAppTaskRouteSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 
 function rememberProjectAppNames(
@@ -713,6 +751,359 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
   return count;
 }
 
+type TaskCapabilityRun = {
+  type: "done" | "blocked";
+  summary: string;
+  runId: string | null;
+};
+
+async function runTaskCapability(input: {
+  opts: ProjectAppLoaderOptions;
+  descriptor: ProjectAppDescriptor;
+  capability: ProjectAppTaskCapability;
+  intent: ProjectAppTaskIntent;
+  claim: ProjectAppTaskClaim;
+  event?: EventEnvelope;
+  fallbackReason?: string;
+}): Promise<TaskCapabilityRun> {
+  const { opts, descriptor, capability, intent, claim, event } = input;
+  const runtime = requireWorkflowRuntimeOptions(opts);
+  const agentName = capability.agent ?? claim.owner;
+  const trace = childEventTrace(event);
+  const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
+  const task = [
+    capability.task,
+    "",
+    "## Reconciliation Task",
+    "```json",
+    JSON.stringify(
+      {
+        appId: descriptor.id,
+        taskId: claim.taskId,
+        generation: claim.generation,
+        owner: claim.owner,
+        handler: claim.handler,
+        mode: claim.mode,
+        outcome: intent.outcome,
+        acceptance: intent.acceptance,
+        input: intent.input ?? {},
+        fallbackReason: input.fallbackReason ?? null,
+      },
+      null,
+      2,
+    ),
+    "```",
+    ...(event ? ["", "## Trigger Event", "```json", JSON.stringify(event, null, 2), "```"] : []),
+  ].join("\n");
+
+  opts.bus.emit({
+    type: "handler.workflow_dispatched",
+    source: `agent:${agentName}`,
+    owner: `agent:${claim.owner}`,
+    target: { project: descriptor.id, taskId: claim.taskId },
+    data: {
+      handler: claim.handler,
+      workflow: capability.workflow,
+      source: agentName,
+      projectId: descriptor.id,
+      taskId: claim.taskId,
+      taskGeneration: claim.generation,
+      workflowRunId: null,
+      status: "started",
+    },
+    ...(trace ? { trace } : {}),
+  } as AgentEvent);
+
+  try {
+    const runtimeCtx = buildRuntimeCtx({
+      bus: opts.bus,
+      persistDir: runtime.persistDir,
+      projectRoot: opts.projectRoot,
+      agentsRoot: paths.agentsRoot,
+      sharedRoot: runtime.sharedRoot,
+      projectsRoot: opts.projectsRoot,
+      agentName,
+    });
+    const { result, runId } = await runWorkflowDirect({
+      workflowName: capability.workflow,
+      task,
+      manager: opts.manager,
+      runtimeCtx,
+      agentName,
+      persistDir: runtime.persistDir,
+      workflowDir: paths.workflowDir,
+      projectWorkflowDir: paths.projectWorkflowDir,
+      guardsDir: paths.guardsDir,
+      sharedGuardsDir: paths.sharedGuardsDir,
+      projectId: descriptor.id,
+      trace,
+    });
+    const done = result.type === "done";
+    const summary = done ? result.summary : result.reason;
+    opts.bus.emit({
+      type: "handler.workflow_dispatched",
+      source: `agent:${agentName}`,
+      owner: `agent:${claim.owner}`,
+      target: { project: descriptor.id, taskId: claim.taskId },
+      data: {
+        handler: claim.handler,
+        workflow: capability.workflow,
+        source: agentName,
+        projectId: descriptor.id,
+        taskId: claim.taskId,
+        taskGeneration: claim.generation,
+        workflowRunId: runId,
+        status: done ? "done" : "blocked",
+        ...(done ? { summary } : { reason: summary }),
+      },
+      ...(trace ? { trace } : {}),
+    } as AgentEvent);
+    return { type: done ? "done" : "blocked", summary, runId };
+  } catch (error) {
+    const summary = error instanceof Error ? error.message : String(error);
+    opts.bus.emit({
+      type: "handler.workflow_dispatched",
+      source: `agent:${agentName}`,
+      owner: `agent:${claim.owner}`,
+      target: { project: descriptor.id, taskId: claim.taskId },
+      data: {
+        handler: claim.handler,
+        workflow: capability.workflow,
+        source: agentName,
+        projectId: descriptor.id,
+        taskId: claim.taskId,
+        taskGeneration: claim.generation,
+        workflowRunId: null,
+        status: "blocked",
+        reason: summary,
+      },
+      ...(trace ? { trace } : {}),
+    } as AgentEvent);
+    return { type: "blocked", summary, runId: null };
+  }
+}
+
+function emitTaskReconciliationEvent(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  event: EventEnvelope | undefined,
+  type: string,
+  taskId: string,
+  data: Record<string, unknown>,
+): void {
+  const trace = childEventTrace(event);
+  opts.bus.emit({
+    type,
+    source: `project-app:${descriptor.id}:task-reconciler`,
+    owner: `agent:${descriptor.owner}`,
+    target: { project: descriptor.id, taskId },
+    data: { project: descriptor.id, taskId, ...data },
+    ...(trace ? { trace } : {}),
+  } as AgentEvent);
+}
+
+async function reconcileTaskRoute(input: {
+  opts: ProjectAppLoaderOptions;
+  descriptor: ProjectAppDescriptor;
+  route: ProjectAppTaskRoute;
+  event?: EventEnvelope;
+}): Promise<void> {
+  const { opts, descriptor, route, event } = input;
+  const flattened = event ? flattenEvent(event as unknown as AgentEvent) : {};
+  const intent = route.resolve(flattened);
+  if (!intent) {
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", route.name, {
+      route: route.name,
+      reason: "route-produced-no-task",
+    });
+    return;
+  }
+
+  const config = taskReconciliationConfig({
+    appDir: descriptor.appDir,
+    projectDir: descriptor.projectDir,
+    owner: descriptor.owner,
+    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+  });
+  const workflowKey = intent.workflow?.trim() || "";
+  const primaryCapability = workflowKey ? descriptor.app.taskWorkflows?.[workflowKey] : descriptor.app.ownerEntry;
+  const primaryHandler = workflowKey ? `workflow:${workflowKey}` : "owner";
+  const primary = claimProjectAppTask(config, {
+    intent,
+    appOwner: descriptor.owner,
+    handler: primaryHandler,
+    reason: event?.type ?? route.name,
+  });
+  if (primary.kind !== "claimed") {
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", intent.id, {
+      route: route.name,
+      reason: primary.kind === "busy" ? "attempt-active" : "already-completed",
+      ...(primary.kind === "busy" ? { attemptId: primary.attemptId } : { generation: primary.generation }),
+    });
+    return;
+  }
+
+  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
+    route: route.name,
+    generation: primary.generation,
+    attemptId: primary.attemptId,
+    handler: primary.handler,
+    owner: primary.owner,
+  });
+
+  let primaryResult: TaskCapabilityRun;
+  if (!primaryCapability) {
+    primaryResult = {
+      type: "blocked",
+      summary: workflowKey ? `Task workflow is not declared: ${workflowKey}` : `App ${descriptor.id} has no ownerEntry`,
+      runId: null,
+    };
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
+      generation: primary.generation,
+      handler: primary.handler,
+      reason: primaryResult.summary,
+    });
+  } else {
+    primaryResult = await runTaskCapability({
+      opts,
+      descriptor,
+      capability: primaryCapability,
+      intent,
+      claim: primary,
+      event,
+    });
+  }
+
+  if (primaryResult.type === "done") {
+    const apply = completeProjectAppTask(config, primary, { summary: primaryResult.summary });
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+      generation: primary.generation,
+      attemptId: primary.attemptId,
+      handler: primary.handler,
+      disposition: apply === "applied" ? "converged" : "stale",
+      summary: primaryResult.summary,
+      workflowRunId: primaryResult.runId,
+    });
+    return;
+  }
+
+  markProjectAppTaskAttention(config, primary, {
+    summary: primaryResult.summary,
+    reason: primaryCapability ? "handler-blocked" : "handler-unavailable",
+  });
+  if (!workflowKey || !descriptor.app.ownerEntry) {
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+      generation: primary.generation,
+      attemptId: primary.attemptId,
+      handler: primary.handler,
+      disposition: "attention",
+      summary: primaryResult.summary,
+    });
+    return;
+  }
+
+  const fallback = claimProjectAppTask(config, {
+    intent,
+    appOwner: descriptor.owner,
+    handler: `owner:${primary.owner}`,
+    reason: "workflow-fallback",
+  });
+  if (fallback.kind !== "claimed") {
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+      generation: primary.generation,
+      handler: primary.handler,
+      disposition: "attention",
+      summary: primaryResult.summary,
+      fallback: fallback.kind,
+    });
+    return;
+  }
+
+  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
+    route: route.name,
+    generation: fallback.generation,
+    attemptId: fallback.attemptId,
+    handler: fallback.handler,
+    owner: fallback.owner,
+    fallbackFrom: primary.handler,
+  });
+  const fallbackResult = await runTaskCapability({
+    opts,
+    descriptor,
+    capability: descriptor.app.ownerEntry,
+    intent,
+    claim: fallback,
+    event,
+    fallbackReason: primaryResult.summary,
+  });
+  if (fallbackResult.type === "done") {
+    const apply = completeProjectAppTask(config, fallback, { summary: fallbackResult.summary });
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+      generation: fallback.generation,
+      attemptId: fallback.attemptId,
+      handler: fallback.handler,
+      disposition: apply === "applied" ? "converged" : "stale",
+      summary: fallbackResult.summary,
+      workflowRunId: fallbackResult.runId,
+      fallbackFrom: primary.handler,
+    });
+    return;
+  }
+
+  markProjectAppTaskAttention(config, fallback, {
+    summary: fallbackResult.summary,
+    reason: "owner-entry-blocked",
+  });
+  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+    generation: fallback.generation,
+    attemptId: fallback.attemptId,
+    handler: fallback.handler,
+    disposition: "attention",
+    summary: fallbackResult.summary,
+    fallbackFrom: primary.handler,
+  });
+}
+
+function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
+  const routes = descriptor.app.taskRoutes ?? [];
+  if (routes.length > 0 && !descriptor.app.ownerEntry) {
+    throw new Error(`Project app ${descriptor.id} declares taskRoutes without ownerEntry`);
+  }
+  let count = 0;
+  const currentNames = new Set<string>();
+  for (const route of routes) {
+    currentNames.add(route.name);
+    const entry: CronEntry = {
+      name: route.name,
+      enabled: route.enabled !== false,
+      description: route.description,
+      maxConcurrentTriggers: route.maxConcurrentTriggers,
+      on: routeAcceptedEventTypes(route),
+      context: [],
+      agent: descriptor.owner,
+      handler: {
+        workflow: "__project_task_reconcile__",
+        agent: descriptor.owner,
+        projectId: descriptor.id,
+        includeEvent: true,
+        task: `Reconcile project task through route ${route.name}`,
+        timeoutMs: 0,
+      },
+    };
+    cron.registerHandler(route.name, async (event?: EventEnvelope) => {
+      if (event) {
+        const flattened = flattenEvent(event as unknown as AgentEvent);
+        if (!routeAccepts(route).some((selector) => matchesSelector(selector, flattened, descriptor.id))) return;
+      }
+      await reconcileTaskRoute({ opts, descriptor, route, event });
+    });
+    cron.addSyntheticEntry(entry);
+    count++;
+  }
+  rememberProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, cron, descriptor.id, currentNames);
+  return count;
+}
+
 function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
   let count = 0;
   const currentNames = new Set<string>();
@@ -760,7 +1151,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
       const hasAppEventHandler = typeof descriptor.app.onEvent === "function";
       const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event, descriptor.id);
-      const routedMetricFeedback = isMetricFeedbackEvent(event) && (ownerMetricFeedback || hasWorkflowHandler);
+      const hasTaskRoute = hasExplicitTaskRoute(descriptor.app, event, descriptor.id);
+      const routedMetricFeedback =
+        isMetricFeedbackEvent(event) && (ownerMetricFeedback || hasWorkflowHandler || hasTaskRoute);
       if (routedMetricFeedback) {
         const eventOwner = ownerValue(event);
         opts.bus.emit({
@@ -778,7 +1171,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           },
         } as AgentEvent);
       }
-      if (hasWorkflowHandler) continue;
+      if (hasWorkflowHandler || hasTaskRoute) continue;
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
@@ -883,11 +1276,13 @@ export async function installProjectApps(
     activeAppIds.add(descriptor.id);
     activeCronAppIds.set(cron, activeAppIds);
     entries += installWorkflowHandlers(opts, cron, descriptor);
+    entries += installTaskRoutes(opts, cron, descriptor);
     entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }
 
   pruneProjectAppNames(projectAppWorkflowSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
+  pruneProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
   pruneProjectAppNames(projectAppScheduleSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
 
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
