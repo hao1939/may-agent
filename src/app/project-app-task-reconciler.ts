@@ -661,6 +661,7 @@ function validateConditions(
     }
     const id = condition.id ?? condition.conditionId;
     const identity = requireNonEmptyString(id, `Handler result Condition for ${input.taskId} identity`);
+    if (!input.required) continue;
     requireNonEmptyString(condition.observer, `Handler result Condition ${identity} observer`);
     const hasExplicitSubject =
       ["taskId", "sessionId", "workflowRunId", "metricId", "alertId"].some((key) => condition[key] !== undefined) ||
