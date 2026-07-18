@@ -172,6 +172,24 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.stall.review.requested") {
+    return {
+      id: "aks-project-stall-review",
+      parentId: "project",
+      outcome:
+        "Keep project liveness stalls evidence-backed, mechanically repaired where safe, and handed to app-ops as one reviewed disposition.",
+      acceptance: [
+        "Each accepted stall-review wake produces one structured project.stall.reviewed fact for planner reconciliation.",
+        "Mechanical repairs and loop pulses remain bounded, visible, and recorded in the stall-review ledger.",
+      ],
+      mode: "maintain",
+      owner: "app-ops",
+      workflow: "project-stall-review",
+      input: { maxLoopPulses: 3 },
+      outputs: [".state/stall-review-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   if (event.type === "project.approval.requested") {
     const packetPath = detailString(details, "packetPath", "packet_path");
     const pathId = detailString(details, "pathId", "path_id");
@@ -533,6 +551,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "project-stall-review": {
+      workflow: "project-stall-review",
+      agent: "app-ops",
+      task: `${appTaskContext}\nagent: app-ops\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+      timeoutMs: 1_800_000,
+      context: taskTreeContext,
+    },
     "approval-dispatch": {
       workflow: "approval-dispatch",
       agent: "aks-explorer",
@@ -587,6 +612,20 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-stall-review",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Reconciles project liveness stalls through one standing maintain task.",
+      accepts: [
+        {
+          type: "project.stall.review.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-approval-dispatch",
       enabled: true,
@@ -753,28 +792,6 @@ export default defineProjectApp({
         "project.task.assigned",
         "project.task.tick",
       ],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-project-stall-review",
-      type: "job",
-      enabled: true,
-      description:
-        "App-ops deep-dive fallback. Collects liveness state, performs safe mechanical repair, asks app-ops to judge the stall, and emits a reviewed fact for planner reconciliation.",
-      maxConcurrentTriggers: 1,
-      accepts: [
-        {
-          type: "project.stall.review.requested",
-          target: { project: projectId },
-        },
-      ],
-      handler: {
-        workflow: "project-stall-review",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: app-ops\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
-        timeoutMs: 1_800_000,
-      },
-      emits: ["project.stall.reviewed", "project.task.tick"],
       context: taskTreeContext,
     },
     {

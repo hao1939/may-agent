@@ -395,6 +395,30 @@ describe("app event contract", () => {
     ).toBeNull();
   });
 
+  test("stall-review wakes resolve to one standing maintain task", () => {
+    const first = resolveAksReconciliationTask({
+      type: "project.stall.review.requested",
+      target: { project: projectId },
+      data: { reason: "watchdog-durable-loop-stall", mode: "fallback" },
+    });
+    const later = resolveAksReconciliationTask({
+      type: "project.stall.review.requested",
+      target: { project: projectId },
+      data: { reason: "watchdog-risk-review", mode: "risk-review" },
+    });
+
+    expect(first).toMatchObject({
+      id: "aks-project-stall-review",
+      parentId: "project",
+      mode: "maintain",
+      owner: "app-ops",
+      workflow: "project-stall-review",
+      input: { maxLoopPulses: 3 },
+      priority: "P0",
+    });
+    expect(later?.id).toBe(first?.id);
+  });
+
   test("assignment events resolve to stable bounded execution tasks", () => {
     const event = {
       type: "project.task.assigned",
@@ -671,10 +695,17 @@ describe("app event contract", () => {
       workflow: "problem-solver",
       agent: "aks-explorer",
     });
-    expect(handler("aks-rp-e2e-project-stall-review")).toMatchObject({
-      handler: { workflow: "project-stall-review" },
-      accepts: [{ type: "project.stall.review.requested" }],
-      emits: ["project.stall.reviewed", "project.task.tick"],
+    expect(taskRoute("aks-rp-e2e-task-stall-review")).toMatchObject({
+      accepts: [
+        {
+          type: "project.stall.review.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["project-stall-review"]).toMatchObject({
+      workflow: "project-stall-review",
+      agent: "app-ops",
     });
     expect(taskRoute("aks-rp-e2e-task-approval-dispatch")).toMatchObject({
       accepts: [
@@ -733,9 +764,15 @@ describe("app event contract", () => {
     expect(handlersForEvent("project.stall.reviewed")).toEqual([
       "aks-rp-e2e-project-planner",
     ]);
-    expect(handlersForEvent("project.stall.review.requested")).toEqual([
-      "aks-rp-e2e-project-stall-review",
-    ]);
+    expect(handlersForEvent("project.stall.review.requested")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-stall-review")).toMatchObject({
+      accepts: [
+        {
+          type: "project.stall.review.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
     expect(handlersForEvent("escalation.resolved")).toEqual([
       "aks-rp-e2e-project-planner",
     ]);

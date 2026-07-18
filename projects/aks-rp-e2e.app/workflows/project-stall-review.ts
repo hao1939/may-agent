@@ -771,7 +771,7 @@ function dispatchReviewed(
     repairResult: unknown;
     dispatchedTicks: Array<{ taskId: string; action: string }>;
   },
-): void {
+): boolean {
   try {
     ctx.dispatchEvent("project.stall.reviewed", {
       target: { project: "aks-rp-e2e" },
@@ -801,9 +801,26 @@ function dispatchReviewed(
       summary: input.summary.slice(0, 6000),
       requested_by: "project-stall-review",
     });
+    return true;
   } catch {
-    // Local tests may not provide a dispatcher.
+    return false;
   }
+}
+
+function finishStallReview(
+  ctx: WorkflowContext,
+  input: {
+    disposition: "converged" | "needs-owner";
+    summary: string;
+    evidence: string[];
+  },
+): WorkflowResult {
+  return ctx.done(input.summary, {
+    disposition: input.disposition,
+    summary: input.summary,
+    evidence: input.evidence,
+    actions: [],
+  });
 }
 
 function appendRun(appDir: string, entry: Record<string, unknown>): void {
@@ -823,9 +840,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const config = parseInput(ctx.task, ctx.agent);
   const trigger = parseTriggerEvent(ctx.task);
   if (trigger && trigger.type !== "project.stall.review.requested") {
-    return ctx.done(
-      `Stall review ignored trigger ${String(trigger.type ?? "unknown")}; use project.stall.review.requested.`,
-    );
+    return finishStallReview(ctx, {
+      disposition: "needs-owner",
+      summary: `Stall review ignored trigger ${String(trigger.type ?? "unknown")}; use project.stall.review.requested.`,
+      evidence: ["stall-review:invalid-trigger"],
+    });
   }
 
   const triggerReason =
@@ -906,7 +925,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   const repaired = repairChanged(repairResult);
 
-  dispatchReviewed(ctx, {
+  const reviewedDispatched = dispatchReviewed(ctx, {
     triggerReason,
     mode,
     decision,
@@ -938,9 +957,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     summary: summary.slice(0, 4000),
   });
 
-  return ctx.done(
-    `Stall review emitted project.stall.reviewed (${decision.judgment}, ${mode}); dispatched ${dispatchedTicks.length} loop tick(s).`,
-  );
+  const resultSummary = reviewedDispatched
+    ? `Stall review emitted project.stall.reviewed (${decision.judgment}, ${mode}); dispatched ${dispatchedTicks.length} loop tick(s).`
+    : `Stall review could not emit project.stall.reviewed (${decision.judgment}, ${mode}); owner delivery is required.`;
+  return finishStallReview(ctx, {
+    disposition: reviewedDispatched ? "converged" : "needs-owner",
+    summary: resultSummary,
+    evidence: [
+      `stall-review:${triggerReason}:${decision.judgment}`,
+      ".state/stall-review-runs.jsonl",
+    ],
+  });
 }
 
 if (import.meta.main) {

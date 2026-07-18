@@ -125,7 +125,11 @@ describe("project stall review", () => {
         }),
       ].join("\n"),
       agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
       escalate: (message: string) => ({ status: "escalated", message }),
       emit() {},
       dispatchEvent(type: string, payload: Record<string, unknown>) {
@@ -154,6 +158,19 @@ describe("project stall review", () => {
     expect(result.message).toContain(
       "project.stall.reviewed (needs-work, fallback)",
     );
+    expect(result).toMatchObject({
+      output: {
+        disposition: "converged",
+        summary: expect.stringContaining(
+          "project.stall.reviewed (needs-work, fallback)",
+        ),
+        evidence: [
+          "stall-review:watchdog-durable-loop-stall:needs-work",
+          ".state/stall-review-runs.jsonl",
+        ],
+        actions: [],
+      },
+    });
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("App-Ops Deep-Dive Fallback");
     expect(prompts[0]).toContain("Workflow code collected the packet");
