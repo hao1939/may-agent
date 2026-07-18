@@ -3679,6 +3679,27 @@ function taskRepresentsNormalizationPublication(input: {
   );
 }
 
+function taskIsNormalizationPublicationClosure(task: TaskNode): boolean {
+  const context = taskContext(task);
+  const publication = objectValue(context.normalizationPublication);
+  if (publication) return true;
+
+  const text = taskSearchText(task);
+  const taskScopes = new Set(taskConflictScopes(task));
+  if (
+    taskScopes.has("branch:origin/dev") &&
+    (text.includes("publish") || text.includes("publication"))
+  ) {
+    return true;
+  }
+
+  return (
+    text.includes("origin/dev") &&
+    text.includes("publication") &&
+    (text.includes("recheck") || text.includes("strict inventory"))
+  );
+}
+
 function openNormalizationPublicationTaskId(
   config: TaskTreeConfig,
   candidate: NormalizationPublicationCandidate,
@@ -6916,6 +6937,36 @@ function applyReviewedTaskEvent(
             reviewAction,
           })
         : null;
+    if (
+      normalizationIsolatedWorktreeRequired(config, task.id) &&
+      !taskIsNormalizationPublicationClosure(task) &&
+      acceptedSpecIds.length === 0 &&
+      fixForwardTaskIds.length === 0 &&
+      normalizationPublicationTaskIds.length === 0 &&
+      !queuedWaitTaskId &&
+      !acceptedReviewActionTaskId
+    ) {
+      return rejectAcceptOnInvariant({
+        config,
+        taskId,
+        attemptId,
+        invariant:
+          "normalization.accept.requires-durable-frontier-successor-or-inventory-delta",
+        summary:
+          `Accept cannot close ${taskId}: normalization frontier work must either move strict origin/dev inventory or create an exact queued-run, publication/recheck, fix-forward, blocker, escalation, or follow-up successor.`,
+        details: {
+          reviewerDecision: decision,
+          findings,
+          feedback,
+          suggestedFollowups,
+          acceptedSpecIds,
+          queuedRun,
+          taskContext: taskContext(task),
+          reason:
+            "Local isolated-worktree normalization evidence is useful, but it is not terminal durable frontier progress by itself.",
+        },
+      });
+    }
     markTaskDone(config, {
       taskId,
       taskRevision: reviewedTaskRevision,

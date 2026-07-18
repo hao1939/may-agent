@@ -1367,6 +1367,13 @@ repoints maintained spec/model/coverage surfaces to a plain scenario carrier.
 Ordinary support modules remain allowed when they are not scenario carriers.
 Legacy plain carriers may remain as untouched migration inventory, but a worker
 must not preserve them as the active authored scenario output for the task.
+For scenario-test normalization frontier leaves, do not treat local isolated
+worktree normalization as terminal by itself. Accept terminal closure only when
+current origin/dev strict inventory moved, or when the task has already produced
+an exact queued live run, terminal live-pass publication/recheck successor,
+exact blocker, escalation, or other concrete successor. If the worker only
+proved local normalization in an isolated worktree, choose followup and require
+publication/recheck or the next exact verification step.
 
 For shared runtime repairs, review the cited implementation against the
 existing design contract and sibling success paths, not only the new regression

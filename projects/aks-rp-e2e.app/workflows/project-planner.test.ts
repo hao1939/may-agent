@@ -2549,6 +2549,150 @@ describe("project owner workflow", () => {
     },
   );
 
+  test("rejects local-only normalization accept without durable frontier successor", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "domain/normalize-direct-secops-fips-ubuntu-compat-20260718";
+    const parentId = "domain/normalize-scenario-tests-repo-frontier-20260715";
+    await writeReviewTree(appDir, {
+      taskId,
+      conflictScope: ["spec:spec.secops-fips.ubuntu-compat"],
+      outputs: [
+        "evidence/archive/normalize-direct-secops-fips-ubuntu-compat-20260718.md",
+        "workspace/normalize-direct-secops-fips-ubuntu-compat-20260718-origin-dev-wt/features/secops/tests/secops-fips-ubuntu-compat.test.ts",
+      ],
+    });
+    const tree = await readTaskTreeJson(appDir);
+    tree.tasks.project.children = [parentId];
+    tree.tasks[parentId] = {
+      id: parentId,
+      parent_id: "project",
+      state: "active",
+      status: "active",
+      kind: "domain",
+      priority: "P1",
+      owner: "aks-explorer",
+      children: [taskId],
+      goal: "Normalize every scenario-test carrier until strict inventory is clean.",
+      outputs: ["task tree", "strict inventory"],
+      acceptance: ["strict inventory is clean"],
+    };
+    tree.tasks[taskId].parent_id = parentId;
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "Local isolated worktree normalization looks correct, but no pipeline dispatch or publication occurred.",
+          findings: [
+            "Evidence memo records baseRef origin/dev, local validation pass, and no pipeline dispatch.",
+          ],
+          completion: {
+            workflowResult: {
+              resultVersion: "workflow-result-v1",
+              workflow: "task-worker",
+              status: "done",
+              subject: { kind: "task", id: taskId },
+              details: {
+                taskClaim: "done",
+                worktreePath:
+                  "workspace/normalize-direct-secops-fips-ubuntu-compat-20260718-origin-dev-wt",
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    const updated = await readTaskTreeJson(appDir);
+    expect(result.message).toContain("Did not apply accept review");
+    expect(result.message).toContain(
+      "normalization frontier work must either move strict origin/dev inventory",
+    );
+    expect(updated.tasks[taskId].state).toBe("review");
+  });
+
+  test("allows normalization publication closure task to accept after durable inventory proof", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const specId = "spec.secops-fips.ubuntu-compat";
+    const taskId =
+      "domain/publish-verified-secops-fips-ubuntu-compat-normalization-20260718";
+    const parentId = "domain/normalize-scenario-tests-repo-frontier-20260715";
+    await writeReviewTree(appDir, {
+      taskId,
+      conflictScope: ["branch:origin/dev", `spec:${specId}`],
+      context: {
+        normalizationPublication: {
+          specId,
+          runId: "172900001",
+          runUrl:
+            "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=172900001",
+          sourceCommit: "1111111111111111111111111111111111111111",
+          targetBranch: "origin/dev",
+        },
+      },
+      outputs: [
+        "evidence/archive/publish-secops-fips-ubuntu-compat-normalization-20260718.md",
+      ],
+    });
+    const tree = await readTaskTreeJson(appDir);
+    tree.tasks.project.children = [parentId];
+    tree.tasks[parentId] = {
+      id: parentId,
+      parent_id: "project",
+      state: "active",
+      status: "active",
+      kind: "domain",
+      priority: "P1",
+      owner: "aks-explorer",
+      children: [taskId],
+      goal: "Normalize every scenario-test carrier until strict inventory is clean.",
+      outputs: ["task tree", "strict inventory"],
+      acceptance: ["strict inventory is clean"],
+    };
+    tree.tasks[taskId].parent_id = parentId;
+    tree.tasks[taskId].goal =
+      "Publish the verified normalization to origin/dev and prove strict inventory decreases.";
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: reviewedTrigger({
+          project: "aks-rp-e2e",
+          taskId,
+          attemptId: "attempt-1",
+          decision: "accept",
+          summary:
+            "origin/dev contains the tested commit and strict inventory decreased.",
+          findings: [
+            "Publication evidence proves origin/dev ancestry and strict inventory decrease.",
+          ],
+        }),
+      }),
+    );
+
+    const updated = await readTaskTreeJson(appDir);
+    expect(result.message).toContain(`Applied accept review for ${taskId}`);
+    expect(updated.tasks[taskId].state).toBe("done");
+  });
+
   test("accepts virtualmachines normalization lineage when task outputs prove the virtualmachines-agentpool root", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const taskId =
