@@ -1128,6 +1128,20 @@ export async function execute(ctx: any) {
 export const description = "Perform known sample work";
 export async function execute(ctx: any) {
   ctx.dispatchEvent("test.task.workflow", { task: ctx.task });
+  if (ctx.task.includes('"itemId": "waiting"') && ctx.task.includes('"type": "project.work"')) {
+    return ctx.done("waiting for dependency", {
+      disposition: "waiting",
+      summary: "waiting for dependency",
+      evidence: ["dependency is not done"],
+      actions: [],
+      conditions: [{
+        id: "task-done:dependency/waiting",
+        observer: "project.dependency.ready",
+        taskId: "dependency/waiting",
+        expectedState: "done"
+      }]
+    });
+  }
   return ctx.done("known workflow converged");
 }
 `,
@@ -1224,6 +1238,65 @@ export async function execute(ctx: any) {
             event.data?.reason === "already-completed",
         ),
       );
+      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(knownWorkflowRuns);
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "waiting" },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/waiting" &&
+            event.data?.disposition === "waiting",
+        ),
+      );
+      const waitingWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "waiting", redelivery: true },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconcile.skipped" &&
+            event.data?.taskId === "work/waiting" &&
+            event.data?.reason === "conditions-open",
+        ),
+      );
+      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(waitingWorkflowRuns);
+
+      bus.emit({
+        type: "project.dependency.ready",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", taskId: "dependency/other", state: "done" },
+      } as any);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(waitingWorkflowRuns);
+
+      bus.emit({
+        type: "project.dependency.ready",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", taskId: "dependency/waiting", state: "done" },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/waiting" &&
+            event.data?.disposition === "converged" &&
+            event.data?.handler === "workflow:known",
+        ),
+      );
+      const resumedWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
 
       bus.emit({
         type: "project.work",
@@ -1240,7 +1313,7 @@ export async function execute(ctx: any) {
             event.data?.actionsApplied?.includes("created owner-created-child"),
         ),
       );
-      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(knownWorkflowRuns);
+      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(resumedWorkflowRuns);
 
       bus.emit({
         type: "project.work",
@@ -1285,6 +1358,7 @@ export async function execute(ctx: any) {
       expect(tree.tasks["work/known"]).toBeUndefined();
       expect(tree.tasks["work/owner"]).toBeUndefined();
       expect(tree.tasks["work/fallback"]).toBeUndefined();
+      expect(tree.tasks["work/waiting"]).toBeUndefined();
       expect(tree.tasks["owner-created-child"]).toMatchObject({
         state: "backlog",
         owner: "sample-owner",
@@ -1292,6 +1366,11 @@ export async function execute(ctx: any) {
       expect(tree.completions["work/known"].handler).toBe("workflow:known");
       expect(tree.completions["work/owner"].handler).toBe("owner:sample-owner");
       expect(tree.completions["work/fallback"].handler).toBe("owner:sample-owner");
+      expect(tree.completions["work/waiting"].handler).toBe("workflow:known");
+      expect(tree.conditions["task-done:dependency/waiting"]).toMatchObject({
+        status: "resolved",
+        waitingTaskId: "work/waiting",
+      });
       expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("work/known");
     } finally {
       cron?.stop();
