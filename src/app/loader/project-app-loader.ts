@@ -29,6 +29,7 @@ import {
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
   recoverableProjectAppTaskAttempts,
+  releaseInterruptedProjectAppTaskAttempt,
   taskReconciliationConfig,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
@@ -1271,6 +1272,17 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
   for (const wake of recoverableProjectAppTaskAttempts(recoveryConfig)) {
+    if (!wake.trigger) {
+      const summary = `Interrupted reconciliation ${wake.taskId} cannot resume because its previous runtime did not persist the trigger packet`;
+      if (releaseInterruptedProjectAppTaskAttempt(recoveryConfig, wake.taskId, summary)) {
+        emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", wake.taskId, {
+          handler: "recovery",
+          disposition: "attention",
+          summary,
+        });
+      }
+      continue;
+    }
     const flattened = flattenEvent(wake.trigger as unknown as AgentEvent);
     const route = routes.find(
       (candidate) =>
@@ -1278,7 +1290,23 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
         routeAccepts(candidate).some((selector) => matchesSelector(selector, flattened, descriptor.id)) &&
         candidate.resolve(flattened)?.id === wake.taskId,
     );
-    if (!route) continue;
+    if (!route) {
+      const summary = `Interrupted reconciliation ${wake.taskId} cannot resume because no current task route accepts its persisted trigger`;
+      releaseInterruptedProjectAppTaskAttempt(recoveryConfig, wake.taskId, summary);
+      emitTaskReconciliationEvent(
+        opts,
+        descriptor,
+        wake.trigger as unknown as EventEnvelope,
+        "project.task.reconciled",
+        wake.taskId,
+        {
+          handler: "recovery",
+          disposition: "attention",
+          summary,
+        },
+      );
+      continue;
+    }
     void reconcileTaskRoute({
       opts,
       descriptor,

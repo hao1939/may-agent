@@ -10,6 +10,7 @@ import {
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
   recoverableProjectAppTaskAttempts,
+  releaseInterruptedProjectAppTaskAttempt,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -192,6 +193,36 @@ describe("project app task reconciler state", () => {
     expect(
       (readTaskTree(config).tasks[first.taskId].trace?.reconciliation as Record<string, unknown>).recoveredFromAttempt,
     ).toBe(first.attemptId);
+  });
+
+  it("releases a previous-runtime attempt when no trigger was persisted", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const interrupted = readTaskTree(config);
+    const trace = interrupted.tasks[claim.taskId].trace?.reconciliation as Record<string, unknown>;
+    trace.runtimeId = "previous-runtime";
+    saveTaskTree(config, interrupted);
+
+    const [recovery] = recoverableProjectAppTaskAttempts(config);
+    expect(recovery.taskId).toBe(claim.taskId);
+    expect(recovery.trigger).toBeUndefined();
+    expect(releaseInterruptedProjectAppTaskAttempt(config, claim.taskId, "trigger packet was not persisted")).toBe(
+      true,
+    );
+
+    const released = readTaskTree(config);
+    expect(released.tasks[claim.taskId]).toMatchObject({
+      state: "review",
+      summary: "trigger packet was not persisted",
+    });
+    expect((released.tasks[claim.taskId].trace?.reconciliation as Record<string, unknown>).attemptId).toBeUndefined();
+    expect(released.active_task_ids).not.toContain(claim.taskId);
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
