@@ -3190,6 +3190,42 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("does not count runtime task wrappers whose worker session only appears in reconciliation trigger data", async () => {
+    const fixture = await makeFixture();
+    const sessionId = "s_task_active-task";
+    await writeTree(fixture.appDir, {
+      workflow: "task-execution",
+      session_id: null,
+      trace: {
+        reconciliation: {
+          startedAt: "2026-07-03T12:05:00.000Z",
+          trigger: {
+            sessionId,
+            assignedAt: "2026-07-03T12:05:00.000Z",
+            data: {
+              sessionId,
+              assignedAt: "2026-07-03T12:05:00.000Z",
+            },
+          },
+        },
+      },
+    });
+    writeSession(fixture.dbPath, {
+      sessionId,
+      status: "running",
+      source: "workflow:task-worker",
+      startedAt: Date.now() - 60_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.process.unowned-work-count"),
+    ).toBe("0");
+  });
+
   test("does not count queued assignments that already have a running worker session", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, {
@@ -3538,13 +3574,23 @@ describe("project metrics", () => {
           outputs: [],
           acceptance: [],
         },
-        "runtime-review": {
-          id: "runtime-review",
+        "runtime/task-review/example": {
+          id: "runtime/task-review/example",
           parent_id: "project",
           state: "active",
           workflow: "task-reviewer",
           children: [],
           goal: "runtime review",
+          outputs: [],
+          acceptance: [],
+        },
+        "runtime/review-application/example": {
+          id: "runtime/review-application/example",
+          parent_id: "project",
+          state: "active",
+          workflow: "reviewed-task-applier",
+          children: [],
+          goal: "review application",
           outputs: [],
           acceptance: [],
         },

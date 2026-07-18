@@ -2765,14 +2765,12 @@ function isControllerSupportLeaf(task: TaskNode): boolean {
     typeof task.workflow === "string" ? task.workflow.trim() : "";
   const taskId = typeof task.id === "string" ? task.id.trim() : "";
   if (task.kind === "focus_plan") return true;
-  if (
-    workflow === "focus-plan" ||
-    workflow === "project-watchdog" ||
-    workflow === "task-reviewer"
-  ) {
+  if (workflow === "focus-plan" || workflow === "project-watchdog") {
     return true;
   }
-  if (taskId.startsWith("runtime/owner-event/")) return true;
+  if (taskId.startsWith("runtime/")) {
+    return workflow !== "task-execution";
+  }
   return false;
 }
 
@@ -2880,6 +2878,20 @@ function reconciliationTriggerDataString(
   );
 }
 
+function activeTaskSessionId(task: TaskNode): string | null {
+  const directSessionId =
+    typeof task.session_id === "string" && task.session_id.trim()
+      ? task.session_id.trim()
+      : "";
+  if (directSessionId) return directSessionId;
+  const triggerSessionId = reconciliationTriggerDataString(
+    task,
+    "sessionId",
+    "session_id",
+  );
+  return triggerSessionId || null;
+}
+
 function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   const trace = recordValue(task.trace);
   const reconciliation = objectRecordField(trace, ["reconciliation"]);
@@ -2944,10 +2956,7 @@ function activeTaskHasFreshGitHubRun(task: TaskNode): boolean {
 
 function activeTaskRestartReason(task: TaskNode): string | null {
   const taskId = typeof task.id === "string" ? task.id.trim() : "";
-  const sessionId =
-    typeof task.session_id === "string" && task.session_id.trim()
-      ? task.session_id.trim()
-      : "";
+  const sessionId = activeTaskSessionId(task) ?? "";
   const verifierByTaskId = loadVerifierLivenessByTaskId();
   const verifier = taskId ? verifierByTaskId.get(taskId) : undefined;
   const featureCompactByTaskId = featureCompactLoopByTaskId();
@@ -3049,10 +3058,7 @@ function staleActiveTaskDetails(): StaleActiveTaskInfo[] {
   return activeLeafTasks().flatMap((task) => {
     const restartReason = activeTaskRestartReason(task);
     const taskId = typeof task.id === "string" ? task.id.trim() : "";
-    const sessionId =
-      typeof task.session_id === "string" && task.session_id.trim()
-        ? task.session_id.trim()
-        : null;
+    const sessionId = activeTaskSessionId(task);
     if (!restartReason || !taskId) return [];
     return [{ taskId, sessionId, restartReason }];
   });
