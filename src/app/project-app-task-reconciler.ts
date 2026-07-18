@@ -585,6 +585,17 @@ function upsertTask(
       mode: intent.mode,
     },
   };
+  task.session_id = undefined;
+  task.trace = {
+    ...(task.trace ?? {}),
+    current_attempt_id: undefined,
+    current_task_revision: undefined,
+    assigned_at: undefined,
+    assigned_by: undefined,
+    assigned_worker: undefined,
+    worker_started_attempt_id: undefined,
+    worker_started_at: undefined,
+  };
   tree.tasks[intent.id] = task;
   parent.children = [...new Set([...(parent.children ?? []), intent.id])];
   return task;

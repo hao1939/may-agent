@@ -99,6 +99,49 @@ describe("project app task reconciler state", () => {
     expect(tree.active_task_ids).toContain("evaluate:session-1");
   });
 
+  it("clears legacy assignment authority when reconciliation claims a task", () => {
+    const { config } = fixture();
+    const tree = readTaskTree(config);
+    tree.tasks["pipeline-monitor"] = {
+      id: "pipeline-monitor",
+      parent_id: "operations",
+      state: "active",
+      children: [],
+      goal: "Legacy duplicate execution",
+      outputs: ["legacy.md"],
+      acceptance: ["Legacy execution finishes"],
+      session_id: "s_legacy",
+      trace: {
+        current_attempt_id: "a_legacy",
+        current_task_revision: 0,
+        assigned_at: "2026-07-18T00:00:00Z",
+        assigned_by: "planner",
+        assigned_worker: "owner",
+      },
+    };
+    tree.tasks.operations.children = [
+      ...(tree.tasks.operations.children ?? []),
+      "pipeline-monitor",
+    ];
+    saveTaskTree(config, tree);
+
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(claim.kind).toBe("claimed");
+
+    const claimed = readTaskTree(config).tasks["pipeline-monitor"];
+    expect(claimed.session_id).toBeUndefined();
+    expect(claimed.trace?.current_attempt_id).toBeUndefined();
+    expect(claimed.trace?.assigned_by).toBeUndefined();
+    expect(claimed.trace?.reconciliation).toMatchObject({
+      phase: "running",
+      handler: "workflow:known-workflow",
+    });
+  });
+
   it("absorbs achieved work into a minimal tombstone and deduplicates redelivery", () => {
     const { config, appDir } = fixture();
     const claim = claimProjectAppTask(config, {
