@@ -40,6 +40,14 @@ export type ProjectAppConditionWake = {
   recovery: boolean;
 };
 
+export type ProjectAppTaskAttemptRecovery = {
+  taskId: string;
+  intent: ProjectAppTaskIntent;
+  trigger: Record<string, unknown>;
+};
+
+const reconcilerRuntimeId = randomUUID();
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
@@ -263,6 +271,18 @@ function reconciliationInput(task: TaskNode): Record<string, unknown> {
 }
 
 function taskIntent(task: TaskNode): ProjectAppTaskIntent | null {
+  const reconciliation = isRecord(task.context?.reconciliation) ? task.context.reconciliation : {};
+  const stored = isRecord(reconciliation.intent) ? reconciliation.intent : null;
+  if (
+    stored &&
+    stored.id === task.id &&
+    typeof stored.parentId === "string" &&
+    typeof stored.outcome === "string" &&
+    Array.isArray(stored.acceptance) &&
+    (stored.mode === "achieve" || stored.mode === "maintain")
+  ) {
+    return stored as ProjectAppTaskIntent;
+  }
   if (!task.parent_id || !task.goal?.trim() || !task.acceptance?.length) return null;
   return {
     id: task.id,
@@ -277,6 +297,21 @@ function taskIntent(task: TaskNode): ProjectAppTaskIntent | null {
     dependsOn: Array.isArray(task.depends_on) ? [...task.depends_on] : task.depends_on ? [task.depends_on] : [],
     priority: task.priority,
   };
+}
+
+export function recoverableProjectAppTaskAttempts(config: TaskTreeConfig): ProjectAppTaskAttemptRecovery[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    return Object.values(tree.tasks).flatMap((task) => {
+      if (taskState(task) !== "active" || !currentAttempt(task)) return [];
+      const trace = reconciliationTrace(task);
+      if (trace.runtimeId === reconcilerRuntimeId || !isRecord(trace.trigger)) {
+        return [];
+      }
+      const intent = taskIntent(task);
+      return intent ? [{ taskId: task.id, intent, trigger: trace.trigger }] : [];
+    });
+  });
 }
 
 function eventField(event: Record<string, unknown>, ...names: string[]): unknown {
@@ -453,6 +488,7 @@ function upsertTask(
     reconciliation: {
       ...reconciliationTrace(task),
       specHash,
+      intent,
       input: intent.input ?? {},
       mode: intent.mode,
     },
@@ -469,6 +505,7 @@ export function claimProjectAppTask(
     appOwner: string;
     handler: string;
     reason?: string;
+    trigger?: Record<string, unknown>;
   },
 ): ProjectAppTaskClaimResult {
   validateIntent(input.intent);
@@ -482,7 +519,11 @@ export function claimProjectAppTask(
 
     const existing = tree.tasks[input.intent.id];
     const existingAttempt = existing ? currentAttempt(existing) : null;
-    if (existing && taskState(existing) === "active" && existingAttempt) {
+    const existingTrace = existing ? reconciliationTrace(existing) : {};
+    const canRecoverPreviousRuntime = Boolean(
+      existingAttempt && input.trigger && existingTrace.runtimeId !== reconcilerRuntimeId,
+    );
+    if (existing && taskState(existing) === "active" && existingAttempt && !canRecoverPreviousRuntime) {
       return { kind: "busy", taskId: existing.id, attemptId: existingAttempt };
     }
     const openConditionIds = existing ? openTaskConditionIds(tree, existing) : [];
@@ -519,6 +560,9 @@ export function claimProjectAppTask(
         observedGeneration: generation - 1,
         attemptId,
         handler,
+        runtimeId: reconcilerRuntimeId,
+        trigger: input.trigger ?? existingTrace.trigger,
+        recoveredFromAttempt: canRecoverPreviousRuntime ? existingAttempt : undefined,
         startedAt: now,
         reason: input.reason ?? "event",
       },
