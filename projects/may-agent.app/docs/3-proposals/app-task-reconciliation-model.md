@@ -613,21 +613,34 @@ Migration is based on work semantics, not on making every event look alike.
 | `gym.app`                 | Do not task-migrate yet. Extract and reuse the neutral agent runner first. | Incident intake, benchmark execution, and review already form an immutable request/result pipeline. A task layer adds value only where deduplication, resumption, owner fallback, or desired-state observation is actually needed. |
 
 The first AKS cohorts validate both task modes. The feature-compact controller
-is a standing `maintain` task. Reviewed-task application is an `achieve` task
-whose stable identity is derived from the review identity. In production,
-review event `3489482` was claimed through
-`aks-rp-e2e-task-reviewed-application`, invoked
-`workflow:reviewed-task-applier`, and converged at event `3489531`. The task
-then left the live graph and retained only its bounded completion tombstone.
+is a standing `maintain` task. Completion review and reviewed-task application
+are paired `achieve` tasks whose stable identities are derived from the task
+attempt and review identities. In production, review event `3489482` was
+claimed through `aks-rp-e2e-task-reviewed-application`, invoked
+`workflow:reviewed-task-applier`, and converged at event `3489531`. Completion
+event `3490789` was then claimed through
+`aks-rp-e2e-task-completion-review`, invoked `workflow:task-reviewer`, emitted
+its structured decision, and converged at event `3490862`. Both tasks left the
+live graph with bounded completion tombstones.
 
-The recommended next AKS boundary is task execution/review for a bounded
-cohort, because it can remove duplicated claim, generation, and result-apply
-mechanics while retaining the proven worker and reviewer workflows. Migrate
-the spec loop only after its watchdog-owned external waits are represented as
-exact Conditions. Do not recreate the already-complete feature-reference loop
-as standing backlog. Retire planner refill, watchdog, and stall-review overlap
-only after incident replay and live parity prove that the reconciler and
-Condition wake path cover the same recovery cases.
+The completion-review cutover also exercised restart recovery. The reconciler
+now persists the authored intent and trigger observation with each attempt,
+distinguishes attempts from the current runtime instance, resumes a prior
+runtime attempt through the same route, and releases older attempts that lack
+a recoverable trigger into visible owner attention. Active-task projection is
+derived from executable leaves and active workflow controllers rather than all
+active parent rollups.
+
+The recommended next AKS boundary is task execution for a bounded cohort, but
+only after `task-worker` returns a typed handler disposition instead of an
+unqualified workflow completion. The cutover must use one non-overlapping
+event authority or cohort marker; a task route and the legacy
+`project.task.assigned` handler must never execute the same assignment.
+Migrate the spec loop only after its watchdog-owned external waits are
+represented as exact Conditions. Do not recreate the already-complete
+feature-reference loop as standing backlog. Retire planner refill, watchdog,
+and stall-review overlap only after incident replay and live parity prove that
+the reconciler and Condition wake path cover the same recovery cases.
 
 ## Migration
 
