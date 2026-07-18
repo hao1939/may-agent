@@ -26,8 +26,10 @@ import {
   claimProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
+  acknowledgeProjectAppTaskRecoveryAttention,
   markProjectAppTaskAttention,
   observeProjectAppTaskConditions,
+  pendingProjectAppTaskRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   taskReconciliationConfig,
@@ -1280,18 +1282,6 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
           disposition: "attention",
           summary,
         });
-        opts.bus.emit({
-          type: "project.owner.requested",
-          source: `project-app:${descriptor.id}:task-reconciler`,
-          owner: `agent:${descriptor.owner}`,
-          target: { project: descriptor.id, taskId: wake.taskId },
-          data: {
-            project: descriptor.id,
-            taskId: wake.taskId,
-            reason: "task-reconciliation-recovery-attention",
-            summary,
-          },
-        } as AgentEvent);
       }
       continue;
     }
@@ -1317,18 +1307,6 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
           summary,
         },
       );
-      opts.bus.emit({
-        type: "project.owner.requested",
-        source: `project-app:${descriptor.id}:task-reconciler`,
-        owner: `agent:${descriptor.owner}`,
-        target: { project: descriptor.id, taskId: wake.taskId },
-        data: {
-          project: descriptor.id,
-          taskId: wake.taskId,
-          reason: "task-reconciliation-recovery-attention",
-          summary,
-        },
-      } as AgentEvent);
       continue;
     }
     void reconcileTaskRoute({
@@ -1350,6 +1328,21 @@ function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor
         },
       });
     });
+  }
+  for (const attention of pendingProjectAppTaskRecoveryAttention(recoveryConfig)) {
+    opts.bus.emit({
+      type: "project.owner.requested",
+      source: `project-app:${descriptor.id}:task-reconciler`,
+      owner: `agent:${descriptor.owner}`,
+      target: { project: descriptor.id, taskId: attention.taskId },
+      data: {
+        project: descriptor.id,
+        taskId: attention.taskId,
+        reason: "task-reconciliation-recovery-attention",
+        summary: attention.summary,
+      },
+    } as AgentEvent);
+    acknowledgeProjectAppTaskRecoveryAttention(recoveryConfig, attention.taskId);
   }
   rememberProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, cron, descriptor.id, currentNames);
   return count;
