@@ -631,16 +631,23 @@ a recoverable trigger into visible owner attention. Active-task projection is
 derived from executable leaves and active workflow controllers rather than all
 active parent rollups.
 
-The recommended next AKS boundary is task execution for a bounded cohort, but
-only after `task-worker` returns a typed handler disposition instead of an
-unqualified workflow completion. The cutover must use one non-overlapping
-event authority or cohort marker; a task route and the legacy
-`project.task.assigned` handler must never execute the same assignment.
-Migrate the spec loop only after its watchdog-owned external waits are
-represented as exact Conditions. Do not recreate the already-complete
-feature-reference loop as standing backlog. Retire planner refill, watchdog,
-and stall-review overlap only after incident replay and live parity prove that
-the reconciler and Condition wake path cover the same recovery cases.
+Task execution has now crossed that boundary. New `project.task.assigned`
+events resolve to revision-and-attempt-stable `achieve` tasks bound to
+`workflow:task-execution`; `task-worker` returns a typed disposition, and the
+legacy direct assignment handler is absent from the manifest. The temporal
+cutover allowed an already-running legacy workflow to finish at event
+`3491771`, while assignment `3491801` was claimed only by route
+`aks-rp-e2e-task-execution` at `3491803`. It emitted the normal completion
+handoff, converged at `3491907`, passed through task review at `3491974`, and
+through reviewed-result application at `3492038`. The execution, review, and
+application tasks all left the live graph with bounded completion tombstones.
+
+The next recommended AKS boundary is the spec loop, but only after its
+watchdog-owned external waits are represented as exact Conditions. Do not
+recreate the already-complete feature-reference loop as standing backlog.
+Retire planner refill, watchdog, and stall-review overlap only after incident
+replay and live parity prove that the reconciler and Condition wake path cover
+the same recovery cases.
 
 ## Migration
 
