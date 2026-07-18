@@ -305,10 +305,44 @@ export function writeSessionMeta(persistDir: string, sessionId: string, meta: Pe
 const ACTIVE_MARKER = "[ACTIVE]";
 const STARTED_MARKER = "[STARTED]";
 
+function isPermissionError(err: unknown): err is NodeJS.ErrnoException {
+  return (
+    err instanceof Error &&
+    ((err as NodeJS.ErrnoException).code === "EACCES" ||
+      (err as NodeJS.ErrnoException).code === "EPERM")
+  );
+}
+
 /** Mark a session as runtime-active without changing its permanent directory. */
 export function markSessionActive(persistDir: string, sessionId: string): void {
   ensureSessionDir(persistDir, sessionId);
-  writeFileSync(join(sessionDir(persistDir, sessionId), ACTIVE_MARKER), new Date().toISOString(), "utf-8");
+  const markerPath = join(sessionDir(persistDir, sessionId), ACTIVE_MARKER);
+  const content = new Date().toISOString();
+  try {
+    writeFileSync(markerPath, content, "utf-8");
+  } catch (err) {
+    if (!isPermissionError(err)) throw err;
+    // Crash recovery can inherit a stale marker file whose ownership or mode
+    // drifted away from the runtime user. Because the session directory itself
+    // remains ours, unlink the old marker and recreate it instead of failing
+    // the whole resume path on an in-place truncate/open.
+    try {
+      rmSync(markerPath, { force: true });
+    } catch {
+      // rmSync may also fail if there's a transient lock or permission issue;
+      // fall through to the atomic-rename strategy below.
+    }
+    try {
+      writeFileSync(markerPath, content, "utf-8");
+    } catch (err2) {
+      if (!isPermissionError(err2)) throw err2;
+      // Last resort: write via temp file + rename (works even if original
+      // inode is locked, as rename replaces the directory entry).
+      const tmpPath = markerPath + ".tmp." + process.pid;
+      writeFileSync(tmpPath, content, "utf-8");
+      renameSync(tmpPath, markerPath);
+    }
+  }
 }
 
 /** Mark a session terminal. Artifacts remain in their original directory. */
