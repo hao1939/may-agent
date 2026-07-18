@@ -2,15 +2,16 @@
 
 **Design status:** Pilot.
 **Implementation status:** The shared reconciler is in production.
-`evaluation.app`, `may-agent.app`, and `scout-knowledge-lib.app` route their
-organized work through task reconciliation. `aks-rp-e2e.app` is migrating by
-bounded cohorts. Feature-compact maintenance, task execution, completion
-review, reviewed-result application, problem investigation, approval dispatch,
-Condition owner fallback, stall review, and focus review now use the
-reconciler. Owner/planner events and compatibility watchdog health checks also
-enter through tasks, leaving the unfinished spec loop as the remaining direct
-AKS controller cohort. `gym.app` remains a direct immutable request/result
-pipeline pending extraction of the shared agent runner.
+All active project apps route organized work through task reconciliation.
+`evaluation.app`, `may-agent.app`, `scout-knowledge-lib.app`, and `gym.app`
+declare task routes, reusable workflow capabilities, and an owner fallback.
+`aks-rp-e2e.app` has completed its bounded handler cutover: feature compact,
+single-spec verification, task execution and review, problem investigation,
+approval dispatch, Condition fallback, stall and focus review, semantic owner
+events, and compatibility health are reconciled tasks. No active app manifest
+declares a direct `workflowHandlers` execution path. Imperative `onEvent`
+functions remain only where an event must be filtered, translated, or recorded
+without executing project work.
 
 ## Executive Decision
 
@@ -677,12 +678,20 @@ declare the old watchdog strategy permanent: the task makes its standing
 responsibility and handler visible while exact Conditions and generic attempt
 recovery progressively remove its reasons to act.
 
-The next recommended AKS boundary is the spec loop, but only after its
-watchdog-owned external waits are represented as exact Conditions. Do not
-recreate the already-complete feature-reference loop as standing backlog. Its
-ledger currently reports `completionReady=true`, `done=307`, and no unfinished
-rows, so the periodic wake, manual pulse action, and direct controller handler
-have been retired while the completed task and durable feature outputs remain.
+The spec loop now enters through one stable `maintain` task bound to
+`workflow:spec-loop-controller`. Production tick `3496686` was claimed by
+`aks-rp-e2e-task-spec-loop` at `3496689`, ran the existing bounded controller,
+and converged at `3496695` without creating or assigning duplicate work. The
+workflow preserves the reconciler's active attempt and no longer rewrites the
+root lifecycle while that attempt owns authority. Its 63 existing blocked wait
+children remain unchanged; converting those waits is a later Condition cohort,
+not a prerequisite for removing the duplicate direct controller.
+
+Do not recreate the already-complete feature-reference loop as standing
+backlog. Its ledger currently reports `completionReady=true`, `done=307`, and
+no unfinished rows, so the periodic wake, manual pulse action, and direct
+controller handler have been retired while the completed task and durable
+feature outputs remain.
 Retire planner refill, watchdog, and stall-review overlap only after incident
 replay and live parity prove that the reconciler and Condition wake path cover
 the same recovery cases.
