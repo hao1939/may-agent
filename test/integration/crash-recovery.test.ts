@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
@@ -237,6 +237,35 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
 
     // Sentinel should be cleaned up
     expect(sentinelExists(persistDir, "s_orphan")).toBe(false);
+  });
+
+  it("resumeStaleSessions() recreates a stale read-only [ACTIVE] marker during resume", async () => {
+    writeRegistryState(persistDir, {
+      s_readonly_active: {
+        agent: "worker",
+        task: "important task",
+        status: "running",
+        startedAt: Date.now() - 30000,
+      },
+    });
+    setupSession(persistDir, "s_readonly_active", [
+      userMessage("important task"),
+      assistantMessage("Working on it..."),
+    ]);
+    chmodSync(join(sessionDir(persistDir, "s_readonly_active"), "[ACTIVE]"), 0o444);
+    writeSentinel(persistDir, "s_readonly_active");
+
+    const manager = new SubagentManager({ persistDir });
+    registerAgent(manager, "worker");
+
+    const { resumed, interrupted } = manager.resumeStaleSessions();
+
+    expect(resumed).toHaveLength(1);
+    expect(resumed[0].sessionId).toBe("s_readonly_active");
+    expect(interrupted).toHaveLength(0);
+    expect(sentinelExists(persistDir, "s_readonly_active")).toBe(false);
+
+    await manager.waitFor("s_readonly_active");
   });
 
   it("resumeStaleSessions() interrupts sentinel session with unregistered agent", () => {
