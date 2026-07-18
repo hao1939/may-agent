@@ -8,7 +8,6 @@ import {
 const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
 const specLoopTaskId = "aks-spec-verification-loop";
-const featureReferenceLoopTaskId = "aks-feature-reference-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
 const appTaskContext =
   "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nsource: /app/sources/aks-rp";
@@ -518,15 +517,6 @@ export default defineProjectApp({
         },
         {
           type: "project.task.tick",
-          target: { project: projectId, taskId: featureReferenceLoopTaskId },
-          action: "feature-reference-loop",
-          data: {
-            project: projectId,
-            reason: "scheduled-durable-loop-pulse",
-          },
-        },
-        {
-          type: "project.task.tick",
           target: { project: projectId, taskId: featureCompactLoopTaskId },
           action: "feature-compact-loop",
           data: {
@@ -922,34 +912,6 @@ export default defineProjectApp({
         "projects/aks-rp-e2e/design/specs/README.md",
       ],
     },
-    {
-      name: "aks-rp-e2e-feature-reference-loop-controller",
-      type: "job",
-      enabled: true,
-      description:
-        "Deterministic task controller. Pulses long-lived feature reference loop tasks and keeps their bounded child frontier filled.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "feature-reference-loop-controller",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: 30`,
-        timeoutMs: 600_000,
-      },
-      accepts: [
-        {
-          type: "project.task.tick",
-          target: { project: projectId },
-          actions: ["feature-reference-loop"],
-        },
-      ],
-      emits: ["project.task.assigned"],
-      context: [
-        ...taskTreeContext,
-        "projects/aks-rp-e2e/features/README.md",
-        "projects/aks-rp-e2e/features/SCHEMA.md",
-        "projects/aks-rp-e2e/features/",
-      ],
-    },
   ],
 
   eventGraph: {
@@ -1181,34 +1143,6 @@ export default defineProjectApp({
             taskId,
             task_id: taskId,
             reason: "manual-spec-loop-pulse",
-            params: input,
-          },
-        };
-      },
-    },
-    "pulse-feature-reference-loop": {
-      type: "async",
-      description:
-        "Pulse the targeted long-lived feature reference loop task controller.",
-      event(params) {
-        const input =
-          params && typeof params === "object"
-            ? (params as Record<string, unknown>)
-            : {};
-        const taskId =
-          typeof input.taskId === "string" && input.taskId.trim()
-            ? input.taskId.trim()
-            : featureReferenceLoopTaskId;
-        return {
-          type: "project.task.tick",
-          action: "feature-reference-loop",
-          target: { project: projectId, taskId },
-          data: {
-            project: projectId,
-            action: "feature-reference-loop",
-            taskId,
-            task_id: taskId,
-            reason: "manual-feature-reference-loop-pulse",
             params: input,
           },
         };

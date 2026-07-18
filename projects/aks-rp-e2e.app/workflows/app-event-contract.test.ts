@@ -338,17 +338,10 @@ describe("app event contract", () => {
       ]),
     });
     expect(
-      handler("aks-rp-e2e-feature-reference-loop-controller"),
-    ).toMatchObject({
-      handler: { workflow: "feature-reference-loop-controller" },
-      accepts: expect.arrayContaining([
-        expect.objectContaining({
-          type: "project.task.tick",
-          target: expect.objectContaining({ project: projectId }),
-          actions: ["feature-reference-loop"],
-        }),
-      ]),
-    });
+      (appManifest.workflowHandlers ?? []).some(
+        (entry) => entry.name === "aks-rp-e2e-feature-reference-loop-controller",
+      ),
+    ).toBe(false);
     expect(taskRoute("aks-rp-e2e-task-feature-compact-loop")).toMatchObject({
       accepts: expect.arrayContaining([
         expect.objectContaining({
@@ -942,6 +935,24 @@ describe("app event contract", () => {
     );
   });
 
+  test("completed feature-reference work has no live controller wake", () => {
+    const durableLoopSchedule = appManifest.schedules?.find(
+      (entry) => entry.id === "durable-loop-pulse",
+    );
+    expect(durableLoopSchedule).toBeDefined();
+    expect(
+      scheduleEvents(durableLoopSchedule!).map((event) => event.action),
+    ).not.toContain("feature-reference-loop");
+    expect(appManifest.actions).not.toHaveProperty(
+      "pulse-feature-reference-loop",
+    );
+    expect(
+      (appManifest.workflowHandlers ?? []).some(
+        (entry) => entry.name === "aks-rp-e2e-feature-reference-loop-controller",
+      ),
+    ).toBe(false);
+  });
+
   test("manual actions emit explicit target events", () => {
     expect(
       actionEvent("dispatch-approval-packet", {
@@ -1023,18 +1034,9 @@ describe("app event contract", () => {
       },
     });
 
-    expect(
-      actionEvent("pulse-feature-reference-loop", { taskId: "loop-b" }),
-    ).toMatchObject({
-      type: "project.task.tick",
-      action: "feature-reference-loop",
-      target: { project: projectId, taskId: "loop-b" },
-      data: {
-        project: projectId,
-        action: "feature-reference-loop",
-        taskId: "loop-b",
-      },
-    });
+    expect(appManifest.actions).not.toHaveProperty(
+      "pulse-feature-reference-loop",
+    );
 
     expect(
       actionEvent("pulse-feature-compact-loop", { taskId: "loop-c" }),
