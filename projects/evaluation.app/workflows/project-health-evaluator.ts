@@ -1207,7 +1207,8 @@ export function escalationPacket(
     "escalation-events",
     () =>
       ctx.query.sql(
-        `SELECT e.id, e.event_type, e.source, e.owner, e.timestamp, e.status,
+        `SELECT e.id, e.event_type, e.source, e.owner, e.timestamp,
+                e.subject_status AS status,
                 e.data, s.projectId AS source_project_id
          FROM events AS e
          LEFT JOIN sessions AS s
@@ -2285,7 +2286,7 @@ function writeCheckState(
 }
 
 function targetOwnerProjectId(target: TargetConfig): string {
-  return target.targetProject.replace(/\.app$/, "");
+  return target.targetProject;
 }
 
 export function shouldFeedbackTargetOwner(
