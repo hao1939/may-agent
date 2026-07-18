@@ -6421,6 +6421,115 @@ describe("project owner workflow", () => {
     expect(task.trace.requeued_by).toBe("project-planner");
   });
 
+  test("preserves reviewed task-tree followups that are structured external waits", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const taskId =
+      "recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-6-20260718";
+    await writeReviewTree(appDir, {
+      taskId,
+      status: "blocked",
+      context: {
+        reviewedTask: {
+          taskId:
+            "recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-5-20260718",
+          attemptId:
+            "a_recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-5-20260718_20260718223134",
+          decision: "followup",
+          summary:
+            "The publication gate cannot close and needs one exact successor waiting for the next origin/dev change or publication attempt.",
+          suggestedFollowups: [
+            "After origin/dev changes from 2c71edb1d6d9b985ebace61bea76727e4b2efc90 or a storage-csi-file-clone publication attempt occurs, recheck whether 9649d935 entered origin/dev ancestry.",
+          ],
+          reviewAction: {
+            actionKind: "task-tree-followup",
+            idBase: taskId,
+            parentId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+            owner: "aks-explorer",
+            goal: "Keep the storage-csi-file-clone publication gate alive after the next origin/dev change or storage-csi-file-clone publication attempt.",
+            outputs: [
+              "evidence/archive/recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-6-20260718.md",
+            ],
+            acceptance: [
+              "If origin/dev has not changed and no publication attempt occurred, keep this as an exact external wait.",
+            ],
+            conflictScopes: ["spec:spec.storage-csi.file-clone"],
+            waitingFor: {
+              type: "git.ref.changed-or-publication-attempt",
+              ref: "origin/dev",
+              currentCommit: "2c71edb1d6d9b985ebace61bea76727e4b2efc90",
+              publicationSubject: "spec.storage-csi.file-clone",
+            },
+            blockerCategory: "external-wait",
+            blockerOwner: "repo/publication pipeline",
+            resumeCondition:
+              "Resume only after origin/dev changes or a concrete storage-csi-file-clone publication attempt updates the branch/commit under review.",
+          },
+        },
+      },
+      conflictScope: ["spec:spec.storage-csi.file-clone"],
+    });
+    const treeBefore = await readTaskTreeJson(appDir);
+    treeBefore.tasks[taskId].parent_id =
+      "domain/normalize-scenario-tests-repo-frontier-20260715";
+    treeBefore.tasks[taskId].blocker = {
+      condition:
+        "Keep the storage-csi-file-clone publication gate alive after the next origin/dev change or storage-csi-file-clone publication attempt.",
+      category: "external-wait",
+      owner: "repo/publication pipeline",
+      blocked_at: "2026-07-18T22:35:14.636Z",
+      waiting_for: {
+        type: "git.ref.changed-or-publication-attempt",
+        ref: "origin/dev",
+        currentCommit: "2c71edb1d6d9b985ebace61bea76727e4b2efc90",
+        publicationSubject: "spec.storage-csi.file-clone",
+        reviewedTaskId:
+          "recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-5-20260718",
+        reviewedAttemptId:
+          "a_recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-5-20260718_20260718223134",
+        successorTaskId: taskId,
+        source: "project.task.reviewed",
+      },
+      observed_by: {
+        workflow: "project-planner",
+        trigger: "project.task.reviewed",
+      },
+      observation_method:
+        "Project planner created this structured-wait task-tree follow-up from the review result.",
+      next_check_at: "2026-07-19T04:00:00.000Z",
+      resume_condition:
+        "Resume only after origin/dev changes or a concrete storage-csi-file-clone publication attempt updates the branch/commit under review.",
+      fallback_at: "2026-07-19T22:00:00.000Z",
+      fallback_action:
+        "If origin/dev has not changed, report the stale publication wait for planner/owner review rather than rerunning immediate ancestry checks.",
+    };
+    treeBefore.tasks[taskId].trace = {
+      blocked_contract_seeded_at: "2026-07-18T22:35:14.636Z",
+      blocked_contract_seeded_by: "work.applyReview.v2",
+    };
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(treeBefore, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await execute(
+      plannerContext({
+        appDir,
+        projectDir,
+        trigger: planningTrigger({ reason: "test-planner-wake" }),
+      }),
+    );
+
+    const tree = await readTaskTreeJson(appDir);
+    const task = tree.tasks[taskId];
+    expect(result.status).toBe("done");
+    expect(task.state).toBe("blocked");
+    expect(task.status).toBe("blocked");
+    expect(task.blocker.waiting_for.type).toBe(
+      "git.ref.changed-or-publication-attempt",
+    );
+    expect(task.trace.requeued_by).toBeUndefined();
+  });
   test("restores reviewed terminal pipeline waits in place when the run is still a real external wait", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(

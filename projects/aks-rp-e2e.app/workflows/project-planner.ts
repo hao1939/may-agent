@@ -6455,6 +6455,27 @@ function shouldPreserveReviewedBlockedWait(input: {
   return input.reviewAction?.actionKind === "task-tree-followup";
 }
 
+function shouldPreserveStructuredReviewActionWait(input: {
+  blocker: Record<string, unknown> | null;
+  reviewAction: ReviewAction | null;
+}): boolean {
+  if (input.reviewAction?.actionKind !== "task-tree-followup") return false;
+  const reviewWaitingFor = objectValue(input.reviewAction.waitingFor);
+  if (Object.keys(reviewWaitingFor).length === 0) return false;
+  const blockerCategory = stringValue(input.blocker?.category);
+  if (blockerCategory !== "external-wait") return false;
+
+  const waitingFor = objectValue(input.blocker?.waiting_for);
+  const waitType =
+    stringValue(waitingFor?.type) || stringValue(reviewWaitingFor.type);
+  if (!waitType) return false;
+  return (
+    waitType !== "ado.pipeline_run.completed" &&
+    waitType !== "github.workflow_run.completed" &&
+    waitType !== "blocker.resolved"
+  );
+}
+
 function requeueReviewedBlockedProjectActions(
   config: TaskTreeConfig,
 ): string[] {
@@ -6501,6 +6522,11 @@ function requeueReviewedBlockedProjectActions(
         continue;
       }
       if (shouldPreserveReviewedBlockedWait({ blocker, reviewAction })) {
+        continue;
+      }
+      if (
+        shouldPreserveStructuredReviewActionWait({ blocker, reviewAction })
+      ) {
         continue;
       }
       if (action.state === "blocked") {
