@@ -148,6 +148,61 @@ async function runCompletionDeliveryFixture(input: {
 }
 
 describe("task worker", () => {
+  test("returns a typed reconciliation result for execution-route events", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify({
+        root_task_id: "project",
+        active_task_ids: [],
+        tasks: {
+          project: {
+            id: "project",
+            state: "active",
+            children: [],
+          },
+        },
+      })}\n`,
+      "utf8",
+    );
+
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        eventBlock({
+          type: "project.task.assigned",
+          project: "aks-rp-e2e",
+          taskId: "missing-task",
+          taskRevision: 3,
+          attemptId: "attempt-3",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "error" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        disposition: "converged",
+        summary: "Assigned task missing-task was not found.",
+        evidence: ["task-execution:missing-task:3:attempt-3"],
+        actions: [],
+      },
+    });
+  });
+
   test("rejects stale assignment and completion revisions", async () => {
     const projectDir = await makeProject();
     await writeFile(

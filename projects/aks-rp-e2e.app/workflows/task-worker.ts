@@ -34,6 +34,39 @@ export const description =
 type InlineWorkflowModule = {
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
 };
+type TaskExecutionDisposition = "converged" | "needs-owner";
+
+function executionDisposition(result: unknown): TaskExecutionDisposition {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return "needs-owner";
+  }
+  const record = result as Record<string, unknown>;
+  const status = String(record.type ?? record.status ?? "").toLowerCase();
+  return ["blocked", "error", "failed", "escalated"].includes(status)
+    ? "needs-owner"
+    : "converged";
+}
+
+function finishTaskExecution(
+  ctx: WorkflowContext,
+  input: {
+    disposition: TaskExecutionDisposition;
+    summary: string;
+    taskId: string;
+    taskRevision: number;
+    attemptId: string;
+  },
+): WorkflowResult {
+  return ctx.done(input.summary, {
+    disposition: input.disposition,
+    summary: input.summary,
+    evidence: [
+      `task-execution:${input.taskId}:${input.taskRevision}:${input.attemptId || "unidentified"}`,
+    ],
+    actions: [],
+  });
+}
+
 
 const DEFAULT_WORKFLOWS = new Set([
   "",
@@ -105,9 +138,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
 
   if (trigger?.type !== "project.task.assigned") {
-    return ctx.done(
-      `Task worker ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.assigned.`,
-    );
+    return finishTaskExecution(ctx, {
+      disposition: "converged",
+      summary: `Task worker ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.assigned.`,
+      taskId: "unknown",
+      taskRevision: 0,
+      attemptId: "",
+    });
   }
 
   const taskId =
@@ -115,9 +152,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "task_id") ||
     field(ctx.task, "taskId");
   if (!taskId) {
-    return ctx.done(
-      "Task assignment event ignored because it did not include taskId.",
-    );
+    return finishTaskExecution(ctx, {
+      disposition: "converged",
+      summary:
+        "Task assignment event ignored because it did not include taskId.",
+      taskId: "unknown",
+      taskRevision: 0,
+      attemptId: "",
+    });
   }
   const attemptId =
     triggerString(trigger, "attemptId") ||
@@ -134,16 +176,35 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       : 0;
 
   const task = readTaskTree(config).tasks[taskId];
-  if (!task) return ctx.done(`Assigned task ${taskId} was not found.`);
+  if (!task) {
+    return finishTaskExecution(ctx, {
+      disposition: "converged",
+      summary: `Assigned task ${taskId} was not found.`,
+      taskId,
+      taskRevision: assignedTaskRevision,
+      attemptId,
+    });
+  }
   if (taskRevision(task) !== assignedTaskRevision) {
-    return ctx.done(
-      `Assigned task ${taskId} revision ${assignedTaskRevision} is stale; current revision is ${taskRevision(task)}.`,
-    );
+    return finishTaskExecution(ctx, {
+      disposition: "converged",
+      summary: `Assigned task ${taskId} revision ${assignedTaskRevision} is stale; current revision is ${taskRevision(task)}.`,
+      taskId,
+      taskRevision: assignedTaskRevision,
+      attemptId,
+    });
   }
 
   const workflow = taskWorkflow(task);
   if (workflow === "default-task-worker") {
-    return executeDefaultTaskWorker(ctx);
+    const result = await executeDefaultTaskWorker(ctx);
+    return finishTaskExecution(ctx, {
+      disposition: executionDisposition(result),
+      summary: resultText(result),
+      taskId,
+      taskRevision: assignedTaskRevision,
+      attemptId,
+    });
   }
 
   const taskSessionId =
@@ -166,9 +227,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ...ctx,
     task: routedTask,
   });
-  return ctx.done(
-    `Task ${task.id} routed inline to workflow ${workflow} under session ${taskSessionId}. Result: ${resultText(result)}`,
-  );
+  const summary = `Task ${task.id} routed inline to workflow ${workflow} under session ${taskSessionId}. Result: ${resultText(result)}`;
+  return finishTaskExecution(ctx, {
+    disposition: executionDisposition(result),
+    summary,
+    taskId,
+    taskRevision: assignedTaskRevision,
+    attemptId,
+  });
 }
 
 if (import.meta.main) {

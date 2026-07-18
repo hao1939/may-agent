@@ -277,7 +277,7 @@ describe("app event contract", () => {
     expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).toContain(
       "pendingActionV2: review-application-revisioned",
     );
-    expect(handler("aks-rp-e2e-task-execution-worker").handler?.task).toContain(
+    expect(appManifest.taskWorkflows?.["task-execution"]?.task).toContain(
       "pendingActionV2: completion-review-revisioned",
     );
     expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).not.toContain(
@@ -301,9 +301,14 @@ describe("app event contract", () => {
   });
 
   test("worker and controllers own their targeted task events", () => {
-    expect(handler("aks-rp-e2e-task-execution-worker")).toMatchObject({
-      handler: { workflow: "task-worker" },
-      accepts: [{ type: "project.task.assigned" }],
+    expect(taskRoute("aks-rp-e2e-task-execution")).toMatchObject({
+      accepts: [
+        { type: "project.task.assigned", target: { project: projectId } },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["task-execution"]).toMatchObject({
+      workflow: "task-worker",
+      agent: "aks-explorer",
     });
     expect(taskRoute("aks-rp-e2e-task-completion-review")).toMatchObject({
       accepts: [
@@ -388,6 +393,55 @@ describe("app event contract", () => {
         action: "spec-loop",
       }),
     ).toBeNull();
+  });
+
+  test("assignment events resolve to stable bounded execution tasks", () => {
+    const event = {
+      type: "project.task.assigned",
+      target: { project: projectId },
+      data: {
+        taskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        taskRevision: 12,
+        worker: "aks-explorer",
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "task-execution",
+      priority: "P0",
+      input: {
+        assignedTaskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        taskRevision: 12,
+        worker: "aks-explorer",
+      },
+    });
+    expect(resolveAksReconciliationTask(structuredClone(event))?.id).toBe(
+      first?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, attemptId: "attempt-8" },
+      })?.id,
+    ).not.toBe(first?.id);
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, taskRevision: 13 },
+      })?.id,
+    ).not.toBe(first?.id);
+
+    for (const missing of ["taskId", "attemptId"] as const) {
+      const data = { ...event.data };
+      delete data[missing];
+      expect(resolveAksReconciliationTask({ ...event, data })).toBeNull();
+    }
   });
 
   test("completion events resolve to stable bounded review tasks", () => {
@@ -576,6 +630,12 @@ describe("app event contract", () => {
 
   test("handled events are declared by generated workflow handlers", () => {
     expect(appManifest).not.toHaveProperty("events");
+    expect(handlersForEvent("project.task.assigned")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-execution")).toMatchObject({
+      accepts: [
+        { type: "project.task.assigned", target: { project: projectId } },
+      ],
+    });
     expect(handlersForEvent("project.task.completed")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-completion-review")).toMatchObject({
       accepts: [

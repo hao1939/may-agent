@@ -80,6 +80,27 @@ function completionReviewId(details: Record<string, unknown>): string {
   return `runtime/task-review/${readable || "task"}-${digest}`;
 }
 
+function taskExecutionId(details: Record<string, unknown>): string {
+  const taskId = detailString(details, "taskId", "task_id");
+  const attemptId = detailString(details, "attemptId", "attempt_id");
+  const revisionValue = details.taskRevision ?? details.task_revision;
+  const taskRevision =
+    typeof revisionValue === "number" &&
+    Number.isInteger(revisionValue) &&
+    revisionValue >= 0
+      ? revisionValue
+      : 0;
+  const digest = createHash("sha256")
+    .update(`${taskId}\0${taskRevision}\0${attemptId}`)
+    .digest("hex")
+    .slice(0, 16);
+  const readable = taskId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/task-execution/${readable || "task"}-${digest}`;
+}
+
 function detailStrings(
   details: Record<string, unknown>,
   ...names: string[]
@@ -133,6 +154,39 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.task.assigned") {
+    const assignedTaskId = detailString(details, "taskId", "task_id");
+    const attemptId = detailString(details, "attemptId", "attempt_id");
+    if (!assignedTaskId || !attemptId) return null;
+    const revisionValue = details.taskRevision ?? details.task_revision;
+    const taskRevision =
+      typeof revisionValue === "number" &&
+      Number.isInteger(revisionValue) &&
+      revisionValue >= 0
+        ? revisionValue
+        : 0;
+    const worker = detailString(details, "worker", "assignedWorker");
+    return {
+      id: taskExecutionId(details),
+      parentId: "project",
+      outcome: `Execute assignment ${assignedTaskId} revision ${taskRevision} attempt ${attemptId} exactly once and hand its result to review.`,
+      acceptance: [
+        "The assignment is rejected as stale or executed under its exact revision and attempt identity.",
+        "The worker result is durably recorded and its revisioned completion handoff is delivered for independent review.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "task-execution",
+      input: {
+        assignedTaskId,
+        attemptId,
+        taskRevision,
+        worker,
+      },
+      outputs: [".state/task-worker-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   if (event.type === "project.problem.investigation.requested") {
     const problemKey = detailString(details, "problemKey", "problem_key");
     if (!problemKey) return null;
@@ -430,6 +484,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "task-execution": {
+      workflow: "task-worker",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}\npendingActionV2: completion-review-revisioned`,
+      timeoutMs: 13 * 60 * 60_000,
+      context: taskTreeContext,
+    },
     "problem-solver": {
       workflow: "problem-solver",
       agent: "aks-explorer",
@@ -466,6 +527,17 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-execution",
+      enabled: true,
+      maxConcurrentTriggers: projectPolicyMaxConcurrent,
+      description:
+        "Executes each revisioned task assignment once through a bounded achieve task.",
+      accepts: [
+        { type: "project.task.assigned", target: { project: projectId } },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-problem-investigation",
       enabled: true,
@@ -581,25 +653,6 @@ export default defineProjectApp({
         },
       ],
       emits: ["project.task.assigned", "project.owner.requested"],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-task-execution-worker",
-      type: "job",
-      enabled: true,
-      description:
-        "Worker execution. Executes one dispatched task and emits task completion.",
-      maxConcurrentTriggers: projectPolicyMaxConcurrent,
-      handler: {
-        workflow: "task-worker",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}\npendingActionV2: completion-review-revisioned`,
-        timeoutMs: 13 * 60 * 60_000,
-      },
-      accepts: [
-        { type: "project.task.assigned", target: { project: projectId } },
-      ],
-      emits: ["project.task.completed", "project.task.tick"],
       context: taskTreeContext,
     },
     {
