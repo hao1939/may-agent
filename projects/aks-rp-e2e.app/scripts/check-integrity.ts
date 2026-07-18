@@ -42,6 +42,23 @@ type WorkflowHandler = {
   };
 };
 
+type TaskCapability = {
+  workflow?: string;
+  agent?: string;
+  task?: string;
+  timeoutMs?: number;
+  context?: string[];
+};
+
+type TaskRoute = {
+  name?: string;
+  enabled?: boolean;
+  description?: string;
+  maxConcurrentTriggers?: number;
+  accepts?: EventSelector[];
+  resolve?: unknown;
+};
+
 type Schedule = {
   id?: string;
   enabled?: boolean;
@@ -93,6 +110,9 @@ type ProjectApp = {
     branch?: string;
   };
   workflowHandlers?: WorkflowHandler[];
+  ownerEntry?: TaskCapability;
+  taskWorkflows?: Record<string, TaskCapability>;
+  taskRoutes?: TaskRoute[];
   schedules?: Schedule[];
   events?: EventSelector[];
   actions?: Record<string, AppAction>;
@@ -494,6 +514,77 @@ function validateWorkflowHandlers(
   }
 }
 
+function validateTaskCapability(
+  label: string,
+  capability: TaskCapability,
+  workflowNames: Set<string>,
+): void {
+  if (!capability.workflow) fail(`${label} missing workflow`);
+  else if (!workflowNames.has(capability.workflow)) {
+    fail(`${label} references missing workflows/${capability.workflow}.ts`);
+  }
+  if (!capability.task?.trim()) fail(`${label} missing task`);
+  if (capability.timeoutMs !== undefined && capability.timeoutMs < 10_000) {
+    fail(`${label} timeoutMs is too low`);
+  }
+  for (const contextPath of capability.context ?? []) {
+    const absolute = isAbsolute(contextPath)
+      ? contextPath
+      : resolve(appDir, "../..", contextPath);
+    if (!existsSync(absolute)) {
+      warn(`${label} context path is missing: ${contextPath}`);
+    }
+  }
+}
+
+function taskRouteSelectors(route: TaskRoute): EventSelector[] {
+  return Array.isArray(route.accepts) ? route.accepts : [];
+}
+
+function validateTaskReconciliation(
+  projectApp: ProjectApp,
+  workflowNames: Set<string>,
+): void {
+  const routes = projectApp.taskRoutes ?? [];
+  if (routes.length > 0 && !projectApp.ownerEntry) {
+    fail("taskRoutes require an ownerEntry fallback");
+  }
+  if (projectApp.ownerEntry) {
+    validateTaskCapability("ownerEntry", projectApp.ownerEntry, workflowNames);
+  }
+  for (const [name, capability] of Object.entries(
+    projectApp.taskWorkflows ?? {},
+  )) {
+    validateTaskCapability(`taskWorkflows.${name}`, capability, workflowNames);
+  }
+
+  const seen = new Set<string>();
+  for (const route of routes) {
+    if (!route.name) {
+      fail("taskRoutes entry missing name");
+      continue;
+    }
+    if (seen.has(route.name)) fail(`duplicate task route name: ${route.name}`);
+    seen.add(route.name);
+    if (!route.description?.trim()) {
+      fail(`task route ${route.name} missing description`);
+    }
+    if (typeof route.resolve !== "function") {
+      fail(`task route ${route.name} missing resolve()`);
+    }
+    if (route.enabled !== false && taskRouteSelectors(route).length === 0) {
+      fail(`task route ${route.name} must be triggered by an event`);
+    }
+    if (
+      route.maxConcurrentTriggers !== undefined &&
+      (!Number.isInteger(route.maxConcurrentTriggers) ||
+        route.maxConcurrentTriggers <= 0)
+    ) {
+      fail(`task route ${route.name} has invalid maxConcurrentTriggers`);
+    }
+  }
+}
+
 function validateSchedules(projectApp: ProjectApp): void {
   const seen = new Set<string>();
   for (const schedule of projectApp.schedules ?? []) {
@@ -651,6 +742,27 @@ function validateEventGraph(projectApp: ProjectApp): void {
           key,
           handler.name ?? "unnamed-handler",
         );
+    }
+  }
+  for (const route of projectApp.taskRoutes ?? []) {
+    if (route.enabled === false) continue;
+    for (const selector of taskRouteSelectors(route)) {
+      const event = eventTypeFromSelector(selector);
+      if (event) {
+        addMapValue(
+          handlerConsumers,
+          event,
+          route.name ?? "unnamed-task-route",
+        );
+      }
+      const key = selectorConflictKey(selector);
+      if (key) {
+        addMapValue(
+          handlerSelectorConsumers,
+          key,
+          route.name ?? "unnamed-task-route",
+        );
+      }
     }
   }
 
@@ -1085,6 +1197,7 @@ const workflowNames = listWorkflowNames();
 validateProjectAndApp(projectJson, projectApp, owner);
 validateFeatureScenarioCarrierContracts(projectApp);
 validateWorkflowHandlers(projectApp, workflowNames);
+validateTaskReconciliation(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);
 validateTaskTree(taskTree, workflowNames);

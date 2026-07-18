@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import app from "../app.ts";
+import app, { resolveAksReconciliationTask } from "../app.ts";
 
 type WorkflowHandler = {
   name?: string;
@@ -9,6 +9,11 @@ type WorkflowHandler = {
     task?: string;
   };
   emits?: string[];
+};
+
+type TaskRoute = {
+  name?: string;
+  accepts?: EventSelector[];
 };
 
 type EventSelector =
@@ -31,6 +36,9 @@ type Schedule = {
 const projectId = "aks-rp-e2e";
 const appManifest = app as {
   workflowHandlers?: WorkflowHandler[];
+  taskRoutes?: TaskRoute[];
+  taskWorkflows?: Record<string, { workflow?: string; agent?: string }>;
+  ownerEntry?: { workflow?: string; agent?: string };
   schedules?: Schedule[];
   eventGraph?: Record<string, unknown> & {
     externalEvents?: string[];
@@ -45,6 +53,12 @@ function handler(name: string): WorkflowHandler {
   );
   if (!found) throw new Error(`Missing workflow handler ${name}`);
   return structuredClone(found);
+}
+
+function taskRoute(name: string): TaskRoute {
+  const found = appManifest.taskRoutes?.find((entry) => entry.name === name);
+  if (!found) throw new Error(`Missing task route ${name}`);
+  return found;
 }
 
 function handlerEvents(name: string): string[] {
@@ -71,7 +85,10 @@ function scheduleEvents(schedule: Schedule): Array<Record<string, unknown>> {
 }
 
 function allHandlerSelectors(): EventSelector[] {
-  return (appManifest.workflowHandlers ?? []).flatMap(handlerSelectors);
+  return [
+    ...(appManifest.workflowHandlers ?? []).flatMap(handlerSelectors),
+    ...(appManifest.taskRoutes ?? []).flatMap((route) => route.accepts ?? []),
+  ];
 }
 
 function eventTarget(event: Record<string, unknown>): Record<string, unknown> {
@@ -307,18 +324,49 @@ describe("app event contract", () => {
         }),
       ]),
     });
-    expect(handler("aks-rp-e2e-feature-compact-loop-controller")).toMatchObject(
-      {
-        handler: { workflow: "feature-compact-loop-controller" },
-        accepts: expect.arrayContaining([
-          expect.objectContaining({
-            type: "project.task.tick",
-            target: expect.objectContaining({ project: projectId }),
-            actions: ["feature-compact-loop"],
-          }),
-        ]),
-      },
-    );
+    expect(taskRoute("aks-rp-e2e-task-feature-compact-loop")).toMatchObject({
+      accepts: expect.arrayContaining([
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: expect.objectContaining({ project: projectId }),
+          actions: ["feature-compact-loop"],
+        }),
+      ]),
+    });
+    expect(
+      appManifest.taskWorkflows?.["feature-compact-loop-controller"],
+    ).toMatchObject({
+      workflow: "feature-compact-loop-controller",
+      agent: "aks-explorer",
+    });
+    expect(appManifest.ownerEntry).toMatchObject({
+      workflow: "project-planner",
+      agent: "app-ops",
+    });
+  });
+
+  test("feature compact wakes resolve to one stable maintain task", () => {
+    expect(
+      resolveAksReconciliationTask({
+        type: "project.task.tick",
+        action: "feature-compact-loop",
+        target: { project: projectId, taskId: "aks-feature-compact-loop" },
+        data: { reason: "test-wake" },
+      }),
+    ).toMatchObject({
+      id: "aks-feature-compact-loop",
+      parentId: "project",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "feature-compact-loop-controller",
+      input: { maxConcurrent: 20 },
+    });
+    expect(
+      resolveAksReconciliationTask({
+        type: "project.task.tick",
+        action: "spec-loop",
+      }),
+    ).toBeNull();
   });
 
   test("stall review, problem, and approval workflows use explicit request events", () => {

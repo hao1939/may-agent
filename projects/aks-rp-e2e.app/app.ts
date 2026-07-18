@@ -1,4 +1,8 @@
-import { defineProjectApp } from "@may-agent/sdk";
+import {
+  defineProjectApp,
+  eventDetails,
+  type ProjectAppTaskIntent,
+} from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
 const projectPolicyMaxConcurrent = 80;
@@ -15,6 +19,49 @@ const taskTreeContext = [
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go",
   "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go",
 ];
+
+function taskIdFromEvent(event: Record<string, unknown>): string {
+  const target =
+    event.target &&
+    typeof event.target === "object" &&
+    !Array.isArray(event.target)
+      ? (event.target as Record<string, unknown>)
+      : {};
+  const value = target.taskId ?? event.taskId ?? event.task_id;
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function resolveAksReconciliationTask(
+  event: Record<string, unknown>,
+): ProjectAppTaskIntent | null {
+  const details = eventDetails(event);
+  const action = String(event.action ?? details.action ?? "");
+  if (event.type !== "project.task.tick" || action !== "feature-compact-loop") {
+    return null;
+  }
+  const taskId = taskIdFromEvent(event) || featureCompactLoopTaskId;
+  return {
+    id: taskId,
+    parentId: "project",
+    outcome:
+      "Generate feature-owned compact plans that cover every spec in each feature and prove each compacted test package with a passing live Azure DevOps staging pipeline run.",
+    acceptance: [
+      "Every compact state item is done only after the feature compact plan covers the full feature-owned spec set and the live ADO staging pipeline passed.",
+      "Local package generation or check-mode Vitest success is intermediate evidence only; records without an ADO run id or failed live run remain pending/error.",
+      "Each non-pass compact feature has an exact repair-and-rerun path or an escalation record after bounded repo-local fixes are exhausted.",
+      "Controller pulses keep a bounded child frontier filled from pending/error compact features until all feature compact packages pass live through ADO.",
+    ],
+    mode: "maintain",
+    owner: "aks-explorer",
+    workflow: "feature-compact-loop-controller",
+    input: { maxConcurrent: 20 },
+    outputs: [
+      ".state/feature-compact-loop/state.json",
+      "../aks-rp-e2e/features/",
+    ],
+    priority: "P1",
+  };
+}
 
 export default defineProjectApp({
   id: projectId,
@@ -186,6 +233,47 @@ export default defineProjectApp({
           },
         },
       ],
+    },
+  ],
+
+  ownerEntry: {
+    workflow: "project-planner",
+    agent: "app-ops",
+    task: `${appTaskContext}\nagent: app-ops\nworker: aks-explorer\ndomainWorker: aks-explorer\nopsWorker: app-ops\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nconditionV2: exact-ado-revisioned`,
+    timeoutMs: 3_600_000,
+    context: taskTreeContext,
+  },
+
+  taskWorkflows: {
+    "feature-compact-loop-controller": {
+      workflow: "feature-compact-loop-controller",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nmaxConcurrent: 20`,
+      timeoutMs: 600_000,
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e/design/feature-compact-loop.md",
+        "projects/aks-rp-e2e/features/",
+        "projects/aks-rp-e2e/runner/feature-compact.ts",
+      ],
+    },
+  },
+
+  taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-feature-compact-loop",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Reconciles the standing feature-compact responsibility through its proven bounded workflow.",
+      accepts: [
+        {
+          type: "project.task.tick",
+          target: { project: projectId },
+          actions: ["feature-compact-loop"],
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
     },
   ],
 
@@ -444,34 +532,6 @@ export default defineProjectApp({
         "projects/aks-rp-e2e/features/README.md",
         "projects/aks-rp-e2e/features/SCHEMA.md",
         "projects/aks-rp-e2e/features/",
-      ],
-    },
-    {
-      name: "aks-rp-e2e-feature-compact-loop-controller",
-      type: "job",
-      enabled: true,
-      description:
-        "Deterministic task controller. Pulses long-lived feature compact loop tasks and keeps their bounded child frontier filled.",
-      maxConcurrentTriggers: 1,
-      handler: {
-        workflow: "feature-compact-loop-controller",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: 20`,
-        timeoutMs: 600_000,
-      },
-      accepts: [
-        {
-          type: "project.task.tick",
-          target: { project: projectId },
-          actions: ["feature-compact-loop"],
-        },
-      ],
-      emits: ["project.task.assigned"],
-      context: [
-        ...taskTreeContext,
-        "projects/aks-rp-e2e/design/feature-compact-loop.md",
-        "projects/aks-rp-e2e/features/",
-        "projects/aks-rp-e2e/runner/feature-compact.ts",
       ],
     },
     {
