@@ -59,10 +59,62 @@ function reviewedApplicationId(details: Record<string, unknown>): string {
   return `runtime/review-application/${readable || "task"}-${digest}`;
 }
 
+function completionReviewId(details: Record<string, unknown>): string {
+  const taskId = detailString(details, "taskId", "task_id");
+  const attemptId = detailString(details, "attemptId", "attempt_id");
+  const revisionValue = details.taskRevision ?? details.task_revision;
+  const taskRevision =
+    typeof revisionValue === "number" &&
+    Number.isInteger(revisionValue) &&
+    revisionValue >= 0
+      ? revisionValue
+      : 0;
+  const digest = createHash("sha256")
+    .update(`${taskId}\0${taskRevision}\0${attemptId}`)
+    .digest("hex")
+    .slice(0, 16);
+  const readable = taskId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return `runtime/task-review/${readable || "task"}-${digest}`;
+}
+
 export function resolveAksReconciliationTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
   const details = eventDetails(event);
+  if (event.type === "project.task.completed") {
+    const completedTaskId = detailString(details, "taskId", "task_id");
+    const attemptId = detailString(details, "attemptId", "attempt_id");
+    if (!completedTaskId || !attemptId) return null;
+    const revisionValue = details.taskRevision ?? details.task_revision;
+    const taskRevision =
+      typeof revisionValue === "number" &&
+      Number.isInteger(revisionValue) &&
+      revisionValue >= 0
+        ? revisionValue
+        : 0;
+    return {
+      id: completionReviewId(details),
+      parentId: "project",
+      outcome: `Review completion of ${completedTaskId} attempt ${attemptId} exactly once and deliver its structured disposition.`,
+      acceptance: [
+        "The completion is checked against the current task revision and attempt without mutating project state directly.",
+        "A structured review decision is durably recorded and delivered for application, or the completion is recorded as stale without changing newer task state.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "task-reviewer",
+      input: {
+        completedTaskId,
+        attemptId,
+        taskRevision,
+      },
+      outputs: [".state/task-reviewer-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   if (event.type === "project.task.reviewed") {
     const reviewedTaskId = detailString(details, "taskId", "task_id");
     const attemptId = detailString(details, "attemptId", "attempt_id");
@@ -305,6 +357,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "task-reviewer": {
+      workflow: "task-reviewer",
+      agent: "aks-reviewer",
+      task: `${appTaskContext}\nagent: aks-reviewer\nmaxAttempts: 1\npendingActionV2: review-application-revisioned`,
+      timeoutMs: 900_000,
+      context: taskTreeContext,
+    },
     "reviewed-task-applier": {
       workflow: "project-planner",
       agent: "app-ops",
@@ -327,6 +386,17 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-completion-review",
+      enabled: true,
+      maxConcurrentTriggers: projectPolicyMaxConcurrent,
+      description:
+        "Reviews each revisioned task completion once through a bounded achieve task.",
+      accepts: [
+        { type: "project.task.completed", target: { project: projectId } },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-reviewed-application",
       enabled: true,
@@ -417,25 +487,6 @@ export default defineProjectApp({
         },
       ],
       emits: ["project.task.assigned", "project.owner.requested"],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-task-reviewer",
-      type: "job",
-      enabled: true,
-      description:
-        "Read-only task completion review. Emits structured review decisions for the planner to apply.",
-      maxConcurrentTriggers: projectPolicyMaxConcurrent,
-      handler: {
-        workflow: "task-reviewer",
-        includeEvent: true,
-        task: `${appTaskContext}\nagent: aks-reviewer\nmaxAttempts: 1\npendingActionV2: review-application-revisioned`,
-        timeoutMs: 900_000,
-      },
-      accepts: [
-        { type: "project.task.completed", target: { project: projectId } },
-      ],
-      emits: ["project.task.reviewed"],
       context: taskTreeContext,
     },
     {

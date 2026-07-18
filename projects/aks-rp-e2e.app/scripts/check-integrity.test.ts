@@ -345,6 +345,50 @@ describe("check-integrity durable loop contracts", () => {
     );
   });
 
+  test("accepts explicit task workflow binding names in reconciler-owned tasks", async () => {
+    const fixture = await makeFixture();
+    const appPath = join(fixture.appDir, "app.ts");
+    const appSource = await Bun.file(appPath).text();
+    await writeFile(
+      appPath,
+      appSource.replace(
+        "  schedules: [],",
+        `  taskWorkflows: {
+    "reviewed-task-applier": {
+      workflow: "feature-reference-loop-controller",
+      task: "apply one review",
+      timeoutMs: 60000,
+      context: [],
+    },
+  },
+  schedules: [],`,
+      ),
+      "utf8",
+    );
+
+    const treePath = resolveTaskTreePath(fixture.appDir);
+    const tree = JSON.parse(await Bun.file(treePath).text());
+    tree.tasks.project.children.push("runtime/review-application/test-review");
+    tree.tasks["runtime/review-application/test-review"] = {
+      id: "runtime/review-application/test-review",
+      parent_id: "project",
+      state: "backlog",
+      children: [],
+      goal: "Apply one review exactly once.",
+      outputs: [".state/planner-runs.jsonl"],
+      acceptance: ["The review is applied or recorded stale."],
+      workflow: "reviewed-task-applier",
+      reconcile_mode: "achieve",
+      context: { reconciliation: { phase: "converged" } },
+    };
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await runIntegrity(fixture.appDir);
+
+    expect(result.exitCode, `${result.stdout}${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("App integrity OK");
+  });
+
   test("rejects a runtime root goal that replaces the configured project goal", async () => {
     const fixture = await makeFixture();
     await writeFile(

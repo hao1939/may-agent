@@ -274,13 +274,13 @@ describe("app event contract", () => {
   });
 
   test("manifest opts only revisioned review handoffs into PendingAction V2 delivery", () => {
-    expect(handler("aks-rp-e2e-task-reviewer").handler?.task).toContain(
+    expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).toContain(
       "pendingActionV2: review-application-revisioned",
     );
     expect(handler("aks-rp-e2e-task-execution-worker").handler?.task).toContain(
       "pendingActionV2: completion-review-revisioned",
     );
-    expect(handler("aks-rp-e2e-task-reviewer").handler?.task).not.toContain(
+    expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).not.toContain(
       "pendingActionV2: completion-review-revisioned",
     );
     for (const name of [
@@ -305,10 +305,14 @@ describe("app event contract", () => {
       handler: { workflow: "task-worker" },
       accepts: [{ type: "project.task.assigned" }],
     });
-    expect(handler("aks-rp-e2e-task-reviewer")).toMatchObject({
-      handler: { workflow: "task-reviewer" },
-      accepts: [{ type: "project.task.completed" }],
-      emits: ["project.task.reviewed"],
+    expect(taskRoute("aks-rp-e2e-task-completion-review")).toMatchObject({
+      accepts: [
+        { type: "project.task.completed", target: { project: projectId } },
+      ],
+    });
+    expect(appManifest.taskWorkflows?.["task-reviewer"]).toMatchObject({
+      workflow: "task-reviewer",
+      agent: "aks-reviewer",
     });
     expect(handler("aks-rp-e2e-spec-loop-controller")).toMatchObject({
       handler: { workflow: "spec-loop-controller" },
@@ -386,6 +390,54 @@ describe("app event contract", () => {
     ).toBeNull();
   });
 
+  test("completion events resolve to stable bounded review tasks", () => {
+    const event = {
+      type: "project.task.completed",
+      target: { project: projectId },
+      data: {
+        taskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        taskRevision: 12,
+        completion: { result: "done", summary: "Verified live." },
+      },
+    };
+    const first = resolveAksReconciliationTask(event);
+
+    expect(first).toMatchObject({
+      parentId: "project",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "task-reviewer",
+      priority: "P0",
+      input: {
+        completedTaskId: "domain/network-cni",
+        attemptId: "attempt-7",
+        taskRevision: 12,
+      },
+    });
+    expect(resolveAksReconciliationTask(structuredClone(event))?.id).toBe(
+      first?.id,
+    );
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, attemptId: "attempt-8" },
+      })?.id,
+    ).not.toBe(first?.id);
+    expect(
+      resolveAksReconciliationTask({
+        ...event,
+        data: { ...event.data, taskRevision: 13 },
+      })?.id,
+    ).not.toBe(first?.id);
+
+    for (const missing of ["taskId", "attemptId"] as const) {
+      const data = { ...event.data };
+      delete data[missing];
+      expect(resolveAksReconciliationTask({ ...event, data })).toBeNull();
+    }
+  });
+
   test("review events resolve to stable bounded achieve tasks", () => {
     const event = {
       type: "project.task.reviewed",
@@ -454,9 +506,12 @@ describe("app event contract", () => {
 
   test("handled events are declared by generated workflow handlers", () => {
     expect(appManifest).not.toHaveProperty("events");
-    expect(handlersForEvent("project.task.completed")).toEqual([
-      "aks-rp-e2e-task-reviewer",
-    ]);
+    expect(handlersForEvent("project.task.completed")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-completion-review")).toMatchObject({
+      accepts: [
+        { type: "project.task.completed", target: { project: projectId } },
+      ],
+    });
     expect(handlersForEvent("project.task.reviewed")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
       accepts: [

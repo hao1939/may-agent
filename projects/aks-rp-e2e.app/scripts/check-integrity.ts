@@ -852,6 +852,7 @@ function validateEventGraph(projectApp: ProjectApp): void {
 function validateTaskTree(
   tree: TaskTree | null,
   appWorkflowNames: Set<string>,
+  taskWorkflowNames: Set<string>,
 ): void {
   if (!tree) return;
   const tasks = tree.tasks ?? {};
@@ -898,6 +899,7 @@ function validateTaskTree(
     if (
       task.workflow &&
       !appWorkflowNames.has(task.workflow) &&
+      !taskWorkflowNames.has(task.workflow) &&
       !domainWorkflowNames.has(task.workflow)
     ) {
       fail(`task ${taskId} references unknown workflow ${task.workflow}`);
@@ -905,6 +907,7 @@ function validateTaskTree(
     if (
       task.workflow &&
       appWorkflowNames.has(task.workflow) &&
+      !taskWorkflowNames.has(task.workflow) &&
       !["task-worker", "default-task-worker"].includes(task.workflow) &&
       !workflowExportsContract(task.workflow)
     ) {
@@ -1200,7 +1203,11 @@ validateWorkflowHandlers(projectApp, workflowNames);
 validateTaskReconciliation(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);
-validateTaskTree(taskTree, workflowNames);
+validateTaskTree(
+  taskTree,
+  workflowNames,
+  new Set(Object.keys(projectApp.taskWorkflows ?? {})),
+);
 validateProjectRootGoal(projectJson, taskTree, "runtime task tree");
 validateProjectRootGoal(projectJson, taskSeed, "task seed");
 validateDurableLoopTasks(taskTree);
