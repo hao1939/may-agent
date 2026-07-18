@@ -89,7 +89,9 @@ function summarizeRun(runDir: string): Record<string, unknown> {
   const trialRows = Array.isArray(manifest.trials) ? manifest.trials : [];
   const counts = { pass: 0, fail: 0, invalid: 0 };
   for (const row of trialRows) {
-    const verdict = String(row.machine_verdict ?? "invalid") as keyof typeof counts;
+    const verdict = String(
+      row.machine_verdict ?? "invalid",
+    ) as keyof typeof counts;
     if (verdict in counts) counts[verdict]++;
   }
   const unapproved = trialRows
@@ -122,12 +124,7 @@ function regressionFailure(
     .update(JSON.stringify({ benchmark, reason, evidence }))
     .digest("hex")
     .slice(0, 20);
-  const failureDir = join(
-    ctx.projectsRoot,
-    "gym.app",
-    ".state",
-    "failures",
-  );
+  const failureDir = join(ctx.projectsRoot, "gym.app", ".state", "failures");
   const failurePath = join(failureDir, `${failureKey}.json`);
   mkdirSync(failureDir, { recursive: true });
   writeFileSync(
@@ -160,7 +157,12 @@ function regressionFailure(
     requestKey: `regression-runtime-${failureKey}`,
     failurePath,
   });
-  return ctx.blocked(reason, { failurePath, ...evidence });
+  return ctx.done(reason, {
+    disposition: "converged",
+    summary: reason,
+    evidence: [failurePath],
+    actions: [],
+  });
 }
 
 export async function runRegression(
@@ -168,25 +170,20 @@ export async function runRegression(
   processRunner: ProcessRunner = runProcess,
 ): Promise<WorkflowResult> {
   const details = triggerDetails(ctx.task);
-  if (!details) return ctx.blocked("Regression trigger event is missing or invalid");
+  if (!details)
+    return ctx.blocked("Regression trigger event is missing or invalid");
 
   let benchmark: string;
   let agent: string;
   let trialCount: number;
   let scenarios: string[];
   try {
-    benchmark = validatedName(
-      details.benchmark,
-      "benchmark",
-      "may-alignment",
-    );
+    benchmark = validatedName(details.benchmark, "benchmark", "may-alignment");
     agent = validatedName(details.agent, "agent", "may");
     trialCount = trials(details.trials);
     scenarios = requestedScenarios(details);
   } catch (error) {
-    return ctx.blocked(
-      error instanceof Error ? error.message : String(error),
-    );
+    return ctx.blocked(error instanceof Error ? error.message : String(error));
   }
 
   const gymRoot = join(ctx.projectsRoot, "gym");

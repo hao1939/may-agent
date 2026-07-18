@@ -7,13 +7,20 @@ production-failure intake, owner review, and notifications.
 ## Autonomous flow
 
 ```text
-evaluation.reviewed ─> incident intake ─> owner proposal ─> human approval
-daily schedule ──────> regression run ──> owner review when needed
+evaluation.reviewed ─> incident task ─> intake workflow ─> review task
+daily schedule ──────> regression task ─> run workflow ───> review task
+task workflow failure ──────────────────> Gym owner fallback
 ```
 
 The app does not approve ground truth, rewrite evidence, merge changes, or
 expose infrastructure APIs inside the evaluated May execution. It invokes the
 same standalone Gym CLI a developer or CI would use.
+
+Events wake reconciliation. Each incident, regression request, and review
+request resolves to stable task intent. The task tree records ownership,
+attempts, and outcomes; it does not schedule work. Known tasks bind to the
+existing Gym workflows, while an unavailable or blocked workflow falls back to
+the Gym owner review workflow.
 
 ## Actions
 

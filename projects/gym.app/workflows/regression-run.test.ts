@@ -3,10 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
-import {
-  runRegression,
-  type ProcessRunner,
-} from "./regression-run.ts";
+import { runRegression, type ProcessRunner } from "./regression-run.ts";
 
 function task(event: Record<string, unknown>): string {
   return `app: test\n\n## Trigger Event\n\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
@@ -138,6 +135,9 @@ test("regression process failure becomes durable review work", async () => {
     emit(event: Record<string, unknown>) {
       emitted.push(event);
     },
+    done(summary: string, output?: unknown) {
+      return { type: "done" as const, summary, output };
+    },
     blocked(reason: string, context?: unknown) {
       return { type: "blocked" as const, reason, context };
     },
@@ -150,8 +150,11 @@ test("regression process failure becomes durable review work", async () => {
   }));
 
   expect(result).toMatchObject({
-    type: "blocked",
-    reason: "Gym regression process exited 2",
+    type: "done",
+    summary: "Gym regression process exited 2",
+    output: {
+      disposition: "converged",
+    },
   });
   expect(emitted.map((event) => event.type)).toEqual([
     "gym.regression.failed",

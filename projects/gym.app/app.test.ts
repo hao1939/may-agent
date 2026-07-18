@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
-import gymApp, { routeGymEvent } from "./app.ts";
+import gymApp, { resolveGymTask, routeGymEvent } from "./app.ts";
 
 function context(emitted: Array<Record<string, unknown>>): ProjectAppContext {
   return {
@@ -25,11 +25,18 @@ describe("gym app manifest", () => {
         expect.objectContaining({ id: "may-alignment-nightly", enabled: true }),
       ]),
     );
-    expect(gymApp.workflowHandlers?.map((handler) => handler.name)).toEqual([
-      "gym-incident-intake",
-      "gym-regression-run",
-      "gym-review-and-propose",
+    expect(gymApp.workflowHandlers).toBeUndefined();
+    expect(gymApp.taskRoutes?.map((route) => route.name)).toEqual([
+      "gym-task-incident-intake",
+      "gym-task-regression-run",
+      "gym-task-review-and-propose",
     ]);
+    expect(Object.keys(gymApp.taskWorkflows ?? {})).toEqual([
+      "incident-intake",
+      "regression-run",
+      "review-and-propose",
+    ]);
+    expect(gymApp.ownerEntry?.workflow).toBe("owner-review");
     expect(Object.keys(gymApp.actions)).toEqual([
       "run-regression",
       "report-incident",
@@ -38,6 +45,62 @@ describe("gym app manifest", () => {
       readFileSync(new URL("./agents/gym/agent.json", import.meta.url), "utf8"),
     );
     expect(ownerConfig.tools).toEqual(["read-only", "finish"]);
+  });
+});
+
+describe("gym task reconciliation", () => {
+  test("deduplicates incident and review work by semantic identity", () => {
+    const firstIncident = resolveGymTask({
+      type: "gym.incident.detected",
+      eventId: 101,
+      params: { evaluation: { sessionId: "s_failed" } },
+    });
+    const duplicateIncident = resolveGymTask({
+      type: "gym.incident.detected",
+      eventId: 102,
+      params: { evaluation: { sessionId: "s_failed" } },
+    });
+    expect(firstIncident?.id).toBe(duplicateIncident?.id);
+    expect(firstIncident).toMatchObject({
+      parentId: "incident-learning",
+      mode: "achieve",
+      workflow: "incident-intake",
+    });
+
+    const firstReview = resolveGymTask({
+      type: "gym.review.requested",
+      eventId: 103,
+      requestKey: "incident-s_failed",
+    });
+    const duplicateReview = resolveGymTask({
+      type: "gym.review.requested",
+      eventId: 104,
+      requestKey: "incident-s_failed",
+    });
+    expect(firstReview?.id).toBe(duplicateReview?.id);
+  });
+
+  test("treats each regression request as a distinct bounded run", () => {
+    const first = resolveGymTask({
+      type: "gym.regression.requested",
+      eventId: 201,
+      params: { benchmark: "may-alignment" },
+    });
+    const second = resolveGymTask({
+      type: "gym.regression.requested",
+      eventId: 202,
+      params: { benchmark: "may-alignment" },
+    });
+    expect(first?.id).not.toBe(second?.id);
+    expect(first).toMatchObject({
+      parentId: "regression-assurance",
+      mode: "achieve",
+      workflow: "regression-run",
+    });
+  });
+
+  test("requires a durable event identity", () => {
+    expect(resolveGymTask({ type: "gym.regression.requested" })).toBeNull();
   });
 });
 
