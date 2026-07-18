@@ -57,6 +57,16 @@ type PlannerRun = {
   result?: string;
 };
 
+type PlannerOwnerStepSession = {
+  sessionId: string;
+  source: string;
+  status: string;
+  outcome: string;
+  error: string;
+  startedAt: number | null;
+  endedAt: number | null;
+};
+
 type ReviewApplyCoverage = {
   coveringTaskId: string;
   state: string;
@@ -3176,6 +3186,71 @@ function plannerRuns(): PlannerRun[] {
   }
 }
 
+function plannerOwnerStepSessions(): PlannerOwnerStepSession[] {
+  return listFiles(sessionsDirPath, (path) => path.endsWith("/meta.json"))
+    .map((metaPath) => {
+      const meta = readJson<Record<string, unknown>>(metaPath, {});
+      const result = readJson<Record<string, unknown>>(
+        join(dirname(metaPath), "result.json"),
+        {},
+      );
+      const sessionId =
+        typeof meta.sessionId === "string"
+          ? meta.sessionId
+          : typeof result.sessionId === "string"
+            ? result.sessionId
+            : "";
+      const source =
+        typeof meta.source === "string"
+          ? meta.source
+          : typeof result.source === "string"
+            ? result.source
+            : "";
+      const status =
+        typeof result.status === "string"
+          ? result.status
+          : typeof meta.status === "string"
+            ? meta.status
+            : "";
+      const outcome =
+        typeof result.outcome === "string"
+          ? result.outcome
+          : typeof meta.outcome === "string"
+            ? meta.outcome
+            : "";
+      const error =
+        typeof result.error === "string"
+          ? result.error
+          : typeof meta.error === "string"
+            ? meta.error
+            : "";
+      const startedAt =
+        typeof meta.startedAt === "number" && Number.isFinite(meta.startedAt)
+          ? meta.startedAt
+          : null;
+      const endedAtCandidates = [result.endedAt, meta.endedAt];
+      const endedAt = endedAtCandidates.find(
+        (value): value is number =>
+          typeof value === "number" && Number.isFinite(value),
+      );
+      return {
+        sessionId,
+        source,
+        status,
+        outcome,
+        error,
+        startedAt,
+        endedAt: endedAt ?? null,
+      } satisfies PlannerOwnerStepSession;
+    })
+    .filter(
+      (session) =>
+        session.sessionId.startsWith("s_project_planner_planning_update_") &&
+        session.source === "workflow:project-planner",
+    )
+    .sort((a, b) => (a.endedAt ?? 0) - (b.endedAt ?? 0));
+}
+
 function plannerRunTimestamp(run: PlannerRun): number | null {
   const parsed = typeof run.ts === "string" ? Date.parse(run.ts) : Number.NaN;
   return Number.isFinite(parsed) ? parsed : null;
@@ -3189,9 +3264,51 @@ function recentPlannerRuns(hours: number): PlannerRun[] {
   });
 }
 
-function plannerTimedOut(run: PlannerRun): boolean {
+function matchedPlannerOwnerStepSession(
+  run: PlannerRun,
+): PlannerOwnerStepSession | null {
+  const runTs = plannerRunTimestamp(run);
+  if (runTs == null) return null;
+  const maxSkewMs = 30_000;
+  let best: PlannerOwnerStepSession | null = null;
+  let bestSkew = Number.POSITIVE_INFINITY;
+  for (const session of plannerOwnerStepSessions()) {
+    if (session.endedAt == null) continue;
+    const skew = Math.abs(session.endedAt - runTs);
+    if (skew > maxSkewMs || skew >= bestSkew) continue;
+    best = session;
+    bestSkew = skew;
+  }
+  return best;
+}
+
+function plannerResultMentionsTimeout(run: PlannerRun): boolean {
   const result = (run.result ?? "").toLowerCase();
   return result.includes("timed out after");
+}
+
+function plannerSessionTimedOut(session: PlannerOwnerStepSession): boolean {
+  const status = session.status.toLowerCase();
+  const outcome = session.outcome.toLowerCase();
+  const error = session.error.toLowerCase();
+  if (error.includes("timed out") || error.includes("request timed out")) {
+    return true;
+  }
+  if (error.includes("aborted") || error.includes("stream ended before")) {
+    return false;
+  }
+  return status === "error" || outcome === "error";
+}
+
+function plannerTimedOut(run: PlannerRun): boolean {
+  if (!plannerResultMentionsTimeout(run)) {
+    return false;
+  }
+  const matchedSession = matchedPlannerOwnerStepSession(run);
+  if (!matchedSession) {
+    return true;
+  }
+  return plannerSessionTimedOut(matchedSession);
 }
 
 function plannerTouchesOwnerSteps(run: PlannerRun): boolean {
@@ -3211,6 +3328,16 @@ function plannerTimeoutCount24h(runs: PlannerRun[]): number {
 function isSlowPlannerRun(run: PlannerRun): boolean {
   if (!plannerTouchesOwnerSteps(run) || plannerTimedOut(run)) {
     return false;
+  }
+  const matchedSession = matchedPlannerOwnerStepSession(run);
+  if (
+    matchedSession &&
+    [matchedSession.status, matchedSession.outcome].some((value) => {
+      const normalized = value.toLowerCase();
+      return normalized === "interrupted" || normalized === "cancelled";
+    })
+  ) {
+    return true;
   }
   if (typeof run.durationMs === "number" && Number.isFinite(run.durationMs)) {
     return run.durationMs >= 180_000;

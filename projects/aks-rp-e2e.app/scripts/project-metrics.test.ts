@@ -330,6 +330,49 @@ async function writeSessionTranscript(
   );
 }
 
+async function writePlannerOwnerStepSession(
+  fixture: Awaited<ReturnType<typeof makeFixture>>,
+  input: {
+    sessionId: string;
+    startedAt?: number;
+    endedAt: number;
+    status: string;
+    outcome?: string;
+    error?: string;
+  },
+) {
+  const sessionDir = join(fixture.sessionsDir, input.sessionId);
+  await mkdir(sessionDir, { recursive: true });
+  await writeFile(
+    join(sessionDir, "meta.json"),
+    `${JSON.stringify(
+      {
+        sessionId: input.sessionId,
+        source: "workflow:project-planner",
+        status: input.status,
+        startedAt: input.startedAt ?? input.endedAt - 60_000,
+        endedAt: input.endedAt,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    join(sessionDir, "result.json"),
+    `${JSON.stringify(
+      {
+        sessionId: input.sessionId,
+        status: input.status,
+        outcome: input.outcome ?? input.status,
+        error: input.error ?? null,
+        endedAt: input.endedAt,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 async function metricValue(
   fixture: Awaited<ReturnType<typeof makeFixture>>,
   metricId: string,
@@ -4959,5 +5002,62 @@ describe("project metrics", () => {
     expect(
       await metricValue(fixture, "aks-rp-e2e.planner.slow-count-24h"),
     ).toBe("2");
+  });
+
+  test("uses matched planning-update session results to exclude interrupted timeout-shaped summaries", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_running" });
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+    await mkdir(join(fixture.appDir, ".state"), { recursive: true });
+    const interruptedTs = Date.now() - 15_000;
+    const timeoutTs = Date.now() - 5_000;
+    await writeFile(
+      join(fixture.appDir, ".state", "planner-runs.jsonl"),
+      [
+        JSON.stringify({
+          ts: new Date(interruptedTs).toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          result: 'Agent step "app-ops" timed out after 360000ms',
+        }),
+        JSON.stringify({
+          ts: new Date(timeoutTs).toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          result: 'Agent step "app-ops" timed out after 360000ms',
+        }),
+      ].join("\n") + "\n",
+    );
+    await writePlannerOwnerStepSession(fixture, {
+      sessionId: "s_project_planner_planning_update_fixture_interrupted",
+      endedAt: interruptedTs + 400,
+      status: "interrupted",
+      outcome: "interrupted",
+      error: "OpenAI Responses stream ended before a terminal response event",
+    });
+    await writePlannerOwnerStepSession(fixture, {
+      sessionId: "s_project_planner_planning_update_fixture_timeout",
+      endedAt: timeoutTs + 500,
+      status: "error",
+      outcome: "error",
+      error: "Request timed out.",
+    });
+
+    expect(await metricValue(fixture, "aks-rp-e2e.planner.timeout-24h")).toBe(
+      "1",
+    );
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.planner.slow-count-24h"),
+    ).toBe("1");
   });
 });
