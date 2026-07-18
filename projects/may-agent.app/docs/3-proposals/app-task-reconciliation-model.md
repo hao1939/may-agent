@@ -664,7 +664,10 @@ authority during that observation window.
 
 The next recommended AKS boundary is the spec loop, but only after its
 watchdog-owned external waits are represented as exact Conditions. Do not
-recreate the already-complete feature-reference loop as standing backlog.
+recreate the already-complete feature-reference loop as standing backlog. Its
+ledger currently reports `completionReady=true`, `done=307`, and no unfinished
+rows, so the periodic wake, manual pulse action, and direct controller handler
+have been retired while the completed task and durable feature outputs remain.
 Retire planner refill, watchdog, and stall-review overlap only after incident
 replay and live parity prove that the reconciler and Condition wake path cover
 the same recovery cases.
