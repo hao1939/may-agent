@@ -9,8 +9,8 @@
 - Fix: credit the analysis for surfacing a plausible high-value lever, but note the evidence gap. For strong-quality credit, require one more check that links the aggregate issue to representative sessions (for example sampled transcripts, guarded finish outputs, or commit/status evidence from the affected agent over the same window).
 
 ## Pattern: runtime session rows can understate actual work
-- Symptom: the `sessions` row makes a run look like low-value waste (`opCount` 1-2, very short duration), but `.state/sessions/history/<id>/meta.json`, `session.jsonl`, `session_digests`, or landed commits show longer execution and real deliverables.
-- Fix: before accepting a waste/no-op classification, cross-check the history directory plus any committed artifacts. Treat DB session rows as hints, not ground truth, when they conflict with transcript/meta evidence.
+- Symptom: the `sessions` row makes a run look like low-value waste (`opCount` 1-2, very short duration), but `.state/sessions/<id>/meta.json`, `session.jsonl`, `session_digests`, or landed commits show longer execution and real deliverables.
+- Fix: before accepting a waste/no-op classification, cross-check the permanent session directory plus any committed artifacts. Treat DB session rows as hints, not ground truth, when they conflict with transcript/meta evidence.
 
 ## Pattern: finish blocked by uncommitted agent repo changes
 - Symptom: `finish()` guard blocks with `uncommitted changes` and lists modified files.

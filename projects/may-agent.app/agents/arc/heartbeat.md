@@ -35,9 +35,10 @@ FROM sessions
 WHERE startedAt > strftime('%s','now')*1000 - 21600000
 ORDER BY startedAt DESC;
 
--- events: NO session_id, NO agent, NO created_at, NO payload columns.
--- Filter by JSON: data LIKE '%<sessionId>%' or json_extract(data,'$.agent')='arc'.
-SELECT id, event_type, source, owner, timestamp, status, urgency
+-- events: use typed delivery/correlation columns; there is no generic status,
+-- agent, created_at, or payload column. Use JSON only for domain-specific fields.
+SELECT id, event_type, source, owner, timestamp, delivery_status, urgency,
+       session_id, project_id
 FROM events
 WHERE timestamp > strftime('%s','now')*1000 - 21600000
   AND json_extract(data,'$.agent') = 'arc'
@@ -58,7 +59,7 @@ WHERE owner = 'arc';
 Verified 2026-05-08: the `sessions` table has no
 `turns` column — use `opCount`. Its PK is **`sessionId`**, not `id`
 (aftermath flagged s_1778222607213_0 for `SELECT id FROM sessions`).
-Status values are `done | error | interrupted | running` (no `'completed'`). There is **no `stopReason`** anywhere queryable — not on `sessions`, not in `session.end` event `data` (KE-1745 census: 0/7802 events contain it). Use `error` or `outcome` (both TEXT on `sessions`) for first-class queryable status. The `stopReason` string only appears in transcript JSONL as an LLM API response field (not session lifecycle). `events` columns: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency` — there is **no** `session_id`, no `agent`, no `created_at`, and no `payload`. To filter events by session or agent, use `data LIKE '%<sessionId>%'` or `json_extract(data,'$.agent')='arc'` against the JSON blob. Aftermath flagged s_1778213206775_3 for `payload` and s_1778311834038_35 (2026-05-09) for both `session_id` and `agent` in the same session — recurring footgun. (KE-910) `metrics` uses `updated_at` (NOT
+Status values are `done | error | interrupted | running` (no `'completed'`). There is **no `stopReason`** anywhere queryable — not on `sessions`, not in `session.end` event `data` (KE-1745 census: 0/7802 events contain it). Use `error` or `outcome` (both TEXT on `sessions`) for first-class queryable status. The `stopReason` string only appears in transcript JSONL as an LLM API response field (not session lifecycle). `events` has typed routing, delivery, and correlation columns. Use `delivery_status`, `accepted_by`, and `accepted_at` for delivery; use typed closing events plus `event_pair_runs.status` for lifecycle completion. It has `session_id`, `workflow_run_id`, `project_id`, `task_id`, `attempt_id`, `handler`, `metric_id`, `alert_id`, `escalation_id`, `subject_status`, and `duration_ms`; it has no generic `status`, `handled_by`, `result`, `reason`, `retry_count`, `agent`, `created_at`, or `payload`. Run `PRAGMA table_info(events)` instead of relying on old incident notes. `metrics` uses `updated_at` (NOT
 `lastUpdated`) and `current` (NOT `value` / `current_value`); there is
 no `config` table — config is the `metrics.config` TEXT column. The
 `projects` table uses **`id`** (PK, not `projectId`) and **`updated_at`**

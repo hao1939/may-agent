@@ -126,6 +126,11 @@ Only a component taking responsibility reports acceptance:
 - receiving human/channel adapter;
 - queryable owner inbox.
 
+Observation and outcome events such as daemon heartbeats, workflow dispatch
+facts, evaluator results, routed metric feedback, and review records are
+accepted directly by the evidence projection. An `owner` on those facts is
+attribution, not a request to create owner work.
+
 DbWriter, logging, passive metrics, UI tailing, graph projection, and unrelated
 broad subscribers do not count as delivery.
 
@@ -136,8 +141,12 @@ For asynchronous work, acceptance means “queued or started responsibly,” not
 ## Owner Inbox
 
 The owner inbox is the durable pull route for owned events without a specialized
-consumer. Inbox acceptance means the item is visible to the owner. Owner review
-later emits a typed follow-up event and closes the inbox pair.
+consumer when the event represents actionable work. Explicit work candidates
+include messages, escalations, metric alerts, owner requests, feedback, and
+comments. An otherwise unknown owner-addressed request also remains visible
+rather than being silently discarded. Inbox acceptance means the item is
+visible to the owner. Owner review later emits a typed follow-up event and
+closes the inbox pair.
 
 Typical follow-ups include:
 
@@ -147,8 +156,8 @@ Typical follow-ups include:
 - `escalation.resolved` or `escalation.dismissed`;
 - an explicit evidence-backed no-op event.
 
-Stale inbox work becomes an orphaned owner-inbox pair. Do not rewrite legacy
-`events.status`, `handled_by`, or `result` to represent current review.
+Stale inbox work becomes an orphaned owner-inbox pair. Event rows have no
+generic mutable review status; use delivery metadata and typed pair state.
 
 ## Typed Response And Pair Tracking
 
@@ -281,15 +290,16 @@ After referential protection, old detail may be pruned before roots, delivery,
 and closure evidence. Long-term domain truth belongs in projects, tasks,
 metrics, knowledge, reports, or domain artifacts.
 
-## Compatibility
+## Schema Boundary
 
-Historical rows may contain mutable `status`, `handled_by`, `result`, `reason`,
-and `retry_count` columns. New runtime paths do not write them for delivery or
-completion. They remain read-compatible only.
+The live schema has one event model. Delivery uses `delivery_status`,
+`accepted_by`, `accepted_at`, `delivery_route`, and `delivery_note`. Domain
+state uses typed events and `event_pair_runs`; there are no generic mutable
+`status`, `handled_by`, `result`, `reason`, or `retry_count` event columns.
 
-Flat socket/app events, old project names, and correlation ids normalize at
-explicit ingress/backfill boundaries. Compatibility must not leak into new
-event examples or create a second live lifecycle.
+Authoring conveniences normalize at ingress into this canonical envelope.
+Runtime readers and examples use only the canonical schema and do not maintain
+a second legacy lifecycle.
 
 ## Operational Audit
 

@@ -109,7 +109,8 @@ No approved implementation item is available: `agents/shared/work-queue.md` stil
 2. Read `agents/shared/work-queue.md`; implement only items under `## Approved`. Proposed items are not dev-authorized implementation work.
 3. For unfamiliar runtime DB tables, first run `PRAGMA table_info(<table>)`; do not guess columns. Current verified fields:
    - `metric_alerts`: `id, metric_id, alert_type, message, resolved_at, created_at`.
-   - `events`: `id, event_type, source, owner, data, timestamp, status, handled_by, result, reason, retry_count, ttl_ms, urgency`.
+   - `events`: `id, event_type, source, owner, data, timestamp, ttl_ms, urgency, delivery_status, accepted_by, accepted_at, delivery_route, delivery_note, body_ref, body_sha256, body_bytes, session_id, workflow_run_id, project_id, task_id, attempt_id, handler, metric_id, alert_id, escalation_id, subject_status, duration_ms`.
+     Delivery uses `delivery_status`; lifecycle completion uses typed closing events and `event_pair_runs.status`. Do not query a generic `events.status`.
    - `metrics`: use `current` and `updated_at`, not `value` or `lastUpdated`.
    - `sessions`: no `summary`; use `sessionId, agent, task, status, error, outcome, opCount, startedAt, endedAt`.
 4. Do not repeat identical reads/queries after evidence is collected; pivot to summary, fix, escalation, or artifact.

@@ -18,18 +18,18 @@ echo '{"type":"status"}' | socat -t2 - UNIX-CONNECT:<path>/<socket>
 
 ### Read recent sessions
 ```bash
-ls -lt <path>/.state/sessions/history/ | head -5
+ls -lt <path>/.state/sessions/ | head -5
 ```
 
 ### Read session outcome
 ```bash
-python3 -c "import json; m=json.load(open('<path>/.state/sessions/history/<sid>/meta.json')); print(m['agent'], m['status'], m.get('error',''))"
+python3 -c "import json; m=json.load(open('<path>/.state/sessions/<sid>/meta.json')); print(m['agent'], m['status'], m.get('error',''))"
 ```
 
 ## When to escalate to coach
 
 If a project agent repeatedly fails on the same kind of task:
-1. Read its recent session transcripts from `<path>/.state/sessions/history/`
+1. Read its recent session transcripts from `<path>/.state/sessions/`. Session directories keep this permanent path for every lifecycle state.
 2. Send coach a task: "The flexnodehelper agent keeps failing on X. Read its sessions at <path>/.state/ and its SOUL.md at <path>/agents/assistant/SOUL.md. Diagnose the gap and fix the SOUL.md."
 3. Coach reads the project's files, patches the SOUL.md, optionally tests in gym
 

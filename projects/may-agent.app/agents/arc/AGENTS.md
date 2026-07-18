@@ -58,9 +58,13 @@ sessions: sessionId(PK), agent, task, status, kind, source, parentSessionId,
           requestId, workflowRunId, projectId, startedAt, endedAt, error,
           outcome, opCount, stepLabel, lastActivityAt
 
-events:   id, event_type, source, owner, data(JSON), timestamp, status,
-          handled_by, result, reason, retry_count, ttl_ms, urgency
-          (NO session_id, NO agent, NO created_at, NO payload columns)
+events:   id, event_type, source, owner, data(JSON), timestamp, ttl_ms, urgency,
+          delivery_status, accepted_by, accepted_at, delivery_route,
+          delivery_note, body_ref, body_sha256, body_bytes, session_id,
+          workflow_run_id, project_id, task_id, attempt_id, handler, metric_id,
+          alert_id, escalation_id, subject_status, duration_ms
+          (NO generic status, handled_by, result, reason, retry_count, agent,
+          created_at, or payload columns)
 
 metrics:  id, name, type, owner, current, target, threshold, unit, priority,
           status, source_query, config, updated_at
