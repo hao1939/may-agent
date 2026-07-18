@@ -81,6 +81,49 @@ export type ProjectWorkflowHandler = {
 
 export type ProjectAppTaskMode = "achieve" | "maintain";
 
+export type ProjectAppTaskDisposition = "converged" | "progressing" | "waiting" | "needs-owner" | "failed";
+
+export type ProjectAppTaskAction =
+  | {
+      kind: "create-task";
+      id: string;
+      parentId: string;
+      goal: string;
+      outputs: string[];
+      acceptance: string[];
+      priority?: "P0" | "P1" | "P2" | "P3";
+      owner?: string;
+      workflow?: string;
+    }
+  | {
+      kind: "update-task";
+      taskId: string;
+      expectedRevision: number;
+      goal?: string;
+      outputs?: string[];
+      acceptance?: string[];
+    }
+  | {
+      kind: "close-task";
+      taskId: string;
+      expectedRevision: number;
+      summary: string;
+    }
+  | {
+      kind: "unblock-task";
+      taskId: string;
+      expectedRevision: number;
+      reason: string;
+    };
+
+export type ProjectAppTaskHandlerResult = {
+  disposition: ProjectAppTaskDisposition;
+  summary: string;
+  evidence: string[];
+  actions?: ProjectAppTaskAction[];
+  conditions?: Array<Record<string, unknown>>;
+};
+
 export type ProjectAppTaskIntent = {
   id: string;
   parentId: string;

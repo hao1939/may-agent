@@ -99,8 +99,7 @@ export interface GuardModule {
 
 /** The outcome of a workflow execution. */
 export type WorkflowResult =
-  | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown };
+  { type: "done"; summary: string; output?: unknown } | { type: "blocked"; reason: string; context?: unknown };
 
 export interface WorkflowAgentOptions<S extends TSchema = TSchema> {
   timeoutMs?: number;
@@ -232,7 +231,7 @@ export interface WorkflowContext {
   summarize(result: TaskResult, opts?: HandoffOptions): string;
 
   /** Mark workflow as done. */
-  done(summary: string): WorkflowResult;
+  done(summary: string, output?: unknown): WorkflowResult;
 
   /** Mark workflow as locally blocked. Does not emit escalation.created. */
   blocked(reason: string, context?: unknown): WorkflowResult;
@@ -338,7 +337,14 @@ export interface SessionTrace {
 // ── Workflow Tool Result Types ─────────────────────────────────────────
 
 export type WorkflowToolResult =
-  | { type: "done"; workflow: string; workflowRunId: string; summary: string; steps: WorkflowStepSummary[] }
+  | {
+      type: "done";
+      workflow: string;
+      workflowRunId: string;
+      summary: string;
+      output?: unknown;
+      steps: WorkflowStepSummary[];
+    }
   | {
       type: "blocked";
       workflow: string;

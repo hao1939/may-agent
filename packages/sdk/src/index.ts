@@ -830,7 +830,8 @@ export function workflowRowToExecutionResult(row: WorkflowExecutionRow): Executi
   };
 }
 
-export type WorkflowResult = { type: "done"; summary: string } | { type: "blocked"; reason: string; context?: unknown };
+export type WorkflowResult =
+  { type: "done"; summary: string; output?: unknown } | { type: "blocked"; reason: string; context?: unknown };
 
 export interface WorkflowEvent {
   type: string;
@@ -886,7 +887,7 @@ export interface WorkflowContext {
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
   runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
   summarize(result: TaskResult, opts?: Record<string, unknown>): string;
-  done(summary: string): WorkflowResult;
+  done(summary: string, output?: unknown): WorkflowResult;
   blocked(reason: string, context?: unknown): WorkflowResult;
   createSession(opts: SessionOptions): Promise<SessionHandle>;
 }
@@ -974,6 +975,9 @@ export type {
   ProjectAppEventUrgency,
   ProjectAppOnEvent,
   ProjectAppTaskCapability,
+  ProjectAppTaskAction,
+  ProjectAppTaskDisposition,
+  ProjectAppTaskHandlerResult,
   ProjectAppTaskIntent,
   ProjectAppTaskMode,
   ProjectAppTaskRoute,
