@@ -7,10 +7,10 @@ organized work through task reconciliation. `aks-rp-e2e.app` is migrating by
 bounded cohorts. Feature-compact maintenance, task execution, completion
 review, reviewed-result application, problem investigation, approval dispatch,
 Condition owner fallback, stall review, and focus review now use the
-reconciler; legacy planner, watchdog, and unfinished loop responsibilities
-retain authority for their existing cohorts. `gym.app` remains a direct
-immutable request/result pipeline pending extraction of the shared agent
-runner.
+reconciler. Owner/planner events and compatibility watchdog health checks also
+enter through tasks, leaving the unfinished spec loop as the remaining direct
+AKS controller cohort. `gym.app` remains a direct immutable request/result
+pipeline pending extraction of the shared agent runner.
 
 ## Executive Decision
 
@@ -662,6 +662,21 @@ integrity coverage. Their natural-event production proof remains pending; the
 old direct handlers have been removed, so each event cohort still has only one
 authority during that observation window.
 
+The owner-entry cutover required one shared runtime addition: task route
+resolvers now receive the durable persisted event row as `eventId`, and the
+canonical flattened wake packet—including that identity—is stored with the
+attempt for restart recovery. Each comment, metric signal, approval result, or
+other semantic owner event can therefore become its own replay-safe `achieve`
+task rather than being collapsed into a busy standing task. Production owner
+event `3493655` was claimed by `owner:app-ops` at `3493657`, converged at
+`3493774`, and left the live graph with a completion tombstone. The old direct
+planner handler was absent for that event.
+
+Compatibility watchdog execution now uses one `maintain` task. This does not
+declare the old watchdog strategy permanent: the task makes its standing
+responsibility and handler visible while exact Conditions and generic attempt
+recovery progressively remove its reasons to act.
+
 The next recommended AKS boundary is the spec loop, but only after its
 watchdog-owned external waits are represented as exact Conditions. Do not
 recreate the already-complete feature-reference loop as standing backlog. Its
@@ -671,6 +686,15 @@ have been retired while the completed task and durable feature outputs remain.
 Retire planner refill, watchdog, and stall-review overlap only after incident
 replay and live parity prove that the reconciler and Condition wake path cover
 the same recovery cases.
+
+Condition conversion must also preserve single authority. When an external
+fact such as `project.approval.submitted` satisfies an affected task Condition,
+that fact must not independently invoke both a global owner-event task and the
+Condition task's owner handler. A conversion cohort therefore needs an
+explicit event-ownership gate or a deterministic Condition workflow before its
+legacy global owner route is removed. Merely copying legacy `waiting_for`
+records into the Condition registry would create duplicate semantic
+reconciliation and is not a valid migration.
 
 ## Migration
 
