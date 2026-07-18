@@ -218,6 +218,27 @@ export function resolveAksReconciliationTask(
       ? (baseDetails.params as Record<string, unknown>)
       : {};
   const details = { ...baseDetails, ...params };
+  if (event.type === "project.watchdog.check.requested") {
+    return {
+      id: "aks-project-runtime-health",
+      parentId: "project",
+      outcome:
+        "Keep task delivery, attempts, exact external waits, and review handoffs mechanically healthy while compatibility recovery remains necessary.",
+      acceptance: [
+        "Each wake repairs only declared mechanical invariants or emits one typed owner/stall/Condition continuation.",
+        "The watchdog does not make domain strategy decisions or create duplicate execution authority.",
+      ],
+      mode: "maintain",
+      owner: "app-ops",
+      workflow: "project-watchdog",
+      input: {
+        supervisor: "review-handoff-revisioned",
+        condition: "exact-ado-revisioned",
+      },
+      outputs: [".state/watchdog-runs.jsonl"],
+      priority: "P0",
+    };
+  }
   if (ownerEventTypes.has(String(event.type ?? ""))) {
     const eventId = event.eventId;
     if (
@@ -675,6 +696,13 @@ export default defineProjectApp({
   },
 
   taskWorkflows: {
+    "project-watchdog": {
+      workflow: "project-execution-watchdog",
+      agent: "aks-explorer",
+      task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nsupervisorV2: review-handoff-revisioned\nsupervisorAttemptV2: shadow\nconditionV2: exact-ado-revisioned\npendingActionRedeliveryV2: review-application-revisioned`,
+      timeoutMs: 1_800_000,
+      context: taskTreeContext,
+    },
     "focus-plan": {
       workflow: "focus-plan",
       agent: "aks-explorer",
@@ -747,6 +775,20 @@ export default defineProjectApp({
   },
 
   taskRoutes: [
+    {
+      name: "aks-rp-e2e-task-runtime-health",
+      enabled: true,
+      maxConcurrentTriggers: 1,
+      description:
+        "Reconciles compatibility delivery and recovery invariants through one standing task.",
+      accepts: [
+        {
+          type: "project.watchdog.check.requested",
+          target: { project: projectId },
+        },
+      ],
+      resolve: resolveAksReconciliationTask,
+    },
     {
       name: "aks-rp-e2e-task-owner-event",
       enabled: true,
@@ -899,32 +941,6 @@ export default defineProjectApp({
   ],
 
   workflowHandlers: [
-    {
-      name: "aks-rp-e2e-project-watchdog",
-      type: "job",
-      enabled: true,
-      description:
-        "Five-minute liveness guard. Observes task/session state and wakes app-ops when review is needed.",
-      accepts: [
-        {
-          type: "project.watchdog.check.requested",
-          target: { project: projectId },
-        },
-      ],
-      handler: {
-        workflow: "project-execution-watchdog",
-        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}\nsupervisorV2: review-handoff-revisioned\nsupervisorAttemptV2: shadow\nconditionV2: exact-ado-revisioned\npendingActionRedeliveryV2: review-application-revisioned`,
-        timeoutMs: 1_800_000,
-      },
-      emits: [
-        "project.owner.requested",
-        "project.condition.fallback.requested",
-        "project.stall.review.requested",
-        "project.task.assigned",
-        "project.task.tick",
-      ],
-      context: taskTreeContext,
-    },
     {
       name: "aks-rp-e2e-spec-loop-controller",
       type: "job",

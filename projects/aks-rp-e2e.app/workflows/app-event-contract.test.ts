@@ -252,14 +252,12 @@ describe("app event contract", () => {
   });
 
   test("manifest explicitly opts only the bounded exact ADO Condition writers into V2", () => {
-    for (const name of ["aks-rp-e2e-project-watchdog"]) {
-      expect(handler(name).handler?.task).toContain(
-        "conditionV2: exact-ado-revisioned",
-      );
-    }
-    for (const name of ["aks-rp-e2e-project-watchdog"]) {
-      expect(handler(name).handler?.task).not.toContain("conditionAdoptionV2:");
-    }
+    expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).toContain(
+      "conditionV2: exact-ado-revisioned",
+    );
+    expect(
+      appManifest.taskWorkflows?.["project-watchdog"]?.task,
+    ).not.toContain("conditionAdoptionV2:");
     expect(appManifest.ownerEntry?.task).toContain(
       "conditionV2: exact-ado-revisioned",
     );
@@ -287,19 +285,19 @@ describe("app event contract", () => {
     expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).not.toContain(
       "pendingActionV2: completion-review-revisioned",
     );
-    for (const name of ["aks-rp-e2e-project-watchdog"]) {
-      expect(handler(name).handler?.task).not.toContain("pendingActionV2:");
-    }
+    expect(
+      appManifest.taskWorkflows?.["project-watchdog"]?.task,
+    ).not.toContain("pendingActionV2:");
     expect(appManifest.ownerEntry?.task).not.toContain("pendingActionV2:");
     expect(
       appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
     ).not.toContain("pendingActionV2:");
-    expect(handler("aks-rp-e2e-project-watchdog").handler?.task).toContain(
+    expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).toContain(
       "pendingActionRedeliveryV2: review-application-revisioned",
     );
-    expect(handler("aks-rp-e2e-project-watchdog").handler?.task).not.toContain(
-      "pendingActionRedeliveryV2: review-handoffs-revisioned",
-    );
+    expect(
+      appManifest.taskWorkflows?.["project-watchdog"]?.task,
+    ).not.toContain("pendingActionRedeliveryV2: review-handoffs-revisioned");
   });
 
   test("worker and controllers own their targeted task events", () => {
@@ -412,6 +410,37 @@ describe("app event contract", () => {
       priority: "P0",
     });
     expect(later?.id).toBe(first?.id);
+  });
+
+  test("watchdog wakes resolve to one compatibility health task", () => {
+    const first = resolveAksReconciliationTask({
+      type: "project.watchdog.check.requested",
+      target: { project: projectId },
+      data: { reason: "scheduled" },
+    });
+    const later = resolveAksReconciliationTask({
+      type: "project.watchdog.check.requested",
+      target: { project: projectId },
+      data: { reason: "manual-recheck" },
+    });
+
+    expect(first).toMatchObject({
+      id: "aks-project-runtime-health",
+      parentId: "project",
+      mode: "maintain",
+      owner: "app-ops",
+      workflow: "project-watchdog",
+      input: {
+        supervisor: "review-handoff-revisioned",
+        condition: "exact-ado-revisioned",
+      },
+      priority: "P0",
+    });
+    expect(later?.id).toBe(first?.id);
+    expect(appManifest.taskWorkflows?.["project-watchdog"]).toMatchObject({
+      workflow: "project-execution-watchdog",
+      agent: "aks-explorer",
+    });
   });
 
   test("focus strategy and progress wakes reconcile independently", () => {
@@ -912,6 +941,15 @@ describe("app event contract", () => {
       accepts: [
         {
           type: "project.stall.review.requested",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(handlersForEvent("project.watchdog.check.requested")).toEqual([]);
+    expect(taskRoute("aks-rp-e2e-task-runtime-health")).toMatchObject({
+      accepts: [
+        {
+          type: "project.watchdog.check.requested",
           target: { project: projectId },
         },
       ],
