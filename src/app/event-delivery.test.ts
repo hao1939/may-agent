@@ -1193,7 +1193,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("accepts unclaimed owned events through a queryable owner inbox", () => {
+  it("accepts observation events through the evidence projection without opening inbox work", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1215,9 +1215,26 @@ describe("event delivery metadata", () => {
           route: "owner-app",
         },
       } as any);
+      bus.emit({
+        type: "handler.workflow_dispatched",
+        source: "workflow-runner",
+        owner: "agent:evaluator",
+        data: { handler: "evaluator-aftermath", workflowRunId: "wr_1" },
+      } as any);
+      bus.emit({
+        type: "evaluation.routed",
+        source: "evaluation.app",
+        owner: "agent:evaluator",
+        data: { sessionId: "s_1", lane: "routine_ok" },
+      } as any);
 
       const db = getDb(root);
-      for (const eventType of ["runtime.daemon.heartbeat", "metric.feedback.routed"]) {
+      for (const eventType of [
+        "runtime.daemon.heartbeat",
+        "metric.feedback.routed",
+        "handler.workflow_dispatched",
+        "evaluation.routed",
+      ]) {
         const event = db
           .prepare(
             `SELECT delivery_status, accepted_by, delivery_route
@@ -1227,10 +1244,61 @@ describe("event delivery metadata", () => {
           .get(eventType) as Record<string, unknown>;
         expect(event).toMatchObject({
           delivery_status: "accepted",
-          accepted_by: "owner-inbox:agent:may",
-          delivery_route: "owner_inbox",
+          accepted_by: "event-store:evidence-projection",
+          delivery_route: "direct",
         });
       }
+      expect(
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count
+               FROM event_pair_runs
+              WHERE pair_name = 'owner_inbox'`,
+          )
+          .get(),
+      ).toMatchObject({ count: 0 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps unknown owner-addressed requests visible in the owner inbox", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "project.watchdog.check.requested",
+        source: "test",
+        owner: "project:sample",
+        data: { projectId: "sample" },
+      } as any);
+
+      const db = getDb(root);
+      expect(
+        db
+          .prepare(
+            `SELECT delivery_status, accepted_by, delivery_route
+               FROM events
+              WHERE event_type = 'project.watchdog.check.requested'`,
+          )
+          .get(),
+      ).toMatchObject({
+        delivery_status: "accepted",
+        accepted_by: "owner-inbox:project:sample",
+        delivery_route: "owner_inbox",
+      });
+      expect(
+        db
+          .prepare(
+            `SELECT pair_name, status
+               FROM event_pair_runs
+              WHERE pair_name = 'owner_inbox'`,
+          )
+          .get(),
+      ).toMatchObject({ pair_name: "owner_inbox", status: "open" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
