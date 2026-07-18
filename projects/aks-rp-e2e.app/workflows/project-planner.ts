@@ -47,6 +47,7 @@ import { syncProjectReadout } from "./lib/project-readout-sync.ts";
 import {
   applyTaskTreeFollowupReviewV2,
   revisePipelineVerificationPhaseV2,
+  type JsonRecord,
   type TaskTreeFollowupActionV2,
 } from "./lib/work-commands-v2.ts";
 import {
@@ -5666,6 +5667,13 @@ type ReviewAction = {
   acceptance?: string[];
   conflictScopes?: string[];
   workflow?: string;
+  waitingFor?: JsonRecord;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 };
 
 function taskIdLeaf(id: string): string {
@@ -5704,6 +5712,19 @@ function reviewActionFromValue(value: unknown): ReviewAction | null {
       action?.conflictScopes ?? action?.conflict_scope,
     ),
     workflow: stringValue(action?.workflow),
+    waitingFor: objectValue(action?.waitingFor ?? action?.waiting_for) ?? {},
+    blockerCategory: stringValue(
+      action?.blockerCategory ?? action?.blocker_category,
+    ),
+    blockerOwner: stringValue(action?.blockerOwner ?? action?.blocker_owner),
+    resumeCondition: stringValue(
+      action?.resumeCondition ?? action?.resume_condition,
+    ),
+    nextCheckAt: stringValue(action?.nextCheckAt ?? action?.next_check_at),
+    fallbackAt: stringValue(action?.fallbackAt ?? action?.fallback_at),
+    fallbackAction: stringValue(
+      action?.fallbackAction ?? action?.fallback_action,
+    ),
   };
 }
 
@@ -5733,6 +5754,19 @@ function taskTreeFollowupActionV2(
     conflictScopes: action.conflictScopes,
     ...(action.kind ? { kind: action.kind } : {}),
     ...(action.workflow ? { workflow: action.workflow } : {}),
+    ...(action.waitingFor && Object.keys(action.waitingFor).length > 0
+      ? { waitingFor: action.waitingFor }
+      : {}),
+    ...(action.blockerCategory
+      ? { blockerCategory: action.blockerCategory }
+      : {}),
+    ...(action.blockerOwner ? { blockerOwner: action.blockerOwner } : {}),
+    ...(action.resumeCondition
+      ? { resumeCondition: action.resumeCondition }
+      : {}),
+    ...(action.nextCheckAt ? { nextCheckAt: action.nextCheckAt } : {}),
+    ...(action.fallbackAt ? { fallbackAt: action.fallbackAt } : {}),
+    ...(action.fallbackAction ? { fallbackAction: action.fallbackAction } : {}),
   };
 }
 

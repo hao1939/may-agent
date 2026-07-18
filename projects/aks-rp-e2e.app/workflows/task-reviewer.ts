@@ -1436,6 +1436,16 @@ successor directly, include the complete successor contract: \`idBase\`,
 \`parentId\`, \`owner\`, \`goal\`, non-empty \`outputs\`, non-empty
 \`acceptance\`, and non-empty \`conflictScopes\`. The owner must remain the
 reviewed task owner, and any workflow must remain the reviewed task workflow.
+If the successor cannot produce new facts until an external or repo state
+changes, keep the same \`task-tree-followup\` contract but include structured
+wait fields instead of creating another immediate recheck. Use
+\`waitingFor\` for the exact condition, \`blockerOwner\`,
+\`resumeCondition\`, \`nextCheckAt\`, \`fallbackAt\`, and \`fallbackAction\`
+when known. Example: a publication recheck that is waiting for \`origin/dev\`
+to change should use \`waitingFor: { "type": "git.ref.changed", "ref":
+"origin/dev", "currentCommit": "..." }\` and a resume condition that says to
+resume only after that ref changes or a publication attempt updates the branch.
+
 If those fields cannot be stated exactly, omit the incomplete fields; the
 planner will keep that review on the legacy bounded app-ops path.
 
@@ -1467,7 +1477,14 @@ TASK_REVIEW_JSON:
     "owner": "required current task owner for direct task-tree-followup",
     "outputs": ["required outputs for direct task-tree-followup"],
     "acceptance": ["required acceptance for direct task-tree-followup"],
-    "conflictScopes": ["required conflict scope for direct task-tree-followup"]
+    "conflictScopes": ["required conflict scope for direct task-tree-followup"],
+    "waitingFor": { "optional": "structured condition that must change before this successor can run" },
+    "blockerCategory": "optional blocker category such as external-wait",
+    "blockerOwner": "optional owner of the external wait",
+    "resumeCondition": "optional exact condition that unblocks the successor",
+    "nextCheckAt": "optional ISO timestamp for the next observation",
+    "fallbackAt": "optional ISO timestamp for fallback if unchanged",
+    "fallbackAction": "optional action to take if fallback is reached"
   }
 }
 \`\`\`

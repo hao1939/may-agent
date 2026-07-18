@@ -29,6 +29,13 @@ export type TaskTreeFollowupActionV2 = {
   conflictScopes: string[];
   kind?: string;
   workflow?: string;
+  waitingFor?: JsonRecord;
+  blockerCategory?: string;
+  blockerOwner?: string;
+  resumeCondition?: string;
+  nextCheckAt?: string;
+  fallbackAt?: string;
+  fallbackAction?: string;
 };
 
 export type ApplyTaskTreeFollowupReviewInputV2 = {
@@ -92,7 +99,7 @@ export type AdoptExactPipelineWaitV2Result = {
   reason?: string;
 };
 
-type JsonRecord = Record<string, unknown>;
+export type JsonRecord = Record<string, unknown>;
 
 function record(value: unknown): JsonRecord {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -119,19 +126,24 @@ function sortedUnique(values: string[]): string[] {
   );
 }
 
-type FutureWindowFollowupGate = {
-  resumeAt: string;
+type FollowupGate = {
+  resumeAt?: string;
   nextCheckAt: string;
   fallbackAt: string;
   blockerCondition: string;
   resumeCondition: string;
+  category: string;
+  owner: string;
+  waitingFor: JsonRecord;
+  observationMethod: string;
+  fallbackAction: string;
 };
 
 function futureWindowFollowupGate(input: {
   action: TaskTreeFollowupActionV2;
   reviewedTaskId: string;
   now: string;
-}): FutureWindowFollowupGate | null {
+}): FollowupGate | null {
   const match = input.action.goal.match(
     /^\s*At or after\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\b/i,
   );
@@ -152,6 +164,63 @@ function futureWindowFollowupGate(input: {
     fallbackAt: new Date(resumeMs + 6 * 60 * 60 * 1000).toISOString(),
     blockerCondition: `Future-window task-tree follow-up created from reviewed task ${input.reviewedTaskId}; do not start before its named review window opens. ${input.action.goal.trim()}`,
     resumeCondition: input.action.goal.trim(),
+    category: "external-wait",
+    owner: input.action.blockerOwner || input.action.owner,
+    waitingFor: {
+      type: "time.reached",
+      resumeAt,
+      reviewedTaskId: input.reviewedTaskId,
+      source: "project.task.reviewed",
+    },
+    observationMethod:
+      "Project planner created this future-window task-tree follow-up from the review result; keep it blocked until the named review window opens, then refresh or replace it with the exact same-lineage next step.",
+    fallbackAction:
+      input.action.fallbackAction ||
+      "If the review window passes without stronger same-lineage evidence, refresh this exact wait or replace it with the narrower follow-up instead of dispatching early.",
+  };
+}
+
+function structuredFollowupGate(input: {
+  action: TaskTreeFollowupActionV2;
+  reviewedTaskId: string;
+  attemptId: string;
+  successorTaskId: string;
+  now: string;
+}): FollowupGate | null {
+  const waitingFor = record(input.action.waitingFor);
+  if (Object.keys(waitingFor).length === 0) return null;
+
+  const nowMs = Date.parse(input.now);
+  const parsedNext = Date.parse(input.action.nextCheckAt || "");
+  const nextCheckAt =
+    Number.isFinite(parsedNext) && parsedNext > nowMs
+      ? new Date(parsedNext).toISOString()
+      : new Date(nowMs + 15 * 60 * 1000).toISOString();
+  const parsedFallback = Date.parse(input.action.fallbackAt || "");
+  const fallbackAt =
+    Number.isFinite(parsedFallback) && parsedFallback > Date.parse(nextCheckAt)
+      ? new Date(parsedFallback).toISOString()
+      : new Date(nowMs + 6 * 60 * 60 * 1000).toISOString();
+
+  return {
+    nextCheckAt,
+    fallbackAt,
+    blockerCondition: input.action.goal.trim(),
+    resumeCondition: input.action.resumeCondition || input.action.goal.trim(),
+    category: input.action.blockerCategory || "external-wait",
+    owner: input.action.blockerOwner || input.action.owner,
+    waitingFor: {
+      ...waitingFor,
+      reviewedTaskId: input.reviewedTaskId,
+      reviewedAttemptId: input.attemptId,
+      successorTaskId: input.successorTaskId,
+      source: "project.task.reviewed",
+    },
+    observationMethod:
+      "Project planner created this structured-wait task-tree follow-up from the review result; keep it blocked until the named condition changes, then refresh or replace it with the exact same-lineage next step.",
+    fallbackAction:
+      input.action.fallbackAction ||
+      "If the structured wait remains unchanged at fallback, refresh this exact wait with current evidence, replace it with a narrower follow-up, or escalate.",
   };
 }
 
@@ -169,6 +238,7 @@ function actionFingerprint(action: TaskTreeFollowupActionV2): string {
         conflictScopes: sortedUnique(action.conflictScopes),
         kind: action.kind?.trim() ?? "domain_leaf",
         workflow: action.workflow?.trim() ?? "",
+        waitingFor: record(action.waitingFor),
       }),
     )
     .digest("hex");
@@ -388,16 +458,24 @@ export function applyTaskTreeFollowupReviewV2(
     }
 
     const now = new Date().toISOString();
-    const futureWindowGate = futureWindowFollowupGate({
-      action: input.action,
-      reviewedTaskId: source.id,
-      now,
-    });
+    const followupGate =
+      structuredFollowupGate({
+        action: input.action,
+        reviewedTaskId: source.id,
+        attemptId: input.attemptId,
+        successorTaskId: input.action.idBase,
+        now,
+      }) ??
+      futureWindowFollowupGate({
+        action: input.action,
+        reviewedTaskId: source.id,
+        now,
+      });
     const successor: TaskNode = existing ?? {
       id: input.action.idBase,
       revision: 0,
       parent_id: input.action.parentId,
-      state: futureWindowGate ? "blocked" : "backlog",
+      state: followupGate ? "blocked" : "backlog",
       kind: input.action.kind?.trim() || source.kind || "domain_leaf",
       priority: source.priority,
       owner: input.action.owner,
@@ -433,33 +511,28 @@ export function applyTaskTreeFollowupReviewV2(
         command_key: key,
       },
     };
-    if (futureWindowGate) {
+    if (followupGate) {
       successor.state = "blocked";
       delete successor.status;
       successor.blocker = {
-        condition: futureWindowGate.blockerCondition,
-        category: "external-wait",
-        owner: input.action.owner,
+        condition: followupGate.blockerCondition,
+        category: followupGate.category,
+        owner: followupGate.owner,
         blocked_at: now,
         waiting_for: {
-          type: "blocker.resolved",
-          reviewedTaskId: source.id,
-          reviewedAttemptId: input.attemptId,
+          ...followupGate.waitingFor,
           successorTaskId: successor.id,
-          source: "project.task.reviewed",
         },
         observed_by: {
           workflow: "project-planner",
           trigger: "project.task.reviewed",
         },
-        observation_method:
-          "Project planner created this future-window task-tree follow-up from the review result; keep it blocked until the named review window opens, then refresh or replace it with the exact same-lineage next step.",
-        resume_at: futureWindowGate.resumeAt,
-        next_check_at: futureWindowGate.nextCheckAt,
-        resume_condition: futureWindowGate.resumeCondition,
-        fallback_at: futureWindowGate.fallbackAt,
-        fallback_action:
-          "If the review window passes without stronger same-lineage evidence, refresh this exact wait or replace it with the narrower follow-up instead of dispatching early.",
+        observation_method: followupGate.observationMethod,
+        ...(followupGate.resumeAt ? { resume_at: followupGate.resumeAt } : {}),
+        next_check_at: followupGate.nextCheckAt,
+        resume_condition: followupGate.resumeCondition,
+        fallback_at: followupGate.fallbackAt,
+        fallback_action: followupGate.fallbackAction,
       };
       successor.trace = {
         ...(record(successor.trace) ?? {}),

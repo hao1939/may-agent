@@ -130,6 +130,72 @@ describe("work commands v2", () => {
     ).toHaveLength(1);
   });
 
+  test("structured wait follow-up creates one blocked successor", async () => {
+    const input = await fixture();
+    const command = {
+      taskId: "source",
+      taskRevision: 2,
+      attemptId: "attempt-2",
+      decision: "followup" as const,
+      summary: "Wait for origin/dev to change before rechecking.",
+      action: {
+        ...action,
+        idBase: "domain/wait-for-origin-dev-change",
+        goal: "Recheck the exact publication only after origin/dev changes.",
+        waitingFor: {
+          type: "git.ref.changed",
+          ref: "origin/dev",
+          currentCommit: "abc123",
+        },
+        blockerCategory: "external-wait",
+        blockerOwner: "git",
+        resumeCondition:
+          "Resume after origin/dev changes from abc123 or a publication attempt updates the branch.",
+        nextCheckAt: "2099-01-01T00:15:00Z",
+        fallbackAt: "2099-01-01T06:00:00Z",
+        fallbackAction:
+          "If origin/dev is unchanged, keep the exact wait or escalate the publication path.",
+      },
+    };
+
+    const result = applyTaskTreeFollowupReviewV2(input.config, command);
+
+    expect(result).toMatchObject({
+      applied: true,
+      replayed: false,
+      successorTaskId: "domain/wait-for-origin-dev-change",
+    });
+    const updated = await tree(input.appDir);
+    expect(updated.tasks.source.state).toBe("done");
+    expect(updated.tasks["domain/wait-for-origin-dev-change"]).toMatchObject({
+      state: "blocked",
+      blocker: {
+        category: "external-wait",
+        owner: "git",
+        waiting_for: {
+          type: "git.ref.changed",
+          ref: "origin/dev",
+          currentCommit: "abc123",
+          reviewedTaskId: "source",
+          reviewedAttemptId: "attempt-2",
+          successorTaskId: "domain/wait-for-origin-dev-change",
+          source: "project.task.reviewed",
+        },
+        next_check_at: "2099-01-01T00:15:00.000Z",
+        fallback_at: "2099-01-01T06:00:00.000Z",
+      },
+    });
+
+    const replay = applyTaskTreeFollowupReviewV2(input.config, command);
+    expect(replay).toMatchObject({ applied: true, replayed: true });
+    const replayed = await tree(input.appDir);
+    expect(
+      replayed.tasks.lane.children.filter(
+        (id: string) => id === "domain/wait-for-origin-dev-change",
+      ),
+    ).toHaveLength(1);
+  });
+
   test("stale revision and invalid contracts leave the source untouched", async () => {
     const staleFixture = await fixture();
     const stale = applyTaskTreeFollowupReviewV2(staleFixture.config, {

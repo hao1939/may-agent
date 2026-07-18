@@ -5802,6 +5802,99 @@ describe("project owner workflow", () => {
     ).toBeUndefined();
   });
 
+  test("keeps V2 task-tree followups blocked when reviewer returns structured waitingFor", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeReviewTree(appDir, {
+      taskId: "domain/review-origin-dev-publication-recheck",
+      revision: 2,
+      conflictScope: ["spec:storage-csi-file-clone"],
+      extraTasks: {
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: [],
+        },
+      },
+    });
+    const before = await readTaskTreeJson(appDir);
+    before.tasks.project.children.push("lane");
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(before, null, 2)}\n`,
+      "utf8",
+    );
+
+    const trigger = reviewedTrigger({
+      taskId: "domain/review-origin-dev-publication-recheck",
+      taskRevision: 2,
+      attemptId: "attempt-1",
+      decision: "followup",
+      summary: "Wait for origin/dev to change before rechecking publication.",
+      reviewAction: {
+        actionKind: "task-tree-followup",
+        idBase:
+          "domain/wait-storage-csi-file-clone-origin-dev-publication-change",
+        parentId: "lane",
+        owner: "aks-explorer",
+        goal: "Recheck storage-csi file-clone publication after origin/dev changes.",
+        outputs: [
+          "evidence/archive/recheck-storage-csi-file-clone-origin-dev-publication.md",
+        ],
+        acceptance: [
+          "Rechecks the exact publication only after origin/dev changes.",
+        ],
+        conflictScopes: ["spec:storage-csi-file-clone"],
+        waitingFor: {
+          type: "git.ref.changed",
+          ref: "origin/dev",
+          currentCommit: "abc123",
+        },
+        blockerCategory: "external-wait",
+        blockerOwner: "git",
+        resumeCondition:
+          "Resume after origin/dev changes from abc123 or a publication attempt updates the branch.",
+        nextCheckAt: "2099-01-01T00:15:00Z",
+        fallbackAt: "2099-01-01T06:00:00Z",
+        fallbackAction:
+          "If origin/dev is unchanged, keep the exact wait or escalate the publication path.",
+      },
+    });
+
+    const first = await execute(
+      plannerContext({ appDir, projectDir, trigger }),
+    );
+
+    expect(first.message).toContain("Applied V2 task-tree follow-up review");
+    const updated = await readTaskTreeJson(appDir);
+    expect(
+      updated.tasks["domain/review-origin-dev-publication-recheck"].state,
+    ).toBe("done");
+    expect(
+      updated.tasks[
+        "domain/wait-storage-csi-file-clone-origin-dev-publication-change"
+      ],
+    ).toMatchObject({
+      state: "blocked",
+      owner: "aks-explorer",
+      blocker: {
+        owner: "git",
+        category: "external-wait",
+        waiting_for: {
+          type: "git.ref.changed",
+          ref: "origin/dev",
+          currentCommit: "abc123",
+          reviewedTaskId: "domain/review-origin-dev-publication-recheck",
+          reviewedAttemptId: "attempt-1",
+          successorTaskId:
+            "domain/wait-storage-csi-file-clone-origin-dev-publication-change",
+          source: "project.task.reviewed",
+        },
+        next_check_at: "2099-01-01T00:15:00.000Z",
+        fallback_at: "2099-01-01T06:00:00.000Z",
+      },
+    });
+  });
   test("turns create-domain-followup reviews into direct domain successor tasks", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeReviewTree(appDir, {

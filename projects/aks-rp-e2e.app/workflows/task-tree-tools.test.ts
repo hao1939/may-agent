@@ -25,6 +25,7 @@ import {
   updateAcceptedReviewMetadata,
   updateArchivedTaskOutputs,
   updateArchivedTaskEvidence,
+  restoreArchivedTask,
   updateTaskOutputs,
   updateTaskText,
   unblockTask,
@@ -69,6 +70,51 @@ function config(projectDir: string) {
     worker: "aks-explorer",
     maxConcurrent: 3,
   });
+}
+
+function configWithAppDir(appDir: string, projectDir: string) {
+  return taskTreeConfig({
+    appDir,
+    projectDir,
+    worker: "aks-explorer",
+    maxConcurrent: 3,
+  });
+}
+
+function runGit(projectDir: string, args: string[]): string {
+  const result = Bun.spawnSync({
+    cmd: ["git", "-C", projectDir, ...args],
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  if (!result.success) {
+    throw new Error(
+      `git ${args.join(" ")} failed: ${Buffer.from(result.stderr).toString("utf8")}`,
+    );
+  }
+  return Buffer.from(result.stdout).toString("utf8").trim();
+}
+
+function exactReadyPathWaitBlocker(waitingFor: Record<string, unknown>) {
+  return {
+    condition:
+      "Wait on the exact ready-path carrier until the named bounded return signal or same-lineage replacement evidence arrives.",
+    category: "external-wait",
+    owner: "human",
+    waiting_for: waitingFor,
+    observed_by: {
+      workflow: "project-planner",
+      trigger: "project.planning.requested",
+    },
+    observation_method:
+      "Planner review keeps the exact wait blocked until the named ready-path frontier materially changes.",
+    resume_condition:
+      "Resume only when the exact ready-path carrier returns a bounded same-lineage signal or accepted replacement evidence.",
+    next_check_at: "2026-07-18T18:00:00Z",
+    fallback_at: "2026-07-19T18:00:00Z",
+    fallback_action:
+      "If the same ready-path frontier still holds at fallback, refresh this exact wait instead of reopening unchanged work.",
+  };
 }
 
 describe("task tree tools", () => {
@@ -267,6 +313,243 @@ describe("task tree tools", () => {
     );
   });
 
+  test("planning packet keeps runtime bookkeeping out of owner-facing frontier", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T20:10:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "domain/normalize-example",
+                "runtime/task-execution/domain-normalize-example",
+                "runtime/task-review/domain-normalize-example",
+                "runtime/owner-event/project-owner-requested",
+              ],
+            },
+            "domain/normalize-example": {
+              id: "domain/normalize-example",
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Normalize one spec.",
+              outputs: ["evidence/domain-normalize-example.md"],
+              acceptance: ["One spec is normalized."],
+            },
+            "runtime/task-execution/domain-normalize-example": {
+              id: "runtime/task-execution/domain-normalize-example",
+              parent_id: "project",
+              state: "active",
+              children: [],
+              goal: "Execute a task assignment.",
+              outputs: [".state/task-worker-runs.jsonl"],
+              acceptance: ["The runtime handoff is observed."],
+            },
+            "runtime/task-review/domain-normalize-example": {
+              id: "runtime/task-review/domain-normalize-example",
+              parent_id: "project",
+              state: "review",
+              children: [],
+              goal: "Review a task completion.",
+              outputs: [".state/task-reviewer-runs.jsonl"],
+              acceptance: ["The runtime review handoff is observed."],
+            },
+            "runtime/owner-event/project-owner-requested": {
+              id: "runtime/owner-event/project-owner-requested",
+              parent_id: "project",
+              state: "backlog",
+              children: [],
+              goal: "Disposition one owner event.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["The owner event is observed."],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const treeConfig = config(projectDir);
+    const summary = summarizeTaskTree(treeConfig);
+    const packet = planningPacket(treeConfig);
+
+    expect(summary.frontier.active).toEqual(["domain/normalize-example"]);
+    expect(summary.frontier.review).toEqual([]);
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.counts.active).toBe(1);
+    expect(summary.counts.review).toBe(0);
+    expect(summary.runtime_activity).toEqual({
+      runnable: ["runtime/owner-event/project-owner-requested"],
+      active: ["runtime/task-execution/domain-normalize-example"],
+      review: ["runtime/task-review/domain-normalize-example"],
+      count: 3,
+    });
+
+    expect(packet.frontier.active).toEqual(["domain/normalize-example"]);
+    expect(packet.frontier.review).toEqual([]);
+    expect(packet.frontier.runnable).toEqual([]);
+    expect(packet.counts.active).toBe(1);
+    expect(packet.counts.review).toBe(0);
+    expect(packet.runtime_activity).toEqual(summary.runtime_activity);
+  });
+
+  test("planning packet reports scenario-test normalization frontier parallelism", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [
+                "domain/normalize-scenario-tests-repo-frontier-20260715",
+                "ops/unrelated-active",
+              ],
+              goal: "Drive AKS RP e2e feature knowledge.",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              owner: "aks-explorer",
+              children: [
+                "domain/normalize-direct-active",
+                "domain/normalize-direct-review",
+                "domain/normalize-direct-runnable",
+                "domain/normalize-direct-blocked",
+              ],
+              goal: "Normalize scenario tests.",
+              outputs: ["scripts/check-scenario-tests.ts"],
+              acceptance: ["strict inventory is clean"],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "strict scenario-test inventory still has plain scenario carriers",
+                  pending: 619,
+                  repositoryPlainScenarioCarriers: 687,
+                  activePlainSpecRefs: 623,
+                  directVitestImplementationRefs: 42,
+                },
+              },
+            },
+            "domain/normalize-direct-active": {
+              id: "domain/normalize-direct-active",
+              parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "active",
+              kind: "domain_leaf",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize active spec.",
+              outputs: ["features/a/tests/a.test.ts"],
+              acceptance: ["live pass"],
+            },
+            "domain/normalize-direct-review": {
+              id: "domain/normalize-direct-review",
+              parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "review",
+              kind: "domain_leaf",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Review normalized spec.",
+              outputs: ["features/b/tests/b.test.ts"],
+              acceptance: ["live pass"],
+            },
+            "domain/normalize-direct-runnable": {
+              id: "domain/normalize-direct-runnable",
+              parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "backlog",
+              kind: "domain_leaf",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize runnable spec.",
+              outputs: ["features/c/tests/c.test.ts"],
+              acceptance: ["live pass"],
+            },
+            "domain/normalize-direct-blocked": {
+              id: "domain/normalize-direct-blocked",
+              parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "blocked",
+              kind: "domain_leaf",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for blocked spec.",
+              outputs: ["features/d/tests/d.test.ts"],
+              acceptance: ["live pass"],
+              blocker: {
+                condition: "Waiting for exact ADO run result.",
+                category: "external-wait",
+                owner: "ado",
+              },
+            },
+            "ops/unrelated-active": {
+              id: "ops/unrelated-active",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair unrelated app issue.",
+              outputs: ["evidence/ops.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const treeConfig = config(projectDir);
+    const summary = summarizeTaskTree(treeConfig);
+    const packet = planningPacket(treeConfig);
+
+    expect(summary.normalization_frontier).toEqual(
+      packet.normalization_frontier,
+    );
+    expect(packet.normalization_frontier).toEqual({
+      controller_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      controller_state: "active",
+      desired_parallelism: { min: 3, max: 5 },
+      pending_plain_spec_refs: 619,
+      repository_plain_scenario_carriers: 687,
+      active_plain_spec_refs: 623,
+      direct_vitest_implementation_refs: 42,
+      descendant_frontier: {
+        runnable: ["domain/normalize-direct-runnable"],
+        waiting: [],
+        active: ["domain/normalize-direct-active"],
+        review: ["domain/normalize-direct-review"],
+        blocked: ["domain/normalize-direct-blocked"],
+      },
+      concrete_nonblocked_count: 3,
+      parallelism_gap: 0,
+    });
+  });
+
   test("planning packet reports ready-path frontier materialization gaps from current live carriers", async () => {
     const projectDir = await makeProject();
     await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
@@ -329,6 +612,11 @@ describe("task tree tools", () => {
               conflict_scope: ["path:path.feature-a.ready"],
               outputs: ["evidence/archive/feature-a.md"],
               acceptance: ["done"],
+              blocker: exactReadyPathWaitBlocker({
+                type: "evidence.available",
+                taskId: "wait-feature-a",
+                pathId: "path.feature-a.ready",
+              }),
             },
           },
         },
@@ -344,7 +632,710 @@ describe("task tree tools", () => {
       generated_at: "2026-07-17T12:35:54.702Z",
       ready_count: 2,
       represented_ready_path_ids: ["path.feature-a.ready"],
+      blocked_only_ready_path_ids: ["path.feature-a.ready"],
+      nonblocked_represented_ready_path_ids: [],
       unrepresented_ready_path_ids: ["path.feature-b.ready"],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: ["wait-feature-a"],
+          holder_states: ["blocked"],
+          representation: "truthful-exact-wait",
+        },
+        {
+          path_id: "path.feature-b.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization reports blocked-only coverage separately from nonblocked frontier work", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+            {
+              id: "path.feature-b.ready",
+              featureId: "feature-b",
+              specId: "spec.feature-b.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["wait-feature-a", "wait-feature-b"],
+              goal: "All ready paths are already represented by blocked waits.",
+            },
+            "wait-feature-a": {
+              id: "wait-feature-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Wait for path.feature-a.ready / spec.feature-a.ready to return.",
+              outputs: ["evidence/archive/feature-a.md"],
+              acceptance: ["done"],
+              blocker: exactReadyPathWaitBlocker({
+                type: "evidence.available",
+                taskId: "wait-feature-a",
+                pathId: "path.feature-a.ready",
+              }),
+            },
+            "wait-feature-b": {
+              id: "wait-feature-b",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Wait for path.feature-b.ready / spec.feature-b.ready to return.",
+              outputs: ["evidence/archive/feature-b.md"],
+              acceptance: ["done"],
+              blocker: exactReadyPathWaitBlocker({
+                type: "evidence.available",
+                taskId: "wait-feature-b",
+                pathId: "path.feature-b.ready",
+              }),
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "blocked-only",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 2,
+      represented_ready_path_ids: [
+        "path.feature-a.ready",
+        "path.feature-b.ready",
+      ],
+      blocked_only_ready_path_ids: [
+        "path.feature-a.ready",
+        "path.feature-b.ready",
+      ],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: [],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: ["wait-feature-a"],
+          holder_states: ["blocked"],
+          representation: "truthful-exact-wait",
+        },
+        {
+          path_id: "path.feature-b.ready",
+          holder_task_ids: ["wait-feature-b"],
+          holder_states: ["blocked"],
+          representation: "truthful-exact-wait",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization keeps generic blocked ready-path holders non-exact without explicit wait metadata", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-c.ready",
+              featureId: "feature-c",
+              specId: "spec.feature-c.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["hold-feature-c-generic"],
+              goal: "A generic blocked holder mentions the ready path but does not expose an exact wait contract.",
+            },
+            "hold-feature-c-generic": {
+              id: "hold-feature-c-generic",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Keep path.feature-c.ready visible while broader frontier review remains pending.",
+              outputs: ["evidence/archive/feature-c-holder.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "blocked-only",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 1,
+      represented_ready_path_ids: ["path.feature-c.ready"],
+      blocked_only_ready_path_ids: ["path.feature-c.ready"],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: [],
+      path_details: [
+        {
+          path_id: "path.feature-c.ready",
+          holder_task_ids: ["hold-feature-c-generic"],
+          holder_states: ["blocked"],
+          representation: "stale-blocked-only-representation",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization ignores blocked holders that explicitly retire a ready spec", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+            {
+              id: "path.feature-b.ready",
+              featureId: "feature-b",
+              specId: "spec.feature-b.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["hold-feature-package-partial"],
+              goal: "One compact holder mentions both paths but retires one of them.",
+            },
+            "hold-feature-package-partial": {
+              id: "hold-feature-package-partial",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Keep spec.feature-a.ready passed while spec.feature-b.ready remains blocked.",
+              outputs: ["evidence/archive/feature-holder.md"],
+              acceptance: ["done"],
+              blocker: exactReadyPathWaitBlocker({
+                type: "blocker.resolved",
+                taskId: "hold-feature-package-partial",
+                pathId: "path.feature-b.ready",
+                retiredPassSpecIds: ["spec.feature-a.ready"],
+                representedReviewedBlockerSpecIds: ["spec.feature-b.ready"],
+              }),
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "gap",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 2,
+      represented_ready_path_ids: ["path.feature-b.ready"],
+      blocked_only_ready_path_ids: ["path.feature-b.ready"],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: ["path.feature-a.ready"],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+        {
+          path_id: "path.feature-b.ready",
+          holder_task_ids: ["hold-feature-package-partial"],
+          holder_states: ["blocked"],
+          representation: "truthful-exact-wait",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization ignores blocker waiting_for metadata that is not controller-visible", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["hold-feature-package-partial"],
+              goal: "A broad family holder exists, but it does not surface the exact ready path on its visible goal or blocker text.",
+            },
+            "hold-feature-package-partial": {
+              id: "hold-feature-package-partial",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Keep one broad family holder blocked while reviewed blockers remain.",
+              outputs: ["evidence/archive/feature-holder.md"],
+              acceptance: ["done"],
+              blocker: {
+                condition: "The broad package-partial family still has unresolved reviewed blockers.",
+                waiting_for: {
+                  representedReviewedBlockerSpecIds: ["spec.feature-a.ready"],
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "gap",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 1,
+      represented_ready_path_ids: [],
+      blocked_only_ready_path_ids: [],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: ["path.feature-a.ready"],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization exposes blocked review wrappers as stale blocked-only representations", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["wait-feature-a-result-blocked"],
+              goal: "A planner-created blocked review wrapper is still open.",
+            },
+            "wait-feature-a-result-blocked": {
+              id: "wait-feature-a-result-blocked",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Resolve blocked review for wait-feature-a-result: ADO run 123 is still in progress for spec.feature-a.ready.",
+              inputs: ["Reviewed task: wait-feature-a-result"],
+              outputs: ["evidence/archive/feature-a-review.md"],
+              acceptance: ["Refresh the exact wait or replace it with runnable work."],
+              blocker: {
+                category: "external-wait",
+                waiting_for: {
+                  type: "blocker.resolved",
+                },
+              },
+              context: {
+                reviewedTask: {
+                  taskId: "wait-feature-a-result",
+                },
+              },
+              trace: {
+                reviewed_source_task_id: "wait-feature-a-result",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "blocked-only",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 1,
+      represented_ready_path_ids: ["path.feature-a.ready"],
+      blocked_only_ready_path_ids: ["path.feature-a.ready"],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: [],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: ["wait-feature-a-result-blocked"],
+          holder_states: ["blocked"],
+          representation: "stale-blocked-only-representation",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization ignores the refill-gap meta task itself", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T12:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+            {
+              id: "path.feature-b.ready",
+              featureId: "feature-b",
+              specId: "spec.feature-b.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T12:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["ops/repair-ready-model-path-frontier-refill-gap-20260718"],
+              goal: "An app-ops repair task is investigating the missing ready-path carriers.",
+            },
+            "ops/repair-ready-model-path-frontier-refill-gap-20260718": {
+              id: "ops/repair-ready-model-path-frontier-refill-gap-20260718",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              owner: "app-ops",
+              children: [],
+              goal: "Repair the ready-model/frontier materialization gap for path.feature-a.ready and path.feature-b.ready.",
+              inputs: [
+                "Unrepresented ready paths: path.feature-a.ready, path.feature-b.ready",
+              ],
+              outputs: [".state/ops/repair-ready-model-path-frontier-refill-gap-20260718.md"],
+              acceptance: ["Record the exact missing ready-path carriers."],
+              conflict_scope: ["ops:ready-model-path-frontier-refill"],
+              context: {
+                readyPathFrontierGap: true,
+                creationTrigger: "ready-path-frontier-materialization-gap",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "gap",
+      generated_at: "2026-07-18T12:00:00.000Z",
+      ready_count: 2,
+      represented_ready_path_ids: [],
+      blocked_only_ready_path_ids: [],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: ["path.feature-a.ready", "path.feature-b.ready"],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+        {
+          path_id: "path.feature-b.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+      ],
+    });
+  });
+
+  test("ready-path materialization ignores stale project and non-leaf history matches", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map", "views"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "views", "path-summary.json"),
+      `${JSON.stringify(
+        {
+          generatedAt: "2026-07-18T07:00:00.000Z",
+          paths: [
+            {
+              id: "path.feature-a.ready",
+              featureId: "feature-a",
+              specId: "spec.feature-a.ready",
+              status: "ready",
+            },
+            {
+              id: "path.feature-b.ready",
+              featureId: "feature-b",
+              specId: "spec.feature-b.ready",
+              status: "ready",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: "2026-07-18T07:05:00.000Z",
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["wait-feature-a", "feature-b-parent"],
+              goal: "Legacy history still mentions path.feature-b.ready.",
+              context: {
+                stale_ready_path_ids: ["path.feature-b.ready"],
+                stale_spec_ids: ["spec.feature-b.ready"],
+              },
+            },
+            "wait-feature-a": {
+              id: "wait-feature-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Wait for spec.feature-a.ready to return.",
+              conflict_scope: ["path:path.feature-a.ready"],
+              outputs: ["evidence/archive/feature-a.md"],
+              acceptance: ["done"],
+              blocker: exactReadyPathWaitBlocker({
+                type: "evidence.available",
+                taskId: "wait-feature-a",
+                pathId: "path.feature-a.ready",
+              }),
+            },
+            "feature-b-parent": {
+              id: "feature-b-parent",
+              parent_id: "project",
+              state: "blocked",
+              children: ["active-unrelated-child"],
+              goal: "Stale non-leaf holder for path.feature-b.ready remains in history only.",
+              context: {
+                stale_signal: "spec.feature-b.ready",
+              },
+            },
+            "active-unrelated-child": {
+              id: "active-unrelated-child",
+              parent_id: "feature-b-parent",
+              state: "active",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Unrelated live child that should not cover the stale ready path.",
+              outputs: ["evidence/archive/unrelated.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+    expect(packet.ready_path_frontier_materialization).toEqual({
+      status: "gap",
+      generated_at: "2026-07-18T07:00:00.000Z",
+      ready_count: 2,
+      represented_ready_path_ids: ["path.feature-a.ready"],
+      blocked_only_ready_path_ids: ["path.feature-a.ready"],
+      nonblocked_represented_ready_path_ids: [],
+      unrepresented_ready_path_ids: ["path.feature-b.ready"],
+      path_details: [
+        {
+          path_id: "path.feature-a.ready",
+          holder_task_ids: ["wait-feature-a"],
+          holder_states: ["blocked"],
+          representation: "truthful-exact-wait",
+        },
+        {
+          path_id: "path.feature-b.ready",
+          holder_task_ids: [],
+          holder_states: [],
+          representation: "missing-runnable-child",
+        },
+      ],
     });
   });
 
@@ -853,6 +1844,87 @@ describe("task tree tools", () => {
     expect(task.blocker.fallback_at).toBe("2026-07-14T18:40:00Z");
   });
 
+  test("refresh-blocked-wait rewrites legacy synthetic refresh observers onto the blocked-frontier schedule", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["legacy-frontier-wait"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "legacy-frontier-wait": {
+              id: "legacy-frontier-wait",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep one exact frontier holder.",
+              outputs: ["evidence/archive/legacy-frontier-wait.md"],
+              acceptance: ["frontier stays current"],
+              blocker: {
+                condition: "Old frontier wait condition.",
+                category: "external-wait",
+                owner: "human",
+                blocked_at: "2026-07-18T18:00:00Z",
+                waiting_for: {
+                  type: "frontier.changed",
+                  taskId: "legacy-frontier-wait",
+                  source: "task-tree.refresh-blocked-wait",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  trigger: "task-tree.refresh-blocked-wait",
+                },
+                observation_method:
+                  "Planner/app-ops refreshed this wait after reviewing returned evidence; controller ticks should keep it blocked until the named frontier changes.",
+                next_check_at: "2026-07-18T20:00:00Z",
+                resume_condition: "Resume when the exact frontier changes.",
+                fallback_at: "2026-07-19T20:00:00Z",
+                fallback_action:
+                  "If unchanged, refresh the same frontier holder in place.",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const task = refreshBlockedWait(config(projectDir), {
+      taskId: "legacy-frontier-wait",
+      condition: "Current evidence still shows the same exact frontier.",
+      resumeCondition:
+        "Resume when accepted evidence materially changes the exact frontier.",
+      summary:
+        "Refreshed the exact frontier holder and repaired its observer contract.",
+      nextCheckAt: "2026-07-19T20:00:00Z",
+      fallbackAt: "2026-07-20T20:00:00Z",
+    });
+
+    expect(task.blocker.observed_by).toEqual({
+      workflow: "project-planner",
+      schedule: "blocked-frontier-app-ops-review",
+      trigger: "project.owner.requested",
+    });
+    expect(task.blocker.observation_method).toBe(
+      "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+    );
+  });
+
   test("updateTaskText preserves structured approval wait metadata after refresh even when a blocker patch carries null structured fields", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -1315,6 +2387,99 @@ describe("task tree tools", () => {
       await readFile(resolveTaskTreePath(projectDir), "utf8"),
     );
     expect(tree.tasks["spec-runner-and-replays"].children).toEqual([]);
+  });
+
+  test("model gap seeding ignores stale project and non-leaf context-only matches", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "specs"), { recursive: true });
+    await mkdir(join(projectDir, "replays"), { recursive: true });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify({
+        featurePaths: [
+          {
+            id: "path.feature-b.ready",
+            featureId: "feature-b",
+            status: "ready",
+          },
+        ],
+      })}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["feature-knowledge-and-specs", "stale-feature-b-parent"],
+              goal: "Legacy project history still mentions feature-b.",
+              context: {
+                stale_ready_path_ids: ["path.feature-b.ready"],
+                stale_feature_ids: ["feature-b"],
+              },
+            },
+            "feature-knowledge-and-specs": {
+              id: "feature-knowledge-and-specs",
+              parent_id: "project",
+              state: "backlog",
+              children: [],
+              goal: "source lane",
+              outputs: ["features/", "specs/", "replays/"],
+              acceptance: ["done"],
+            },
+            "stale-feature-b-parent": {
+              id: "stale-feature-b-parent",
+              parent_id: "project",
+              state: "blocked",
+              children: ["unrelated-live-child"],
+              goal: "Stale non-leaf holder for path.feature-b.ready only.",
+              context: {
+                stale_signal: "feature-b",
+              },
+            },
+            "unrelated-live-child": {
+              id: "unrelated-live-child",
+              parent_id: "stale-feature-b-parent",
+              state: "active",
+              kind: "domain_leaf",
+              children: [],
+              goal: "Unrelated active work.",
+              outputs: ["evidence/archive/unrelated.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = seedModelGapBacklog(config(projectDir), { limit: 1 });
+
+    expect(result.skipped).toEqual([]);
+    expect(result.created).toHaveLength(1);
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["feature-knowledge-and-specs"].children).toEqual(
+      result.created,
+    );
+    expect(tree.tasks[result.created[0]].conflict_scope).toContain(
+      "path:path.feature-b.ready",
+    );
   });
 
   test("planning packet warns when retry work references terminal model paths", async () => {
@@ -2298,6 +3463,97 @@ describe("task tree tools", () => {
                 fallback_at: "2099-07-13T18:15:00Z",
                 fallback_action:
                   "If the run is still not reviewable at fallback, refresh this exact wait with current ADO status or escalate the artifact/reachability issue.",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses environment-overblock warning for reviewed exact Azure DevOps waits with future fallback windows", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["reviewed-ado-run-wait", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "reviewed-ado-run-wait": {
+              id: "reviewed-ado-run-wait",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Hold the repaired row-138 egress-lockdown live-carrier branch on one exact external wait for bounded ADO rerun 172798227 in staging, then trigger the terminal artifact review that decides whether the same spec is restored or needs another bounded follow-up.",
+              outputs: ["evidence/archive/reviewed-ado-run-wait.md"],
+              acceptance: [
+                "The exact run wait remains visible until terminal artifacts are reviewable.",
+              ],
+              context: {
+                target: "staging",
+              },
+              blocker: {
+                condition:
+                  "Wait for Azure DevOps run 172798227 to reach a terminal state with downloadable aggregate and per-spec artifacts; until then, do not rerun or create another poll task for the same spec.",
+                category: "external-wait",
+                owner: "external",
+                waiting_for: {
+                  type: "blocker.resolved",
+                  reviewedTaskId: "repair-egress-lockdown-row138-live-carrier",
+                  reviewedAttemptId:
+                    "a_repair-egress-lockdown-row138-live-carrier_20260718103122",
+                  successorTaskId: "reviewed-ado-run-wait",
+                  source: "project.task.reviewed",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  trigger: "project.task.reviewed",
+                },
+                observation_method:
+                  "Project planner created this reviewed blocked successor from the review result; on the next owner/planner pass, refresh it with concrete returned evidence, replace it with runnable work, or keep the wait with updated blocker proof.",
+                next_check_at: "2099-07-18T11:15:00Z",
+                resume_condition:
+                  "Resume only when ADO run 172798227 is terminal and its exact aggregate result plus the per-spec artifact can be reviewed.",
+                fallback_at: "2099-07-19T11:15:00Z",
+                fallback_action:
+                  "If run 172798227 is still nonterminal or artifacts remain unavailable at fallback time, create or reuse one bounded owner recovery/escalation task for this exact run instead of refreshing the wait unchanged.",
+                resume_at: "2099-07-18T11:15:00Z",
               },
             },
             "real-env-blocker": {
@@ -3492,6 +4748,102 @@ describe("task tree tools", () => {
     ]);
   });
 
+  test("planning packet suppresses environment-overblock warning for compact wait holders that use exact frontier-changed review wording", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["aks-feature-compact-loop", "real-env-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              children: ["wait-compact-serverless-frontier"],
+              goal: "compact loop",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "wait-compact-serverless-frontier": {
+              id: "wait-compact-serverless-frontier",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              children: [],
+              goal: "Keep one exact compact blocked wait for spec.serverless-virtual-nodes.multi-pod-burst while the reviewed runtime-readiness surface still fails to materialize the virtual node.",
+              outputs: ["evidence/archive/serverless-frontier.md"],
+              acceptance: [
+                "One blocked compact leaf truthfully carries the reviewed runtime-readiness wait for spec.serverless-virtual-nodes.multi-pod-burst.",
+              ],
+              conflict_scope: [
+                "compact-blocked-holder-exactness",
+                "feature:serverless",
+              ],
+              blocker: {
+                condition:
+                  "Reviewed exact same-surface Azure DevOps run 172799989 on staging still left the exact compact blocked wait unreleased because the virtual node never materialized before witness apply. Resume only when the same-surface frontier changes.",
+                category: "external-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "frontier.changed",
+                  taskId: "wait-compact-serverless-frontier",
+                  source: "task-tree.refresh-blocked-wait",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-app-ops-review",
+                  trigger: "project.owner.requested",
+                },
+                observation_method:
+                  "Scheduled blocked-frontier app-ops review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+                next_check_at: "2099-07-19T00:30:00.000Z",
+                fallback_at: "2099-07-19T18:30:00.000Z",
+                resume_condition:
+                  "Resume only after reviewed same-surface evidence for the exact multi-pod-burst witness contract shows the virtual node realizes before witness apply.",
+              },
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+    ]);
+  });
+
   test("planning packet suppresses environment-overblock warning for compact holders already backed by an exact shared-family wait plus no-local-successor judgment", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -4067,6 +5419,100 @@ describe("task tree tools", () => {
                   errorClass: "package-partial",
                   scope: "feature-compact",
                 },
+              },
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses source-exactness-overblock warning for legacy compact holders backed by accepted no-successor evidence", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["aks-feature-compact-loop", "source-exactness-blocker"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-feature-compact-loop": {
+              id: "aks-feature-compact-loop",
+              parent_id: "project",
+              state: "blocked",
+              children: [
+                "hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708",
+              ],
+              goal: "feature compact loop",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708": {
+              id: "hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708",
+              parent_id: "aks-feature-compact-loop",
+              state: "blocked",
+              children: [],
+              goal: "Preserve the exact compact wait for spec.virtualmachine-prerelease.row61-core-addon-compatibility until the oldest-branch runtime failure meaning changes or a bounded same-surface successor is approved.",
+              outputs: [
+                "../aks-rp-e2e/evidence/archive/verify-vm-row61-core-addon-equivalent-source-migration-20260718.md",
+              ],
+              acceptance: [
+                "One blocked compact holder covers only spec.virtualmachine-prerelease.row61-core-addon-compatibility.",
+              ],
+              conflict_scope: ["feature:virtualmachines-agentpool:row61"],
+              blocker: {
+                condition:
+                  "2026-07-18 accepted source-equivalence review proved spec.virtualmachine-prerelease.row61-core-addon-compatibility has no current-suite/source-equivalent successor in mounted e2ev3 VirtualMachine prerelease/checkin. Preserve hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708 as the distinct row61 compact-facing slice backed by ../aks-rp-e2e/evidence/archive/verify-vm-row61-core-addon-equivalent-source-migration-20260718.md while the accepted live frontier remains the oldest-branch metrics-server/runtime blocker from run 28721673014. Do not remap row61 to ManagedSystem, do not reopen an unchanged rerun, and do not fold row61 back into the row75/row76 family without stronger same-surface proof.",
+                category: "blocked-wait",
+                owner: "aks-explorer",
+                waiting_for: {
+                  type: "evidence.available",
+                  taskId: "hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708",
+                },
+                observed_by: {
+                  workflow: "project-planner",
+                  schedule: "blocked-frontier-owner-review",
+                  trigger: "project.planning.requested",
+                },
+                observation_method:
+                  "Scheduled blocked-frontier owner review checks the stated wait condition and must unblock, replace, escalate, or keep the wait with fresh evidence.",
+                resume_condition:
+                  "Resume only when accepted evidence materially changes the same row61 oldest-branch metrics-server/runtime frontier from run 28721673014, or mounted current source gains one explicit e2ev3 VirtualMachine prerelease/checkin scenario that preserves both version endpoints plus the CoreDNS + metrics-server validation bundle for this row61 surface. Until then keep row61 on hold-compact-virtualmachines-agentpool-row61-oldest-branch-runtime-frontier-20260708 backed by ../aks-rp-e2e/evidence/archive/verify-vm-row61-core-addon-equivalent-source-migration-20260718.md; do not remap row61 to ManagedSystem or schedule an unchanged rerun.",
               },
             },
             "source-exactness-blocker": {
@@ -6463,6 +7909,144 @@ describe("task tree tools", () => {
     expect(tree.tasks.project.children).toEqual(["aks-feature-reference-loop"]);
   });
 
+  test("compaction preserves done leaves closed by blocked reviewer decision", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["exact-wait-holder"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "exact-wait-holder": {
+              id: "exact-wait-holder",
+              parent_id: "project",
+              state: "review",
+              status: "review",
+              children: [],
+              goal: "Preserve exact wait.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["blocked review keeps the exact wait visible"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    markTaskDone(config(projectDir), {
+      taskId: "exact-wait-holder",
+      summary: "Reviewer decision blocked; keep this as the exact wait.",
+      resolution: "replaced",
+      reviewDecision: "blocked",
+    });
+
+    const compactResult = compactDoneLeaves(config(projectDir), { limit: 10 });
+    expect(compactResult.archivedTaskIds).toEqual([]);
+    expect(compactResult.protected).toBe(1);
+    expect(() =>
+      rollupParent(config(projectDir), {
+        parentId: "project",
+        summary: "do not archive blocked wait",
+        taskIds: ["exact-wait-holder"],
+      }),
+    ).toThrow(/reviewer decision is blocked/);
+
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["exact-wait-holder"]).toBeDefined();
+    expect(tree.tasks["exact-wait-holder"].trace.review_decision).toBe(
+      "blocked",
+    );
+    expect(tree.tasks["exact-wait-holder"].context.review_decision).toBe(
+      "blocked",
+    );
+  });
+
+  test("restores an archived done leaf as a live blocked holder", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["archived-wait"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "archived-wait": {
+              id: "archived-wait",
+              parent_id: "project",
+              state: "done",
+              status: "done",
+              children: [],
+              goal: "Old exact wait.",
+              outputs: ["evidence/archive/wait.md"],
+              acceptance: ["restore when still live"],
+              done_at: "2026-07-18T00:00:00.000Z",
+              resolution: "replaced",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const archived = rollupParent(config(projectDir), {
+      parentId: "project",
+      summary: "archive completed wait",
+      taskIds: ["archived-wait"],
+    });
+    expect(archived.archivedTaskIds).toEqual(["archived-wait"]);
+
+    const restored = restoreArchivedTask(config(projectDir), {
+      taskId: "archived-wait",
+      state: "blocked",
+      reason: "same wait is still the live owner boundary",
+      resumeCondition: "owner returns",
+      nextCheckAt: "2026-07-19T00:00:00.000Z",
+    });
+
+    expect(restored.taskId).toBe("archived-wait");
+    expect(restored.state).toBe("blocked");
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    expect(tree.tasks["archived-wait"].state).toBe("blocked");
+    expect(tree.tasks["archived-wait"].done_at).toBeUndefined();
+    expect(tree.tasks.project.children).toEqual(["archived-wait"]);
+    expect(tree.tasks["archived-wait"].trace.restored_from_archive_file).toEndWith(
+      archived.archivePath,
+    );
+  });
+
   test("repair-rollups reopens durable loop roots with incomplete progress", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -7021,9 +8605,12 @@ describe("task tree tools", () => {
           activeChildren: 0,
           openChildren: 0,
           blockedWaitChildren: 1,
+          nonDispatchablePending: 42,
+          representedPending: 42,
+          strandedPending: 0,
           noRefillNow: true,
           reason:
-            "spec-loop execution is drained and the remaining frontier is exact wait stewardship: 0 active child leaf/leaves, 0 review child leaf/leaves, 0 waiting child leaf/leaves, 0 backlog child leaf/leaves, 1 blocked wait leaf/leaves, 0 backlog follow-up leaf/leaves; stranded pending=42",
+            "spec-loop execution is drained and the remaining frontier is exact wait stewardship: 0 active child leaf/leaves, 0 review child leaf/leaves, 0 waiting child leaf/leaves, 0 backlog child leaf/leaves, 1 blocked wait leaf/leaves, 0 backlog follow-up leaf/leaves; pending=42 (dispatchable=0, nonDispatchable=42, represented=42, stranded=0)",
         },
       },
     });
@@ -7379,6 +8966,440 @@ describe("task tree tools", () => {
     );
     expect(tree.tasks["normalization-frontier"].result).toBe(
       "Child review pending: review-a, review-b.",
+    );
+  });
+
+  test("repair-rollups clears stale restored-child controller metadata after the restored child is archived", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          active_task_ids: [
+            "domain/normalize-scenario-tests-repo-frontier-20260715",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              status: "active",
+              children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              owner: "aks-explorer",
+              children: [
+                "domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718",
+              ],
+              goal: "Keep the normalization frontier truthful.",
+              outputs: ["evidence/archive/frontier.md"],
+              acceptance: ["frontier stays visible"],
+              result:
+                "Current direct normalization frontier restored to child task(s): domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718.",
+              session_id: "s_task_normalization_frontier",
+              trace: {
+                current_attempt_id: "attempt-normalization-frontier",
+                assigned_at: "2026-07-18T09:07:01.429Z",
+                assigned_by: "planner",
+                assigned_worker: "aks-explorer",
+                last_session: "s_task_normalization_frontier",
+                worker_started_attempt_id: "attempt-normalization-frontier",
+                worker_started_at: "2026-07-18T09:07:45.234Z",
+                review_summary:
+                  "App-state repair restored domain/normalize-scenario-tests-repo-frontier-20260715 as a live normalization controller and reseeded domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718 as the current one-spec frontier.",
+                restored_child_task_id:
+                  "domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718",
+                restored_from_archive_path:
+                  ".state/tasks/archive/done-leaves-20260718072306827.json",
+              },
+              context: {
+                acceptance_note:
+                  "Current normalization frontier restored in live task state: domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718 now carries the next exact one-spec normalization step.",
+                restoredHolderTaskId:
+                  "domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718",
+                restoredHolderSpecId:
+                  "spec.planned-maintenance.configuration-crud-lifecycle",
+                restoredHolderPathId:
+                  "path.planned-maintenance.configuration-crud-lifecycle",
+                restoredFromArchivePath:
+                  ".state/tasks/archive/done-leaves-20260718072306827.json",
+                repairEvidencePath:
+                  "evidence/archive/ops-apply-normalize-scenario-tests-repo-frontier-20260715-state-repair-20260718.md",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.repaired).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          from: "stale-restored-child",
+          to: "backlog",
+        }),
+      ]),
+    );
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    const controller = tree.tasks[
+      "domain/normalize-scenario-tests-repo-frontier-20260715"
+    ];
+    expect(controller.children).toEqual([]);
+    expect(controller.state).toBe("backlog");
+    expect(controller.status ?? controller.state).toBe("backlog");
+    expect(controller.session_id).toBeUndefined();
+    expect(controller.result).toBeUndefined();
+    expect(controller.trace.current_attempt_id).toBeUndefined();
+    expect(controller.trace.worker_started_attempt_id).toBeUndefined();
+    expect(controller.trace.review_summary).toBeUndefined();
+    expect(controller.trace.restored_child_task_id).toBeUndefined();
+    expect(controller.trace.stale_restored_child_id).toBe(
+      "domain/normalize-direct-planned-maintenance-configuration-crud-lifecycle-20260718",
+    );
+    expect(controller.context.acceptance_note).toBeUndefined();
+    expect(controller.context.restoredHolderTaskId).toBeUndefined();
+    expect(controller.context.restoredHolderSpecId).toBeUndefined();
+    expect(controller.context.restoredHolderPathId).toBeUndefined();
+    expect(controller.context.restoredFromArchivePath).toBeUndefined();
+    expect(controller.context.repairEvidencePath).toBe(
+      "evidence/archive/ops-apply-normalize-scenario-tests-repo-frontier-20260715-state-repair-20260718.md",
+    );
+  });
+
+  test("repair-rollups reopens scenario-test normalization controller while strict inventory fails", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "scripts"), { recursive: true });
+    await writeFile(
+      join(projectDir, "scripts", "check-scenario-tests.ts"),
+      [
+        "console.log(JSON.stringify({",
+        "  report: { referencedPlainActiveSpecCount: 627, directVitestImplementationCount: 38 },",
+        "  guard: {",
+        "    passed: false,",
+        "    missingScenarioFiles: [],",
+        "    remainingSpecReferencedPlainScenarioUnits: Array.from({ length: 623 }, (_, index) => ({ scenarioTestPath: `legacy-${index}.ts` })),",
+        "    remainingRepoPlainScenarioFiles: Array.from({ length: 690 }, (_, index) => `legacy-${index}.ts`)",
+        "  }",
+        "}));",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "done",
+              owner: "aks-explorer",
+              children: ["domain/normalized-one-spec"],
+              goal: "Normalize scenario tests until strict inventory is clean.",
+              outputs: ["../aks-rp-e2e/scripts/check-scenario-tests.ts"],
+              acceptance: [
+                "A clean origin/dev passes bun scripts/check-scenario-tests.ts --strict with 0 active plain spec refs, 0 referenced plain scenario carriers, and 0 repository plain scenario carriers.",
+              ],
+              done_at: "2026-07-18T13:22:03.812Z",
+              done_by: "task-tree-tool",
+              resolution: "completed",
+            },
+            "domain/normalized-one-spec": {
+              id: "domain/normalized-one-spec",
+              parent_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              state: "done",
+              owner: "aks-explorer",
+              goal: "Normalize one spec.",
+              outputs: ["features/example/tests/example.test.ts"],
+              acceptance: ["single spec live pass"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = repairTaskTreeRollups(config(projectDir));
+
+    expect(result.repairedScenarioTestNormalizationControllers).toContain(
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+    );
+    const tree = JSON.parse(
+      await readFile(resolveTaskTreePath(projectDir), "utf8"),
+    );
+    const controller = tree.tasks[
+      "domain/normalize-scenario-tests-repo-frontier-20260715"
+    ];
+    expect(controller.state).toBe("backlog");
+    expect(controller.resolution).toBeUndefined();
+    expect(controller.done_at).toBeUndefined();
+    expect(controller.context.workflowProgress).toMatchObject({
+      completionReady: false,
+      pending: 623,
+      repositoryPlainScenarioCarriers: 690,
+      activePlainSpecRefs: 627,
+      directVitestImplementationRefs: 38,
+    });
+    expect(planningPacket(config(projectDir))).toMatchObject({
+      incomplete_structural_controllers: [
+        expect.objectContaining({
+          id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          state: "backlog",
+          pending: 623,
+          repositoryPlainScenarioCarriers: 690,
+          activePlainSpecRefs: 627,
+        }),
+      ],
+    });
+  });
+
+  test("repair-rollups measures scenario-test inventory from clean origin/dev instead of dirty checkout", async () => {
+    const appDir = await makeProject();
+    const projectDir = await mkdtemp(join(tmpdir(), "aks-scenario-inventory-"));
+    await mkdir(join(projectDir, "scripts"), { recursive: true });
+    const checkerPath = join(projectDir, "scripts", "check-scenario-tests.ts");
+    await writeFile(
+      checkerPath,
+      [
+        "console.log(JSON.stringify({",
+        "  report: { referencedPlainActiveSpecCount: 2, directVitestImplementationCount: 9 },",
+        "  guard: {",
+        "    passed: false,",
+        "    missingScenarioFiles: [],",
+        "    remainingSpecReferencedPlainScenarioUnits: [{ scenarioTestPath: 'origin-a.ts' }],",
+        "    remainingRepoPlainScenarioFiles: ['origin-a.ts', 'origin-b.ts']",
+        "  }",
+        "}));",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+    runGit(projectDir, ["init"]);
+    runGit(projectDir, ["config", "user.email", "task-tree@example.test"]);
+    runGit(projectDir, ["config", "user.name", "Task Tree Test"]);
+    runGit(projectDir, ["add", "."]);
+    runGit(projectDir, ["commit", "-m", "origin inventory"]);
+    const originDevCommit = runGit(projectDir, ["rev-parse", "HEAD"]);
+    runGit(projectDir, ["branch", "-M", "dev"]);
+    runGit(projectDir, ["update-ref", "refs/remotes/origin/dev", originDevCommit]);
+
+    await writeFile(
+      checkerPath,
+      [
+        "console.log(JSON.stringify({",
+        "  report: { referencedPlainActiveSpecCount: 627, directVitestImplementationCount: 38 },",
+        "  guard: {",
+        "    passed: false,",
+        "    missingScenarioFiles: [],",
+        "    remainingSpecReferencedPlainScenarioUnits: Array.from({ length: 623 }, (_, index) => ({ scenarioTestPath: `dirty-${index}.ts` })),",
+        "    remainingRepoPlainScenarioFiles: Array.from({ length: 690 }, (_, index) => `dirty-${index}.ts`)",
+        "  }",
+        "}));",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "done",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize scenario tests until strict inventory is clean.",
+              outputs: ["../aks-rp-e2e/scripts/check-scenario-tests.ts"],
+              acceptance: [
+                "A clean origin/dev passes bun scripts/check-scenario-tests.ts --strict with 0 active plain spec refs, 0 referenced plain scenario carriers, and 0 repository plain scenario carriers.",
+              ],
+              done_at: "2026-07-18T13:22:03.812Z",
+              done_by: "task-tree-tool",
+              resolution: "completed",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const treeConfig = configWithAppDir(appDir, projectDir);
+    const result = repairTaskTreeRollups(treeConfig);
+
+    expect(result.repairedScenarioTestNormalizationControllers).toContain(
+      "domain/normalize-scenario-tests-repo-frontier-20260715",
+    );
+    const tree = JSON.parse(await readFile(resolveTaskTreePath(appDir), "utf8"));
+    const progress =
+      tree.tasks["domain/normalize-scenario-tests-repo-frontier-20260715"]
+        .context.workflowProgress;
+    expect(progress).toMatchObject({
+      completionReady: false,
+      pending: 1,
+      repositoryPlainScenarioCarriers: 2,
+      activePlainSpecRefs: 2,
+      directVitestImplementationRefs: 9,
+      inventorySource: {
+        kind: "origin-dev-worktree",
+        ref: "origin/dev",
+        commit: originDevCommit,
+      },
+    });
+  });
+
+  test("planning packet reports clean origin/dev inventory even when stored workflow progress is stale", async () => {
+    const appDir = await makeProject();
+    const projectDir = await mkdtemp(join(tmpdir(), "aks-scenario-packet-"));
+    await mkdir(join(projectDir, "scripts"), { recursive: true });
+    const checkerPath = join(projectDir, "scripts", "check-scenario-tests.ts");
+    await writeFile(
+      checkerPath,
+      [
+        "console.log(JSON.stringify({",
+        "  report: { referencedPlainActiveSpecCount: 2, directVitestImplementationCount: 9 },",
+        "  guard: {",
+        "    passed: false,",
+        "    missingScenarioFiles: [],",
+        "    remainingSpecReferencedPlainScenarioUnits: [{ scenarioTestPath: 'origin-a.ts' }],",
+        "    remainingRepoPlainScenarioFiles: ['origin-a.ts', 'origin-b.ts']",
+        "  }",
+        "}));",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+    runGit(projectDir, ["init"]);
+    runGit(projectDir, ["config", "user.email", "task-tree@example.test"]);
+    runGit(projectDir, ["config", "user.name", "Task Tree Test"]);
+    runGit(projectDir, ["add", "."]);
+    runGit(projectDir, ["commit", "-m", "origin packet inventory"]);
+    runGit(projectDir, ["branch", "-M", "dev"]);
+    runGit(projectDir, [
+      "update-ref",
+      "refs/remotes/origin/dev",
+      runGit(projectDir, ["rev-parse", "HEAD"]),
+    ]);
+
+    await writeFile(
+      resolveTaskTreePath(appDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["domain/normalize-scenario-tests-repo-frontier-20260715"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-scenario-tests-repo-frontier-20260715": {
+              id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+              parent_id: "project",
+              state: "active",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize scenario tests until strict inventory is clean.",
+              outputs: ["../aks-rp-e2e/scripts/check-scenario-tests.ts"],
+              acceptance: [
+                "A clean origin/dev passes bun scripts/check-scenario-tests.ts --strict with 0 active plain spec refs, 0 referenced plain scenario carriers, and 0 repository plain scenario carriers.",
+              ],
+              context: {
+                workflowProgress: {
+                  completionReady: false,
+                  reason:
+                    "strict scenario-test inventory still has plain scenario carriers",
+                  pending: 623,
+                  repositoryPlainScenarioCarriers: 690,
+                  activePlainSpecRefs: 627,
+                  directVitestImplementationRefs: 38,
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(configWithAppDir(appDir, projectDir));
+
+    expect(packet.normalization_frontier).toMatchObject({
+      pending_plain_spec_refs: 1,
+      repository_plain_scenario_carriers: 2,
+      active_plain_spec_refs: 2,
+      direct_vitest_implementation_refs: 9,
+    });
+    expect(packet.incomplete_structural_controllers).toContainEqual(
+      expect.objectContaining({
+        id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        pending: 1,
+        activePlainSpecRefs: 2,
+        repositoryPlainScenarioCarriers: 2,
+      }),
     );
   });
 
@@ -8114,6 +10135,171 @@ describe("task tree tools", () => {
     );
   });
 
+  test("suppresses runtime-reconciled backlog leaves from runnable frontier when assign would reject them", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["aks-project-runtime-health"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "aks-project-runtime-health": {
+              id: "aks-project-runtime-health",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P0",
+              owner: "app-ops",
+              workflow: "project-watchdog",
+              children: [],
+              goal: "Keep task delivery mechanically healthy.",
+              outputs: [".state/watchdog-runs.jsonl"],
+              acceptance: [
+                "Each wake repairs only declared mechanical invariants.",
+              ],
+              reconcile_mode: "maintain",
+              context: {
+                reconciliation: {
+                  mode: "maintain",
+                  handler: "workflow:project-watchdog",
+                  trigger: {
+                    type: "project.watchdog.check.requested",
+                  },
+                },
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const summary = summarizeTaskTree(config(projectDir));
+    expect(summary.frontier.runnable).toEqual([]);
+    expect(summary.frontier.waiting).toEqual([]);
+    expect(confirmRunnableBacklogLeaves(config(projectDir), 10)).toEqual([]);
+    expect(() =>
+      assignTask(config(projectDir), {
+        taskId: "aks-project-runtime-health",
+        worker: "app-ops",
+      }),
+    ).toThrow(/not a worker-executable backlog leaf/);
+  });
+
+  test("keeps summary/confirm-runnable aligned with assign for independent direct normalization work", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      resolveTaskTreePath(projectDir),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          root_task_id: "project",
+          active_task_id:
+            "domain/normalize-direct-rp-nodepool-lifecycle-rollback-20260718",
+          active_task_ids: [
+            "domain/normalize-direct-rp-nodepool-lifecycle-rollback-20260718",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "domain/normalize-direct-rp-nodepool-lifecycle-rollback-20260718",
+                "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "domain/normalize-direct-rp-nodepool-lifecycle-rollback-20260718": {
+              id: "domain/normalize-direct-rp-nodepool-lifecycle-rollback-20260718",
+              parent_id: "project",
+              state: "active",
+              status: "active",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize rollback directly.",
+              outputs: [
+                "features/rp-nodepool-lifecycle/tests/rp-nodepool-lifecycle-rollback.test.ts",
+              ],
+              acceptance: ["done"],
+              conflict_scope: [
+                "scenario-test-authoring",
+                "features/rp-nodepool-lifecycle/tests/rp-nodepool-lifecycle-rollback",
+                "features/rp-nodepool-lifecycle/specs/rp-nodepool-lifecycle-rollback.json",
+              ],
+            },
+            "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718": {
+              id: "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+              parent_id: "project",
+              state: "backlog",
+              status: "backlog",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Normalize agentpool delete ignore pdb directly.",
+              outputs: [
+                "features/rp-master-validation/tests/rp-agentpool-delete-ignore-pdb.test.ts",
+              ],
+              acceptance: ["done"],
+              conflict_scope: [
+                "scenario-test-authoring",
+                "features/rp-master-validation/tests/rp-agentpool-delete-ignore-pdb",
+                "features/rp-master-validation/specs/rp-agentpool-delete-ignore-pdb.json",
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const summary = summarizeTaskTree(config(projectDir));
+    expect(summary.frontier.runnable).toEqual([
+      "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+    ]);
+    expect(confirmRunnableBacklogLeaves(config(projectDir), 10)).toEqual([
+      "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+    ]);
+
+    const assignment = assignTask(config(projectDir), {
+      taskId:
+        "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+      worker: "aks-explorer",
+    });
+
+    expect(assignment.taskId).toBe(
+      "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718",
+    );
+    const updatedTree = readTaskTree(config(projectDir));
+    expect(
+      updatedTree.tasks[
+        "domain/normalize-direct-rp-master-validation-agentpool-delete-ignore-pdb-20260718"
+      ].state,
+    ).toBe("active");
+  });
+
   test("explains structural active contributors when tree_counts.active exceeds live active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(
@@ -8255,23 +10441,30 @@ describe("task tree tools", () => {
     const summary = summarizeTaskTree(config(projectDir)) as {
       tree_counts: Record<string, number>;
       counts: Record<string, number>;
-      frontier: { runnable: string[]; waiting: string[] };
+      frontier: { runnable: string[]; waiting: string[]; blocked: string[] };
       backlog_structural_task_ids?: string[];
       backlog_count_explanation?: string;
+      blocked_structural_task_ids?: string[];
+      blocked_count_explanation?: string;
     };
     expect(summary.tree_counts.backlog).toBe(2);
     expect(summary.counts.backlog).toBe(0);
     expect(summary.frontier.runnable).toEqual([]);
     expect(summary.frontier.waiting).toEqual([]);
-    expect(summary.backlog_structural_task_ids).toEqual([
+    expect(summary.frontier.blocked).toEqual(["wait-compact-external-signal"]);
+    expect(summary.backlog_structural_task_ids).toEqual(["project"]);
+    expect(summary.blocked_structural_task_ids).toEqual([
       "aks-feature-compact-loop",
-      "project",
     ]);
+    expect(summary.backlog_count_explanation).toContain(
+      "App readout reclassifies exact blocked-wait durable loop roots",
+    );
+    expect(summary.backlog_count_explanation).toContain("project");
     expect(summary.backlog_count_explanation).toContain(
       "aks-feature-compact-loop",
     );
-    expect(summary.backlog_count_explanation).toContain(
-      "frontier.runnable + frontier.waiting",
+    expect(summary.blocked_count_explanation).toContain(
+      "aks-feature-compact-loop",
     );
   });
 
