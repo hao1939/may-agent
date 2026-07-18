@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -1053,6 +1053,211 @@ export async function execute(ctx: any) {
         events.find((event) => event.type === "handler.workflow_dispatched" && event.data?.status === "done")?.trace,
       ).toEqual({ traceId: "event:41", parentEventId: 41 });
       expect(spawnedSessionTrace).toEqual({ traceId: "event:41", parentEventId: 41 });
+    } finally {
+      cron?.stop();
+      closeDb(persistDir);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reconciles task routes through workflows and falls back to the owner entry", async () => {
+    const root = tempRoot();
+    const persistDir = join(root, ".state");
+    let cron: Cron | undefined;
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      mkdirSync(join(appDir, "tasks"), { recursive: true });
+      writeFileSync(
+        join(appDir, "tasks", "seed.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          tasks: {
+            root: { id: "root", state: "backlog", children: ["operations"], owner: "sample-owner" },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+        }),
+      );
+      writeApp(
+        appDir,
+        `{
+          id: "sample",
+          owner: "sample-owner",
+          budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 2 },
+          ownerEntry: {
+            workflow: "owner-entry",
+            agent: "sample-owner",
+            task: "Handle task exception",
+            timeoutMs: 60000,
+            context: []
+          },
+          taskWorkflows: {
+            known: {
+              workflow: "worker",
+              agent: "sample-owner",
+              task: "Perform known work",
+              timeoutMs: 60000,
+              context: []
+            }
+          },
+          taskRoutes: [{
+            name: "sample-task-route",
+            enabled: true,
+            maxConcurrentTriggers: 2,
+            description: "Resolve sample work into tasks",
+            accepts: ["project.work"],
+            resolve(event) {
+              return {
+                id: "work/" + event.itemId,
+                parentId: "operations",
+                outcome: "Process " + event.itemId,
+                acceptance: ["Workflow completed"],
+                mode: "achieve",
+                ...(event.ownerOnly ? {} : { workflow: event.useMissing ? "missing" : "known" }),
+                input: { itemId: event.itemId }
+              };
+            }
+          }]
+        }`,
+      );
+      writeWorkflow(
+        appDir,
+        "worker",
+        `export const name = "worker";
+export const description = "Perform known sample work";
+export async function execute(ctx: any) {
+  ctx.dispatchEvent("test.task.workflow", { task: ctx.task });
+  return ctx.done("known workflow converged");
+}
+`,
+      );
+      writeWorkflow(
+        appDir,
+        "owner-entry",
+        `export const name = "owner-entry";
+export const description = "Handle sample task exceptions";
+export async function execute(ctx: any) {
+  ctx.dispatchEvent("test.task.owner", { task: ctx.task });
+  return ctx.done("owner handled fallback");
+}
+`,
+      );
+
+      const events: any[] = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => events.push(event));
+      const agentCrons = new Map<string, Cron>();
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        persistDir,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          runAgent: () => {
+            throw new Error("raw owner fallback must not bypass ownerEntry");
+          },
+        } as any,
+        bus,
+        agentCrons,
+      });
+
+      cron = agentCrons.get("sample-owner")!;
+      expect(cron.getEventSubscriptions()).toMatchObject({
+        "project.work": ["sample-task-route"],
+      });
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "known" },
+      } as any);
+      await waitUntil(
+        () =>
+          events.some(
+            (event) =>
+              event.type === "project.task.reconciled" &&
+              event.data?.taskId === "work/known" &&
+              event.data?.disposition === "converged",
+          ),
+        3_000,
+      ).catch((error) => {
+        throw new Error(
+          `${error instanceof Error ? error.message : String(error)}; observed=${JSON.stringify(
+            events.map((event) => ({ type: event.type, data: event.data })),
+          )}`,
+        );
+      });
+
+      const knownWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "known", redelivery: true },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconcile.skipped" &&
+            event.data?.taskId === "work/known" &&
+            event.data?.reason === "already-completed",
+        ),
+      );
+      expect(events.filter((event) => event.type === "test.task.workflow")).toHaveLength(knownWorkflowRuns);
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "owner", ownerOnly: true },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner" &&
+            event.data?.handler === "owner:sample-owner" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample", itemId: "fallback", useMissing: true },
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/fallback" &&
+            event.data?.handler === "owner:sample-owner" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(events.some((event) => event.type === "test.task.workflow")).toBe(true);
+      expect(events.some((event) => event.type === "test.task.owner")).toBe(true);
+      expect(
+        events.some(
+          (event) => event.type === "project.task.handler.unavailable" && event.data?.taskId === "work/fallback",
+        ),
+      ).toBe(true);
+      const tree = JSON.parse(readFileSync(join(appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(tree.tasks["work/known"]).toBeUndefined();
+      expect(tree.tasks["work/owner"]).toBeUndefined();
+      expect(tree.tasks["work/fallback"]).toBeUndefined();
+      expect(tree.completions["work/known"].handler).toBe("workflow:known");
+      expect(tree.completions["work/owner"].handler).toBe("owner:sample-owner");
+      expect(tree.completions["work/fallback"].handler).toBe("owner:sample-owner");
+      expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("work/known");
     } finally {
       cron?.stop();
       closeDb(persistDir);

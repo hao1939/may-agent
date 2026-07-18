@@ -1130,6 +1130,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 suppressBenignRaceEvent: true,
                 requireFinish: true,
                 outputSchema: stepOpts?.schema,
+                toolPolicy: stepOpts?.tools,
               });
             }
           }
@@ -1151,6 +1152,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               skill: stepOpts?.skill,
               requireFinish: true,
               outputSchema: stepOpts?.schema,
+              toolPolicy: stepOpts?.tools,
             });
             taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
@@ -1172,6 +1174,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           skill: stepOpts?.skill,
           requireFinish: true,
           outputSchema: stepOpts?.schema,
+          toolPolicy: stepOpts?.tools,
         });
         sid = taskResult.sessionId;
       }
@@ -1440,6 +1443,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               source: `workflow:${label}`,
               trace: resolveTrace(),
               requireFinish: true,
+              toolPolicy: sessionOpts.tools,
             });
 
             lastResponse = taskResult.lastAssistantText || "";

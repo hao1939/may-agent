@@ -64,6 +64,8 @@ export interface PersistedSession {
   requireFinish?: boolean;
   /** Serializable TypeBox/JSON schema for finish().result. */
   outputSchema?: TSchema;
+  /** Per-session capability restriction applied by the runtime. */
+  toolPolicy?: "full" | "readonly";
 }
 
 /** Shape of the registry data (in-memory view).

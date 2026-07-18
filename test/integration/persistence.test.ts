@@ -182,11 +182,16 @@ describe("Registry persistence", () => {
     });
     const outputSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) });
 
-    const sessionId = manager.run("workflow-worker", "review", { requireFinish: true, outputSchema });
+    const sessionId = manager.run("workflow-worker", "review", {
+      requireFinish: true,
+      outputSchema,
+      toolPolicy: "readonly",
+    });
     const meta = readSessionMeta(persistDir, sessionId);
 
     expect(meta?.requireFinish).toBe(true);
     expect(meta?.outputSchema).toMatchObject({ type: "object" });
+    expect(meta?.toolPolicy).toBe("readonly");
 
     manager.cancel(sessionId);
     await manager.waitFor(sessionId);

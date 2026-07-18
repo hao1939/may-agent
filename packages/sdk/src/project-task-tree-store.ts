@@ -74,6 +74,16 @@ export type TaskNode = {
   archived?: boolean;
   archive_summary?: string;
   tags?: string[];
+  reconcile_mode?: "achieve" | "maintain";
+};
+
+export type TaskCompletionTombstone = {
+  taskId: string;
+  generation: number;
+  specHash: string;
+  handler: string;
+  summary: string;
+  completedAt: string;
 };
 
 export type TaskTree = {
@@ -83,6 +93,7 @@ export type TaskTree = {
   active_task_id?: string | null;
   active_task_ids?: string[];
   conditions?: Record<string, unknown>;
+  completions?: Record<string, TaskCompletionTombstone>;
   tasks: Record<string, TaskNode>;
 };
 
@@ -93,6 +104,7 @@ export type TaskTreeConfig = {
   journalPath: string;
   worker: string;
   maxConcurrent: number;
+  mirrorLegacyTree?: boolean;
   mutationAuthority?: unknown;
   validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
 };
@@ -282,7 +294,7 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   renameSync(tempPath, config.treePath);
 
   const runtimeTreePath = projectRuntimePaths(config.appDir).taskTreePath;
-  if (config.treePath === runtimeTreePath) {
+  if (config.treePath === runtimeTreePath && config.mirrorLegacyTree !== false) {
     const legacyPath = join(config.appDir, "tasks", "tree.json");
     ensureDir(dirname(legacyPath));
     writeFileSync(legacyPath, serialized, "utf-8");
