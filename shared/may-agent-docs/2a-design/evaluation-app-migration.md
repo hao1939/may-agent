@@ -166,7 +166,7 @@ export default defineProjectApp({
   ],
 
   eventGraph: {
-    handlers: {
+    routes: {
       "evaluation-aftermath": {
         emits: [
           "evaluation.reviewed",
@@ -220,23 +220,9 @@ export default defineProjectApp({
     },
   },
 
-  workflowHandlers: [
-    {
-      name: "evaluation-aftermath",
-      on: ["session.completed", "evaluation.session.requested"],
-      handler: { workflow: "evaluator-aftermath", includeEvent: true },
-    },
-    {
-      name: "evaluation-heartbeat",
-      on: ["evaluation.tick", "metric.breach"],
-      handler: { workflow: "evaluator-heartbeat", includeEvent: true },
-    },
-    {
-      name: "evaluation-deep-eval",
-      on: ["evaluation.deep.requested"],
-      handler: { workflow: "evaluator-deep-eval", includeEvent: true },
-    },
-  ],
+  // Events correlate to durable evaluation tasks through taskRoutes.
+  // taskWorkflows provides aftermath, heartbeat, and deep-evaluation
+  // capabilities; ownerEntry handles tasks without a bound workflow.
 });
 ```
 

@@ -1,16 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import app, { resolveAksReconciliationTask } from "../app.ts";
 
-type WorkflowHandler = {
-  name?: string;
-  accepts?: EventSelector[];
-  handler?: {
-    workflow?: string;
-    task?: string;
-  };
-  emits?: string[];
-};
-
 type TaskRoute = {
   name?: string;
   accepts?: EventSelector[];
@@ -41,7 +31,6 @@ type Schedule = {
 
 const projectId = "aks-rp-e2e";
 const appManifest = app as {
-  workflowHandlers?: WorkflowHandler[];
   taskRoutes?: TaskRoute[];
   taskWorkflows?: Record<string, TaskWorkflow>;
   ownerEntry?: { workflow?: string; agent?: string; task?: string };
@@ -53,48 +42,21 @@ const appManifest = app as {
   onEvent?: unknown;
 };
 
-function handler(name: string): WorkflowHandler {
-  const found = appManifest.workflowHandlers?.find(
-    (entry) => entry.name === name,
-  );
-  if (!found) throw new Error(`Missing workflow handler ${name}`);
-  return structuredClone(found);
-}
-
 function taskRoute(name: string): TaskRoute {
   const found = appManifest.taskRoutes?.find((entry) => entry.name === name);
   if (!found) throw new Error(`Missing task route ${name}`);
-  return found;
-}
-
-function handlerEvents(name: string): string[] {
-  return handlerSelectors(handler(name))
-    .map((selector) =>
-      typeof selector === "string" ? selector : selector.type,
-    )
-    .filter((type): type is string => Boolean(type));
-}
-
-function handlersForEvent(eventType: string): string[] {
-  return (appManifest.workflowHandlers ?? [])
-    .filter((entry) => handlerEvents(entry.name ?? "").includes(eventType))
-    .map((entry) => entry.name)
-    .filter((name): name is string => Boolean(name));
-}
-
-function handlerSelectors(entry: WorkflowHandler): EventSelector[] {
-  return Array.isArray(entry.accepts) ? entry.accepts : [];
+  return {
+    ...found,
+    accepts: structuredClone(found.accepts ?? []),
+  };
 }
 
 function scheduleEvents(schedule: Schedule): Array<Record<string, unknown>> {
   return Array.isArray(schedule.emits) ? schedule.emits : [];
 }
 
-function allHandlerSelectors(): EventSelector[] {
-  return [
-    ...(appManifest.workflowHandlers ?? []).flatMap(handlerSelectors),
-    ...(appManifest.taskRoutes ?? []).flatMap((route) => route.accepts ?? []),
-  ];
+function allRouteSelectors(): EventSelector[] {
+  return (appManifest.taskRoutes ?? []).flatMap((route) => route.accepts ?? []);
 }
 
 function eventTarget(event: Record<string, unknown>): Record<string, unknown> {
@@ -138,7 +100,7 @@ function eventIsHandledOrBoundary(event: Record<string, unknown>): boolean {
   const externalEvents = appManifest.eventGraph?.externalEvents;
   if (Array.isArray(externalEvents) && externalEvents.includes(type))
     return true;
-  return allHandlerSelectors().some((selector) =>
+  return allRouteSelectors().some((selector) =>
     selectorMatchesEvent(selector, event),
   );
 }
@@ -175,28 +137,16 @@ describe("app event contract", () => {
     }
 
     const consumedTypes = new Set(
-      allHandlerSelectors()
+      allRouteSelectors()
         .map((selector) =>
           typeof selector === "string" ? selector : selector.type,
         )
         .filter((type): type is string => Boolean(type)),
     );
-    const boundaryTypes = new Set(appManifest.eventGraph?.externalEvents ?? []);
-    for (const entry of appManifest.workflowHandlers ?? []) {
-      for (const emitted of entry.emits ?? []) {
-        if (!consumedTypes.has(emitted) && !boundaryTypes.has(emitted)) {
-          failures.push(
-            `handler ${entry.name ?? "(unnamed)"} emits unhandled ${emitted}`,
-          );
-        }
-      }
-    }
-
     expect(failures).toEqual([]);
   });
 
   test("task routes use the declarative canonical event surface", () => {
-    expect(appManifest.workflowHandlers).toBeUndefined();
     expect(appManifest.onEvent).toBeUndefined();
   });
 
@@ -228,8 +178,7 @@ describe("app event contract", () => {
     });
     expect(
       (taskRoute("aks-rp-e2e-task-owner-event").accepts ?? []).map(
-        (selector) =>
-          typeof selector === "string" ? selector : selector.type,
+        (selector) => (typeof selector === "string" ? selector : selector.type),
       ),
     ).toEqual(
       expect.arrayContaining([
@@ -255,9 +204,9 @@ describe("app event contract", () => {
     expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).toContain(
       "conditionV2: exact-ado-revisioned",
     );
-    expect(
-      appManifest.taskWorkflows?.["project-watchdog"]?.task,
-    ).not.toContain("conditionAdoptionV2:");
+    expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).not.toContain(
+      "conditionAdoptionV2:",
+    );
     expect(appManifest.ownerEntry?.task).toContain(
       "conditionV2: exact-ado-revisioned",
     );
@@ -285,9 +234,9 @@ describe("app event contract", () => {
     expect(appManifest.taskWorkflows?.["task-reviewer"]?.task).not.toContain(
       "pendingActionV2: completion-review-revisioned",
     );
-    expect(
-      appManifest.taskWorkflows?.["project-watchdog"]?.task,
-    ).not.toContain("pendingActionV2:");
+    expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).not.toContain(
+      "pendingActionV2:",
+    );
     expect(appManifest.ownerEntry?.task).not.toContain("pendingActionV2:");
     expect(
       appManifest.taskWorkflows?.["reviewed-task-applier"]?.task,
@@ -295,9 +244,9 @@ describe("app event contract", () => {
     expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).toContain(
       "pendingActionRedeliveryV2: review-application-revisioned",
     );
-    expect(
-      appManifest.taskWorkflows?.["project-watchdog"]?.task,
-    ).not.toContain("pendingActionRedeliveryV2: review-handoffs-revisioned");
+    expect(appManifest.taskWorkflows?.["project-watchdog"]?.task).not.toContain(
+      "pendingActionRedeliveryV2: review-handoffs-revisioned",
+    );
   });
 
   test("worker and controllers own their targeted task events", () => {
@@ -332,12 +281,6 @@ describe("app event contract", () => {
       workflow: "spec-loop-controller",
       agent: "aks-explorer",
     });
-    expect(appManifest.workflowHandlers).toBeUndefined();
-    expect(
-      (appManifest.workflowHandlers ?? []).some(
-        (entry) => entry.name === "aks-rp-e2e-feature-reference-loop-controller",
-      ),
-    ).toBe(false);
     expect(taskRoute("aks-rp-e2e-task-feature-compact-loop")).toMatchObject({
       accepts: expect.arrayContaining([
         expect.objectContaining({
@@ -888,29 +831,23 @@ describe("app event contract", () => {
     });
   });
 
-  test("handled events are declared by generated workflow handlers", () => {
+  test("handled events are declared by task routes", () => {
     expect(appManifest).not.toHaveProperty("events");
-    expect(handlersForEvent("project.task.assigned")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-execution")).toMatchObject({
       accepts: [
         { type: "project.task.assigned", target: { project: projectId } },
       ],
     });
-    expect(handlersForEvent("project.task.completed")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-completion-review")).toMatchObject({
       accepts: [
         { type: "project.task.completed", target: { project: projectId } },
       ],
     });
-    expect(handlersForEvent("project.task.reviewed")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-reviewed-application")).toMatchObject({
       accepts: [
         { type: "project.task.reviewed", target: { project: projectId } },
       ],
     });
-    expect(handlersForEvent("project.problem.investigation.requested")).toEqual(
-      [],
-    );
     expect(taskRoute("aks-rp-e2e-task-problem-investigation")).toMatchObject({
       accepts: [
         {
@@ -919,9 +856,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("project.condition.fallback.requested")).toEqual(
-      [],
-    );
     expect(taskRoute("aks-rp-e2e-task-condition-fallback")).toMatchObject({
       accepts: [
         {
@@ -930,7 +864,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("project.approval.requested")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-approval-dispatch")).toMatchObject({
       accepts: [
         {
@@ -939,7 +872,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("project.focus.review.requested")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-focus-review")).toMatchObject({
       accepts: [
         {
@@ -948,8 +880,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("project.stall.reviewed")).toEqual([]);
-    expect(handlersForEvent("project.stall.review.requested")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-stall-review")).toMatchObject({
       accepts: [
         {
@@ -958,7 +888,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("project.watchdog.check.requested")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-runtime-health")).toMatchObject({
       accepts: [
         {
@@ -967,8 +896,6 @@ describe("app event contract", () => {
         },
       ],
     });
-    expect(handlersForEvent("escalation.resolved")).toEqual([]);
-    expect(handlersForEvent("learning.feedback")).toEqual([]);
     expect(taskRoute("aks-rp-e2e-task-owner-event").accepts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: "project.stall.reviewed" }),
@@ -976,13 +903,6 @@ describe("app event contract", () => {
         expect.objectContaining({ type: "learning.feedback" }),
       ]),
     );
-  });
-
-  test("generated workflow handlers are event-only", () => {
-    for (const entry of appManifest.workflowHandlers ?? []) {
-      expect(entry).not.toHaveProperty("intervalMs");
-      expect(entry).not.toHaveProperty("offsetMs");
-    }
   });
 
   test("manifest schedules periodic blocked-frontier app-ops review", () => {
@@ -1024,11 +944,6 @@ describe("app event contract", () => {
     expect(appManifest.actions).not.toHaveProperty(
       "pulse-feature-reference-loop",
     );
-    expect(
-      (appManifest.workflowHandlers ?? []).some(
-        (entry) => entry.name === "aks-rp-e2e-feature-reference-loop-controller",
-      ),
-    ).toBe(false);
   });
 
   test("manual actions emit explicit target events", () => {
@@ -1131,7 +1046,7 @@ describe("app event contract", () => {
   });
 
   test("event graph keeps only non-derivable metadata", () => {
-    expect(appManifest.eventGraph).not.toHaveProperty("handlers");
+    expect(appManifest.eventGraph).not.toHaveProperty("routes");
     expect(appManifest.eventGraph).not.toHaveProperty("adapters");
     expect(appManifest.eventGraph?.externalEvents).toEqual(
       expect.arrayContaining([

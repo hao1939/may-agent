@@ -29,7 +29,7 @@ Standing projects use a sibling `.app` control plane:
 ```text
 projects/<id>/              # optional portable domain workspace
 projects/<id>.app/
-  app.ts                    # schedules, handlers, actions, routing
+  app.ts                    # schedules, task routes/capabilities, actions
   project.json              # identity, owner, posture, goal, domain binding
   tasks/tree.json           # owner decomposition and accepted task state
   workflows/                # app-owned ordered processes

@@ -127,8 +127,7 @@ describe("evaluation app task reconciliation", () => {
     ).toBeNull();
   });
 
-  test("declares capabilities and task routes instead of direct workflow handlers", () => {
-    expect(app.workflowHandlers).toBeUndefined();
+  test("declares task reconciliation capabilities and routes", () => {
     expect(app.ownerEntry?.workflow).toBe("evaluator-heartbeat");
     expect(Object.keys(app.taskWorkflows ?? {})).toEqual([
       "evaluator-pipeline-monitor",

@@ -174,8 +174,7 @@ Keep domain projects portable and May-agent control planes separate.
   strategy.
 - Use `ctx.appPath(...)` for app/control-plane files, `ctx.workspacePath(...)`
   for files in the bound domain workspace, and `ctx.workspaceCwd()` when a tool
-  needs that workspace as its cwd. Treat `ctx.projectPath(...)` as a deprecated
-  compatibility alias.
+  needs that workspace as its cwd.
 - Treat the project owner as the brain. Workflow code wakes sessions, passes
   compact context, and emits events; it should not own task decomposition,
   acceptance, retry policy, or project strategy.
@@ -183,11 +182,10 @@ Keep domain projects portable and May-agent control planes separate.
   `app.ts` defines the event graph, `project.json` stores structured state and
   workspace binding, `tasks/tree.json` stores decomposition, `workflows/`
   stores app policy, and `agents/` stores app-local identities.
-- In `app.ts`, use `schedules[].emits[]` and
-  `workflowHandlers[].accepts[]`. Keep `workflowHandlers` as static
-  event-to-workflow routes, optional imperative `onEvent` as bounded adapter
-  behavior, and `eventGraph` as audit metadata. Do not add singular schedule
-  `event`, handler `on`, or workflow-handler sugar under `onEvent`.
+- In `app.ts`, use `schedules[].emits[]` and `taskRoutes[].accepts[]`.
+  `taskRoutes` correlate events to desired task state; `taskWorkflows` and
+  `ownerEntry` supply reusable execution capabilities and accountable fallback.
+  Keep optional imperative `onEvent` bounded to deterministic adapter behavior.
 - Follow the owner workflow pattern: `project.owner.requested` reviews the
   trigger, updates/reviews the task tree, assigns capacity, and checkpoints
   done slices; `project.task.assigned` runs one task-owned worker session and

@@ -25,7 +25,6 @@ describe("gym app manifest", () => {
         expect.objectContaining({ id: "may-alignment-nightly", enabled: true }),
       ]),
     );
-    expect(gymApp.workflowHandlers).toBeUndefined();
     expect(gymApp.taskRoutes?.map((route) => route.name)).toEqual([
       "gym-task-incident-intake",
       "gym-task-regression-run",

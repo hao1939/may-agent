@@ -44,11 +44,10 @@ type EventSelector =
       actions?: string[];
     };
 
-type WorkflowRoute = {
+type TaskRoute = {
   name?: string;
   enabled?: boolean;
   accepts?: unknown;
-  emits?: unknown;
 };
 
 type Schedule = {
@@ -61,13 +60,13 @@ type ProjectAction = {
 };
 
 type ProjectAppManifest = {
-  workflowHandlers?: WorkflowRoute[];
+  taskRoutes?: TaskRoute[];
   schedules?: Schedule[];
   actions?: Record<string, ProjectAction>;
   eventGraph?: {
     externalEvents?: string[];
     limits?: {
-      maxHandlersPerEvent?: number;
+      maxRoutesPerEvent?: number;
     };
   };
 };
@@ -319,11 +318,11 @@ function eventTypeFromSelector(selector: EventSelector): string | null {
     : null;
 }
 
-function routeSelectors(route: WorkflowRoute): EventSelector[] {
+function routeSelectors(route: TaskRoute): EventSelector[] {
   return Array.isArray(route.accepts) ? (route.accepts as EventSelector[]) : [];
 }
 
-function routeInputEvents(route: WorkflowRoute): string[] {
+function routeInputEvents(route: TaskRoute): string[] {
   return routeSelectors(route)
     .map(eventTypeFromSelector)
     .filter((event): event is string => Boolean(event));
@@ -432,7 +431,7 @@ function actionEvents(projectApp: ProjectAppManifest): {
 export function buildProcessGraphReport(
   projectApp: ProjectAppManifest,
 ): ProcessGraphReport {
-  const routes = (projectApp.workflowHandlers ?? []).filter(
+  const routes = (projectApp.taskRoutes ?? []).filter(
     (route) => route.enabled !== false,
   );
   const selectors = routes.flatMap(routeSelectors);
@@ -453,8 +452,8 @@ export function buildProcessGraphReport(
     const type = stringValue(event.type);
     return Boolean(
       type &&
-      (externalEvents.has(type) ||
-        selectors.some((selector) => selectorMatchesEvent(selector, event))),
+        (externalEvents.has(type) ||
+          selectors.some((selector) => selectorMatchesEvent(selector, event))),
     );
   };
   const eventTypeHandled = (eventType: string) =>
@@ -486,20 +485,7 @@ export function buildProcessGraphReport(
     }
   }
 
-  for (const route of routes) {
-    const emits = Array.isArray(route.emits) ? route.emits : [];
-    for (const emitted of emits) {
-      if (typeof emitted !== "string" || !emitted.trim()) continue;
-      emittedEventCount += 1;
-      if (!eventTypeHandled(emitted)) {
-        unhandledEvents.push(
-          `route ${route.name ?? "unnamed"} emits ${emitted}`,
-        );
-      }
-    }
-  }
-
-  const maxRoutes = projectApp.eventGraph?.limits?.maxHandlersPerEvent ?? 1;
+  const maxRoutes = projectApp.eventGraph?.limits?.maxRoutesPerEvent ?? 1;
   const multiRouteEvents = [...routeSelectorConsumers.entries()]
     .filter(([, routesForEvent]) => routesForEvent.length > maxRoutes)
     .map(([event, routesForEvent]) => ({

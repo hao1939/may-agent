@@ -147,11 +147,10 @@ The active execution model is deliberately small. See
 - `task-worker` handles `project.task.assigned`.
 - `project-execution-watchdog` observes task/session liveness and wakes the
   project owner when review is needed.
-- `app.ts` uses `workflowHandlers: [...]` as its declarative workflow event
-  surface.
-- Each handler declares the event selectors it consumes in `accepts` and the
-  event types it may produce in `emits`. There is no top-level `events` list for
-  generated handlers.
+- `app.ts` uses `taskRoutes: [...]` as its declarative event-to-task surface.
+- Each route declares the event selectors it consumes in `accepts` and resolves
+  a stable task identity. `taskWorkflows` supplies reusable capabilities and
+  `ownerEntry` is the fallback when no workflow is bound.
 - `eventGraph` is audit metadata only: external event outputs, intentional
   cycles, and limits. It must not duplicate handler routing.
 
@@ -295,10 +294,11 @@ explicit `/reload` (or another manifest-refresh action) before using retries as
 verification evidence. Otherwise a retry can still run the old code path and
 repeat stale fallback summaries such as `Agent ended with an empty assistant turn`.
 
-To add or update a project workflow handler, add or edit the workflow file under
-`workflows/`, update the `workflowHandlers: [...]` entry in `app.ts`,
-then let the watcher reload it or issue `/reload`. Existing running sessions are
-not cancelled by this reload; new triggers use the updated manifest.
+To add or update automated project work, add or edit the workflow under
+`workflows/`, expose it through `taskWorkflows`, and bind tasks to it from a
+`taskRoutes` resolver or task-tree node. Then let the watcher reload the app or
+issue `/reload`. Existing running sessions are not cancelled; new
+reconciliations use the updated manifest.
 
 ## Domain Execution
 

@@ -73,6 +73,5 @@ describe("Scout task reconciliation", () => {
       "library-health",
     ]);
     expect(app.taskRoutes).toHaveLength(5);
-    expect(app.workflowHandlers ?? []).toHaveLength(0);
   });
 });

@@ -292,19 +292,6 @@ export async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  if (
-    event.type === "session.end" ||
-    event.type === "evaluation.session.requested" ||
-    event.type === "evaluation.deep.requested" ||
-    event.type === "evaluation.pipeline.check" ||
-    event.type === "evaluation.tick" ||
-    event.type === "evaluation.project.review.requested" ||
-    event.type === "evaluation.aftermath.scan" ||
-    event.type === "evaluation.deep.scan"
-  ) {
-    return ctx.noop(`${event.type} is handled by taskRoutes`);
-  }
-
   if (event.type === "evaluation.review_failed") {
     return ctx.emit(
       projectHealthReviewRequested({
@@ -575,17 +562,7 @@ export default defineProjectApp({
   ],
 
   events: [
-    "session.end",
-    "evaluation.session.requested",
-    "evaluation.deep.requested",
-    "evaluation.pipeline.check",
-    "evaluation.tick",
     "evaluation.review_failed",
-    "evaluation.aftermath.scan",
-    "evaluation.deep.scan",
-    "evaluation.project.review.requested",
-    "evaluation.project.reviewed",
-    "evaluation.project.notification.requested",
     "message.created",
     "telegram.reply",
     { type: "metric.breach", project: projectId },
@@ -596,7 +573,7 @@ export default defineProjectApp({
   ],
 
   eventGraph: {
-    handlers: {
+    routes: {
       "evaluation-task-aftermath": {
         emits: [
           "evaluation.reviewed",
@@ -702,12 +679,6 @@ export default defineProjectApp({
         description:
           "Review-process failures request the same project/app review path for evaluation.app.",
       },
-      {
-        event: "evaluation.project.review.requested",
-        emits: ["evaluation.project.reviewed"],
-        description:
-          "Project/app review requests dispatch the project health evaluator workflow.",
-      },
     ],
     externalEvents: [
       "evaluation.reviewed",
@@ -715,7 +686,8 @@ export default defineProjectApp({
       "evaluation.triage_closed",
       "evaluation.learning_created",
       "evaluation.project.review_started",
-      "project.owner.requested",
+      "evaluation.project.reviewed",
+      "evaluation.project.notification.requested",
       "heartbeat.step_started",
       "heartbeat.skipped",
       "handler.workflow_dispatched",

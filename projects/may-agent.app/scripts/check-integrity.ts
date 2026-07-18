@@ -39,17 +39,6 @@ function eventType(selector: unknown): string {
   return "";
 }
 
-function eventSet(): Set<string> {
-  const events = new Set<string>();
-  for (const selector of app.events ?? []) {
-    const type = eventType(selector);
-    if (!type)
-      addIssue("app.event.invalid", "App event selector is missing a type.");
-    else events.add(type);
-  }
-  return events;
-}
-
 function pathExists(path: string): boolean {
   if (existsSync(resolve(appDir, path))) return true;
   if (existsSync(resolve(repoRoot, path))) return true;
@@ -102,73 +91,20 @@ function checkTaskCapability(
 }
 
 function checkManifest(): void {
-  const events = eventSet();
-  checkUnique("event", [...events]);
-
-  const workflowHandlers = (app as ProjectApp).workflowHandlers ?? [];
-  checkUnique(
-    "workflowHandler",
-    workflowHandlers.map((handler) => handler.name),
-  );
-
-  const workflowHandlerNames = new Set(
-    workflowHandlers.map((handler) => handler.name),
-  );
-  const handlerEvents = new Set<string>();
-  for (const handler of workflowHandlers) {
-    if (!handler.enabled) continue;
-    if (!handler.description?.trim()) {
-      addIssue(
-        "workflowHandler.description",
-        `${handler.name} is missing a description.`,
-      );
-    }
-    if (!handler.handler.workflow?.trim()) {
-      addIssue(
-        "workflowHandler.workflow",
-        `${handler.name} is missing handler.workflow.`,
-      );
-    } else if (!pathExists(`workflows/${handler.handler.workflow}.ts`)) {
-      addIssue(
-        "workflowHandler.workflow.missing",
-        `${handler.name} references missing workflow workflows/${handler.handler.workflow}.ts.`,
-      );
-    }
-    if (!handler.handler.task?.trim()) {
-      addIssue(
-        "workflowHandler.task",
-        `${handler.name} is missing handler.task.`,
-      );
-    }
-    if (
-      !Number.isFinite(handler.handler.timeoutMs) ||
-      handler.handler.timeoutMs <= 0
-    ) {
-      addIssue(
-        "workflowHandler.timeout",
-        `${handler.name} has invalid timeoutMs.`,
-      );
-    }
-    for (const selector of handler.accepts as readonly EventSelector[]) {
-      const type = typeof selector === "string" ? selector : selector.type;
-      handlerEvents.add(type);
-      if (!events.has(type)) {
-        addIssue(
-          "workflowHandler.event.undeclared",
-          `${handler.name} listens to undeclared event ${type}.`,
-        );
-      }
-    }
-    for (const contextPath of handler.context ?? []) {
-      if (!pathExists(contextPath)) {
-        addIssue(
-          "workflowHandler.context.missing",
-          `${handler.name} context file is missing: ${contextPath}`,
-        );
-      }
+  const onEventTypes = new Set<string>();
+  for (const selector of app.events ?? []) {
+    const type = eventType(selector);
+    if (!type) {
+      addIssue("app.event.invalid", "App event selector is missing a type.");
+    } else {
+      onEventTypes.add(type);
     }
   }
+  if (onEventTypes.size > 0 && typeof app.onEvent !== "function") {
+    addIssue("app.onEvent.missing", "App declares events without onEvent().");
+  }
 
+  const routedEvents = new Set<string>();
   const taskRoutes = app.taskRoutes ?? [];
   checkUnique(
     "taskRoute",
@@ -207,34 +143,33 @@ function checkManifest(): void {
       );
     }
     for (const selector of route.accepts as readonly EventSelector[]) {
-      const type = typeof selector === "string" ? selector : selector.type;
-      handlerEvents.add(type);
-      if (!events.has(type)) {
+      const type = eventType(selector);
+      if (!type) {
         addIssue(
-          "taskRoute.event.undeclared",
-          `${route.name} listens to undeclared event ${type}.`,
+          "taskRoute.event.invalid",
+          `${route.name} has an event selector without a type.`,
         );
+      } else {
+        routedEvents.add(type);
       }
     }
   }
 
+  const emittedEvents = new Set<string>();
   checkUnique(
     "schedule",
     (app.schedules ?? []).map((schedule) => schedule.id),
   );
   for (const schedule of app.schedules ?? []) {
     for (const event of schedule.emits) {
-      const type = typeof event.type === "string" ? event.type : "";
-      if (!type)
+      const type = eventType(event);
+      if (!type) {
         addIssue(
           "schedule.emits.invalid",
           `${schedule.id} schedule event is missing type.`,
         );
-      else if (!events.has(type)) {
-        addIssue(
-          "schedule.emits.undeclared",
-          `${schedule.id} emits undeclared event ${type}.`,
-        );
+      } else {
+        emittedEvents.add(type);
       }
     }
   }
@@ -245,68 +180,62 @@ function checkManifest(): void {
     }
     if (action.type === "async") {
       const event = action.event({});
-      const type = typeof event.type === "string" ? event.type : "";
-      if (!type)
+      const type = eventType(event);
+      if (!type) {
         addIssue(
           "action.event.invalid",
           `${actionId} async action event is missing type.`,
         );
-      else if (!events.has(type))
-        addIssue(
-          "action.event.undeclared",
-          `${actionId} emits undeclared event ${type}.`,
-        );
+      } else {
+        emittedEvents.add(type);
+      }
     }
   }
 
   const graph = app.eventGraph;
   const externalEvents = new Set(graph?.externalEvents ?? []);
-  const adapterEvents = new Set<string>();
-  const emittedEvents = new Set<string>();
-  const graphHandlerNames = new Set([
-    ...workflowHandlerNames,
-    ...taskRouteNames,
-  ]);
-
-  for (const [handlerName, details] of Object.entries(graph?.handlers ?? {})) {
-    if (!graphHandlerNames.has(handlerName)) {
+  const declaredOnEventTypes = new Set<string>();
+  for (const [routeName, details] of Object.entries(graph?.routes ?? {})) {
+    if (!taskRouteNames.has(routeName)) {
       addIssue(
-        "eventGraph.handler.unknown",
-        `eventGraph declares unknown handler ${handlerName}.`,
+        "eventGraph.route.unknown",
+        `eventGraph declares unknown task route ${routeName}.`,
       );
     }
     for (const type of details.emits ?? []) emittedEvents.add(type);
   }
 
   for (const adapter of graph?.adapters ?? []) {
-    adapterEvents.add(adapter.event);
-    if (!events.has(adapter.event)) {
-      addIssue(
-        "eventGraph.adapter.undeclared",
-        `Adapter references undeclared event ${adapter.event}.`,
-      );
-    }
+    declaredOnEventTypes.add(adapter.event);
     for (const type of adapter.emits ?? []) emittedEvents.add(type);
   }
-
-  for (const type of emittedEvents) {
-    if (!events.has(type) && !externalEvents.has(type)) {
+  for (const type of onEventTypes) {
+    if (!declaredOnEventTypes.has(type)) {
       addIssue(
-        "eventGraph.emit.unhandled",
-        `eventGraph emits ${type}, but it is neither declared nor external.`,
+        "eventGraph.adapter.missing",
+        `onEvent accepts ${type}, but eventGraph has no adapter declaration.`,
+      );
+    }
+  }
+  for (const type of declaredOnEventTypes) {
+    if (!onEventTypes.has(type)) {
+      addIssue(
+        "eventGraph.adapter.unrouted",
+        `eventGraph declares adapter ${type}, but events does not route it to onEvent.`,
       );
     }
   }
 
-  for (const type of events) {
-    const hasRoute =
-      handlerEvents.has(type) ||
-      adapterEvents.has(type) ||
-      externalEvents.has(type);
-    if (!hasRoute) {
+  const consumedEvents = new Set([
+    ...routedEvents,
+    ...onEventTypes,
+    ...externalEvents,
+  ]);
+  for (const type of emittedEvents) {
+    if (!consumedEvents.has(type)) {
       addIssue(
-        "event.unrouted",
-        `Declared event ${type} has no handler, adapter, or external classification.`,
+        "eventGraph.emit.unhandled",
+        `App emits ${type}, but no task route, adapter, or external boundary accepts it.`,
       );
     }
   }

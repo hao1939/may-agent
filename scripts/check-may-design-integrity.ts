@@ -21,8 +21,8 @@ const staleContractPatterns: Array<{ pattern: RegExp; message: string }> = [
     message: "direct CLI worker presets are retired; use cli-delegation/run_cli_agent",
   },
   {
-    pattern: /SDK now also exports[\s\S]{0,240}`workflowHandlers`/,
-    message: "workflowHandlers is a manifest field, not an exported helper",
+    pattern: /`workflowHandlers`|workflowHandlers\[\]/,
+    message: "workflowHandlers is retired; use taskRoutes and taskWorkflows",
   },
   {
     pattern: /`project\.problem\.requested`/,

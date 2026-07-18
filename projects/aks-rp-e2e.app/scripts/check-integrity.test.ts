@@ -113,15 +113,34 @@ async function makeFixture() {
     repo: "git@example.com:repo.git",
     branch: "main",
   },
-  workflowHandlers: [
+  ownerEntry: {
+    workflow: "feature-reference-loop-controller",
+    task: "app: /tmp\\nproject: /tmp",
+    timeoutMs: 60000,
+    context: [],
+  },
+  taskWorkflows: {
+    "feature-reference-loop-controller": {
+      workflow: "feature-reference-loop-controller",
+      task: "app: /tmp\\nproject: /tmp",
+      timeoutMs: 60000,
+      context: [],
+    },
+  },
+  taskRoutes: [
     {
       name: "feature-reference-loop-handler",
+      enabled: true,
+      description: "Reconcile the feature reference loop task.",
       accepts: [{ type: "project.task.tick", target: { project: "aks-rp-e2e.app" } }],
-      handler: {
+      resolve: () => ({
+        id: "aks-feature-reference-loop",
+        parentId: "aks-rp-e2e",
+        outcome: "Maintain feature reference coverage.",
+        acceptance: ["Coverage is reconciled."],
+        mode: "maintain",
         workflow: "feature-reference-loop-controller",
-        task: "app: /tmp\\nproject: /tmp",
-      },
-      emits: ["project.task.completed"],
+      }),
     },
   ],
   schedules: [],

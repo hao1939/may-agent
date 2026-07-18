@@ -46,13 +46,12 @@ talk about event routes and route targets:
 event -> event route -> target
 ```
 
-An event route lives in `app.ts` through `workflowHandlers[].accepts` or the
-optional imperative `onEvent` router. A route matches an event selector and
-delivers the event to the right target. The target is inferred by convention: a route with a
-workflow runs that workflow; a route or event with an owner and no workflow is
-an owner handoff; an unmatched event follows the runtime ownership fallback.
-The responsible actor is the agent, project, or task owner named by the
-task/event context, not the route object.
+An event route lives in `app.ts` through `taskRoutes[].accepts` or the optional
+imperative `onEvent` adapter. A task route matches an event selector and
+correlates it to stable desired task state. Reconciliation invokes the task's
+declared workflow capability or falls back to `ownerEntry`. The responsible
+actor is the agent, project, or task owner named by task context, not the route
+object.
 
 Owner-routed events must still close with structured output. The owner should
 record one of: dispatch a workflow, create/assign a task, accept a no-op, block

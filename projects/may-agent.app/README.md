@@ -7,8 +7,8 @@ domain workspace.
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` declares the project app: events, schedules, workflow handlers, and
-  actions.
+- `app.ts` declares schedules, event-to-task routes, reusable task workflows,
+  owner fallback, and actions.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
 - `tasks/tree.json` is the durable task tree and project thinking surface.

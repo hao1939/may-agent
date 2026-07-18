@@ -123,7 +123,9 @@ export type ProjectApp = {
     cron?: string;
     emits: ProjectAppEvent[];
   }>;
-  workflowHandlers?: ProjectWorkflowHandler[];
+  ownerEntry?: ProjectAppTaskCapability;
+  taskWorkflows?: Record<string, ProjectAppTaskCapability>;
+  taskRoutes?: ProjectAppTaskRoute[];
   events?: EventSelector[];
   eventGraph?: ProjectEventGraphMetadata;
   actions: Record<string, ProjectAppAction>;
@@ -131,18 +133,23 @@ export type ProjectApp = {
 };
 ```
 
-There are four behavior surfaces:
+There are five behavior surfaces:
 
 | Surface | Purpose |
 | --- | --- |
 | `schedules[].emits[]` | Timer source emits typed events |
-| `workflowHandlers[].accepts[]` | Declarative event-to-workflow routes |
+| `taskRoutes[].accepts[]` | Declarative event-to-task correlation |
+| `ownerEntry` / `taskWorkflows` | Accountable fallback and reusable execution capabilities |
 | `actions` | Named read-only operation or async typed event |
-| `onEvent` | Rare bounded deterministic translation |
+| `events` / `onEvent` | Rare bounded deterministic translation |
 
-The retired singular schedule `event`, handler `on`, generated
-`workflowHandlers(...)` helper, and implicit shared workflow lookup are not
-accepted shapes.
+The retired direct event-to-workflow handler path and implicit shared workflow
+lookup are not accepted shapes. Events organize work through tasks; they do not
+start workflows directly.
+
+`events` has one meaning: selectors handled by `onEvent`. Task-triggering
+selectors belong only in `taskRoutes[].accepts`; output-only events belong in
+`eventGraph.externalEvents`.
 
 ## Event Authoring
 
@@ -169,46 +176,55 @@ type ProjectAppEvent = {
 ```
 
 New HTTP/external producers emit the complete canonical envelope directly.
-Handlers consume event-specific fields from `event.data`. Compatibility
-flattening belongs only at an ingress boundary.
+Routes and adapters consume event-specific fields from `event.data`.
+Compatibility flattening belongs only at an ingress boundary.
 
-## Workflow Handlers
+## Task Reconciliation
 
-Use `workflowHandlers` when an event should run an app-owned workflow:
+Use `taskRoutes` to correlate an event with desired task state. Bind repeatable
+execution policy through `taskWorkflows`; otherwise the task falls back to the
+accountable `ownerEntry`:
 
 ```ts
-workflowHandlers: [
+ownerEntry: {
+  workflow: "project-owner",
+  agent: "project-owner",
+  task: "Review the task and return a structured reconciliation result.",
+  timeoutMs: 3_600_000,
+  context: ["project.json", "tasks/tree.json"],
+},
+taskWorkflows: {
+  "project-planner": {
+    workflow: "project-planner",
+    task: "Reconcile project planning state.",
+    timeoutMs: 3_600_000,
+    context: ["project.json", "tasks/tree.json"],
+  },
+},
+taskRoutes: [
   {
-    name: "my-project-owner",
-    type: "job",
+    name: "my-project-planning",
     enabled: true,
-    description: "Review project state and move the owner loop.",
+    description: "Correlate owner wakes with the standing planning task.",
     accepts: [
       { type: "project.owner.requested", target: { project: "my-project" } },
     ],
-    emits: ["project.task.assigned", "project.owner.reviewed"],
-    handler: {
-      workflow: "project-owner",
-      agent: "project-owner",
-      projectId: "my-project",
-      includeEvent: true,
-      task: "Review the project and task tree.",
-      timeoutMs: 3_600_000,
-    },
-    context: ["project.json", "tasks/tree.json"],
+    resolve: () => ({
+      id: "project-planning",
+      parentId: "my-project",
+      outcome: "Keep project priorities and executable work aligned.",
+      acceptance: ["The current frontier has accountable next actions."],
+      mode: "maintain",
+      workflow: "project-planner",
+    }),
   },
-]
+],
 ```
 
 `accepts` can contain an event type string or a typed selector. Prefer a typed
-project target when several apps consume the same event family. The generated
-handler creates a real workflow run with guards, persistence, provenance, and
-terminal result; it must not imitate a workflow by starting a raw agent
-session.
-
-`emits` is integrity metadata for the handler's declared outputs. `eventGraph`
-contains only edges or exceptions that cannot be derived from schedules,
-handlers, and actions.
+project target when several apps consume the same event family. The reconciler
+claims the task, invokes its workflow capability or owner fallback, validates
+the structured result, and applies task changes atomically.
 
 ## Imperative Event Adapter
 
@@ -222,7 +238,7 @@ It must not:
 - interpret worker quality;
 - accept/reject tasks;
 - encode retry or blocker policy;
-- duplicate an event-to-workflow route already declared in `workflowHandlers`.
+- duplicate task execution already owned by `taskRoutes`.
 
 ## Canonical Project Loop
 
@@ -274,9 +290,6 @@ App code uses explicit roots:
 - `ctx.workspacePath(path)` for domain files;
 - `ctx.workspaceCwd()` for domain commands.
 
-`ctx.projectPath(path)` is a deprecated compatibility alias for
-`workspacePath(path)`. Do not use it in new app code.
-
 The runtime validates resolved paths against the declared app and workspace
 roots. A project app cannot use path helpers to claim unrelated projects.
 
@@ -284,7 +297,7 @@ roots. A project app cannot use path helpers to claim unrelated projects.
 
 Runtime discovery scans sibling `projects/*.app/app.ts` modules, validates the
 app id/layout/manifest, registers app-local agents, and builds schedule and
-workflow-handler routes.
+task-route entries.
 
 Reload is atomic at the app boundary:
 
@@ -338,8 +351,8 @@ The confirmation copy must distinguish “accepted” from “completed.”
 - Record the domain revision when app behavior depends on a domain layout.
 - Keep mutation, budget, concurrency, approval, workspace, and conflict gates
   explicit.
-- Make workflow handlers and continuation adapters idempotent where delivery or
-  reconciliation can repeat.
+- Make task resolvers, workflows, and continuation adapters idempotent where
+  delivery or reconciliation can repeat.
 - Keep credentials and runtime-local state outside committed app files.
 
 ## Compatibility
@@ -356,8 +369,9 @@ workflows.
 
 - App id, directory, project id, and workspace binding agree.
 - Every schedule emits through `emits[]`.
-- Every workflow handler declares `accepts[]` and names a real workflow.
-- No event responsibility is duplicated by `workflowHandlers` and `onEvent`.
+- Every task route declares `accepts[]` and resolves a stable task identity.
+- Every routed task has a valid workflow capability or `ownerEntry` fallback.
+- No event responsibility is duplicated by `taskRoutes` and `onEvent`.
 - Every emitted actionable event has a consumer or accountable owner inbox.
 - Owner and worker workflows preserve their judgment boundary.
 - Task-tree writes use canonical states and owner-reviewed transitions.

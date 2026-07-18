@@ -597,7 +597,7 @@ function launchProjectOwner(
   ownerLoopsInFlight: Set<string>,
 ): void {
   if (isProjectApp(project)) {
-    // Project-apps own their schedules and workflow handlers.
+    // Project-apps own their schedules and task reconciliation.
     // The legacy reconciler should NOT emit owner wakes for them —
     // it creates redundant sessions that burn the app's session budget.
     // The app's own schedules (project.tick, heartbeat, etc.) drive it.

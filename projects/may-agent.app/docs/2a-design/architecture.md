@@ -8,10 +8,10 @@ owned by their linked design docs and trackers.
 > **project-app-centric**. The canonical execution model is now:
 >
 > ```
-> project-app (app.ts) → schedules/events → workflow handlers → agent sessions
+> project-app (app.ts) → events → tasks → workflow or owner → observed state
 > ```
 >
-> Project-apps own their agents, schedules, event routing, and task trees.
+> Project-apps own their agents, schedules, task routing, and task trees.
 > Legacy handlers on may's cron are being consolidated — see
 > [project-app-v3.md](project-app-v3.md) for the canonical app model and
 > [system-operations-model.md](../3-proposals/system-operations-model.md) for
@@ -23,14 +23,15 @@ Core primitive:
 event → handler/workflow → session/function → evidence → events/metrics
 ```
 
-Migration must be incremental. The current system is production-active.
+The project-app migration is complete. Standalone infrastructure handlers
+remain a separate runtime mechanism.
 
 ---
 
 A **project-centered, event-based autonomous agent system** where:
-- **Project-apps are the primary unit.** Each `*.app/app.ts` declares its
-  owner agent, schedules, workflow handlers, event subscriptions, and task tree.
-  The app is how May-agent drives a domain project.
+- **Project-apps are the primary unit.** Each `*.app/app.ts` declares its owner
+  entry, schedules, task routes, reusable workflow capabilities, and task tree.
+  The app is how May-agent organizes work for a domain project.
 - **Projects are context and ownership.** Each project carries its own history,
   background, goals, accumulated experience, and current lifecycle state.
   `active` means push now; `waiting` means watch until a resume signal makes
@@ -633,13 +634,15 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 The current direction is not "more infra logic." It is fewer execution paths:
 
 - timers, adapters, and humans emit events;
-- handlers normalize, dedup, and dispatch workflows;
+- project task routes correlate events to desired task state;
+- one reconciler claims tasks and invokes a reusable workflow or owner fallback;
+- standalone infrastructure handlers normalize mechanical system events;
 - workflows collect context and run sessions/functions;
 - sessions/functions emit evidence;
 - metrics and events make the result observable.
 
 Mechanical infra code may still call manager/runtime internals directly, but
-new judgment/action paths should follow the handler-to-workflow convention. See
+new project judgment/action paths should follow task reconciliation. See
 `system-boundary.md` for the design and
 `../proposals/system-boundary-tracker.md` for historical implementation evidence.
 

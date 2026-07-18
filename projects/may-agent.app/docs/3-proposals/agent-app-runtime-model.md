@@ -667,18 +667,17 @@ exceptions explicit.
 
 ### SDK surface
 
-`ProjectApp` currently exposes four independent behavior surfaces:
+`ProjectApp` exposes task-oriented behavior surfaces:
 
 1. schedules that emit events;
-2. `workflowHandlers` that bind events directly to a workflow and optional
-   agent;
-3. named actions;
-4. an imperative `onEvent` adapter.
+2. `taskRoutes` that correlate events to durable desired task state;
+3. `taskWorkflows` that name reusable execution capabilities;
+4. `ownerEntry` as the accountable fallback;
+5. named actions and a bounded imperative `onEvent` adapter.
 
-The manifest has `owner?: string`, but it does not declare an owner-entry
-workflow, owner context builder, proposal restriction, owner decision schema, or
-runtime action ports. `workflowHandlers[].handler.agent` can independently name
-an agent, so agent choice and app ownership are only loosely related.
+The manifest now separates organization from capability: routes choose tasks,
+tasks choose reusable workflows when appropriate, and unresolved capability
+falls back to the owner.
 
 ### Loader behavior
 
@@ -687,22 +686,21 @@ The loader already moves toward app-owned agents:
 - it discovers agents under the app;
 - it infers an owner from explicit configuration, one local agent, or an
   `agents/owner` convention;
-- it registers app-local owner and handler agents;
-- it installs schedules and workflow handlers on the owner's cron surface.
+- it registers app-local owner and workflow-capability agents;
+- it installs schedules and task routes on the owner's cron surface.
 
-Ingress, however, has three competing paths:
+Ingress now has two explicit paths:
 
 ```text
-matching workflowHandlers -> workflow, possibly with a non-owner agent
-otherwise onEvent         -> deterministic adapter or no-op
-otherwise project event   -> raw fallback owner session
+matching taskRoutes -> task reconciliation -> workflow or ownerEntry
+otherwise onEvent  -> deterministic adapter or no-op
+otherwise          -> not accepted by this app
 ```
 
-The raw fallback calls `runAgent(owner, ownerFallbackTask(...))`; it bypasses an
-owner workflow and therefore bypasses the app's normal context builder,
-structured output, capability policy, and completion handling. The fallback
-also emits an inbox-reviewed signal immediately after starting the session,
-before owner judgment has succeeded.
+Novel semantic input must be accepted by a task route whose task has no workflow
+binding; that task resolves through `ownerEntry`. The retired raw owner-session
+fallback no longer exists, so an undeclared event cannot silently bypass task
+identity, structured output, capability policy, or completion handling.
 
 The platform owner workflow has the same lifecycle hazard in another form: it
 marks inbox messages, escalations, and signals reviewed before invoking the
@@ -735,8 +733,8 @@ prompts, agent instructions, and broad tool access.
 | Property | Assessment | Evidence |
 | --- | --- | --- |
 | Portable project plus sibling control plane | Strong | The accepted layout and active apps consistently separate domain workspace from `.app` state and automation. |
-| Owner as project brain | Strong in design, partial in code | Owner workflows exist, but direct workflow routes and policy-heavy adapters can bypass or pre-empt owner judgment. |
-| One semantic entry | Gap | Explicit handlers, `onEvent`, and raw fallback sessions form three ingress behaviors. |
+| Owner as project brain | Strong for organized work | Known tasks use declared workflows; novel accepted tasks have no workflow binding and resolve through `ownerEntry`. |
+| One semantic entry | Strong for organized work | Task routes enter one reconciler; `onEvent` is limited to declared deterministic translations; raw fallback sessions are removed. |
 | Multi-app identity isolation | Gap | App-local agents are loaded into a global name registry, so two apps cannot safely use the same local role names. |
 | Deterministic runtime boundary | Partial | Events, workflows, guards, sessions, and task tools are present; typed owner decisions and action ports are not. |
 | Durable owner-input handling | Correctness risk | Some paths mark inbox work reviewed before successful owner judgment and follow-up. |
@@ -854,11 +852,10 @@ Recommended rules:
   invoked through declared capabilities as workers/specialists.
 - `onEvent` remains a bounded normalizer/translator and cannot close semantic
   work.
-- Unhandled owned input routes to `owner.entry`; raw owner-session fallback is
-  removed after migration.
-- Existing `owner: string` and `workflowHandlers` remain v1 compatibility
-  inputs. Mismatched legacy owner names produce a migration diagnostic and
-  normalize only during the compatibility window.
+- Novel owned input is explicitly routed to a task handled by `ownerEntry`;
+  undeclared input is not silently converted into a session.
+- Direct event-to-workflow routes are removed after migration. Every organized
+  work item enters through task reconciliation.
 
 This is intentionally an app contract, not a new generic agent framework. A
 system-level conversational agent such as May can use the same internal
@@ -1360,8 +1357,9 @@ evaluator may assist review, but it is not required to start the Gym project.
   `invoke` CLI commands as thin modes of the existing host.
 - Add one-app `run` behavior to the existing runtime; do not build another
   agent loop, tool engine, or deployment framework.
-- Route unhandled owned events through the configured owner entry.
-- Remove raw fallback sessions only after every active app has an owner entry.
+- Route novel owned events explicitly to tasks handled by the configured owner
+  entry.
+- Keep undeclared events out of the app instead of manufacturing raw sessions.
 - Attribute public invocation to `app:<id>` while preserving exact policy
   provenance.
 
@@ -1525,6 +1523,7 @@ Approve the conceptual boundary before changing loaders:
 > durable task runtime is the enforcement/execution boundary. They share one
 > app identity but retain separate, versioned policy and runtime components.
 
-If accepted, the smallest implementation slice is Phase 1 plus the owner-input
-lifecycle tests from Phase 2. That removes the raw fallback inconsistency and
-gives every later Gym and `propose` improvement one stable entry to evaluate.
+Task reconciliation and raw-fallback removal now provide one stable entry for
+organized work. The next decision in this broader proposal is whether to adopt
+the remaining public app identity, multi-app isolation, and proposal-mode
+contracts.

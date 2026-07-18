@@ -1029,7 +1029,7 @@ export default defineProjectApp({
       },
     ],
     limits: {
-      maxHandlersPerEvent: 1,
+      maxRoutesPerEvent: 1,
     },
   },
 

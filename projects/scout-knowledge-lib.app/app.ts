@@ -126,17 +126,6 @@ async function routeScoutEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  // Task-targeted events are handled by the generic reconciler.
-  if (
-    event.type === "scout.heartbeat" ||
-    event.type === "scout.explore" ||
-    event.type === "scout.digest" ||
-    event.type === "project.library_health.tick" ||
-    event.type === "project.owner.requested"
-  ) {
-    return ctx.noop(`${event.type} is handled by taskRoutes`);
-  }
-
   if (event.type === "project.comment.created") {
     return ctx.emit(ownerRequested("project-comment", eventDetails(event)));
   }
@@ -153,14 +142,6 @@ async function routeScoutEvent(
 
   if (event.type === "metric.breach") {
     return ctx.emit(ownerRequested("metric-breach", eventDetails(event)));
-  }
-
-  if (event.type === "project.knowledge.maintained") {
-    return ctx.noop("external event emitted by knowledge-planner workflow");
-  }
-
-  if (event.type === "project.library_health.observed") {
-    return ctx.noop("external event emitted by library-health workflow");
   }
 
   return undefined;
@@ -375,20 +356,14 @@ export default defineProjectApp({
   ],
 
   events: [
-    "scout.heartbeat",
-    "scout.explore",
-    "scout.digest",
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
-    { type: "project.library_health.tick", project: projectId },
-    { type: "project.library_health.observed", project: projectId },
-    { type: "project.owner.requested", project: projectId },
     { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },
   ],
 
   eventGraph: {
-    handlers: {
+    routes: {
       "scout-task-heartbeat": {
         emits: ["project.knowledge.maintained", "project.task.reconciled"],
         description: "Scout creative session — synthesizes across sources.",

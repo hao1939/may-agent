@@ -176,20 +176,17 @@ worth automating.
 
 ### 1. Align Check Language
 
-Update `scripts/check-integrity.ts` messages and helper names from
-handler-centric language to route-centric language.
-
-Keep compatibility with existing `workflowHandlers`, but report as:
+Keep `scripts/check-integrity.ts` messages and helper names task-oriented:
 
 ```text
-event route missing workflow
-duplicate event route
-route emits unknown event
+task route missing resolver
+duplicate task route
+task capability missing workflow
 route conflict on type+target+action/owner
 ```
 
-This is a readability and model-alignment change. It should not change runtime
-behavior.
+The retired direct event-to-workflow route is no longer an accepted manifest
+shape.
 
 ### 2. Add Convention-Based Route Validation
 
@@ -197,9 +194,9 @@ Extend `bun run check` to infer route targets by convention.
 
 Validate:
 
-- every app route has `accepts`;
-- every route workflow exists;
-- every route emits only known internal, external, or terminal events;
+- every task route has `accepts` and `resolve`;
+- every task capability workflow exists;
+- every task route has an `ownerEntry` fallback;
 - shared events with multiple routes are disambiguated by `action`,
   `target.taskId`, or `owner`;
 - schedules and actions emit known routeable or external events.
@@ -428,20 +425,19 @@ workflow when the response is mechanical.
 
 Decision rule:
 
-- if the event needs planner mechanics every time, keep the explicit planner
-  workflow route;
-- if it needs judgment first, remove the explicit route and let owner fallback
-  handle it;
-- if repeated handling becomes mechanical, introduce a workflow route later;
+- if the event needs planner mechanics every time, bind the task to the planner
+  workflow capability;
+- if it needs judgment first, resolve the task without a workflow and use the
+  owner fallback;
+- if repeated handling becomes mechanical, introduce a reusable task workflow;
 - if the breach identifies a concrete failed spec, compact plan, artifact gap,
   or app-process defect, create or dispatch the smallest fix-forward task that
   can diagnose, repair, rerun, or record an exact wait.
 
 ### 10. Keep One SDK Vocabulary
 
-Use the runtime contract names directly: `workflowHandlers[].accepts`,
-`eventGraph.handlers`, and `maxHandlersPerEvent`. Do not add route aliases;
-aliases would create a second manifest language without adding capability.
+Use the runtime contract names directly: `taskRoutes[].accepts`,
+`taskWorkflows`, `ownerEntry`, and `maxRoutesPerEvent`.
 
 ## Suggested Order
 
@@ -474,8 +470,7 @@ For compact-loop reliability, keep the order narrow:
 5. Validate routes in `bun run check`.
    - Validate route conflicts, emitted events, schedule/action outputs, and
      workflow references.
-   - Report route-centric language even while the SDK still exposes
-     `workflowHandlers`.
+   - Report task-route and capability language consistently.
 6. Review metric/owner fallback routing.
    - Keep judgment-driven metric breaches going to owner fallback.
    - Turn repeated mechanical fixes into explicit workflow routes only after the
@@ -486,10 +481,9 @@ For compact-loop reliability, keep the order narrow:
      aliases until the behavior is covered by tests. They should not appear in
      new operator-facing summaries unless the old name is the subject being
      repaired.
-8. Add SDK route aliases later.
-   - Add route aliases without a breaking SDK rename only after app-local
-     checks and UI readouts already speak in route terms.
+8. Keep the SDK vocabulary singular.
+   - Do not reintroduce a direct event-to-workflow alias.
 
-This order gives immediate value without a runtime migration. The first two
+This order gives immediate value after the task-reconciliation migration. The first two
 steps are the ones expected to make the compact loop and project observability
 materially more reliable.

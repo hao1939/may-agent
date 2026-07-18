@@ -157,22 +157,6 @@ export async function routeGymEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  if (
-    event.type === "gym.regression.requested" ||
-    event.type === "gym.incident.detected" ||
-    event.type === "gym.review.requested"
-  ) {
-    return ctx.noop(`${event.type} is handled by taskRoutes`);
-  }
-
-  if (
-    event.type === "gym.regression.completed" ||
-    event.type === "gym.regression.failed" ||
-    event.type === "gym.review.ready"
-  ) {
-    return ctx.noop(`${event.type} is a terminal Gym output event`);
-  }
-
   if (event.type === "evaluation.reviewed") {
     if (!isMayFailure(event)) {
       return ctx.noop("evaluation is not an actionable May failure");
@@ -277,15 +261,10 @@ export default defineProjectApp({
     },
   ],
 
-  events: [
-    "evaluation.reviewed",
-    "gym.regression.completed",
-    "gym.regression.failed",
-    "gym.review.ready",
-  ],
+  events: ["evaluation.reviewed"],
 
   eventGraph: {
-    handlers: {
+    routes: {
       "gym-task-incident-intake": {
         emits: ["gym.review.requested", "project.task.reconciled"],
         description:
@@ -321,7 +300,7 @@ export default defineProjectApp({
       "gym.review.ready",
     ],
     limits: {
-      maxHandlersPerEvent: 2,
+      maxRoutesPerEvent: 2,
     },
   },
 

@@ -5,31 +5,40 @@
 A handler is what runs when a timer, event subscription, or manual
 `trigger.<entry-name>` fires.
 
-For project-app behavior, configure workflow-backed handlers in the app's
-`app.ts`:
+For project-app behavior, correlate events to tasks in the app's `app.ts` and
+declare the capabilities that can reconcile them:
 
 ```typescript
 export default defineProjectApp({
   // ...
-  workflowHandlers: [
+  ownerEntry: {
+    workflow: "project-owner",
+    task: "Review the task and return a structured reconciliation result.",
+    timeoutMs: 3_600_000,
+    context: ["projects/my-project.app/tasks/tree.json"],
+  },
+  taskWorkflows: {
+    "project-planner": {
+      workflow: "project-planner",
+      task: "Reconcile project planning state.",
+      timeoutMs: 3_600_000,
+      context: ["projects/my-project.app/tasks/tree.json"],
+    },
+  },
+  taskRoutes: [
     {
-      name: "my-project-owner",
-      type: "job",
+      name: "my-project-planning",
       enabled: true,
-      description:
-        "Owner loop. Reviews events, updates the task tree, and assigns work.",
+      description: "Wake the standing project planning task.",
       accepts: ["project.owner.requested"],
-      emits: ["project.task.assigned"],
-      handler: {
+      resolve: () => ({
+        id: "project-planning",
+        parentId: "my-project",
+        outcome: "Keep the project frontier executable and accountable.",
+        acceptance: ["The current frontier has clear next actions."],
+        mode: "maintain",
         workflow: "project-planner",
-        includeEvent: true,
-        task: "app: /app/projects/my-project.app\nproject: /app/projects/my-project",
-        timeoutMs: 3_600_000,
-      },
-      context: [
-        "projects/my-project.app/project.json",
-        "projects/my-project.app/tasks/tree.json",
-      ],
+      }),
     },
   ],
 });
@@ -98,20 +107,19 @@ collection in the workflow.
 | Scenario                         | Handler should do                                                                                                        | Usually avoid                                         |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
 | Timer measures a fact            | Read bounded state, update metrics, emit/resolve metric events if needed                                                 | Starting an agent just to count rows                  |
-| Event needs judgment             | Validate the event payload, build a compact task, run the owning workflow                                                | Doing multi-step reasoning inside the handler         |
+| Event needs judgment             | Correlate it to a task and let reconciliation choose the task workflow or owner fallback                                 | Running a project workflow directly from the event    |
 | Event is missing required fields | Emit `handler.skipped` with the reason and return                                                                        | Guessing fields from subscriber-specific shortcuts    |
-| Owner action is needed           | Use a workflow-backed handler, or route to a workflow with `sdk.runWorkflow(...)` when deterministic preflight is needed | Calling many agents directly from handler code        |
+| Owner action is needed           | Resolve a task without a bound workflow so `ownerEntry` handles it                                                       | Calling many agents directly from handler code        |
 | External blocker is clear        | Use `sdk.escalate(...)` with owner, evidence, and requested action                                                       | Sending an informal message and calling it escalation |
 | Operator manually fires a job    | Treat `trigger.<entry-name>` as a control shortcut for that trigger entry                                                | Treating `trigger.*` as a domain lifecycle event      |
 
 ## Registering Trigger Entries
 
-For V3 project-apps, add generated handler entries to
-`workflowHandlers: [...]` or add `schedules` in
-`projects/<id>.app/app.ts`. Each workflow handler declares both `accepts` and
-`emits`; do not add a duplicate top-level event registry or duplicate handler
-edges under `eventGraph`. The app owns the event mapping and the workflow files
-usually live in `projects/<id>.app/workflows/`.
+For V3 project-apps, add `taskRoutes`, `taskWorkflows`, and `schedules` in
+`projects/<id>.app/app.ts`. A task route declares `accepts` and resolves a
+stable task identity; it never executes a workflow directly. The app owns the
+event-to-task mapping, and reusable workflow capabilities usually live in
+`projects/<id>.app/workflows/`.
 
 Use `cron.json` for standalone agents and legacy compatibility. The filename
 is historical; each entry describes triggers plus the handler to run.
@@ -134,10 +142,9 @@ projects/aks-rp-e2e/
         managed-system-pool-watch.ts
 ```
 
-Use an app-local workflow handler when the trigger only has meaning for that
-one project-app. Use a global May/platform handler for shared infra-wide
-mechanics such as metric snapshotting, escalation routing, retention, and
-compatibility backstops.
+Use an app-local task route when the trigger only has meaning for that one
+project-app. Use a global May/platform handler for shared infrastructure
+mechanics such as metric snapshotting, escalation routing, and retention.
 
 Add `context` beside the handler config. Keep it to local paths that explain why
 the loop exists and where future maintenance belongs:

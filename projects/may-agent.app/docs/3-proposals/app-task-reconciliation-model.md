@@ -8,10 +8,10 @@ declare task routes, reusable workflow capabilities, and an owner fallback.
 `aks-rp-e2e.app` has completed its bounded handler cutover: feature compact,
 single-spec verification, task execution and review, problem investigation,
 approval dispatch, Condition fallback, stall and focus review, semantic owner
-events, and compatibility health are reconciled tasks. No active app manifest
-declares a direct `workflowHandlers` execution path. Imperative `onEvent`
-functions remain only where an event must be filtered, translated, or recorded
-without executing project work.
+events, and compatibility health are reconciled tasks. The retired direct
+event-to-workflow path has been removed from the SDK and runtime. Imperative
+`onEvent` functions remain only where an event must be filtered, translated,
+or recorded without executing project work.
 
 ## Executive Decision
 
@@ -380,7 +380,8 @@ Condition event
 known mechanical app event
   -> deterministic projection or explicitly bound task/workflow
 
-novel app-level event
+novel app-level event accepted by a task route
+  -> task without workflow binding
   -> app owner entry
 
 read-only query
@@ -610,11 +611,11 @@ Migration is based on work semantics, not on making every event look alike.
 
 | App                       | Current decision                                                           | Reason                                                                                                                                                                                                                             |
 | ------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `evaluation.app`          | Migrated; harden exact Condition authoring and owner-result quality.       | Session aftermath, scans, pipeline observation, project audits, and owner review all have durable desired-state identities.                                                                                                        |
-| `may-agent.app`           | Migrated organized work; retain small deterministic event adapters.        | Ops observations, digest creation, and owner review are standing responsibilities; comment persistence and event filtering are projections, not tasks.                                                                             |
-| `scout-knowledge-lib.app` | Migrated; keep independent source tasks and one owner fallback.            | Each source is a separate `maintain` task, digest and health are reusable workflows, and novel library maintenance belongs to Scout.                                                                                               |
-| `aks-rp-e2e.app`          | Continue cohort migration.                                                 | It has the largest duplicated control plane and therefore the largest benefit, but live attempts and AKS-specific Condition behavior require incremental replacement.                                                              |
-| `gym.app`                 | Do not task-migrate yet. Extract and reuse the neutral agent runner first. | Incident intake, benchmark execution, and review already form an immutable request/result pipeline. A task layer adds value only where deduplication, resumption, owner fallback, or desired-state observation is actually needed. |
+| `evaluation.app`          | Migrated. | Session aftermath, scans, pipeline observation, project audits, and owner review have durable desired-state identities. |
+| `may-agent.app`           | Migrated. | Ops observations, digest creation, and owner review are standing responsibilities; comment persistence and event filtering remain bounded projections. |
+| `scout-knowledge-lib.app` | Migrated. | Each source is a separate `maintain` task; digest and health are reusable workflows; novel accepted maintenance falls back to Scout. |
+| `aks-rp-e2e.app`          | Migrated. | Loops, execution/review, owner events, approval, Conditions, focus review, and runtime health enter through task reconciliation. |
+| `gym.app`                 | Migrated. | Incident intake, benchmark execution, and review use stable task identities while the neutral agent runner remains reusable. |
 
 The first AKS cohorts validate both task modes. The feature-compact controller
 is a standing `maintain` task. Completion review and reviewed-task application

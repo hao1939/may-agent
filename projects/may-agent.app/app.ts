@@ -119,14 +119,6 @@ async function routePlatformEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  if (
-    event.type === "project.ops_health.tick" ||
-    event.type === "project.ops_digest.tick" ||
-    event.type === "project.owner.requested"
-  ) {
-    return ctx.noop(`${event.type} is handled by taskRoutes`);
-  }
-
   if (event.type === "project.comment.created") {
     const commentId = appendDiscussionRecord(ctx, event);
     return ctx.emit(ownerRequested("project-comment", { commentId }));
@@ -135,18 +127,6 @@ async function routePlatformEvent(
   if (event.type === "project.tick") {
     return ctx.emit(
       ownerRequested("scheduled-project-review", eventDetails(event)),
-    );
-  }
-
-  if (event.type === "project.ops_health.observed") {
-    return ctx.noop(
-      "ops-health observation recorded — no direct owner fallback",
-    );
-  }
-
-  if (event.type === "project.ops_digest.created") {
-    return ctx.noop(
-      "daily ops digest recorded — owner wake is emitted by the digest workflow when needed",
     );
   }
 
@@ -437,14 +417,8 @@ export default defineProjectApp({
   events: [
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
-    { type: "project.ops_health.tick", project: projectId },
-    { type: "project.ops_health.observed", project: projectId },
-    { type: "project.ops_digest.tick", project: projectId },
-    { type: "project.ops_digest.created", project: projectId },
     { type: "project.action.invoked", project: projectId },
-    { type: "project.owner.requested", project: projectId },
     { type: "project.tasks.ready", project: projectId },
-    { type: "project.owner.reviewed", project: projectId },
     { type: "metric.alerted" },
     { type: "metric.breach" },
     { type: "metric.stalled" },
@@ -452,7 +426,7 @@ export default defineProjectApp({
   ],
 
   eventGraph: {
-    handlers: {
+    routes: {
       "may-agent-task-daily-ops-digest": {
         emits: [
           "project.ops_digest.created",
