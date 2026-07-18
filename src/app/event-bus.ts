@@ -1051,18 +1051,19 @@ function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
   };
 }
 
+const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
+  "runtime.daemon.heartbeat",
+  "handler.workflow_dispatched",
+  "handler.skipped",
+  "metric.feedback.routed",
+  "metric.alert_judged",
+  "project.knowledge.maintained",
+]);
+
 function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
-  const evidenceEventTypes = new Set([
-    "runtime.daemon.heartbeat",
-    "handler.workflow_dispatched",
-    "handler.skipped",
-    "metric.feedback.routed",
-    "metric.alert_judged",
-    "project.knowledge.maintained",
-  ]);
   const isEvidence =
     event.type.startsWith("evaluation.") ||
-    evidenceEventTypes.has(event.type) ||
+    EVIDENCE_PROJECTION_EVENT_TYPES.has(event.type) ||
     event.type.startsWith("channel.delivery.") ||
     event.type === "project.owner.reviewed" ||
     event.type === "guard.triggered" ||
