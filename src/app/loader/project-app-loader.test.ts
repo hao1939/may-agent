@@ -115,106 +115,6 @@ describe("project app loader", () => {
     }
   });
 
-  it("installs app workflow handlers with inferred owner and project defaults", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: [{ type: "project.work", target: { project: "sample" } }],
-          handler: { workflow: "worker", task: "work" }
-        }]
-      }`,
-      );
-
-      const agentCrons = new Map<string, Cron>();
-      const bus = new EventBus();
-      const result = await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: (name: string) => name === "sample-owner" } as any,
-        bus,
-        agentCrons,
-      });
-
-      expect(result.installed.map((app) => `${app.id}:${app.owner}`)).toEqual(["sample:sample-owner"]);
-      const entries = agentCrons.get("sample-owner")!.getEntries();
-      expect(entries).toHaveLength(1);
-      expect(entries[0]).toMatchObject({
-        name: "sample-worker",
-        on: ["project.work"],
-        agent: "sample-owner",
-        handler: {
-          workflow: "worker",
-          agent: "sample-owner",
-          projectId: "sample",
-          task: "work",
-        },
-      });
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("installs workflowHandlers alongside an imperative onEvent router", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeAppModule(
-        appDir,
-        `export default {
-  id: "sample",
-  workflowHandlers: [
-    {
-      name: "sample-worker",
-      type: "job",
-      enabled: true,
-      description: "Generated workflow-backed event handler.",
-      accepts: [{ type: "project.work", target: { project: "sample" } }],
-      handler: { workflow: "worker", task: "work", timeoutMs: 60000 },
-      context: []
-    }
-  ],
-  events: ["project.custom"],
-  onEvent: async (ctx, event) => ctx.noop(String(event.type))
-};
-`,
-      );
-
-      const agentCrons = new Map<string, Cron>();
-      const result = await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: (name: string) => name === "sample-owner" } as any,
-        bus: new EventBus(),
-        agentCrons,
-      });
-
-      expect(result.installed.map((app) => app.id)).toEqual(["sample"]);
-      expect(agentCrons.get("sample-owner")!.getEntries()).toContainEqual(
-        expect.objectContaining({
-          name: "sample-worker",
-          on: ["project.work"],
-          handler: expect.objectContaining({
-            workflow: "worker",
-            projectId: "sample",
-          }),
-        }),
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("uses declared owner and workspace localPath for sibling project apps", async () => {
     const root = tempRoot();
     try {
@@ -227,13 +127,7 @@ describe("project app loader", () => {
         `{
         id: "sample-lib",
         owner: "scout",
-        workspace: { localPath: "../sample-lib" },
-        workflowHandlers: [{
-          name: "sample-lib-planner",
-          enabled: true,
-          accepts: ["project.owner.requested"],
-          handler: { workflow: "planner", task: "plan" }
-        }]
+        workspace: { localPath: "../sample-lib" }
       }`,
       );
 
@@ -254,7 +148,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("exposes explicit workspace path helpers while retaining the compatibility alias", async () => {
+  it("exposes explicit workspace and app path helpers", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
@@ -276,7 +170,7 @@ describe("project app loader", () => {
                 data: {
                   workspacePath: ctx.workspacePath("src/index.ts"),
                   workspaceCwd: ctx.workspaceCwd(),
-                  compatibilityPath: ctx.projectPath("src/index.ts")
+                  appPath: ctx.appPath("tasks/tree.json")
                 }
               });
             }
@@ -309,7 +203,7 @@ describe("project app loader", () => {
       expect(pathEvent.data).toMatchObject({
         workspacePath: join(domainDir, "src/index.ts"),
         workspaceCwd: domainDir,
-        compatibilityPath: join(domainDir, "src/index.ts"),
+        appPath: join(appDir, "tasks/tree.json"),
       });
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -417,7 +311,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("offers metric feedback events to the resolved owner app without explicit metric subscriptions", async () => {
+  it("routes explicitly subscribed metric feedback through the bounded adapter", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
@@ -427,6 +321,7 @@ describe("project app loader", () => {
         appDir,
         `{
         id: "sample",
+        events: ["metric.breach", "project.owner.requested"],
         async onEvent(ctx, event) {
           if (event.type === "metric.breach") {
             return ctx.emit({
@@ -499,7 +394,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("records metric feedback routed to an explicit app workflow handler", async () => {
+  it("runs an explicitly subscribed bounded adapter without starting a session", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
@@ -509,137 +404,7 @@ describe("project app loader", () => {
         appDir,
         `{
         id: "sample",
-        workflowHandlers: [{
-          name: "sample-metric-owner",
-          enabled: true,
-          accepts: [{ type: "metric.breach", owner: "agent:app-ops" }],
-          handler: { workflow: "metric-owner", agent: "app-ops", task: "handle metric" }
-        }]
-      }`,
-      );
-
-      const observed: Array<Record<string, unknown>> = [];
-      const bus = new EventBus();
-      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: (name: string) => name === "sample-owner" || name === "app-ops" } as any,
-        bus,
-        agentCrons: new Map(),
-      });
-
-      bus.emit({
-        type: "metric.breach",
-        source: "test",
-        owner: "agent:app-ops",
-        data: {
-          metricId: "sample.task.no-work",
-          project: "sample",
-          alertId: 7,
-          current: 1,
-          threshold: 0,
-          priority: "P0",
-        },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(observed).toContainEqual(
-        expect.objectContaining({
-          type: "metric.feedback.routed",
-          owner: "agent:app-ops",
-          data: expect.objectContaining({
-            metricId: "sample.task.no-work",
-            alertId: 7,
-            project: "sample",
-            appId: "sample",
-            route: "owner-app",
-            eventType: "metric.breach",
-          }),
-        }),
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("falls back to the owner session when metric feedback is not handled by the app", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        async onEvent() { return undefined; }
-      }`,
-      );
-
-      const calls: Array<{ agent: string; task: string; opts: Record<string, unknown> | undefined }> = [];
-      const observed: Array<Record<string, unknown>> = [];
-      const bus = new EventBus();
-      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: {
-          hasAgent: (name: string) => name === "sample-owner",
-          runAgent: (agent: string, task: string, opts?: Record<string, unknown>) => {
-            calls.push({ agent, task, opts });
-            return "sess_metric";
-          },
-        } as any,
-        bus,
-        agentCrons: new Map(),
-      });
-
-      bus.emit({
-        type: "metric.breach",
-        source: "test",
-        owner: "agent:sample-owner",
-        data: {
-          metricId: "sample.task.no-work",
-          alertId: 7,
-          current: 1,
-          threshold: 0,
-          priority: "P1",
-        },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(calls).toHaveLength(1);
-      expect(calls[0]!.agent).toBe("sample-owner");
-      expect(calls[0]!.opts?.projectId).toBe("sample");
-      expect(calls[0]!.task).toContain("metric feedback event");
-      expect(calls[0]!.task).toContain("sample.task.no-work");
-      expect(observed).toContainEqual(
-        expect.objectContaining({
-          type: "metric.feedback.routed",
-          owner: "agent:sample-owner",
-          data: expect.objectContaining({
-            metricId: "sample.task.no-work",
-            alertId: 7,
-            appId: "sample",
-          }),
-        }),
-      );
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not fallback when app onEvent explicitly noops", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
+        events: ["project.unhandled"],
         onEvent(ctx) { return ctx.noop("handled"); }
       }`,
       );
@@ -671,168 +436,6 @@ describe("project app loader", () => {
     }
   });
 
-  it("does not fallback for events with explicit workflow handlers", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker", task: "work" }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-
-      const calls: string[] = [];
-      const bus = new EventBus();
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: {
-          hasAgent: () => true,
-          runAgent: (agent: string) => calls.push(agent),
-        } as any,
-        bus,
-        agentCrons: new Map(),
-      });
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(calls).toEqual([]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not fall back when a workflow selector does not match", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-loop",
-          enabled: true,
-          accepts: [{
-            type: "project.task.tick",
-            target: { project: "sample" },
-            actions: ["known-loop"]
-          }],
-          handler: { workflow: "loop", task: "work" }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-
-      const calls: Array<{ agent: string; task: string }> = [];
-      const bus = new EventBus();
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: {
-          hasAgent: () => true,
-          runAgent: (agent: string, task: string) => calls.push({ agent, task }),
-        } as any,
-        bus,
-        agentCrons: new Map(),
-      });
-
-      bus.emit({
-        type: "project.task.tick",
-        source: "test",
-        owner: "project:sample",
-        target: { project: "sample", taskId: "unknown-loop" },
-        data: { project: "sample", action: "unknown-loop" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(calls).toHaveLength(0);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("routes workflow handlers by top-level action", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-loop",
-          enabled: true,
-          accepts: [{
-            type: "project.task.tick",
-            target: { project: "sample" },
-            actions: ["known-loop"]
-          }],
-          handler: { workflow: "loop", task: "work", includeEvent: true }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-
-      const fired: any[] = [];
-      const bus = new EventBus();
-      const agentCrons = new Map<string, Cron>();
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: () => true } as any,
-        bus,
-        agentCrons,
-      });
-
-      const cron = agentCrons.get("sample-owner")!;
-      cron.registerHandler("sample-loop", async (event) => {
-        fired.push(event);
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.task.tick",
-        source: "test",
-        owner: "project:sample",
-        target: { project: "sample", taskId: "loop-a" },
-        action: "known-loop",
-        data: { project: "sample" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(fired).toHaveLength(1);
-      expect(fired[0]).toMatchObject({
-        type: "project.task.tick",
-        action: "known-loop",
-        target: { project: "sample", taskId: "loop-a" },
-      });
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("preserves scheduled event action on the envelope", async () => {
     const root = tempRoot();
     try {
@@ -854,7 +457,6 @@ describe("project app loader", () => {
             data: { project: "sample", reason: "test-pulse" }
           }]
         }],
-        workflowHandlers: [],
         actions: {}
       }`,
       );
@@ -885,177 +487,6 @@ describe("project app loader", () => {
         data: { project: "sample", reason: "test-pulse" },
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("dispatches project events to installed workflow handler entries", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-planner",
-          enabled: true,
-          accepts: ["project.owner.requested"],
-          handler: { workflow: "planner", task: "plan", includeEvent: true }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-
-      const fired: string[] = [];
-      const bus = new EventBus();
-      const agentCrons = new Map<string, Cron>();
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: () => true } as any,
-        bus,
-        agentCrons,
-      });
-
-      const cron = agentCrons.get("sample-owner")!;
-      expect(cron.getEventSubscriptions()).toMatchObject({
-        "project.owner.requested": ["sample-planner"],
-      });
-      cron.registerHandler("sample-planner", async () => {
-        fired.push("sample-planner");
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.owner.requested",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(fired).toEqual(["sample-planner"]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("runs project app workflow handlers through the workflow runtime", async () => {
-    const root = tempRoot();
-    const persistDir = join(root, ".state");
-    let cron: Cron | undefined;
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker", task: "work", includeEvent: true }
-        }]
-      }`,
-      );
-      writeWorkflow(
-        appDir,
-        "worker",
-        `export const name = "worker";
-export const description = "Execute the sample project workflow";
-export async function execute(ctx: any) {
-  ctx.dispatchEvent("test.workflow.executed", { task: ctx.task });
-  await ctx.runAgent(ctx.agent, "inspect trigger context");
-  return ctx.done("workflow module executed");
-}
-`,
-      );
-
-      const events: any[] = [];
-      let spawnedSessionTrace: unknown;
-      const bus = new EventBus();
-      bus.subscribe((event) => {
-        events.push(event);
-      });
-      const agentCrons = new Map<string, Cron>();
-      const manager = {
-        hasAgent: () => true,
-        runAgent: () => {
-          throw new Error("raw agent session should not be used for workflow handler dispatch");
-        },
-        callAgent: async (_agent: string, _task: string, opts: Record<string, unknown>) => {
-          spawnedSessionTrace = opts.trace;
-          return {
-            sessionId: "s_test_workflow",
-            status: "done",
-            lastAssistantText: "inspected",
-            messages: [],
-            duration: "1ms",
-            outputDir: "",
-          };
-        },
-      } as any;
-
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        persistDir,
-        agentsRoot: join(root, "agents"),
-        sharedRoot: join(root, "shared"),
-        manager,
-        bus,
-        agentCrons,
-      });
-
-      cron = agentCrons.get("sample-owner")!;
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      const trigger = {
-        type: "project.work",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any;
-      Object.defineProperty(trigger, EVENT_ROW_ID, { value: 41 });
-      bus.emit(trigger);
-
-      await waitUntil(() =>
-        events.some(
-          (event) =>
-            event.type === "handler.workflow_dispatched" &&
-            event.data?.workflow === "worker" &&
-            event.data?.status === "done",
-        ),
-      );
-
-      const row = getDb(persistDir)
-        .prepare(
-          "SELECT workflow, projectId, status, result_summary, task FROM workflow_runs ORDER BY startedAt DESC LIMIT 1",
-        )
-        .get() as { workflow: string; projectId: string; status: string; result_summary: string; task: string };
-      expect(row.workflow).toBe("worker");
-      expect(row.projectId).toBe("sample");
-      expect(row.status).toBe("done");
-      expect(row.result_summary).toBe("workflow module executed");
-      expect(row.task).toContain('"type": "project.work"');
-      expect(events.find((event) => event.type === "test.workflow.executed")?.trace).toEqual({
-        traceId: "event:41",
-        parentEventId: 41,
-      });
-      expect(
-        events.find((event) => event.type === "handler.workflow_dispatched" && event.data?.status === "done")?.trace,
-      ).toEqual({ traceId: "event:41", parentEventId: 41 });
-      expect(spawnedSessionTrace).toEqual({ traceId: "event:41", parentEventId: 41 });
-    } finally {
-      cron?.stop();
-      closeDb(persistDir);
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -1224,10 +655,7 @@ export async function execute(ctx: any) {
           )}`,
         );
       });
-      expect(
-        events.find((event) => event.type === "test.task.workflow")?.data
-          ?.task,
-      ).toContain('"eventId": 73');
+      expect(events.find((event) => event.type === "test.task.workflow")?.data?.task).toContain('"eventId": 73');
 
       const knownWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
       bus.emit({
@@ -1263,12 +691,8 @@ export async function execute(ctx: any) {
         ),
       );
       expect(
-        JSON.parse(
-          readFileSync(
-            join(appDir, ".state", "tasks", "tree.json"),
-            "utf8",
-          ),
-        ).tasks["work/waiting"].trace.reconciliation.trigger.eventId,
+        JSON.parse(readFileSync(join(appDir, ".state", "tasks", "tree.json"), "utf8")).tasks["work/waiting"].trace
+          .reconciliation.trigger.eventId,
       ).toBe(74);
       const waitingWorkflowRuns = events.filter((event) => event.type === "test.task.workflow").length;
 
@@ -1391,223 +815,6 @@ export async function execute(ctx: any) {
     } finally {
       cron?.stop();
       closeDb(persistDir);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("passes app-local agentsRoot into project app workflows", async () => {
-    const root = tempRoot();
-    const persistDir = join(root, ".state");
-    let cron: Cron | undefined;
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker", agent: "sample-owner", task: "work" }
-        }]
-      }`,
-      );
-      writeWorkflow(
-        appDir,
-        "worker",
-        `export const name = "worker";
-export const description = "Expose app-local workflow roots";
-export async function execute(ctx: any) {
-  ctx.dispatchEvent("test.workflow.agentsRoot", { agentsRoot: ctx.agentsRoot });
-  return ctx.done("ok");
-}
-`,
-      );
-
-      const events: any[] = [];
-      const bus = new EventBus();
-      bus.subscribe((event) => events.push(event));
-      const agentCrons = new Map<string, Cron>();
-
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        persistDir,
-        agentsRoot: join(root, "agents"),
-        sharedRoot: join(root, "shared"),
-        manager: { hasAgent: () => true } as any,
-        bus,
-        agentCrons,
-      });
-
-      cron = agentCrons.get("sample-owner")!;
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any);
-
-      await waitUntil(() => events.some((event) => event.type === "test.workflow.agentsRoot"));
-
-      const event = events.find((item) => item.type === "test.workflow.agentsRoot");
-      expect(event?.data?.agentsRoot).toBe(join(appDir, "agents"));
-    } finally {
-      cron?.stop();
-      closeDb(persistDir);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("registers app-local agents referenced by workflow handlers", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeAgent(appDir, "ops", "sample-ops");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-planner",
-          enabled: true,
-          accepts: ["project.owner.requested"],
-          handler: { workflow: "planner", agent: "sample-ops", task: "plan" }
-        }]
-      }`,
-      );
-
-      const knownAgents = new Set(["sample-owner"]);
-      const registered: Array<{ agentName: string; appDir: string; agentDir?: string }> = [];
-      const bus = new EventBus();
-      const agentCrons = new Map<string, Cron>();
-
-      const result = await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager: { hasAgent: (name: string) => knownAgents.has(name) } as any,
-        bus,
-        agentCrons,
-        registerLocalAgent: async (agentName, localAppDir, agentDir) => {
-          registered.push({ agentName, appDir: localAppDir, agentDir });
-          knownAgents.add(agentName);
-          return true;
-        },
-      });
-
-      expect(result.installed.map((app) => app.id)).toEqual(["sample"]);
-      expect(registered).toEqual([
-        {
-          agentName: "sample-ops",
-          appDir,
-          agentDir: join(appDir, "agents", "ops"),
-        },
-      ]);
-      const entry = agentCrons.get("sample-owner")!.getEntries()[0]!;
-      expect(entry.agent).toBe("sample-ops");
-      expect((entry.handler as any).agent).toBe("sample-ops");
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("reinstalls project app handlers and router state on reload", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker-v1", task: "work v1" }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-
-      const calls: string[] = [];
-      const bus = new EventBus();
-      const agentCrons = new Map<string, Cron>();
-      const manager = {
-        hasAgent: () => true,
-        runAgent: (agent: string) => calls.push(agent),
-      } as any;
-
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager,
-        bus,
-        agentCrons,
-      });
-      expect((agentCrons.get("sample-owner")!.getEntries()[0]!.handler as any).workflow).toBe("worker-v1");
-
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker-v2", task: "work v2" }
-        }],
-        onEvent() { return undefined; }
-      }`,
-      );
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager,
-        bus,
-        agentCrons,
-      });
-
-      const updatedEntry = agentCrons.get("sample-owner")!.getEntries()[0]!;
-      expect((updatedEntry.handler as any).workflow).toBe("worker-v2");
-      expect((updatedEntry.handler as any).task).toBe("work v2");
-
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        events: ["project.work"],
-        onEvent() { return undefined; }
-      }`,
-      );
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager,
-        bus,
-        agentCrons,
-      });
-      expect(agentCrons.get("sample-owner")!.getEntries()).toHaveLength(0);
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(calls).toEqual(["sample-owner"]);
-    } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -1863,73 +1070,6 @@ export async function execute(ctx: any) {
     }
   });
 
-  it("keeps schedule entries separate from workflow handlers with similar names", async () => {
-    const root = tempRoot();
-    try {
-      const projectsRoot = join(root, "projects");
-      const appDir = join(projectsRoot, "sample.app");
-      writeAgent(appDir, "owner", "sample-owner");
-      writeApp(
-        appDir,
-        `{
-        id: "sample",
-        schedules: [{
-          id: "worker",
-          enabled: true,
-          intervalMs: 60000,
-          emits: [{ type: "project.work", project: "sample" }]
-        }],
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker", task: "work" }
-        }]
-      }`,
-      );
-
-      const bus = new EventBus();
-      const agentCrons = new Map<string, Cron>();
-      const manager = { hasAgent: () => true } as any;
-
-      await installProjectApps({
-        projectsRoot,
-        projectRoot: root,
-        manager,
-        bus,
-        agentCrons,
-      });
-
-      const cron = agentCrons.get("sample-owner")!;
-      const handled: string[] = [];
-      cron.registerHandler("sample-worker", async () => {
-        handled.push("sample-worker");
-      });
-      cron.subscribeToBus(bus);
-      cron.start();
-
-      expect(
-        cron
-          .getEntries()
-          .map((entry) => entry.name)
-          .sort(),
-      ).toEqual(["sample-schedule-worker", "sample-worker"]);
-
-      bus.emit({
-        type: "project.work",
-        source: "test",
-        owner: "human:test",
-        data: { project: "sample" },
-      } as any);
-      await waitForMicrotasks();
-
-      expect(handled).toEqual(["sample-worker"]);
-      cron.stop();
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("auto-reloads project app manifests when the watcher sees app.ts change", async () => {
     const root = tempRoot();
     let watcher: ReturnType<typeof startProjectAppWatcher> | undefined;
@@ -1941,11 +1081,11 @@ export async function execute(ctx: any) {
         appDir,
         `{
         id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
+        schedules: [{
+          id: "worker-v1",
           enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker-v1", task: "work v1" }
+          intervalMs: 60000,
+          emits: [{ type: "project.work", target: { project: "sample" } }]
         }]
       }`,
       );
@@ -1968,19 +1108,22 @@ export async function execute(ctx: any) {
         appDir,
         `{
         id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
+        schedules: [{
+          id: "worker-v2",
           enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker-v2", task: "work v2" }
+          intervalMs: 60000,
+          emits: [{ type: "project.work", target: { project: "sample" } }]
         }]
       }`,
       );
 
       expect(await watcher.scanNow()).toBe(true);
-      const updatedEntry = agentCrons.get("sample-owner")!.getEntries()[0]!;
-      expect((updatedEntry.handler as any).workflow).toBe("worker-v2");
-      expect((updatedEntry.handler as any).task).toBe("work v2");
+      expect(
+        agentCrons
+          .get("sample-owner")!
+          .getEntries()
+          .map((entry) => entry.name),
+      ).toEqual(["sample-schedule-worker-v2"]);
     } finally {
       watcher?.close();
       rmSync(root, { recursive: true, force: true });
@@ -1999,12 +1142,15 @@ export async function execute(ctx: any) {
         appDir,
         `{
         id: "sample",
-        workflowHandlers: [{
-          name: "sample-worker",
-          enabled: true,
-          accepts: ["project.work"],
-          handler: { workflow: "worker", agent: "sample-ops", task: "work" }
-        }]
+        taskWorkflows: {
+          worker: {
+            workflow: "worker",
+            agent: "sample-ops",
+            task: "work",
+            timeoutMs: 60000,
+            context: []
+          }
+        }
       }`,
       );
 

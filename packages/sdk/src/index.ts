@@ -981,7 +981,6 @@ export type {
   ProjectAppTaskIntent,
   ProjectAppTaskMode,
   ProjectAppTaskRoute,
-  ProjectWorkflowHandler,
 } from "./project-app.js";
 
 // ── JSON task-tree helpers for project apps ──────────────────────────
