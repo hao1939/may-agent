@@ -763,10 +763,30 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
 export function listRunnableProjectAppTaskIds(config: TaskTreeConfig): string[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
-    return Object.values(tree.resources ?? {})
-      .filter((resource) => isRunnableOnPassiveResync(tree, resource))
-      .map((resource) => resource.metadata.id)
-      .sort();
+    const runnable = new Set(
+      Object.values(tree.resources ?? {})
+        .filter((resource) => !isRouteCarrierTaskId(resource.metadata.id))
+        .filter((resource) => isRunnableOnPassiveResync(tree, resource))
+        .map((resource) => resource.metadata.id),
+    );
+    const ordered: string[] = [];
+    const visited = new Set<string>();
+    const visit = (taskId: string): void => {
+      if (visited.has(taskId)) return;
+      visited.add(taskId);
+      if (runnable.has(taskId)) ordered.push(taskId);
+      for (const childId of tree.tasks[taskId]?.children ?? []) visit(childId);
+    };
+    const rootId = typeof tree.root_task_id === "string" ? tree.root_task_id : "";
+    if (rootId && tree.tasks[rootId]) visit(rootId);
+    for (const taskId of Object.keys(tree.tasks).sort()) {
+      const parentId = tree.tasks[taskId]?.parent_id;
+      if (!parentId || !tree.tasks[parentId]) visit(taskId);
+    }
+    for (const taskId of [...runnable].sort()) {
+      if (!visited.has(taskId)) ordered.push(taskId);
+    }
+    return ordered;
   });
 }
 
