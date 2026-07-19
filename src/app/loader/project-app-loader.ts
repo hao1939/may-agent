@@ -927,6 +927,7 @@ async function runTaskOwner(input: {
     `You are the accountable owner for Agent App ${descriptor.id}.`,
     "Reconcile the task from current evidence. Do not edit task-tree storage directly.",
     "Return your decision through finish().result using state, summary, evidence, actions, and conditions.",
+    "You are already the resolved owner; do not return state \"needs-owner\". Decide converged, waiting with exact Conditions, or failed with evidence.",
     "Use waiting only with exact Conditions. Use actions only for supported task-tree mutations.",
     "",
     "Allowed actions:",
@@ -1671,14 +1672,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
       reconciliationPaused: false,
     };
     descriptor.reconciliationPaused = descriptor.app.tasks
-      ? readTaskTree(
-          taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-          }),
-        ).project_lifecycle === "paused"
+      ? projectAppLifecycle(descriptor.appDir) === "paused"
       : false;
     validatePreparedProjectApp(descriptor);
     descriptors.push(descriptor);
