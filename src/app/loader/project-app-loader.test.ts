@@ -56,7 +56,7 @@ function writeApp(appDir: string, extra = "") {
             parentId: "operations",
             outcome: "Process " + event.itemId,
             acceptance: ["Work converges"],
-            mode: "achieve",
+            mode: event.mode || "achieve",
             ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
             input: { itemId: event.itemId }
           };
@@ -669,6 +669,56 @@ describe("project app loader", () => {
         workflow: "owner-needed",
         failureFingerprints: ["needs-owner"],
       });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("reconciles two maintain tasks through the same workflow independently", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "maintain-a", mode: "maintain" } as any);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "maintain-b", mode: "maintain" } as any);
+      await waitUntil(
+        () =>
+          events.filter(
+            (event) =>
+              event.type === "project.task.reconciled" &&
+              ["work/maintain-a", "work/maintain-b"].includes(event.data?.taskId) &&
+              event.data?.disposition === "converged",
+          ).length === 2,
+      );
+
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      for (const taskId of ["work/maintain-a", "work/maintain-b"]) {
+        expect(tree.tasks[taskId]).toMatchObject({ state: "backlog", workflow: "worker" });
+        expect(tree.resources[taskId]).toMatchObject({
+          spec: { mode: "maintain", workflow: "worker" },
+          status: { phase: "converged", observedGeneration: 1 },
+        });
+      }
+      const attempts = Object.values(tree.attempts).filter((attempt: any) =>
+        ["work/maintain-a", "work/maintain-b"].includes(attempt.taskId),
+      ) as any[];
+      expect(attempts).toHaveLength(2);
+      expect(attempts.every((attempt) => attempt.state === "completed")).toBe(true);
+      expect(new Set(attempts.map((attempt) => attempt.id ?? attempt.metadata?.id)).size).toBe(2);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
