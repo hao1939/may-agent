@@ -45,10 +45,10 @@ describe("Cron event triggers", () => {
   it("fires any cron entry via trigger.<entry-name> without per-entry on config", async () => {
     const { root, configPath, cleanup } = tempCronConfig([
       {
-        name: "closed-loop-steward",
+        name: "sample-maintenance",
         enabled: true,
         intervalMs: 600_000,
-        handler: "closed-loop-steward",
+        handler: "sample-maintenance",
       },
     ]);
     try {
@@ -56,11 +56,11 @@ describe("Cron event triggers", () => {
       const handler = vi.fn(async (_event?: unknown) => {});
       const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
       cron.load();
-      cron.registerHandler("closed-loop-steward", handler);
+      cron.registerHandler("sample-maintenance", handler);
       cron.subscribeToBus(bus);
 
       bus.emit({
-        type: "trigger.closed-loop-steward",
+        type: "trigger.sample-maintenance",
         source: "test",
         owner: "agent:may",
         data: {},
@@ -69,7 +69,7 @@ describe("Cron event triggers", () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
-        type: "trigger.closed-loop-steward",
+        type: "trigger.sample-maintenance",
         source: "test",
         owner: "agent:may",
         data: {},

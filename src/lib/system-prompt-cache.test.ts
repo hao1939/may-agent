@@ -1,21 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { SubagentManager } from "./manager.js";
+import { prepareAgentExecution } from "./agent-execution.js";
 
 describe("System Prompt Caching", () => {
   it("should place stable context before volatile session IDs", () => {
-    // We create a manager instance but we'll call the private method directly via prototype
-    // to avoid filesystem dependencies in the test.
-    const manager = new SubagentManager({ persistDir: "/tmp/test" });
-
-    // After refactoring, resolveSystemPrompt(def, toolsOverride?) no longer
-    // includes session IDs — they moved to resolveSessionSystemPrompt which
-    // appends session-specific context at the END. This is exactly what we want
-    // for API cache prefixes: the stable prefix is long and only the tail varies.
-    //
-    // Test that resolveSessionSystemPrompt puts session-varying content at the end.
-    // @ts-expect-error Accessing private method for testing
-    const resolveSessionSystemPrompt = manager.resolveSessionSystemPrompt.bind(manager);
-
     const mockDef = {
       name: "test-agent",
       description: "test",
@@ -26,18 +13,18 @@ describe("System Prompt Caching", () => {
       workspace: "/app/workspace",
     };
 
-    const prompt1 = resolveSessionSystemPrompt(mockDef, {
-      kind: "persistent-chat",
-      autoClose: "never",
-      sessionId: "session_123",
+    const prepare = (sessionId: string, persistentChat: boolean) => prepareAgentExecution({
+      definition: mockDef,
+      projectRoot: "/app",
+      sessionId,
       task: "hello",
-    });
-    const prompt2 = resolveSessionSystemPrompt(mockDef, {
-      kind: "persistent-chat",
-      autoClose: "never",
-      sessionId: "session_456",
-      task: "hello",
-    });
+      persistentChat,
+      promptTimestamp: "2026-07-20T00:00:00.000Z",
+      chatContext: persistentChat ? `Session ID: ${sessionId}` : undefined,
+    }).systemPrompt;
+
+    const prompt1 = prepare("session_123", true);
+    const prompt2 = prepare("session_456", true);
 
     // Find where they diverge
     let diffIndex = 0;
@@ -59,11 +46,8 @@ describe("System Prompt Caching", () => {
       );
     }
 
-    // For non-persistent sessions, the prompt has NO session ID at all,
-    // meaning the entire prompt is cacheable across sessions.
-    // @ts-expect-error Accessing private method for testing
-    const resolveSystemPrompt = manager.resolveSystemPrompt.bind(manager);
-    const basePrompt = resolveSystemPrompt(mockDef);
+    // Non-chat callers add no session context, so the complete prompt is reusable.
+    const basePrompt = prepare("session_789", false);
     expect(basePrompt).not.toContain("session_");
     expect(basePrompt).toContain("Runtime Environment");
   });

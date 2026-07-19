@@ -1,61 +1,44 @@
-import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { SubagentManager } from "../../src/lib/manager.js";
+import { describe, expect, it } from "bun:test";
+import { prepareAgentExecution } from "../../src/lib/agent-execution.js";
 import type { BeforeToolCallContext } from "../../src/lib/tools/compose-guards.js";
 
-describe("SubagentManager guard signals", () => {
-  const roots: string[] = [];
-
-  afterEach(() => {
-    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
-  });
-
-  function makeRoot(): string {
-    const root = mkdtempSync(join(tmpdir(), "manager-guard-signal-"));
-    roots.push(root);
-    return root;
-  }
-
-  it("emits durable guard.triggered context for tool-level guard results", async () => {
-    const root = makeRoot();
-    const emitted: any[] = [];
-    const manager = new SubagentManager({
-      persistDir: root,
-      projectRoot: root,
-      bus: { emit: (event: any) => emitted.push(event) } as any,
+describe("agent guard observations", () => {
+  it("reports a neutral observation for tool-level guard results", async () => {
+    const observations: any[] = [];
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "may",
+        description: "test",
+        domain: "test",
+        systemPrompt: "test agent",
+        model: { contextWindow: 4096 } as any,
+        tools: [{
+          name: "finish",
+          description: "finish",
+          parameters: {},
+          execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
+        } as any],
+      },
+      projectRoot: "/tmp",
+      sessionId: "s_guard",
+      task: "test guard",
+      onGuard: (observation) => observations.push(observation),
     });
-    const hook = (manager as any).createGuardSignalHook(
-      async () => ({ block: true, reason: "finish blocked by test guard", guardName: "test-finish" }),
-      "s_guard",
-      "may",
-      { workflowRunId: "wr_guard", projectId: "p_guard", parentSessionId: "s_parent" },
-    );
     const context: BeforeToolCallContext = {
       toolCall: { name: "finish", id: "tc_1" },
-      args: { status: "success" },
+      args: { status: "success", summary: "Implemented the fix" },
       context: { messages: [] },
     };
 
-    await hook(context);
+    const result = await prepared.runner.beforeToolCall!(context as any);
 
-    expect(emitted).toEqual([
+    expect(result).toMatchObject({ block: false, reason: expect.stringContaining("Ghost Deliverable") });
+    expect(observations).toEqual([
       expect.objectContaining({
-        type: "guard.triggered",
-        source: "tool",
-        owner: "agent:may",
-        data: {
-          workflowRunId: "wr_guard",
-          projectId: "p_guard",
-          parentSessionId: "s_parent",
-          sessionId: "s_guard",
-          guard: "test-finish",
-          demandType: "block",
-          action: "blocked",
-          reason: "finish blocked by test guard",
-          sourceEventType: "tool.finish",
-        },
+        guard: "finish-evidence",
+        block: false,
+        reason: expect.stringContaining("Ghost Deliverable"),
+        context: expect.objectContaining({ toolCall: { name: "finish", id: "tc_1" } }),
       }),
     ]);
   });

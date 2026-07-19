@@ -10,6 +10,7 @@ import {
   sessionOutputDir,
   writeSessionMeta,
   readSessionMeta,
+  markSessionActive,
 } from "../../src/lib/persistence.js";
 import type { PersistedSession } from "../../src/lib/persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -55,6 +56,7 @@ function writeRegistryState(persistDir: string, sessions: Record<string, Persist
 
 function setupSession(persistDir: string, sessionId: string, messages?: AgentMessage[]): void {
   ensureSessionDir(persistDir, sessionId);
+  markSessionActive(persistDir, sessionId);
   mkdirSync(sessionOutputDir(persistDir, sessionId), { recursive: true });
   if (messages) {
     for (const msg of messages) {
@@ -86,6 +88,25 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
   afterEach(() => {
     rmSync(persistDir, { recursive: true, force: true });
+  });
+
+  it("does not treat a session started by the current manager as stale", async () => {
+    const manager = new SubagentManager({ persistDir });
+    registerAgent(manager, "agent-a");
+    const sessionId = manager.run("agent-a", "current runtime work", {
+      recoveryOwner: "project-app-task-reconciler",
+    });
+
+    const { resumed, interrupted } = manager.resumeStaleSessions({
+      shouldResume: () => ({ resume: false, reason: "belongs to another recovery owner" }),
+    });
+
+    expect(resumed).toEqual([]);
+    expect(interrupted).toEqual([]);
+    expect(manager.hasActiveSession(sessionId)).toBe(true);
+    expect(readSessionMeta(persistDir, sessionId)?.status).toBe("running");
+    manager.cancel(sessionId);
+    await manager.waitFor(sessionId);
   });
 
   it("resumes all running sessions with registered agents", async () => {

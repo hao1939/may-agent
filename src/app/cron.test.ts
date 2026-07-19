@@ -292,4 +292,56 @@ describe("Cron event dispatch", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("stops an enabled synthetic entry when an app reload disables it", () => {
+    const root = tempRoot();
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+    );
+    try {
+      cron.registerHandler("sample-schedule", async () => {});
+      cron.addSyntheticEntry({
+        name: "sample-schedule",
+        enabled: true,
+        intervalMs: 60_000,
+        handler: "sample-schedule",
+      });
+      cron.start();
+
+      const runtime = cron as unknown as {
+        pendingStartTimers: Map<string, ReturnType<typeof setTimeout>>;
+        queuedEventTriggers: Map<string, unknown[]>;
+      };
+      expect(runtime.pendingStartTimers.has("sample-schedule")).toBe(true);
+      runtime.queuedEventTriggers.set("sample-schedule", [{ type: "project.tick" }]);
+
+      cron.addSyntheticEntry({
+        name: "sample-schedule",
+        enabled: false,
+        intervalMs: 60_000,
+        handler: "sample-schedule",
+      });
+
+      expect(runtime.pendingStartTimers.has("sample-schedule")).toBe(false);
+      expect(runtime.queuedEventTriggers.has("sample-schedule")).toBe(false);
+      expect(cron.triggerNow("sample-schedule")).toBe(false);
+
+      // Reinstalling the same disabled descriptor is also a repair boundary.
+      runtime.queuedEventTriggers.set("sample-schedule", [{ type: "project.tick" }]);
+      cron.addSyntheticEntry({
+        name: "sample-schedule",
+        enabled: false,
+        intervalMs: 60_000,
+        handler: "sample-schedule",
+      });
+      expect(runtime.queuedEventTriggers.has("sample-schedule")).toBe(false);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

@@ -66,6 +66,18 @@ describe("stale workflow run cleanup", () => {
     expect(updated!.result_summary).toBe("completed");
   });
 
+  it("leaves workflow runs started by the current manager untouched", () => {
+    const manager = new SubagentManager({ persistDir });
+    insertWorkflowRun(persistDir, {
+      ...makeStaleRun("wr_current"),
+      startedAt: Date.now(),
+    });
+
+    manager.resumeStaleSessions();
+
+    expect(getWorkflowRun(persistDir, "wr_current")!.status).toBe("running");
+  });
+
   it("resumeStaleSessions handles multiple stale workflow runs", () => {
     const manager = new SubagentManager({ persistDir });
     insertWorkflowRun(persistDir, makeStaleRun("wr_a"));

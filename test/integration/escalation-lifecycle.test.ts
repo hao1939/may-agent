@@ -159,7 +159,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -170,7 +170,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -236,7 +236,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -247,7 +247,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -296,7 +296,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -307,7 +307,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "workflow:task-worker",
+      source: "project-app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -432,7 +432,9 @@ describe("escalation lifecycle", () => {
       reason: "escalation-resolved",
     });
     expect(
-      getDb(persistDir).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'escalation.resume_failed'").get(),
+      getDb(persistDir)
+        .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'escalation.resume_failed'")
+        .get(),
     ).toEqual({ count: 0 });
     const started = getDb(persistDir)
       .prepare("SELECT data FROM events WHERE event_type = 'escalation.resume_started'")

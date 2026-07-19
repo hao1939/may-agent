@@ -5,20 +5,14 @@ import {
 } from "../../src/app/http/server.js";
 
 describe("project task read model", () => {
-  it("normalizes canonical state and legacy status values", () => {
+  it("accepts only canonical task state values", () => {
     expect(normalizeProjectTaskState({ state: "backlog" })).toBe("backlog");
-    expect(normalizeProjectTaskState({ status: "ready" })).toBe("backlog");
-    expect(normalizeProjectTaskState({ status: "claimed_done" })).toBe(
-      "review",
-    );
-    expect(normalizeProjectTaskState({ status: "accepted" })).toBe("done");
-    expect(normalizeProjectTaskState({ status: "superseded" })).toBe("done");
-    expect(normalizeProjectTaskState({ status: "something-new" })).toBe(
-      "unknown",
-    );
+    expect(normalizeProjectTaskState({ state: "review" })).toBe("review");
+    expect(normalizeProjectTaskState({ state: "done" })).toBe("done");
+    expect(normalizeProjectTaskState({ state: "something-new" })).toBe("unknown");
   });
 
-  it("uses state for counts and exposes status as a compatibility alias", () => {
+  it("uses canonical state for counts and output", () => {
     const model = buildProjectTasksReadModel(
       {
         root_task_id: "project",
@@ -45,12 +39,12 @@ describe("project task read model", () => {
           "leaf-c": {
             id: "leaf-c",
             parent_id: "project",
-            status: "claimed_done",
+            state: "review",
             children: [],
           },
         },
       },
-      { path: "projects/example.app", treePath: "tasks/tree.json" },
+      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
     );
 
     expect(model).toMatchObject({
@@ -68,20 +62,16 @@ describe("project task read model", () => {
     });
     expect(model.tasks["leaf-a"]).toMatchObject({
       state: "done",
-      status: "done",
-      raw_state: "done",
     });
     expect(model.tasks["leaf-c"]).toMatchObject({
       state: "review",
-      status: "review",
-      raw_status: "claimed_done",
     });
   });
 
   it("returns actionable errors for malformed task trees", () => {
     const model = buildProjectTasksReadModel(
       { root_task_id: "missing", tasks: { project: { children: [7] } } },
-      { path: "projects/example.app", treePath: "tasks/tree.json" },
+      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
     );
 
     expect(model).toMatchObject({
@@ -100,7 +90,7 @@ describe("project task read model", () => {
     expect(
       buildProjectTasksReadModel(
         { root_task_id: "project" },
-        { path: "projects/example.app", treePath: "tasks/tree.json" },
+        { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
       ),
     ).toMatchObject({
       available: false,

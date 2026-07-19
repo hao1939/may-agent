@@ -1,51 +1,30 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
-import { projectRuntimePaths } from "./project-runtime-state.js";
-
-export type TaskBlocker =
-  | string
-  | {
-      condition?: string;
-      category?: string;
-      owner?: string;
-      resume_condition?: string;
-      resume_at?: string;
-      resumeCondition?: string;
-      resumeAt?: string;
-      blocked_at?: string;
-      blockedAt?: string;
-      waiting_for?: Record<string, unknown>;
-      waitingFor?: Record<string, unknown>;
-      observed_by?: Record<string, unknown>;
-      observedBy?: Record<string, unknown>;
-      observation_method?: string;
-      observationMethod?: string;
-      next_check_at?: string;
-      nextCheckAt?: string;
-      fallback_at?: string;
-      fallbackAt?: string;
-      fallback_action?: string;
-      fallbackAction?: string;
-      condition_id?: string;
-      conditionId?: string;
-      last_observed_at?: string;
-      lastObservedAt?: string;
-      last_observed_status?: string;
-      lastObservedStatus?: string;
-    };
+import type {
+  ProjectAppCondition,
+  ProjectAppTaskAttempt,
+  ProjectAppTaskResource,
+  ProjectAppTaskTrigger,
+} from "./project-app.js";
 
 export type TaskNode = {
   id: string;
   revision?: number;
   parent_id?: string | null;
   state?: string;
-  status?: string;
   kind?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
-  session_id?: string;
-  session_history?: string[];
   conflict_scope?: string[] | string;
   goal?: string;
   children?: string[];
@@ -62,7 +41,6 @@ export type TaskNode = {
   progress?: Record<string, unknown>;
   result?: string;
   evidence?: string[];
-  blocker?: TaskBlocker;
   verification?: unknown;
   trace?: Record<string, unknown>;
   resolution?: string;
@@ -71,18 +49,26 @@ export type TaskNode = {
   done_by?: string;
   created_at?: string;
   updated_at?: string;
-  archived?: boolean;
-  archive_summary?: string;
   tags?: string[];
   reconcile_mode?: "achieve" | "maintain";
 };
 
-export type TaskCompletionTombstone = {
-  taskId: string;
-  generation: number;
+export type TaskCompletionReceipt = {
+  metadata: {
+    id: string;
+    generation: number;
+    resourceVersion: number;
+  };
   specHash: string;
+  parentId: string;
+  outcome: string;
+  acceptance: string[];
+  owner: string;
+  workflow?: string;
   handler: string;
   summary: string;
+  evidence: string[];
+  failureFingerprints: string[];
   completedAt: string;
 };
 
@@ -92,8 +78,11 @@ export type TaskTree = {
   root_task_id?: string;
   active_task_id?: string | null;
   active_task_ids?: string[];
-  conditions?: Record<string, unknown>;
-  completions?: Record<string, TaskCompletionTombstone>;
+  conditions?: Record<string, ProjectAppCondition>;
+  resources?: Record<string, ProjectAppTaskResource>;
+  attempts?: Record<string, ProjectAppTaskAttempt>;
+  taskTriggers?: Record<string, ProjectAppTaskTrigger>;
+  receipts?: Record<string, TaskCompletionReceipt>;
   tasks: Record<string, TaskNode>;
 };
 
@@ -104,7 +93,6 @@ export type TaskTreeConfig = {
   journalPath: string;
   worker: string;
   maxConcurrent: number;
-  mirrorLegacyTree?: boolean;
   mutationAuthority?: unknown;
   validateMutation?: (input: { current: TaskTree; next: TaskTree; authority?: unknown }) => void;
 };
@@ -117,73 +105,13 @@ function timeoutFromAnyEnv(names: string[], fallbackMs: number): number {
   return fallbackMs;
 }
 
-export function taskEventSnapshot(task: TaskNode): Record<string, unknown> {
-  const trace = task.trace && typeof task.trace === "object" && !Array.isArray(task.trace) ? task.trace : {};
-  return {
-    taskId: task.id,
-    taskRevision: taskRevision(task),
-    task_revision: taskRevision(task),
-    parent_id: task.parent_id,
-    state: taskState(task),
-    kind: task.kind,
-    priority: task.priority,
-    owner: task.owner,
-    workflow: task.workflow,
-    session_id: task.session_id,
-    goal: task.goal,
-    inputs: normalizeStringArray(task.inputs),
-    outputs: normalizeStringArray(task.outputs),
-    acceptance: normalizeStringArray(task.acceptance),
-    forbidden: normalizeStringArray(task.forbidden),
-    depends_on: normalizeStringArray(task.depends_on),
-    conflict_scope: normalizeStringArray(task.conflict_scope),
-    context: task.context,
-    blocker: task.blocker,
-    verification: task.verification,
-    result: trace.last_worker_result ?? trace.last_worker_claim,
-    claim: trace.last_worker_claim,
-    summary: trace.last_worker_summary,
-    evidence: trace.last_worker_evidence,
-    completed_at: trace.last_worker_completed_at,
-  };
-}
-
 export function taskState(task: TaskNode | undefined): string {
-  const raw = task?.state ?? task?.status ?? "backlog";
-  if (raw === "accepted") return "done";
-  if (raw === "ready" || raw === "proposed") return "backlog";
-  if (raw === "superseded" || raw === "cancelled") return "done";
-  if (raw === "decomposed") return "backlog";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
-  return raw;
+  return task?.state ?? "backlog";
 }
 
 export function taskRevision(task: TaskNode | undefined): number {
   const value = task?.revision;
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;
-}
-
-export function rawTaskState(task: TaskNode | undefined): string {
-  return String(task?.state ?? task?.status ?? "");
-}
-
-function installLegacyStatusAlias(task: TaskNode): void {
-  const descriptor = Object.getOwnPropertyDescriptor(task, "status");
-  if (descriptor?.get && descriptor?.set && descriptor.enumerable === false) return;
-  delete task.status;
-  Object.defineProperty(task, "status", {
-    configurable: true,
-    enumerable: false,
-    get: () => task.state,
-    set: (value: string | undefined) => {
-      task.state = value;
-    },
-  });
-}
-
-export function setTaskState(task: TaskNode, state: string): void {
-  task.state = state;
-  installLegacyStatusAlias(task);
 }
 
 export function normalizeStringArray(value: unknown): string[] {
@@ -194,6 +122,16 @@ export function normalizeStringArray(value: unknown): string[] {
 
 function ensureDir(path: string): void {
   if (!existsSync(path)) mkdirSync(path, { recursive: true });
+}
+
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function isRetryableTaskTreeReadError(error: unknown): boolean {
+  if (error instanceof SyntaxError) return true;
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("ENOENT") || error.message.includes("EAGAIN");
 }
 
 export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
@@ -215,7 +153,7 @@ export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
         // Retry until the deadline.
       }
       if (Date.now() > deadline) throw new Error(`Timed out waiting for task tree lock: ${lockPath}`);
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      sleepSync(50);
     }
   }
   try {
@@ -226,15 +164,65 @@ export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
 }
 
 export function readTaskTree(config: TaskTreeConfig): TaskTree {
-  const tree = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
-  normalizeTaskTreeInPlace(tree);
-  return tree;
+  const retryMs = timeoutFromAnyEnv(["PROJECT_TREE_READ_RETRY_MS", "AKS_RP_E2E_TREE_READ_RETRY_MS"], 250);
+  const deadline = Date.now() + retryMs;
+
+  while (true) {
+    try {
+      const tree = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+      normalizeTaskTreeInPlace(tree);
+      return tree;
+    } catch (error) {
+      if (!isRetryableTaskTreeReadError(error) || Date.now() >= deadline) {
+        throw error;
+      }
+      sleepSync(10);
+    }
+  }
 }
 
 export type SaveTaskTreeOptions = {
   /** Set to true to bypass the shrinkage guard (e.g. intentional tree reset). */
   allowShrinkage?: boolean;
+  /**
+   * Required for every explicit project lifecycle transition. Normal task-tree
+   * saves must preserve lifecycle; they cannot silently pause or resume an app.
+   */
+  projectLifecycleReason?: string;
 };
+
+function normalizedLifecycle(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function appendTaskTreeJournal(config: TaskTreeConfig, entry: Record<string, unknown>): void {
+  ensureDir(dirname(config.journalPath));
+  appendFileSync(
+    config.journalPath,
+    `${JSON.stringify({
+      ts: new Date().toISOString(),
+      actor: config.worker,
+      ...entry,
+    })}\n`,
+    "utf-8",
+  );
+}
+
+function validateLifecycleTransition(
+  config: TaskTreeConfig,
+  current: TaskTree,
+  next: TaskTree,
+  options?: SaveTaskTreeOptions,
+): void {
+  const currentLifecycle = normalizedLifecycle(current.project_lifecycle);
+  const nextLifecycle = normalizedLifecycle(next.project_lifecycle);
+  if (currentLifecycle !== nextLifecycle && !options?.projectLifecycleReason?.trim()) {
+    throw new Error(
+      `saveTaskTree lifecycle guard: refusing to change project ${config.projectDir} ` +
+        `from ${currentLifecycle || "unset"} to ${nextLifecycle || "unset"} without an explicit reason.`,
+    );
+  }
+}
 
 export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: SaveTaskTreeOptions): void {
   normalizeTaskTreeInPlace(tree);
@@ -255,6 +243,10 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
       next: tree,
       authority: config.mutationAuthority,
     });
+  }
+
+  if (existingTree) {
+    validateLifecycleTransition(config, existingTree, tree, options);
   }
 
   // Shrinkage guard: reject writes that reduce task count by >80%.
@@ -293,79 +285,52 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.treePath);
 
-  const runtimeTreePath = projectRuntimePaths(config.appDir).taskTreePath;
-  if (config.treePath === runtimeTreePath && config.mirrorLegacyTree !== false) {
-    const legacyPath = join(config.appDir, "tasks", "tree.json");
-    ensureDir(dirname(legacyPath));
-    writeFileSync(legacyPath, serialized, "utf-8");
+  if (
+    existingTree &&
+    normalizedLifecycle(existingTree.project_lifecycle) !== normalizedLifecycle(tree.project_lifecycle)
+  ) {
+    const from = normalizedLifecycle(existingTree.project_lifecycle);
+    const to = normalizedLifecycle(tree.project_lifecycle);
+    appendTaskTreeJournal(config, {
+      kind:
+        to === "paused"
+          ? "project_lifecycle_paused"
+          : to === "active"
+            ? "project_lifecycle_resumed"
+            : "project_lifecycle_changed",
+      from: from || null,
+      to: to || null,
+      reason: options?.projectLifecycleReason?.trim(),
+    });
   }
 }
 
-function normalizeLegacyState(raw: string): string {
-  if (raw === "accepted") return "done";
-  if (raw === "ready" || raw === "proposed") return "backlog";
-  if (raw === "superseded" || raw === "cancelled") return "done";
-  if (raw === "decomposed") return "backlog";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
-  return raw || "backlog";
+export function setProjectLifecycle(config: TaskTreeConfig, lifecycle: string, reason: string): void {
+  const nextLifecycle = normalizedLifecycle(lifecycle);
+  const transitionReason = reason.trim();
+  if (!nextLifecycle) throw new Error("Project lifecycle must not be empty");
+  if (!transitionReason) throw new Error("Project lifecycle change requires a reason");
+
+  withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    if (normalizedLifecycle(tree.project_lifecycle) === nextLifecycle) return;
+    tree.project_lifecycle = nextLifecycle;
+    saveTaskTree(config, tree, { projectLifecycleReason: transitionReason });
+  });
 }
 
 export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
-  const rawTasks = (tree as unknown as { tasks?: unknown }).tasks;
-  if (Array.isArray(rawTasks)) {
-    const tasks: Record<string, TaskNode> = {};
-    for (const rawTask of rawTasks) {
-      if (!rawTask || typeof rawTask !== "object" || Array.isArray(rawTask)) continue;
-      const task = rawTask as TaskNode;
-      if (!task.id) continue;
-      tasks[task.id] = task;
-    }
-    tree.tasks = tasks;
-  }
   for (const task of Object.values(tree.tasks ?? {})) {
-    const raw = String(task.state ?? task.status ?? "");
-    const state = normalizeLegacyState(raw);
-    task.state = state;
-    installLegacyStatusAlias(task);
-    if (raw === "accepted") {
-      task.resolution = task.resolution ?? "completed";
-      const record = task as Record<string, unknown>;
-      if (record.accepted_at && !record.done_at) record.done_at = record.accepted_at;
-      if (record.accepted_by && !record.done_by) record.done_by = record.accepted_by;
-    } else if (raw === "superseded") {
-      task.resolution = task.resolution ?? "replaced";
-      const record = task as Record<string, unknown>;
-      if (!record.replaced_by && record.supersededBy) record.replaced_by = record.supersededBy;
-    } else if (raw === "cancelled") {
-      task.resolution = task.resolution ?? "cancelled";
-    }
+    task.state ??= "backlog";
     if (task.children === undefined) task.children = [];
   }
   return tree;
 }
 
 function canonicalTaskTreeForWrite(tree: TaskTree): TaskTree {
-  const copy = JSON.parse(JSON.stringify(tree)) as TaskTree;
-  for (const task of Object.values(copy.tasks ?? {})) {
-    const state = normalizeLegacyState(String(task.state ?? task.status ?? ""));
-    task.state = state;
-    delete task.status;
-  }
-  return copy;
+  return JSON.parse(JSON.stringify(tree)) as TaskTree;
 }
 
 export function isLeaf(task: TaskNode): boolean {
   return normalizeStringArray(task.children).length === 0;
-}
-
-export function isClearEnough(task: TaskNode): boolean {
-  return (
-    Boolean((task.goal ?? "").trim()) &&
-    normalizeStringArray(task.acceptance).length > 0 &&
-    normalizeStringArray(task.outputs).length > 0
-  );
-}
-
-export function dependenciesSatisfied(tree: TaskTree, task: TaskNode): boolean {
-  return normalizeStringArray(task.depends_on).every((id) => taskState(tree.tasks[id]) === "done");
 }

@@ -35,16 +35,17 @@ describe("project runtime state paths", () => {
     expect(tree.source).toBe("runtime");
   });
 
-  test("copies legacy task tree once when runtime state is missing", async () => {
+  test("does not bootstrap mutable runtime state from a legacy tree", async () => {
     const appDir = await makeApp();
     await writeFile(join(appDir, "tasks", "tree.json"), `{"source":"legacy","tasks":{}}\n`, "utf8");
 
     const result = ensureTaskTreeState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
-    expect(result).toMatchObject({ migrated: true, source: "legacy-tree" });
+    expect(result).toMatchObject({ migrated: true, source: "empty" });
     expect(result.path).toBe(projectRuntimePaths(appDir).taskTreePath);
-    expect(tree.source).toBe("legacy");
+    expect(tree.source).toBeUndefined();
+    expect(tree.tasks).toEqual({});
     expect(existsSync(projectRuntimePaths(appDir).migrationLogPath)).toBe(true);
   });
 

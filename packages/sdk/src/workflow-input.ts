@@ -26,12 +26,11 @@ export function resolveAppDir(
   explicitAppDir?: string,
 ): string {
   if (explicitAppDir) return explicitAppDir;
-  const embeddedProjectPath = join(projectDir, ".app", "project.json");
-  const legacyRootTaskDir = join(projectDir, "tasks");
-  if (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir))
-    return projectDir;
-  if (existsSync(embeddedProjectPath)) return join(projectDir, ".app");
-  return new URL("../..", import.meta.url).pathname;
+  const siblingAppDir = projectDir.endsWith(".app")
+    ? projectDir
+    : `${projectDir}.app`;
+  if (existsSync(join(siblingAppDir, "project.json"))) return siblingAppDir;
+  throw new Error(`Cannot resolve sibling Agent App for workspace ${projectDir}`);
 }
 
 export function parseTriggerEvent(raw: string): TriggerEvent | null {
