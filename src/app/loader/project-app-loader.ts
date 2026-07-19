@@ -642,6 +642,9 @@ function invalidProjectAppTaskActionReason(value: unknown, index: number): strin
     if (value.workflow !== undefined && !nonEmptyString(value.workflow)) {
       return `actions[${index}].workflow must be a non-empty string when present`;
     }
+    if (typeof value.workflow === "string" && value.workflow.trim() === "project") {
+      return `actions[${index}].workflow must name a real workflow; omit workflow for owner-handled project work`;
+    }
     if (value.dependsOn !== undefined && !stringArray(value.dependsOn)) {
       return `actions[${index}].dependsOn must be a string array when present`;
     }
@@ -931,6 +934,7 @@ async function runTaskOwner(input: {
     '- update a task: { kind: "update-task", taskId, expectedGeneration, goal?, mode?, outputs?, acceptance? }',
     '- close a task: { kind: "close-task", taskId, expectedGeneration, summary }',
     '- unblock a task: { kind: "unblock-task", taskId, expectedGeneration, reason }',
+    'For ordinary owner-handled project/domain work, omit workflow. Do not use workflow: "project"; workflow may only name a real app-local workflow.',
     "Do not invent action names such as task.dispatch-existing-review, focus.update, noop, or task.batch-priority.",
     "Do not include an action for the current Reconciliation Task taskId; the controller closes or waits that carrier automatically from your state.",
     "If no task-tree mutation is needed, return actions: [] and put the explanation in summary/evidence.",
