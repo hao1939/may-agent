@@ -7,7 +7,7 @@ import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { runWorkflowDirect } from "../../lib/workflow-tool.js";
+import { runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
 import {
@@ -517,6 +517,7 @@ function pruneProjectAppNames(
 type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
   runId: string | null;
+  unavailable?: boolean;
 };
 
 type WorkflowCapability = {
@@ -883,6 +884,7 @@ async function runTaskCapability(input: {
     return { handlerResult, runId };
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
+    const unavailable = error instanceof WorkflowHandlerUnavailable;
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -903,12 +905,13 @@ async function runTaskCapability(input: {
     } as unknown as AgentEvent);
     return {
       handlerResult: {
-        state: "failed",
+        state: unavailable ? "needs-owner" : "failed",
         summary,
         evidence: [],
         actions: [],
       },
       runId: null,
+      ...(unavailable ? { unavailable: true } : {}),
     };
   }
 }
@@ -1055,14 +1058,6 @@ async function reconcileTaskIntent(input: {
     });
     return [];
   }
-  const primaryCapability: WorkflowCapability | undefined = workflowKey
-    ? {
-        workflow: workflowKey,
-        agent: primary.owner,
-        task: `Reconcile task through workflow ${workflowKey}`,
-      }
-    : undefined;
-
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
     route: "task-controller",
     generation: primary.generation,
@@ -1074,28 +1069,15 @@ async function reconcileTaskIntent(input: {
   let primaryResult: TaskCapabilityRun;
   if (!workflowKey) {
     primaryResult = await runTaskOwner({ opts, descriptor, intent, claim: primary, event });
-  } else if (!primaryCapability) {
-    primaryResult = {
-      handlerResult: {
-        state: "needs-owner",
-        summary: workflowKey
-          ? `Task workflow is not declared: ${workflowKey}`
-          : `App ${descriptor.id} has no resolved owner handler`,
-        evidence: [],
-        actions: [],
-      },
-      runId: null,
-    };
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
-      generation: primary.generation,
-      handler: primary.handler,
-      reason: primaryResult.handlerResult.summary,
-    });
   } else {
     primaryResult = await runTaskCapability({
       opts,
       descriptor,
-      capability: primaryCapability,
+      capability: {
+        workflow: workflowKey,
+        agent: primary.owner,
+        task: `Reconcile task through workflow ${workflowKey}`,
+      },
       intent,
       claim: primary,
       event,
@@ -1103,6 +1085,14 @@ async function reconcileTaskIntent(input: {
   }
 
   const primaryHandlerResult = primaryResult.handlerResult;
+  if (primaryResult.unavailable) {
+    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
+      generation: primary.generation,
+      handler: primary.handler,
+      condition: "HandlerUnavailable",
+      reason: primaryHandlerResult.summary,
+    });
+  }
   if (primaryHandlerResult.state === "converged") {
     try {
       const apply = completeProjectAppTask(config, primary, {
@@ -1155,7 +1145,11 @@ async function reconcileTaskIntent(input: {
 
   markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
-    reason: primaryCapability || !workflowKey ? "handler-blocked" : "handler-unavailable",
+    reason: primaryResult.unavailable
+      ? "HandlerUnavailable"
+      : primaryHandlerResult.state === "needs-owner"
+        ? "needs-owner"
+        : "handler-blocked",
   });
   if (!workflowKey) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {

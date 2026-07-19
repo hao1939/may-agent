@@ -57,7 +57,7 @@ function writeApp(appDir: string, extra = "") {
             outcome: "Process " + event.itemId,
             acceptance: ["Work converges"],
             mode: "achieve",
-            ...(event.ownerOnly ? {} : { workflow: "worker" }),
+            ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
             input: { itemId: event.itemId }
           };
         }
@@ -541,6 +541,131 @@ describe("project app loader", () => {
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(tree.receipts["work/workflow"]).toBeTruthy();
       expect(tree.receipts["work/owner"]).toBeTruthy();
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("records HandlerUnavailable and invokes the resolved owner once for a missing workflow", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "missing",
+        workflow: "not-installed",
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/missing" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(1);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "project.task.handler.unavailable",
+          data: expect.objectContaining({
+            taskId: "work/missing",
+            handler: "workflow:not-installed",
+            condition: "HandlerUnavailable",
+          }),
+        }),
+      );
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(tree.receipts["work/missing"]).toMatchObject({
+        handler: "owner:sample-owner",
+        workflow: "not-installed",
+        failureFingerprints: ["HandlerUnavailable"],
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("invokes the resolved owner exactly once when a workflow returns needs-owner", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "owner-needed.ts"),
+        `export const name = "owner-needed";
+         export const description = "request owner judgment";
+         export async function execute(ctx) {
+           return ctx.done("owner judgment required", {
+             state: "needs-owner",
+             summary: "workflow needs owner judgment",
+             evidence: ["workflow classified the exception"],
+             actions: []
+           });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "owner-needed",
+        workflow: "owner-needed",
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-needed" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(1);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "project.task.reconcile.started" &&
+            event.data?.taskId === "work/owner-needed" &&
+            event.data?.handler === "owner:sample-owner",
+        ),
+      ).toHaveLength(1);
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(tree.receipts["work/owner-needed"]).toMatchObject({
+        handler: "owner:sample-owner",
+        workflow: "owner-needed",
+        failureFingerprints: ["needs-owner"],
+      });
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
