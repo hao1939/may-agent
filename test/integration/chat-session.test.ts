@@ -15,6 +15,7 @@ import {
   readSessionMeta,
   writeSessionMeta,
   ensureSessionDir,
+  markSessionActive,
 } from "../../src/lib/persistence.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
@@ -398,6 +399,7 @@ describe("Session kind in resumeStaleSessions", () => {
       if (meta) {
         meta.status = "running";
         writeSessionMeta(persistDir, sid, meta);
+        markSessionActive(persistDir, sid);
       }
     }
 

@@ -1,6 +1,13 @@
 export type { SessionStore } from "./persistence.js";
 export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { SubagentManagerOptions, RunOptions } from "./manager.js";
+export { executePreparedAgent, normalizeExecutionSchema, prepareAgentExecution } from "./agent-execution.js";
+export type {
+  AgentPreparationOptions,
+  DirectAgentExecutionOptions,
+  DirectAgentExecutionResult,
+  PreparedAgentExecution,
+} from "./agent-execution.js";
 // Session recovery (Ambulance Protocol — P62)
 export { classifyError } from "./classify-error.js";
 export type { ErrorClass } from "./classify-error.js";

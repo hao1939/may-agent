@@ -6,7 +6,8 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model } from "@earendil-works/pi-ai";
 import { SubagentManager } from "./manager.js";
-import { readCompactedMessages } from "./persistence.js";
+import { prepareAgentExecution } from "./agent-execution.js";
+import { readCompactedMessages, saveCompactedMessages } from "./persistence.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -119,9 +120,18 @@ describe("chat runtime policy", () => {
       ];
       session.agent.state.messages = messages as any;
 
-      const transform = (manager as any).createSessionCompactionTransform(def, sessionId, true) as (
-        messages: AgentMessage[],
-      ) => Promise<AgentMessage[]>;
+      const prepared = prepareAgentExecution({
+        definition: def!,
+        projectRoot: persistDir,
+        sessionId,
+        task: "start long chat",
+        persistentChat: true,
+        chatContext: "Persistent chat test context",
+        onCompact: (_info, compactedMessages) => {
+          saveCompactedMessages(persistDir, sessionId, compactedMessages);
+        },
+      });
+      const transform = prepared.runner.transformContext as (messages: AgentMessage[]) => Promise<AgentMessage[]>;
       const originalArray = session.agent.state.messages as AgentMessage[];
       const originalLength = originalArray.length;
 

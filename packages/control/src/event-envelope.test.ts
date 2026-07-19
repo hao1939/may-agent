@@ -55,19 +55,19 @@ describe("event envelope helpers", () => {
 
   it("keeps target on the envelope instead of moving it into data", () => {
     expect(
-      buildCanonicalEventEnvelope("project.task.completed", {
+      buildCanonicalEventEnvelope("project.task.reconciled", {
         source: "agent:worker",
         owner: "aks-explorer",
         target: { project: "alpha-project", taskId: "task-a" },
-        result: "done",
+        disposition: "converged",
       }),
     ).toEqual({
-      type: "project.task.completed",
+      type: "project.task.reconciled",
       source: "agent:worker",
       owner: "agent:aks-explorer",
       target: { project: "alpha-project", taskId: "task-a" },
       data: {
-        result: "done",
+        disposition: "converged",
       },
     });
   });
@@ -95,21 +95,21 @@ describe("event envelope helpers", () => {
   it("infers project owner from target before fallback owner", () => {
     expect(
       buildCanonicalEventEnvelope(
-        "project.task.completed",
+        "project.task.reconciled",
         {
           source: "agent:worker",
           target: { project: "alpha-project", taskId: "task-a" },
-          result: "done",
+          disposition: "converged",
         },
         { owner: "aks-explorer" },
       ),
     ).toEqual({
-      type: "project.task.completed",
+      type: "project.task.reconciled",
       source: "agent:worker",
       owner: "project:alpha-project",
       target: { project: "alpha-project", taskId: "task-a" },
       data: {
-        result: "done",
+        disposition: "converged",
       },
     });
   });

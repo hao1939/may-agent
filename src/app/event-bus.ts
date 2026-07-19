@@ -304,12 +304,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "project.iteration";
-      source?: string;
-      owner: string;
-      data: { iteration: number; project?: string; projectId?: string; projectPath?: string };
-    }
-  | {
       type: "project.status_changed";
       source?: string;
       owner: string;

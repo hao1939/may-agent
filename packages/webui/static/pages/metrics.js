@@ -1,6 +1,6 @@
 // ── Metrics Tab ───────────────────────────────────────────────────────
-const PINNED_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
-const HEALTH_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
+const PINNED_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count'];
+const HEALTH_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count'];
 
 async function loadMetricsTab() {
   try {
@@ -130,7 +130,7 @@ async function loadMetricsTab() {
 
 var RUNTIME_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h'];
 var HANDLER_METRICS = ['handler.completed-count', 'handler.failed-count', 'handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour'];
-var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
+var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count'];
 
 async function loadHealthMetricGraphs() {
   var metricsRes = await fetch('/api/metrics');

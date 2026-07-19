@@ -102,7 +102,6 @@ interface QueryAPI {
   workflowRuns(filter?: Record<string, unknown>): QueryResult;
   metricAlertContext(filter: Record<string, unknown>): Record<string, unknown>;
   metricAlertReactorState(filter: Record<string, unknown>): Record<string, unknown>;
-  closedLoopStewardContext(filter?: Record<string, unknown>): Record<string, unknown>;
   eventDeliveryHealth(filter?: Record<string, unknown>): Record<string, unknown>;
   heartbeatContext(filter: Record<string, unknown>): Record<string, unknown>;
   evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;

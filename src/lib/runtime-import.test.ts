@@ -28,22 +28,20 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { parseProjectTasks } from "@may-agent/sdk";
+        import { workflowResultVersion } from "@may-agent/sdk";
 
-        export function taskIds(content: string): string[] {
-          return parseProjectTasks(content).tasks.map((task) => task.id);
+        export function sdkVersion(): string {
+          return workflowResultVersion;
         }
       `,
     );
 
-    const mod = await importRuntimeModule<{ taskIds(content: string): string[] }>(modulePath, {
+    const mod = await importRuntimeModule<{ sdkVersion(): string }>(modulePath, {
       forceBundle: true,
       cacheDir: join(root, ".cache"),
     });
 
-    expect(mod.taskIds("## Tasks\n- id: managedsystem-pool-priority-test\n  status: ready\n")).toEqual([
-      "managedsystem-pool-priority-test",
-    ]);
+    expect(mod.sdkVersion()).toBe("workflow-result-v1");
   });
 
   it("preserves dynamic relative imports from the original module directory", async () => {

@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { RegistryStore, ensureSessionDir, sessionOutputDir } from "../../src/lib/persistence.js";
+import { RegistryStore, ensureSessionDir, markSessionActive, sessionOutputDir } from "../../src/lib/persistence.js";
 import type { SubagentDefinition } from "../../src/lib/types.js";
 import type { Model } from "@earendil-works/pi-ai";
 import { tmpdir } from "node:os";
@@ -47,6 +47,7 @@ function baseDef(name: string): SubagentDefinition {
 
 function setupSessionDir(persistDir: string, sessionId: string): void {
   ensureSessionDir(persistDir, sessionId);
+  markSessionActive(persistDir, sessionId);
   mkdirSync(sessionOutputDir(persistDir, sessionId), { recursive: true });
 }
 
@@ -72,6 +73,7 @@ describe("detached sessions survive restart", () => {
       pid: process.pid, // current process — definitely alive
       instance: "job-s_detached_1",
     });
+    markSessionActive(dir, "s_detached_1");
     // Also a normal (non-detached) stale session
     registry.saveSession("s_attached_1", {
       agent: "worker",

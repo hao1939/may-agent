@@ -1,8 +1,9 @@
 /**
- * V2 Agent Runtime — replaces SubagentManager.
+ * Durable agent session runtime.
  *
- * Design: pi-agent-core's Agent handles LLM loop, retry, overflow recovery.
- * We handle: persistence, event bridging, timeout, guards, session state.
+ * The infrastructure-neutral runner owns construction of the Pi model/tool
+ * loop. This wrapper owns persistence, event bridging, timeout, guards,
+ * session state, and recovery.
  *
  * Pi-agent-core owns the model loop and retry behavior. This coordinator owns
  * durable session state, recovery, guards, event bridging, and bounded calls.
@@ -10,12 +11,10 @@
  * See: shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
-import { Agent } from "@earendil-works/pi-agent-core";
-import type {
-  AgentTool,
-  AgentMessage,
-  BeforeToolCallContext as PiBeforeToolCallContext,
-} from "@earendil-works/pi-agent-core";
+import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
+import { createAgentRun, type AgentRun } from "./agent-runner.js";
+import { prepareAgentExecution } from "./agent-execution.js";
+import { extractFinishParams } from "./agent-result.js";
 import type { TSchema } from "@earendil-works/pi-ai";
 import {
   existsSync,
@@ -36,7 +35,6 @@ import {
   formatDuration,
   truncateForPrompt,
 } from "./manager-utils.js";
-import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -52,7 +50,6 @@ import {
   RegistryStore,
   sessionDir,
 } from "./persistence.js";
-import { createCompactionTransform } from "./compaction.js";
 import {
   updateSessionDb,
   updateSessionProgress,
@@ -68,19 +65,9 @@ import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession } from "./persistence.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { createFinishGuard } from "./tools/finish-guard.js";
-import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-import { createSessionReadGuard } from "./tools/session-read-guard.js";
-import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
-import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
-import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
-import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
-import { createCommitGuard } from "./tools/commit-guard.js";
-import { createCompletenessGuard } from "./tools/completeness-guard.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
+import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
-import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -92,6 +79,7 @@ export {
   TOOL_PIVOT_LIMIT,
 } from "./manager-utils.js";
 export { classifyError } from "./classify-error.js";
+export { extractFinishParams } from "./agent-result.js";
 export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 export type { RegisteredAgent } from "./manager-utils.js";
 
@@ -109,6 +97,8 @@ export interface RunOptions {
   autoClose?: "immediate" | "never";
   requestId?: string;
   projectId?: string;
+  /** Runtime that exclusively owns crash recovery for this session. */
+  recoveryOwner?: string;
   orderId?: string;
   startedAt?: number;
   timeoutMs?: number;
@@ -126,7 +116,7 @@ export interface RunOptions {
 
 interface ActiveSession {
   sessionId: string;
-  agent: Agent;
+  agent: AgentRun;
   agentName: string;
   task: string;
   startedAt: number;
@@ -144,6 +134,7 @@ interface ActiveSession {
   turnCount: number;
   requestId?: string;
   projectId?: string;
+  recoveryOwner?: string;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
   /** Semantic intent traces merged into the currently executing turn. */
@@ -161,40 +152,11 @@ type DispatchDedupDb = {
   version?: number;
 };
 
-const CHAT_TOOL_DENYLIST = new Set([
-  "bash",
-  "background_exec",
-  "checkpoint",
-  "cron",
-  "edit",
-  "finish",
-  "scrape_webpage",
-  "workflow",
-  "write",
-]);
-
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status"]);
-
 function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
   return (
     reason === "Agent ended on an empty tool-use assistant turn" ||
     reason === "Agent ended with an empty assistant turn"
   );
-}
-
-function normalizePersistableSchema(schema: TSchema | undefined): TSchema | undefined {
-  if (schema === undefined) return undefined;
-  try {
-    const normalized = JSON.parse(JSON.stringify(schema));
-    if (!normalized || typeof normalized !== "object" || Array.isArray(normalized)) {
-      throw new Error("schema must serialize to a JSON object");
-    }
-    return normalized as TSchema;
-  } catch (error) {
-    throw new Error(
-      `Workflow output schema must be JSON-serializable: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
 }
 
 function trimTerminalEmptyAssistantTurn(messages: AgentMessage[]): boolean {
@@ -277,69 +239,6 @@ export interface SubagentManagerOptions {
   projectRoot?: string;
   bus?: EventBus;
   maxCallDepth?: number;
-}
-
-// ── Finish extraction ────────────────────────────────────────────────
-
-function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined): boolean {
-  if (!toolCallId) return true;
-  const result = messages.find((message) => message?.role === "toolResult" && message.toolCallId === toolCallId);
-  if (!result) return true; // Backward compatibility for older partial transcripts.
-  if (result.isError === true) return false;
-  const content = Array.isArray(result.content) ? result.content : [];
-  return !content.some(
-    (block: any) =>
-      block?.type === "text" &&
-      String(block.text ?? "")
-        .trimStart()
-        .startsWith("finish() error:"),
-  );
-}
-
-/** Extract the params from the last successfully executed finish() tool call, if any. */
-export function extractFinishParams(messages: any[]): {
-  status: string;
-  summary: string;
-  blockers?: { reason: string; context: string }[];
-  deliverables?: { path: string; description: string }[];
-  next_steps?: string;
-  completed_items?: string[];
-  new_items?: string[];
-  lessons?: { category: string; content: string }[];
-  verification_evidence?: string[];
-  context_updates?: { action: string; content: string }[];
-  result?: unknown;
-} | null {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    if (msg.role === "assistant" && Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        const rawArgs = block?.arguments ?? block?.args;
-        if (block?.type === "toolCall" && block.name === "finish" && rawArgs) {
-          if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
-          try {
-            const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
-            return {
-              status: args.status,
-              summary: args.summary,
-              blockers: args.blockers,
-              deliverables: args.deliverables,
-              next_steps: args.next_steps,
-              completed_items: args.completed_items,
-              new_items: args.new_items,
-              lessons: args.lessons,
-              verification_evidence: args.verification_evidence,
-              context_updates: args.context_updates,
-              result: args.result,
-            };
-          } catch {
-            return null;
-          }
-        }
-      }
-    }
-  }
-  return null;
 }
 
 function isProcessAlive(pid: number | undefined): boolean {
@@ -493,6 +392,7 @@ export class SubagentManager {
         orderId: meta.orderId,
         startedAt: meta.startedAt,
         projectId: meta.projectId,
+        recoveryOwner: meta.recoveryOwner,
         timeoutMs: opts.timeoutMs,
         resumeMessages,
         trace: opts.trace,
@@ -548,22 +448,79 @@ export class SubagentManager {
     if (!registered) throw new Error(`Agent "${name}" not registered`);
     const def = registered.definition;
 
-    const parsedSkill = parseExplicitSkill(task);
-    const skillName = opts?.skill ?? parsedSkill.skill;
-    const sessionTask = parsedSkill.skill ? parsedSkill.task : task;
-    if (skillName && !sessionTask) throw new Error(`Skill "${skillName}" requires a task`);
-    const activation = skillName ? invokeCatalogSkill(def.skillCatalog, skillName, sessionTask) : undefined;
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
-    const outputSchema = normalizePersistableSchema(opts?.outputSchema);
-    const requireFinish = opts?.requireFinish === true || outputSchema !== undefined;
+    const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
+    const requestedStructuredCompletion = opts?.requireFinish === true || opts?.outputSchema !== undefined;
     const toolPolicy = opts?.toolPolicy ?? "full";
-    if (requireFinish && this.isPersistentChatPolicy(kind, autoClose)) {
+    if (requestedStructuredCompletion && persistentChat) {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
     }
+
+    const prepared = prepareAgentExecution({
+      definition: def,
+      projectRoot: this._projectRoot,
+      sessionId,
+      task,
+      persistentChat,
+      skill: opts?.skill,
+      requireFinish: opts?.requireFinish,
+      outputSchema: opts?.outputSchema,
+      toolPolicy,
+      promptTimestamp: this._promptTimestamp,
+      ...(persistentChat
+        ? {
+            chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(sessionId, name, task)}`,
+          }
+        : {}),
+      createFinish: () =>
+        createFinishTool({
+          agentName: def.name,
+          projectRoot: def.projectRoot ?? this._projectRoot,
+          persistDir: this._persistDir,
+        }),
+      dynamicApiKey: () => this.getCopilotToken(),
+      onGuard: ({ context, guard, block, reason }) => {
+        this.bus?.emit({
+          type: "guard.triggered",
+          source: "tool",
+          owner: normalizeEventOwner(def.name),
+          data: {
+            workflowRunId: opts?.workflowRunId,
+            projectId: opts?.projectId,
+            parentSessionId: opts?.parentSessionId,
+            sessionId,
+            guard,
+            demandType: block ? "block" : "warn",
+            action: block ? "blocked" : "warned",
+            reason,
+            sourceEventType: `tool.${context.toolCall.name}`,
+          },
+        });
+      },
+      onCompact: (info, messages) => {
+        log(
+          "info",
+          `[manager] Compacted ${sessionId} (${def.name}): ${info.messagesCompacted} compacted, ${info.messagesKept} kept, ${info.tokensBefore}->${info.tokensAfter} tokens`,
+        );
+        try {
+          saveCompactedMessages(this._persistDir, sessionId, messages);
+        } catch (error) {
+          log(
+            "warn",
+            `[manager] Failed to save compacted context for ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      },
+      onNotice: (message) => log("warn", message),
+    });
+    const sessionTask = prepared.task;
+    const outputSchema = prepared.outputSchema;
+    const requireFinish = prepared.requireFinish;
+    const activation = prepared.activatedSkill;
 
     // Setup persistence
     ensureSessionDir(this._persistDir, sessionId);
@@ -571,34 +528,9 @@ export class SubagentManager {
     mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
     writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
 
-    // Create Agent
-    const guards = this.buildGuards(def);
-    const guardHook = guards.length
-      ? this.createGuardSignalHook(composeGuards(...guards), sessionId, def.name, opts)
-      : undefined;
-    const beforeToolCall = guardHook
-      ? (context: PiBeforeToolCallContext, signal?: AbortSignal) => guardHook(toGuardContext(context), signal)
-      : undefined;
-    const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
-    const sessionTools = this.resolveSessionTools(def, persistentChat, {
-      requireFinish,
-      outputSchema,
-      toolPolicy,
-    });
-    const agent = new Agent({
-      initialState: {
-        systemPrompt: this.resolveSessionSystemPrompt(
-          def,
-          { kind, autoClose, sessionId, task: sessionTask, requireFinish, outputSchema },
-          sessionTools,
-        ),
-        model: def.model,
-        tools: sessionTools,
-      },
-      beforeToolCall,
-      transformContext: this.createSessionCompactionTransform(def, sessionId, persistentChat),
-      getApiKey: def.apiKey === "dynamic" ? () => this.getCopilotToken() : def.apiKey ? () => def.apiKey! : undefined,
-    });
+    // Create the same prepared model/tool loop used by direct callers. The
+    // durable manager only adds persistence and system-event adapters around it.
+    const agent = createAgentRun(prepared.runner);
 
     // JSONL persistence
     agent.subscribe((event) => {
@@ -625,11 +557,12 @@ export class SubagentManager {
       turnCount: 0,
       requestId: opts?.requestId,
       projectId: opts?.projectId,
+      recoveryOwner: opts?.recoveryOwner,
       resumeMessages: opts?.resumeMessages,
       trace: opts?.trace,
       openTurnTraces: opts?.trace ? [opts.trace] : [],
-      promptTask: activation?.prompt,
-      loadedSkillHashes: new Set(activation ? [activation.skill.contentHash] : []),
+      promptTask: prepared.prompt,
+      loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
       requireFinish,
       outputSchema,
       toolPolicy,
@@ -657,6 +590,7 @@ export class SubagentManager {
       source: opts?.source ?? existingMeta?.source,
       requestId: opts?.requestId ?? existingMeta?.requestId,
       projectId: opts?.projectId ?? existingMeta?.projectId,
+      recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
       kind,
       autoClose,
       orderId: opts?.orderId ?? existingMeta?.orderId,
@@ -671,7 +605,7 @@ export class SubagentManager {
     this._sessions.set(sessionId, session);
     try {
       this.bridgeEvents(session);
-      if (activation) this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+      if (activation) this.emitSkillLoaded(session, activation, "explicit", opts?.trace);
     } catch (err) {
       this._sessions.delete(sessionId);
       const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
@@ -685,7 +619,7 @@ export class SubagentManager {
     if (timeoutMs) {
       session.timeoutTimer = setTimeout(() => {
         log("warn", `[runtime] ${sessionId} timed out after ${timeoutMs}ms`);
-        agent.abort();
+        agent.cancel();
       }, timeoutMs);
     }
 
@@ -698,7 +632,7 @@ export class SubagentManager {
           if (session.resumeMessages) {
             agent.state.messages = session.resumeMessages as any;
           }
-          await agent.prompt(activation?.prompt ?? sessionTask);
+          await agent.prompt(prepared.prompt);
         },
         task,
       );
@@ -724,7 +658,7 @@ export class SubagentManager {
       const wasRunning = session.status === "running";
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       session.status = "interrupted";
-      session.agent.abort();
+      session.agent.cancel();
       this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
       updateSessionDb(this._persistDir, sessionId, {
         status: "interrupted",
@@ -884,6 +818,7 @@ export class SubagentManager {
       source?: string;
       workflowRunId?: string;
       projectId?: string;
+      recoveryOwner?: string;
       stepLabel?: string;
       timeout?: number;
       trace?: EventTrace;
@@ -911,6 +846,7 @@ export class SubagentManager {
       kind: "call",
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
+      recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
       trace: opts?.trace,
@@ -934,6 +870,7 @@ export class SubagentManager {
       requestId?: string;
       workflowRunId?: string;
       projectId?: string;
+      recoveryOwner?: string;
       trace?: EventTrace;
       skill?: string;
       requireFinish?: boolean;
@@ -949,6 +886,7 @@ export class SubagentManager {
       requestId: opts?.requestId,
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
+      recoveryOwner: opts?.recoveryOwner,
       trace: opts?.trace,
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
@@ -991,6 +929,11 @@ export class SubagentManager {
 
     try {
       for (const dirName of listActiveSessionIds(this._persistDir)) {
+        // Project-app installation may start controller work before startup
+        // recovery scans the durable session directory. A session already in
+        // this manager is current work, never a stale session from a prior
+        // process.
+        if (this._sessions.has(dirName)) continue;
         const sentinelPath = join(sessionDir(this._persistDir, dirName), "[STARTED]");
         if (!existsSync(sentinelPath)) continue;
         const persisted = activeSessions[dirName];
@@ -1013,6 +956,7 @@ export class SubagentManager {
 
     for (const [sessionId, persisted] of Object.entries(activeSessions)) {
       if (stale.has(sessionId)) continue;
+      if (this._sessions.has(sessionId)) continue;
       if (persisted.status !== "running" && persisted.status !== "idle") continue;
       const kind = persisted.kind ?? "job";
       if (kindFilter && !kindFilter.has(kind)) continue;
@@ -1431,7 +1375,7 @@ export class SubagentManager {
   private cleanupStaleWorkflowRuns(): void {
     for (const runId of listWorkflowRunIds(this._persistDir)) {
       const run = getWorkflowRun(this._persistDir, runId);
-      if (run?.status === "running") {
+      if (run?.status === "running" && run.startedAt < this._createdAt) {
         updateWorkflowRun(this._persistDir, runId, {
           status: "interrupted",
           endedAt: Date.now(),
@@ -1509,63 +1453,6 @@ export class SubagentManager {
       finishResult: finishResult as any,
       structuredResult: finishResult?.result,
     };
-  }
-
-  private resolveSystemPrompt(def: SubagentDefinition | undefined, toolsOverride?: AgentTool[]): string {
-    if (!def) return "";
-    if (def.systemPrompt !== undefined) return def.systemPrompt;
-
-    const agentDir = this.resolveAgentDir(def);
-    const sections: string[] = [];
-
-    const shared = this.loadPromptFile(this.resolveSharedPromptPath(agentDir));
-    if (shared) sections.push(shared);
-
-    if (agentDir) {
-      const identity = this.loadPromptFile(join(agentDir, "AGENTS.md"));
-      if (identity) sections.push(identity);
-    }
-
-    const tools = toolsOverride ?? def.tools;
-    if (def.skillCatalog && tools.some((tool) => tool.name === "read")) {
-      const catalog = formatBoundedSkillCatalog(def.skillCatalog);
-      if (catalog.text) sections.push(catalog.text);
-      if (catalog.omitted.length > 0) {
-        log(
-          "warn",
-          `[skills] ${def.name}: omitted ${catalog.omitted.length} skill(s) from prompt budget: ${catalog.omitted.join(", ")}`,
-        );
-      }
-    }
-
-    sections.push(this.runtimeEnvironment(def, agentDir, toolsOverride));
-    return `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
-  }
-
-  private resolveSessionSystemPrompt(
-    def: SubagentDefinition,
-    session: {
-      kind: SessionKind;
-      autoClose: "immediate" | "never";
-      sessionId: string;
-      task: string;
-      requireFinish?: boolean;
-      outputSchema?: TSchema;
-    },
-    toolsOverride?: AgentTool[],
-  ): string {
-    const persistentChat = this.isPersistentChatPolicy(session.kind, session.autoClose);
-    const tools = toolsOverride ?? this.resolveSessionTools(def, persistentChat);
-    const base = this.resolveSystemPrompt(def, tools);
-    if (session.requireFinish) {
-      const resultInstruction = session.outputSchema
-        ? "The finish() call must include the required schema-validated result payload."
-        : "Use the standard finish() fields; no caller-defined result payload is required.";
-      return `${base}\n\n<workflow_completion>\nThis is a workflow step. Complete it only by calling finish() as your final action. ${resultInstruction} A prose-only response is not a successful workflow result.\n</workflow_completion>`;
-    }
-    if (!persistentChat) return base;
-
-    return `${base}\n\n<chat_runtime_context>\n${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(session.sessionId, def.name, session.task)}\n</chat_runtime_context>`;
   }
 
   private chatSessionInstructions(): string {
@@ -1669,108 +1556,7 @@ export class SubagentManager {
     return lines.join("\n");
   }
 
-  private resolveAgentDir(def: SubagentDefinition): string | undefined {
-    if (def.agentDir) return def.agentDir;
-    if (def.knowledgeDir) return dirname(def.knowledgeDir);
-    if (def.workspace) return dirname(def.workspace);
-    const root = def.projectRoot ?? this._projectRoot;
-    return root ? join(root, "agents", def.name) : undefined;
-  }
-
-  private resolveSharedPromptPath(_agentDir: string | undefined): string {
-    return join(this._projectRoot, "shared", "common-sense.md");
-  }
-
-  private loadPromptFile(path: string): string | undefined {
-    if (!existsSync(path)) return undefined;
-    const text = readFileSync(path, "utf-8").trim();
-    return text || undefined;
-  }
-
-  private runtimeEnvironment(
-    def: SubagentDefinition,
-    agentDir: string | undefined,
-    toolsOverride?: AgentTool[],
-  ): string {
-    const root = def.projectRoot ?? this._projectRoot;
-    const relAgentDir = agentDir && root && agentDir.startsWith(root) ? agentDir.slice(root.length + 1) : agentDir;
-    const relWorkspace =
-      def.workspace && root && def.workspace.startsWith(root) ? def.workspace.slice(root.length + 1) : def.workspace;
-    const relKnowledge =
-      def.knowledgeDir && root && def.knowledgeDir.startsWith(root)
-        ? def.knowledgeDir.slice(root.length + 1)
-        : def.knowledgeDir;
-
-    const toolNames = (toolsOverride ?? def.tools).map((tool: any) => tool?.name).filter(Boolean);
-    const lines = ["# Runtime Environment"];
-    lines.push(`- Project root: ${root}`);
-    if (relAgentDir) lines.push(`- Agent directory: ${relAgentDir}`);
-    if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
-    if (relKnowledge) lines.push(`- Knowledge: ${relKnowledge} (read on demand; start with INDEX.md when needed)`);
-    lines.push("- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.");
-    lines.push(
-      "- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.",
-    );
-    if (toolNames.length > 0) {
-      lines.push(`- Available tools: ${toolNames.join(", ")}`);
-    }
-    lines.push(`- Current time: ${this._promptTimestamp}`);
-    lines.push("");
-    lines.push("All paths are relative to project root unless absolute paths are explicitly provided.");
-    return lines.join("\n");
-  }
-
   // ── Private ──
-
-  private buildGuards(def: SubagentDefinition): BeforeToolCallHook[] {
-    const named =
-      (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
-      async (context, signal) => {
-        const result = await guard(context, signal);
-        return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
-      };
-    return [
-      named("empty-args", createEmptyArgsGuard()),
-      named("tool-schema", createToolSchemaGuard()),
-      named("path-hallucination", createPathHallucinationGuard()),
-      named("completeness", createCompletenessGuard(def.name)),
-      named("finish-evidence", createFinishGuard()),
-      named("commit", createCommitGuard(def.name, this.projectRoot)),
-      named("read-dedup", createReadDedupGuard()),
-      named("session-read", createSessionReadGuard()),
-      named("scrape-dedup", createScrapeDedupGuard()),
-    ];
-  }
-
-  private createGuardSignalHook(
-    hook: BeforeToolCallHook,
-    sessionId: string,
-    agentName: string,
-    opts?: RunOptions,
-  ): BeforeToolCallHook {
-    return async (context, signal) => {
-      const result = await hook(context, signal);
-      if (result) {
-        this.bus?.emit({
-          type: "guard.triggered",
-          source: "tool",
-          owner: normalizeEventOwner(agentName),
-          data: {
-            workflowRunId: opts?.workflowRunId,
-            projectId: opts?.projectId,
-            parentSessionId: opts?.parentSessionId,
-            sessionId,
-            guard: result.guardName ?? "unknown",
-            demandType: result.block ? "block" : "warn",
-            action: result.block ? "blocked" : "warned",
-            reason: result.reason,
-            sourceEventType: `tool.${context.toolCall.name}`,
-          },
-        });
-      }
-      return result;
-    };
-  }
 
   private getCopilotToken(): string {
     try {
@@ -1913,69 +1699,6 @@ export class SubagentManager {
     return kind === "chat" || autoClose === "never";
   }
 
-  private resolveSessionTools(
-    def: SubagentDefinition,
-    persistentChat: boolean,
-    workflow?: {
-      requireFinish: boolean;
-      outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly";
-    },
-  ): AgentTool[] {
-    let tools = persistentChat ? def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name)) : def.tools;
-    if (workflow?.toolPolicy === "readonly") {
-      tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
-    }
-    if (!workflow?.requireFinish) return tools;
-
-    const baseFinish =
-      tools.find((tool) => tool.name === "finish") ??
-      def.tools.find((tool) => tool.name === "finish") ??
-      createFinishTool({
-        agentName: def.name,
-        projectRoot: def.projectRoot ?? this._projectRoot,
-        persistDir: this._persistDir,
-      });
-    const finish = createWorkflowFinishTool(baseFinish, workflow.outputSchema);
-
-    const finishIndex = tools.findIndex((tool) => tool.name === "finish");
-    if (finishIndex < 0) return [...tools, finish];
-    return tools.map((tool, index) => (index === finishIndex ? finish : tool));
-  }
-
-  private createSessionCompactionTransform(
-    def: SubagentDefinition,
-    sessionId: string,
-    persistentChat: boolean,
-  ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
-    if (!persistentChat && !def.compaction) return undefined;
-
-    const transform = createCompactionTransform(def.model, {
-      onCompact: (info) => {
-        log(
-          "info",
-          `[manager] Compacted ${sessionId} (${def.name}): ${info.messagesCompacted} compacted, ${info.messagesKept} kept, ${info.tokensBefore}->${info.tokensAfter} tokens`,
-        );
-      },
-    });
-
-    return async (messages) => {
-      const compacted = await transform(messages);
-      if (compacted !== messages) {
-        messages.splice(0, messages.length, ...compacted);
-        try {
-          saveCompactedMessages(this._persistDir, sessionId, messages);
-        } catch (err) {
-          log(
-            "warn",
-            `[manager] Failed to save compacted context for ${sessionId}: ${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
-      }
-      return messages;
-    };
-  }
-
   private queueTurnTrace(session: ActiveSession, trace: EventTrace | undefined): void {
     if (!trace) return;
     session.trace = trace;
@@ -2012,12 +1735,20 @@ export class SubagentManager {
     const { sessionId } = session;
     const def = this.agents.get(session.agentName)?.definition;
     if (def) {
-      session.agent.state.systemPrompt = this.resolveSessionSystemPrompt(def, {
-        kind: session.kind,
-        autoClose: session.autoClose,
+      session.agent.state.systemPrompt = prepareAgentExecution({
+        definition: def,
+        projectRoot: this._projectRoot,
         sessionId,
         task: turnTask ?? session.task,
-      });
+        persistentChat: true,
+        promptTimestamp: this._promptTimestamp,
+        chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(
+          sessionId,
+          def.name,
+          turnTask ?? session.task,
+        )}`,
+        onNotice: (message) => log("warn", message),
+      }).systemPrompt;
     }
     session.status = "running";
     session.lastError = undefined;

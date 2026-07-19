@@ -12,12 +12,7 @@ import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
-import {
-  describeText,
-  writeContentAddressedJson,
-  writeSessionResult,
-  type ArtifactDescriptor,
-} from "./artifacts.js";
+import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
 const INLINE_EVENT_DATA_BYTES = 4_096;
@@ -40,7 +35,6 @@ const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 // take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
 // batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
 // the event.pair-orphan-count threshold.
-const TASK_ASSIGNED_PAIR_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
   if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
@@ -311,12 +305,6 @@ const escalationKey = (payload: Record<string, unknown>) => keyPart(payload.esca
 const cliTaskKey = (payload: Record<string, unknown>) => keyPart(payload.taskId);
 const projectOwnerKey = (payload: Record<string, unknown>) =>
   keyPart(payload.projectId) ?? keyPart(payload.project) ?? keyPart(payload.projectPath);
-const projectTaskKey = (payload: Record<string, unknown>) => {
-  const taskId = keyPart(payload.taskId);
-  if (!taskId) return undefined;
-  const attemptId = keyPart(payload.attemptId);
-  return attemptId ? `${taskId}:${attemptId}` : taskId;
-};
 
 // Lifecycle tracking is deliberately explicit. Adding an event suffix must not
 // silently create work or a request-shaped correlation contract.
@@ -370,13 +358,6 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     timeoutMs: 60 * 60 * 1000,
     key: projectOwnerKey,
   },
-  {
-    name: "project.task",
-    open: "project.task.assigned",
-    closes: ["project.task.completed"],
-    timeoutMs: TASK_ASSIGNED_PAIR_TTL_MS,
-    key: projectTaskKey,
-  },
 ];
 
 function openingPair(eventType: string): PairContract | undefined {
@@ -385,15 +366,6 @@ function openingPair(eventType: string): PairContract | undefined {
 
 function closingPairs(eventType: string): PairContract[] {
   return PAIR_CONTRACTS.filter((contract) => contract.closes.includes(eventType));
-}
-
-function pairByName(name: string): PairContract | undefined {
-  return PAIR_CONTRACTS.find((contract) => contract.name === name);
-}
-
-function isRuntimePairRepairProjectTaskCompletion(eventType: string, payload: Record<string, unknown>): boolean {
-  if (eventType !== "project.task.completed") return false;
-  return payload.repair === true || payload.reason === "runtime-pair-repair";
 }
 
 export class DbWriter {
@@ -553,10 +525,6 @@ export class DbWriter {
     this.sweepUnacceptedEvents(timestamp);
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      if (this.shouldSkipDuplicateRuntimePairRepair(event.type, payload)) {
-        this.db.exec("COMMIT");
-        return null;
-      }
       const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
       if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
         (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
@@ -675,27 +643,6 @@ export class DbWriter {
     );
   }
 
-  private shouldSkipDuplicateRuntimePairRepair(eventType: string, payload: Record<string, unknown>): boolean {
-    if (!isRuntimePairRepairProjectTaskCompletion(eventType, payload)) {
-      return false;
-    }
-    const key = projectTaskKey(payload);
-    if (!key) return false;
-    const row = this.db
-      .prepare(
-        `SELECT close_event_id
-         FROM event_pair_runs
-         WHERE pair_name = 'project.task'
-           AND correlation_key = ?
-           AND status = 'closed'
-           AND close_event_id IS NOT NULL
-         LIMIT 1`,
-      )
-      .get(key) as { close_event_id?: unknown } | undefined;
-    const closeEventId = typeof row?.close_event_id === "number" ? row.close_event_id : Number(row?.close_event_id);
-    return Number.isFinite(closeEventId) && closeEventId > 0;
-  }
-
   private openConventionPair(
     eventType: string,
     payload: Record<string, unknown>,
@@ -707,38 +654,6 @@ export class DbWriter {
     if (!pair) return;
     const key = pair.key(payload);
     if (!key) return;
-    // When a task is re-assigned with a new attemptId, supersede older open/orphan
-    // pairs for the same taskId to prevent orphan accumulation from re-attempts.
-    if (eventType === "project.task.assigned") {
-      const taskId = keyPart(payload.taskId);
-      if (taskId) {
-        const superseded = this.db
-          .prepare(
-            `SELECT open_event_id
-           FROM event_pair_runs
-           WHERE status IN ('open', 'orphan')
-             AND pair_name = ?
-             AND correlation_key LIKE ? || ':%'
-             AND correlation_key != ?`,
-          )
-          .all(pair.name, taskId, key) as Array<{ open_event_id?: unknown }>;
-        this.db.run(
-          `UPDATE event_pair_runs
-           SET status = 'closed',
-               close_event_id = ?,
-               closed_at = ?,
-               note = 'superseded by new task attempt'
-           WHERE status IN ('open', 'orphan')
-             AND pair_name = ?
-             AND correlation_key LIKE ? || ':%'
-             AND correlation_key != ?`,
-          [openEventId, openedAt, pair.name, taskId, key],
-        );
-        for (const row of superseded) {
-          persistEventClosure(this.db, openEventId, Number(row.open_event_id), pair.name, openedAt);
-        }
-      }
-    }
     this.db.run(
       `INSERT OR IGNORE INTO event_pair_runs
        (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
@@ -841,11 +756,6 @@ export class DbWriter {
 
   private sweepStalePairs(now: number): void {
     try {
-      this.closeReverseOrderedConventionPairs();
-    } catch {
-      /* best-effort reverse-pair close */
-    }
-    try {
       this.db.run(
         `UPDATE event_pair_runs
          SET status = 'orphan',
@@ -856,35 +766,6 @@ export class DbWriter {
       );
     } catch {
       /* best-effort orphan marking */
-    }
-  }
-
-  private closeReverseOrderedConventionPairs(): void {
-    const rows = this.db
-      .prepare(
-        `SELECT pair_name, correlation_key, open_event_id, opened_at
-         FROM event_pair_runs
-         WHERE status IN ('open', 'orphan')
-           AND pair_name = 'project.task'
-         ORDER BY opened_at DESC
-         LIMIT 50`,
-      )
-      .all() as Array<{
-      pair_name?: unknown;
-      correlation_key?: unknown;
-      open_event_id?: unknown;
-      opened_at?: unknown;
-    }>;
-    for (const row of rows) {
-      const pairName = typeof row.pair_name === "string" ? row.pair_name : "";
-      const key = typeof row.correlation_key === "string" ? row.correlation_key : "";
-      const openEventId = typeof row.open_event_id === "number" ? row.open_event_id : Number(row.open_event_id);
-      const openedAt = typeof row.opened_at === "number" ? row.opened_at : Number(row.opened_at);
-      if (!pairName || !key || !Number.isFinite(openEventId) || !Number.isFinite(openedAt)) {
-        continue;
-      }
-      const pair = pairByName(pairName);
-      if (pair) this.closeConventionPairFromEarlierEvent(pair, key, openEventId, openedAt);
     }
   }
 

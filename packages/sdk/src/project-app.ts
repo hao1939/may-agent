@@ -33,32 +33,114 @@ export type EventSelector =
       metricIds?: string[];
     };
 
+function selectorRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function selectorValue(event: Record<string, unknown>, ...keys: string[]): unknown {
+  const details = eventDetails(event);
+  const target = selectorRecord(event.target);
+  for (const key of keys) {
+    if (details[key] !== undefined) return details[key];
+    if (target[key] !== undefined) return target[key];
+  }
+  return undefined;
+}
+
+function normalizedOwner(value: unknown): string {
+  const owner = typeof value === "string" ? value.trim() : "";
+  return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
+}
+
+/** Canonical selector matching used by app loading, integrity checks, and tests. */
+export function matchesEventSelector(selector: EventSelector, event: Record<string, unknown>): boolean {
+  if (typeof selector === "string") return event.type === selector;
+  if (event.type !== selector.type) return false;
+
+  const expectedProject = selector.target?.project ?? selector.project;
+  if (expectedProject && selectorValue(event, "project", "projectId", "project_id") !== expectedProject) return false;
+
+  if (selector.target?.taskId && selectorValue(event, "taskId", "task_id") !== selector.target.taskId) return false;
+  if (selector.target?.sessionId && selectorValue(event, "sessionId", "session_id") !== selector.target.sessionId) {
+    return false;
+  }
+
+  if (selector.owner) {
+    if (normalizedOwner(selectorValue(event, "owner")) !== normalizedOwner(selector.owner)) return false;
+  }
+  if (selector.target?.owner) {
+    const target = selectorRecord(event.target);
+    if (normalizedOwner(target.owner) !== normalizedOwner(selector.target.owner)) return false;
+  }
+
+  if (selector.target?.human !== undefined) {
+    const target = selectorRecord(event.target);
+    if (target.human !== selector.target.human) return false;
+  }
+  if (selector.urgency && selectorValue(event, "urgency") !== selector.urgency) return false;
+
+  if (selector.actions?.length) {
+    const action = selectorValue(event, "action");
+    if (typeof action !== "string" || !selector.actions.includes(action)) return false;
+  }
+  if (selector.metricIds?.length) {
+    const metricId = selectorValue(event, "metricId", "metric_id");
+    if (typeof metricId !== "string" || !selector.metricIds.includes(metricId)) return false;
+  }
+  return true;
+}
+
 export type ProjectAppContext = {
-  workspacePath(path: string): string;
-  workspaceCwd(): string;
   appPath(path: string): string;
-  readJson<T = unknown>(path: string): Promise<T>;
-  importModule<T = Record<string, unknown>>(path: string): Promise<T>;
   emit(event: ProjectAppEvent): unknown;
   noop(reason: string): unknown;
+  /** Read-only host projection for deterministic app observers/watchers. */
+  query?: {
+    sql(statement: string, params?: unknown[], options?: { limit?: number }): unknown;
+    metrics(filter?: Record<string, unknown>): unknown;
+    workflowRuns(filter?: Record<string, unknown>): unknown;
+    events(filter?: Record<string, unknown>): unknown;
+  };
 };
 
-export type ProjectAppAction =
-  | {
-      type: "sync";
-      readOnly: true;
-      description: string;
-      run(ctx: ProjectAppContext, params: unknown): Promise<unknown>;
-    }
-  | {
-      type: "async";
-      description: string;
-      event(params: unknown): ProjectAppEvent;
-    };
+export type ProjectAppAction = {
+  type: "async";
+  description: string;
+  event(params: unknown): ProjectAppEvent;
+};
 
 export type ProjectAppTaskMode = "achieve" | "maintain";
 
-export type ProjectAppTaskDisposition = "converged" | "progressing" | "waiting" | "needs-owner" | "failed";
+export type ProjectAppTaskHandlerState =
+  | "converged"
+  | "waiting"
+  | "needs-owner";
+
+export type ProjectAppConditionSpec = {
+  id: string;
+  type: string;
+  subject: string;
+  expected: unknown;
+  owner?: string;
+};
+
+export type ProjectAppCondition = {
+  metadata: {
+    id: string;
+    generation: number;
+    resourceVersion: number;
+  };
+  spec: Omit<ProjectAppConditionSpec, "id">;
+  status: {
+    observedGeneration: number;
+    state: "unknown" | "false" | "true";
+    observed?: unknown;
+    observedAt?: string;
+    evidence?: string[];
+  };
+};
 
 export type ProjectAppTaskAction =
   | {
@@ -66,39 +148,43 @@ export type ProjectAppTaskAction =
       id: string;
       parentId: string;
       goal: string;
+      mode: ProjectAppTaskMode;
       outputs: string[];
       acceptance: string[];
       priority?: "P0" | "P1" | "P2" | "P3";
       owner?: string;
       workflow?: string;
+      input?: Record<string, unknown>;
+      dependsOn?: string[];
     }
   | {
       kind: "update-task";
       taskId: string;
-      expectedRevision: number;
+      expectedGeneration: number;
       goal?: string;
+      mode?: ProjectAppTaskMode;
       outputs?: string[];
       acceptance?: string[];
     }
   | {
       kind: "close-task";
       taskId: string;
-      expectedRevision: number;
+      expectedGeneration: number;
       summary: string;
     }
   | {
       kind: "unblock-task";
       taskId: string;
-      expectedRevision: number;
+      expectedGeneration: number;
       reason: string;
     };
 
 export type ProjectAppTaskHandlerResult = {
-  disposition: ProjectAppTaskDisposition;
+  state: ProjectAppTaskHandlerState;
   summary: string;
   evidence: string[];
   actions?: ProjectAppTaskAction[];
-  conditions?: Array<Record<string, unknown>>;
+  conditions?: ProjectAppConditionSpec[];
 };
 
 export type ProjectAppTaskIntent = {
@@ -115,21 +201,58 @@ export type ProjectAppTaskIntent = {
   priority?: "P0" | "P1" | "P2" | "P3";
 };
 
-export type ProjectAppTaskCapability = {
-  workflow: string;
-  agent?: string;
-  task: string;
-  timeoutMs: number;
-  context: string[];
+export type ProjectAppTaskResource = {
+  metadata: {
+    id: string;
+    generation: number;
+    resourceVersion: number;
+  };
+  spec: Omit<ProjectAppTaskIntent, "id">;
+  status: {
+    observedGeneration: number;
+    phase: "pending" | "running" | "converged" | "waiting" | "attention";
+    currentAttemptId?: string;
+    summary?: string;
+    evidence?: string[];
+    conditionIds?: string[];
+    updatedAt: string;
+  };
 };
 
-export type ProjectAppTaskRoute = {
-  name: string;
-  enabled: boolean;
-  description: string;
-  maxConcurrentTriggers?: number;
+export type ProjectAppTaskAttempt = {
+  metadata: {
+    id: string;
+    resourceVersion: number;
+  };
+  taskId: string;
+  taskGeneration: number;
+  specHash: string;
+  owner: string;
+  handler: string;
+  runtimeId: string;
+  state: "running" | "completed" | "failed" | "interrupted";
+  reason: string;
+  trigger?: Record<string, unknown>;
+  startedAt: string;
+  finishedAt?: string;
+  summary?: string;
+  failureReason?: string;
+  attentionNotifiedAt?: string;
+};
+
+export type ProjectAppTaskTrigger = {
+  taskId: string;
+  taskGeneration: number;
+  resourceVersion: number;
+  event: Record<string, unknown>;
+  observedAt: string;
+};
+
+/** Convention-first event correlation. Targeted task and Condition events bypass this resolver. */
+export type ProjectAppTasks = {
   accepts: EventSelector[];
   resolve(event: Record<string, unknown>): ProjectAppTaskIntent | null;
+  resyncIntervalMs?: number;
 };
 
 export type ProjectAppOnEvent = (ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown>;
@@ -137,57 +260,30 @@ export type ProjectAppOnEvent = (ctx: ProjectAppContext, event: Record<string, u
 export type ProjectApp = {
   id: string;
   version: 1;
-  owner?: string;
+  owner: string;
   description: string;
-  workspace: {
+  workspace?: {
     kind: "git" | "local";
     repo?: string;
     localPath: string;
     branch?: string;
   };
-  budget: {
+  budget?: {
     sessionsPerDay: number;
     tokensPerDay: number;
     maxConcurrent: number;
   };
-  schedules: Array<{
+  schedules?: Array<{
     id: string;
     enabled: boolean;
-    intervalMs?: number;
-    cron?: string;
+    intervalMs: number;
     emits: ProjectAppEvent[];
   }>;
-  /**
-   * First-class owner entry for task reconciliation. A task without a bound
-   * workflow, or a workflow that cannot handle its input, falls back here.
-   */
-  ownerEntry?: ProjectAppTaskCapability;
-  /** Reusable workflow capabilities addressable from task.workflow. */
-  taskWorkflows?: Record<string, ProjectAppTaskCapability>;
-  /** Event-to-task correlation. Task routes organize work; they do not execute it. */
-  taskRoutes?: ProjectAppTaskRoute[];
-  /** Selectors delivered to onEvent. Task events belong in taskRoutes. */
+  /** The app's single event-to-desired-task correlation surface. */
+  tasks?: ProjectAppTasks;
+  /** Selectors delivered to onEvent. Task events belong in tasks.accepts. */
   events?: EventSelector[];
-  eventGraph?: {
-    /** Task-route output declarations for integrity checking. */
-    routes?: Record<string, { emits?: string[]; description?: string }>;
-    /** Adapter declarations: event→emits for integrity checking. */
-    adapters?: Array<{
-      event: string;
-      emits?: string[];
-      description?: string;
-    }>;
-    externalEvents?: string[];
-    intentionalCycles?: Array<{
-      id: string;
-      events: string[];
-      reason: string;
-    }>;
-    limits?: {
-      maxRoutesPerEvent?: number;
-    };
-  };
-  actions: Record<string, ProjectAppAction>;
+  actions?: Record<string, ProjectAppAction>;
   onEvent?: ProjectAppOnEvent;
 };
 

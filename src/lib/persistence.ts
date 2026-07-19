@@ -49,6 +49,8 @@ export interface PersistedSession {
   requestId?: string;
   /** Project ID linking this session to a persisted project. */
   projectId?: string;
+  /** Runtime that exclusively owns crash recovery for this session. */
+  recoveryOwner?: string;
   detached?: boolean;
   pid?: number;
   instance?: string;

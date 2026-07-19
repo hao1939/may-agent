@@ -271,9 +271,8 @@ function graphNodeTitle(node) {
   if (node.type === 'session.start') return 'Session started';
   if (node.type === 'session.end') return 'Session ended';
   if (node.type === 'session.completed') return 'Session completed';
-  if (node.type === 'project.task.assigned') return 'Task assigned';
-  if (node.type === 'project.task.completed') return 'Task completed';
-  if (node.type === 'project.task.reviewed') return 'Task reviewed';
+  if (node.type === 'project.task.reconcile.started') return 'Task reconciliation started';
+  if (node.type === 'project.task.reconciled') return 'Task reconciled';
   if (node.type === 'workflow.started') return 'Workflow started';
   if (node.type === 'workflow.completed') return 'Workflow completed';
   if (node.type === 'workflow.failed') return 'Workflow failed';
