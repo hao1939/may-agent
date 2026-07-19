@@ -1,26 +1,54 @@
 # Evaluation Task Tree
 
-The task tree represents systemic evaluation work, not individual evaluations.
+The task tree records desired evaluation outcomes and their current observed
+state. Events only wake reconciliation. Workflow runs, agent sessions, reports,
+and database rows are evidence linked to a task generation; they are not extra
+task-state authorities.
 
-Individual "evaluate session X" work is represented by a short-lived
-`achieve` task while its workflow is running. After the evaluation result is
-absorbed into the evaluation store, the task leaves the live graph and only a
-minimal completion tombstone remains for deduplication.
+The normative schema and authoring rules live in
+`projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`.
 
-Each watched project/app has one standing `maintain` task bound to the
-`project-health-evaluator` workflow. A scheduled or manual event reconciles that
-task; convergence means the current review is settled, not that future audits
-are disabled.
+## Stable Responsibilities
 
-The tree tracks:
+`tasks/seed.json` contains only responsibilities that remain true for the life
+of the app. They use `reconcile_mode: "maintain"`:
 
-- Pipeline health (is aftermath keeping up?)
-- Criteria calibration (are scores consistent?)
-- Drift detection (are agents changing behavior?)
-- System integrity (compliance, anomalies)
-- Strategy learning (what works?)
-- Project/app evaluation health (are target projects moving, and are
-  human-facing reports/notifications accurate?)
+| Task | Desired state |
+| --- | --- |
+| `evaluation-system` | Independent evaluation stays current, useful, and reliable. |
+| `session-audit` | Eligible terminal sessions have traceable evaluations or structured skips. |
+| `project-app-audit` | Every watched app has a current independent health assessment. |
+| `finding-delivery` | Actionable findings reach owners and useful human decisions without duplicates. |
+| `evaluator-reliability` | Evaluation's own workflows and control path remain reliable and bounded. |
+| `pipeline-health` | Coverage, throughput, review delivery, and anomaly state remain observable. |
+| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples. |
+| `drift-detection` | Comparable cohorts expose meaningful quality drift without speculative work. |
+| `system-integrity` | Evaluator-local state, routing, ownership, and reports remain internally consistent. |
+
+Completed migrations, retired ideas, incidents, and dated repair tasks do not
+belong in the seed. They are bounded `achieve` children and leave the live graph
+after their result is absorbed.
+
+## Reconciled Tasks
+
+`app.ts` maps known events to task intent:
+
+| Task key | Mode | Handler | Convergence |
+| --- | --- | --- | --- |
+| `runtime/session-aftermath/<session>` | `achieve` | `evaluator-aftermath` | The exact session has a durable evaluation or structured skip. |
+| `runtime/deep-eval/<session>` | `achieve` | `evaluator-deep-eval` | The requested session has one workflow-traced deep judgment. |
+| `runtime/pipeline-monitor` | `maintain` | `evaluator-pipeline-monitor` | The current snapshot is recorded and unchanged state creates no owner wake. |
+| `runtime/aftermath-backfill` | `maintain` | `evaluator-aftermath` | At most one missed session is recovered, or no eligible candidate exists now. |
+| `runtime/deep-eval-scan` | `maintain` | `evaluator-deep-eval` | At most one candidate is reviewed, or none exists now. |
+| `runtime/project-audit/<target>` | `maintain` | `project-health-evaluator` | The target fingerprint is current and any due report/feedback is persisted. |
+| `runtime/owner-review` | `maintain` | evaluator owner | Typed task actions are applied atomically, or the owner records a justified no-op. |
+
+Changing trigger payloads are observations. They are passed to the handler as
+the trigger event, not copied into a standing task's desired specification.
+Only stable configuration belongs in a `maintain` task input. This prevents a
+metric timestamp or manual review reason from creating a new task generation.
+
+## Ownership And Waits
 
 Task execution follows one rule:
 
@@ -29,16 +57,16 @@ explicit task workflow -> reusable workflow
 no workflow or workflow exception -> evaluation.app owner entry
 ```
 
-Events wake tasks. The task tree does not schedule them. Workflow runs and
-agent sessions remain runtime attempts linked to the task generation.
+Handlers return a structured disposition, summary, evidence, optional actions,
+and optional Conditions. They do not edit the tree. The generic reconciler
+checks the task generation and applies allowed actions atomically.
 
-Project/app evaluation is human-facing. Target apps own their domain work,
-self-recovery, and goal progress. `evaluation.app` checks whether that process
-is visible, moving, and trustworthy.
+An external wait is not a blocked-task narrative. A bounded handler records an
+exact Condition, returns `waiting`, and ends. A later Condition change wakes
+the same task. Supervision only repairs broken delivery or attempt invariants;
+it does not duplicate evaluation judgment.
 
-Its reports should expose raw facts, evaluator judgment, and requested human
-action. The evaluator may emit feedback for the target app, but the report and
-notification are the primary outputs. Target-app problems should become
-`evaluation.app` task-tree work only when the evaluation process itself needs
-repair, for example missing facts, noisy notifications, or a blind spot in the
-health review.
+Project-app findings remain owned by the target app. `evaluation.app` writes
+reports, sends evidence-backed owner feedback, and optionally asks a human for
+a concrete decision. It does not create evaluator-owned remediation tasks for
+the target project's domain problem.

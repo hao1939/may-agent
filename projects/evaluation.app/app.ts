@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   defineProjectApp,
   eventDetails,
@@ -5,16 +6,9 @@ import {
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
+import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
 
 const projectId = "evaluation";
-const appTaskContext = "app: /app/projects/evaluation.app";
-
-const evaluationContext = [
-  "projects/evaluation.app/project.json",
-  "projects/evaluation.app/.state/tasks/tree.json",
-  "projects/evaluation.app/criteria/criteria.md",
-  "projects/evaluation.app/criteria/scoring.md",
-];
 
 const watchedProjectTargets = [
   {
@@ -143,11 +137,15 @@ function isEvaluatorOwnerMessage(event: Record<string, unknown>): boolean {
 }
 
 function safeTaskIdPart(value: unknown): string {
-  return String(value ?? "")
-    .trim()
+  const raw = String(value ?? "").trim();
+  const normalized = raw
     .replace(/[^A-Za-z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 120);
+    .replace(/^-+|-+$/g, "");
+  if (normalized === raw && normalized.length <= 120) return normalized;
+
+  const digest = createHash("sha256").update(raw).digest("hex").slice(0, 12);
+  const prefix = normalized.slice(0, 107) || "id";
+  return `${prefix}-${digest}`;
 }
 
 function eventSessionId(event: Record<string, unknown>): string {
@@ -173,20 +171,6 @@ export function resolveEvaluationTask(
 ): ProjectAppTaskIntent | null {
   const details = eventDetails(event);
   switch (event.type) {
-    case "evaluation.pipeline.check":
-      return {
-        id: "runtime/pipeline-monitor",
-        parentId: "pipeline-health",
-        outcome:
-          "Keep the evaluation pipeline health projection current and wake the owner only for changed anomalies.",
-        acceptance: [
-          "The current pipeline snapshot is recorded and changed anomalies emit one owner wake.",
-        ],
-        mode: "maintain",
-        workflow: "evaluator-pipeline-monitor",
-        input: details,
-        priority: "P0",
-      };
     case "session.end":
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
@@ -202,11 +186,12 @@ export function resolveEvaluationTask(
         parentId: "session-audit",
         outcome: `Evaluate completed session ${sessionId} and publish its evidence-backed disposition.`,
         acceptance: [
-          "The session is evaluated or explicitly skipped with a structured reason.",
+          "A durable evaluation record or structured skip is linked to the exact source session.",
+          "Any required review emits its structured outcome, while a review-process failure remains visible as evaluation.review_failed.",
         ],
         mode: "achieve",
         workflow: "evaluator-aftermath",
-        input: { ...details, sessionId },
+        input: { sessionId },
         priority: "P1",
       };
     }
@@ -217,11 +202,12 @@ export function resolveEvaluationTask(
         outcome:
           "Reconcile terminal sessions missed by direct session-end evaluation.",
         acceptance: [
-          "At most one eligible missed session is evaluated, or the scan proves there is no candidate.",
+          "At most one eligible missed terminal session receives its normal aftermath evaluation.",
+          "If no candidate exists, the reconciliation records that current database observation and creates no session task.",
         ],
         mode: "maintain",
         workflow: "evaluator-aftermath",
-        input: details,
+        input: { scope: "missed-session-backfill" },
         priority: "P1",
       };
     case "evaluation.deep.requested": {
@@ -232,11 +218,11 @@ export function resolveEvaluationTask(
         parentId: "session-audit",
         outcome: `Run one deep evaluator review for session ${sessionId}.`,
         acceptance: [
-          "The deep evaluation returns a workflow-traced judgment for the requested session.",
+          "The deep evaluator returns a workflow-traced judgment linked to the exact requested session.",
         ],
         mode: "achieve",
         workflow: "evaluator-deep-eval",
-        input: { ...details, sessionId },
+        input: { sessionId },
         priority: "P1",
       };
     }
@@ -247,26 +233,36 @@ export function resolveEvaluationTask(
         outcome:
           "Find and deeply evaluate at most one eligible recent session.",
         acceptance: [
-          "One eligible session is deeply evaluated, or the scan proves no candidate is available.",
+          "At most one eligible recent session receives a workflow-traced deep evaluation.",
+          "If no candidate exists, the reconciliation records that observation without creating duplicate work.",
         ],
         mode: "maintain",
         workflow: "evaluator-deep-eval",
-        input: details,
+        input: { scope: "deep-evaluation-candidates" },
         priority: "P2",
       };
     case "evaluation.project.review.requested": {
       const project = targetProject(event);
       if (!project) return null;
+      const watchedTarget = watchedProjectTargets.find(
+        (target) =>
+          target.targetProject === project ||
+          target.targetProject.replace(/\.app$/, "") === project,
+      );
       return {
         id: `runtime/project-audit/${safeTaskIdPart(project)}`,
         parentId: "project-app-audit",
         outcome: `Maintain an independent, evidence-backed health assessment for ${project}.`,
         acceptance: [
-          "Material changes produce an owner-facing report; unchanged scheduled samples remain no-op.",
+          "The current meaningful-state fingerprint is persisted for the target.",
+          "Material changes or a due baseline produce an owner-facing report with raw facts, judgment, and verification; unchanged scheduled samples remain no-op.",
+          "New actionable findings are deduplicated and routed to the target owner, with human notification only when policy requires it.",
         ],
         mode: "maintain",
         workflow: "project-health-evaluator",
-        input: details,
+        input: watchedTarget
+          ? { ...watchedTarget }
+          : { targetProject: project },
         priority: "P1",
       };
     }
@@ -277,10 +273,12 @@ export function resolveEvaluationTask(
         outcome:
           "Keep evaluation.app's own organization coherent and act on evaluator-local exceptions.",
         acceptance: [
-          "The owner applies a useful task-tree decision or records a justified no-op.",
+          "The owner returns revision-checked typed actions that the reconciler applies atomically, or a justified no-op with evidence.",
+          "The owner does not directly mutate the task tree or create evaluator work for target-project remediation.",
         ],
         mode: "maintain",
-        input: details,
+        workflow: "evaluator-heartbeat",
+        input: { scope: "evaluation.app" },
         priority: "P1",
       };
     default:
@@ -292,6 +290,14 @@ export async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  if (event.type === "evaluation.pipeline.check") {
+    if (!ctx.query)
+      throw new Error(
+        "evaluation pipeline watcher requires the hosted read-only query capability",
+      );
+    return observeEvaluationPipeline({ ...ctx, query: ctx.query });
+  }
+
   if (event.type === "evaluation.review_failed") {
     return ctx.emit(
       projectHealthReviewRequested({
@@ -335,31 +341,6 @@ export async function routeEvaluationEvent(
         metric: eventDetails(event),
       },
     });
-  }
-
-  if (event.type === "project.action.invoked") {
-    const action = eventDetails(event);
-    if (action.action === "review-project-app") {
-      return ctx.emit(
-        projectHealthReviewRequested({
-          ...(eventParams(action.params) as Record<string, unknown>),
-          reason: action.reason ?? "manual-action",
-        }),
-      );
-    }
-    return ctx.emit(
-      evaluationReviewRequested("project-action", {
-        action,
-      }),
-    );
-  }
-
-  if (event.type === "project.tasks.ready") {
-    return ctx.emit(
-      evaluationReviewRequested("task-ready", {
-        taskReady: eventDetails(event),
-      }),
-    );
   }
 
   return undefined;
@@ -429,8 +410,8 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "eval-llm-scan",
-      enabled: false,
+      id: "deep-evaluation-scan",
+      enabled: true,
       intervalMs: 1_800_000, // 30min — one deep eval candidate per run
       emits: [
         {
@@ -456,255 +437,28 @@ export default defineProjectApp({
     })),
   ],
 
-  ownerEntry: {
-    workflow: "evaluator-heartbeat",
-    task: `${appTaskContext}\nReview evaluation.app's organization for the reconciled task. Handle unfamiliar work and workflow exceptions; do not run session aftermath without a concrete sessionId.`,
-    timeoutMs: 900_000,
-    context: evaluationContext,
+  tasks: {
+    accepts: [
+      "session.end",
+      "evaluation.session.requested",
+      "evaluation.tick",
+      "evaluation.deep.requested",
+      "evaluation.aftermath.scan",
+      "evaluation.deep.scan",
+      "evaluation.project.review.requested",
+    ],
+    resolve: resolveEvaluationTask,
   },
-
-  taskWorkflows: {
-    "evaluator-pipeline-monitor": {
-      workflow: "evaluator-pipeline-monitor",
-      agent: "evaluator",
-      task: `${appTaskContext}\nCheck evaluation pipeline health without invoking an agent unless anomaly state changes.`,
-      timeoutMs: 120_000,
-      context: evaluationContext,
-    },
-    "evaluator-aftermath": {
-      workflow: "evaluator-aftermath",
-      agent: "evaluator",
-      task: `${appTaskContext}\nEvaluate the completed session from the trigger event, or perform one bounded backfill scan.`,
-      timeoutMs: 900_000,
-      context: evaluationContext,
-    },
-    "evaluator-deep-eval": {
-      workflow: "evaluator-deep-eval",
-      agent: "evaluator",
-      task: `${appTaskContext}\nRun the requested deep evaluation or one bounded candidate scan.`,
-      timeoutMs: 1_800_000,
-      context: evaluationContext,
-    },
-    "project-health-evaluator": {
-      workflow: "project-health-evaluator",
-      agent: "evaluator",
-      task: `${appTaskContext}\nIndependently audit the target project/app from the trigger event. Report evidence-backed findings to its owner and notify a human only when useful; do not own target remediation.`,
-      timeoutMs: 900_000,
-      context: [
-        ...evaluationContext,
-        "projects/evaluation.app/design/project-app-evaluation.md",
-      ],
-    },
-  },
-
-  taskRoutes: [
-    {
-      name: "evaluation-task-pipeline-monitor",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description: "Reconciles the standing evaluation-pipeline health task.",
-      accepts: ["evaluation.pipeline.check"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-aftermath",
-      enabled: true,
-      maxConcurrentTriggers: 5,
-      description:
-        "Creates one short-lived evaluation task per completed session.",
-      accepts: ["session.end", "evaluation.session.requested"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-owner",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Routes unfamiliar evaluation.app maintenance through its owner entry.",
-      accepts: ["evaluation.tick"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-deep",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Creates one short-lived task for an explicit deep evaluation.",
-      accepts: ["evaluation.deep.requested"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-aftermath-scan",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description: "Reconciles the standing missed-session backfill task.",
-      accepts: ["evaluation.aftermath.scan"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-deep-scan",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Reconciles the standing deep-evaluation candidate scan task.",
-      accepts: ["evaluation.deep.scan"],
-      resolve: resolveEvaluationTask,
-    },
-    {
-      name: "evaluation-task-project-audit",
-      enabled: true,
-      maxConcurrentTriggers: 4,
-      description:
-        "Reconciles one standing independent audit task per target project app.",
-      accepts: ["evaluation.project.review.requested"],
-      resolve: resolveEvaluationTask,
-    },
-  ],
 
   events: [
+    { type: "evaluation.pipeline.check", project: projectId },
     "evaluation.review_failed",
     "message.created",
     "telegram.reply",
-    { type: "metric.breach", project: projectId },
-    { type: "metric.recovered", project: projectId },
+    "metric.breach",
+    "metric.recovered",
     { type: "project.owner.requested", project: projectId },
-    { type: "project.action.invoked", project: projectId },
-    { type: "project.tasks.ready", project: `${projectId}.app` },
   ],
-
-  eventGraph: {
-    routes: {
-      "evaluation-task-aftermath": {
-        emits: [
-          "evaluation.reviewed",
-          "evaluation.review_failed",
-          "evaluation.success_candidate",
-          "evaluation.triage_closed",
-          "evaluation.learning_created",
-          "project.task.reconciled",
-        ],
-        description:
-          "Creates a short-lived task, scores one concrete session, absorbs the result, and emits evaluation events.",
-      },
-      "evaluation-task-owner": {
-        emits: [
-          "evaluation.owner_review_started",
-          "evaluation.owner_reviewed",
-          "project.task.reconciled",
-        ],
-        description:
-          "Routes unfamiliar evaluation.app maintenance through the accountable owner entry.",
-      },
-      "evaluation-task-pipeline-monitor": {
-        emits: ["evaluation.tick", "project.task.reconciled"],
-        description:
-          "Reconciles the standing pipeline task and emits a tick only when anomaly state changes.",
-      },
-      "evaluation-task-deep": {
-        emits: ["handler.workflow_dispatched", "project.task.reconciled"],
-        description: "Creates and absorbs a short-lived deep-evaluation task.",
-      },
-      "evaluation-task-aftermath-scan": {
-        emits: [
-          "evaluation.reviewed",
-          "evaluation.review_failed",
-          "evaluation.success_candidate",
-          "evaluation.triage_closed",
-          "evaluation.learning_created",
-          "project.task.reconciled",
-        ],
-        description: "Reconciles the standing missed-session backfill task.",
-      },
-      "evaluation-task-deep-scan": {
-        emits: ["handler.workflow_dispatched", "project.task.reconciled"],
-        description:
-          "Reconciles the standing deep-evaluation candidate scan task.",
-      },
-      "evaluation-task-project-audit": {
-        emits: [
-          "evaluation.project.review_started",
-          "evaluation.project.reviewed",
-          "evaluation.project.notification.requested",
-          "project.owner.requested",
-          "project.task.reconciled",
-        ],
-        description:
-          "Reconciles one standing target-project audit and writes an independent owner-facing report.",
-      },
-    },
-    adapters: [
-      {
-        event: "metric.breach",
-        emits: ["evaluation.pipeline.check"],
-        description:
-          "Evaluation metric breaches run through the deterministic anomaly gate before any owner wake.",
-      },
-      {
-        event: "metric.recovered",
-        emits: ["evaluation.pipeline.check"],
-        description:
-          "Evaluation metric recoveries run through the deterministic anomaly gate before any owner wake.",
-      },
-      {
-        event: "project.owner.requested",
-        emits: ["evaluation.tick"],
-        description: "Generic owner review wakes evaluation heartbeat.",
-      },
-      {
-        event: "project.action.invoked",
-        emits: ["evaluation.tick"],
-        description: "Project actions become evaluation health-review ticks.",
-      },
-      {
-        event: "project.tasks.ready",
-        emits: ["evaluation.tick"],
-        description:
-          "Ready task-tree leaves wake the evaluation owner through the existing heartbeat lane.",
-      },
-      {
-        event: "message.created",
-        emits: ["evaluation.tick"],
-        description:
-          "Evaluator-targeted owner messages wake evaluation owner review.",
-      },
-      {
-        event: "telegram.reply",
-        emits: ["evaluation.tick"],
-        description:
-          "Human replies attached to evaluator notifications wake evaluation owner review.",
-      },
-      {
-        event: "evaluation.review_failed",
-        emits: ["evaluation.project.review.requested"],
-        description:
-          "Review-process failures request the same project/app review path for evaluation.app.",
-      },
-    ],
-    externalEvents: [
-      "evaluation.reviewed",
-      "evaluation.success_candidate",
-      "evaluation.triage_closed",
-      "evaluation.learning_created",
-      "evaluation.project.review_started",
-      "evaluation.project.reviewed",
-      "evaluation.project.notification.requested",
-      "heartbeat.step_started",
-      "heartbeat.skipped",
-      "handler.workflow_dispatched",
-      "project.task.reconcile.started",
-      "project.task.reconcile.skipped",
-      "project.task.handler.unavailable",
-      "project.task.reconciled",
-    ],
-    intentionalCycles: [
-      {
-        id: "evaluation-health-tick",
-        events: ["evaluation.tick"],
-        reason:
-          "Periodic ticks keep evaluation pipeline health visible without running session aftermath blindly.",
-      },
-    ],
-  },
 
   actions: {
     "evaluate-session": {

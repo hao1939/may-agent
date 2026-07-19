@@ -70,7 +70,7 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 
 - `app.ts` declares schedules, event-to-task routes, workflow capabilities,
   owner entry, actions, and bounded ingress adapters.
-- `workflows/` contains the app workflow entrypoints.
+- `agents/evaluator/workflows/` contains the evaluator-owned workflow entrypoints.
 - `agents/evaluator/` contains the evaluator worker identity and guidance.
 - `criteria/` contains scoring criteria and versioned methodology.
 

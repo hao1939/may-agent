@@ -81,7 +81,7 @@ revision.
 The canonical v1 workflow remains a flat TypeScript file:
 
 ```text
-projects/<id>.app/workflows/<name>.ts
+projects/<id>.app/agents/<agent>/workflows/<name>.ts
 agents/<agent>/workflows/<name>.ts
 ```
 
@@ -136,19 +136,16 @@ resource bundle. If repeated cases require workflow-private references,
 fixtures, or helpers, a later design may add `workflows/<name>/workflow.ts`.
 Do not migrate existing workflows until that need and loader contract exist.
 
-## Scope And Precedence
+## Scope And Ownership
 
-For a project-scoped call, resolve workflows in this order:
+Every workflow has one owning agent. For an app task, resolve the task's owner
+first, then discover workflows only in that agent's app-local directory. A
+standalone agent uses its standalone directory. App-root workflow discovery is
+unsupported.
 
-| Priority | Scope | Location |
-|---:|---|---|
-| 1 | Owning project app | `projects/<id>.app/workflows/<name>.ts` |
-| 2 | Calling standalone agent | `agents/<agent>/workflows/<name>.ts` |
-
-The project workflow replaces an agent workflow with the same effective name;
-workflows never merge. Shared workflow discovery is intentionally unsupported.
-Cross-owner reuse should use an explicit SDK/tool boundary, or a shared helper
-module imported by separately owned workflows.
+Workflow names need only be unique for their owning agent. Cross-owner reuse
+uses an explicit qualified call or a shared helper module; discovery never
+merges catalogs from multiple owners.
 
 The effective name is the exported `name`, not only the filename. Duplicate
 effective names within one scope are invalid. Discovery must report and omit

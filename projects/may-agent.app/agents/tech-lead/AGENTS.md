@@ -20,7 +20,7 @@ machinery when the app-local model replaces it.
 ## What You Own
 
 - `projects/may-agent.app/app.ts` and the app event/handler mapping.
-- `projects/may-agent.app/project.json` and `tasks/tree.json`.
+- `projects/may-agent.app/project.json` and `.state/tasks/tree.json`.
 - Platform design docs under `projects/may-agent.app/docs/`.
 - Runtime workspace work in `projects/may-agent/` when it supports the app.
 - App-local specialist coordination: `dev` for debugging/metrics, `arc` for

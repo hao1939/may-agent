@@ -42,7 +42,7 @@ function parseInput(raw: string): ParsedInput {
   if (!verifyMatch) {
     throw new Error(
       "Task must include a 'verifyCommand: <command>' line. " +
-        "This is the shell command that must exit 0 for the task to pass."
+        "This is the shell command that must exit 0 for the task to pass.",
     );
   }
   const verifyCommand = verifyMatch[1].trim();
@@ -58,7 +58,9 @@ function parseInput(raw: string): ParsedInput {
     .trim();
 
   if (!task) {
-    throw new Error("No coding task found in the input (only found verifyCommand).");
+    throw new Error(
+      "No coding task found in the input (only found verifyCommand).",
+    );
   }
 
   return { task, verifyCommand, maxAttempts };
@@ -84,7 +86,8 @@ function runVerification(command: string): VerifyResult {
     const exitCode = err.status ?? 1;
     const stdout = err.stdout ?? "";
     const stderr = err.stderr ?? "";
-    const output = [stdout, stderr].filter(Boolean).join("\n").trim() || "(no output)";
+    const output =
+      [stdout, stderr].filter(Boolean).join("\n").trim() || "(no output)";
     return { passed: false, exitCode, output };
   }
 }
@@ -97,7 +100,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   try {
     parsed = parseInput(ctx.task);
   } catch (err: any) {
-    return ctx.blocked("Failed to parse verified-coder input", { error: err.message });
+    return ctx.blocked("Failed to parse verified-coder input", {
+      error: err.message,
+    });
   }
 
   const { task, verifyCommand, maxAttempts } = parsed;
@@ -150,7 +155,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `## Verification PASSED (attempt ${attempt}/${maxAttempts})\n\n` +
           `### Verification Command\n\`\`\`\n${verifyCommand}\n\`\`\`\n\n` +
           `### Verification Output\n\`\`\`\n${verify.output}\n\`\`\`\n\n` +
-          `### Coder Summary\n${coder.lastAssistantText ?? "(no output)"}`
+          `### Coder Summary\n${coder.lastAssistantText ?? "(no output)"}`,
       );
     }
 
@@ -166,12 +171,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   // All attempts exhausted
-  return ctx.blocked(
-    `Verification failed after ${maxAttempts} attempts`,
-    {
-      verifyCommand,
-      lastExitCode: 1,
-      lastOutput: lastVerifyOutput,
-    }
-  );
+  return ctx.blocked(`Verification failed after ${maxAttempts} attempts`, {
+    verifyCommand,
+    lastExitCode: 1,
+    lastOutput: lastVerifyOutput,
+  });
 }

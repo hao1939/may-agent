@@ -23,5 +23,96 @@
     "Execute specs through the domain runner when gated, then feed verdict-driving evidence back into the model.",
     "Plan and run combined-scenario suites so compatible specs share CRUD lifecycles, save AKS capacity, and expose dependency bugs.",
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
-  ]
+  ],
+  "currentFocus": {
+    "summary": "The approved no-new-live focus remains on track: cluster-autoscaler local-storage-runtime moved back into active work, three ready-path materialization leaves stayed active, and the owner-visible packet is now 7 active focus leaves, 3 review/result leaves, and 5 exact runnable normalization/writeback/run-wait successors. Ready-path coverage remains fully represented, live-start/live-success remain 0/0 in the sampled 24h window, so the owner loop should keep draining this active normalization/review packet instead of widening into new live families.",
+    "nextAction": "Keep the same no-new-live envelope; let app-ops finish the three active repair leaves, keep the four active domain leaves moving (cluster-autoscaler plus the three ready-path materializations), absorb the three review/result leaves, and pull only from the five exact runnable normalization/writeback/run-wait successors as capacity opens. Do not widen into new live families, broad discovery, or ceremonial backlog refill.",
+    "activeTaskIds": [
+      "domain-reconcile-live-admission-and-verify-cluster-autoscaler-vm-prerelease-local-storage-runtime-profile-matrix-refs-20-20",
+      "domain/materialize-managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-ready-path-20260719",
+      "domain/materialize-net-integration-nsg-route-table-in-use-vm-prerelease-ready-path-20260719",
+      "domain/materialize-network-cni-none-byo-cni-vm-prerelease-lifecycle-ready-path-20260719",
+      "ops-apply-repair-feature-compact-loop-invalid-result-shape-20260719-state-repair",
+      "ops-apply-repair-spec-loop-invalid-result-shape-20260719-state-repair",
+      "ops/repair-done-parent-live-child-representation-20260719"
+    ],
+    "proposedTaskIds": [
+      "domain-reconcile-live-admission-and-verify-cluster-autoscaler-vm-prerelease-local-storage-runtime-profile-matrix-refs-20-20",
+      "domain/materialize-managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-ready-path-20260719",
+      "domain/materialize-net-integration-nsg-route-table-in-use-vm-prerelease-ready-path-20260719",
+      "domain/materialize-network-cni-none-byo-cni-vm-prerelease-lifecycle-ready-path-20260719",
+      "ops-apply-repair-feature-compact-loop-invalid-result-shape-20260719-state-repair",
+      "ops-apply-repair-spec-loop-invalid-result-shape-20260719-state-repair",
+      "ops/repair-done-parent-live-child-representation-20260719",
+      "domain-wait-network-cni-vm-prerelease-npm-uninstall-matrix-goldpinger-qos-live-gates-20260719-26",
+      "ops-close-policy-addon-vm-prerelease-basic-pubsub-matrix-normalization-packet-20260719",
+      "wait-secops-fips-ubuntu-compat-ado-run-172855739-result",
+      "domain/materialize-network-cni-vm-prerelease-cilium-matrix-ready-path-20260719",
+      "domain/publish-recheck-localdns-enable-disable-vm-prerelease-normalization-20260719",
+      "domain/wait-ado-run-172857792-app-monitoring-appmonitoring-vm-prerelease-20260719",
+      "domain/wait-rp-snapshot-create-from-nodepool-run-172858026-20260719",
+      "domain/writeback-network-cni-vm-prerelease-azure-overlay-upgrade-matrix-path-summary-current-origin-dev-20260719"
+    ],
+    "focusPlanId": "focus-ready-path-covered-frontier-and-exact-same-spec-repair-20260718",
+    "focusPlanStatus": "on_track",
+    "focusMission": {
+      "title": "no-new-live active normalization + review drain",
+      "horizon": "12-24h",
+      "successCriteria": [
+        "Focus metadata and compact project readout represent the current no-new-live packet as active=[domain-reconcile-live-admission-and-verify-cluster-autoscaler-vm-prerelease-local-storage-runtime-profile-matrix-refs-20-20, domain/materialize-managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-ready-path-20260719, domain/materialize-net-integration-nsg-route-table-in-use-vm-prerelease-ready-path-20260719, domain/materialize-network-cni-none-byo-cni-vm-prerelease-lifecycle-ready-path-20260719, ops-apply-repair-feature-compact-loop-invalid-result-shape-20260719-state-repair, ops-apply-repair-spec-loop-invalid-result-shape-20260719-state-repair, ops/repair-done-parent-live-child-representation-20260719], review=[domain-wait-network-cni-vm-prerelease-npm-uninstall-matrix-goldpinger-qos-live-gates-20260719-26, ops-close-policy-addon-vm-prerelease-basic-pubsub-matrix-normalization-packet-20260719, wait-secops-fips-ubuntu-compat-ado-run-172855739-result], runnable=[domain/materialize-network-cni-vm-prerelease-cilium-matrix-ready-path-20260719, domain/publish-recheck-localdns-enable-disable-vm-prerelease-normalization-20260719, domain/wait-ado-run-172857792-app-monitoring-appmonitoring-vm-prerelease-20260719, domain/wait-rp-snapshot-create-from-nodepool-run-172858026-20260719, domain/writeback-network-cni-vm-prerelease-azure-overlay-upgrade-matrix-path-summary-current-origin-dev-20260719], waiting=[none], while ready-path representation remains covered.",
+        "The owner loop stays inside the no-new-live envelope: let app-ops finish the active repair leaves, keep the active domain leaves moving, absorb the review/result leaves, and pull only from the exact runnable normalization/writeback/run-wait leaves as capacity opens without launching a fresh live family, broad rerun, or broad source-discovery wave from focus maintenance alone.",
+        "Packet churn inside this unchanged direction/risk envelope should not reopen a human approval wait by itself."
+      ],
+      "activeTaskIds": [
+        "domain-reconcile-live-admission-and-verify-cluster-autoscaler-vm-prerelease-local-storage-runtime-profile-matrix-refs-20-20",
+        "domain/materialize-managementplane-addon-vm-prerelease-addonv2-create-scale-upgrade-ready-path-20260719",
+        "domain/materialize-net-integration-nsg-route-table-in-use-vm-prerelease-ready-path-20260719",
+        "domain/materialize-network-cni-none-byo-cni-vm-prerelease-lifecycle-ready-path-20260719",
+        "ops-apply-repair-feature-compact-loop-invalid-result-shape-20260719-state-repair",
+        "ops-apply-repair-spec-loop-invalid-result-shape-20260719-state-repair",
+        "ops/repair-done-parent-live-child-representation-20260719"
+      ],
+      "reviewTaskIds": [
+        "domain-wait-network-cni-vm-prerelease-npm-uninstall-matrix-goldpinger-qos-live-gates-20260719-26",
+        "ops-close-policy-addon-vm-prerelease-basic-pubsub-matrix-normalization-packet-20260719",
+        "wait-secops-fips-ubuntu-compat-ado-run-172855739-result"
+      ],
+      "waitingTaskIds": [],
+      "runnableTaskIds": [
+        "domain/materialize-network-cni-vm-prerelease-cilium-matrix-ready-path-20260719",
+        "domain/publish-recheck-localdns-enable-disable-vm-prerelease-normalization-20260719",
+        "domain/wait-ado-run-172857792-app-monitoring-appmonitoring-vm-prerelease-20260719",
+        "domain/wait-rp-snapshot-create-from-nodepool-run-172858026-20260719",
+        "domain/writeback-network-cni-vm-prerelease-azure-overlay-upgrade-matrix-path-summary-current-origin-dev-20260719"
+      ],
+      "linkedBlockedTaskIds": [
+        "domain/normalize-direct-storage-csi-disk-clone-20260719-publication-owner-decision-wait",
+        "domain/publish-or-recheck-virtualmachines-autoscaled-vms-crud-live-pass-172830214-origin-dev-20260719",
+        "domain/publish-verified-app-monitoring-addonv2-azure-monitor-metrics-normalization-20260719-blocked",
+        "domain/wait-live-proof-network-isolated-managed-acr-outbound-none-vm-prerelease-origin-dev-slice-change-20260719-blocked",
+        "domain/wait-private-cluster-privatelink-create-k8s-validation-admission-unblock-172841594-blocked",
+        "domain/wait-rp-cluster-lifecycle-new-vnet-lifecycle-vm-prerelease-ado-run-172802964-result-blocked",
+        "fix-aad-rbac-azure-rbac-automatic-sku-run-172820814",
+        "fix-rp-nodepool-lifecycle-rollback-run-172809940",
+        "recheck-storage-csi-file-clone-tested-commit-9649d935-origin-dev-publication-after-next-origin-dev-7-20260718",
+        "wait-spec-egress-lockdown-vm-prerelease-vhd-matrix-owner-aggregate-carrier-decision-20260719",
+        "wait-virtualmachines-spot-pool-eviction-a17c474-origin-dev-publication-blocked"
+      ],
+      "allowedRisk": "Allow only direct normalization closeout, exact result/publication absorption, bounded same-spec writeback, exact same-spec run-wait follow-through, ready-path materialization follow-through, and explicit compact/spec-loop runtime-shape repair for the already-open leaves. Do not widen into new live families, new source-discovery waves, or broad reruns from focus maintenance alone."
+    },
+    "focusReview": {
+      "status": "on_track",
+      "reviewedAt": "2026-07-19T11:49:00Z",
+      "note": "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: no-new-live active normalization + review drain\nFOCUS_PLAN_SUMMARY: The approved no-new-live focus remains on track: cluster-autoscaler local-storage-runtime moved back into active work, three ready-path materialization leaves stayed active, and the owner-visible packet is now 7 active focus leaves, 3 review/result leaves, and 5 exact runnable normalization/writeback/run-wait successors. Ready-path coverage remains fully represented, live-start/live-success remain 0/0 in the sampled 24h window, so the owner loop should keep draining this active normalization/review packet instead of widening into new live families.\nOWNER_NEXT: Keep the same no-new-live envelope; let app-ops finish the three active repair leaves, keep the four active domain leaves moving (cluster-autoscaler plus the three ready-path materializations), absorb the three review/result leaves, and pull only from the five exact runnable normalization/writeback/run-wait successors as capacity opens. Do not widen into new live families, broad discovery, or ceremonial backlog refill.",
+      "evidencePath": "../aks-rp-e2e/evidence/archive/focus-plan-progress-review-midterm-no-new-live-active-review-drain-20260719n.md"
+    }
+  },
+  "focusReview": {
+    "status": "on_track",
+    "reviewedAt": "2026-07-19T11:49:00Z",
+    "title": "no-new-live active normalization + review drain",
+    "summary": "The approved no-new-live focus remains on track: cluster-autoscaler local-storage-runtime moved back into active work, three ready-path materialization leaves stayed active, and the owner-visible packet is now 7 active focus leaves, 3 review/result leaves, and 5 exact runnable normalization/writeback/run-wait successors. Ready-path coverage remains fully represented, live-start/live-success remain 0/0 in the sampled 24h window, so the owner loop should keep draining this active normalization/review packet instead of widening into new live families.",
+    "evidencePath": "../aks-rp-e2e/evidence/archive/focus-plan-progress-review-midterm-no-new-live-active-review-drain-20260719n.md"
+  },
+  "ownerNext": "Keep the same no-new-live envelope; let app-ops finish the three active repair leaves, keep the four active domain leaves moving (cluster-autoscaler plus the three ready-path materializations), absorb the three review/result leaves, and pull only from the five exact runnable normalization/writeback/run-wait successors as capacity opens. Do not widen into new live families, broad discovery, or ceremonial backlog refill."
 }

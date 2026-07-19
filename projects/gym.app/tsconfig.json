@@ -13,6 +13,6 @@
     "noEmit": true,
     "types": ["bun-types"]
   },
-  "include": ["app.ts", "workflows/**/*.ts"],
+  "include": ["app.ts", "agents/gym/workflows/**/*.ts"],
   "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
 }

@@ -31,6 +31,7 @@ export function resolveMayAgentTask(
     case "project.ops_digest.tick":
       return {
         id: "runtime/daily-ops-digest",
+        parentId: "ops-health",
         outcome:
           "Keep a current deterministic daily platform alert digest, notify the human, and request owner judgment only for actionable conditions.",
         acceptance: [
@@ -44,6 +45,7 @@ export function resolveMayAgentTask(
     case "project.ops_health.tick":
       return {
         id: "runtime/ops-health-observer",
+        parentId: "ops-health",
         outcome:
           "Keep a deterministic observation of platform operational health and request owner judgment only for meaningful signals.",
         acceptance: [
@@ -118,12 +120,7 @@ async function routePlatformEvent(
     );
   }
 
-  if (event.type === "project.action.invoked") {
-    return ctx.emit(ownerRequested("project-action", eventDetails(event)));
-  }
-
   if (
-    event.type === "metric.alerted" ||
     event.type === "metric.breach" ||
     event.type === "metric.stalled" ||
     event.type === "metric.recovered"
@@ -355,9 +352,6 @@ export default defineProjectApp({
   events: [
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
-    { type: "project.action.invoked", project: projectId },
-    { type: "project.tasks.ready", project: projectId },
-    { type: "metric.alerted" },
     { type: "metric.breach" },
     { type: "metric.stalled" },
     { type: "metric.recovered" },

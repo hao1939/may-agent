@@ -77,7 +77,7 @@ The summary row in `session.eval.jsonl` should include owner-routed findings der
 | `session.eval.jsonl` | Append-only critique trail beside the raw log. Stores evaluator summary, turn/line critique, and human feedback. |
 | `evaluations` table | Query/index projection for session-level status. Not the source of truth. |
 | Project folder | Durable work context and output location for improvement work. |
-| `project.json`, `tasks/tree.json`, journal/discussion state | Human intent, current state, and history for current `.app` projects. Legacy `project.md` projects are historical compatibility material. |
+| `project.json`, `.state/tasks/tree.json`, journal/discussion state | Human intent, current task state, and runtime observations for current `.app` projects. Reusable experience belongs in workflows, skills, design, and domain evidence. |
 | Metrics and events | Signals that learning may be needed or that a change worked. Raw guard metrics are unreviewed signals; `learning.feedback` is the owner-targeted notification for reviewed actionable evaluator findings. |
 | Evaluator agent | First-pass critic and learning extractor. |
 | Owner agent/human | Receives actionable findings and chooses the fix in the right project/code/context boundary. |
@@ -430,7 +430,7 @@ After a project-local improvement works, decide whether it should stay local or 
 |---------------|------------------|
 | Only useful for one project | Keep in that project's `project.md`, workflow, or UI. |
 | Useful for one agent's repeated work | Agent context, lessons, or skill. |
-| Useful across many projects | Shared skill or design guidance, SDK helper, or metric. Keep workflow policy in one owning app/agent. |
+| Useful across many projects | Shared skill or design guidance, SDK helper, or metric. Keep each learned workflow with one owning agent. |
 | Prevents a concrete repeated failure | Guard, starting in observe/warn mode. |
 
 Retirement is part of evolution. If later sessions show the promoted behavior is stale, too noisy, or has the wrong abstraction, append a retirement note to the candidate and remove or downgrade the implementation.

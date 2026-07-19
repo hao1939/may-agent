@@ -1,160 +1,57 @@
-# Handler Surface Audit
+# Handler Boundary Audit
 
-**Design status:** Historical tracker.
-**Implementation status:** Historical migration evidence; active contracts live in subsystem designs.
+**Design status:** Accepted.
+**Implementation status:** Current after the convention-first Agent App
+migration.
 
-> **Status (2026-06-18):** Several handlers from this audit have been disabled:
-> - `project` — disabled (all projects are `.app` now)
-> - `closed-loop-steward` — disabled (97 sessions/day, redundant)
-> - `project-creative-audit` — disabled (redundant with project-steward + app review)
-> - `daily-alert-review` — disabled (replaced by may-agent.app ops-digest)
-> - `session-aftermath-scan` — migrated to evaluation.app schedule
-> - `eval-llm-scan` — partially migrated (rolled back, still on may cron)
->
-> The Migration Gates section (below) now governs remaining consolidation.
-> See [system-operations-model.md](../3-proposals/system-operations-model.md)
-> for the current plan.
+## Rule
 
-**Design status:** Tracker. This is a migration audit, not a subsystem
-contract; `architecture.md`, `cron.md`, and `system-boundary.md` govern the
-handler model.
+A handler is a small infrastructure adapter. It accepts a timer or event,
+performs bounded mechanical work, and emits facts or invokes an agent-owned
+workflow. It must not become a second task scheduler, task-state writer, owner,
+or learned process.
 
-This audit applies the infra surface model:
+Agent Apps own domain event correlation. Apps with `tasks` attach one queue and
+controller. Apps without `tasks` install no task state, recovery, or resync.
+Reusable judgment belongs to a workflow under its owning agent.
 
-```
-timer/event/manual trigger -> handler -> workflow/code -> sessions/functions/metrics -> evidence
-```
+## Current Global Handlers
 
-Handlers are bridges. They may do deterministic preflight and mechanical state
-projection, but judgment and repair work should live in workflows.
+| Handler | Responsibility | Boundary |
+| --- | --- | --- |
+| `metric-alert-reactor` | Deduplicate and route metric breaches | Reads bounded alert state; routes to the accountable owner/workflow |
+| `session-recovery` | React to terminal failed/interrupted sessions | Produces recovery evidence; does not reconcile app tasks directly |
+| `escalation` | Route `escalation.created` to human/owner surfaces | Delivery and lifecycle adapter only |
+| `metrics-snapshot` | Measure and project runtime health | Mechanical observation and metric persistence |
+| `coaching-consumer` | Consume bounded coaching signals | Invokes agent-owned coaching behavior |
+| `feedback-echo-sync` | Synchronize feedback evidence | Mechanical projection, not owner judgment |
 
-## Ownership Model
+Project-specific schedules, event selectors, actions, task resolution, and
+watchers live in sibling `projects/<id>.app/` packages. A watcher observes
+provider state and emits semantic events; it never knows task IDs or mutates
+task resources.
 
-A handler is owned by the `cron.json` entry that registers it:
+## Retired And Deleted
 
-- `agents/<agent>/cron.json` owns global agent handlers in
-  `agents/<agent>/handlers/`.
-- legacy `projects/<project>/agents/<agent>/cron.json` owns legacy
-  project-local handlers in `projects/<project>/agents/<agent>/handlers/`.
-- V3 project-app workflow handlers are owned by
-  `projects/<id>.app/app.ts`; app-local workflows live in
-  `projects/<id>.app/workflows/`.
+The migration deleted these global control paths rather than retaining disabled
+compatibility code:
 
-This keeps project-specific automation inside the project boundary while shared
-infra behavior remains owned by a global agent such as May.
+- `project`, `project-steward`, and `project-creative-audit`;
+- `closed-loop-steward` and its query API;
+- `eval-llm-scan` and session-aftermath scan ownership in May;
+- app-root May heartbeat, project audit, and steward workflows;
+- Markdown task parsing/assignment/review handlers and their live E2E fixtures.
 
-## Classification
+Deep evaluation now belongs to Evaluation's evaluator-owned workflow and app
+schedule. Session aftermath belongs to Evaluation. Platform operations review
+and daily digest are tech-lead-owned workflows scheduled by `may-agent.app`.
 
-| Handler | Owner scope today | Current role | Surface | Keep direct DB? | Next move |
-|---|---|---|---|---:|---|
-| Workflow-backed handler config | Owner of the trigger entry | Generic timer/event to workflow bridge | `handler: { workflow, agent, task }` via `createWorkflowHandler` | no | Default for simple workflow dispatch. |
-| `run-workflow` | Retired | Legacy named bridge for old configs | n/a | no | Removed from active handlers; use workflow-backed handler objects. |
-| `session-aftermath-scan` | Evaluator entry in May cron | Fallback scan for unevaluated sessions | `sdk.query` + `runWorkflow` | no | Keep; it is already a bounded workflow dispatcher. |
-| `metrics-snapshot` | May/global | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
-| `coaching-consumer` | May/global if enabled | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
-| `project` | Disabled May/global legacy handler | Legacy project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Disabled. V3 apps own project behavior in `app.ts`; keep code only as compatibility reference. |
-| `project-steward` | May/global | Read-only project health discovery | direct FS + project health events | no | Keep global; it observes all projects and emits evidence. |
-| `project-creative-audit` | Disabled May/global legacy fallback | Proposal-only semantic fallback for project issues | `runWorkflow` with project context | no | Disabled. Replacement direction is project-steward observations plus `may-agent.app` owner review. |
-| `metric-alert-reactor` | May/global | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
-| `closed-loop-steward` | Disabled May/global legacy audit | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Disabled because it was too expensive and overlapped metric-alert-reactor plus `may-agent.app` owner review. |
-| `eval-llm-scan` | Evaluator entry in May cron | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is workflow-backed. Convert candidate reads to `sdk.query` later. |
-| `session-eval` | Retired | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
-| `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.end` recoverable outcomes. |
-| `escalation` | May/global | Escalation routing | canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations. |
-| `db-retention` | Runtime | Retired agent handler; bounded retention now runs in the dedicated `may-agent --maintenance` process | runtime maintenance | no | No agent/event-loop ownership and no online full VACUUM. |
-| `feedback-echo-sync` | May/global | Sync evaluator feedback into `agents/<name>/last-eval.md` files | direct DB read + FS write | yes | Keep direct; inline handler replaced a flaky subprocess spawn (bun:sqlite race). |
-| `metric-auto-handlers` | May/global | Declarative auto-remediation for known metric breaches (e.g., kill stale sessions) | direct DB + metrics service | yes | Keep direct; called by metric-alert-reactor before LLM triage dispatch. Registry-based, not judgment. |
+## Review Checklist
 
-## Rules
-
-- New simple event-to-workflow bridges should use `handler: { workflow, agent,
-  task }` in the trigger entry. Use a TypeScript handler only for pure
-  projection, cleanup, lifecycle plumbing, dedup, or dynamic workflow choice.
-- Judgment handlers may read small deterministic facts, then dispatch a workflow
-  with the trigger event and preflight evidence.
-- Event subscribers read domain fields from `event.data`. The framework should
-  not promote fields such as `sessionId` onto subscriber-specific shortcuts.
-- Direct `getDb()` is acceptable for metric projection, DB cleanup, and schema-aware
-  infra repair. It is a compatibility escape hatch elsewhere.
-- `sdk.query` is the default read surface for handler preflight.
-- Handler output should leave traceable evidence: event id/type, workflow run id,
-  owner, project id when available, and skip reason when no work is dispatched.
-
-## Priority
-
-1. `metric-alert-reactor`: high leverage, already mostly a workflow bridge.
-2. `closed-loop-steward`: important for closing loops, but should avoid becoming
-   a second agent runtime inside a handler.
-3. `project`: valuable, but split carefully because it owns file mutations and
-   project launch throttling.
-4. `eval-llm-scan`: bounded and useful now; migrate reads after alert/project
-   paths are cleaner.
-
-## Migration Gates
-
-Do not disable an enabled operational handler just because a newer observer or
-project-app path exists. Disable only after the replacement path has all four
-parts:
-
-1. **Replacement signal** — the event, metric, packet, or schedule that will
-   notice the same condition.
-2. **Owner** — the app or agent that receives the signal and judges it.
-3. **Closure path** — how the owner records fixed, accepted, escalated, or
-   ignored-with-evidence.
-4. **Proof** — static integrity check, unit test, replay test, or live
-   verification artifact showing the replacement catches the old incident.
-
-| Handler | Replacement candidate | Gate before disabling | Current decision |
-|---|---|---|---|
-| `daily-alert-review` | `may-agent.app` `daily-ops-digest` schedule plus `ops-health-review` packets | Replacement signal: `project.ops_digest.tick`; owner: `may-agent.app` owner `tech-lead`; closure path: report, notification, `project.ops_digest.created`, and `project.owner.requested` when open/noisy/missing-owner conditions need judgment; proof: `workflows/daily-ops-digest.test.ts` seeds open/noisy alerts and verifies report, notification, and owner wake. | Disabled in `agents/may/cron.json`. The report path moved from `outputs/YYYY-MM-DD-alert-review.md` to `.state/daily-ops-digests/YYYY-MM-DD-alert-review.md` because digest output is runtime state, not committed project knowledge. |
-| `closed-loop-steward` | `ops-health-review` signals plus metric owner routing through `metric-alert-reactor`/project owner events | Replays cover stale P1 alert, unresolved escalation, failed message delivery, and recovered alert validation without losing `metric.alert_judged` closure. | Disabled in `agents/may/cron.json` after high session cost and overlap were confirmed. Keep the replacement proof current before deleting code. |
-| `project-creative-audit` | Project owner planning plus `project-steward` structural findings | Replay shows unknown semantic project issues become owner-visible proposals without the global fallback, including stale/misleading task-tree decomposition cases. | Disabled in `agents/may/cron.json`. Re-enable only if the app owner review path misses semantic project issues in practice. |
-| `coaching-consumer` | `evaluation.app` feedback events or metrics owned by evaluator/coach | Evaluation app owns coaching queue production, coach receives durable feedback signals, and at least one replay verifies low-quality pattern feedback reaches the coach without file polling. | Keep enabled. Ownership target is evaluation/coach, but replacement is not built. |
-| `feedback-echo-sync` | Evaluation app or runtime feedback writer that updates agent feedback files from evaluation events | Event-driven feedback update is implemented and replayed; stale feedback cleanup still works; no subprocess/SQLite race reappears. | Keep enabled. It is deterministic, cheap, and fixes a prior flaky subprocess path. |
-
-Migration work should update this table first, then change `agents/may/cron.json`
-only in the same patch that adds proof. If proof is missing, the handler stays
-enabled and the missing proof becomes a task.
-
-## Validation
-
-- Existing helper coverage: workflow-backed handler config uses
-  `createWorkflowHandler`, which emits `handler.skipped` and
-  `handler.workflow_dispatched`.
-- Helper ownership: `createWorkflowHandler` lives in `@may-agent/sdk`; runtime
-  and shared code import the SDK helper instead of maintaining duplicate
-  implementations.
-- Event payload contract: event-triggered handlers receive the canonical event
-  envelope directly; event-specific fields live under `event.data`.
-- Existing query-surface coverage: `session-aftermath-scan` uses `sdk.query`.
-- First alert-reactor traceability slice: `metric-alert-reactor` records
-  `handler.skipped` and `handler.workflow_dispatched` evidence.
-- Project traceability slice: `project` records `handler.skipped`,
-  `handler.failed`, and `handler.workflow_dispatched` evidence for nudge/launch
-  paths.
-- Closed-loop steward traceability slice: `closed-loop-steward` records
-  `handler.skipped`, `handler.failed`, and `handler.workflow_dispatched`
-  evidence, and May audit work now runs inside the `closed-loop-steward`
-  workflow.
-- Query facade first slice: `metric-alert-triage` uses
-  `query.metricAlertContext(...)` and `query.sessions(...)` for alert context
-  instead of opening SQLite directly in workflow code.
-- Query facade reactor slice: `metric-alert-reactor` uses
-  `query.metricAlertReactorState(...)` for schema-sensitive preflight reads
-  instead of opening SQLite directly in handler code.
-- Query facade project slice: `project` uses `query.alerts(...)` and
-  `query.workflowRuns(...)` for runtime context reads; direct DB remains only
-  for project cache projection.
-- Query facade steward slice: `closed-loop-steward` uses
-  `query.closedLoopStewardContext(...)` plus `query.sessions(...)` for bounded
-  live evidence instead of opening SQLite directly in handler code.
-- Eval LLM scan traceability slice: `eval-llm-scan` records
-  `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
-  LLM work through `evaluator-deep-eval`.
-- Session recovery bridge slice: `session-recovery` should be event-first on
-  `session.end` terminal error/interrupted outcomes, record
-  skipped/workflow-dispatched evidence, and avoid opening recovery agent
-  sessions directly from the handler.
-- Escalation routing slice: blocked/failure session finishes promote to
-  `escalation.created` and routing records skipped/routed evidence.
-- Full test suite must stay green after each handler migration.
+- Does the handler only translate, observe, persist, or dispatch bounded work?
+- Is reusable judgment implemented as an agent-owned workflow?
+- Does any project event bypass the app's single resolver/queue/controller?
+- Does any watcher import task-tree APIs or address a task ID?
+- Does any deleted event name or task mutation API remain reachable?
+- Can the same work be recovered from durable state without replaying a
+  synthetic scheduler event?

@@ -29,7 +29,7 @@ a domain-specific question.
 | Event pair | Did the expected typed response arrive in time? | `event_pair_runs` |
 | Trace | What caused this work, and which event fulfilled it? | Event trace and closure links |
 | Project | What durable goal and operating posture does an owner maintain? | `project.json` and project-owned state |
-| Task tree | What is the project owner's current decomposition and judgment? | `tasks/tree.json` |
+| Task resources | What desired and observed work state does the app currently own? | `.state/tasks/tree.json` |
 | Metric alert | Which measured signal still needs judgment or recovery evidence? | Metric and alert tables |
 | Session | Which agent execution or conversation container ran? | Session registry and transcript |
 | Workflow run | Which ordered executable process ran, and how did it end? | Workflow-run record |
@@ -88,21 +88,23 @@ workspace.
 
 ```text
 project signal
-  -> project.owner.requested
-  -> owner reviews current state and task tree
-  -> project.task.assigned
-  -> worker returns project.task.completed with evidence
-  -> owner accepts, rejects, repairs, waits, or escalates
-  -> project.owner.reviewed or another typed continuation
+  -> app task resolver declares desired task state
+  -> one deduplicating queue receives the task key
+  -> controller reconciles the latest persisted resource
+  -> resolved owner runs directly or applies an owner-owned workflow
+  -> one structured result is atomically applied
+  -> Condition wait, attention, or completion receipt records the outcome
+  -> changed dependents re-enter the same queue
 ```
 
 The owner is the project brain. Runtime and app code deliver, schedule,
 observe, and persist. They do not decide domain decomposition, acceptance,
 retry policy, or project truth.
 
-The task tree has five persisted states: `backlog`, `active`, `review`,
-`blocked`, and `done`. Readiness, attempts, failures, waits, cancellation, and
-supersession are projections or metadata, not additional task states.
+Task resources persist desired `spec` and observed `status`. Their phases are
+`pending`, `running`, `waiting`, `attention`, and `converged`. Attempts are
+separate durable runtime records; completion receipts preserve finite results
+after completed tasks leave the live graph.
 
 Project posture is separate from task state. Project status answers whether the
 owner loop should push, wait, request judgment, pause, or stop. Session and

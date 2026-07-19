@@ -20,7 +20,7 @@ owned by their linked design docs and trackers.
 Core primitive:
 
 ```
-event → handler/workflow → session/function → evidence → events/metrics
+event or resync → task intent → app queue → reconciler → workflow or owner → structured result
 ```
 
 The project-app migration is complete. Standalone infrastructure handlers
@@ -29,8 +29,9 @@ remain a separate runtime mechanism.
 ---
 
 A **project-centered, event-based autonomous agent system** where:
-- **Project-apps are the primary unit.** Each `*.app/app.ts` declares its owner
-  entry, schedules, task routes, reusable workflow capabilities, and task tree.
+- **Project-apps are the primary unit.** Each `*.app/app.ts` declares its owner,
+  schedules, one task resolver, app observations, and actions. Reusable
+  workflows are discovered by filename.
   The app is how May-agent organizes work for a domain project.
 - **Projects are context and ownership.** Each project carries its own history,
   background, goals, accumulated experience, and current lifecycle state.
@@ -542,8 +543,8 @@ bounded metadata, indexes, and coordination state. See
 | Lessons | `agents/<name>/LESSONS.md` | Legacy; some agents only |
 | Heartbeat instructions | `agents/<name>/heartbeat.md` | |
 | Config | `agents/<name>/agent.json` | |
-| Workflows | `projects/<id>.app/workflows/*.ts`, `agents/<name>/workflows/*.ts` | App-local for project behavior; agent-local for standalone/infra behavior |
-| Projects | `projects/<id>.app/project.json`, `projects/<id>.app/tasks/tree.json`, legacy `projects/<id>/project.md` | V3 app files are canonical for active standing projects |
+| Workflows | `projects/<id>.app/agents/<name>/workflows/*.ts`, `agents/<name>/workflows/*.ts` | Owned by the agent that learned and operates the process |
+| Projects | `projects/<id>.app/project.json`, `projects/<id>.app/tasks/seed.json`, runtime `.state/tasks/tree.json`, legacy `projects/<id>/project.md` | App definition and seed are source; runtime task resources are the sole mutable work-state authority |
 | Work queue | `shared/work-queue.md` | |
 | Session transcripts | Pi-coding-agent SessionManager format | |
 
@@ -634,7 +635,7 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 The current direction is not "more infra logic." It is fewer execution paths:
 
 - timers, adapters, and humans emit events;
-- project task routes correlate events to desired task state;
+- each app task resolver correlates semantic events to desired task state;
 - one reconciler claims tasks and invokes a reusable workflow or owner fallback;
 - standalone infrastructure handlers normalize mechanical system events;
 - workflows collect context and run sessions/functions;

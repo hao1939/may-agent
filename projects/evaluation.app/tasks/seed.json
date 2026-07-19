@@ -8,7 +8,15 @@
     "evaluation-system": {
       "id": "evaluation-system",
       "parent_id": null,
-      "goal": "Independently audit May-agent sessions and project apps, identify evidence-backed risks and improvement opportunities, and report actionable findings to humans and responsible project owners.",
+      "owner": "evaluator",
+      "goal": "Keep independent session and project-app evaluation current, evidence-backed, and useful to responsible owners and humans.",
+      "acceptance": [
+        "Eligible completed sessions receive a durable evaluation or an explicit structured skip.",
+        "Watched project apps receive current independent reviews when their meaningful state changes or the baseline review is due.",
+        "Findings reach the responsible owner, and human notification is limited to a concrete useful action or decision.",
+        "Evaluation pipeline defects are represented by bounded repair work or exact Conditions rather than monitoring prose."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": [
         "session-audit",
@@ -20,417 +28,110 @@
     "session-audit": {
       "id": "session-audit",
       "parent_id": "evaluation-system",
-      "goal": "Independently evaluate completed May-agent sessions and maintain trustworthy scoring evidence.",
+      "goal": "Keep eligible completed May-agent sessions evaluated with trustworthy criteria and traceable evidence.",
+      "acceptance": [
+        "Every eligible terminal session is covered by direct aftermath or the bounded backfill reconciler.",
+        "Each evaluation is linked to its source session and records a verdict, structured skip, or visible review-process failure.",
+        "Criteria and drift work use concrete samples and produce bounded calibration or criteria changes."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": [
         "criteria-and-calibration",
-        "drift-detection",
-        "strategy-learning"
+        "drift-detection"
       ]
     },
     "project-app-audit": {
       "id": "project-app-audit",
       "parent_id": "evaluation-system",
-      "goal": "Independently inspect project-app progress, risk, waits, and process evidence, then produce owner-facing findings.",
+      "goal": "Keep an independent, evidence-backed health assessment for every watched project app.",
+      "acceptance": [
+        "Each watched target has one standing audit task with a current meaningful-state fingerprint.",
+        "Material changes produce a durable report containing raw facts, evaluator judgment, and concrete verification.",
+        "Target findings are routed to the target owner without transferring target remediation into evaluation.app."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     },
     "finding-delivery": {
       "id": "finding-delivery",
       "parent_id": "evaluation-system",
-      "goal": "Deliver deduplicated audit findings to responsible project owners and notify humans only when useful.",
+      "goal": "Keep owner feedback and human notification accurate, deduplicated, and tied to observable findings.",
+      "acceptance": [
+        "A new or materially changed actionable finding is delivered to the responsible project owner with artifact and verification context.",
+        "Unchanged findings do not create duplicate owner work or human messages.",
+        "Human messages describe the situation and exact decision needed; delivery alone is never recorded as issue resolution."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     },
     "evaluator-reliability": {
       "id": "evaluator-reliability",
       "parent_id": "evaluation-system",
-      "goal": "Keep evaluation.app's own audit pipeline reliable and efficient as ordinary project self-maintenance.",
+      "goal": "Keep evaluation.app's own reconciliation, workflows, evidence, and reporting reliable and bounded.",
+      "acceptance": [
+        "Known recurring responsibilities reconcile through explicit workflows and unfamiliar exceptions reach the evaluator owner.",
+        "Workflow and review failures stay visible and become bounded evaluator-local repair work when action is required.",
+        "External waits use exact Conditions, and repeated observations do not create duplicate repair tasks."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": [
         "pipeline-health",
-        "system-integrity",
-        "owner-review-dedupe-and-rollup",
-        "replace-heartbeat-with-owner-planner"
+        "system-integrity"
       ]
     },
     "pipeline-health": {
       "id": "pipeline-health",
       "parent_id": "evaluator-reliability",
-      "goal": "Monitor evaluation pipeline: is aftermath keeping up? Are there gaps? Is LLM lane useful?",
+      "goal": "Keep evaluation pipeline coverage, throughput, review delivery, and anomaly state observable and within policy.",
+      "acceptance": [
+        "The standing pipeline monitor records a current snapshot and wakes the owner only when anomaly state changes.",
+        "Missed eligible sessions are recovered by the standing bounded backfill task.",
+        "A persistent pipeline anomaly becomes one bounded repair task or exact Condition with an observable recovery check."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     },
     "criteria-and-calibration": {
       "id": "criteria-and-calibration",
       "parent_id": "session-audit",
-      "goal": "Maintain trustworthy session-audit criteria, calibrate against human reviews, and version criteria changes.",
+      "goal": "Keep session-evaluation criteria versioned and calibrated against concrete human or independent review samples.",
+      "acceptance": [
+        "Calibration work names a concrete sample cohort and disagreement being tested.",
+        "Accepted changes update criteria, scoring guidance, and regression evidence together.",
+        "A completed calibration batch is absorbed into criteria state and leaves the live task graph."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     },
     "drift-detection": {
       "id": "drift-detection",
       "parent_id": "session-audit",
-      "goal": "Detect evidence-backed changes in session quality when a concrete agent cohort supports comparison.",
-      "context": {
-        "migrated_from_invalid_leaf_state": "decomposed",
-        "latest_evidence": {
-          "observed_at": "2026-07-06T11:48:43.423Z",
-          "trigger": "evaluation.tick from project-app:evaluation:schedule:drift-detection",
-          "metric_snapshot": {
-            "eval.llm-coverage-lag-h": 0.55,
-            "eval.llm-evals-24h": 24,
-            "evaluator.false-good-rate-sample": 0.2126,
-            "evaluator.low-quality-rate-24h": 0.0609,
-            "evaluator.meaningful-review-rate-24h": 0.9802,
-            "evaluator.substantive-low-quality-rate-24h": 0,
-            "evaluator.triage-closure-rate-24h": 0.9084,
-            "evaluator.aftermath-coverage-rate-3h": 1,
-            "session.failed-triage-rate-3h": 1
-          },
-          "packet_signal": {
-            "active_task_ids": [
-              "aftermath-trigger-leak-audit",
-              "aftermath-reviewer-runtime-failures"
-            ],
-            "recent_pipeline_examples": [
-              "2026-07-06T11:48Z the current runtime slice still shows live evaluator throughput rather than a per-agent drift sample: a fresh `evaluator-heartbeat` and an `evaluator-aftermath` worker were both already running at packet time while nearby `evaluator-aftermath` runs completed one substantive `success_candidate`, one routine_ok evaluation, and several quick-exit skips.",
-              "2026-07-06T11:48Z fresh downstream evaluation output remained active around the drift tick family: `evaluation.reviewed`, `evaluation.success_candidate`, and `evaluation.learning_created` landed minutes before the tick, another `evaluation.skipped` landed shortly after, and upstream `session.completed` traffic was still flowing.",
-              "2026-07-06T11:48Z the current metrics still show no live LLM-lag breach: `eval.llm-coverage-lag-h` is 0.55 below target 1 and far below threshold 4, `eval.llm-evals-24h` remains strong at 24, aftermath coverage is 1, failed-session triage remains 1, and substantive low-quality remains 0."
-            ],
-            "recent_owner_review_pattern": "The two active P0 pipeline-health lanes still cover the only evaluator-owned follow-through work, and this drift tick again adds no evaluator-local session sample, disagreement batch, or calibration artifact that would justify promoting drift work into the bounded active set. The latest completed owner-review heartbeat still adds hygiene evidence—optional `last-eval.md` ENOENT and a truncated handoff summary—but that belongs to `owner-review-dedupe-and-rollup`, not drift.",
-            "recent_runtime_reference": "The last concrete blocked reviewer-runtime sample still remains the 2026-07-06T00:50Z provider-capacity/auth cluster rooted in aftermath workflow runs `wr_1783298929158_ocf5` and `wr_1783298920581_ze7c` plus owner-review heartbeat `wr_1783298971867_trqq`; this drift packet adds no newer blocked review sample and mostly adds continuity evidence around otherwise healthy evaluator flow."
-          },
-          "signal": "This scheduled drift tick again adds no concrete per-agent behavior shift, no new disagreement batch, no calibration artifact, and no evaluator-local sessionId to review. Aggregate quality metrics remain bounded enough that this wake still reads as routine backlog surveillance rather than drift ownership: false-good is 0.2126, broad low-quality is 0.0609, meaningful review is 0.9802, substantive low-quality remains 0, and triage closure remains strong at 0.9084. The current LLM-review lane also still reads as healthy in context: `eval.llm-coverage-lag-h` is 0.55, which is below target and far below its threshold of 4, `eval.llm-evals-24h` remains 24, while `evaluator.aftermath-coverage-rate-3h` and `session.failed-triage-rate-3h` are both 1 inside otherwise live evaluator flow. Because the same two active P0 pipeline-health leaves still consume the bounded active slots and this drift wake again provides no agent-specific regression evidence, drift detection should remain backlog until a concrete per-agent behavior shift, disagreement batch, or calibration artifact appears."
-        },
-        "owner_decision": {
-          "observed_at": "2026-07-06T11:48:43.423Z",
-          "reason": "Kept backlog because this drift-detection wake again provided only aggregate runtime metrics plus clearly live evaluator throughput, and it still does not carry a concrete per-agent regression sample that would justify displacing the two active P0 pipeline-health leaves.",
-          "no_churn_note": "Existing active tasks already cover the live packet. I refreshed only this drift-detection backlog lane to capture the current `eval.llm-coverage-lag-h=0.55` / `eval.llm-evals-24h=24` sample, the in-flight heartbeat plus in-flight aftermath worker, the fresh reviewed/success_candidate/learning_created/skipped/session-completed flow, and the continued absence of any newer blocked reviewer-runtime sample; I did not add leaves, change active_task_ids, append discussion.md, send a new runtime escalation, or run session aftermath without a concrete sessionId.",
-          "next_resume_trigger": "Resume when a metric breach, disagreement sample, or review batch isolates a concrete per-agent behavior shift; when calibration work lands a durable baseline artifact that can be compared over time; when false-good, low-quality, or triage movement can be tied to a specific agent cohort or scoring pattern; or when the active pipeline-health blockers stabilize enough to free an active slot for proactive drift analysis."
-        }
-      },
+      "goal": "Detect meaningful session-quality drift only when comparable agent cohorts and evaluation evidence exist.",
+      "acceptance": [
+        "A drift judgment identifies the compared cohorts, time windows, criteria version, and supporting samples.",
+        "Aggregate movement without a comparable cohort remains an observation and does not create speculative repair work.",
+        "Confirmed drift creates one bounded calibration, criteria, workflow, or owner-feedback task with a verification condition."
+      ],
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     },
     "system-integrity": {
       "id": "system-integrity",
       "parent_id": "evaluator-reliability",
-      "goal": "Handle concrete evaluation.app integrity and audit-runtime defects as ordinary project self-maintenance.",
-      "context": {
-        "migrated_from_invalid_leaf_state": "decomposed",
-        "latest_evidence": {
-          "observed_at": "2026-07-05T20:54:04.216Z",
-          "trigger": "evaluation.tick from project-app:evaluation:schedule:integrity-patrol",
-          "metric_snapshot": {
-            "evaluator.stale-running-session-count": {
-              "status": "retired",
-              "current": 0,
-              "target": 0,
-              "threshold": 1
-            },
-            "eval.llm-coverage-lag-h": 0.21,
-            "eval.llm-evals-24h": 24,
-            "evaluator.aftermath-coverage-rate-3h": 1,
-            "session.failed-triage-rate-3h": 1,
-            "evaluator.triage-closure-rate-24h": 0.9124,
-            "evaluator.meaningful-review-rate-24h": 0.9799,
-            "evaluator.false-good-rate-sample": 0.2042,
-            "evaluator.low-quality-rate-24h": 0.0651,
-            "evaluator.substantive-low-quality-rate-24h": 0
-          },
-          "recent_runtime_slice": [
-            {
-              "workflow": "evaluator-heartbeat",
-              "status": "running",
-              "startedAt": 1783283642592,
-              "note": "A fresh owner-review heartbeat was already running at packet time, so the evaluator control loop remained live during this integrity patrol tick."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "status": "running",
-              "startedAt": 1783283559651,
-              "note": "One evaluator-aftermath worker was still in flight while fresh skipped output continued to land, which argues against an integrity or liveness collapse."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "status": "done",
-              "startedAt": 1783283629548,
-              "note": "A nearby aftermath worker completed a quick-exit skip immediately before the tick family, confirming routine evaluator output is still landing."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "status": "done",
-              "startedAt": 1783283502893,
-              "note": "Another nearby aftermath worker completed a success-candidate evaluation shortly before this tick, confirming substantive evaluator output is still landing."
-            },
-            {
-              "workflow": "evaluator-heartbeat",
-              "status": "done",
-              "startedAt": 1783283548904,
-              "note": "The immediately previous completed owner-review heartbeat still finished success, but its result payload appended discussion churn and logged optional-file ENOENT, an ambiguous edit failure, and a truncated handoff summary."
-            }
-          ],
-          "recent_events": [
-            {
-              "id": 2647084,
-              "type": "evaluation.tick",
-              "timestamp": 1783283640779,
-              "note": "The current integrity-patrol tick arrived while evaluator metrics were already healthy, so this wake remained a bounded owner review rather than incident response."
-            },
-            {
-              "id": 2647078,
-              "type": "evaluation.skipped",
-              "timestamp": 1783283630596,
-              "note": "Fresh skipped output landed moments before the tick, confirming evaluator-aftermath still emitted downstream output in the live packet."
-            },
-            {
-              "id": 2647075,
-              "type": "evaluation.skipped",
-              "timestamp": 1783283630006,
-              "note": "A second nearby skipped event reinforces that evaluator-aftermath throughput remained live during this integrity review."
-            },
-            {
-              "id": 2647068,
-              "type": "session.completed",
-              "timestamp": 1783283627959,
-              "note": "Upstream completed-session traffic is still arriving alongside evaluator output, so the packet reflects healthy live flow rather than drain-down."
-            },
-            {
-              "id": 2647063,
-              "type": "evaluation.aftermath.scan",
-              "timestamp": 1783283626406,
-              "note": "The routine aftermath scan also fired in the same window, reinforcing that evaluator control-plane activity remained live."
-            }
-          ],
-          "signal": "The current integrity-patrol packet introduces no new evaluator-owned integrity signal. The stale-running-session metric remains retired and zeroed, LLM coverage is healthy below target with 24 LLM evals in the last 24h, live evaluator flow continues with a running heartbeat plus one in-flight aftermath worker, and fresh skipped output plus upstream session completions show no blocked or stale evaluator sessions or other evaluator-local compliance anomaly. The only new durable issue in this packet is evaluator-local owner-review/reporting hygiene from the previous completed heartbeat, not an integrity incident."
-        },
-        "owner_decision": {
-          "observed_at": "2026-07-05T20:54:04.216Z",
-          "reason": "Kept backlog because this integrity wake again adds no concrete evaluator-owned anomaly, and the current healthy packet does not justify displacing the two active P0 pipeline-health audits.",
-          "no_churn_note": "Existing active tasks already cover the live packet. I refreshed only the top-level rollup, the pipeline-health rollup, this system-integrity backlog lane, and the existing owner-review hygiene backlog lane to capture the current `eval.llm-coverage-lag-h=0.21` / `eval.llm-evals-24h=24` sample, the retired stale-session metric at 0, the running heartbeat plus one in-flight aftermath worker, the fresh skipped/session-completed flow, and the newest owner-review heartbeat noise; I did not change active_task_ids, append discussion.md, send a new escalation, or run session aftermath without a sessionId.",
-          "next_resume_trigger": "Resume if runtime reactivates a stale-session metric under evaluator ownership, a future integrity packet shows blocked or stale evaluator sessions or another evaluator-local compliance anomaly, if evaluator throughput degrades enough to soften aftermath or failed-session triage liveness, or if runtime/owner-loop spillover starts breaching integrity-specific metrics rather than the current pipeline-health and owner-review-hygiene lanes."
-        }
-      },
-      "state": "backlog",
-      "children": []
-    },
-    "strategy-learning": {
-      "id": "strategy-learning",
-      "parent_id": "session-audit",
-      "goal": "Retired: strategy extraction and guidance adoption are not part of evaluation.app's independent audit goal.",
-      "context": {
-        "migrated_from_invalid_leaf_state": "decomposed"
-      },
-      "state": "done",
-      "children": []
-    },
-    "owner-review-dedupe-and-rollup": {
-      "id": "owner-review-dedupe-and-rollup",
-      "parent_id": "evaluator-reliability",
-      "kind": "review",
-      "priority": "P2",
-      "owner": "evaluator",
-      "goal": "Reduce discussion.md churn from unchanged scheduled owner-review ticks by defining when to append, when to roll up, and what compact no-op evidence is sufficient.",
-      "inputs": [
-        "projects/evaluation.app/discussion.md",
-        "projects/evaluation.app/workflows/evaluator-heartbeat.ts",
-        "recent owner-review workflow results"
-      ],
-      "outputs": [
-        "projects/evaluation.app/discussion.md",
-        "projects/evaluation.app/tasks/tree.json"
-      ],
+      "goal": "Keep evaluation.app's task ownership, event routing, reports, and runtime state internally consistent.",
       "acceptance": [
-        "Confirms whether repeated unchanged owner ticks should append every time or be rolled into a bounded cadence/format.",
-        "Separates evaluator-owned workflow/reporting fixes from any broader platform logging expectations.",
-        "Leaves either a concrete evaluator-local implementation task or an explicit durable owner policy in the tree/discussion."
+        "Each concrete evaluator-local integrity defect is represented by one bounded repair task with an observable postcondition.",
+        "External prerequisites are represented by exact Conditions with an owner, observer, next check, and fallback.",
+        "Resolved repairs leave no duplicate writer, stale compatibility path, or permanent incident task in the seed tree."
       ],
-      "conflict_scope": [
-        "evaluation-owner-review-hygiene"
-      ],
-      "context": {
-        "latest_evidence": {
-          "observed_at": "2026-07-06T05:33:15.587Z",
-          "trigger": "evaluation.tick from project-app:evaluation:schedule:evaluation-pipeline-review",
-          "current_packet_metrics": {
-            "eval.llm-coverage-lag-h": 0.08,
-            "eval.llm-evals-24h": 25,
-            "evaluator.aftermath-coverage-rate-3h": 1,
-            "session.failed-triage-rate-3h": 1,
-            "evaluator.triage-closure-rate-24h": 0.8864,
-            "evaluator.false-good-rate-sample": 0.2091,
-            "evaluator.low-quality-rate-24h": 0.0691,
-            "evaluator.meaningful-review-rate-24h": 0.976,
-            "evaluator.substantive-low-quality-rate-24h": 0,
-            "evaluator.success-candidates-24h": 899,
-            "evaluator.success-learnings-24h": 732
-          },
-          "recent_owner_review_examples": [
-            {
-              "startedAt": 1783315996472,
-              "workflow": "evaluator-heartbeat",
-              "status": "running",
-              "note": "A replacement owner-review heartbeat was already running at packet time, so the evaluator control loop remained live during this scheduled review."
-            },
-            {
-              "startedAt": 1783315686393,
-              "workflow": "evaluator-heartbeat",
-              "status": "done",
-              "note": "The newest completed heartbeat is now the fresh no-op sample whose truncated handoff still reports optional `last-eval.md` ENOENT noise and failed `rg` / inline `node` probes while making no tree or discussion changes."
-            }
-          ],
-          "repo_probe": {
-            "checked_at": "2026-07-06T05:33:15.587Z",
-            "paths": [
-              {
-                "path": "/app/projects/evaluation.app/agents/evaluator/last-eval.md",
-                "exists": false
-              },
-              {
-                "path": "/app/agents/evaluator/last-eval.md",
-                "exists": false
-              }
-            ],
-            "note": "Repo checks still confirm both project-local and global agent `last-eval.md` probes are optional-absent in this repo state. The materially fresh hygiene regression is that the newest completed heartbeat again surfaced ENOENT in its handoff instead of staying silent-absent, while the handoff summary also remained truncated and included failed `rg` and inline `node` probes."
-          },
-          "recent_pipeline_examples": [
-            {
-              "workflow": "evaluator-heartbeat",
-              "startedAt": 1783315996472,
-              "status": "running",
-              "result": "A replacement owner-review heartbeat was already back in flight at packet time."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "startedAt": 1783315993843,
-              "status": "running",
-              "result": "One evaluator-aftermath worker was already in flight at packet time, reinforcing that live downstream evaluation work continued."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "startedAt": 1783315989569,
-              "status": "done",
-              "result": "Skipped aftermath for s_project_planner_event_review_20260706053243_2x2xfz: quick_exit_successful_session."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "startedAt": 1783315960861,
-              "status": "done",
-              "result": "Evaluated s_project_planner_planning_update_20260706052951_1kf861: good (routine_ok). No review needed."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "startedAt": 1783315960856,
-              "status": "running",
-              "result": "Another evaluator-aftermath worker remained in flight, showing continued parallel throughput rather than owner-loop stall."
-            },
-            {
-              "workflow": "evaluator-aftermath",
-              "startedAt": 1783315861511,
-              "status": "done",
-              "result": "Evaluated s_1783315718800_198: good (success_candidate). Review session: s_1783315862414_199. Artifact: projects/evaluation.app/agents/evaluator/workspace/aftermath/s_1783315718800_198.md"
-            }
-          ],
-          "recent_event_examples": [
-            {
-              "id": 2679413,
-              "type": "evaluation.tick",
-              "timestamp": 1783315995587,
-              "note": "The current owner-review tick arrived during otherwise live evaluator flow, so this wake remained bounded review rather than incident response."
-            },
-            {
-              "id": 2679410,
-              "type": "evaluation.routed",
-              "timestamp": 1783315994761,
-              "note": "Fresh routed output landed immediately before the tick, confirming evaluator-aftermath continued to enqueue downstream review work."
-            },
-            {
-              "id": 2679391,
-              "type": "evaluation.skipped",
-              "timestamp": 1783315992552,
-              "note": "Fresh skipped output landed in the same slice, reinforcing that throughput remained healthy around this owner-review continuity check."
-            },
-            {
-              "id": 2679397,
-              "type": "session.completed",
-              "timestamp": 1783315993231,
-              "note": "Upstream completed-session traffic was still arriving alongside evaluator output, so the packet reflects live flow rather than drain-down."
-            },
-            {
-              "id": 2679377,
-              "type": "evaluation.routed",
-              "timestamp": 1783315962049,
-              "note": "A second nearby routed event shows the evaluator review lane remained active in the current packet."
-            },
-            {
-              "id": 2679374,
-              "type": "evaluation.routed",
-              "timestamp": 1783315961883,
-              "note": "Another routed event from the same slice confirms downstream evaluator activity stayed healthy while the owner-review no-op pattern persisted."
-            }
-          ],
-          "signal": "The current packet still does not justify a new evaluation-owned active branch because evaluator throughput, failed-session triage, and the broader LLM lane remain healthy overall: `eval.llm-coverage-lag-h=0.08` is below target and far below threshold 4, `eval.llm-evals-24h=25`, `evaluator.aftermath-coverage-rate-3h=1`, and `session.failed-triage-rate-3h=1` remain strong, while `evaluator.triage-closure-rate-24h=0.8864` is only slightly below target and `evaluator.false-good-rate-sample=0.2091` remains below its alert threshold. The same two active P0 pipeline-health leaves still cover the live signal, and this packet adds no fresher blocked reviewer-runtime sample beyond the already-tracked failure family. The materially fresh fact is owner-review hygiene continuity with a new completed no-op sample: heartbeat `1783315686393` still ended with a truncated handoff and surfaced optional `last-eval.md` ENOENT noise plus failed `rg` and inline `node` probes even though the repo probes remain optional-absent, while nearby routed/skipped/session-completed activity shows evaluator throughput stayed healthy."
-        },
-        "owner_decision": {
-          "observed_at": "2026-07-06T05:33:15.587Z",
-          "reason": "I kept this lane in backlog because the live evaluation signal is still fully covered by the two active P0 pipeline-health leaves, and the current packet adds only continuity evidence around the owner-review hygiene sample without showing throughput loss or a new reviewer-runtime failure family.",
-          "append_policy": "For scheduled owner-review ticks with unchanged active leaves and no materially new evidence, do not append discussion.md, do not create new tree leaves, and prefer a compact no-op finish. Treat both `agents/evaluator/last-eval.md` and `/app/agents/evaluator/last-eval.md` as optional probes that should be silent when absent, and treat truncated no-op handoffs plus absent-file ENOENT noise and stray failed helper probes as workflow hygiene defects worth refreshing only in this backlog lane rather than as separate owner judgments.",
-          "no_churn_note": "Existing active tasks already cover the live evaluation pipeline signal. I refreshed only the top-level rollup, the pipeline-health rollup, and this backlog hygiene lane to capture the current `eval.llm-coverage-lag-h=0.08` / `eval.llm-evals-24h=25` sample, the replacement running heartbeat at `1783315996472`, the fresh completed no-op heartbeat at `1783315686393`, the return of optional-file ENOENT noise plus failed `rg` and inline `node` probes in that handoff, and the nearby routed/skipped/session-completed activity while keeping the same active_task_ids; I did not append discussion.md, add leaves, send a new escalation, or run session aftermath without a concrete sessionId.",
-          "runtime_escalation": "No new runtime escalation was needed on this tick because the packet added no fresh blocked reviewer-runtime sample and the new evidence remains evaluator-local reporting hygiene continuity.",
-          "next_resume_trigger": "Resume this lane when no-churn owner-review ticks keep truncating handoffs, when absent optional-file probe noise returns, when failed helper probes keep leaking into no-op handoffs, when a local heartbeat/dedupe fix lands and needs validation, when dedupe or serialization feedback lands from runtime ownership, when owner-loop noise starts suppressing evaluator throughput enough to threaten aftermath coverage or failed-session triage metrics, or when a future owner packet couples this hygiene pattern with a fresh runtime failure family."
-        }
-      },
-      "state": "backlog",
-      "children": []
-    },
-    "replace-heartbeat-with-owner-planner": {
-      "id": "replace-heartbeat-with-owner-planner",
-      "parent_id": "evaluator-reliability",
-      "kind": "work",
-      "priority": "P1",
-      "owner": "evaluator",
-      "goal": "Replace genericHeartbeat with a bounded owner-planner workflow that reads the task tree and acts within it. The current heartbeat creates standalone projects (20+ deleted manually). Metric breaches should become task-tree entries, not new projects.",
-      "acceptance": [
-        "No more standalone evaluator-* projects created",
-        "Metric findings become task tree entries under appropriate lanes",
-        "Owner wake reads task tree packet, reviews state, creates/assigns work",
-        "evaluation-pipeline-review re-enabled with bounded planner workflow",
-        "Foreign-app metric breaches are ignored or rerouted; they do not create evaluation work or wake the evaluation owner loop as actionable local tasks"
-      ],
-      "context": {
-        "current_problem": "evaluator-heartbeat.ts uses genericHeartbeat which gives full creative freedom. The evaluator discovers metric issues and creates projects/evaluator-*/project.md files instead of updating evaluation.app/tasks/tree.json.",
-        "fix_direction": "Replace genericHeartbeat with a workflow like aks-rp-e2e's project-planner: read task tree packet, review completions, create tasks for new findings, assign runnable work. Same pattern, evaluation domain.",
-        "disabled": "Resolved 2026-06-20: evaluation-pipeline-review schedule re-enabled against bounded evaluator-heartbeat owner review.",
-        "reference": "projects/aks-rp-e2e.app/workflows/project-planner.ts for the pattern",
-        "implemented": {
-          "workflow": "projects/evaluation.app/workflows/evaluator-heartbeat.ts",
-          "schedule": "evaluation-pipeline-review",
-          "metric_filter": "app.ts ignores non-evaluation metric.breach/recovered signals and only project-scoped or evaluator-owned metrics can become owner-review ticks; evaluator-heartbeat runtime packets also filter metric events to evaluation/evaluator-owned metrics",
-          "owner_packet": [
-            "trigger event",
-            "tasks/tree.json compact active/backlog/blocked packet",
-            "evaluator-owned metrics",
-            "recent evaluator workflow runs",
-            "recent evaluation/session/metric events"
-          ]
-        },
-        "latest_evidence": {
-          "observed_at": "2026-06-20T11:13:00Z",
-          "owner_packet_trigger_type": "evaluation.tick",
-          "foreign_metric_project": "aks-rp-e2e",
-          "foreign_metric_owner": "agent:aks-explorer",
-          "owner_packet_has_sessionId": false,
-          "evaluation_aftermath_coverage_rate_3h": 1,
-          "evaluation_stale_running_session_count": 0,
-          "recent_evaluation_event_ids": {
-            "routed": 1646103,
-            "reviewed": 1646130,
-            "skipped": 1646144
-          },
-          "signal": "The current scheduled owner packet is still a foreign-wake control-plane check, not new evaluation-local work: it carries no sessionId, evaluation-local pipeline health is green, and existing active task replace-heartbeat-with-owner-planner already covers the repeated misrouting of foreign aks-rp-e2e metric feedback into the evaluation owner loop."
-        }
-      },
+      "reconcile_mode": "maintain",
       "state": "backlog",
       "children": []
     }

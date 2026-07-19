@@ -92,7 +92,7 @@ it cannot move yet.
 
 ## Library Health
 
-`workflows/library-health.ts` is code-only observation. It should collect facts
+`agents/scout/workflows/library-health.ts` is code-only observation. It should collect facts
 and emit signals. It should not decide content quality by itself.
 
 Good signals name raw facts:
@@ -181,7 +181,7 @@ Git tracks source:
 - `project.json`;
 - `tasks/seed.json`;
 - `tasks/README.md`;
-- `workflows/*.ts`;
+- `agents/scout/workflows/*.ts`;
 - `design/*.md`.
 
 `.state/` tracks runtime:

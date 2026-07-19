@@ -554,7 +554,7 @@ Then apply stronger relations:
 | Payload has `openEventId` / `open_event_id` | Add `closure` or `reference` link from current event to that event. Use `closure` for review/terminal events, `reference` otherwise. |
 | Same `sessionId` | Link `session.start`, `session.end`, `guard.triggered`, evaluation events, detail records, and historical derivative records into the session trace. |
 | Same `workflowRunId` | Link `handler.workflow_dispatched`, workflow run, session, guard, and result events into the workflow trace. |
-| Same `taskId` plus `attemptId` | Link `project.task.assigned`, worker session, `project.task.completed`, `project.task.reviewed`, and planner follow-up. |
+| Same `taskId` plus `attemptId` | Link reconciliation start/result events, the owner or workflow session, and any retained historical task-attempt records. |
 | Same `metricId` / `alertId` | Link metric alert, `metric.breach`, owner workflow/session, `metric.recovered`, and review events. |
 | `notification_messages.telegram_msg_id` and reply context | Link notification delivery to `message.created`; link `human.input.received` to the message it replied to. |
 | Legacy `escalationId` | Resolve to the opening `escalation.created` event when possible. Use the event id as the canonical identity after that. |
@@ -596,7 +596,7 @@ Branches are natural fan-out: several events can have the same parent event.
 metric.breach
   -> project.owner.requested
   -> message.created
-  -> project.watchdog.check.requested
+  -> project.runtime.review.requested
 ```
 
 Conditions are event attributes or link labels:
@@ -605,14 +605,14 @@ Conditions are event attributes or link labels:
 human.input.received
   -> escalation.resolved  data.outcome=answered
 
-project.task.reviewed
-  -> project.task.assigned  data.decision=redo
+project.test_run.completed
+  -> project.task.reconcile.started  data.reason=condition-satisfied
 ```
 
 Loops are repeated events, not mutation of the same node:
 
 ```text
-project.task.tick -> controller.completed -> project.task.tick -> ...
+project.task.reconcile.started -> project.task.reconciled -> later wake -> ...
 ```
 
 The read model may provide a separate aggregate view for repeated loop slices,
@@ -627,7 +627,7 @@ Merges are multiple incoming parent/reference relationships:
 ```text
 project.owner.requested
   <- metric.breach
-  <- project.task.reviewed
+  <- project.task.reconciled  data.disposition=attention
   <- escalation.resolved
 ```
 
@@ -664,7 +664,7 @@ Use `visibility`:
 
 | Visibility | Display role | Examples |
 |------------|------------------|----------|
-| `default` | primary event | `escalation.created`, `project.task.completed`, `message.created`, `workflow.completed` |
+| `default` | primary event | `escalation.created`, `project.task.reconciled`, `message.created`, `workflow.completed` |
 | `detail` | supporting evidence, still shown | `llm.turn.completed`, `tool.call.completed`, `context.read` |
 
 Do not store full prompts or large tool output as graph node payloads. Store

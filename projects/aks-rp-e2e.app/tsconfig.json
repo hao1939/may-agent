@@ -18,8 +18,13 @@
   },
   "include": [
     "app.ts",
-    "workflows/**/*.ts",
-    "scripts/**/*.ts",
+    "agents/app-ops/workflows/approval-dispatch.ts",
+    "agents/app-ops/workflows/focus-plan.ts",
+    "agents/app-ops/workflows/project-stall-review.ts",
+    "agents/app-ops/workflows/problem-solver.ts",
+    "agents/app-ops/workflows/spec-loop-controller.ts",
+    "agents/app-ops/workflows/feature-compact-loop-controller.ts",
+    "watchers/**/*.ts",
     "types/**/*.d.ts"
   ],
   "exclude": ["**/*.test.ts", "archive/**", ".state/**", "node_modules/**"]

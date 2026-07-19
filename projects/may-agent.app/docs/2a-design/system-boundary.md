@@ -539,7 +539,6 @@ interface QueryAPI {
   alerts(filter?: AlertFilter): AlertView[];
   events(filter?: EventFilter): EventView[];
   heartbeatContext(filter: HeartbeatContextFilter): HeartbeatContext;
-  closedLoopStewardContext(filter?: ClosedLoopFilter): ClosedLoopContext;
 }
 ```
 
@@ -548,9 +547,8 @@ judgment/context code. A safe query facade gives us bounded reads, schema
 validation, fewer guessed columns, and a cleaner mental model.
 
 Current state: the SDK exposes `query` and `metrics` as first-class surfaces,
-with targeted helpers for alert triage, closed-loop stewardship, project
-runtime context, workflow runs, heartbeat live context, and evaluator
-session-review context. New judgment/context code should add targeted query
+with targeted helpers for alert triage, workflow runs, heartbeat live context,
+and evaluator session-review context. New judgment/context code should add targeted query
 helpers rather than guessing SQLite schema. Mechanical projection/snapshot
 handlers may keep direct DB access when it is simpler and well-tested.
 

@@ -18,7 +18,6 @@
         "projects/may-agent/"
       ],
       "outputs": [
-        "projects/may-agent.app/tasks/tree.json",
         "projects/may-agent.app/project.json"
       ],
       "acceptance": [
@@ -156,7 +155,7 @@
         "projects/may-agent/packages/webui/static/styles.css"
       ],
       "acceptance": [
-        "Any project with tasks/tree.json can show shared Kanban and task tree.",
+        "Any Agent App with runtime task resources can show shared Kanban and task views.",
         "Project-local /ui can focus on domain features."
       ],
       "forbidden": [
@@ -177,12 +176,10 @@
       "goal": "Adopt Project App V2 in the platform project and turn the adoption into a reusable migration pattern.",
       "inputs": [
         "projects/may-agent.app/archive/platform-root-project.md",
-        "projects/may-agent.app/",
-        "projects/may-agent.app/tasks/tree.json"
+        "projects/may-agent.app/"
       ],
       "outputs": [
         "projects/may-agent.app/",
-        "projects/may-agent.app/tasks/tree.json",
         "projects/may-agent.app/docs/2a-design/project-app-v2.md"
       ],
       "acceptance": [
@@ -270,7 +267,6 @@
         "projects/may-agent.app/docs/2a-design/"
       ],
       "outputs": [
-        "projects/may-agent.app/tasks/tree.json",
         "projects/may-agent.app/journal.jsonl"
       ],
       "acceptance": [
@@ -394,14 +390,11 @@
       "inputs": [
         "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
         "projects/may-agent.app/app.ts",
-        "projects/may-agent.app/tasks/tree.json",
         "projects/may-agent/src/",
         "agents/may/handlers/"
       ],
       "outputs": [
-        "projects/may-agent.app/scripts/check-integrity.ts",
         "projects/may-agent.app/package.json",
-        "projects/may-agent.app/tasks/tree.json",
         "agents/may/handlers/metrics-snapshot.ts",
         "projects/may-agent.app/workflows/"
       ],

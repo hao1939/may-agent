@@ -14,8 +14,9 @@ description: Handle missing capabilities, unavailable commands or tools, permiss
    use the supervisor-owned restarter path from the May-agent system skill;
    do not improvise process signals or inline stop/copy/start sequences.
 3. **Return locally when the caller owns the decision.** A workflow uses
-   `ctx.blocked(...)`; a project task returns blocked through
-   `project.task.completed` so the project owner can repair or reassign it.
+   `ctx.blocked(...)`. A task workflow returns `needs-owner`, while an owner
+   waiting on a capability returns `waiting` with an exact Condition; the app
+   reconciler records the attempt and owns fallback.
 4. **Escalate only across an owner boundary.** Emit `escalation.created` (or use
    the SDK escalation helper) with the concrete owner, requested action,
    evidence, blocker, resume context, severity, project/session identifiers,

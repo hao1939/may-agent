@@ -123,7 +123,6 @@ until they become necessary for keeping the loop running.
 | `evaluator.low-quality-rate-24h`             | Is evaluated work frequently `needs_improvement` or low-scoring? (dashboard-only, P3) | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10   | 0.80      | above      | active      |
 | `evaluator.substantive-low-quality-rate-24h` | Of _substantive_ evaluations, are quality failures frequent?                          | substantive needs-improvement count / substantive evaluations (24h)                                 | 0.10   | 0.30      | above      | active      |
 | `system.real-output-24h`                     | Is the system producing?                                                              | `git log` substantive files changed (24h)                                                           | 100    | 30        | below      | **retired** |
-| `project.iterations-24h`                     | How much active-project work happened?                                                | active project.iteration events (24h)                                                               | 0      | 0         | watch-only | active      |
 | `project.blocked-over-6h`                    | Is work stuck on true blockers?                                                       | `COUNT(*)` from projects where blocked >6h                                                          | 0      | 4         | above      | active      |
 | `metric.stale-active-count`                  | Is measurement coverage stale?                                                        | active metrics without a recent snapshot                                                            | 0      | 8         | above      | active      |
 | `metric.structurally-pinned-count`           | Are any metrics stuck at a single value?                                              | active metrics with coefficient of variation = 1 over 7d snapshots (KE-938/939/940)                 | 0      | 0         | above      | active      |
@@ -168,12 +167,7 @@ These are measured but not in the prioritized tables above.
 
 - `project.active-count` — observable count of projects currently pushing; not a health target by itself
 - `project.blocked-count` — true blocked projects only
-- `project.stale-active-count`
-- `project.invalid-format-count` — projects with invalid `project.md` format
-- `project.health.finding-count` — project-steward health findings (active projects with structural issues)
-- `project.owner-incomplete-count` — active projects with no open work (steward signal)
-- `project.owner-judgment-needed-count` — project tasks needing owner judgment (steward signal)
-- `project.task-parser-error-count` — project task parser errors (steward signal)
+- `project.stale-active-count` — active apps with no owner or task-controller activity for 48h
 - `project.reconcile.event-latency-ms` — latency from project event to reconciler action (**retired** — legacy project handler disabled 2026-06-15; see KE-2011. DB status set to 'retired' as of 2026-06-17.)
 - `project.reconcile.launched-count` — reconciler-launched actions (**retired** — see above)
 - `project.reconcile.trigger-count` — reconciler invocations (**retired** — see above)
@@ -217,7 +211,6 @@ open alert for it, and stop measuring it in `metrics-snapshot.ts`.
 
 The "all green → healthy" reading was falsified at 2026-05-03 20:17Z: every prioritized metric was green at the moment the system had been producing zero real project iterations for 7h. Each metric has a floor or counting rule that prevents it from alerting in a specific failure mode the metric _names_:
 
-- `project.iterations-24h` — formerly had an unreachable floor and counted closed-project ghost iterations. It now counts only active project iterations and is watch-only because zero active iterations can be healthy when every project is waiting on valid watch conditions.
 - `project.active-count` — formerly required `>=1`, which encouraged fake active projects. It is now observability only: zero active projects is healthy when waiting projects have clear resume signals.
 - `project.blocked-over-6h` — now counts only true `blocked` projects. `waiting` is a normal watch state and should not page by itself.
 - `project.stale-active-count` — registry `threshold=2`, alert_op=`>`. Demands ≥3 simultaneous stale-active projects to fire, but with `active-count` capped near 1 in practice this metric cannot breach in the failure mode it describes. **Not currently in the prioritized set** despite being the most direct signal for KE-724-class drift.
@@ -225,8 +218,8 @@ The "all green → healthy" reading was falsified at 2026-05-03 20:17Z: every pr
 
 Read this dashboard as a liveness check on plumbing plus a first-pass quality
 signal, not proof of substance. Confirm direction with session transcripts,
-project journals, and `project.iteration` events before concluding the system is
-producing meaningful work.
+task receipts, workflow evidence, and `project.task.reconciled` events before
+concluding the system is producing meaningful work.
 
 ### Evaluator LLM Lane Signals
 
@@ -234,8 +227,9 @@ producing meaningful work.
 The lag metric catches lane death and is urgent. The count metric catches
 sampling starvation and is advisory. A low count is not proof that evaluator
 should create more reviews; evaluator should first check whether there were
-eligible recent sessions, whether `eval-llm-scan` ran, and whether model/runtime
-failures or skip rules prevented useful deep evaluation.
+eligible recent sessions, whether Evaluation's `evaluation.deep.scan` schedule
+ran, and whether model/runtime failures or skip rules prevented useful deep
+evaluation.
 
 ## Pipeline
 
@@ -259,31 +253,16 @@ filesystem pruning, WAL management, and compaction are runtime maintenance and
 must not run inside `metrics-snapshot` or any agent execution. See
 [storage.md](storage.md#retention-and-maintenance).
 
-`project-steward` is another producer for project health signals. It scans
-project docs/tasks read-only and emits `project.health.finding` events (the
-former `project.health.checked` periodic snapshot was removed in commit
-73d989fdb, 2026-06-10 — see ruflo-learning-loop iter-13). It records/evaluates
-project metrics such as
-`project.health.finding-count`, `project.task-parser-error-count`, and
-`project.owner-judgment-needed-count`. Active projects with no tasks are owner
-judgment findings, not missing workflow findings. The steward does not mutate
-project files.
+Project-health observations come from app-owned watchers, controller state, and
+bounded metrics. A metric breach may wake the app resolver or owner, but it does
+not mutate task meaning. The owner reviews task resources, Conditions, attempts,
+project facts, and recent events before deciding whether to return task actions,
+calibrate the metric, record an exception, or escalate.
 
-Project-health metric alerts follow the default project feedback convention when
-they are tied to a project. The metric breach wakes the project owner with the
-original metric context; the owner reviews task-tree state, project facts, and
-recent events before deciding whether to repair the plan, create work, calibrate
-the metric, record an exception, or escalate. Generic metric-alert triage is the
-fallback for unhandled or unknown metrics, not the first consumer for known
-project reconciliation signals.
-
-Waiting projects may depend on project-scoped watch metrics. Metrics named in
-the project's wait/watch contract (`resume_condition`, `wait_reason`, or
-`## Watch Conditions`) must stay active and fresh enough to make the wait
-condition observable. The project-steward treats disabled, missing, or stale
-owner-scoped contract metrics as project health findings so the project owner
-can repair the watch or revise the wait condition. Historical notes and weak
-signals outside that contract do not make the project active by themselves.
+Waiting tasks depend on typed Conditions whose truth comes from a watcher or
+semantic event. Metrics may alert on stale observation infrastructure, but task
+resync never treats metric age as Condition truth. Historical notes and weak
+signals do not make a project active by themselves.
 
 The usual path is owner/context-driven: agents see metric state and unresolved
 alerts, known owner auto-handlers can act first, and the generic alert reactor

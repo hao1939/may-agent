@@ -20,7 +20,7 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type {
@@ -33,7 +33,6 @@ import {
   listConfiguredAgents,
   resolveMetricOwner,
 } from "../../../shared/lib/metric-ownership.ts";
-import { validateProjectFormat } from "../../../shared/lib/project-health.ts";
 
 const execAsync = promisify(exec);
 
@@ -512,17 +511,6 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P1",
   },
   {
-    id: "project.iterations-24h",
-    name: "Active project iterations (24h)",
-    owner: "may",
-    type: "gauge",
-    target: 0,
-    threshold: 0,
-    unit: "count",
-    alert_op: "<",
-    priority: "P3",
-  },
-  {
     id: "project.blocked-over-6h",
     name: "Projects blocked >6h",
     owner: "may",
@@ -532,18 +520,6 @@ const ALL_METRICS: MetricDef[] = [
     unit: "count",
     alert_op: ">",
     priority: "P2",
-  },
-  {
-    id: "project.invalid-format-count",
-    name: "Invalid project.md format",
-    owner: "may",
-    type: "health",
-    target: 0,
-    threshold: 0,
-    unit: "count",
-    alert_op: ">",
-    priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
     id: "capability.status-reality-mismatch-count",
@@ -728,51 +704,6 @@ const STRUCTURALLY_PINNED_ALLOWLIST = new Set([
   "infra.bus.subscriber-failed-count-1h", // desired 0; failure counter
   "infra.messages.delivery-rate", // desired 1.0; high-reliability gauge
 ]);
-
-function projectSlugFromRef(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null;
-  const normalized = raw.replace(/\\/g, "/").replace(/\/+$/, "");
-  return basename(normalized).trim() || null;
-}
-
-function projectSlugFromIterationData(data: string | null): string | null {
-  if (!data) return null;
-  try {
-    const parsed = JSON.parse(data) as {
-      projectId?: unknown;
-      project?: unknown;
-    };
-    const raw =
-      typeof parsed.projectId === "string"
-        ? parsed.projectId
-        : typeof parsed.project === "string"
-          ? parsed.project
-          : "";
-    return projectSlugFromRef(raw);
-  } catch {
-    return null;
-  }
-}
-
-function countInvalidSharedProjectFormats(projectsRoot: string): number {
-  if (!existsSync(projectsRoot)) return 0;
-
-  let invalid = 0;
-  for (const entry of readdirSync(projectsRoot)) {
-    if (entry === "_archive") continue;
-    const projectDir = join(projectsRoot, entry);
-    try {
-      if (!statSync(projectDir).isDirectory()) continue;
-      const projectFile = join(projectDir, "project.md");
-      if (!existsSync(projectFile)) continue;
-      const content = readFileSync(projectFile, "utf-8");
-      if (validateProjectFormat(content, entry).length > 0) invalid++;
-    } catch {
-      invalid++;
-    }
-  }
-  return invalid;
-}
 
 function listEnabledHeartbeatAgents(
   agentsRoot: string,
@@ -2151,9 +2082,8 @@ export const create: HandlerModule["create"] = (
       );
     }
 
-    // Stale: active projects with no activity event in 48h (single query, no N+1)
-    // v3 project apps emit project.owner.requested / project.reviewed / project.tick
-    // instead of the legacy project.iteration event. Count any of these as activity.
+    // Stale: active projects with no owner or task reconciliation activity in
+    // 48h (single query, no N+1).
     // Match on both the DB id (e.g. "may-agent.app") and the project slug without .app
     // (e.g. "may-agent") since event sources use the slug form (project-app:may-agent).
     try {
@@ -2162,7 +2092,12 @@ export const create: HandlerModule["create"] = (
          WHERE p.status = 'active'
            AND NOT EXISTS (
              SELECT 1 FROM events e
-             WHERE e.event_type IN ('project.iteration', 'project.owner.requested', 'project.reviewed', 'project.tick')
+             WHERE e.event_type IN (
+               'project.owner.requested',
+               'project.owner.reviewed',
+               'project.task.reconcile.started',
+               'project.task.reconciled'
+             )
                AND e.timestamp > ?
                AND (e.data LIKE '%' || p.id || '%'
                     OR e.source LIKE '%' || p.id || '%'
@@ -2180,35 +2115,6 @@ export const create: HandlerModule["create"] = (
     }
 
     try {
-      const activeProjectSlugs = new Set(
-        (
-          db
-            .prepare(
-              "SELECT id, name, path FROM projects WHERE status = 'active'",
-            )
-            .all() as Array<{ id: string; name: string; path: string }>
-        )
-          .flatMap((p) => [p.id, p.name, projectSlugFromRef(p.path)])
-          .filter((slug): slug is string => Boolean(slug)),
-      );
-      const iterationRows = db
-        .prepare(
-          "SELECT data FROM events WHERE event_type = 'project.iteration' AND timestamp > ?",
-        )
-        .all(twentyFourH) as Array<{ data: string | null }>;
-      const activeIterations = iterationRows.filter((row) => {
-        const slug = projectSlugFromIterationData(row.data);
-        return slug != null && activeProjectSlugs.has(slug);
-      }).length;
-      record("project.iterations-24h", activeIterations, iterationRows.length);
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring iterations-24h: ${e}`,
-      );
-    }
-
-    try {
       record(
         "project.blocked-over-6h",
         count(
@@ -2220,20 +2126,6 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`,
-      );
-    }
-
-    try {
-      record(
-        "project.invalid-format-count",
-        countInvalidSharedProjectFormats(
-          ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects"),
-        ),
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring invalid-format-count: ${e}`,
       );
     }
 
@@ -2269,7 +2161,12 @@ export const create: HandlerModule["create"] = (
          WHERE p.status = 'active'
            AND NOT EXISTS (
              SELECT 1 FROM events e
-             WHERE e.event_type IN ('project.iteration', 'project.owner.requested', 'project.reviewed', 'project.tick')
+             WHERE e.event_type IN (
+               'project.owner.requested',
+               'project.owner.reviewed',
+               'project.task.reconcile.started',
+               'project.task.reconciled'
+             )
                AND e.timestamp > ?
                AND (e.data LIKE '%' || p.id || '%'
                     OR e.source LIKE '%' || p.id || '%'

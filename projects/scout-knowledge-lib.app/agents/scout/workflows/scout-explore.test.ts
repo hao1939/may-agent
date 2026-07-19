@@ -28,13 +28,14 @@ describe("scout-explore workflow prompt", () => {
     });
 
     expect(result).toMatchObject({
-      disposition: "waiting",
+      state: "waiting",
       actions: [],
       conditions: [
         {
           id: "task-done:xhs-cookie-refresh-blocked",
-          taskId: "xhs-cookie-refresh-blocked",
-          expectedState: "done",
+          type: "project.task.reconciled",
+          subject: "task:xhs-cookie-refresh-blocked",
+          expected: "done",
         },
       ],
     });

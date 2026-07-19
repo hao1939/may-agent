@@ -36,11 +36,19 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
+import { runDirectAgent } from "../../may-agent/src/app/direct-agent.js";
+import { createModelRegistry } from "../../may-agent/src/app/model-registry.js";
 
-import { listScenarios, loadScenarioMeta, matchesFilters } from "./scenarios/catalog";
+import {
+  listScenarios,
+  loadScenarioMeta,
+  matchesFilters,
+} from "./scenarios/catalog";
 import type { ScenarioMeta } from "./scenarios/types";
 
-function learnFromSession(_opts: { agentDir: string; messages: any[] }): { added: string[] } {
+function learnFromSession(_opts: { agentDir: string; messages: any[] }): {
+  added: string[];
+} {
   return { added: [] };
 }
 
@@ -100,7 +108,11 @@ interface AdapterResult {
 interface Adapter {
   name: string;
   setup(projectRoot: string, opts: AdapterOpts): void;
-  runAgent(taskFile: string, workDir: string, timeoutMin: number): AdapterResult;
+  runAgent(
+    taskFile: string,
+    workDir: string,
+    timeoutMin: number,
+  ): AdapterResult | Promise<AdapterResult>;
 }
 
 interface AdapterOpts {
@@ -124,12 +136,17 @@ interface AdapterOpts {
 const PROJECT_ROOT = resolve(import.meta.dirname, "../../may-agent");
 const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
 const GYM_PROJECT_ROOT = resolve(import.meta.dirname, "..");
-const DEFAULT_APP_AGENTS_ROOT = join(REPO_ROOT, "projects/may-agent.app/agents");
+const DEFAULT_APP_AGENTS_ROOT = join(
+  REPO_ROOT,
+  "projects/may-agent.app/agents",
+);
 const LEGACY_APP_ROOT = join(PROJECT_ROOT, "app");
 const APP_AGENTS_ROOT = resolve(
   process.env["GYM_AGENTS_ROOT"] ||
     process.env["AGENTS_ROOT"] ||
-    (existsSync(DEFAULT_APP_AGENTS_ROOT) ? DEFAULT_APP_AGENTS_ROOT : join(LEGACY_APP_ROOT, "agents")),
+    (existsSync(DEFAULT_APP_AGENTS_ROOT)
+      ? DEFAULT_APP_AGENTS_ROOT
+      : join(LEGACY_APP_ROOT, "agents")),
 );
 const SCENARIOS_DIR = resolve(
   process.env["GYM_SCENARIOS_DIR"] ||
@@ -141,7 +158,6 @@ const SCENARIOS_DIR = resolve(
 // ── Adapter: may-agent ─────────────────────────────────────────────────
 
 function createMayAgentAdapter(): Adapter {
-  let mayCmd: string[] = [];
   let agentsRoot = "";
   let agentName = "";
   let gymRoot = "";
@@ -156,7 +172,8 @@ function createMayAgentAdapter(): Adapter {
       // Resolve agents root (with optional lab fork overlay)
       if (opts.labFork) {
         const labDir = join(APP_AGENTS_ROOT, ".lab", opts.labFork);
-        if (!existsSync(labDir)) throw new Error(`Lab fork not found: ${labDir}`);
+        if (!existsSync(labDir))
+          throw new Error(`Lab fork not found: ${labDir}`);
         const gymAgents = join(opts.gymRoot, "agents-lab");
         cpSync(APP_AGENTS_ROOT, gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
@@ -167,7 +184,10 @@ function createMayAgentAdapter(): Adapter {
         const agentTarget = join(gymAgents, opts.agentName);
         for (const entry of readdirSync(labDir, { withFileTypes: true })) {
           if (entry.isDirectory()) {
-            rmSync(join(agentTarget, entry.name), { recursive: true, force: true });
+            rmSync(join(agentTarget, entry.name), {
+              recursive: true,
+              force: true,
+            });
           }
         }
         cpSync(labDir, agentTarget, { recursive: true });
@@ -199,135 +219,63 @@ function createMayAgentAdapter(): Adapter {
       // Verify agent exists
       const agentDir = join(agentsRoot, opts.agentName);
       if (!existsSync(join(agentDir, "agent.json"))) {
-        throw new Error(`Agent '${opts.agentName}' not found in: ${agentsRoot}`);
+        throw new Error(
+          `Agent '${opts.agentName}' not found in: ${agentsRoot}`,
+        );
       }
 
       // ── Identity injection handled above in runAgent() ──────────────
 
-      // Resolve binary — prefer compiled binary even if stale.
-      // vite-node requires Node 20+ (crypto.hash) so it's not a safe fallback.
-      const envBin = process.env["MAY_BIN"];
-      if (envBin) {
-        mayCmd = [envBin];
-      } else {
-        const binary = join(projectRoot, "bundle/may-agent");
-        if (existsSync(binary)) {
-          try {
-            const binaryStat = statSync(binary);
-            const newerFile = findNewerFile(join(projectRoot, "src"), binaryStat.mtimeMs);
-            if (newerFile !== null) {
-              console.error(
-                `Warning: compiled binary is stale (newer: ${newerFile}). Using it anyway — rebuild with: bun run bundle`,
-              );
-            }
-          } catch {
-            /* assume fresh */
-          }
-          mayCmd = [binary];
-        } else {
-          // No binary at all — try vite-node as last resort
-          console.error("Warning: no compiled binary found. Falling back to vite-node (requires Node 20+).");
-          mayCmd = [join(projectRoot, "node_modules/.bin/vite-node"), join(projectRoot, "src/app/may.ts")];
-        }
-      }
+      void projectRoot;
     },
 
-    runAgent(taskFile: string, _workDir: string, timeoutMin: number): AdapterResult {
+    async runAgent(
+      taskFile: string,
+      workDir: string,
+      timeoutMin: number,
+    ): Promise<AdapterResult> {
       const gymState = join(gymRoot, "state");
       mkdirSync(gymState, { recursive: true });
-      const sessionsBefore = snapshotSessionPaths(gymState);
 
       // ── Identity Sandbox ───────────────────────────────────────────
       // Copy agent directory into workDir/agents/<name>/ so the agent
       // can read("agents/<name>/heartbeat.md") etc. from its CWD.
       // This is a sandbox copy — writes go to the temp dir, not prod.
       const agentDir = join(agentsRoot, agentName);
-      const agentDest = join(_workDir, "agents", agentName);
+      const agentDest = join(workDir, "agents", agentName);
       if (existsSync(agentDir) && !existsSync(agentDest)) {
-        mkdirSync(join(_workDir, "agents"), { recursive: true });
+        mkdirSync(join(workDir, "agents"), { recursive: true });
         cpSync(agentDir, agentDest, { recursive: true });
       }
 
-      const cmdParts = mayCmd.map((s) => `"${s}"`).join(" ");
-      const fullCmd = `${cmdParts} --oneshot --agent "${agentName}" --task-file "${taskFile}" --timeout=${timeoutMin}`;
-
       try {
-        const stdout = execSync(fullCmd, {
-          cwd: _workDir,
-          env: {
-            ...process.env,
-            AGENTS_ROOT: agentsRoot,
-            STATE_DIR: gymState,
-          },
-          timeout: timeoutMin * 60 * 1000 + 30000, // extra 30s grace
-          encoding: "utf-8",
-          stdio: ["pipe", "pipe", "pipe"],
-          maxBuffer: 10 * 1024 * 1024,
+        const result = await runDirectAgent({
+          agentName,
+          task: readFileSync(taskFile, "utf8"),
+          projectRoot: REPO_ROOT,
+          workRoot: workDir,
+          agentsRoot,
+          globalAgentsRoot: join(REPO_ROOT, "agents"),
+          sharedRoot: join(REPO_ROOT, "shared"),
+          projectsRoot: join(REPO_ROOT, "projects"),
+          outputRoot: gymState,
+          models: createModelRegistry().models,
+          timeoutMs: timeoutMin * 60 * 1000,
+          onNotice: (message) => console.error(`  [may-direct] ${message}`),
         });
-
-        const parsed = parseOneshotOutput(stdout, gymState);
-        return parsed.sessionId ? parsed : recoverNewSession(gymState, sessionsBefore, parsed.status);
-      } catch (err: unknown) {
-        const e = err as { stdout?: string };
-        if (e.stdout) {
-          const parsed = parseOneshotOutput(e.stdout, gymState);
-          if (parsed.sessionId) return parsed;
-        }
-        return recoverNewSession(gymState, sessionsBefore, "error");
+        return {
+          sessionId: result.sessionId,
+          status: result.status === "done" ? "success" : "error",
+          sessionPath: result.sessionPath,
+        };
+      } catch (error) {
+        console.error(
+          `  [may-direct] ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return { sessionId: "", status: "error", sessionPath: "" };
       }
     },
   };
-}
-
-function snapshotSessionPaths(gymState: string): Set<string> {
-  const paths = new Set<string>();
-  for (const root of [join(gymState, "sessions"), join(gymState, "sessions/history")]) {
-    if (!existsSync(root)) continue;
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
-      if (entry.isDirectory()) paths.add(join(root, entry.name));
-    }
-  }
-  return paths;
-}
-
-function recoverNewSession(gymState: string, before: Set<string>, fallbackStatus: string): AdapterResult {
-  const candidates = [...snapshotSessionPaths(gymState)]
-    .filter((candidate) => !before.has(candidate))
-    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
-  const sessionPath = candidates[0] ?? "";
-  if (!sessionPath) return { sessionId: "", status: fallbackStatus, sessionPath: "" };
-
-  let status = fallbackStatus;
-  const transcriptPath = join(sessionPath, "session.jsonl");
-  if (existsSync(transcriptPath)) {
-    const transcript = readFileSync(transcriptPath, "utf-8");
-    if (/"name":"finish"/.test(transcript)) status = "success";
-    else if (/"stopReason":"error"/.test(transcript)) status = "error";
-  }
-
-  return { sessionId: sessionPath.split("/").pop() ?? "", status, sessionPath };
-}
-
-function parseOneshotOutput(stdout: string, gymState: string): AdapterResult {
-  try {
-    const parsed = JSON.parse(stdout.trim());
-    const sessionId: string = parsed.sessionId || "";
-    const status: string = parsed.status || "unknown";
-
-    let sessionPath = "";
-    if (sessionId) {
-      for (const candidate of [join(gymState, "sessions", sessionId), join(gymState, "sessions/history", sessionId)]) {
-        if (existsSync(candidate)) {
-          sessionPath = candidate;
-          break;
-        }
-      }
-    }
-
-    return { sessionId, status, sessionPath };
-  } catch {
-    return { sessionId: "", status: "unknown", sessionPath: "" };
-  }
 }
 
 // ── Adapter: claude-code ───────────────────────────────────────────────
@@ -340,11 +288,17 @@ function createClaudeCodeAdapter(): Adapter {
       try {
         execSync("which claude", { stdio: "pipe" });
       } catch {
-        throw new Error("claude CLI not found. Install: https://docs.anthropic.com/en/docs/claude-code");
+        throw new Error(
+          "claude CLI not found. Install: https://docs.anthropic.com/en/docs/claude-code",
+        );
       }
     },
 
-    runAgent(taskFile: string, workDir: string, timeoutMin: number): AdapterResult {
+    runAgent(
+      taskFile: string,
+      workDir: string,
+      timeoutMin: number,
+    ): AdapterResult {
       const task = readFileSync(taskFile, "utf-8");
       const timeoutMs = timeoutMin * 60 * 1000;
 
@@ -387,7 +341,11 @@ function createGenericAdapter(): Adapter {
       }
     },
 
-    runAgent(taskFile: string, workDir: string, timeoutMin: number): AdapterResult {
+    runAgent(
+      taskFile: string,
+      workDir: string,
+      timeoutMin: number,
+    ): AdapterResult {
       const timeoutMs = timeoutMin * 60 * 1000;
 
       try {
@@ -429,7 +387,10 @@ function exportTranscript(sessionPath: string, workDir: string): void {
   const transcriptDest = join(workDir, "transcript.jsonl");
 
   if (!sessionPath || !existsSync(sessionPath)) {
-    writeFileSync(transcriptDest, JSON.stringify({ note: "no session transcript available" }) + "\n");
+    writeFileSync(
+      transcriptDest,
+      JSON.stringify({ note: "no session transcript available" }) + "\n",
+    );
     return;
   }
 
@@ -462,7 +423,11 @@ function exportTranscript(sessionPath: string, workDir: string): void {
   }
 
   // Fallback: look for messages.json or similar
-  for (const candidate of ["messages.json", "messages.jsonl", "transcript.json"]) {
+  for (const candidate of [
+    "messages.json",
+    "messages.jsonl",
+    "transcript.json",
+  ]) {
     const p = join(sessionPath, candidate);
     if (existsSync(p)) {
       cpSync(p, transcriptDest);
@@ -472,7 +437,10 @@ function exportTranscript(sessionPath: string, workDir: string): void {
 
   writeFileSync(
     transcriptDest,
-    JSON.stringify({ note: "session path found but no transcript file detected", sessionPath }) + "\n",
+    JSON.stringify({
+      note: "session path found but no transcript file detected",
+      sessionPath,
+    }) + "\n",
   );
 }
 
@@ -481,7 +449,10 @@ function exportTranscript(sessionPath: string, workDir: string): void {
  * combined transcript.jsonl. This allows success_criteria.js behavioral checks
  * to see the full sequence of tool calls across all phases, not just the last one.
  */
-function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string): void {
+function exportCombinedTranscript(
+  phaseResults: AdapterResult[],
+  workDir: string,
+): void {
   const transcriptDest = join(workDir, "transcript.jsonl");
   let combined = "";
 
@@ -496,7 +467,9 @@ function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string
     } else {
       // Look for .jsonl files in the session directory
       try {
-        const files = readdirSync(sessionPath).filter((f) => f.endsWith(".jsonl"));
+        const files = readdirSync(sessionPath).filter((f) =>
+          f.endsWith(".jsonl"),
+        );
         if (files.length > 0) {
           let best = files[0];
           let bestSize = 0;
@@ -525,7 +498,10 @@ function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string
     writeFileSync(transcriptDest, combined);
   } else {
     // Fallback: try last phase only
-    exportTranscript(phaseResults[phaseResults.length - 1]?.sessionPath ?? "", workDir);
+    exportTranscript(
+      phaseResults[phaseResults.length - 1]?.sessionPath ?? "",
+      workDir,
+    );
   }
 }
 
@@ -545,7 +521,9 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
   ).Bun;
   const scorerEnv = {
     ...process.env,
-    NODE_PATH: [join(GYM_PROJECT_ROOT, "dist"), process.env["NODE_PATH"]].filter(Boolean).join(delimiter),
+    NODE_PATH: [join(GYM_PROJECT_ROOT, "dist"), process.env["NODE_PATH"]]
+      .filter(Boolean)
+      .join(delimiter),
   };
   const result = bun?.spawnSync
     ? (() => {
@@ -561,11 +539,11 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
         };
       })()
     : spawnSync("node", [criteriaPath, workDir], {
-      encoding: "utf-8",
-      timeout: 30000,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: scorerEnv,
-    });
+        encoding: "utf-8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: scorerEnv,
+      });
 
   // Scorers exit non-zero on failed scenario checks but still emit valid JSON.
   // Use Bun.spawnSync under Bun because its child_process shim drops stdout for
@@ -577,7 +555,9 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
       // stdout wasn't valid JSON — fall through to generic failure
     }
   }
-  const stderr = result.stderr ? ` (${result.stderr.trim().slice(0, 200)})` : "";
+  const stderr = result.stderr
+    ? ` (${result.stderr.trim().slice(0, 200)})`
+    : "";
   return { passed: false, checks: [], summary: `scoring failed${stderr}` };
 }
 
@@ -591,7 +571,12 @@ function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
  *
  * Returns empty array if no judge criteria or if judging fails.
  */
-function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, task: string): Judgment[] {
+async function judgeScenario(
+  scenarioDir: string,
+  workDir: string,
+  gymRoot: string,
+  task: string,
+): Promise<Judgment[]> {
   const rubricPath = join(scenarioDir, "judge_criteria.md");
   if (!existsSync(rubricPath)) return [];
 
@@ -623,48 +608,34 @@ function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, ta
   // Resolve judge agent
   const agentsRoot = APP_AGENTS_ROOT;
   if (!existsSync(join(agentsRoot, "judge", "agent.json"))) {
-    console.error("  Judge agent not found at agents/judge/ — skipping LLM judge");
+    console.error(
+      "  Judge agent not found at agents/judge/ — skipping LLM judge",
+    );
     return [];
-  }
-
-  // Resolve may binary — prefer compiled binary even if stale (vite-node needs Node 20+)
-  let mayCmd: string[];
-  const envBin = process.env["MAY_BIN"];
-  if (envBin) {
-    mayCmd = [envBin];
-  } else {
-    const binary = join(PROJECT_ROOT, "bundle/may-agent");
-    if (existsSync(binary)) {
-      if (isStale(binary)) {
-        console.error("  Warning: binary stale for judge — using it anyway.");
-      }
-      mayCmd = [binary];
-    } else {
-      console.error("  Warning: no compiled binary — falling back to vite-node (requires Node 20+).");
-      mayCmd = [join(PROJECT_ROOT, "node_modules/.bin/vite-node"), join(PROJECT_ROOT, "src/app/may.ts")];
-    }
   }
 
   const judgeState = join(gymRoot, "judge-state");
   mkdirSync(judgeState, { recursive: true });
 
-  const cmdParts = mayCmd.map((s) => `"${s}"`).join(" ");
-  const fullCmd = `${cmdParts} --oneshot --agent "judge" --task-file "${judgeTaskFile}" --timeout=3`;
-
   try {
-    execSync(fullCmd, {
-      env: {
-        ...process.env,
-        AGENTS_ROOT: agentsRoot,
-        STATE_DIR: judgeState,
-      },
-      timeout: 3 * 60 * 1000 + 15000,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      maxBuffer: 10 * 1024 * 1024,
+    await runDirectAgent({
+      agentName: "judge",
+      task: readFileSync(judgeTaskFile, "utf8"),
+      projectRoot: REPO_ROOT,
+      workRoot: REPO_ROOT,
+      agentsRoot,
+      globalAgentsRoot: join(REPO_ROOT, "agents"),
+      sharedRoot: join(REPO_ROOT, "shared"),
+      projectsRoot: join(REPO_ROOT, "projects"),
+      outputRoot: judgeState,
+      models: createModelRegistry().models,
+      timeoutMs: 3 * 60 * 1000,
+      onNotice: (message) => console.error(`  [judge-direct] ${message}`),
     });
-  } catch {
-    // Judge may "fail" (non-zero exit) but still produce output
+  } catch (error) {
+    console.error(
+      `  Judge direct run failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
   // Read verdict
@@ -675,26 +646,19 @@ function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, ta
 
   try {
     const verdict = JSON.parse(readFileSync(verdictPath, "utf-8"));
-    const judgments: Judgment[] = (verdict.judgments || []).map((j: Record<string, unknown>) => ({
-      convention: String(j.convention || ""),
-      name: String(j.name || ""),
-      verdict: String(j.verdict || "unknown") as Judgment["verdict"],
-      evidence: String(j.evidence || ""),
-      note: String(j.note || ""),
-    }));
+    const judgments: Judgment[] = (verdict.judgments || []).map(
+      (j: Record<string, unknown>) => ({
+        convention: String(j.convention || ""),
+        name: String(j.name || ""),
+        verdict: String(j.verdict || "unknown") as Judgment["verdict"],
+        evidence: String(j.evidence || ""),
+        note: String(j.note || ""),
+      }),
+    );
     return judgments;
   } catch (err) {
     console.error(`  Failed to parse judge verdict: ${err}`);
     return [];
-  }
-}
-
-function isStale(binaryPath: string): boolean {
-  try {
-    const binaryStat = statSync(binaryPath);
-    return findNewerFile(join(PROJECT_ROOT, "src"), binaryStat.mtimeMs) !== null;
-  } catch {
-    return false;
   }
 }
 
@@ -704,7 +668,10 @@ function isStale(binaryPath: string): boolean {
  * Read a session transcript from a session path and return parsed messages.
  * Reused by both context-learn and per-session transcript export.
  */
-function readSessionTranscript(sessionPath: string): { raw: string; messages: unknown[] } {
+function readSessionTranscript(sessionPath: string): {
+  raw: string;
+  messages: unknown[];
+} {
   if (!sessionPath || !existsSync(sessionPath)) {
     return { raw: "", messages: [] };
   }
@@ -753,14 +720,14 @@ function readSessionTranscript(sessionPath: string): { raw: string; messages: un
  *   - The agent's context.md (via context-learn)
  *   - Explicitly declared artifacts (artifacts_out / artifacts_in_rename)
  */
-function runMultiSessionScenario(
+async function runMultiSessionScenario(
   scenarioName: string,
   adapter: Adapter,
   agentName: string,
   labFork: string,
   timeoutOverride?: number,
   commonSensePath?: string,
-): RunResult {
+): Promise<RunResult> {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
   const meta = loadScenarioMeta(scenarioDir)!;
   const sessions = meta.sessions!;
@@ -785,15 +752,27 @@ function runMultiSessionScenario(
   }
 
   // Setup adapter with sandboxed agents (context.md persists between sessions)
-  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: true, commonSensePath });
+  adapter.setup(PROJECT_ROOT, {
+    agentName,
+    labFork,
+    gymRoot,
+    sandboxAgents: true,
+    commonSensePath,
+  });
 
   const startMs = Date.now();
   const allSessionResults: AdapterResult[] = [];
   // Artifact store: collected files from prior sessions
   const artifactStore: Map<string, string> = new Map(); // artifact name → temp file path
-  let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
+  let lastResult: AdapterResult = {
+    sessionId: "",
+    status: "unknown",
+    sessionPath: "",
+  };
 
-  console.error(`Multi-session scenario: ${scenarioName} (${sessions.length} sessions)`);
+  console.error(
+    `Multi-session scenario: ${scenarioName} (${sessions.length} sessions)`,
+  );
 
   for (let i = 0; i < sessions.length; i++) {
     const session = sessions[i];
@@ -818,7 +797,9 @@ function runMultiSessionScenario(
 
     // ── Step B: Inject artifacts from prior sessions ──────────────
     if (session.artifacts_in_rename) {
-      for (const [artifactName, destName] of Object.entries(session.artifacts_in_rename)) {
+      for (const [artifactName, destName] of Object.entries(
+        session.artifacts_in_rename,
+      )) {
         const sourcePath = artifactStore.get(artifactName);
         if (sourcePath && existsSync(sourcePath)) {
           const destPath = join(workDir, destName);
@@ -833,7 +814,9 @@ function runMultiSessionScenario(
           console.error(`    Injected artifact: ${artifactName} → ${destName}`);
         } else {
           // Artifact not available — session runs without it (best-effort)
-          console.error(`    Warning: artifact "${artifactName}" not available from prior sessions`);
+          console.error(
+            `    Warning: artifact "${artifactName}" not available from prior sessions`,
+          );
         }
       }
     }
@@ -850,17 +833,24 @@ function runMultiSessionScenario(
 
     const taskContent = readFileSync(join(scenarioDir, session.task), "utf-8");
     const taskFile = join(gymRoot, `${sessionId}-task.md`);
-    writeFileSync(taskFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`);
+    writeFileSync(
+      taskFile,
+      `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`,
+    );
 
     // ── Step D: Run agent (fresh invocation) ─────────────────────
-    lastResult = adapter.runAgent(taskFile, workDir, sessionTimeout);
+    lastResult = await adapter.runAgent(taskFile, workDir, sessionTimeout);
     allSessionResults.push(lastResult);
-    console.error(`    ${sessionId} complete (status: ${lastResult.status}, session: ${lastResult.sessionId})`);
+    console.error(
+      `    ${sessionId} complete (status: ${lastResult.status}, session: ${lastResult.sessionId})`,
+    );
 
     // Agent failed to launch (e.g. unregistered agent) — abort entire multi-session
     if (lastResult.status === "error" && !lastResult.sessionId) {
       const durationMs = Date.now() - startMs;
-      console.error(`    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`);
+      console.error(
+        `    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`,
+      );
 
       const effectiveAgentsRoot = labFork
         ? join(gymRoot, "agents-lab")
@@ -907,17 +897,25 @@ function runMultiSessionScenario(
     // deleted or relocated it (e.g. rm -rf ., cleanup scripts, etc.)
     if (!existsSync(workDir)) {
       mkdirSync(workDir, { recursive: true });
-      console.error(`    Warning: workDir was deleted during ${sessionId} — recreated`);
+      console.error(
+        `    Warning: workDir was deleted during ${sessionId} — recreated`,
+      );
     }
 
     // ── Step E: Export per-session transcript ─────────────────────
     const transcriptDest = join(workDir, `${sessionId}-transcript.jsonl`);
-    const { raw: transcriptRaw, messages } = readSessionTranscript(lastResult.sessionPath);
+    const { raw: transcriptRaw, messages } = readSessionTranscript(
+      lastResult.sessionPath,
+    );
     if (transcriptRaw) {
       writeFileSync(transcriptDest, transcriptRaw);
       console.error(`    Exported transcript → ${sessionId}-transcript.jsonl`);
     } else {
-      writeFileSync(transcriptDest, JSON.stringify({ note: `no transcript available for ${sessionId}` }) + "\n");
+      writeFileSync(
+        transcriptDest,
+        JSON.stringify({ note: `no transcript available for ${sessionId}` }) +
+          "\n",
+      );
     }
 
     // ── Step F: Context learning between sessions ────────────────
@@ -930,12 +928,16 @@ function runMultiSessionScenario(
           if (existsSync(dir)) {
             const result = learnFromSession({ agentDir: dir, messages });
             if (result.added.length > 0) {
-              console.error(`    Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`);
+              console.error(
+                `    Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`,
+              );
             }
           }
         }
       } catch (err) {
-        console.error(`    Context-learn error: ${err instanceof Error ? err.message : err}`);
+        console.error(
+          `    Context-learn error: ${err instanceof Error ? err.message : err}`,
+        );
       }
     }
 
@@ -945,7 +947,11 @@ function runMultiSessionScenario(
         const artifactPath = join(workDir, artifactName);
         if (existsSync(artifactPath)) {
           // Store a copy in temp dir so environment overlays don't clobber it
-          const storePath = join(gymRoot, "artifacts", `${sessionId}--${artifactName.replace(/\//g, "__")}`);
+          const storePath = join(
+            gymRoot,
+            "artifacts",
+            `${sessionId}--${artifactName.replace(/\//g, "__")}`,
+          );
           const isDir = statSync(artifactPath).isDirectory();
           if (isDir) {
             mkdirSync(storePath, { recursive: true });
@@ -957,7 +963,9 @@ function runMultiSessionScenario(
           artifactStore.set(artifactName, storePath);
           console.error(`    Collected artifact: ${artifactName}`);
         } else {
-          console.error(`    Warning: expected artifact "${artifactName}" not found in workDir`);
+          console.error(
+            `    Warning: expected artifact "${artifactName}" not found in workDir`,
+          );
         }
       }
     }
@@ -979,17 +987,27 @@ function runMultiSessionScenario(
 
   // LLM judge (if rubric exists)
   // For multi-session, use the last session's task as context for the judge
-  const lastTaskContent = readFileSync(join(scenarioDir, sessions[sessions.length - 1].task), "utf-8");
+  const lastTaskContent = readFileSync(
+    join(scenarioDir, sessions[sessions.length - 1].task),
+    "utf-8",
+  );
   let judgments: Judgment[] = [];
   if (existsSync(join(scenarioDir, "judge_criteria.md"))) {
     console.error("  Running LLM judge...");
-    judgments = judgeScenario(scenarioDir, workDir, gymRoot, lastTaskContent);
+    judgments = await judgeScenario(
+      scenarioDir,
+      workDir,
+      gymRoot,
+      lastTaskContent,
+    );
     const jPass = judgments.filter((j) => j.verdict === "pass").length;
     console.error(`  Judge: ${jPass}/${judgments.length} conventions passed`);
   }
 
   const judgeSummary =
-    judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
+    judgments.length > 0
+      ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}`
+      : "";
 
   const effectiveAgentsRoot = labFork
     ? join(gymRoot, "agents-lab")
@@ -1028,20 +1046,27 @@ function runMultiSessionScenario(
 
 // ── Single scenario run ────────────────────────────────────────────────
 
-function runScenario(
+async function runScenario(
   scenarioName: string,
   adapter: Adapter,
   agentName: string,
   labFork: string,
   timeoutOverride?: number,
   commonSensePath?: string,
-): RunResult {
+): Promise<RunResult> {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
   const meta = loadScenarioMeta(scenarioDir);
 
   // Multi-session scenarios use a separate code path
   if (meta?.sessions && meta.sessions.length > 0) {
-    return runMultiSessionScenario(scenarioName, adapter, agentName, labFork, timeoutOverride, commonSensePath);
+    return runMultiSessionScenario(
+      scenarioName,
+      adapter,
+      agentName,
+      labFork,
+      timeoutOverride,
+      commonSensePath,
+    );
   }
 
   // Validate single-session scenario
@@ -1066,16 +1091,30 @@ function runScenario(
   cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
 
   // Setup adapter
-  adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween, commonSensePath });
+  adapter.setup(PROJECT_ROOT, {
+    agentName,
+    labFork,
+    gymRoot,
+    sandboxAgents: learnBetween,
+    commonSensePath,
+  });
 
   // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
-  const injectedContextFile = meta?.injected_context ? join(scenarioDir, meta.injected_context) : null;
+  const injectedContextFile = meta?.injected_context
+    ? join(scenarioDir, meta.injected_context)
+    : null;
   const injectedContext =
-    injectedContextFile && existsSync(injectedContextFile) ? readFileSync(injectedContextFile, "utf-8").trim() : "";
+    injectedContextFile && existsSync(injectedContextFile)
+      ? readFileSync(injectedContextFile, "utf-8").trim()
+      : "";
   const contextPrefix = injectedContext ? `${injectedContext}\n\n` : "";
 
   const startMs = Date.now();
-  let lastResult: AdapterResult = { sessionId: "", status: "unknown", sessionPath: "" };
+  let lastResult: AdapterResult = {
+    sessionId: "",
+    status: "unknown",
+    sessionPath: "",
+  };
   const allPhaseResults: AdapterResult[] = [];
 
   if (isWorkflow) {
@@ -1088,17 +1127,24 @@ function runScenario(
       if (!phase) continue;
 
       const phaseFile = join(gymRoot, `phase${i + 1}-task.md`);
-      writeFileSync(phaseFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${phase}\n`);
+      writeFileSync(
+        phaseFile,
+        `${contextPrefix}Work in this directory: ${workDir}\n\n${phase}\n`,
+      );
 
       console.error(`Phase ${i + 1}...`);
-      lastResult = adapter.runAgent(phaseFile, workDir, timeout);
+      lastResult = await adapter.runAgent(phaseFile, workDir, timeout);
       allPhaseResults.push(lastResult);
-      console.error(`Phase ${i + 1} complete (session: ${lastResult.sessionId})`);
+      console.error(
+        `Phase ${i + 1} complete (session: ${lastResult.sessionId})`,
+      );
 
       // Agent failed to launch (e.g. unregistered agent) — abort before scoring
       if (lastResult.status === "error" && !lastResult.sessionId) {
         const durationMs = Date.now() - startMs;
-        console.error(`  ABORT: agent failed to launch (phase ${i + 1}) — skipping scoring`);
+        console.error(
+          `  ABORT: agent failed to launch (phase ${i + 1}) — skipping scoring`,
+        );
         return {
           scenario: scenarioName,
           adapter: adapter.name,
@@ -1165,13 +1211,17 @@ function runScenario(
               if (existsSync(dir)) {
                 const result = learnFromSession({ agentDir: dir, messages });
                 if (result.added.length > 0) {
-                  console.error(`  Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`);
+                  console.error(
+                    `  Context-learn: +${result.added.length} fact(s) → ${dir}/context.md`,
+                  );
                 }
               }
             }
           }
         } catch (err) {
-          console.error(`  Context-learn error: ${err instanceof Error ? err.message : err}`);
+          console.error(
+            `  Context-learn error: ${err instanceof Error ? err.message : err}`,
+          );
         }
       }
 
@@ -1189,9 +1239,12 @@ function runScenario(
     // Single phase
     const taskFile = join(gymRoot, "task.md");
     const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
-    writeFileSync(taskFile, `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`);
+    writeFileSync(
+      taskFile,
+      `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`,
+    );
 
-    lastResult = adapter.runAgent(taskFile, workDir, timeout);
+    lastResult = await adapter.runAgent(taskFile, workDir, timeout);
   }
 
   // Agent failed to launch (e.g. unregistered agent) — abort before scoring
@@ -1206,7 +1259,11 @@ function runScenario(
       workflow: isWorkflow,
       passed: false,
       checks: [
-        { name: "agent_launch", passed: false, detail: "Agent failed to launch (status: error, no sessionId)" },
+        {
+          name: "agent_launch",
+          passed: false,
+          detail: "Agent failed to launch (status: error, no sessionId)",
+        },
       ],
       judgments: [],
       summary: "FAIL: agent failed to launch",
@@ -1245,14 +1302,16 @@ function runScenario(
   let judgments: Judgment[] = [];
   if (existsSync(join(scenarioDir, "judge_criteria.md"))) {
     console.error("  Running LLM judge...");
-    judgments = judgeScenario(scenarioDir, workDir, gymRoot, taskContent);
+    judgments = await judgeScenario(scenarioDir, workDir, gymRoot, taskContent);
     const jPass = judgments.filter((j) => j.verdict === "pass").length;
     console.error(`  Judge: ${jPass}/${judgments.length} conventions passed`);
   }
 
   // Summary combines both layers
   const judgeSummary =
-    judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
+    judgments.length > 0
+      ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}`
+      : "";
 
   // Compute benchmark identity
   // Derive the effective agentsRoot the same way the adapter does:
@@ -1336,7 +1395,10 @@ function readAgentModel(agentsRoot: string, agentName: string): string | null {
  *
  * Returns the full prompt text + its SHA-256 hash (first 12 hex chars).
  */
-function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash: string; text: string } | null {
+function assembleEffectivePrompt(
+  agentsRoot: string,
+  agentName: string,
+): { hash: string; text: string } | null {
   try {
     const agentDir = join(agentsRoot, agentName);
     if (!existsSync(agentDir)) return null;
@@ -1352,7 +1414,9 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
     // 1. common-sense.md — shared behavioral rules
     const sharedCommonSense = join(agentsRoot, "shared", "common-sense.md");
     const sharedFallback = join(REPO_ROOT, "shared", "common-sense.md");
-    const commonSense = loadFile(existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback);
+    const commonSense = loadFile(
+      existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback,
+    );
     if (commonSense) sections.push(commonSense);
 
     // 2. AGENTS.md — agent identity and operating contract
@@ -1365,12 +1429,21 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
     const envLines = ["# Runtime Environment"];
     envLines.push(`- Project root: ${PROJECT_ROOT}`);
     envLines.push(`- Agent directory: agents/${agentName}`);
-    if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (scratch/runtime work)`);
+    if (existsSync(workspace))
+      envLines.push(
+        `- Workspace: agents/${agentName}/workspace (scratch/runtime work)`,
+      );
     if (existsSync(knowledgeDir))
-      envLines.push(`- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`);
-    envLines.push(`- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.`);
+      envLines.push(
+        `- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`,
+      );
+    envLines.push(
+      `- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.`,
+    );
     envLines.push(``);
-    envLines.push(`All paths are relative to project root unless absolute paths are explicitly provided.`);
+    envLines.push(
+      `All paths are relative to project root unless absolute paths are explicitly provided.`,
+    );
     sections.push(envLines.join("\n"));
 
     if (sections.length === 0) return null;
@@ -1382,24 +1455,6 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
   } catch {
     return null;
   }
-}
-
-function findNewerFile(dir: string, thanMs: number): string | null {
-  try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        const found = findNewerFile(full, thanMs);
-        if (found) return found;
-      } else if (entry.name.endsWith(".ts")) {
-        if (statSync(full).mtimeMs > thanMs) return full;
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
 }
 
 // ── CLI ────────────────────────────────────────────────────────────────
@@ -1466,7 +1521,7 @@ function parseArgs(argv: string[]) {
   return args;
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv);
 
   // ── List mode ────────────────────────────────────────────────────
@@ -1479,7 +1534,9 @@ function main() {
       if (meta) {
         const tier = String(meta.tier || "unknown");
         const cats = (meta.categories || []).join(",");
-        console.log(`${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`);
+        console.log(
+          `${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`,
+        );
       } else {
         console.log(`${name.padEnd(42)} (no metadata)`);
       }
@@ -1512,7 +1569,14 @@ function main() {
           process.exit(1);
         }
         const adapter = adapterFactory();
-        const result = runScenario(name, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
+        const result = await runScenario(
+          name,
+          adapter,
+          args.agent,
+          args.lab,
+          args.timeout,
+          args.commonSense || undefined,
+        );
         results.push(result);
         if (result.passed) {
           passCount++;
@@ -1560,8 +1624,12 @@ function main() {
   if (!args.scenario) {
     console.error("Usage:");
     console.error("  bun run scenario:run -- <scenario> [options]");
-    console.error("  bun run scenario:list -- [--tier <t>] [--category <c>] [--tag <t>]");
-    console.error("  bun run scenario:run -- --run-all [--tier <t>] [--category <c>]");
+    console.error(
+      "  bun run scenario:list -- [--tier <t>] [--category <c>] [--tag <t>]",
+    );
+    console.error(
+      "  bun run scenario:run -- --run-all [--tier <t>] [--category <c>]",
+    );
     console.error("");
     console.error("Adapters: may-agent (default), claude-code, generic");
     console.error("");
@@ -1574,14 +1642,23 @@ function main() {
 
   const adapterFactory = ADAPTERS[args.adapter];
   if (!adapterFactory) {
-    console.error(`Unknown adapter: ${args.adapter}. Available: ${Object.keys(ADAPTERS).join(", ")}`);
+    console.error(
+      `Unknown adapter: ${args.adapter}. Available: ${Object.keys(ADAPTERS).join(", ")}`,
+    );
     process.exit(1);
   }
 
   const adapter = adapterFactory();
   let result: RunResult;
   try {
-    result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
+    result = await runScenario(
+      args.scenario,
+      adapter,
+      args.agent,
+      args.lab,
+      args.timeout,
+      args.commonSense || undefined,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result = {
@@ -1593,7 +1670,9 @@ function main() {
       passed: false,
       checks: [{ name: "scenario", passed: false, detail: message }],
       judgments: [],
-      summary: message.includes("Missing:") ? `scenario not found or incomplete: ${message}` : message,
+      summary: message.includes("Missing:")
+        ? `scenario not found or incomplete: ${message}`
+        : message,
       agent_status: "error",
       duration_ms: 0,
       session_id: "",
@@ -1614,4 +1693,4 @@ function main() {
   if (!result.passed) process.exit(1);
 }
 
-main();
+await main();

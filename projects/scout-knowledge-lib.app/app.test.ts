@@ -46,7 +46,7 @@ describe("Scout task reconciliation", () => {
     });
   });
 
-  it("routes unfamiliar maintenance through the accountable owner", () => {
+  it("reuses learned maintenance and keeps the accountable owner fallback", () => {
     expect(
       resolveScoutTask({
         type: "project.owner.requested",
@@ -61,17 +61,28 @@ describe("Scout task reconciliation", () => {
         type: "project.owner.requested",
         reason: "manual-review",
       })?.workflow,
-    ).toBeUndefined();
+    ).toBe("knowledge-planner");
   });
 
-  it("declares task routes and capabilities instead of direct handlers", () => {
-    expect(app.ownerEntry?.workflow).toBe("knowledge-planner");
-    expect(Object.keys(app.taskWorkflows ?? {})).toEqual([
-      "scout-heartbeat",
-      "scout-explore",
-      "scout-daily-digest",
-      "library-health",
+  it("declares one scoped resolver and relies on workflow discovery", () => {
+    expect(app.tasks?.accepts).toEqual([
+      { type: "scout.heartbeat", project: "scout-knowledge-lib" },
+      { type: "scout.explore", project: "scout-knowledge-lib" },
+      { type: "scout.digest", project: "scout-knowledge-lib" },
+      {
+        type: "project.library_health.tick",
+        project: "scout-knowledge-lib",
+      },
+      {
+        type: "project.owner.requested",
+        project: "scout-knowledge-lib",
+      },
     ]);
-    expect(app.taskRoutes).toHaveLength(5);
+    expect(app.tasks?.resolve).toBe(resolveScoutTask);
+    expect(app.owner).toBe("scout");
+    expect(app).not.toHaveProperty("ownerEntry");
+    expect(app).not.toHaveProperty("taskWorkflows");
+    expect(app).not.toHaveProperty("taskRoutes");
+    expect(app).not.toHaveProperty("eventGraph");
   });
 });

@@ -1,17 +1,19 @@
 # Proposal: App Task Reconciliation Model
 
-**Design status:** Pilot.
-**Implementation status:** The shared reconciler is in production.
-All active project apps route organized work through task reconciliation.
-`evaluation.app`, `may-agent.app`, `scout-knowledge-lib.app`, and `gym.app`
-declare task routes, reusable workflow capabilities, and an owner fallback.
-`aks-rp-e2e.app` has completed its bounded handler cutover: feature compact,
-single-spec verification, task execution and review, problem investigation,
-approval dispatch, Condition fallback, stall and focus review, semantic owner
-events, and compatibility health are reconciled tasks. The retired direct
-event-to-workflow path has been removed from the SDK and runtime. Imperative
-`onEvent` functions remain only where an event must be filtered, translated,
-or recorded without executing project work.
+**Design status:** Canonical convergence target.
+**Implementation status:** Convention-first app/task reconciliation is the
+production contract as of 2026-07-19. Every active app has one resolver, one
+deduplicating controller queue, convention workflow discovery, and owner
+fallback. AKS live state has been transformed to resources, attempts,
+Conditions, and completion receipts. Legacy task routes, capability maps,
+owner-entry wrappers, synthetic task Cron handlers, tree mirroring, and the
+AKS assignment/review/planner scheduler have been removed.
+
+Imperative `onEvent` remains only for deterministic filtering or translation;
+it does not execute project work. The infrastructure-independent agent runner
+is implemented. Converging direct and hosted definition/tool preparation is a
+separate follow-up in [implementation-simplification.md](implementation-simplification.md),
+not an app/task reconciliation compatibility requirement.
 
 ## Executive Decision
 
@@ -22,13 +24,13 @@ Use one event-driven task reconciliation model for every Agent App:
 > which invokes the task's workflow or falls back to its accountable owner.
 
 ```text
-event
-  -> app identifies a task or Condition
-  -> task reconciler compares desired and observed state
-  -> bound workflow, otherwise resolved owner agent
-  -> structured result and evidence
-  -> app validates and applies commands
-  -> updated task/Condition state and follow-up events
+event or periodic resync
+  -> identify one task or update one Condition
+  -> enqueue task key
+  -> one task reconciler compares spec with status
+  -> invoke bound workflow, otherwise resolved owner agent
+  -> validate and atomically apply the structured result
+  -> update status and enqueue affected tasks
 ```
 
 This proposal refines the boundaries in
@@ -41,7 +43,7 @@ The public unit is the app. Internally, the pieces have distinct jobs:
 
 | Concept     | Responsibility                                                                                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
-| App         | Organizes goals, tasks, ownership, workflows, knowledge, events, permissions, and durable state.                    |
+| App         | Organizes goals, tasks, workflow bindings, knowledge, events, permissions, watchers, and durable state.             |
 | Task        | Records one desired outcome, its relationships, and observed reconciliation state.                                  |
 | Owner agent | Makes adaptive semantic decisions and is the guaranteed accountability fallback.                                    |
 | Workflow    | Preserves a learned, repeatable process for a known task shape.                                                     |
@@ -57,6 +59,59 @@ The compact rule is:
 The app owns the organization and its durable state. The owner agent authors
 semantic changes to that organization through typed decisions. App code does
 not become a second planner merely because it applies those decisions.
+
+## Convention-First Contract
+
+The normal app declares less than the runtime derives. Required semantics do
+not imply repeated configuration.
+
+| Concern | Convention | Explicit configuration is needed only when |
+| --- | --- | --- |
+| App owner | Declare one `app.owner`; `agents/owner/` is the conventional local implementation directory. | Never; ambiguous ownership is a manifest error. |
+| Task owner | Inherit from the nearest explicit ancestor, then the app owner. | A task has a different accountable owner. |
+| Handler | Use `task.workflow` when present; otherwise invoke the resolved owner through the standard agent runner. | Never. There is no separately configured owner handler. |
+| Workflow | Resolve `workflow: "name"` from the resolved agent's local `workflows/name` module. | A deliberately external workflow needs a qualified name. |
+| Task mode | `achieve`. | The desired state is standing, so use `maintain`. |
+| Parent | The app's root containment. | The task belongs under a more specific decomposition. |
+| Priority | `P2`. | The owner intentionally raises or lowers it. |
+| Event routing | A targeted task event reconciles `target.taskId`; a Condition event updates the Condition and reconciles its dependents. | An external event must be correlated into a new or standing task identity. |
+| Concurrency and timeout | Use runtime and workflow defaults. | A proven domain constraint requires a narrower bound. |
+| Context | Supply the task, linked Conditions, app context, and trigger observation automatically. | A workflow declares additional domain inputs in its own module. |
+
+An app is invalid only when these rules cannot produce one owner or resolve an
+explicit workflow under that agent. It should not repeat derived owner, handler, context,
+timeout, route name, or event-graph metadata merely to satisfy the runtime.
+
+The target manifest surface is correspondingly small:
+
+```ts
+defineProjectApp({
+  id: "example",
+  owner: "example-owner",
+
+  tasks: {
+    accepts: [
+      { type: "project.owner.requested", target: { project: "example" } },
+    ],
+    resolve: resolveTask,
+  },
+
+  schedules: [/* emit events only */],
+  actions: {/* action name -> event */},
+  onEvent: projectReadModels, // optional deterministic projection only
+});
+```
+
+`tasks.resolve` correlates non-targeted events with task identities. It does
+not execute work. Multiple named task routes, route-local handler timeouts,
+capability maps, and manually duplicated event graphs are migration surfaces,
+not parts of the target contract.
+
+An action has one conventional path: the host resolves
+`app.actions[actionName]`, validates parameters, calls its event factory, and
+emits that event once. `project.action.invoked` is an ingress envelope, not an
+event every app must redispatch by hand. Read-only actions execute through the
+same named action boundary without entering task reconciliation.
 
 ## Agent Core And Infrastructure
 
@@ -101,45 +156,46 @@ observers; the autonomous system wraps it with durable infrastructure. Prompt
 construction and tool-policy resolution must also be shared so Gym does not
 approximate production behavior by duplicating runtime logic.
 
-`SubagentManager` may remain the compatibility facade while this boundary is
-extracted. Its durable session coordination belongs to the infrastructure
-wrapper, not to the agent execution core.
+`agent-runner.ts` and `agent-execution.ts` are the neutral execution boundary.
+`SubagentManager` is the current infrastructure facade, not the agent core;
+its durable session coordination, event adaptation, timeout, and recovery
+belong to the infrastructure wrapper. A rename is not required to preserve
+that dependency direction.
 
 ## One Task Resource
 
-A task follows the Kubernetes `spec`/`status` shape. Exact serialized field
-names may remain compatible during migration; the authority boundary is the
-important decision.
+A task follows the Kubernetes `spec`/`status` shape. Compatibility aliases may
+exist only at a bounded migration reader; they are not valid authoring forms.
+New writes use this shape.
 
 ```ts
 type Task = {
   metadata: {
     id: string;
     generation: number;
+    resourceVersion: number;
   };
 
   spec: {
     outcome: string;
     acceptance: string[];
-    mode: "achieve" | "maintain";
+    mode?: "achieve" | "maintain"; // default: achieve
 
     owner?: string;
-    workflow?: {
-      name: string;
-      input?: Record<string, unknown>;
-    };
+    workflow?: string;
+    input?: Record<string, unknown>;
 
     parentId?: string;
     dependsOn?: string[];
     outputs?: string[];
-    priority?: "P0" | "P1" | "P2" | "P3";
+    priority?: "P0" | "P1" | "P2" | "P3"; // default: P2
   };
 
   status: {
     observedGeneration: number;
     phase: "pending" | "running" | "waiting" | "converged" | "attention";
     currentAttempt?: string;
-    blockedBy?: string[];
+    conditionIds?: string[];
     summary?: string;
     evidence?: string[];
   };
@@ -149,7 +205,8 @@ type Task = {
 `spec` is owner intent. `status` is an observation written through app/runtime
 commands. `generation` changes whenever owner intent changes in a way that can
 invalidate execution. Attempts and results carry the task generation and cannot
-close or rewrite a newer generation.
+close or rewrite a newer generation. Every mutation also compares
+`resourceVersion`, so two reconcilers cannot silently overwrite each other.
 
 Task modes are intentionally small:
 
@@ -162,9 +219,10 @@ Loops are ordinary `maintain` tasks. Focus plans and normal bounded work are
 normally `achieve` tasks. There is no separate loop-task scheduler or focus-task
 lifecycle.
 
-The phase vocabulary above is the logical target, not an immediate persistence
-cutover. Existing project apps may map `backlog`, `active`, `blocked`, `review`,
-and `done` at compatibility boundaries while the new authority model is proven.
+The phase vocabulary above is the writable reconciliation authority. The
+co-located `backlog`, `active`, `blocked`, `review`, and `done` task view is a
+derived human projection for decomposition and existing project views; it is
+not another handler result contract or mutation authority.
 
 ## Task Authoring Contract
 
@@ -177,9 +235,9 @@ tasks, but must not define incompatible app-specific task shapes.
 | `parentId`   | Durable decomposition or containment only; it is not a scheduling edge.                                                                |
 | `outcome`    | One desired end state, written as an outcome rather than an activity such as "investigate" or "monitor".                               |
 | `acceptance` | One or more observable postconditions that can prove convergence from artifacts, records, events, or external state.                   |
-| `mode`       | `achieve` for a bounded outcome; `maintain` for standing desired state. No other task kind is needed.                                  |
+| `mode`       | Omit for the conventional `achieve` mode; write `maintain` only for standing desired state. No other task kind is needed.               |
 | `owner`      | Optional explicit accountability override. Otherwise ownership resolves from the nearest ancestor and then the app.                    |
-| `workflow`   | Optional explicit binding to a known reusable process. Absence means owner handling; an invalid binding is visible failure.            |
+| `workflow`   | Optional local workflow name. Absence means owner handling; an invalid binding is visible failure.                                      |
 | `input`      | Stable desired configuration needed by the handler. It participates in the spec hash and therefore must not contain wake observations. |
 | `outputs`    | Durable artifacts or records into which the outcome is absorbed. Do not list transient logs as project output.                         |
 | `dependsOn`  | True ordering constraints only. External facts and waits are Conditions, not dependency prose.                                         |
@@ -209,9 +267,10 @@ the reconciler from distinguishing a changed goal from a changed observation.
 6. Keep completed migrations, incidents, and retired ideas out of seed trees.
    Seed files contain only standing desired state; bounded completed work is
    absorbed and compacted.
-7. Parent tasks express meaningful outcomes and acceptance. Their displayed
-   state is derived from children and linked ledgers; parent summaries are not
-   a second writable rollup authority.
+7. A parent task expresses its own meaningful outcome and acceptance; its
+   status reflects only its own reconciliation. Child progress is a derived
+   branch projection, not writable parent rollup state. A grouping label with
+   no outcome is a view, not a task.
 8. Prefer clear local code for one-off work. Promote proven repeated execution
    into a workflow; do not add an envelope or abstraction merely to make unlike
    tasks look uniform.
@@ -270,8 +329,9 @@ a different process would hide a configuration failure.
 
 ## One Generic Task Reconciler
 
-Use one generic reconciler implementation, logically scoped to each app
-instance. It performs only mechanical steps:
+Use one generic reconciler implementation and one work queue, logically scoped
+to each app instance. Event selectors are correlation rules, not separately
+scheduled controllers. It performs only mechanical steps:
 
 ```text
 load -> compare -> resolve -> lease -> invoke -> validate -> apply -> emit
@@ -298,9 +358,16 @@ It must not:
 - encode AKS-, Scout-, or other app-specific strategy;
 - scan the task graph as a scheduling queue.
 
-Events are wakeups. Persisted task and Condition resources are truth. A bounded
-recovery scan may detect missed delivery or broken invariants, but it feeds the
-same reconciliation path and does not become a second scheduler.
+Events are hints that enqueue resource keys. Persisted task and Condition
+resources are truth. Duplicate or lost events therefore do not change the
+answer: reconciliation is level-based and idempotent. A bounded periodic
+resync enqueues live tasks to recover missed delivery and configuration drift;
+it feeds the same path and does not make scheduling decisions from the tree.
+
+Cron owns time only. It may emit a wake event or request a resync, but task
+selectors must not be installed as synthetic Cron handlers. Workflow names
+such as `spec-loop-controller` describe legacy implementation history; in the
+target model they are ordinary domain workflows such as `spec-verification`.
 
 ## Uniform Handler Contract
 
@@ -308,13 +375,15 @@ Owner agents and workflows return one app-level result envelope:
 
 ```ts
 type HandlerResult = {
-  disposition:
-    "converged" | "progressing" | "waiting" | "needs-owner" | "failed";
-
+  state: "converged" | "waiting";
   summary: string;
   evidence: string[];
   actions?: AppAction[];
   conditions?: ConditionSpec[];
+} | {
+  state: "needs-owner";
+  reason: string;
+  evidence?: string[];
 };
 ```
 
@@ -322,10 +391,33 @@ Handlers do not write the task graph directly. The app validates action scope,
 expected generation, authorization, budget, idempotency, and evidence before
 applying commands.
 
-`progressing` must identify an observable continuation. `waiting` must reference
-or create exact Conditions. `failed` ends the current attempt but does not by
-itself decide the task's semantic disposition. `needs-owner` selects the owner
-fallback on the next safe reconciliation boundary.
+The states have one meaning each:
+
+- `converged`: the handler finished the current reconciliation and may include
+  bounded follow-up task actions;
+- `waiting`: no run should remain open; exact Conditions identify what can
+  change the answer; and
+- `needs-owner`: a workflow declines semantic authority and hands the same task
+  to its resolved owner once.
+
+`needs-owner` is valid only from a workflow. An owner that needs human or
+external input returns `waiting` with a Condition or emits an escalation
+action; it cannot hand the task back to itself.
+
+Failure is not a task state and is not a successful result envelope. A thrown
+error or invalid result fails the attempt. Infrastructure may retry the same
+handler with bounded backoff; exhaustion records `attention` and wakes the
+owner. If the owner attempt fails, the task remains in `attention` for a later
+event or human intervention. It never recursively falls back to itself.
+
+External continuation is always `waiting` with an exact Condition. A domain
+watcher owns monitoring and emits the matching event; the task reconciler only
+persists the correlation and wakes the task. `converged` is still a claim: the
+app checks generation, authorization, command validity, and declared
+postconditions before accepting it. A workflow should expose a deterministic
+`verify` function beside its handler when its postconditions can be checked
+mechanically; the runtime calls it by convention without a separate manifest
+entry. Otherwise semantic acceptance belongs to the owner.
 
 ## Workflow Versus Agent
 
@@ -370,6 +462,9 @@ This preserves both accepted principles:
 Event routing stays small:
 
 ```text
+task created or spec generation changes
+  -> reconcile that task
+
 task-targeted event
   -> reconcile that task
 
@@ -380,9 +475,9 @@ Condition event
 known mechanical app event
   -> deterministic projection or explicitly bound task/workflow
 
-novel app-level event accepted by a task route
+novel app-level event accepted by the task resolver
   -> task without workflow binding
-  -> app owner entry
+  -> resolved app owner
 
 read-only query
   -> projection, no agent turn
@@ -407,6 +502,35 @@ strategy or acceptance must change -> owner
 Repeated delivery of the same fallback packet is deduplicated by task,
 generation, handler revision, and failure identity.
 
+### One Feedback And Recovery Loop
+
+All continuation returns through the same resource reconciliation path:
+
+```text
+result commands change resources
+  -> commit once
+  -> enqueue changed task and affected dependents
+  -> reconcile from fresh state
+
+handler error
+  -> retry same generation and handler with bounded backoff
+  -> on exhaustion, record attention and enqueue owner handoff
+
+owner error
+  -> record attention
+  -> wait for resync, new evidence, or human action
+```
+
+There is no separate reviewer-applier loop, recovery controller, watchdog task,
+or result event required for the normal path. Independent review is a domain
+workflow step or a separate task only when the task's acceptance policy truly
+requires a different authority. Watchdogs observe controller health and enqueue
+keys; they do not mutate task meaning or invent work.
+
+The controller may retry transport and lease failures because those are
+mechanical. It may not retry a rejected domain result, rewrite acceptance,
+create a blocker, or choose a different workflow. Those are owner decisions.
+
 ## Conditions And Durable Waits
 
 Workflows and agent sessions remain bounded. They never sleep across a durable
@@ -423,9 +547,33 @@ external event
   -> affected task is reconciled again
 ```
 
-A Condition records the exact fact, observer, owner, freshness, and fallback
-policy. A task references it; the task does not copy its changing state into a
-large blocker narrative.
+A Condition is another small `spec`/`status` resource:
+
+```ts
+type Condition = {
+  metadata: { id: string; generation: number; resourceVersion: number };
+  spec: {
+    type: string;
+    subject: string;
+    expected: unknown;
+    owner?: string;       // default: referencing task owner
+  };
+  status: {
+    observedGeneration: number;
+    state: "unknown" | "false" | "true";
+    observed?: unknown;
+    observedAt?: string;
+    evidence?: string[];
+  };
+};
+```
+
+The event source is the observer by convention. Domain watchers own polling,
+provider retries, and replay of current external state; the task controller
+never substitutes age for an observation. A task references Condition IDs; it
+does not copy their changing state into a blocker narrative. `waiting_for`,
+`blocker`, refresh schedules, and status aliases are legacy representations,
+not alternate authoring forms.
 
 ## Tree And Graph
 
@@ -443,21 +591,38 @@ same resources. They do not own scheduling or duplicate parent/child state.
 Attempts, sessions, workflow runs, reviews, and delivery traces remain runtime
 facts linked by task ID and generation.
 
+A parent task has status only for its own desired state and attempt. Branch
+health such as "three children waiting" is a projection and never overwrites
+that status. If a node exists only to label a group and has no outcome to
+reconcile, it is a view/category, not a fake task. The app root is the default
+containment parent and does not need a schedulable root-task record.
+
 ## Completion And Experience
 
 An `achieve` task that converges goes through a short absorption boundary:
 
-1. validate and apply its outcome to the parent, domain state, plan, or loop
-   ledger that required it;
-2. extract reusable experience into knowledge, a skill, a workflow, a test, or
-   a workflow improvement task;
-3. wake dependents;
-4. retain a minimal completion reference for lineage and deduplication; and
-5. remove it from the live graph.
+1. validate the generation, result, declared postconditions, and output
+   absorption;
+2. atomically apply its commands and durable output references;
+3. retain one minimal completion receipt for lineage and deduplication;
+4. remove it from the live graph; and
+5. enqueue dependents from the committed state.
+
+This is the task equivalent of one runtime-owned finalizer. Apps do not
+configure finalizer lists or write deletion hooks for ordinary tasks; the
+controller performs this same absorption transaction for every `achieve`
+task.
 
 The system does not need a full task archive to remember experience. Attempt
 and evidence records keep bounded operational provenance. Durable value is
 promoted into the surface where future work actually consumes it.
+
+Experience promotion is not allowed to hold a completed task in the live
+graph. Completion receipts carry the task shape, workflow, outcome, evidence,
+and failure fingerprints needed to detect repetition. A bounded observer may
+suggest a skill, workflow, test, or `maintain` task when the same useful shape
+recurs; the owner decides whether to promote it. This retains learning without
+turning every completion into another mandatory review loop.
 
 The learning path is:
 
@@ -520,17 +685,18 @@ mechanics remain in the reconciler.
 8. Every semantic exception eventually resolves to the accountable owner.
 9. Events wake reconciliation; the task graph is not a scheduling queue.
 10. Workflow binding is explicit and invalid binding is observable.
-11. Finished work leaves the live graph only after outcome absorption,
-    dependent wakeup, and experience extraction.
+11. Finished work leaves the live graph only after outcome absorption and a
+    completion receipt make dependent wakeup and later learning safe.
 12. No fact has two writable authorities.
 
 ## AKS-RP-E2E Convergence
 
-The current AKS app validates the need for this model. At the design review
-snapshot it had 127 live tasks, 117 blocked tasks, an explicit owner on every
-task, and only eight workflow-bound tasks. App routing separately invokes a
-planner, reviewed-task applier, task reviewer, task worker, problem solver,
-watchdog, stall review, three loop controllers, and focus-plan handling.
+The AKS cutover is the production proof for this model. While paused, the
+authoritative 315-node legacy graph was atomically transformed into 169 live
+nodes, 154 executable resources, 133 typed Conditions, 162 durable attempts,
+and 1,156 completion receipts. Ninety-nine finished leaves were absorbed and
+47 assignment/review/application wrapper tasks were retired. The transform
+reported zero invalid tasks.
 
 The target mapping is:
 
@@ -539,200 +705,83 @@ The target mapping is:
 | Task-worker event adapter                                  | Generic task reconciler invokes the resolved handler.                               |
 | Task reviewer and reviewed-task applier                    | Bound workflow contract or owner fallback, followed by generic command application. |
 | Planner dispatch, refill, and result-application mechanics | Generic reconciliation.                                                             |
-| Planner decomposition and strategy                         | Smaller owner-entry workflow.                                                       |
+| Planner decomposition and strategy                         | Resolved owner agent; bind a workflow only after that process becomes reusable.     |
 | Watchdog and stall-review overlap                          | Reconciler delivery/attempt invariants plus exact Conditions.                       |
-| Spec/reference/compact loop controllers                    | Reusable `maintain` workflows with domain logic preserved.                          |
+| Spec and compact loop controllers                          | Reusable `maintain` workflows that return actions and Conditions.                   |
 | Blocked holder tasks and refresh schedules                 | Conditions and event-driven wakeup.                                                 |
 | Stored parent rollups                                      | Derived projections.                                                                |
 
-This proposal does not claim that all existing workflow code disappears. The
-valuable spec verification, feature reference, compact planning, review, and
-repair experience stays. The change removes duplicated control-plane roles and
-makes that experience directly bindable to tasks.
+Only six AKS workflows remain executable: focus review, stall review, approval
+dispatch, problem solving, spec-loop reconciliation, and compact-loop
+reconciliation. They preserve reusable domain process while the generic
+controller owns claims, retries, task changes, Conditions, completion
+absorption, and dependent wakeup. Unbound work always resolves to the app or
+task owner.
 
-## Evaluation App Pilot Evidence
+## Implementation Status
 
-The `evaluation.app` pilot was deployed on 2026-07-18. Seven direct workflow
-handlers were replaced by task routes, four explicit workflow capabilities,
-and one owner entry. Live evidence showed:
+The convention-first contract is implemented across the active Agent Apps:
 
-- known session aftermath and pipeline work resolved through their bound
-  workflows without an owner turn;
-- unfamiliar owner work resolved through `owner:evaluator`;
-- concurrent session aftermath work used independent `achieve` tasks;
-- completed `achieve` tasks left the live graph and retained bounded
-  tombstones;
-- recurring pipeline and backfill responsibilities remained as `maintain`
-  tasks; and
-- evaluator/judge terminal events were filtered before they could create
-  self-evaluation tasks.
+| App | Current state |
+| --- | --- |
+| `evaluation.app` | One resolver/controller, workflow discovery, and owner fallback. |
+| `may-agent.app` | Standing platform responsibilities use scoped semantic events and the same controller. |
+| `scout-knowledge-lib.app` | Research, digest, health, and owner work use maintain tasks and learned workflows. |
+| `gym.app` | Incident, regression, and proposal work use the shared app contract. |
+| `aks-rp-e2e.app` | Graph migrated to resources, attempts, Conditions, and receipts; active on the convention controller. |
 
-A production owner-action canary first exercised the proposed authority
-boundary twice. Generation 3 asked the owner to create a canary task; the
-evaluator session was persisted with `toolPolicy: readonly`, invoked only
-`finish`, and returned a typed `create-task` action. Generation 4 returned a
-typed `close-task` action with `expectedRevision: 0`. The owner sessions made no
-direct file or task-tree mutation.
+Steady state has no task routes, owner-entry wrapper, workflow registry,
+manual event graph, assignment/review pipeline, task archive, mirrored
+`tasks/tree.json`, or app-specific scheduler. Declared actions are translated
+once by infrastructure. Targeted events, Condition observations, restart
+recovery, and resync all enqueue the same task key in one app work queue.
 
-The follow-up implementation removed the evaluation-specific action applier.
-Workflow completion now carries the structured handler result through the
-typed workflow runner. The generic reconciler verifies the task generation,
-attempt, and handler, validates the complete action batch, applies it, and
-records the reconciliation outcome under one task-tree lock and save. A stale
-claim exits before action validation or mutation, and one invalid action rejects
-the whole batch. The boundary enforces action scope, expected revision, a
-16-action budget, non-empty evidence, and protection for reconciler-owned
-`runtime/*` tasks. `progressing` and `waiting` also end their attempts through
-this boundary; `waiting` requires an identified Condition.
+AKS retains six reusable workflows: approval dispatch, focus review, project
+stall review, problem solving, spec-loop reconciliation, and feature-compact
+reconciliation. Other work resolves directly to its accountable owner. Exact
+external waits are Conditions; completed achieve tasks are receipts; parent
+and Kanban views are projections.
 
-The post-deployment production canary then exercised this generic boundary in
-both directions. Generation 5 used evaluator session `s_1784371353696_1` to
-propose creation of `atomic-owner-action-canary-20260718`; event `3470662`
-recorded `proposedActions`, and reconciliation event `3470665` recorded
-`actionsApplied: ["created atomic-owner-action-canary-20260718"]`. Generation 6
-used session `s_1784371415872_2` to propose its revision-checked closure; events
-`3470744` and `3470747` recorded the proposal and applied action respectively.
-Both sessions persisted `toolPolicy: readonly` and invoked only `finish`. The
-task state records `created_by` and `done_by` as
-`project-app-task-reconciler`, and no workflow-side task mutation occurred.
+AKS was reactivated after the paused transform. Live owner-fallback and active
+restart probes on 2026-07-20 showed one controller runtime generation, one
+session per claimed task, no duplicate attempts, and no generic resumption of
+task-bound sessions. Task session recovery is explicitly owned by the app task
+reconciler; the generic session runtime interrupts prior task sessions while
+the controller re-enqueues their persisted resource keys.
 
-Two limitations remain explicit:
-
-1. Condition identity validation and waiting-attempt termination have focused
-   coverage, but end-to-end Condition event materialization and affected-task
-   wake filtering are not yet proven in production.
-2. `SubagentManager` is still the durable infrastructure facade and Gym still
-   enters through the full May binary. Extracting the shared agent runner and
-   moving Gym to direct runner use remain separate runtime work.
-
-## Current Rollout And App Decisions
-
-Migration is based on work semantics, not on making every event look alike.
-
-| App                       | Current decision                                                           | Reason                                                                                                                                                                                                                             |
-| ------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `evaluation.app`          | Migrated. | Session aftermath, scans, pipeline observation, project audits, and owner review have durable desired-state identities. |
-| `may-agent.app`           | Migrated. | Ops observations, digest creation, and owner review are standing responsibilities; comment persistence and event filtering remain bounded projections. |
-| `scout-knowledge-lib.app` | Migrated. | Each source is a separate `maintain` task; digest and health are reusable workflows; novel accepted maintenance falls back to Scout. |
-| `aks-rp-e2e.app`          | Migrated. | Loops, execution/review, owner events, approval, Conditions, focus review, and runtime health enter through task reconciliation. |
-| `gym.app`                 | Migrated. | Incident intake, benchmark execution, and review use stable task identities while the neutral agent runner remains reusable. |
-
-The first AKS cohorts validate both task modes. The feature-compact controller
-is a standing `maintain` task. Completion review and reviewed-task application
-are paired `achieve` tasks whose stable identities are derived from the task
-attempt and review identities. In production, review event `3489482` was
-claimed through `aks-rp-e2e-task-reviewed-application`, invoked
-`workflow:reviewed-task-applier`, and converged at event `3489531`. Completion
-event `3490789` was then claimed through
-`aks-rp-e2e-task-completion-review`, invoked `workflow:task-reviewer`, emitted
-its structured decision, and converged at event `3490862`. Both tasks left the
-live graph with bounded completion tombstones.
-
-The completion-review cutover also exercised restart recovery. The reconciler
-now persists the authored intent and trigger observation with each attempt,
-distinguishes attempts from the current runtime instance, resumes a prior
-runtime attempt through the same route, and releases older attempts that lack
-a recoverable trigger into visible owner attention. Active-task projection is
-derived from executable leaves and active workflow controllers rather than all
-active parent rollups.
-
-Task execution has now crossed that boundary. New `project.task.assigned`
-events resolve to revision-and-attempt-stable `achieve` tasks bound to
-`workflow:task-execution`; `task-worker` returns a typed disposition, and the
-legacy direct assignment handler is absent from the manifest. The temporal
-cutover allowed an already-running legacy workflow to finish at event
-`3491771`, while assignment `3491801` was claimed only by route
-`aks-rp-e2e-task-execution` at `3491803`. It emitted the normal completion
-handoff, converged at `3491907`, passed through task review at `3491974`, and
-through reviewed-result application at `3492038`. The execution, review, and
-application tasks all left the live graph with bounded completion tombstones.
-
-The next bounded cohorts are represented directly by their semantics:
-
-- approval dispatch is an `achieve` task keyed by its path-and-packet approval
-  lineage, with malformed or failed delivery returning `needs-owner`;
-- each exact Condition fallback is an `achieve` task with no workflow binding,
-  proving that semantic recovery resolves through the accountable owner;
-- project stall review is one standing `maintain` task rather than a stream of
-  repeated review jobs; and
-- strategy and progress focus reviews are two independent `maintain` tasks
-  using the same learned focus workflow, while the focus branches they create
-  remain ordinary project tasks.
-
-These four cohorts have manifest, stable-identity, typed-result, syntax, and
-integrity coverage. Their natural-event production proof remains pending; the
-old direct handlers have been removed, so each event cohort still has only one
-authority during that observation window.
-
-The owner-entry cutover required one shared runtime addition: task route
-resolvers now receive the durable persisted event row as `eventId`, and the
-canonical flattened wake packet—including that identity—is stored with the
-attempt for restart recovery. Each comment, metric signal, approval result, or
-other semantic owner event can therefore become its own replay-safe `achieve`
-task rather than being collapsed into a busy standing task. Production owner
-event `3493655` was claimed by `owner:app-ops` at `3493657`, converged at
-`3493774`, and left the live graph with a completion tombstone. The old direct
-planner handler was absent for that event.
-
-Compatibility watchdog execution now uses one `maintain` task. This does not
-declare the old watchdog strategy permanent: the task makes its standing
-responsibility and handler visible while exact Conditions and generic attempt
-recovery progressively remove its reasons to act.
-
-The spec loop now enters through one stable `maintain` task bound to
-`workflow:spec-loop-controller`. Production tick `3496686` was claimed by
-`aks-rp-e2e-task-spec-loop` at `3496689`, ran the existing bounded controller,
-and converged at `3496695` without creating or assigning duplicate work. The
-workflow preserves the reconciler's active attempt and no longer rewrites the
-root lifecycle while that attempt owns authority. Its 63 existing blocked wait
-children remain unchanged; converting those waits is a later Condition cohort,
-not a prerequisite for removing the duplicate direct controller.
-
-Do not recreate the already-complete feature-reference loop as standing
-backlog. Its ledger currently reports `completionReady=true`, `done=307`, and
-no unfinished rows, so the periodic wake, manual pulse action, and direct
-controller handler have been retired while the completed task and durable
-feature outputs remain.
-Retire planner refill, watchdog, and stall-review overlap only after incident
-replay and live parity prove that the reconciler and Condition wake path cover
-the same recovery cases.
-
-Condition conversion must also preserve single authority. When an external
-fact such as `project.approval.submitted` satisfies an affected task Condition,
-that fact must not independently invoke both a global owner-event task and the
-Condition task's owner handler. A conversion cohort therefore needs an
-explicit event-ownership gate or a deterministic Condition workflow before its
-legacy global owner route is removed. Merely copying legacy `waiting_for`
-records into the Condition registry would create duplicate semantic
-reconciliation and is not a valid migration.
+The neutral agent core is also implemented. Direct/hosted agent-definition and
+tool-construction parity remains a separate simplification proposal, not an
+alternate Agent App execution path or unfinished task-reconciliation cutover.
 
 ## Migration
 
 Migration must replace paths rather than add a permanent V3 layer:
 
-1. Compute `resolvedOwner` and `resolvedHandler` as read-only shadow
-   projections for current tasks.
-2. Treat existing task `workflow` values as explicit workflow bindings and
-   report missing/invalid bindings without changing execution.
-3. Require one app-owner fallback and prove owner inheritance in shadow.
-4. Add the uniform handler-result envelope and generation checks at current
-   task command boundaries.
-5. Route a bounded cohort of new task wakes through the generic reconciler.
-6. Convert future exact waits to Conditions and stop creating equivalent wait
-   tasks for the cohort.
-7. Move loop-controller domain behavior behind `maintain` task workflow
-   bindings while preserving current ledgers and evidence.
-8. Absorb task review into workflow contracts or owner fallback for the cohort.
-9. Retire overlapping task-worker, reviewer-applier, watchdog, stall, and
-   controller routes only after live parity and incident replay.
-10. Remove compatibility fields and old routes once no active attempt depends
-    on them.
-11. Extract the May-specific agent runner from durable session coordination;
-    move Gym to the same runner with sandbox observers before deleting its
-    duplicated prompt construction.
+1. Fix single-authority defects first: scoped selectors, action translation,
+   acknowledgement after successful handling, and atomic result application.
+2. Introduce the convention-first surface: one app owner, one task resolver,
+   local workflow discovery, one result contract, and one selector matcher.
+3. Make targeted task events, Condition events, and periodic resync enqueue the
+   same app work queue; remove synthetic task Cron handlers.
+4. For AKS, pause new assignment, drain or settle current attempts, and take a
+   migration snapshot. Do not transform live task generations underneath
+   running workers.
+5. Transform the live graph once: retain desired tasks, convert exact waits to
+   Conditions, derive parent views, write completion receipts, and move leases,
+   assignments, review delivery, and retries into runtime state.
+6. Start the generic controller, enqueue every live task, and verify replay of
+   assignment, completion, Condition, restart, and stale-result incidents.
+7. In the same cutover, delete task-tree scheduling APIs, state aliases,
+   `tasks/tree.json` mirroring, archive/restore support, capability maps,
+   owner-entry wrappers, duplicated event graphs, and retired handlers.
+8. Use the extracted neutral agent runner from both durable sessions and Gym;
+   keep direct/hosted definition and capability convergence in its separate
+   implementation proposal.
 
-During migration, old and new paths may coexist only behind an explicit cohort
-gate. They must not both hold mutation authority for the same task generation.
+Across apps, migration may proceed in bounded cohorts. Within one app/task
+generation, cutover is singular: old and new paths must never both hold
+mutation authority. A completed cohort keeps no indefinite compatibility
+writer or mirror.
 
 ## Acceptance Tests
 
@@ -742,8 +791,8 @@ The design is proven when:
 2. A task without a workflow reaches its explicit, inherited, or app owner.
 3. A workflow returning `needs-owner` reaches the same resolved owner exactly
    once.
-4. A missing explicit workflow becomes `HandlerUnavailable` and does not
-   silently execute through another process.
+4. A missing explicit workflow becomes `HandlerUnavailable`; the owner may
+   repair the binding, but the task is not silently executed as if unbound.
 5. Two events for one task generation create at most one current attempt.
 6. A stale result cannot change a newer task generation.
 7. A waiting handler run ends and resumes only after its Condition changes.
@@ -756,15 +805,24 @@ The design is proven when:
     same domain input and result contract.
 12. Disabling the compatibility route for a migrated cohort does not change its
     accepted outcomes or evidence quality.
-13. The same agent runner produces equivalent prompt, tool policy, and result
-    behavior under Gym and autonomous infrastructure wrappers.
+13. Gym and durable sessions invoke the same neutral agent preparation and
+    execution core; caller-specific persistence remains outside it.
 14. The agent runner imports no EventBus, task, scheduler, metrics, or database
     implementation; explicitly supplied tools may still provide those
     capabilities.
+15. One app task controller handles targeted events, correlations, Condition
+    changes, and resync without installing task routes as Cron handlers.
+16. Removing one wake event does not change eventual convergence because a
+    resync reaches the same result from persisted resources.
+17. An app action is translated through its declared action exactly once; apps
+    do not reimplement action-name dispatch in `onEvent`.
+18. The normal app needs no owner-entry wrapper, workflow capability map,
+    manual event graph, route name, or duplicated context declaration.
 
 ## Non-Goals
 
-- Replacing the existing event, session, workflow, or task persistence engines.
+- Replacing the storage technology merely to rename the model. Schema and
+  authority cleanup are in scope; a new database product is not.
 - Making the task graph a queue or adding a durable generic request object.
 - Routing every event through an LLM.
 - Automatically selecting workflows from natural-language similarity.

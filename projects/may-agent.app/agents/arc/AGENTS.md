@@ -50,7 +50,7 @@ These paths are relative to `/app` (your cwd). Do NOT prepend `/app/agents/`.
 | Your workspace | `projects/may-agent.app/agents/arc/workspace/` |
 | Agent configs | global `agents/<name>/agent.json` or app-local `projects/<id>.app/agents/<name>/agent.json` |
 | Agent identity | global/app-local `AGENTS.md` |
-| May-agent app task tree | `projects/may-agent.app/tasks/tree.json` |
+| May-agent app task resources | `projects/may-agent.app/.state/tasks/tree.json` |
 
 ### query_db column cheatsheet
 ```

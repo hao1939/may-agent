@@ -19,7 +19,7 @@
         "agents/scout/AGENTS.md",
         "agents/scout/heartbeat.md"
       ],
-      "outputs": ["knowledge/", "reports/", "tasks/tree.json"],
+      "outputs": ["knowledge/", "reports/"],
       "acceptance": [
         "Scout can maintain the knowledge library through project events, not only heartbeat.",
         "The library index remains useful for agents looking for reusable knowledge.",
@@ -193,7 +193,7 @@
       "owner": "scout",
       "goal": "Review whether Scout and other agents are reusing the library, then feed findings into library structure and task priorities.",
       "inputs": ["knowledge/", "reports/", "agents/scout/last-eval.md"],
-      "outputs": ["reports/reuse-feedback.md", "tasks/tree.json"],
+      "outputs": ["reports/reuse-feedback.md"],
       "acceptance": [
         "Reuse/adoption evidence changes the next maintenance priority or records why no action is needed."
       ],

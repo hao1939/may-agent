@@ -121,7 +121,7 @@ delivery_note
 
 Only a component taking responsibility reports acceptance:
 
-- matching cron/app workflow handler;
+- matching event consumer or workflow-dispatch binding;
 - targeted session/runtime controller;
 - receiving human/channel adapter;
 - queryable owner inbox.
@@ -177,7 +177,6 @@ Examples:
 | Opening | Closing |
 | --- | --- |
 | `project.owner.requested` | `project.owner.reviewed` |
-| `project.task.assigned` | `project.task.completed` |
 | `escalation.created` | `escalation.resolved` or `escalation.dismissed` |
 | `cli.task.requested` | `cli.task.completed`, `failed`, or `orphaned` |
 | `runtime.restart.requested` | runtime restart result event |
@@ -222,14 +221,16 @@ Exactly one semantic child intent follows each free-form human input root.
 ### Project
 
 - `project.owner.requested` / `project.owner.reviewed`;
-- `project.task.assigned` / `project.task.completed`;
+- `project.task.reconcile.started`, `project.task.reconcile.skipped`, and
+  `project.task.reconciled` are controller observations, not scheduling commands;
+- domain and provider observations wake tasks through an app resolver or an
+  exact `target.taskId`;
 - `project.problem.investigation.requested` / `project.problem.resolved` /
   `project.problem.escalated`;
 - `project.comment.created` and project-specific typed actions.
 
-Historical `project.planning.requested`, `project.execution.requested`,
-`project.task.dispatched`, and `project.task.finished` are not live ingress
-aliases.
+Historical assignment, completion, review, planning, execution, dispatch, and
+finish task events are not live ingress aliases.
 
 ### Metrics And Escalation
 
@@ -268,7 +269,8 @@ result trace.
 A workflow ends with local `done` or `blocked`. Nested blockers return to the
 parent synchronously. At a top-level project boundary:
 
-- task workflows return blocked evidence through `project.task.completed`;
+- task workflows return blocked evidence to the app controller, which records
+  attention and invokes owner fallback through the same task key;
 - project workflows without task context wake `project.owner.requested`;
 - non-project workflows wake `workflow.owner.requested`.
 

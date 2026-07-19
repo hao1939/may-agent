@@ -27,7 +27,7 @@ Core primitives:
 - Event: durable signal that something can consume.
 - Owner: accountability backstop, not necessarily first responder.
 - Project app: control plane that drives a portable domain project.
-- Task tree: project owner's durable thinking map, not a scheduler.
+- Task resources: desired and observed project work, not a scheduler queue.
 - Metric: signal for investigation, not a target.
 - Escalation: structured handoff across an ownership boundary.
 
@@ -66,6 +66,7 @@ relevant to the change:
 - Project posture: `/app/projects/may-agent.app/docs/2a-design/projects.md`
 - App/project integrity: `/app/projects/may-agent.app/docs/2a-design/app-project-integrity.md`
 - Task trees: `/app/projects/may-agent.app/docs/2a-design/task-tree-engine.md`
+- Convention task reconciliation: `/app/projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`
 - Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
 - Metric alert triage: `/app/projects/may-agent.app/docs/2b-manual/metric-alerts.md`
 
@@ -81,7 +82,7 @@ doc with evidence, or call out the mismatch.
 1. Locate the owner boundary: runtime, app, project owner, worker, problem
    solver, May, or human.
 2. Read the active project/app files that own the work: `app.ts`,
-   `project.json`, `tasks/tree.json`, agent `AGENTS.md`, workflows, handlers,
+   `project.json`, `.state/tasks/tree.json`, agent `AGENTS.md`, workflows,
    metrics, and recent traces as needed.
 3. Preserve the loop:
    `project + metrics + trigger -> bounded work -> agent judgment -> evidence -> project update`.
@@ -110,10 +111,10 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   queryable owner inbox, or explicit external platform path. Pair bookkeeping
   alone is not domain delivery.
 - For handlers, read `event.data.*`; do not add shortcut field promotion.
-- Prefer canonical project events:
-  `project.owner.requested`, `project.task.assigned`,
-  `project.task.completed`, `project.problem.investigation.requested`,
-  `project.problem.resolved`, and `project.problem.escalated`.
+- Prefer semantic project events such as `project.owner.requested`,
+  `project.problem.investigation.requested`, `project.problem.resolved`, and
+  `project.problem.escalated`. Task claim/result mechanics belong to the
+  reconciler and do not require assignment or completion event adapters.
 - Treat `project.planning.requested`, `project.execution.requested`,
   `project.task.dispatched`, and `project.task.finished` as retired historical
   names, not accepted ingress aliases or examples for new code.
@@ -167,42 +168,27 @@ Keep domain projects portable and May-agent control planes separate.
 
 - Put May-agent app logic in `projects/<id>.app/`; domain tools and artifacts
   stay in the domain workspace.
-- Keep `app.ts` readable as an event graph: schedules/actions/events route to
-  handlers, adapters, or explicit external events.
-- Use app-local workflows for project-specific policy. Global handlers should
-  deliver, discover, route, and surface missing closure, not encode domain
-  strategy.
-- Use `ctx.appPath(...)` for app/control-plane files, `ctx.workspacePath(...)`
-  for files in the bound domain workspace, and `ctx.workspaceCwd()` when a tool
-  needs that workspace as its cwd.
-- Treat the project owner as the brain. Workflow code wakes sessions, passes
-  compact context, and emits events; it should not own task decomposition,
-  acceptance, retry policy, or project strategy.
-- Use the Project App V3 shape:
-  `app.ts` defines the event graph, `project.json` stores structured state and
-  workspace binding, `tasks/tree.json` stores decomposition, `workflows/`
-  stores app policy, and `agents/` stores app-local identities.
-- In `app.ts`, use `schedules[].emits[]` and `taskRoutes[].accepts[]`.
-  `taskRoutes` correlate events to desired task state; `taskWorkflows` and
-  `ownerEntry` supply reusable execution capabilities and accountable fallback.
-  Keep optional imperative `onEvent` bounded to deterministic adapter behavior.
-- Follow the owner workflow pattern: `project.owner.requested` reviews the
-  trigger, updates/reviews the task tree, assigns capacity, and checkpoints
-  done slices; `project.task.assigned` runs one task-owned worker session and
-  returns `project.task.completed` to wake the owner.
-- Mutate task trees through task-tree tools when available. Direct JSON edits
-  are for migration or repair only.
-- Persist only these task states: `backlog`, `active`, `review`, `done`,
-  `blocked`. Readiness, decomposition, acceptance, cancellation, and
-  supersession are projections or metadata, not states.
-- Treat `state` as the only persisted task lifecycle field. Legacy `status`
-  access may map to `state` at runtime, but must not become a second serialized
-  value or appear in new event snapshots.
-- Workers handle exactly one owner-assigned leaf and submit evidence to
-  `review`. They do not reshape siblings, roll up parents, mark done, or create
-  planning/control branches.
-- Record useful done summaries and evidence links. Keep runtime attempts in
-  infra traces, not as noisy live tree branches.
+- Keep `app.ts` small: one owner, `tasks.accepts`, one `tasks.resolve`, event-only
+  schedules, declared actions, and optional deterministic `onEvent` projection.
+- A targeted event, resolved app event, Condition change, and periodic resync
+  all enqueue the same per-app controller. Do not recreate task Cron handlers.
+- Resolve a declared task workflow from the accountable agent's local
+  `agents/<owner>/workflows/` directory. With no workflow, invoke the resolved
+  owner. Do not add workflow maps or owner-entry wrappers.
+- Treat the project owner as the semantic backstop. Workflows preserve a proven
+  process; the app runtime owns claims, retries, validation, and atomic task
+  mutation.
+- `.state/tasks/tree.json` is the sole mutable task-resource store.
+  `tasks/seed.json` is bootstrap intent; `tasks/tree.json` is not a live mirror.
+- Workflows and agents read task state but never edit the store directly. They
+  return `converged`, `waiting` with exact Conditions, or `needs-owner`, plus
+  typed actions for the app to validate and apply.
+- Resource `spec` is desired state and resource `status.phase` is observed
+  reconciliation state. The old task-state vocabulary may appear only in a
+  derived human projection, never as a second execution authority.
+- An `achieve` task is absorbed into a completion receipt and removed from the
+  live graph. A `maintain` task stays live for later wake events. Parent/child
+  structure is decomposition, not scheduling.
 
 ## Metrics And Runtime Health
 
@@ -242,9 +228,10 @@ Distinguish local blockers from ownership-boundary escalations.
 - A workflow `ctx.blocked(...)` result is local and synchronous. The caller
   records it, returns it to the task/project owner, or promotes it only when it
   crosses an owner boundary.
-- Top-level project task blockers should usually return to the project owner
-  as blocked `project.task.completed` with task id, attempt id, workflow run,
-  reason, and compact context.
+- A task workflow that cannot decide returns `needs-owner`; an owner waiting on
+  an external fact returns `waiting` with an exact Condition. The reconciler
+  records the attempt and performs the single owner fallback—do not emit a
+  parallel task-completion event.
 - Use `project.owner.requested` for project workflows without task context and
   `workflow.owner.requested` for non-project workflows.
 - Emit `escalation.created` only when another owner must answer or act. Prefer

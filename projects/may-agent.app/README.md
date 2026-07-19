@@ -7,14 +7,15 @@ domain workspace.
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` declares schedules, event-to-task routes, reusable task workflows,
-  owner fallback, and actions.
+- `app.ts` declares schedules, one event-to-task resolver, owner fallback, and
+  actions. Reusable workflows are discovered by filename.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
-- `tasks/tree.json` is the durable task tree and project thinking surface.
+- `.state/tasks/tree.json` is the sole mutable task-resource authority.
+- `tasks/seed.json` is used only to initialize an empty runtime state.
 - `docs/` contains May-agent design, principles, manual, and proposal docs.
-- `.state/` is local/runtime scratch for app operation. It is not the source of
-  durable project understanding.
+- `.state/` contains local runtime state. Durable understanding belongs in
+  project metadata, design, workflows, receipts, and domain evidence.
 - `archive/` keeps migrated legacy platform project files for audit.
 
 ## Commands

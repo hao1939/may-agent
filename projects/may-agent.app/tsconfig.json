@@ -14,7 +14,7 @@
   },
   "include": [
     "app.ts",
-    "workflows/**/*.ts",
+    "agents/tech-lead/workflows/**/*.ts",
     "scripts/**/*.ts",
     "types/**/*.ts"
   ],

@@ -145,14 +145,11 @@ not inject or replace its output contract.
 the caller receives `{ type: "blocked", reason, context }`. This is local to the
 workflow call. The caller or handler may promote it to an external
 `escalation.created` event only when the blocker must route to another owner.
-For top-level workflows, the runtime routes the blocker back to the most
-specific owner of context. If the workflow was triggered by
-`project.task.assigned`, runtime emits blocked `project.task.completed`; the
-task tree is the recovery target. Project workflows without task context use
-`project.owner.requested`. Non-project workflows use `workflow.owner.requested`,
-which follows the default owner route. Nested workflows return the blocked
-result to their parent workflow synchronously; the nested workflow does not wake
-the owner directly.
+For task-bound workflows, the app controller normalizes the blocker into a
+structured task result. It records attention and invokes the resolved owner as
+fallback through the same task key. The workflow does not emit task lifecycle
+events or mutate task storage. Nested workflows return the blocked result to
+their parent workflow synchronously.
 
 Because workflow execution is synchronous, a workflow can handle a blocker
 inside the workflow before returning: run a repair step, ask another agent with
@@ -174,7 +171,7 @@ Typical blocker paths:
 | A reusable recipe should handle the problem | Use `ctx.runWorkflow(...)` and continue or return based on its result |
 | A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary |
 | The workflow cannot safely decide the next action | `return ctx.blocked(reason, context)` and let the caller/boundary decide |
-| A top-level task workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and emits blocked `project.task.completed` with task/workflow lineage |
+| A top-level task workflow blocks | Runtime persists `workflow_runs.status = "blocked"`; the controller records task attention and invokes owner fallback |
 | A top-level non-task workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and wakes the project or workflow owner with lineage |
 | The blocker crosses an ownership boundary after the workflow returns | Caller/boundary may emit `escalation.created`; the workflow itself should not |
 
@@ -282,19 +279,19 @@ Put workflows next to the owner that operates them:
 
 | Location | Visibility | Use case |
 |----------|------------|----------|
-| `projects/<id>.app/workflows/` | That project app's workflow loader | Project-app owner, worker, problem-solver, focus-plan, and project-specific domain workflows |
-| `agents/<name>/workflows/` | That standalone agent's workflow loader | Agent-owned workflows such as heartbeat, metric alert triage, or infra-wide compatibility workflows |
+| `projects/<id>.app/agents/<name>/workflows/` | That app-local agent's workflow loader | Learned project-specific processes owned by that agent |
+| `agents/<name>/workflows/` | That standalone agent's workflow loader | Learned standalone or infrastructure processes owned by that agent |
 
-For project-specific behavior, prefer the app-local workflow. Global May
+For project-specific behavior, prefer the app-local agent workflow. Global May
 handlers may deliver events or provide compatibility backstops, but they should
 not own another app's planning packet, task assignment policy, or domain repair
 logic.
 
 Shared workflow loading is not supported. If more than one owner needs the same
-pattern, keep the workflow owned by the app/agent that operates it and have
+pattern, keep the workflow owned by the agent that learned and operates it and have
 other callers invoke that owner through the SDK/tool boundary, or factor
-reusable mechanics into a normal shared helper module that an app-local or
-agent-owned workflow imports.
+reusable mechanics into a normal shared helper module that an agent-owned
+workflow imports.
 
 Keep the flat `<name>.ts` form. Do not create a workflow directory package or
 make Markdown executable; the current loader does not define either contract.
@@ -335,6 +332,6 @@ custom metric plumbing unless the guard needs behavior beyond the default.
 bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
 
 # Or invoke from a handler/workflow test
-bun test projects/<id>.app/workflows/my-workflow.test.ts
+bun test projects/<id>.app/agents/<name>/workflows/my-workflow.test.ts
 bun test agents/<name>/workflows/__tests__/my-workflow.test.ts
 ```

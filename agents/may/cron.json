@@ -1,118 +1,11 @@
 [
   {
-    "name": "heartbeat",
-    "type": "job",
-    "intervalMs": 1800000,
-    "enabled": false,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
-    "lastModified": "2026-05-26T00:10:30.227Z",
-    "handler": {
-      "workflow": "may-heartbeat",
-      "agent": "may",
-      "task": "persistent-task: skip\n[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
-      "timeoutMs": 1800000
-    },
-    "on": ["heartbeat.trigger"],
-    "context": [
-      "agents/may/heartbeat.md",
-      "projects/may-agent.app/project.json"
-    ],
-    "_disabled_reason": "Redundant with may-agent.app platform-review (4h schedule) — 2026-06-15"
-  },
-  {
-    "name": "heartbeat-evaluator",
-    "type": "job",
-    "intervalMs": 1800000,
-    "enabled": false,
-    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
-    "notifyBrief": true,
-    "handler": {
-      "workflow": "evaluator-heartbeat",
-      "agent": "evaluator",
-      "task": "[heartbeat] You are the Evaluator. Your files are in projects/evaluation.app/agents/evaluator/. Read projects/evaluation.app/agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
-      "timeoutMs": 1800000
-    },
-    "offsetMs": 600000,
-    "on": ["heartbeat.trigger"],
-    "context": [
-      "projects/evaluation.app/project.json",
-      "projects/may-agent.app/project.json"
-    ],
-    "_disabled_reason": "migrated to evaluation.app — 2026-06-14"
-  },
-  {
-    "name": "project",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "project",
-    "agent": "may",
-    "enabled": false,
-    "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "Detect projects needing attention, dispatch tasks or owner agent sessions. Event triggers provide immediate reaction; timer is backup scan.",
-    "on": [
-      "project.nudge",
-      "project.task.finished",
-      "project.completed",
-      "project.blocked",
-      "project.health.finding",
-      "project.owner.incomplete"
-    ],
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/may-agent.app/docs/2a-design/projects.md"
-    ],
-    "_disabled_reason": "All projects migrated to .app — apps own their schedules. Legacy reconciler no longer needed. 2026-06-15"
-  },
-  {
-    "name": "project-steward",
-    "type": "job",
-    "intervalMs": 1800000,
-    "handler": "project-steward",
-    "agent": "may",
-    "enabled": true,
-    "message": "[cron:project-steward] Read-only project health discovery.",
-    "description": "Scan project docs/tasks without mutating them; emit project.health.* events and project-health metrics for heartbeat/closed-loop handling.",
-    "offsetMs": 180000,
-    "on": [
-      "project.nudge",
-      "project.task.finished",
-      "project.owner.finished",
-      "project.completed",
-      "project.blocked"
-    ],
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/may-agent.app/docs/2a-design/projects.md"
-    ]
-  },
-  {
-    "name": "project-creative-audit",
-    "type": "job",
-    "intervalMs": 21600000,
-    "handler": "project-creative-audit",
-    "agent": "may",
-    "enabled": false,
-    "message": "[cron:project-creative-audit] Broad proposal-only review for project issues fixed rules may miss.",
-    "description": "Select one open project and run May's semantic fallback audit. The workflow writes proposal comments only; normal project owner review applies changes.",
-    "handlerConfig": {
-      "cooldownMs": 21600000,
-      "maxProjectsPerRun": 1
-    },
-    "offsetMs": 420000,
-    "on": ["project.blocked", "project.health.finding"],
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/may-agent.app/docs/2a-design/projects.md"
-    ],
-    "_disabled_reason": "Redundant with project-steward + may-agent.app review. 2026-06-18"
-  },
-  {
     "name": "metric-alert-reactor",
     "type": "job",
     "handler": "metric-alert-reactor",
     "agent": "may",
     "enabled": true,
-    "description": "React to metric.breach and metric.stalled events by forking the owning agent with a remediation task. P0 breaches get immediate fork; P1/P2 get explicit triage after grace period. P3 alerts stay visible through metric context. Polls unresolved alerts every 5min.",
+    "description": "React to metric.breach and metric.stalled events by routing bounded triage to the metric owner.",
     "intervalMs": 300000,
     "on": ["metric.breach", "metric.stalled"],
     "context": [
@@ -121,101 +14,18 @@
     ]
   },
   {
-    "name": "closed-loop-steward",
-    "type": "job",
-    "handler": "closed-loop-steward",
-    "agent": "may",
-    "enabled": false,
-    "intervalMs": 600000,
-    "message": "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
-    "description": "May-owned closed-loop audit. Handler builds live context from open metric alerts, failed deliveries, and owner activity. Frequency can be tuned independently from heartbeat.",
-    "handlerConfig": {
-      "lookbackMs": 21600000,
-      "alertLimit": 12,
-      "deliveryFailureLimit": 12
-    },
-    "offsetMs": 120000,
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/may-agent.app/docs/2a-design/metrics.md"
-    ],
-    "_disabled_reason": "97 sessions/day — most expensive handler. Redundant with metric-alert-reactor + may-agent.app owner review. 2026-06-18"
-  },
-  {
     "name": "session-recovery",
     "type": "job",
     "handler": "session-recovery",
     "agent": "may",
     "enabled": true,
     "intervalMs": 300000,
-    "description": "React to failed sessions by dispatching the session-recovery workflow; timer fallback auto-closes stale immediate sessions with no assistant activity.",
+    "description": "React to failed sessions and close stale immediate sessions with no assistant activity.",
     "on": ["session.end"],
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/sessions.md"
     ]
-  },
-  {
-    "name": "evaluator-aftermath",
-    "type": "job",
-    "handler": {
-      "workflow": "evaluator-aftermath",
-      "agent": "evaluator",
-      "task": "Evaluate the completed session, produce metrics/evaluation signal, fix obvious low-risk root causes, escalate when blocked, and capture reusable learning.",
-      "includeEvent": true,
-      "timeoutMs": 900000
-    },
-    "enabled": false,
-    "on": ["session.end"],
-    "description": "Run evaluator aftermath workflow when a session ends.",
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/evaluation.app/project.json"
-    ],
-    "_disabled_reason": "migrated to evaluation.app/app.ts evaluation-aftermath handler — 2026-06-14"
-  },
-  {
-    "name": "session-aftermath-scan",
-    "type": "job",
-    "handler": "session-aftermath-scan",
-    "agent": "evaluator",
-    "enabled": false,
-    "intervalMs": 420000,
-    "description": "Every 7 minutes, evaluate terminal sessions missed by the completion event; skip sessions ended less than 7 minutes ago.",
-    "handlerConfig": {
-      "workflow": "evaluator-aftermath",
-      "agent": "evaluator",
-      "backfillHours": 3,
-      "fallbackDelayMs": 420000,
-      "limit": 1,
-      "maxConcurrent": 2
-    },
-    "timeoutMs": 900000,
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/evaluation.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to evaluation.app schedules — 2026-06-15"
-  },
-  {
-    "name": "eval-llm-scan",
-    "type": "job",
-    "handler": "eval-llm-scan",
-    "agent": "evaluator",
-    "enabled": true,
-    "intervalMs": 1800000,
-    "description": "Bounded non-heuristic evaluator lane. Processes at most one terminal session per run and records only validated artifacts.",
-    "handlerConfig": {
-      "backfillHours": 24,
-      "fallbackDelayMs": 900000,
-      "activeWindowMs": 1800000,
-      "artifactLimit": 3
-    },
-    "context": [
-      "projects/may-agent.app/project.json",
-      "projects/evaluation.app/project.json"
-    ],
-    "_disabled_reason": "Rollback 2026-06-15: evaluation.app schedule emitted evaluation.deep.scan directly to evaluator-deep-eval, which bypassed eval-llm-scan artifact recording and stalled non-heuristic eval writes."
   },
   {
     "name": "escalation",
@@ -238,7 +48,7 @@
     "agent": "may",
     "enabled": true,
     "timeoutMs": 600000,
-    "description": "Measure and record health metrics every 5 minutes. Storage retention and compaction run in the dedicated runtime maintenance process, never in this handler.",
+    "description": "Measure and record health metrics every 5 minutes.",
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
@@ -251,7 +61,7 @@
     "handler": "coaching-consumer",
     "agent": "may",
     "enabled": true,
-    "description": "Scan recent evaluations every 6h and flag sessions needing coaching intervention. Writes recommendations to .state/coaching-queue/.",
+    "description": "Scan recent evaluations every 6h and flag sessions needing coaching intervention.",
     "offsetMs": 1200000,
     "context": [
       "projects/may-agent.app/project.json",
@@ -259,25 +69,11 @@
     ]
   },
   {
-    "name": "daily-alert-review",
-    "intervalMs": 86400000,
-    "enabled": false,
-    "handler": {
-      "workflow": "verify-wrap",
-      "agent": "may",
-      "task": "[cron:daily-alert-review] Run the daily alert review. Query metric_alerts for the last 24h plus unresolved older alerts; correlate metric.breach, metric.recovered, metric.alert_judged, and remediation sessions; write the report at projects/may-agent.app/outputs/YYYY-MM-DD-alert-review.md; send a concise summary to human via Telegram; call out noisy thresholds, missing owners, unresolved validation, and recurring systemic patterns.",
-      "projectId": "may-agent",
-      "timeoutMs": 900000
-    },
-    "description": "Disabled after replacement by projects/may-agent.app daily-ops-digest schedule with replay coverage.",
-    "context": ["projects/may-agent.app/project.json"]
-  },
-  {
     "name": "feedback-echo-sync",
     "intervalMs": 3600000,
     "handler": "feedback-echo-sync",
     "enabled": true,
-    "description": "Hourly sync of evaluator feedback into agent last-eval.md files (direct handler, no LLM session)",
+    "description": "Hourly sync of evaluator feedback into agent last-eval.md files.",
     "context": [
       "agents/may/handlers/feedback-echo-sync.ts",
       "projects/may-agent.app/project.json"

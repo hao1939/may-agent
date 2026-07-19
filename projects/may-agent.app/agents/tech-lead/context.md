@@ -14,7 +14,7 @@ escalation paths.
 
 - `projects/may-agent.app/project.json`
 - `projects/may-agent.app/app.ts`
-- `projects/may-agent.app/tasks/tree.json`
+- `projects/may-agent.app/.state/tasks/tree.json`
 - `projects/may-agent.app/docs/2a-design/app-project-integrity.md`
 - `projects/may-agent.app/docs/2a-design/events.md`
 - `projects/may-agent.app/docs/3-proposals/chat-agent-separation.md`

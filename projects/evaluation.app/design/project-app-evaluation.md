@@ -318,6 +318,96 @@ report `concern` or higher. If the target app does not expose enough state for
 the evaluator to tell whether the breach was handled, that lack of
 observability is itself a project/app concern.
 
+## Task Reconciliation
+
+`evaluation.app` follows the shared task schema in
+`projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`. It does
+not define an evaluation-specific task kind or lifecycle.
+
+```text
+event wake
+  -> resolve one task intent
+  -> generic reconciler claims task + generation
+  -> explicit workflow, otherwise evaluator owner
+  -> structured result + evidence
+  -> generic reconciler validates and applies actions
+  -> observed state and reconciliation event
+```
+
+The task tree records desired outcomes and relationships. It is not the queue,
+and app code is not a second planner. Known evaluation processes are explicit
+workflows. The evaluator owner judges novel or ambiguous evaluator-local work.
+Both return the shared structured result and neither mutates the tree directly.
+
+### Evaluation Task Schema
+
+Every evaluation task has:
+
+- a stable, collision-safe identity and parent;
+- one desired outcome;
+- observable acceptance criteria;
+- `achieve` or `maintain` mode;
+- inherited or explicit ownership;
+- an optional explicit workflow binding and stable configuration;
+- optional durable outputs and true task dependencies; and
+- observed generation, phase, attempt, summary, and evidence maintained by the
+  reconciler.
+
+Wake observations do not belong in task intent. Metric values, timestamps,
+review reasons, messages, and event bodies remain in the trigger packet. A
+standing task's input contains only stable configuration. This prevents each
+scheduled sample or metric transition from creating a false desired-state
+generation.
+
+### Durable Responsibilities
+
+The seed tree contains only standing `maintain` responsibilities:
+
+| Task | Desired state | Current convergence evidence |
+| --- | --- | --- |
+| `evaluation-system` | Independent evaluation stays useful and reliable. | Session, project-audit, delivery, and reliability lanes satisfy their postconditions. |
+| `session-audit` | Eligible terminal sessions have trustworthy, traceable evaluations. | Evaluation records or structured skips cover the eligible terminal-session frontier. |
+| `project-app-audit` | Every watched app has a current independent assessment. | Each target fingerprint and due report state are current. |
+| `finding-delivery` | Findings reach owners and useful human decisions without duplicates. | New actionable findings have one delivery; unchanged findings create none. |
+| `evaluator-reliability` | Evaluation's own process remains bounded and operable. | Known work uses declared workflows; exceptions have bounded work or exact Conditions. |
+| `pipeline-health` | Coverage, throughput, review delivery, and anomalies remain observable. | Pipeline snapshot, backfill frontier, and changed-anomaly wake state agree. |
+| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples. | Accepted calibration is reflected in criteria and regression evidence. |
+| `drift-detection` | Comparable cohorts reveal meaningful quality drift. | Claims name cohorts, windows, criteria version, and samples; absent evidence creates no speculative work. |
+| `system-integrity` | Evaluator-local routing, ownership, state, and reports remain consistent. | Each concrete defect has one bounded repair and observable postcondition. |
+
+Retired concepts, completed migrations, dated incidents, and one-off repairs
+are not seed tasks. They are bounded `achieve` work and leave the live graph
+after their result is absorbed.
+
+### Runtime Tasks
+
+| Event | Task | Mode | Observable postcondition |
+| --- | --- | --- | --- |
+| `session.end`, `evaluation.session.requested` | `runtime/session-aftermath/<session>` | `achieve` | The exact session has a durable evaluation or structured skip. |
+| `evaluation.deep.requested` | `runtime/deep-eval/<session>` | `achieve` | The exact session has one workflow-traced deep judgment. |
+| `evaluation.pipeline.check` | `runtime/pipeline-monitor` | `maintain` | Snapshot persisted; only changed anomaly state wakes the owner. |
+| `evaluation.aftermath.scan` | `runtime/aftermath-backfill` | `maintain` | One missed session recovered or no candidate currently exists. |
+| `evaluation.deep.scan` | `runtime/deep-eval-scan` | `maintain` | One candidate reviewed or no candidate currently exists. |
+| `evaluation.project.review.requested` | `runtime/project-audit/<target>` | `maintain` | Target fingerprint is current and any due report and feedback are persisted. |
+| `evaluation.tick` | `runtime/owner-review` | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded. |
+
+An `achieve` task leaves the live graph after outcome absorption and keeps a
+bounded completion reference for deduplication. A converged `maintain` task
+remains standing and can be woken again.
+
+### Conditions And Failures
+
+A handler that must wait on an external fact records an exact Condition and
+returns `waiting`; the bounded run then ends. The Condition owns its observer,
+freshness, next check, owner, and fallback. A Condition change wakes affected
+tasks.
+
+`failed` means the current attempt failed. It does not prove the desired
+outcome impossible or justify a generic blocked task. Known-workflow failures
+fall back to the evaluator owner with evidence. Supervision repairs only broken
+mechanical invariants such as lost delivery or a dead attempt; it does not
+repeat evaluation judgment.
+
 ## Self-Recovery Contract
 
 Every project app should own the first attempt to recover its own process

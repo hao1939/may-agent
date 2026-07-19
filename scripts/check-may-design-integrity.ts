@@ -22,7 +22,7 @@ const staleContractPatterns: Array<{ pattern: RegExp; message: string }> = [
   },
   {
     pattern: /`workflowHandlers`|workflowHandlers\[\]/,
-    message: "workflowHandlers is retired; use taskRoutes and taskWorkflows",
+    message: "workflowHandlers is retired; use the conventional task resolver and local workflows",
   },
   {
     pattern: /`project\.problem\.requested`/,

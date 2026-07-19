@@ -179,8 +179,12 @@ Recommended event names:
 | `project.comment.created` | Human comment/direction for a project. |
 | `project.action.requested` | UI or operator requested a named project behavior. |
 | `project.tick` | Timer-triggered project lane. |
-| `project.task.assigned` / `project.task.completed` | Current V3 task execution lifecycle. |
-| `project.task.dispatched` / `project.task.finished` | Legacy project handler lifecycle; do not use for new project-apps. |
+| App-specific semantic observation | Correlated by `tasks.resolve` into desired task state. |
+| Event with `target.taskId` | Wakes that exact task through the app queue. |
+
+Task reconciliation lifecycle events are emitted by infrastructure for
+observation. UI code must not manufacture task assignment, completion, review,
+dispatch, or finish events.
 
 ### Existing Convenience Routes
 

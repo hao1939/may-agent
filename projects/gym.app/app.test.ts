@@ -25,17 +25,12 @@ describe("gym app manifest", () => {
         expect.objectContaining({ id: "may-alignment-nightly", enabled: true }),
       ]),
     );
-    expect(gymApp.taskRoutes?.map((route) => route.name)).toEqual([
-      "gym-task-incident-intake",
-      "gym-task-regression-run",
-      "gym-task-review-and-propose",
-    ]);
-    expect(Object.keys(gymApp.taskWorkflows ?? {})).toEqual([
-      "incident-intake",
-      "regression-run",
-      "review-and-propose",
-    ]);
-    expect(gymApp.ownerEntry?.workflow).toBe("owner-review");
+    expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
+    expect(gymApp.tasks?.accepts).toHaveLength(3);
+    expect(gymApp.taskRoutes).toBeUndefined();
+    expect(gymApp.taskWorkflows).toBeUndefined();
+    expect(gymApp.ownerEntry).toBeUndefined();
+    expect(gymApp.eventGraph).toBeUndefined();
     expect(Object.keys(gymApp.actions)).toEqual([
       "run-regression",
       "report-incident",

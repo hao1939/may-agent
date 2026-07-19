@@ -415,11 +415,6 @@ Scope:
 - [x] Add `query.workflowRuns(...)` and move the `project` handler's runtime
   context reads to `query.alerts(...)` / `query.workflowRuns(...)`; its direct
   DB write remains cache projection.
-- [x] Add `query.closedLoopStewardContext(...)` for the exact schema brief,
-  open alert, delivery failure, judgment, snapshot, triage-run, and recent
-  steward-run bundle used by `closed-loop-steward`.
-- [x] Move `closed-loop-steward` live context reads off raw
-  `ctx.sdk.getDb()`; owner activity now uses `query.sessions(...)`.
 - [x] Add `query.heartbeatContext(...)` for the exact metric/snapshot/alert/
   inbox bundle used by shared heartbeats.
 - [x] Move heartbeat live-context loaders away from raw schema-sensitive SQL.

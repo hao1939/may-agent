@@ -8,18 +8,6 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "gym";
-const appTaskContext = [
-  "app: /app/projects/gym.app",
-  "project: /app/projects/gym",
-  "persistent-task: skip",
-].join("\n");
-
-const appContext = [
-  "projects/gym.app/project.json",
-  "projects/gym/README.md",
-  "projects/gym/docs/test-improve-verify-loop.md",
-  "projects/gym/benchmarks/may-alignment/README.md",
-];
 
 function params(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -203,106 +191,16 @@ export default defineProjectApp({
     },
   ],
 
-  ownerEntry: {
-    workflow: "owner-review",
-    agent: "gym",
-    task: `${appTaskContext}\nReview a task workflow exception and preserve a bounded proposal for human judgment.`,
-    timeoutMs: 900_000,
-    context: appContext,
+  tasks: {
+    accepts: [
+      "gym.incident.detected",
+      "gym.regression.requested",
+      "gym.review.requested",
+    ],
+    resolve: resolveGymTask,
   },
-
-  taskWorkflows: {
-    "incident-intake": {
-      workflow: "incident-intake",
-      task: `${appTaskContext}\nCapture this incident without changing May or approved benchmark truth.`,
-      timeoutMs: 120_000,
-      context: appContext,
-    },
-    "regression-run": {
-      workflow: "regression-run",
-      task: `${appTaskContext}\nRun the requested benchmark through the standalone Gym CLI.`,
-      timeoutMs: 7_200_000,
-      context: appContext,
-    },
-    "review-and-propose": {
-      workflow: "review-and-propose",
-      task: `${appTaskContext}\nReview the supplied evidence and prepare the smallest useful proposal.`,
-      timeoutMs: 900_000,
-      context: appContext,
-    },
-  },
-
-  taskRoutes: [
-    {
-      name: "gym-task-incident-intake",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Reconciles one semantically identified May failure into durable incident evidence.",
-      accepts: ["gym.incident.detected"],
-      resolve: resolveGymTask,
-    },
-    {
-      name: "gym-task-regression-run",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description: "Reconciles each requested standalone Gym benchmark run.",
-      accepts: ["gym.regression.requested"],
-      resolve: resolveGymTask,
-    },
-    {
-      name: "gym-task-review-and-propose",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Reconciles one semantic evidence request into a bounded human-review proposal.",
-      accepts: ["gym.review.requested"],
-      resolve: resolveGymTask,
-    },
-  ],
 
   events: ["evaluation.reviewed"],
-
-  eventGraph: {
-    routes: {
-      "gym-task-incident-intake": {
-        emits: ["gym.review.requested", "project.task.reconciled"],
-        description:
-          "Persists incident evidence and queues it for benchmark-owner review.",
-      },
-      "gym-task-regression-run": {
-        emits: [
-          "gym.regression.completed",
-          "gym.regression.failed",
-          "gym.review.requested",
-          "project.task.reconciled",
-        ],
-        description:
-          "Executes the standalone benchmark and emits a durable result pointer.",
-      },
-      "gym-task-review-and-propose": {
-        emits: ["gym.review.ready", "project.task.reconciled"],
-        description:
-          "Uses the Gym owner agent to prepare a reviewable scenario or remediation proposal.",
-      },
-    },
-    adapters: [
-      {
-        event: "evaluation.reviewed",
-        emits: ["gym.incident.detected"],
-        description:
-          "Actionable May evaluation failures enter Gym incident intake.",
-      },
-    ],
-    externalEvents: [
-      "gym.regression.completed",
-      "gym.regression.failed",
-      "gym.review.ready",
-    ],
-    limits: {
-      maxRoutesPerEvent: 2,
-    },
-  },
 
   actions: {
     "run-regression": {

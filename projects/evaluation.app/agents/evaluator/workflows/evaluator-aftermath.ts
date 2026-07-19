@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { appendLearningCandidate } from "./lib/learning-candidates.js";
 
 export const name = "evaluator-aftermath";
 export const description =
@@ -8,9 +9,7 @@ export const description =
 export const HEURISTIC_VERSION = 11;
 
 export type EvaluationLane =
-  | "needs_triage"
-  | "success_candidate"
-  | "routine_ok";
+  "needs_triage" | "success_candidate" | "routine_ok";
 
 type TranscriptView = {
   text: string;
@@ -837,15 +836,20 @@ export function shouldSkipAftermathAmplification(
   // trivially categorizable from metadata — skip LLM evaluation entirely.
   // Falsifier: if >5% of ≤10-op done sessions have errors, threshold needs adjustment.
   // Validated at 0.0% across 1,479 7-day sessions (2026-06-15).
-  if (
-    status === "done" &&
-    !session?.error &&
-    opCount <= 10
-  ) {
+  if (status === "done" && !session?.error && opCount <= 10) {
     return { skip: true, reason: "quick_exit_successful_session" };
   }
 
   if (!isTerminalFailureSession(session)) return { skip: false, reason: "" };
+
+  const errorText = String(session?.error ?? "");
+  if (
+    /^Failed to resume session: Session \"[^\"]+\" already active/i.test(
+      errorText,
+    )
+  ) {
+    return { skip: true, reason: "runtime_duplicate_resume_already_active" };
+  }
 
   if (opCount === 0) {
     return { skip: true, reason: "terminal_zero_op_session" };
@@ -871,8 +875,8 @@ export function shouldRefreshEvaluation(
   return evaluationHeuristicVersion(evaluation) < HEURISTIC_VERSION;
 }
 
-function getSessionIdFromTrigger(trigger: any): string | undefined {
-  const data = trigger?.data ?? trigger ?? {};
+export function getSessionIdFromTrigger(trigger: any): string | undefined {
+  const data = trigger?.data ?? trigger?.params ?? trigger ?? {};
   const direct = data.sessionId;
   const nested = data.session?.sessionId;
   return typeof direct === "string"
@@ -882,9 +886,54 @@ function getSessionIdFromTrigger(trigger: any): string | undefined {
       : undefined;
 }
 
+function getTriggerType(trigger: any): string {
+  return typeof trigger?.type === "string" ? trigger.type : "";
+}
+
 function getModeFromTrigger(trigger: any): string {
   const data = trigger?.data ?? trigger ?? {};
   return typeof data.mode === "string" ? data.mode : "completed";
+}
+
+export function triggerRequiresSessionId(trigger: any): boolean {
+  return [
+    "session.end",
+    "evaluation.session.requested",
+    "evaluation.deep.requested",
+  ].includes(getTriggerType(trigger));
+}
+
+export function backfillCandidateSessionId(
+  ctx: WorkflowContext,
+): string | undefined {
+  const now = Date.now();
+  const graceCutoff = now - 7 * 60_000;
+  const result = ctx.query.sql(
+    `SELECT s.sessionId
+     FROM sessions s
+     WHERE s.agent NOT IN ('evaluator', 'judge')
+       AND s.status IN ('done', 'error', 'interrupted')
+       AND COALESCE(s.endedAt, 0) > 0
+       AND s.endedAt <= ?
+       AND NOT EXISTS (
+         SELECT 1
+         FROM evaluations e
+         WHERE e.sessionId = s.sessionId
+       )
+     ORDER BY
+       CASE WHEN s.status IN ('error', 'interrupted') THEN 0 ELSE 1 END ASC,
+       CASE
+         WHEN s.status IN ('error', 'interrupted') THEN s.endedAt
+         ELSE NULL
+       END DESC,
+       CASE WHEN s.status = 'done' THEN s.endedAt ELSE NULL END ASC
+     LIMIT 1`,
+    [graceCutoff],
+    { limit: 1 },
+  ) as { rows?: Array<{ sessionId?: string }> } | Array<{ sessionId?: string }>;
+  const rows = Array.isArray(result) ? result : result?.rows;
+  const sessionId = rows?.[0]?.sessionId;
+  return typeof sessionId === "string" && sessionId ? sessionId : undefined;
 }
 
 function sessionTranscriptPath(persistDir: string, sessionId: string): string {
@@ -907,6 +956,64 @@ function readArtifact(path: string): string {
   } catch {
     return "";
   }
+}
+
+export function reviewFailureDetails(review: any): Record<string, unknown> {
+  const text = JSON.stringify(review ?? {});
+  const providerUnavailable =
+    /\b429\b|no deployments available|rate limit|capacity|temporarily unavailable|overloaded/i.test(
+      text,
+    );
+  const authFailure =
+    /\b401\b|\b403\b|unauthorized|forbidden|permission|api key|token/i.test(
+      text,
+    );
+  const emptyRuntime =
+    Number(review?.opCount ?? 0) === 0 ||
+    (/status["']?\s*:\s*["']?error/i.test(text) &&
+      !/tool|assistant|content/i.test(text));
+  const failureType = providerUnavailable
+    ? "provider_unavailable"
+    : authFailure
+      ? "provider_auth"
+      : emptyRuntime
+        ? "reviewer_runtime_empty_turn"
+        : "reviewer_runtime";
+  return {
+    failureScope: "review_process",
+    reviewCompleted: false,
+    reviewFailureType: failureType,
+    retryable: failureType !== "provider_auth",
+    reviewSessionId: review?.sessionId,
+    reviewStatus: review?.status,
+  };
+}
+
+export function reviewProcessFailureOutcome(
+  sessionId: string,
+  session: any,
+  details: Record<string, unknown>,
+): {
+  state: "needs-owner";
+  summary: string;
+  evidence: string[];
+  actions: [];
+} {
+  const failureType = String(details.reviewFailureType ?? "reviewer_runtime");
+  const reviewSessionId =
+    typeof details.reviewSessionId === "string"
+      ? details.reviewSessionId
+      : "unknown-review-session";
+  return {
+    state: "needs-owner",
+    summary: `Recorded durable heuristic evaluation for ${sessionId}; evaluator review process failed (${failureType}) in ${reviewSessionId}, so the standard owner fallback must decide the next bounded attempt.`,
+    evidence: [
+      `evaluations.overall.review records failureScope=review_process reviewFailureType=${failureType}`,
+      `evaluation.review_failed event emitted for concrete session ${sessionId}`,
+      "runtime/session-aftermath closure semantics: the workflow preserves retry evidence and delegates policy through the standard owner fallback",
+    ],
+    actions: [],
+  };
 }
 
 export function sessionEvalTrailPath(transcriptPath: string): string {
@@ -986,12 +1093,7 @@ function evalIssuesFromChecks(checks: EvalCheck[]): string[] {
 }
 
 type EvalTarget =
-  | "request"
-  | "execution"
-  | "result"
-  | "verification"
-  | "evolution"
-  | "session";
+  "request" | "execution" | "result" | "verification" | "evolution" | "session";
 type TargetQuality = "ok" | "check" | "issue" | "unknown";
 type RepairAction =
   | "none"
@@ -1320,10 +1422,16 @@ function buildNotificationDecision(
 }
 
 export function ownerEventTarget(owner: unknown): string {
-  const text = String(owner ?? "");
-  if (text.startsWith("agent:")) return text.slice("agent:".length) || "may";
-  if (text.startsWith("human:")) return "may";
-  return text || "may";
+  const text = String(owner ?? "").trim();
+  const target = text.startsWith("agent:")
+    ? text.slice("agent:".length)
+    : text.startsWith("human:")
+      ? "may"
+      : text;
+  // Message targets are flat agent names. Owner labels can include scoped
+  // pseudo-owners such as `agent:may/runtime` for responsibility tracking, but
+  // sending to `may/runtime` is invalid and produces message.delivery_failed.
+  return (target || "may").split("/")[0] || "may";
 }
 
 function findingNeedsHuman(owner: unknown): boolean {
@@ -2047,15 +2155,18 @@ export function artifactVerdict(artifactText: string): string | null {
   if (raw.startsWith("needs_improvement")) return "needs_improvement";
   if (raw.startsWith("needs_repair")) return "needs_improvement";
   if (raw.startsWith("low_quality")) return "needs_improvement";
-  if (raw.startsWith("partial_value") || raw.startsWith("partial")) return "acceptable";
-  if (raw.startsWith("mixed_value") || raw.startsWith("mixed_success") || raw.startsWith("mixed")) return "acceptable";
+  if (raw.startsWith("partial_value") || raw.startsWith("partial"))
+    return "acceptable";
+  if (
+    raw.startsWith("mixed_value") ||
+    raw.startsWith("mixed_success") ||
+    raw.startsWith("mixed")
+  )
+    return "acceptable";
   if (raw.startsWith("real_value") || raw.startsWith("valuable")) return "good";
   if (raw.startsWith("good")) return "good";
   if (raw.startsWith("acceptable")) return "acceptable";
-  if (raw.startsWith("useful") || raw.startsWith("solid") || raw.startsWith("adequate")) return "acceptable";
-  // Fallback: any unrecognized verdict string should not leak as non-canonical.
-  // Map to "acceptable" as a safe middle-ground rather than emitting raw prose.
-  return "acceptable";
+  return raw;
 }
 
 function shouldOverrideWithReview(
@@ -2151,20 +2262,46 @@ export function buildReviewTask(params: {
     `3. Write the concise review to the artifact path above.`,
     `4. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
     `5. For needs_triage: do not silently fix the project as evaluator. Classify each important issue by scope, assign owner as agent:<name> or human:<role>, and suggest possible actions for that owner.`,
-    `6. Notify immediately only for high-severity or blocked/waiting findings; routine critique belongs in the eval trail or digest.`,
-    `7. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
+    `6. Owner-feedback delivery must be deduped by finding family, not by session. Before calling message(), compare target owner/project + root cause + remediation ask against already-delivered cohort feedback. Regression family: events 3582689, 3583286, 3583498, and 3583812 show Scout nested-output-path aftermath findings after a cohort-level delivery; use family key agent:scout|scout-knowledge-lib.app|root:nested-/app/projects/scout-knowledge-lib/projects-output-path|ask:reconcile-canonical-artifacts-and-use-absolute-/app/projects-output-verification. If a Scout review is unchanged in that family, do not send another owner message; preserve this session's artifact/session link in the artifact and eval trail instead. Only send a new owner message for this family when the root cause/remediation ask materially changes, severity increases, or Scout explicitly asks for per-session follow-up. This rule is narrow: unrelated Scout findings with a different root cause or ask still use normal high-severity owner notification.`,
+    `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest.`,
+    `8. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
     `8. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,
     `Keep the artifact short with sections: Verdict, Evidence, Output Quality, Root Cause, Owner Findings, Learning, Learning Created: yes|no.`,
   ].join("\n");
 }
 
+function converged(
+  ctx: WorkflowContext,
+  summary: string,
+  evidence: string[] = [],
+): WorkflowResult {
+  return ctx.done(summary, {
+    state: "converged",
+    summary,
+    evidence,
+    actions: [],
+  });
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
-  const sessionId = getSessionIdFromTrigger(trigger);
+  const triggerSessionId = getSessionIdFromTrigger(trigger);
+  const triggerType = getTriggerType(trigger);
   const mode = getModeFromTrigger(trigger);
+  const sessionId =
+    triggerSessionId ??
+    (triggerRequiresSessionId(trigger) || mode !== "completed"
+      ? undefined
+      : backfillCandidateSessionId(ctx));
 
   if (!sessionId) {
+    if (!triggerRequiresSessionId(trigger)) {
+      return converged(
+        ctx,
+        `No eligible aftermath backfill candidate found for ${triggerType || "unspecified trigger"}.`,
+      );
+    }
     return ctx.blocked("evaluator-aftermath requires a sessionId", {
       trigger,
     });
@@ -2176,7 +2313,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!session) return ctx.blocked(`Session ${sessionId} not found`);
 
   if (session.agent === "evaluator" || session.agent === "judge") {
-    return ctx.done(`Skipped self/judge session ${sessionId}.`);
+    return converged(ctx, `Skipped self/judge session ${sessionId}.`);
   }
 
   const ageMs = Date.now() - Number(session.startedAt ?? Date.now());
@@ -2196,7 +2333,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ageMs,
       owner: "evaluator",
     } as any);
-    return ctx.done(
+    return converged(
+      ctx,
       `Cancelled stale ${session.status} session ${sessionId} (${session.agent}), age ${Math.round(ageMs / 60000)}m.`,
     );
   }
@@ -2214,7 +2352,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       String(evaluation?.verdict ?? "") === "skipped" &&
       evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION
     ) {
-      return ctx.done(
+      return converged(
+        ctx,
         `Session ${sessionId} already skipped (${skipAftermath.reason}).`,
       );
     }
@@ -2279,7 +2418,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return `skipped aftermath for ${sessionId}: ${skipAftermath.reason}`;
     });
 
-    return ctx.done(
+    return converged(
+      ctx,
       `Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`,
     );
   }
@@ -2298,7 +2438,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const artifactPath = projectAppArtifactPath;
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
-    return ctx.done(
+    return converged(
+      ctx,
       `Session ${sessionId} already evaluated (${evaluation.verdict}).`,
     );
   }
@@ -2396,14 +2537,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (normalized.route.lane === "routine_ok") {
-    return ctx.done(
+    return converged(
+      ctx,
       `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). No review needed.`,
     );
   }
 
-  mkdirSync(join(projectRoot, "projects/evaluation.app/agents/evaluator/workspace/aftermath"), {
-    recursive: true,
-  });
+  mkdirSync(
+    join(
+      projectRoot,
+      "projects/evaluation.app/agents/evaluator/workspace/aftermath",
+    ),
+    {
+      recursive: true,
+    },
+  );
 
   const reviewTask = buildReviewTask({
     sessionId,
@@ -2417,10 +2565,52 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const review = await ctx.runAgent("evaluator", reviewTask);
 
-  if ((review as any).status === "error") {
-    return ctx.blocked(`Evaluator review failed for ${sessionId}`, {
-      reviewSessionId: (review as any).sessionId,
-    });
+  if (["error", "interrupted"].includes(String((review as any).status))) {
+    const details = reviewFailureDetails(review);
+    await (ctx as any).runFunction(
+      "record-review-process-failure",
+      async () => {
+        const db = ctx.getDb() as any;
+        const prior = db
+          .prepare("SELECT overall FROM evaluations WHERE sessionId = ?")
+          .get(sessionId) as any;
+        let overall: Record<string, unknown> = {};
+        try {
+          overall = prior?.overall ? JSON.parse(prior.overall) : {};
+        } catch {
+          overall = {};
+        }
+        overall.review = {
+          ...(typeof overall.review === "object" && overall.review
+            ? (overall.review as Record<string, unknown>)
+            : {}),
+          ...details,
+        };
+        db.run(
+          `UPDATE evaluations
+            SET overall = ?
+          WHERE sessionId = ?`,
+          [JSON.stringify(overall), sessionId],
+        );
+        return `recorded review process failure for ${sessionId}`;
+      },
+    );
+    ctx.emit({
+      type: "evaluation.review_failed",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      projectId: session.projectId ?? null,
+      workflowRunId: session.workflowRunId ?? null,
+      ...details,
+    } as any);
+    const reviewFailureOutcome = reviewProcessFailureOutcome(
+      sessionId,
+      session,
+      details,
+    );
+    return ctx.done(reviewFailureOutcome.summary, reviewFailureOutcome);
   }
 
   const postReviewArtifactAbsPath = artifactAbsPath;
@@ -2521,6 +2711,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (/Learning Created:\s*yes/i.test(artifactText)) {
+    const candidatePath = join(
+      ctx.projectsRoot,
+      "evaluation.app",
+      ".state",
+      "learning-candidates.jsonl",
+    );
+    const candidate = appendLearningCandidate(candidatePath, {
+      sessionId,
+      reviewSessionId: (review as any).sessionId,
+      agent: session.agent,
+      artifactPath: postReviewArtifactPath,
+      summary: normalized.route.reason,
+      evidence: {
+        lane: normalized.route.lane,
+        signals: normalized.route.signals,
+        reviewedVerdict,
+      },
+    });
     ctx.emit({
       type: "evaluation.learning_created",
       source: "evaluator-aftermath",
@@ -2530,10 +2738,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       lane: normalized.route.lane,
       reviewSessionId: (review as any).sessionId,
       artifactPath: postReviewArtifactPath,
+      candidateId: candidate.candidateId,
+      candidatePath,
+      candidateCreated: candidate.created,
     } as any);
   }
 
-  return ctx.done(
+  return converged(
+    ctx,
     `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${postReviewArtifactPath}`,
   );
 }

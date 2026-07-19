@@ -11,15 +11,11 @@ import {
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
-import {
-  checkCircuitBreaker,
-  recordCircuitOutcome,
-  shouldDispatch,
-  recordDispatch,
-  recordDedupOutcome,
-  cleanupDispatchRecords,
-} from "@may-agent/sdk";
-import { resolve } from "node:path";
+
+type TaskHandlerResult = Exclude<
+  ProjectAppTaskHandlerResult,
+  { state: "needs-owner" }
+>;
 
 export const name = "scout-explore";
 export const description =
@@ -36,6 +32,7 @@ Output contract:
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
 - Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
 - If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.
+- DATE RULE: Filename dates and internal Date/last_updated fields MUST NOT be later than today. Run \`date -u +%Y-%m-%d\` to get the current date. Never derive dates from scan numbers or arithmetic.
 `;
 }
 
@@ -62,7 +59,7 @@ function reconciliationPacket(task: string): Record<string, unknown> {
 export function xhsWaitResult(
   task: string,
   tree: Record<string, unknown>,
-): ProjectAppTaskHandlerResult | null {
+): TaskHandlerResult | null {
   const packet = reconciliationPacket(task);
   const input =
     packet.input &&
@@ -85,7 +82,7 @@ export function xhsWaitResult(
   const summary =
     "XHS exploration is waiting for the existing cookie-refresh task; no source agent was started.";
   return {
-    disposition: "waiting",
+    state: "waiting",
     summary,
     evidence: [
       `xhs-cookie-refresh-blocked is ${blockerState}`,
@@ -95,15 +92,15 @@ export function xhsWaitResult(
     conditions: [
       {
         id: "task-done:xhs-cookie-refresh-blocked",
-        observer: "project.task.reconciled",
-        taskId: "xhs-cookie-refresh-blocked",
-        expectedState: "done",
+        type: "project.task.reconciled",
+        subject: "task:xhs-cookie-refresh-blocked",
+        expected: "done",
       },
     ],
   };
 }
 
-function currentXhsWait(task: string): ProjectAppTaskHandlerResult | null {
+function currentXhsWait(task: string): TaskHandlerResult | null {
   const treePath = resolveTaskTreePath("/app/projects/scout-knowledge-lib.app");
   if (!existsSync(treePath)) return null;
   try {
@@ -118,55 +115,29 @@ function currentXhsWait(task: string): ProjectAppTaskHandlerResult | null {
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
-  const agentsRoot =
-    ctx.agentsRoot || resolve(import.meta.dirname ?? ".", "../..");
 
   const waiting = currentXhsWait(ctx.task);
   if (waiting) return ctx.done(waiting.summary, waiting);
-
-  // Circuit breaker + dedup
-  const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
-  if (circuitBlock) {
-    return ctx.done(`Circuit breaker OPEN: ${circuitBlock}`);
-  }
-  const dedupCheck = shouldDispatch(agent, "explore");
-  if (!dedupCheck.allowed) {
-    return ctx.done(`Dedup blocked: ${dedupCheck.reason}`);
-  }
-  recordDispatch(agent, "explore");
-  cleanupDispatchRecords();
 
   // The task comes from the workflow-backed handler config — source-specific instructions
   const task =
     ctx.task || "Explore sources and update the Scout knowledge library.";
   const agentTask = buildExploreTask(task);
 
-  let result: any;
-  try {
-    result = await ctx.runAgent(agent, agentTask);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    recordCircuitOutcome(
-      agentsRoot,
-      agent,
-      true,
-      `explore threw: ${message.slice(0, 200)}`,
-    );
-    recordDedupOutcome(agent, "explore", "error");
-    throw err;
+  const result = await ctx.runAgent(agent, agentTask);
+
+  if (result.status === "error" || result.status === "interrupted") {
+    return ctx.blocked("Scout exploration session failed", {
+      sessionId: result.sessionId,
+      status: result.status,
+      summary: result.lastAssistantText,
+    });
   }
-
-  recordCircuitOutcome(
-    agentsRoot,
-    agent,
-    result.status === "error",
-    result.status === "error" ? "explore error" : undefined,
-  );
-  recordDedupOutcome(
-    agent,
-    "explore",
-    result.status === "error" ? "error" : "success",
-  );
-
-  return ctx.done(ctx.summarize(result, { maxLength: 500 }));
+  const summary = ctx.summarize(result, { maxLength: 500 });
+  return ctx.done(summary, {
+    state: "converged",
+    summary,
+    evidence: [`session:${result.sessionId}`],
+    actions: [],
+  });
 }

@@ -33,7 +33,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (!todayContent) {
     ctx.log("[scout-daily-digest] No findings today — skipping digest.");
-    return ctx.done("No findings to digest today.");
+    const summary = "No findings to digest today.";
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [`digest:${todayFile}`],
+      actions: [],
+    });
   }
 
   // Format date
@@ -67,5 +73,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `# Scout Findings — ${new Date(now.getTime() + 86400000).toISOString().slice(0, 10)}\n\n`,
   );
 
-  return ctx.done(`Daily digest sent (${dateStr}). Archived to ${dateStr}.md.`);
+  const summary = `Daily digest sent (${dateStr}). Archived to ${dateStr}.md.`;
+  return ctx.done(summary, {
+    state: "converged",
+    summary,
+    evidence: [`digest:${archivePath}`],
+    actions: [],
+  });
 }

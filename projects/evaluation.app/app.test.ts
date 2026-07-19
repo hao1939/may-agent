@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import app, { resolveEvaluationTask, routeEvaluationEvent } from "./app.ts";
 
@@ -64,7 +65,9 @@ describe("evaluation app task reconciliation", () => {
         data: { sessionId: "s/eval:42", status: "done" },
       }),
     ).toMatchObject({
-      id: "runtime/session-aftermath/s-eval-42",
+      id: expect.stringMatching(
+        /^runtime\/session-aftermath\/s-eval-42-[a-f0-9]{12}$/,
+      ),
       parentId: "session-audit",
       mode: "achieve",
       workflow: "evaluator-aftermath",
@@ -72,14 +75,31 @@ describe("evaluation app task reconciliation", () => {
     });
   });
 
-  test("uses standing maintain tasks for recurring responsibilities", () => {
-    expect(
-      resolveEvaluationTask({ type: "evaluation.pipeline.check" }),
-    ).toMatchObject({
-      id: "runtime/pipeline-monitor",
-      mode: "maintain",
-      workflow: "evaluator-pipeline-monitor",
+  test("uses collision-safe stable keys for normalized session ids", () => {
+    const first = resolveEvaluationTask({
+      type: "session.end",
+      data: { sessionId: "s/eval:42" },
     });
+    const second = resolveEvaluationTask({
+      type: "session.end",
+      data: { sessionId: "s:eval/42" },
+    });
+
+    expect(first?.id).not.toBe(second?.id);
+    expect(first?.id.length).toBeLessThanOrEqual(
+      "runtime/session-aftermath/".length + 120,
+    );
+  });
+
+  test("keeps deterministic pipeline observation outside the task graph", () => {
+    expect(resolveEvaluationTask({ type: "evaluation.pipeline.check" })).toBeNull();
+    expect(app.events).toContainEqual({
+      type: "evaluation.pipeline.check",
+      project: "evaluation",
+    });
+  });
+
+  test("uses standing maintain tasks for recurring agent responsibilities", () => {
     expect(
       resolveEvaluationTask({
         type: "evaluation.project.review.requested",
@@ -93,7 +113,19 @@ describe("evaluation app task reconciliation", () => {
     });
   });
 
-  test("falls unfamiliar owner work back to the owner entry", () => {
+  test("keeps wake observations out of standing task specifications", () => {
+    const firstAudit = resolveEvaluationTask({
+      type: "evaluation.project.review.requested",
+      params: { targetProject: "aks-rp-e2e.app", reason: "scheduled" },
+    });
+    const secondAudit = resolveEvaluationTask({
+      type: "evaluation.project.review.requested",
+      params: { targetProject: "aks-rp-e2e.app", reason: "manual" },
+    });
+    expect(firstAudit?.input).toEqual(secondAudit?.input);
+  });
+
+  test("reuses the learned evaluation owner-review workflow", () => {
     const task = resolveEvaluationTask({
       type: "evaluation.tick",
       lane: "owner-message",
@@ -101,8 +133,8 @@ describe("evaluation app task reconciliation", () => {
     expect(task).toMatchObject({
       id: "runtime/owner-review",
       mode: "maintain",
+      workflow: "evaluator-heartbeat",
     });
-    expect(task).not.toHaveProperty("workflow");
   });
 
   test("does not create malformed per-session tasks without a session id", () => {
@@ -127,14 +159,35 @@ describe("evaluation app task reconciliation", () => {
     ).toBeNull();
   });
 
-  test("declares task reconciliation capabilities and routes", () => {
-    expect(app.ownerEntry?.workflow).toBe("evaluator-heartbeat");
-    expect(Object.keys(app.taskWorkflows ?? {})).toEqual([
-      "evaluator-pipeline-monitor",
-      "evaluator-aftermath",
-      "evaluator-deep-eval",
-      "project-health-evaluator",
+  test("declares one convention-first task resolver", () => {
+    expect(app.tasks?.resolve).toBe(resolveEvaluationTask);
+    expect(app.tasks?.accepts).toHaveLength(7);
+    expect(app.ownerEntry).toBeUndefined();
+    expect(app.taskWorkflows).toBeUndefined();
+    expect(app.taskRoutes).toBeUndefined();
+    expect(app.eventGraph).toBeUndefined();
+  });
+
+  test("seeds only durable maintenance responsibilities", () => {
+    const seed = JSON.parse(
+      readFileSync(new URL("./tasks/seed.json", import.meta.url), "utf8"),
+    ) as { tasks: Record<string, Record<string, unknown>> };
+
+    expect(Object.keys(seed.tasks)).toEqual([
+      "evaluation-system",
+      "session-audit",
+      "project-app-audit",
+      "finding-delivery",
+      "evaluator-reliability",
+      "pipeline-health",
+      "criteria-and-calibration",
+      "drift-detection",
+      "system-integrity",
     ]);
-    expect(app.taskRoutes).toHaveLength(7);
+    for (const task of Object.values(seed.tasks)) {
+      expect(task.reconcile_mode).toBe("maintain");
+      expect(task.acceptance).toBeArray();
+      expect((task.acceptance as unknown[]).length).toBeGreaterThan(0);
+    }
   });
 });

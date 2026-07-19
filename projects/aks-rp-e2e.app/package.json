@@ -4,23 +4,14 @@
   "type": "module",
   "description": "May-agent project app that drives the portable aks-rp-e2e domain workspace.",
   "scripts": {
-    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-stall-review.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/task-reviewer.ts ./workflows/default-task-worker.ts ./workflows/spec-loop-controller.ts ./workflows/single-spec-verifier.ts ./workflows/feature-reference-loop-controller.ts ./workflows/feature-reference-collector.ts ./workflows/feature-compact-loop-controller.ts ./workflows/feature-compact-planner.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts ./workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
-    "check": "bun run integrity && bun run syntax && bun run typecheck && bun run format:check && bun run test",
-    "integrity": "bun run ./scripts/check-integrity.ts",
-    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-stall-review.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/task-reviewer.ts ./workflows/default-task-worker.ts ./workflows/spec-loop-controller.ts ./workflows/single-spec-verifier.ts ./workflows/feature-reference-loop-controller.ts ./workflows/feature-reference-collector.ts ./workflows/feature-compact-loop-controller.ts ./workflows/feature-compact-planner.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts ./workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/app-ops/workflows/project-stall-review.ts ./agents/app-ops/workflows/spec-loop-controller.ts ./agents/app-ops/workflows/feature-compact-loop-controller.ts ./agents/app-ops/workflows/problem-solver.ts ./agents/app-ops/workflows/focus-plan.ts ./agents/app-ops/workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
+    "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/app-ops/workflows/project-stall-review.ts ./agents/app-ops/workflows/spec-loop-controller.ts ./agents/app-ops/workflows/feature-compact-loop-controller.ts ./agents/app-ops/workflows/problem-solver.ts ./agents/app-ops/workflows/focus-plan.ts ./agents/app-ops/workflows/approval-dispatch.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "bun x tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./scripts/*.test.ts ./workflows/app-event-contract.test.ts ./workflows/approval-dispatch.test.ts ./workflows/feature-reference-loop.test.ts ./workflows/focus-plan.test.ts ./workflows/lib/spec-loop-store.test.ts ./workflows/problem-solver.test.ts ./workflows/project-conditions.test.ts ./workflows/project-execution-watchdog.test.ts ./workflows/project-pending-actions-v2.test.ts ./workflows/project-planner.test.ts ./workflows/project-snapshot-v2.test.ts ./workflows/project-supervisor-v2.test.ts ./workflows/project-stall-review.test.ts ./workflows/single-spec-verifier.test.ts ./workflows/spec-loop-controller.test.ts ./workflows/task-reviewer.test.ts ./workflows/task-tree-tools.test.ts ./workflows/task-worker.test.ts ./workflows/work-commands-v2.test.ts ./e2e/replanning-flow.test.ts ./e2e/feature-page.test.ts --timeout 30000",
-    "test:ui": "bun test ./e2e/feature-page.test.ts ./e2e/project-ui-replan-buttons.test.ts --timeout 30000",
-    "format": "bun x prettier --write .",
-    "format:check": "bun x prettier --check .",
-    "metrics:register": "bun run ./scripts/register-project-metrics.ts",
-    "metrics:sample": "bun run ./scripts/project-metrics.ts",
-    "health": "bun run ./scripts/project-health.ts",
-    "domain:checkpoint": "bun run ./scripts/domain-checkpoint.ts",
-    "spec-loop": "bun run ./scripts/spec-loop.ts",
-    "tasks:summary": "bun run ./scripts/task-summary.ts",
-    "task-tree": "bun ./scripts/task-tree.ts",
-    "compact-organizer": "bun run ./scripts/compact-organizer.ts"
+    "test": "bun test ./agents/app-ops/workflows/app-event-contract.test.ts ./agents/app-ops/workflows/approval-dispatch.test.ts ./agents/app-ops/workflows/feature-compact-loop.test.ts ./agents/app-ops/workflows/focus-plan.test.ts ./agents/app-ops/workflows/lib/spec-loop-store.test.ts ./agents/app-ops/workflows/problem-solver.test.ts ./agents/app-ops/workflows/project-stall-review.test.ts ./agents/app-ops/workflows/spec-loop-controller.test.ts ./watchers/aks-pipeline.test.ts --timeout 30000",
+    "test:ui": "bun test ./e2e/feature-page.test.ts --timeout 30000",
+    "format": "bun x prettier --write app.ts package.json tsconfig.json README.md design/README.md agents/app-ops/workflows/**/*.ts watchers/**/*.ts",
+    "format:check": "bun x prettier --check app.ts package.json tsconfig.json README.md design/README.md agents/app-ops/workflows/**/*.ts watchers/**/*.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

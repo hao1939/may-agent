@@ -5,13 +5,12 @@
   "description": "May-agent project app that drives the May-agent platform domain workspace.",
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
-    "check": "bun run syntax && bun run typecheck && bun run integrity && bun run format:check && bun run test",
-    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/daily-ops-digest.ts ./workflows/ops-health-review.ts ./workflows/platform-owner-review.ts ./scripts/check-integrity.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/tech-lead/workflows/daily-ops-digest.ts ./agents/tech-lead/workflows/ops-health-review.ts ./agents/tech-lead/workflows/platform-owner-review.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "integrity": "bun scripts/check-integrity.ts",
-    "test": "bun test ./workflows/*.test.ts --timeout 30000",
-    "format": "bun x prettier --write app.ts workflows/**/*.ts scripts/**/*.ts types/**/*.ts package.json project.json tsconfig.json",
-    "format:check": "bun x prettier --check app.ts workflows/**/*.ts scripts/**/*.ts types/**/*.ts package.json project.json tsconfig.json"
+    "test": "bun test ./agents/tech-lead/workflows/*.test.ts --timeout 30000",
+    "format": "bun x prettier --write app.ts agents/tech-lead/workflows/**/*.ts types/**/*.ts package.json project.json tsconfig.json",
+    "format:check": "bun x prettier --check app.ts agents/tech-lead/workflows/**/*.ts types/**/*.ts package.json project.json tsconfig.json"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

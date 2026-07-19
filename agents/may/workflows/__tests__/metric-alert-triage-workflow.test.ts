@@ -254,65 +254,6 @@ describe("metric-alert-triage workflow", () => {
     expect(agentTasks[0]).toContain("s_false_good");
   });
 
-  it("does not ask a human or owner agent to triage project-health metrics", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    const notifications: string[] = [];
-    const rows = makeDbData();
-    rows.metric.id = "project.owner-judgment-needed-count";
-    rows.metric.name = "Project tasks needing owner judgment";
-    rows.metric.explicitOwner = "may";
-    rows.metric.priority = "P2";
-    rows.alert.metric_id = "project.owner-judgment-needed-count";
-    rows.snapshots = [{
-      value: 1,
-      measured_at: Date.now(),
-      note: JSON.stringify({
-        trigger: "project.task.finished",
-        findings: [{
-          projectId: "aks-explorer/aks-rp-e2e",
-          projectPath: "projects/aks-rp-e2e",
-          projectPolicy: "aggressive-push",
-          codes: ["owner_judgment_needed"],
-        }],
-      }),
-    }];
-    const ctx = {
-      task: task("project.owner-judgment-needed-count"),
-      agentsRoot: "/tmp/no-agents",
-      query: makeQuery(rows),
-      runFunction: async (_label: string, fn: () => Promise<string>) => ({
-        sessionId: "fn_load",
-        status: "done",
-        lastAssistantText: await fn(),
-        messages: [],
-        duration: "0s",
-        outputDir: "",
-      }),
-      runAgent: async () => {
-        throw new Error("project health metric should not run generic owner triage");
-      },
-      notify: (message: string) => notifications.push(message),
-      emit: (event: Record<string, unknown>) => emitted.push(event),
-      done: (summary: string) => ({ type: "done", summary }),
-      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
-    } as any;
-
-    const result = await execute(ctx);
-
-    expect(result).toMatchObject({ type: "done" });
-    expect(notifications).toEqual([]);
-    expect(emitted).toEqual([
-      expect.objectContaining({
-        type: "metric.alert_judged",
-        metricId: "project.owner-judgment-needed-count",
-        operation: "waiting_with_evidence",
-        evidence: expect.stringContaining("routed directly to the project reconciler"),
-        ownerSessionId: null,
-        workflow: "metric-alert-triage",
-      }),
-    ]);
-  });
-
   it("blocks instead of recording closure when owner omits the structured operation", async () => {
     const emitted: Array<Record<string, unknown>> = [];
     const notifications: string[] = [];

@@ -157,12 +157,12 @@ describe("metric-alert-reactor handler", () => {
     expect(trigger.data).not.toHaveProperty("owner");
   });
 
-  it("triages aggregate project health metrics when no owner-app receipt exists", async () => {
+  it("triages a project metric when no owner-app receipt exists", async () => {
     const ctx = makeCtx({
       metric: {
         ...stateTemplate.metric,
-        id: "project.owner-judgment-needed-count",
-        name: "Project tasks needing owner judgment",
+        id: "project.stale-active-count",
+        name: "Stale active projects",
         explicitOwner: "may",
         current: 2,
         threshold: 0,
@@ -171,11 +171,11 @@ describe("metric-alert-reactor handler", () => {
       },
       alert: {
         ...stateTemplate.alert,
-        metric_id: "project.owner-judgment-needed-count",
-        message: "project owner judgment needed",
+        metric_id: "project.stale-active-count",
+        message: "stale active project",
         created_at: Date.now() - 20 * 60_000,
       },
-      metricId: "project.owner-judgment-needed-count",
+      metricId: "project.stale-active-count",
     });
     const handler = create(ctx, {} as any);
 
@@ -185,25 +185,25 @@ describe("metric-alert-reactor handler", () => {
       owner: "agent:may",
       timestamp: Date.now(),
       data: {
-        metricId: "project.owner-judgment-needed-count",
-        metricName: "Project tasks needing owner judgment",
+        metricId: "project.stale-active-count",
+        metricName: "Stale active projects",
         current: 2,
         threshold: 0,
         target: 0,
-        message: "project owner judgment needed",
+        message: "stale active project",
         priority: "P2",
       },
     });
 
     expect(ctx.sdk.query.metricAlertReactorState).toHaveBeenCalledWith(
       expect.objectContaining({
-        metricId: "project.owner-judgment-needed-count",
+        metricId: "project.stale-active-count",
         owner: "may",
       }),
     );
     expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
       "metric-alert-triage",
-      expect.stringContaining("project.owner-judgment-needed-count"),
+      expect.stringContaining("project.stale-active-count"),
       { source: "may" },
     );
     expect(ctx.sdk.emit).toHaveBeenCalledWith(
@@ -211,7 +211,7 @@ describe("metric-alert-reactor handler", () => {
       expect.objectContaining({
         handler: "metric-alert-reactor",
         workflow: "metric-alert-triage",
-        metricId: "project.owner-judgment-needed-count",
+        metricId: "project.stale-active-count",
       }),
     );
   });

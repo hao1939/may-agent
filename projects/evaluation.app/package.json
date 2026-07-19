@@ -4,12 +4,12 @@
   "type": "module",
   "description": "Independent May-agent session and project-app auditing with evidence-backed finding delivery.",
   "scripts": {
-    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./workflows/evaluator-aftermath.ts ./workflows/evaluator-pipeline-monitor.ts ./workflows/evaluator-heartbeat.ts ./workflows/evaluator-deep-eval.ts ./workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
+    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/evaluator/workflows/evaluator-aftermath.ts ./agents/evaluator/workflows/evaluator-heartbeat.ts ./agents/evaluator/workflows/evaluator-deep-eval.ts ./agents/evaluator/workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check",
-    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/evaluator-aftermath.ts ./workflows/evaluator-pipeline-monitor.ts ./workflows/evaluator-heartbeat.ts ./workflows/evaluator-deep-eval.ts ./workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/evaluator/workflows/evaluator-aftermath.ts ./agents/evaluator/workflows/evaluator-heartbeat.ts ./agents/evaluator/workflows/evaluator-deep-eval.ts ./agents/evaluator/workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "bun x prettier --write app.ts package.json project.json tsconfig.json workflows/**/*.ts",
-    "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json workflows/**/*.ts"
+    "format": "bun x prettier --write app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts watchers/**/*.ts",
+    "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts watchers/**/*.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

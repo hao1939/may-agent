@@ -54,6 +54,14 @@ BAD (will be flagged):
 - "File was updated successfully" (no specifics)
 - "Verified the changes work" (unfalsifiable)
 
+## Date Sanity Rule (CRITICAL)
+
+When creating findings files or setting `last_updated`/`Date` fields:
+- The filename date and internal dates MUST NOT be later than today's actual date.
+- Use `date -u +%Y-%m-%d` to get today's date if unsure. Never compute a date from arithmetic on paper IDs, scan numbers, or offsets.
+- If a source has a future publication date, use today's date as the filename date and note the source's claimed date inside the file.
+- Violation of this rule creates impossible-future files that require manual repair.
+
 ## Knowledge File Safety
 
 - Durable Scout knowledge belongs in `projects/scout-knowledge-lib/knowledge/` or `projects/scout-knowledge-lib/reports/`.
