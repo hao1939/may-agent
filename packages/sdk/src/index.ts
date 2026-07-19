@@ -130,29 +130,6 @@ export interface MetricAlertReactorState {
   alertId: number | null;
 }
 
-export interface ClosedLoopStewardContextQuery {
-  lookbackMs?: number;
-  alertLimit?: number;
-  deliveryFailureLimit?: number;
-  now?: number;
-}
-
-export interface ClosedLoopStewardAlertContext {
-  alert: Record<string, unknown>;
-  latestJudgment: Record<string, unknown> | null;
-  latestSnapshot: Record<string, unknown> | null;
-  activeTriageRun: Record<string, unknown> | null;
-}
-
-export interface ClosedLoopStewardContext {
-  now: number;
-  schemaBrief: string[];
-  runningStewardRun: Record<string, unknown> | null;
-  alerts: ClosedLoopStewardAlertContext[];
-  deliveryFailures: Record<string, unknown>[];
-  recentStewardRuns: Record<string, unknown>[];
-}
-
 export interface EventDeliveryHealthQuery {
   now?: number;
   lookbackMs?: number;
@@ -218,7 +195,6 @@ export interface QueryAPI {
   workflowRuns(filter?: WorkflowRunQuery): QueryResult;
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
-  closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
   eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
   heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
@@ -927,25 +903,6 @@ export {
 } from "./project-schema.js";
 export type { ProjectMeta } from "./project-schema.js";
 
-export {
-  PROJECT_TASK_RESULTS,
-  PROJECT_TASK_STATUSES,
-  parseProjectTasks,
-  planProjectTasks,
-  updateProjectTaskFields,
-  validateProjectTasks,
-} from "./project-tasks.js";
-export type {
-  PlannedProjectTask,
-  ProjectTaskFieldPatch,
-  ProjectTask,
-  ProjectTaskParseResult,
-  ProjectTaskPlan,
-  ProjectTaskPlanOptions,
-  ProjectTaskResult,
-  ProjectTaskStatus,
-} from "./project-tasks.js";
-
 // ── Metric ownership (which agents exist; who owns which metric) ────────────
 export { listConfiguredAgents, listAutonomousAgents, resolveMetricOwner } from "./metric-ownership.js";
 
@@ -964,49 +921,43 @@ export {
 } from "./heartbeat-data.js";
 
 // ── Project-app manifest/event helpers ───────────────────────────────
-export { defineProjectApp, eventData, eventDetails, eventString } from "./project-app.js";
+export { defineProjectApp, eventData, eventDetails, eventString, matchesEventSelector } from "./project-app.js";
 export type {
   EventSelector,
   ProjectApp,
   ProjectAppAction,
   ProjectAppContext,
+  ProjectAppCondition,
+  ProjectAppConditionSpec,
   ProjectAppEvent,
   ProjectAppEventTarget,
   ProjectAppEventUrgency,
   ProjectAppOnEvent,
-  ProjectAppTaskCapability,
   ProjectAppTaskAction,
-  ProjectAppTaskDisposition,
+  ProjectAppTaskHandlerState,
   ProjectAppTaskHandlerResult,
+  ProjectAppTaskAttempt,
   ProjectAppTaskIntent,
   ProjectAppTaskMode,
-  ProjectAppTaskRoute,
+  ProjectAppTaskResource,
+  ProjectAppTaskTrigger,
+  ProjectAppTasks,
 } from "./project-app.js";
 
 // ── JSON task-tree helpers for project apps ──────────────────────────
 export {
-  dependenciesSatisfied,
-  isClearEnough,
   isLeaf,
   normalizeTaskTreeInPlace,
   normalizeStringArray,
-  rawTaskState,
   readTaskTree,
   saveTaskTree,
-  setTaskState,
-  taskEventSnapshot,
+  setProjectLifecycle,
   taskRevision,
   taskState,
   withTreeLock,
 } from "./project-task-tree-store.js";
 export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
-export type {
-  TaskBlocker,
-  TaskCompletionTombstone,
-  TaskNode,
-  TaskTree,
-  TaskTreeConfig,
-} from "./project-task-tree-store.js";
+export type { TaskCompletionReceipt, TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
 
 export {
   ensureTaskTreeState,
@@ -1016,70 +967,6 @@ export {
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
 export type { EnsureTaskTreeStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
-
-export {
-  acknowledgeTaskAssignments,
-  appendPlannerRun,
-  appendToolJournal,
-  assignRunnableBacklogTasks,
-  assignTask,
-  compactDoneLeaves,
-  completeTask,
-  confirmRunnableBacklogLeaves,
-  createTask,
-  drainTaskAssignments,
-  kanbanTaskTreeState,
-  listRunnableBacklogTaskIds,
-  markTaskDone,
-  peekTaskAssignments,
-  planningPacket,
-  pruneMissingChildren,
-  readTask,
-  rejectTaskReview,
-  requeueStaleActiveTasks,
-  rollupParent,
-  unblockTask,
-  updateTaskOutputs,
-  updateTaskText,
-  repairTaskTreeRollups,
-  saveTaskTreeWithKanbanSnapshot,
-  summarizeTaskTree,
-  summarizeBlockedFrontier,
-  taskKanbanColumn,
-  taskIntentFingerprint,
-  taskTreeConfig,
-  waitingBacklogTaskSnapshots,
-  writeKanbanSnapshot,
-} from "./project-task-tree.js";
-export type {
-  CreateTaskInput,
-  RunnableBacklogAssignmentResult,
-  TaskBlockedFrontierSummary,
-  TaskBlockedParentGroup,
-  TaskBlockedSignatureGroup,
-  TaskAssignment,
-  TaskCompletionClaim,
-  TaskKanbanColumn,
-  TaskKanbanProjection,
-  TaskKanbanSnapshot,
-  TaskKanbanState,
-  TaskTreeCompactResult,
-  TaskTreeRepairResult,
-  ModelPathStatusEntry,
-  ModelStatusSummary,
-  RejectTaskReviewInput,
-  RollupParentInput,
-  TaskTreePruneMissingChildrenResult,
-  UpdateTaskTextInput,
-  TaskPlanningPacket,
-  TaskPlanningSnapshot,
-  TaskTreeCompactionCandidate,
-  TaskTreeHygieneSummary,
-  TaskTreeSummary,
-  TaskTreeToolConfig,
-  UnblockTaskInput,
-  UpdateTaskOutputsInput,
-} from "./project-task-tree.js";
 
 export {
   field,

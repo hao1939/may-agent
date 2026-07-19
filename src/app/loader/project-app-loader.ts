@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { Type } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
@@ -8,31 +9,41 @@ import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { runWorkflowDirect } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
+import { createQueryService } from "../../lib/query-service.js";
 import {
   loadProjectReadModel,
-  type EventSelector,
+  matchesEventSelector,
+  projectRuntimePaths,
+  readTaskTree,
   type ProjectApp,
   type ProjectAppContext,
+  type ProjectAppConditionSpec,
   type ProjectAppEvent as AppEvent,
   type ProjectAppEventTarget as EventTarget,
-  type ProjectAppTaskCapability,
-  type ProjectAppTaskHandlerResult,
+  type ProjectAppTaskAction,
   type ProjectAppTaskIntent,
-  type ProjectAppTaskRoute,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
+import { ProjectAppTaskController } from "../project-app-task-controller.js";
+import { isTypedProjectAppConditionSubject, trackProjectAppConditionEvent } from "../project-app-condition-tracker.js";
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type EventBus } from "../event-bus.js";
 import {
+  acknowledgeProjectAppTaskRecoveryAttention,
   claimProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
-  acknowledgeProjectAppTaskRecoveryAttention,
   markProjectAppTaskAttention,
-  observeProjectAppTaskConditions,
+  listProjectAppTaskIntents,
+  listRunnableProjectAppTaskIds,
+  observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
+  readProjectAppTaskIntent,
+  readProjectAppTaskTrigger,
+  repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   taskReconciliationConfig,
+  PROJECT_APP_TASK_RECOVERY_OWNER,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
 
@@ -52,6 +63,7 @@ export interface ProjectAppDescriptor {
   projectDir: string;
   owner: string;
   app: ProjectApp;
+  reconciliationPaused: boolean;
 }
 
 export interface ProjectAppLoaderOptions {
@@ -327,7 +339,6 @@ function appWorkflowRuntimePaths(
 ): {
   agentsRoot: string;
   workflowDir: string;
-  projectWorkflowDir: string;
   guardsDir: string;
   sharedGuardsDir: string;
 } {
@@ -338,7 +349,6 @@ function appWorkflowRuntimePaths(
   return {
     agentsRoot: appAgentDir ? join(descriptor.appDir, "agents") : runtime.agentsRoot,
     workflowDir: join(agentDir, "workflows"),
-    projectWorkflowDir: join(descriptor.appDir, "workflows"),
     guardsDir: join(agentDir, "guards"),
     sharedGuardsDir: join(runtime.sharedRoot, "guards"),
   };
@@ -374,48 +384,6 @@ function projectValue(event: Record<string, unknown>): string {
   return "";
 }
 
-function selectorProject(selector: Exclude<EventSelector, string>): string {
-  return typeof selector.target?.project === "string" && selector.target.project.trim()
-    ? selector.target.project.trim()
-    : typeof selector.project === "string" && selector.project.trim()
-      ? selector.project.trim()
-      : "";
-}
-
-function taskIdValue(event: Record<string, unknown>): string {
-  const direct = event.taskId ?? event.task_id;
-  if (typeof direct === "string") return direct;
-  if (isRecord(event.target)) {
-    const targetedTaskId = event.target.taskId;
-    if (typeof targetedTaskId === "string") return targetedTaskId;
-  }
-  return "";
-}
-
-function matchesSelector(selector: EventSelector, event: Record<string, unknown>, appId: string): boolean {
-  if (typeof selector === "string") return event.type === selector;
-  if (event.type !== selector.type) return false;
-  const project = selectorProject(selector);
-  if (project && projectValue(event) !== project) return false;
-  if (selector.target?.taskId && taskIdValue(event) !== selector.target.taskId) return false;
-  if (selector.owner && ownerValue(event) !== selector.owner.replace(/^agent:/, "")) return false;
-  if (selector.urgency && event.urgency !== selector.urgency) return false;
-  if (selector.actions?.length) {
-    const action = typeof event.action === "string" ? event.action : "";
-    if (!selector.actions.includes(action)) return false;
-  }
-  if (selector.metricIds?.length) {
-    const metricId = typeof event.metricId === "string" ? event.metricId : "";
-    if (!selector.metricIds.includes(metricId)) return false;
-  }
-  return true;
-}
-
-function eventTypeFromSelector(selector: EventSelector): string | null {
-  if (typeof selector === "string") return selector;
-  return typeof selector.type === "string" && selector.type.trim() ? selector.type.trim() : null;
-}
-
 function isProjectScopedForApp(event: Record<string, unknown>, appId: string): boolean {
   const project = projectValue(event);
   return project === appId || project === `${appId}.app`;
@@ -440,43 +408,15 @@ function metricAlertId(event: Record<string, unknown>): number | string | null {
   return typeof alertId === "number" || typeof alertId === "string" ? alertId : null;
 }
 
-function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
-  if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
-  if (hasExplicitTaskRoute(app, event, appId)) return true;
+function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>): boolean {
+  if ((app.events ?? []).some((selector) => matchesEventSelector(selector, event))) return true;
+  if (app.tasks?.accepts.some((selector) => matchesEventSelector(selector, event))) return true;
   return false;
-}
-
-function routeAccepts(route: ProjectAppTaskRoute): EventSelector[] {
-  return route.accepts;
-}
-
-function routeAcceptedEventTypes(route: ProjectAppTaskRoute): string[] {
-  return [
-    ...new Set(
-      routeAccepts(route)
-        .map(eventTypeFromSelector)
-        .filter((type): type is string => Boolean(type)),
-    ),
-  ];
-}
-
-function hasExplicitTaskRoute(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
-  return (app.taskRoutes ?? []).some(
-    (route) =>
-      route.enabled !== false && routeAccepts(route).some((selector) => matchesSelector(selector, event, appId)),
-  );
 }
 
 function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): ProjectAppContext {
   return {
-    workspacePath: (path: string) => resolve(descriptor.projectDir, path),
-    workspaceCwd: () => descriptor.projectDir,
     appPath: (path: string) => resolve(descriptor.appDir, path),
-    readJson: async <T = unknown>(path: string) => {
-      const absolute = resolve(descriptor.appDir, path);
-      return JSON.parse(readFileSync(absolute, "utf-8")) as T;
-    },
-    importModule: async <T = Record<string, unknown>>(path: string) => importRuntimeModule<T>(resolve(path)),
     emit: (event) => {
       const envelope = normalizeEvent(event, {
         source: `project-app:${descriptor.id}`,
@@ -486,6 +426,7 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
       return envelope;
     },
     noop: (reason: string) => ({ type: "noop", reason }),
+    ...(opts.persistDir ? { query: createQueryService({ getDb: () => getDb(opts.persistDir!) }) } : {}),
   };
 }
 
@@ -514,13 +455,7 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
 }
 
 function requiredAppAgentNames(descriptor: ProjectAppDescriptor): string[] {
-  const names = new Set<string>([descriptor.owner]);
-  const ownerEntryAgent = descriptor.app.ownerEntry?.agent;
-  if (ownerEntryAgent?.trim()) names.add(ownerEntryAgent.trim());
-  for (const capability of Object.values(descriptor.app.taskWorkflows ?? {})) {
-    if (capability.agent?.trim()) names.add(capability.agent.trim());
-  }
-  return [...names];
+  return [descriptor.owner];
 }
 
 async function ensureAppAgentRegistered(
@@ -538,7 +473,6 @@ async function ensureAppAgentRegistered(
   return registered || opts.manager.hasAgent(agentName);
 }
 
-const projectAppTaskRouteSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
 
 function rememberProjectAppNames(
@@ -581,27 +515,174 @@ function pruneProjectAppNames(
 }
 
 type TaskCapabilityRun = {
-  handlerResult: ProjectAppTaskHandlerResult;
+  handlerResult: NormalizedTaskHandlerResult;
   runId: string | null;
 };
 
-const taskDispositions = new Set(["converged", "progressing", "waiting", "needs-owner", "failed"]);
+type WorkflowCapability = {
+  workflow: string;
+  agent?: string;
+  task: string;
+};
 
-function normalizeTaskHandlerResult(
+type NormalizedTaskHandlerResult = {
+  state: "converged" | "waiting" | "needs-owner" | "failed";
+  summary: string;
+  evidence: string[];
+  actions: ProjectAppTaskAction[];
+  conditions?: ProjectAppConditionSpec[];
+};
+
+const taskStates = new Set(["converged", "waiting", "needs-owner"]);
+const taskModes = new Set(["achieve", "maintain"]);
+const taskPriorities = new Set(["P0", "P1", "P2", "P3"]);
+const ownerTaskActionSchema = Type.Union([
+  Type.Object({
+    kind: Type.Literal("create-task"),
+    id: Type.String(),
+    parentId: Type.String(),
+    goal: Type.String(),
+    mode: Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]),
+    outputs: Type.Array(Type.String()),
+    acceptance: Type.Array(Type.String()),
+    priority: Type.Optional(
+      Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]),
+    ),
+    owner: Type.Optional(Type.String()),
+    workflow: Type.Optional(Type.String()),
+    input: Type.Optional(Type.Any()),
+    dependsOn: Type.Optional(Type.Array(Type.String())),
+  }),
+  Type.Object({
+    kind: Type.Literal("update-task"),
+    taskId: Type.String(),
+    expectedGeneration: Type.Number(),
+    goal: Type.Optional(Type.String()),
+    mode: Type.Optional(Type.Union([Type.Literal("achieve"), Type.Literal("maintain")])),
+    outputs: Type.Optional(Type.Array(Type.String())),
+    acceptance: Type.Optional(Type.Array(Type.String())),
+  }),
+  Type.Object({
+    kind: Type.Literal("close-task"),
+    taskId: Type.String(),
+    expectedGeneration: Type.Number(),
+    summary: Type.String(),
+  }),
+  Type.Object({
+    kind: Type.Literal("unblock-task"),
+    taskId: Type.String(),
+    expectedGeneration: Type.Number(),
+    reason: Type.String(),
+  }),
+]);
+const ownerTaskResultSchema = Type.Object({
+  state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("needs-owner")]),
+  summary: Type.String(),
+  evidence: Type.Array(Type.String()),
+  actions: Type.Optional(Type.Array(ownerTaskActionSchema)),
+  conditions: Type.Optional(Type.Array(Type.Any())),
+});
+
+function validProjectAppConditionSpec(value: unknown): value is ProjectAppConditionSpec {
+  if (!isRecord(value)) return false;
+  if (typeof value.id !== "string" || !value.id.trim()) return false;
+  if (typeof value.type !== "string" || !value.type.trim()) return false;
+  if (typeof value.subject !== "string" || !isTypedProjectAppConditionSubject(value.subject.trim())) return false;
+  if (!("expected" in value)) return false;
+  if (value.owner !== undefined && (typeof value.owner !== "string" || !value.owner.trim())) {
+    return false;
+  }
+  return true;
+}
+
+function normalizedConditions(conditions: unknown[] | undefined): ProjectAppConditionSpec[] {
+  return (conditions ?? []).filter(validProjectAppConditionSpec).map((condition) => ({
+    ...condition,
+    id: condition.id.trim(),
+    type: condition.type.trim(),
+    subject: condition.subject.trim(),
+    ...(condition.owner !== undefined ? { owner: condition.owner.trim() } : {}),
+  }));
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function stringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
+function validExpectedGeneration(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function invalidProjectAppTaskActionReason(value: unknown, index: number): string | null {
+  if (!isRecord(value)) return `actions[${index}] must be an object`;
+  const kind = value.kind;
+  if (!["create-task", "update-task", "close-task", "unblock-task"].includes(String(kind))) {
+    return `actions[${index}].kind must be one of create-task, update-task, close-task, unblock-task`;
+  }
+
+  if (kind === "create-task") {
+    if (!nonEmptyString(value.id)) return `actions[${index}].id must be a non-empty string`;
+    if (!nonEmptyString(value.parentId)) return `actions[${index}].parentId must be a non-empty string`;
+    if (!nonEmptyString(value.goal)) return `actions[${index}].goal must be a non-empty string`;
+    if (!taskModes.has(String(value.mode))) return `actions[${index}].mode must be achieve or maintain`;
+    if (!stringArray(value.outputs)) return `actions[${index}].outputs must be a string array`;
+    if (!stringArray(value.acceptance) || value.acceptance.length === 0) {
+      return `actions[${index}].acceptance must be a non-empty string array`;
+    }
+    if (value.priority !== undefined && !taskPriorities.has(String(value.priority))) {
+      return `actions[${index}].priority must be P0, P1, P2, or P3`;
+    }
+    if (value.owner !== undefined && !nonEmptyString(value.owner)) {
+      return `actions[${index}].owner must be a non-empty string when present`;
+    }
+    if (value.workflow !== undefined && !nonEmptyString(value.workflow)) {
+      return `actions[${index}].workflow must be a non-empty string when present`;
+    }
+    if (value.dependsOn !== undefined && !stringArray(value.dependsOn)) {
+      return `actions[${index}].dependsOn must be a string array when present`;
+    }
+    return null;
+  }
+
+  if (!nonEmptyString(value.taskId)) return `actions[${index}].taskId must be a non-empty string`;
+  if (!validExpectedGeneration(value.expectedGeneration)) {
+    return `actions[${index}].expectedGeneration must be a positive integer`;
+  }
+  if (kind === "update-task") {
+    if (value.goal !== undefined && !nonEmptyString(value.goal)) {
+      return `actions[${index}].goal must be a non-empty string when present`;
+    }
+    if (value.mode !== undefined && !taskModes.has(String(value.mode))) {
+      return `actions[${index}].mode must be achieve or maintain when present`;
+    }
+    if (value.outputs !== undefined && !stringArray(value.outputs)) {
+      return `actions[${index}].outputs must be a string array when present`;
+    }
+    if (value.acceptance !== undefined && !stringArray(value.acceptance)) {
+      return `actions[${index}].acceptance must be a string array when present`;
+    }
+    return null;
+  }
+  if (kind === "close-task" && !nonEmptyString(value.summary)) {
+    return `actions[${index}].summary must be a non-empty string`;
+  }
+  if (kind === "unblock-task" && !nonEmptyString(value.reason)) {
+    return `actions[${index}].reason must be a non-empty string`;
+  }
+  return null;
+}
+
+export function normalizeTaskHandlerResult(
   output: unknown,
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
-): ProjectAppTaskHandlerResult {
-  if (output === undefined && fallback.type === "done") {
-    return {
-      disposition: "converged",
-      summary: fallback.summary,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
-      actions: [],
-    };
-  }
+): NormalizedTaskHandlerResult {
   if (!isRecord(output)) {
     return {
-      disposition: "failed",
+      state: "failed",
       summary:
         fallback.type === "blocked"
           ? fallback.summary
@@ -610,14 +691,14 @@ function normalizeTaskHandlerResult(
       actions: [],
     };
   }
-  const disposition = output.disposition;
+  const state = output.state;
   const summary = output.summary;
   const evidence = output.evidence;
   const actions = output.actions;
   const conditions = output.conditions;
   if (
-    typeof disposition !== "string" ||
-    !taskDispositions.has(disposition) ||
+    typeof state !== "string" ||
+    !taskStates.has(state) ||
     typeof summary !== "string" ||
     !summary.trim() ||
     !Array.isArray(evidence) ||
@@ -626,25 +707,70 @@ function normalizeTaskHandlerResult(
     (conditions !== undefined && !Array.isArray(conditions))
   ) {
     return {
-      disposition: "failed",
+      state: "failed",
       summary: "Workflow returned an invalid task handler result envelope",
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
+
+  const conditionList = conditions ?? [];
+  const invalidConditionIndex = conditionList.findIndex((condition) => !validProjectAppConditionSpec(condition));
+  if (invalidConditionIndex >= 0) {
+    return {
+      state: "failed",
+      summary: `Workflow returned an invalid Condition at conditions[${invalidConditionIndex}]`,
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+  const exactConditions = normalizedConditions(conditionList);
+  const normalizedState = state as NormalizedTaskHandlerResult["state"];
+  const normalizedSummary = summary.trim();
+  const actionList = actions ?? [];
+  for (let index = 0; index < actionList.length; index += 1) {
+    const reason = invalidProjectAppTaskActionReason(actionList[index], index);
+    if (reason) {
+      return {
+        state: "failed",
+        summary: `Workflow returned an invalid task action: ${reason}`,
+        evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+        actions: [],
+      };
+    }
+  }
+  const normalizedActions = actionList as ProjectAppTaskAction[];
+
+  if (normalizedState === "waiting" && exactConditions.length === 0) {
+    return {
+      state: "failed",
+      summary: "Workflow returned waiting without an exact Condition",
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+  if (normalizedState !== "waiting" && exactConditions.length > 0) {
+    return {
+      state: "failed",
+      summary: `Workflow returned Conditions with non-waiting state ${normalizedState}`,
+      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      actions: [],
+    };
+  }
+
   return {
-    disposition: disposition as ProjectAppTaskHandlerResult["disposition"],
-    summary: summary.trim(),
+    state: normalizedState,
+    summary: normalizedSummary,
     evidence: [...evidence],
-    actions: (actions ?? []) as ProjectAppTaskHandlerResult["actions"],
-    conditions: (conditions ?? []) as ProjectAppTaskHandlerResult["conditions"],
+    actions: normalizedActions,
+    conditions: exactConditions,
   };
 }
 
 async function runTaskCapability(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
-  capability: ProjectAppTaskCapability;
+  capability: WorkflowCapability;
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
   event?: EventEnvelope;
@@ -657,6 +783,8 @@ async function runTaskCapability(input: {
   const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
   const task = [
     capability.task,
+    `app: ${descriptor.appDir}`,
+    `project: ${descriptor.projectDir}`,
     "",
     "## Reconciliation Task",
     "```json",
@@ -665,6 +793,7 @@ async function runTaskCapability(input: {
         appId: descriptor.id,
         taskId: claim.taskId,
         generation: claim.generation,
+        resourceVersion: claim.resourceVersion,
         owner: claim.owner,
         handler: claim.handler,
         mode: claim.mode,
@@ -690,6 +819,7 @@ async function runTaskCapability(input: {
       workflow: capability.workflow,
       source: agentName,
       projectId: descriptor.id,
+      recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
       taskId: claim.taskId,
       taskGeneration: claim.generation,
       workflowRunId: null,
@@ -716,7 +846,6 @@ async function runTaskCapability(input: {
       agentName,
       persistDir: runtime.persistDir,
       workflowDir: paths.workflowDir,
-      projectWorkflowDir: paths.projectWorkflowDir,
       guardsDir: paths.guardsDir,
       sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
@@ -743,11 +872,11 @@ async function runTaskCapability(input: {
         taskGeneration: claim.generation,
         workflowRunId: runId,
         status: done ? "done" : "blocked",
-        disposition: handlerResult.disposition,
+        disposition: handlerResult.state,
         ...(done ? { summary } : { reason: summary }),
       },
       ...(trace ? { trace } : {}),
-    } as AgentEvent);
+    } as unknown as AgentEvent);
     return { handlerResult, runId };
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
@@ -768,10 +897,10 @@ async function runTaskCapability(input: {
         reason: summary,
       },
       ...(trace ? { trace } : {}),
-    } as AgentEvent);
+    } as unknown as AgentEvent);
     return {
       handlerResult: {
-        disposition: "failed",
+        state: "failed",
         summary,
         evidence: [],
         actions: [],
@@ -779,6 +908,85 @@ async function runTaskCapability(input: {
       runId: null,
     };
   }
+}
+
+async function runTaskOwner(input: {
+  opts: ProjectAppLoaderOptions;
+  descriptor: ProjectAppDescriptor;
+  intent: ProjectAppTaskIntent;
+  claim: ProjectAppTaskClaim;
+  event?: EventEnvelope;
+  fallbackReason?: string;
+}): Promise<TaskCapabilityRun> {
+  const { opts, descriptor, intent, claim, event } = input;
+  const trace = childEventTrace(event);
+  const prompt = [
+    `You are the accountable owner for Agent App ${descriptor.id}.`,
+    "Reconcile the task from current evidence. Do not edit task-tree storage directly.",
+    "Return your decision through finish().result using state, summary, evidence, actions, and conditions.",
+    "Use waiting only with exact Conditions. Use actions only for supported task-tree mutations.",
+    "",
+    "Allowed actions:",
+    '- create a task: { kind: "create-task", id, parentId, goal, mode, outputs, acceptance, priority?, owner?, workflow?, input?, dependsOn? }',
+    '- update a task: { kind: "update-task", taskId, expectedGeneration, goal?, mode?, outputs?, acceptance? }',
+    '- close a task: { kind: "close-task", taskId, expectedGeneration, summary }',
+    '- unblock a task: { kind: "unblock-task", taskId, expectedGeneration, reason }',
+    "Do not invent action names such as task.dispatch-existing-review, focus.update, noop, or task.batch-priority.",
+    "Do not include an action for the current Reconciliation Task taskId; the controller closes or waits that carrier automatically from your state.",
+    "If no task-tree mutation is needed, return actions: [] and put the explanation in summary/evidence.",
+    "",
+    "## Reconciliation Task",
+    "```json",
+    JSON.stringify(
+      {
+        appId: descriptor.id,
+        taskId: claim.taskId,
+        generation: claim.generation,
+        resourceVersion: claim.resourceVersion,
+        owner: claim.owner,
+        mode: claim.mode,
+        outcome: intent.outcome,
+        acceptance: intent.acceptance,
+        input: intent.input ?? {},
+        fallbackReason: input.fallbackReason ?? null,
+      },
+      null,
+      2,
+    ),
+    "```",
+    ...(event ? ["", "## Trigger Observation", "```json", JSON.stringify(event, null, 2), "```"] : []),
+  ].join("\n");
+
+  const result = await opts.manager.callAgent(claim.owner, prompt, {
+    source: "project-app-task-owner",
+    projectId: descriptor.id,
+    recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
+    trace,
+    requireFinish: true,
+    outputSchema: ownerTaskResultSchema,
+    toolPolicy: "full",
+  });
+  const handlerResult = normalizeTaskHandlerResult(result.structuredResult, {
+    type: result.status === "done" ? "done" : "blocked",
+    summary:
+      result.finishResult?.summary ??
+      result.lastAssistantText ??
+      result.error ??
+      `Owner session ${result.sessionId || "unknown"} returned no result`,
+    runId: result.sessionId || null,
+  });
+  if (handlerResult.state === "needs-owner") {
+    return {
+      handlerResult: {
+        state: "failed",
+        summary: "The resolved owner cannot hand the task back to itself",
+        evidence: handlerResult.evidence ?? [],
+        actions: [],
+      },
+      runId: result.sessionId || null,
+    };
+  }
+  return { handlerResult, runId: result.sessionId || null };
 }
 
 function emitTaskReconciliationEvent(
@@ -797,26 +1005,18 @@ function emitTaskReconciliationEvent(
     target: { project: descriptor.id, taskId },
     data: { project: descriptor.id, taskId, ...data },
     ...(trace ? { trace } : {}),
-  } as AgentEvent);
+  } as unknown as AgentEvent);
 }
 
-async function reconcileTaskRoute(input: {
+async function reconcileTaskIntent(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
-  route: ProjectAppTaskRoute;
+  intent: ProjectAppTaskIntent;
   event?: EventEnvelope;
   reason?: string;
-}): Promise<void> {
-  const { opts, descriptor, route, event } = input;
+}): Promise<string[]> {
+  const { opts, descriptor, intent, event } = input;
   const flattened = event ? flattenEvent(event as unknown as AgentEvent) : {};
-  const intent = route.resolve(flattened);
-  if (!intent) {
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", route.name, {
-      route: route.name,
-      reason: "route-produced-no-task",
-    });
-    return;
-  }
 
   const config = taskReconciliationConfig({
     appDir: descriptor.appDir,
@@ -825,13 +1025,12 @@ async function reconcileTaskRoute(input: {
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
   const workflowKey = intent.workflow?.trim() || "";
-  const primaryCapability = workflowKey ? descriptor.app.taskWorkflows?.[workflowKey] : descriptor.app.ownerEntry;
   const primaryHandler = workflowKey ? `workflow:${workflowKey}` : "owner";
   const primary = claimProjectAppTask(config, {
     intent,
     appOwner: descriptor.owner,
     handler: primaryHandler,
-    reason: input.reason ?? event?.type ?? route.name,
+    reason: input.reason ?? event?.type ?? "task-controller",
     trigger: event ? flattened : undefined,
   });
   if (primary.kind !== "claimed") {
@@ -839,17 +1038,28 @@ async function reconcileTaskRoute(input: {
       primary.kind === "busy"
         ? { reason: "attempt-active", attemptId: primary.attemptId }
         : primary.kind === "waiting"
-          ? { reason: "conditions-open", conditionIds: primary.conditionIds }
-          : { reason: "already-completed", generation: primary.generation };
+          ? primary.dependencyIds?.length
+            ? { reason: "dependencies-open", dependencyIds: primary.dependencyIds }
+            : { reason: "conditions-open", conditionIds: primary.conditionIds }
+          : primary.kind === "attention"
+            ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
+            : { reason: "already-completed", generation: primary.generation };
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", intent.id, {
-      route: route.name,
+      route: "task-controller",
       ...skip,
     });
-    return;
+    return [];
   }
+  const primaryCapability: WorkflowCapability | undefined = workflowKey
+    ? {
+        workflow: workflowKey,
+        agent: primary.owner,
+        task: `Reconcile task through workflow ${workflowKey}`,
+      }
+    : undefined;
 
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
-    route: route.name,
+    route: "task-controller",
     generation: primary.generation,
     attemptId: primary.attemptId,
     handler: primary.handler,
@@ -857,13 +1067,15 @@ async function reconcileTaskRoute(input: {
   });
 
   let primaryResult: TaskCapabilityRun;
-  if (!primaryCapability) {
+  if (!workflowKey) {
+    primaryResult = await runTaskOwner({ opts, descriptor, intent, claim: primary, event });
+  } else if (!primaryCapability) {
     primaryResult = {
       handlerResult: {
-        disposition: "needs-owner",
+        state: "needs-owner",
         summary: workflowKey
           ? `Task workflow is not declared: ${workflowKey}`
-          : `App ${descriptor.id} has no ownerEntry`,
+          : `App ${descriptor.id} has no resolved owner handler`,
         evidence: [],
         actions: [],
       },
@@ -886,7 +1098,7 @@ async function reconcileTaskRoute(input: {
   }
 
   const primaryHandlerResult = primaryResult.handlerResult;
-  if (primaryHandlerResult.disposition === "converged") {
+  if (primaryHandlerResult.state === "converged") {
     try {
       const apply = completeProjectAppTask(config, primary, {
         summary: primaryHandlerResult.summary,
@@ -903,17 +1115,17 @@ async function reconcileTaskRoute(input: {
         actionsApplied: apply.actionsApplied,
         workflowRunId: primaryResult.runId,
       });
-      return;
+      return apply.dependentTaskIds;
     } catch (error) {
-      primaryHandlerResult.disposition = "failed";
+      primaryHandlerResult.state = "failed";
       primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
-  if (primaryHandlerResult.disposition === "progressing" || primaryHandlerResult.disposition === "waiting") {
+  if (primaryHandlerResult.state === "waiting") {
     try {
       const apply = deferProjectAppTask(config, primary, {
-        disposition: primaryHandlerResult.disposition,
+        disposition: primaryHandlerResult.state,
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
         actions: primaryHandlerResult.actions,
@@ -923,24 +1135,24 @@ async function reconcileTaskRoute(input: {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: apply.status === "applied" ? primaryHandlerResult.disposition : "stale",
+        disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
         actionsApplied: apply.actionsApplied,
         workflowRunId: primaryResult.runId,
       });
-      return;
+      return apply.reconcileTaskIds;
     } catch (error) {
-      primaryHandlerResult.disposition = "failed";
+      primaryHandlerResult.state = "failed";
       primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
   markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
-    reason: primaryCapability ? "handler-blocked" : "handler-unavailable",
+    reason: primaryCapability || !workflowKey ? "handler-blocked" : "handler-unavailable",
   });
-  if (!workflowKey || !descriptor.app.ownerEntry) {
+  if (!workflowKey) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
       attemptId: primary.attemptId,
@@ -948,7 +1160,7 @@ async function reconcileTaskRoute(input: {
       disposition: "attention",
       summary: primaryHandlerResult.summary,
     });
-    return;
+    return [];
   }
 
   const fallback = claimProjectAppTask(config, {
@@ -966,28 +1178,27 @@ async function reconcileTaskRoute(input: {
       summary: primaryHandlerResult.summary,
       fallback: fallback.kind,
     });
-    return;
+    return [];
   }
 
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
-    route: route.name,
+    route: "task-controller",
     generation: fallback.generation,
     attemptId: fallback.attemptId,
     handler: fallback.handler,
     owner: fallback.owner,
     fallbackFrom: primary.handler,
   });
-  const fallbackResult = await runTaskCapability({
+  const fallbackResult = await runTaskOwner({
     opts,
     descriptor,
-    capability: descriptor.app.ownerEntry,
     intent,
     claim: fallback,
     event,
     fallbackReason: primaryHandlerResult.summary,
   });
   const fallbackHandlerResult = fallbackResult.handlerResult;
-  if (fallbackHandlerResult.disposition === "converged") {
+  if (fallbackHandlerResult.state === "converged") {
     try {
       const apply = completeProjectAppTask(config, fallback, {
         summary: fallbackHandlerResult.summary,
@@ -1005,17 +1216,17 @@ async function reconcileTaskRoute(input: {
         workflowRunId: fallbackResult.runId,
         fallbackFrom: primary.handler,
       });
-      return;
+      return apply.dependentTaskIds;
     } catch (error) {
-      fallbackHandlerResult.disposition = "failed";
+      fallbackHandlerResult.state = "failed";
       fallbackHandlerResult.summary = `Owner actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
-  if (fallbackHandlerResult.disposition === "progressing" || fallbackHandlerResult.disposition === "waiting") {
+  if (fallbackHandlerResult.state === "waiting") {
     try {
       const apply = deferProjectAppTask(config, fallback, {
-        disposition: fallbackHandlerResult.disposition,
+        disposition: fallbackHandlerResult.state,
         summary: fallbackHandlerResult.summary,
         evidence: fallbackHandlerResult.evidence,
         actions: fallbackHandlerResult.actions,
@@ -1025,23 +1236,23 @@ async function reconcileTaskRoute(input: {
         generation: fallback.generation,
         attemptId: fallback.attemptId,
         handler: fallback.handler,
-        disposition: apply.status === "applied" ? fallbackHandlerResult.disposition : "stale",
+        disposition: apply.status === "applied" ? fallbackHandlerResult.state : "stale",
         summary: fallbackHandlerResult.summary,
         evidence: fallbackHandlerResult.evidence,
         actionsApplied: apply.actionsApplied,
         workflowRunId: fallbackResult.runId,
         fallbackFrom: primary.handler,
       });
-      return;
+      return apply.reconcileTaskIds;
     } catch (error) {
-      fallbackHandlerResult.disposition = "failed";
+      fallbackHandlerResult.state = "failed";
       fallbackHandlerResult.summary = `Owner result was rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
   markProjectAppTaskAttention(config, fallback, {
     summary: fallbackHandlerResult.summary,
-    reason: "owner-entry-blocked",
+    reason: "owner-handler-failed",
   });
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
     generation: fallback.generation,
@@ -1051,123 +1262,7 @@ async function reconcileTaskRoute(input: {
     summary: fallbackHandlerResult.summary,
     fallbackFrom: primary.handler,
   });
-}
-
-function installTaskRoutes(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
-  const routes = descriptor.app.taskRoutes ?? [];
-  if (routes.length > 0 && !descriptor.app.ownerEntry) {
-    throw new Error(`Project app ${descriptor.id} declares taskRoutes without ownerEntry`);
-  }
-  let count = 0;
-  const currentNames = new Set<string>();
-  for (const route of routes) {
-    currentNames.add(route.name);
-    const entry: CronEntry = {
-      name: route.name,
-      enabled: route.enabled !== false,
-      description: route.description,
-      maxConcurrentTriggers: route.maxConcurrentTriggers,
-      on: routeAcceptedEventTypes(route),
-      context: [],
-      agent: descriptor.owner,
-      handler: {
-        workflow: "__project_task_reconcile__",
-        agent: descriptor.owner,
-        projectId: descriptor.id,
-        includeEvent: true,
-        task: `Reconcile project task through route ${route.name}`,
-        timeoutMs: 0,
-      },
-    };
-    cron.registerHandler(route.name, async (event?: EventEnvelope) => {
-      if (event) {
-        const flattened = flattenEvent(event as unknown as AgentEvent);
-        if (!routeAccepts(route).some((selector) => matchesSelector(selector, flattened, descriptor.id))) return;
-      }
-      await reconcileTaskRoute({ opts, descriptor, route, event });
-    });
-    cron.addSyntheticEntry(entry);
-    count++;
-  }
-  const recoveryConfig = taskReconciliationConfig({
-    appDir: descriptor.appDir,
-    projectDir: descriptor.projectDir,
-    owner: descriptor.owner,
-    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-  });
-  for (const wake of recoverableProjectAppTaskAttempts(recoveryConfig)) {
-    if (!wake.trigger) {
-      const summary = `Interrupted reconciliation ${wake.taskId} cannot resume because its previous runtime did not persist the trigger packet`;
-      if (releaseInterruptedProjectAppTaskAttempt(recoveryConfig, wake.taskId, summary)) {
-        emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", wake.taskId, {
-          handler: "recovery",
-          disposition: "attention",
-          summary,
-        });
-      }
-      continue;
-    }
-    const flattened = flattenEvent(wake.trigger as unknown as AgentEvent);
-    const route = routes.find(
-      (candidate) =>
-        candidate.enabled !== false &&
-        routeAccepts(candidate).some((selector) => matchesSelector(selector, flattened, descriptor.id)) &&
-        candidate.resolve(flattened)?.id === wake.taskId,
-    );
-    if (!route) {
-      const summary = `Interrupted reconciliation ${wake.taskId} cannot resume because no current task route accepts its persisted trigger`;
-      releaseInterruptedProjectAppTaskAttempt(recoveryConfig, wake.taskId, summary);
-      emitTaskReconciliationEvent(
-        opts,
-        descriptor,
-        wake.trigger as unknown as EventEnvelope,
-        "project.task.reconciled",
-        wake.taskId,
-        {
-          handler: "recovery",
-          disposition: "attention",
-          summary,
-        },
-      );
-      continue;
-    }
-    void reconcileTaskRoute({
-      opts,
-      descriptor,
-      route,
-      event: wake.trigger as unknown as EventEnvelope,
-      reason: `attempt-recovery:${wake.taskId}`,
-    }).catch((err) => {
-      opts.bus.emit({
-        type: "handler.failed",
-        source: "cron",
-        owner: `agent:${descriptor.owner}`,
-        data: {
-          handler: route.name,
-          agent: descriptor.owner,
-          error: err instanceof Error ? err.message : String(err),
-          durationMs: 0,
-        },
-      });
-    });
-  }
-  for (const attention of pendingProjectAppTaskRecoveryAttention(recoveryConfig)) {
-    opts.bus.emit({
-      type: "project.owner.requested",
-      source: `project-app:${descriptor.id}:task-reconciler`,
-      owner: `agent:${descriptor.owner}`,
-      target: { project: descriptor.id, taskId: attention.taskId },
-      data: {
-        project: descriptor.id,
-        taskId: attention.taskId,
-        reason: "task-reconciliation-recovery-attention",
-        summary: attention.summary,
-      },
-    } as AgentEvent);
-    acknowledgeProjectAppTaskRecoveryAttention(recoveryConfig, attention.taskId);
-  }
-  rememberProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, cron, descriptor.id, currentNames);
-  return count;
+  return [];
 }
 
 function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
@@ -1201,6 +1296,198 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
+const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
+
+function taskIdFromEvent(event: Record<string, unknown>): string {
+  const direct = event.taskId ?? event.task_id;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const target = isRecord(event.target) ? event.target : {};
+  return typeof target.taskId === "string" ? target.taskId.trim() : "";
+}
+
+function isTaskWakeEvent(event: Record<string, unknown>): boolean {
+  const type = typeof event.type === "string" ? event.type : "";
+  return ![
+    "handler.workflow_dispatched",
+    "project.task.reconcile.started",
+    "project.task.reconcile.skipped",
+    "project.task.reconciled",
+  ].includes(type);
+}
+
+function installConventionTaskControllers(
+  opts: ProjectAppLoaderOptions,
+  descriptors: ProjectAppDescriptor[],
+): Map<string, ProjectAppTaskController> {
+  for (const controller of appTaskControllersByBus.get(opts.bus)?.values() ?? []) controller.close();
+  const controllers = new Map<string, ProjectAppTaskController>();
+
+  for (const descriptor of descriptors) {
+    const tasks = descriptor.app.tasks;
+    if (!tasks || descriptor.reconciliationPaused) continue;
+    const config = taskReconciliationConfig({
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      owner: descriptor.owner,
+      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+    });
+    let controller: ProjectAppTaskController;
+    controller = new ProjectAppTaskController({
+      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      maxRetries: 3,
+      resync: {
+        intervalMs: tasks.resyncIntervalMs ?? 60_000,
+        taskIds: () => listRunnableProjectAppTaskIds(config),
+      },
+      reconcile: async (taskId) => {
+        const intent = readProjectAppTaskIntent(config, taskId);
+        if (!intent) return;
+        const trigger = readProjectAppTaskTrigger(config, taskId);
+        const dependentTaskIds = await reconcileTaskIntent({
+          opts,
+          descriptor,
+          intent,
+          event: trigger as EventEnvelope | undefined,
+          reason: "task-controller",
+        });
+        for (const dependentTaskId of dependentTaskIds) {
+          controller.enqueue(dependentTaskId);
+        }
+      },
+      onError: (taskId, error, willRetry) => {
+        opts.bus.emit({
+          type: "handler.failed",
+          source: "cron",
+          owner: `agent:${descriptor.owner}`,
+          data: {
+            handler: `project-app-task-controller:${taskId}`,
+            agent: descriptor.owner,
+            error: `${error instanceof Error ? error.message : String(error)}; willRetry=${willRetry}`,
+            durationMs: 0,
+          },
+        });
+      },
+    });
+    controllers.set(descriptor.id, controller);
+  }
+
+  appTaskControllersByBus.set(opts.bus, controllers);
+  return controllers;
+}
+
+function recoverInterruptedProjectAppTasks(
+  opts: ProjectAppLoaderOptions,
+  descriptors: ProjectAppDescriptor[],
+  controllers: Map<string, ProjectAppTaskController>,
+): void {
+  for (const descriptor of descriptors) {
+    if (!descriptor.app.tasks) continue;
+    const controller = controllers.get(descriptor.id);
+    const config = taskReconciliationConfig({
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      owner: descriptor.owner,
+      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+    });
+    for (const recovery of recoverableProjectAppTaskAttempts(config)) {
+      if (recovery.trigger) {
+        if (controller && !descriptor.reconciliationPaused) controller.enqueue(recovery.taskId);
+        continue;
+      }
+      releaseInterruptedProjectAppTaskAttempt(
+        config,
+        recovery.taskId,
+        `Interrupted reconciliation ${recovery.taskId} cannot resume because its previous runtime did not persist the trigger packet`,
+      );
+    }
+    const repairs = repairPreviousRuntimeRecoveryAttention(config);
+    if (repairs.length > 0) {
+      opts.bus.emit({
+        type: "project.task.recovery.repaired",
+        source: `project-app:${descriptor.id}:task-recovery`,
+        owner: `agent:${descriptor.owner}`,
+        target: { project: descriptor.id },
+        data: {
+          project: descriptor.id,
+          repaired: repairs.length,
+          requeued: repairs.filter((repair) => repair.disposition === "requeued").length,
+          retired: repairs.filter((repair) => repair.disposition === "retired").length,
+          taskIds: repairs.slice(0, 50).map((repair) => repair.taskId),
+        },
+      } as unknown as AgentEvent);
+      for (const repair of repairs) {
+        if (repair.disposition === "requeued" && controller && !descriptor.reconciliationPaused) {
+          controller.enqueue(repair.taskId);
+        }
+      }
+    }
+    const attentions = pendingProjectAppTaskRecoveryAttention(config);
+    if (attentions.length === 0) continue;
+    if (!descriptor.reconciliationPaused) {
+      opts.bus.emit({
+        type: "project.owner.requested",
+        source: `project-app:${descriptor.id}:task-recovery`,
+        owner: `agent:${descriptor.owner}`,
+        target: { project: descriptor.id },
+        urgency: "high",
+        data: {
+          project: descriptor.id,
+          reason: "project-app-task-recovery-attention",
+          taskIds: attentions.map((attention) => attention.taskId),
+          summaries: Object.fromEntries(attentions.map((attention) => [attention.taskId, attention.summary])),
+          instruction:
+            "Some task attempts were active in a previous runtime but cannot be resumed because no trigger packet was persisted. Reconcile these review/attention tasks from fresh evidence, release stale capacity, and assign only bounded runnable follow-up work.",
+        },
+      } as unknown as AgentEvent);
+      for (const attention of attentions) acknowledgeProjectAppTaskRecoveryAttention(config, attention.taskId);
+    }
+  }
+}
+
+async function dispatchProjectAppAction(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  rawEvent: AgentEvent,
+  event: Record<string, unknown>,
+): Promise<boolean> {
+  if (event.type !== "project.action.invoked" || !isProjectScopedForApp(event, descriptor.id)) return false;
+
+  const actionName = typeof event.action === "string" ? event.action.trim() : "";
+  const action = actionName ? descriptor.app.actions?.[actionName] : undefined;
+  const trace = childEventTrace(rawEvent);
+  if (!action) {
+    opts.bus.emit({
+      type: "project.action.rejected",
+      source: `project-app:${descriptor.id}`,
+      owner: `agent:${descriptor.owner}`,
+      target: { project: descriptor.id },
+      data: {
+        project: descriptor.id,
+        action: actionName || null,
+        reason: actionName ? "unknown-action" : "missing-action",
+      },
+      ...(trace ? { trace } : {}),
+    } as unknown as AgentEvent);
+    return true;
+  }
+
+  const params = isRecord(event.params) ? event.params : {};
+  const emitted = normalizeEvent(action.event(params), {
+    source: `project-app:${descriptor.id}:action:${actionName}`,
+    owner: `agent:${descriptor.owner}`,
+  });
+  opts.bus.emit(emitted as unknown as AgentEvent);
+
+  opts.bus.emit({
+    type: "project.action.accepted",
+    source: `project-app:${descriptor.id}`,
+    owner: `agent:${descriptor.owner}`,
+    target: { project: descriptor.id },
+    data: { project: descriptor.id, action: actionName },
+    ...(trace ? { trace } : {}),
+  } as unknown as AgentEvent);
+  return true;
+}
 
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
   const existing = appRouterDescriptorsByBus.get(opts.bus);
@@ -1213,45 +1500,72 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   opts.bus.subscribe((rawEvent): void => {
     const event = flattenEvent(rawEvent);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
-      if (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner) {
+      if (descriptor.reconciliationPaused) continue;
+      const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
+      if (event.type === "project.action.invoked" && isProjectScopedForApp(event, descriptor.id)) {
+        void dispatchProjectAppAction(opts, descriptor, rawEvent, event).catch((err) => {
+          opts.bus.emit({
+            type: "handler.failed",
+            source: "cron",
+            owner: `agent:${descriptor.owner}`,
+            data: {
+              handler: "project-app-action",
+              agent: descriptor.owner,
+              error: err instanceof Error ? err.message : String(err),
+              durationMs: 0,
+            },
+          });
+        });
+        continue;
+      }
+      if (
+        descriptor.app.tasks &&
+        (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner)
+      ) {
         const config = taskReconciliationConfig({
           appDir: descriptor.appDir,
           projectDir: descriptor.projectDir,
           owner: descriptor.owner,
           maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
         });
-        const conditionWakes = observeProjectAppTaskConditions(config, event);
-        for (const wake of conditionWakes) {
-          const route: ProjectAppTaskRoute = {
-            name: `condition:${wake.conditionId}`,
-            enabled: true,
-            description: `Resume ${wake.taskId} after Condition ${wake.conditionId} changed`,
-            accepts: [String(event.type ?? "")],
-            resolve: () => wake.intent,
-          };
-          void reconcileTaskRoute({
-            opts,
-            descriptor,
-            route,
-            event: rawEvent as EventEnvelope,
-            reason: wake.recovery ? `condition-recovery:${wake.conditionId}` : `condition:${wake.conditionId}`,
-          }).catch((err) => {
-            opts.bus.emit({
-              type: "handler.failed",
-              source: "cron",
-              owner: `agent:${descriptor.owner}`,
-              data: {
-                handler: route.name,
-                agent: descriptor.owner,
-                error: err instanceof Error ? err.message : String(err),
-                durationMs: 0,
-              },
-            });
-          });
+        const conditionWakes = trackProjectAppConditionEvent(config, event);
+        for (const wake of conditionWakes) taskController?.enqueue(wake.taskId);
+      }
+      if (taskController && descriptor.app.tasks) {
+        const targetedTaskId =
+          isProjectScopedForApp(event, descriptor.id) && isTaskWakeEvent(event) ? taskIdFromEvent(event) : "";
+        if (
+          targetedTaskId &&
+          readProjectAppTaskIntent(
+            taskReconciliationConfig({
+              appDir: descriptor.appDir,
+              projectDir: descriptor.projectDir,
+              owner: descriptor.owner,
+              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+            }),
+            targetedTaskId,
+          )
+        ) {
+          taskController.enqueue(targetedTaskId);
+        }
+        if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
+          const intent = descriptor.app.tasks.resolve(event);
+          if (intent) {
+            const observation = observeProjectAppTaskIntent(
+              taskReconciliationConfig({
+                appDir: descriptor.appDir,
+                projectDir: descriptor.projectDir,
+                owner: descriptor.owner,
+                maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+              }),
+              { intent, appOwner: descriptor.owner, trigger: event },
+            );
+            if (observation.kind === "observed") taskController.enqueue(observation.taskId);
+          }
+          continue;
         }
       }
-      if (!shouldOfferToApp(descriptor.app, event, descriptor.id)) continue;
-      const hasTaskRoute = hasExplicitTaskRoute(descriptor.app, event, descriptor.id);
+      if (!shouldOfferToApp(descriptor.app, event)) continue;
       if (isMetricFeedbackEvent(event)) {
         const eventOwner = ownerValue(event);
         opts.bus.emit({
@@ -1269,7 +1583,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           },
         } as AgentEvent);
       }
-      if (hasTaskRoute) continue;
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
@@ -1311,24 +1624,73 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   });
 }
 
-export async function installProjectApps(
-  opts: ProjectAppLoaderOptions,
-): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
-  const installed: ProjectAppDescriptor[] = [];
-  let entries = 0;
-  const activeCronAppIds = new Map<Cron, Set<string>>();
+function validatePreparedProjectApp(descriptor: ProjectAppDescriptor): void {
+  const { app, id } = descriptor;
+  const concurrency = app.budget?.maxConcurrent ?? 1;
+  if (!Number.isInteger(concurrency) || concurrency <= 0) {
+    throw new Error(`Project app ${id} maxConcurrent must be a positive integer`);
+  }
+  if (app.tasks) {
+    const resyncIntervalMs = app.tasks.resyncIntervalMs ?? 60_000;
+    if (!Number.isFinite(resyncIntervalMs) || resyncIntervalMs <= 0) {
+      throw new Error(`Project app ${id} task resyncIntervalMs must be positive`);
+    }
+  }
+  const scheduleIds = new Set<string>();
+  for (const schedule of app.schedules ?? []) {
+    if (!schedule.id?.trim()) throw new Error(`Project app ${id} has a schedule without an id`);
+    if (scheduleIds.has(schedule.id)) throw new Error(`Project app ${id} has duplicate schedule ${schedule.id}`);
+    scheduleIds.add(schedule.id);
+    if (typeof schedule.intervalMs !== "number" || !Number.isFinite(schedule.intervalMs) || schedule.intervalMs <= 0) {
+      throw new Error(`Project app ${id} schedule ${schedule.id} intervalMs must be positive`);
+    }
+    if (!Array.isArray(schedule.emits) || schedule.emits.length === 0) {
+      throw new Error(`Project app ${id} schedule ${schedule.id} must emit at least one event`);
+    }
+  }
+}
 
+async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Promise<ProjectAppDescriptor[]> {
+  const descriptors: ProjectAppDescriptor[] = [];
+  const ids = new Set<string>();
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
     const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
+    if (ids.has(id)) throw new Error(`Duplicate project app id: ${id}`);
+    ids.add(id);
     const descriptor: ProjectAppDescriptor = {
       id,
       appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       owner: configuredProjectAppOwner(app, appDir),
       app,
+      reconciliationPaused: false,
     };
+    descriptor.reconciliationPaused = descriptor.app.tasks
+      ? readTaskTree(
+          taskReconciliationConfig({
+            appDir: descriptor.appDir,
+            projectDir: descriptor.projectDir,
+            owner: descriptor.owner,
+            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+          }),
+        ).project_lifecycle === "paused"
+      : false;
+    validatePreparedProjectApp(descriptor);
+    descriptors.push(descriptor);
+  }
+  return descriptors;
+}
 
+async function commitProjectAppDescriptors(
+  opts: ProjectAppLoaderOptions,
+  prepared: ProjectAppDescriptor[],
+): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
+  const installed: ProjectAppDescriptor[] = [];
+  let entries = 0;
+  const activeCronAppIds = new Map<Cron, Set<string>>();
+  for (const descriptor of prepared) {
+    const { id } = descriptor;
     let missingAgent = "";
     for (const agentName of requiredAppAgentNames(descriptor)) {
       if (!(await ensureAppAgentRegistered(opts, descriptor, agentName))) {
@@ -1348,19 +1710,46 @@ export async function installProjectApps(
     const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
     activeAppIds.add(descriptor.id);
     activeCronAppIds.set(cron, activeAppIds);
-    entries += installTaskRoutes(opts, cron, descriptor);
+    if (descriptor.reconciliationPaused) {
+      rememberProjectAppNames(projectAppScheduleSyntheticNamesByCron, cron, descriptor.id, new Set());
+      installed.push(descriptor);
+      continue;
+    }
     entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }
 
-  pruneProjectAppNames(projectAppTaskRouteSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
   pruneProjectAppNames(projectAppScheduleSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
+  const controllers = installConventionTaskControllers(opts, installed);
 
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
+  recoverInterruptedProjectAppTasks(opts, installed, controllers);
 
   return { installed, entries };
+}
+
+export async function installProjectApps(
+  opts: ProjectAppLoaderOptions,
+): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
+  const prepared = await prepareProjectAppDescriptors(opts);
+  const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
+  try {
+    return await commitProjectAppDescriptors(opts, prepared);
+  } catch (error) {
+    if (previous.length > 0) {
+      try {
+        await commitProjectAppDescriptors(opts, previous);
+      } catch (rollbackError) {
+        throw new AggregateError(
+          [error, rollbackError],
+          "Project app reload failed and the previous app set could not be restored",
+        );
+      }
+    }
+    throw error;
+  }
 }
 
 function hashFile(path: string): string {
@@ -1371,13 +1760,25 @@ function hashFile(path: string): string {
   }
 }
 
-function projectAppManifestFingerprint(projectsRoot: string): string {
+function projectAppLifecycle(appDir: string): string {
+  try {
+    const tree = JSON.parse(readFileSync(projectRuntimePaths(appDir).taskTreePath, "utf8")) as {
+      project_lifecycle?: unknown;
+    };
+    return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+export function projectAppHostFingerprint(projectsRoot: string): string {
   const parts: string[] = [];
   for (const appDir of listProjectAppDirs(projectsRoot)) {
     const tsPath = join(appDir, "app.ts");
     const jsPath = join(appDir, "app.js");
     const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
     parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
+    parts.push(`${appDir}\tproject_lifecycle\t${projectAppLifecycle(appDir)}`);
     for (const agent of localAgents(appDir)) {
       const agentDir = join(appDir, "agents", agent.dirName);
       const configPath = join(agentDir, "agent.json");
@@ -1394,11 +1795,11 @@ export function startProjectAppWatcher(
   const intervalMs = Math.max(1_000, watcherOpts.intervalMs ?? 5_000);
   let closed = false;
   let inFlight = false;
-  let lastFingerprint = projectAppManifestFingerprint(opts.projectsRoot);
+  let lastFingerprint = projectAppHostFingerprint(opts.projectsRoot);
 
   const scanNow = async (): Promise<boolean> => {
     if (closed || inFlight) return false;
-    const nextFingerprint = projectAppManifestFingerprint(opts.projectsRoot);
+    const nextFingerprint = projectAppHostFingerprint(opts.projectsRoot);
     if (nextFingerprint === lastFingerprint) return false;
     inFlight = true;
     try {

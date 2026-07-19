@@ -165,9 +165,7 @@ describe("workflow tool: list", () => {
     }
   });
 
-  it("resolves precedence by exported name and rejects duplicates within one scope", async () => {
-    const projectWorkflowDir = join(testDir, "project-workflows");
-    mkdirSync(projectWorkflowDir, { recursive: true });
+  it("resolves by exported name and rejects duplicates within the owning agent", async () => {
     writeWorkflow(
       "agent-file.ts",
       `
@@ -175,14 +173,6 @@ describe("workflow tool: list", () => {
       export const description = "Agent version";
       export async function execute(ctx) { return ctx.done("agent"); }
     `,
-    );
-    writeFileSync(
-      join(projectWorkflowDir, "different-file.ts"),
-      `
-      export const name = "effective";
-      export const description = "Project version";
-      export async function execute(ctx) { return ctx.done("project"); }
-      `,
     );
     writeWorkflow(
       "duplicate-a.ts",
@@ -202,14 +192,14 @@ describe("workflow tool: list", () => {
     );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir, projectWorkflowDir });
+    const tool = createWorkflowTool({ manager, workflowDir });
     const listed = JSON.parse((await tool.execute("tc1", { action: "list" })).content[0].text) as WorkflowToolResult;
     expect(listed.type).toBe("list");
     if (listed.type !== "list") return;
     expect(listed.workflows).toContainEqual({
       name: "effective",
-      description: "Project version",
-      sourceScope: "project",
+      description: "Agent version",
+      sourceScope: "agent",
     });
     expect(listed.workflows.some((workflow) => workflow.name === "ambiguous")).toBe(false);
     expect(listed.diagnostics?.join("\n")).toContain('Ambiguous agent workflow name "ambiguous"');
@@ -218,7 +208,7 @@ describe("workflow tool: list", () => {
       (await tool.execute("tc2", { action: "run", name: "effective", task: "task" })).content[0].text,
     ) as WorkflowToolResult;
     expect(result.type).toBe("done");
-    if (result.type === "done") expect(result.summary).toBe("project");
+    if (result.type === "done") expect(result.summary).toBe("agent");
   });
 });
 
@@ -254,6 +244,47 @@ describe("workflow tool: typed execution", () => {
       workflow: "typed",
       summary: "typed result",
       output: { disposition: "converged" },
+    });
+  });
+
+  it("propagates the caller's recovery owner to workflow step sessions", async () => {
+    writeWorkflow(
+      "recovery-owned.ts",
+      `
+      export const name = "recovery-owned";
+      export const description = "Recovery ownership fixture";
+      export async function execute(ctx) {
+        await ctx.runAgent("worker", "do the step");
+        return ctx.done("done");
+      }
+    `,
+    );
+    const calls: Array<Record<string, unknown>> = [];
+    const manager = {
+      async callAgent(_agent: string, _task: string, options: Record<string, unknown>) {
+        calls.push(options);
+        return {
+          sessionId: "step-session",
+          status: "done",
+          lastAssistantText: "done",
+          messages: [],
+          duration: "0s",
+          outputDir: "",
+        };
+      },
+    } as unknown as SubagentManager;
+    const runner = createWorkflowRunner({
+      manager,
+      workflowDir,
+      projectId: "sample",
+      recoveryOwner: "project-app-task-reconciler",
+    });
+
+    expect(await runner.run("recovery-owned", "run it")).toMatchObject({ type: "done" });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      projectId: "sample",
+      recoveryOwner: "project-app-task-reconciler",
     });
   });
 });
@@ -555,7 +586,7 @@ describe("workflow tool: run", () => {
     );
   });
 
-  it("returns to the project task when a task-assigned workflow blocks", async () => {
+  it("wakes the project owner without interpreting legacy task packets", async () => {
     writeWorkflow(
       "task-blocked.ts",
       `
@@ -602,7 +633,7 @@ describe("workflow tool: run", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.task.assigned",
+          type: "project.task.reconcile.started",
           project: "alpha-project",
           data: {
             taskId: "vm-pipeline-rest-plan",
@@ -616,21 +647,14 @@ describe("workflow tool: run", () => {
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
-    expect(runtimeEvents.some((event) => event.type === "project.owner.requested")).toBe(false);
+    expect(runtimeEvents.some((event) => event.type === "project.owner.requested")).toBe(true);
     expect(runtimeEvents.some((event) => event.type === "workflow.owner.requested")).toBe(false);
+    expect(runtimeEvents.some((event) => event.type.startsWith("project.task."))).toBe(false);
     expect(runtimeEvents).toContainEqual(
       expect.objectContaining({
-        type: "project.task.completed",
+        type: "project.owner.requested",
         project: "alpha-project",
-        data: expect.objectContaining({
-          project: "alpha-project",
-          taskId: "vm-pipeline-rest-plan",
-          task_id: "vm-pipeline-rest-plan",
-          attemptId: "a_vm_pipeline_rest_plan_1",
-          attempt_id: "a_vm_pipeline_rest_plan_1",
-          status: "blocked",
-          result: "blocked",
-          claim: "blocked",
+        params: expect.objectContaining({
           reason: "worker preflight failed",
           context: { detail: "missing token" },
           workflow: "task-blocked",

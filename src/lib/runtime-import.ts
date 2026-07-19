@@ -2,6 +2,7 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   symlinkSync,
   unlinkSync,
@@ -186,8 +187,57 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
           path: resolveSdkExport(args.path, args.importer || entrypoint),
         };
       });
+
+      // When running from a compiled binary, Bun.build cannot resolve
+      // bare-specifier dependencies of the SDK source (e.g. @earendil-works/pi-ai)
+      // because the binary's resolver has no node_modules context.
+      // Walk up from the importer to find the package in node_modules.
+      build.onResolve({ filter: /^@earendil-works\// }, (args) => {
+        const resolved = resolveNodeModulesPackage(
+          args.path,
+          args.importer || entrypoint,
+        );
+        if (resolved) return { path: resolved };
+        throw new Error(
+          `Cannot resolve ${args.path} from ${args.importer || entrypoint}`,
+        );
+      });
     },
   };
+}
+
+/**
+ * Walk up from `startDir` looking for `specifier` in node_modules.
+ * Returns the resolved package main (dist/index.js or package.json main) or undefined.
+ */
+function resolveNodeModulesPackage(
+  specifier: string,
+  importer: string,
+): string | undefined {
+  let current = resolve(dirname(importer));
+  while (true) {
+    const candidate = join(current, "node_modules", ...specifier.split("/"));
+    if (existsSync(candidate)) {
+      // Try package.json main/module/exports, fall back to dist/index.js
+      const pkgPath = join(candidate, "package.json");
+      if (existsSync(pkgPath)) {
+        try {
+          const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+          const main = pkg.module || pkg.main || "dist/index.js";
+          const mainPath = join(candidate, main);
+          if (existsSync(mainPath)) return mainPath;
+        } catch {
+          /* fall through */
+        }
+      }
+      const fallback = join(candidate, "dist", "index.js");
+      if (existsSync(fallback)) return fallback;
+      return candidate;
+    }
+    const parent = dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
+  }
 }
 
 function resolveSdkExport(specifier: string, importer: string): string {

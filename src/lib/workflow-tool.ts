@@ -134,72 +134,6 @@ function enforceStructuredWorkflowResult(result: TaskResult, expectsPayload: boo
   return result;
 }
 
-function taskField(task: string, name: string): string | undefined {
-  return task.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim();
-}
-
-function triggerEventFromTask(task: string): Record<string, unknown> | null {
-  const match = task.match(/## Trigger Event[\s\S]*?```json\s*([\s\S]*?)```/);
-  if (!match?.[1]) return null;
-  try {
-    const parsed = JSON.parse(match[1]);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function eventPayload(event: Record<string, unknown> | null): Record<string, unknown> {
-  const data = event?.data;
-  return data && typeof data === "object" && !Array.isArray(data)
-    ? (data as Record<string, unknown>)
-    : {};
-}
-
-function stringValue(...values: unknown[]): string | undefined {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return undefined;
-}
-
-type ProjectTaskContext = {
-  projectId?: string;
-  taskId: string;
-  attemptId?: string;
-  sourceEventType?: string;
-};
-
-function projectTaskContextFromTask(task: string, fallbackProjectId?: string): ProjectTaskContext | undefined {
-  const event = triggerEventFromTask(task);
-  const payload = eventPayload(event);
-  const eventType = stringValue(event?.type);
-  const taskId = stringValue(
-    event?.taskId,
-    event?.task_id,
-    payload.taskId,
-    payload.task_id,
-    taskField(task, "taskId"),
-    taskField(task, "task_id"),
-  );
-  if (!taskId) return undefined;
-  if (eventType && eventType !== "project.task.assigned") return undefined;
-  return {
-    projectId: stringValue(
-      event?.project,
-      event?.projectId,
-      payload.project,
-      payload.projectId,
-      fallbackProjectId,
-    ),
-    taskId,
-    attemptId: stringValue(event?.attemptId, event?.attempt_id, payload.attemptId, payload.attempt_id),
-    sourceEventType: eventType,
-  };
-}
-
 function generateRunId(): string {
   return `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
@@ -289,7 +223,11 @@ function listWorkflowFiles(workflowDir: string | undefined): string[] {
       .map((file) => realpathSync(join(workflowDir, file)))
       .filter((filePath) => {
         const fromRoot = relative(trustedRoot, filePath);
-        return fromRoot !== ".." && !fromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) && !isAbsolute(fromRoot);
+        return (
+          fromRoot !== ".." &&
+          !fromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) &&
+          !isAbsolute(fromRoot)
+        );
       });
   } catch {
     return [];
@@ -331,26 +269,22 @@ async function loadWorkflowScope(
   return { workflows, diagnostics };
 }
 
-async function buildWorkflowCatalog(
-  workflowDir: string,
-  projectWorkflowDir?: string,
-): Promise<WorkflowCatalog> {
-  const [agent, project] = await Promise.all([
-    loadWorkflowScope(workflowDir, "agent"),
-    loadWorkflowScope(projectWorkflowDir, "project"),
-  ]);
-  const workflows = new Map(agent.workflows);
-  for (const [name, workflow] of project.workflows) workflows.set(name, workflow);
+async function buildWorkflowCatalog(workflowDir: string): Promise<WorkflowCatalog> {
+  const agent = await loadWorkflowScope(workflowDir, "agent");
   return Object.freeze({
-    workflows,
-    diagnostics: Object.freeze([...agent.diagnostics, ...project.diagnostics]),
+    workflows: new Map(agent.workflows),
+    diagnostics: Object.freeze([...agent.diagnostics]),
   });
 }
 
-function findWorkflow(catalog: WorkflowCatalog, name: string): { workflow: WorkflowModule | null; error: string | null } {
+function findWorkflow(
+  catalog: WorkflowCatalog,
+  name: string,
+): { workflow: WorkflowModule | null; error: string | null } {
   const workflow = catalog.workflows.get(name) ?? null;
   if (workflow) return { workflow, error: null };
-  const diagnostics = catalog.diagnostics.length > 0 ? ` Catalog diagnostics:\n  ${catalog.diagnostics.join("\n  ")}` : "";
+  const diagnostics =
+    catalog.diagnostics.length > 0 ? ` Catalog diagnostics:\n  ${catalog.diagnostics.join("\n  ")}` : "";
   return { workflow: null, error: `Workflow "${name}" not found.${diagnostics}` };
 }
 
@@ -426,7 +360,8 @@ export function emitAndCollectDemands(guards: WorkflowGuard[], event: WorkflowGu
   return demands;
 }
 
-type GuardSignalAction = "observed" | "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+type GuardSignalAction =
+  "observed" | "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
 type GuardSignalEmitter = (demand: Demand, action: GuardSignalAction, extra?: Record<string, unknown>) => void;
 
 /** Resolve a list of demands: run injected steps, emit warnings, or block. */
@@ -441,6 +376,7 @@ async function resolveDemands(
   manager: SubagentManager,
   parentSessionId: string | undefined,
   projectId: string | undefined,
+  recoveryOwner: string | undefined,
   trace: EventTrace | undefined,
   onEvent: ((event: WorkflowEvent) => void) | undefined,
   run: WorkflowRun,
@@ -541,6 +477,7 @@ async function resolveDemands(
           parentSessionId,
           workflowRunId: runId,
           projectId,
+          recoveryOwner,
           stepLabel: label,
           source: "guard",
           trace,
@@ -603,11 +540,12 @@ export interface RunWorkflowDirectOpts {
   agentName: string;
   persistDir: string;
   workflowDir?: string;
-  projectWorkflowDir?: string;
   guardsDir?: string;
   sharedGuardsDir?: string;
   parentSessionId?: string;
   projectId?: string;
+  /** Runtime that exclusively owns crash recovery for workflow step sessions. */
+  recoveryOwner?: string;
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
 }
@@ -624,13 +562,13 @@ export async function runWorkflowDirect(
   const runner = createWorkflowRunner({
     manager: opts.manager,
     workflowDir: opts.workflowDir ?? "",
-    projectWorkflowDir: opts.projectWorkflowDir,
     guardsDir: opts.guardsDir,
     sharedGuardsDir: opts.sharedGuardsDir,
     persistDir: opts.persistDir,
     agentName: opts.agentName,
     parentSessionId: opts.parentSessionId,
     projectId: opts.projectId,
+    recoveryOwner: opts.recoveryOwner,
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
@@ -661,10 +599,6 @@ export async function runWorkflowDirect(
 export interface WorkflowToolOptions {
   manager: SubagentManager;
   workflowDir: string;
-  /** Per-project workflows directory (projects/<id>/workflows/). Highest
-   *  precedence: matches here win over agent workflows. Set per-call by
-   *  runWorkflowDirect when a projectId is known. */
-  projectWorkflowDir?: string;
   /** Agent-specific guards directory. */
   guardsDir?: string;
   /** Shared guards directory (shared/guards/). */
@@ -686,6 +620,8 @@ export interface WorkflowToolOptions {
   parentSessionId?: string;
   /** Canonical project id for sessions spawned by this workflow. */
   projectId?: string;
+  /** Runtime that exclusively owns crash recovery for workflow step sessions. */
+  recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
   /** Trace inherited from the event that started this workflow. */
@@ -697,7 +633,7 @@ export interface WorkflowToolOptions {
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: false): WorkflowRunner;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
-  const { manager, workflowDir, projectWorkflowDir, persistDir, onEvent } = opts;
+  const { manager, workflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
   const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
   const emitRuntimeEvent = (event: { type: string; [key: string]: unknown }): void => {
@@ -788,42 +724,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     reason: string;
     context?: unknown;
     projectId?: string;
-    taskContext?: ProjectTaskContext;
     parentSessionId?: string;
     parentWorkflowRunId?: string;
   }): void => {
     const workflowOwner = normalizeEventOwner(opts.agentName);
-    const taskProjectId = data.taskContext?.projectId ?? data.projectId;
-    if (data.taskContext?.taskId && taskProjectId) {
-      emitRuntimeEvent({
-        type: "project.task.completed",
-        source: "workflow-tool",
-        owner: workflowOwner,
-        project: taskProjectId,
-        data: {
-          project: taskProjectId,
-          projectId: taskProjectId,
-          taskId: data.taskContext.taskId,
-          task_id: data.taskContext.taskId,
-          attemptId: data.taskContext.attemptId,
-          attempt_id: data.taskContext.attemptId,
-          status: "blocked",
-          result: "blocked",
-          claim: "blocked",
-          summary: `Workflow ${data.workflow} blocked before task completion: ${data.reason}`,
-          reason: data.reason,
-          context: data.context,
-          workflowRunId: data.workflowRunId,
-          workflow: data.workflow,
-          workflowOwner,
-          parentSessionId: data.parentSessionId,
-          parentWorkflowRunId: data.parentWorkflowRunId,
-          sourceEventType: data.taskContext.sourceEventType,
-          workflowTask: truncate(data.task, 500),
-        },
-      } as any);
-      return;
-    }
     const payload = {
       workflowRunId: data.workflowRunId,
       workflow: data.workflow,
@@ -917,7 +821,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     let stepCounter = 0;
     const callerMeta = getCallerSessionMeta(parentSessionId);
     const effectiveProjectId = previousRun?.projectId ?? opts.projectId ?? callerMeta.projectId;
-    const projectTaskContext = projectTaskContextFromTask(task, effectiveProjectId);
     const revisionMatches = Boolean(
       previousRun?.entryContentHash && previousRun.entryContentHash === workflow.entryContentHash,
     );
@@ -1147,6 +1050,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               parentSessionId,
               workflowRunId: runId,
               projectId: effectiveProjectId,
+              recoveryOwner: opts.recoveryOwner,
               stepLabel: agentName,
               source: `workflow:${workflow.name}`,
               kind: "call",
@@ -1171,6 +1075,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           source: `workflow:${workflow.name}`,
           workflowRunId: runId,
           projectId: effectiveProjectId,
+          recoveryOwner: opts.recoveryOwner,
           stepLabel: agentName,
           timeout: stepOpts?.timeoutMs,
           trace: resolveTrace(),
@@ -1225,6 +1130,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             manager,
             parentSessionId,
             effectiveProjectId,
+            opts.recoveryOwner,
             resolveTrace(),
             onEvent,
             run,
@@ -1362,6 +1268,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               manager,
               parentSessionId,
               effectiveProjectId,
+              opts.recoveryOwner,
               resolveTrace(),
               onEvent,
               run,
@@ -1442,6 +1349,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               parentSessionId,
               workflowRunId: runId,
               projectId: effectiveProjectId,
+              recoveryOwner: opts.recoveryOwner,
               stepLabel: stepName,
               source: `workflow:${label}`,
               trace: resolveTrace(),
@@ -1502,6 +1410,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                   manager,
                   parentSessionId,
                   effectiveProjectId,
+                  opts.recoveryOwner,
                   resolveTrace(),
                   onEvent,
                   run,
@@ -1545,6 +1454,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           manager,
           parentSessionId,
           effectiveProjectId,
+          opts.recoveryOwner,
           resolveTrace(),
           onEvent,
           run,
@@ -1573,7 +1483,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           reason: result.reason,
           context: result.context,
           projectId: effectiveProjectId,
-          taskContext: projectTaskContext,
           parentSessionId,
           parentWorkflowRunId,
         });
@@ -1587,7 +1496,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           workflow: workflow.name,
           projectId: effectiveProjectId,
           durationMs: run.endedAt - run.startedAt,
-          ...(result.type === "done" ? { summary: result.summary } : { reason: result.reason, context: result.context }),
+          ...(result.type === "done"
+            ? { summary: result.summary }
+            : { reason: result.reason, context: result.context }),
         },
       });
 
@@ -1616,7 +1527,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           task,
           reason: run.result?.reason ?? err.reason,
           projectId: effectiveProjectId,
-          taskContext: projectTaskContext,
           parentSessionId,
           parentWorkflowRunId,
         });
@@ -1636,11 +1546,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           projectId: effectiveProjectId,
           durationMs: run.endedAt - run.startedAt,
           reason:
-            err instanceof WorkflowInterrupted
-              ? err.steeringMessage
-              : err instanceof Error
-                ? err.message
-                : String(err),
+            err instanceof WorkflowInterrupted ? err.steeringMessage : err instanceof Error ? err.message : String(err),
         },
       });
       throw err;
@@ -1739,7 +1645,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   }
 
   async function runTyped(name: string, task: string, existingCatalog?: WorkflowCatalog): Promise<WorkflowToolResult> {
-    const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir, projectWorkflowDir));
+    const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir));
     const { workflow, error } = findWorkflow(catalog, name);
     if (!workflow) return { type: "error", workflow: name, error: error ?? `Workflow "${name}" not found` };
     const callerSessionId = resolveCallerSessionId();
@@ -1787,7 +1693,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
     execute: async (_toolCallId, _params) => {
       const params = _params as WorkflowInput;
-      const catalog = await buildWorkflowCatalog(workflowDir, projectWorkflowDir);
+      const catalog = await buildWorkflowCatalog(workflowDir);
       switch (params.action) {
         case "list": {
           const workflows = [...catalog.workflows.values()]

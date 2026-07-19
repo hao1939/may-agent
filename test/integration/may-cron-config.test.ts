@@ -76,16 +76,14 @@ describe("May cron config design alignment", () => {
     expect(triggerSubscriptions).toEqual([]);
   });
 
-  it("reruns project steward after project owner completion", () => {
+  it("does not retain the legacy project scheduler or steward", () => {
     const cronPath = "/app/agents/may/cron.json";
     if (!existsSync(cronPath)) return;
 
     const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
-    const projectSteward = entries.find((entry) => entry.name === "project-steward");
-
-    expect(projectSteward).toBeDefined();
-    expect(projectSteward?.on).toContain("project.task.finished");
-    expect(projectSteward?.on).toContain("project.owner.finished");
+    expect(entries.some((entry) => entry.name === "project")).toBe(false);
+    expect(entries.some((entry) => entry.name === "project-steward")).toBe(false);
+    expect(entries.flatMap((entry) => entry.on ?? [])).not.toContain("project.task.finished");
   });
 
   it("declares reachable maintenance context for every trigger entry", () => {
@@ -99,12 +97,13 @@ describe("May cron config design alignment", () => {
         return [{ entry: entry.name, reason: "missing context" }];
       }
       return context
-        .filter((contextPath) =>
-          typeof contextPath !== "string"
-          || contextPath.trim() === ""
-          || contextPath.startsWith("/")
-          || contextPath.includes("..")
-          || !existsSync(`/app/${contextPath}`),
+        .filter(
+          (contextPath) =>
+            typeof contextPath !== "string" ||
+            contextPath.trim() === "" ||
+            contextPath.startsWith("/") ||
+            contextPath.includes("..") ||
+            !existsSync(`/app/${contextPath}`),
         )
         .map((contextPath) => ({ entry: entry.name, reason: `invalid context path: ${String(contextPath)}` }));
     });

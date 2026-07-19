@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { saveTaskTree, type TaskTreeConfig, type TaskTree } from "./project-task-tree-store.js";
+import { saveTaskTree, setProjectLifecycle, type TaskTreeConfig, type TaskTree } from "./project-task-tree-store.js";
 
 const TEST_DIR = join(import.meta.dir, "__test_shrinkage__");
 
@@ -64,6 +64,77 @@ describe("saveTaskTree shrinkage guard", () => {
 
     expect(() => saveTaskTree(config, { tasks: makeTasks(6) })).toThrow("mutation rejected");
     expect(Object.keys((JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree).tasks).length).toBe(5);
+  });
+
+  it("rejects silent active-to-paused lifecycle writes", () => {
+    const config = makeConfig();
+    const existingTree: TaskTree = {
+      project_lifecycle: "active",
+      tasks: makeTasks(5),
+    };
+    writeFileSync(config.treePath, JSON.stringify(existingTree));
+
+    expect(() =>
+      saveTaskTree(config, {
+        project_lifecycle: "paused",
+        tasks: makeTasks(6),
+      }),
+    ).toThrow(/lifecycle guard/);
+
+    const saved = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+    expect(saved.project_lifecycle).toBe("active");
+  });
+
+  it("allows explicit project pause writes with a reason and journal entry", () => {
+    const config = makeConfig();
+    const existingTree: TaskTree = {
+      project_lifecycle: "active",
+      tasks: makeTasks(5),
+    };
+    writeFileSync(config.treePath, JSON.stringify(existingTree));
+
+    saveTaskTree(
+      config,
+      {
+        project_lifecycle: "paused",
+        tasks: makeTasks(6),
+      },
+      {
+        projectLifecycleReason: "operator requested a bounded pause",
+      },
+    );
+
+    const saved = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+    expect(saved.project_lifecycle).toBe("paused");
+    expect(readFileSync(config.journalPath, "utf-8")).toContain("project_lifecycle_paused");
+    expect(readFileSync(config.journalPath, "utf-8")).toContain("operator requested a bounded pause");
+  });
+
+  it("rejects silent paused-to-active lifecycle writes", () => {
+    const config = makeConfig();
+    writeFileSync(config.treePath, JSON.stringify({ project_lifecycle: "paused", tasks: makeTasks(5) }));
+
+    expect(() =>
+      saveTaskTree(config, {
+        project_lifecycle: "active",
+        tasks: makeTasks(6),
+      }),
+    ).toThrow(/lifecycle guard/);
+
+    const saved = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+    expect(saved.project_lifecycle).toBe("paused");
+  });
+
+  it("changes lifecycle through one locked helper and records the reason", () => {
+    const config = makeConfig();
+    writeFileSync(config.treePath, JSON.stringify({ project_lifecycle: "paused", tasks: makeTasks(5) }));
+
+    setProjectLifecycle(config, "active", "migration verification passed");
+
+    const saved = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+    expect(saved.project_lifecycle).toBe("active");
+    expect(readFileSync(config.journalPath, "utf-8")).toContain("project_lifecycle_resumed");
+    expect(readFileSync(config.journalPath, "utf-8")).toContain("migration verification passed");
   });
 
   afterEach(() => {

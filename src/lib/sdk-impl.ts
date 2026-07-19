@@ -26,7 +26,7 @@ import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
 import { createCommandService } from "./command-service.js";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
@@ -54,31 +54,6 @@ export interface SDKDeps {
 
 // ── Workflow path helpers ──────────────────────────────────────────────
 
-export function projectWorkflowDirFor(projectsRoot: string, projectId: string | undefined): string | undefined {
-  if (!projectId) return undefined;
-
-  const clean = projectId
-    .trim()
-    .replace(/^projects\//, "")
-    .replace(/\/project\.md$/, "")
-    .replace(/\/$/, "");
-  if (!clean) return undefined;
-
-  const candidates = [
-    join(projectsRoot, `${clean}.app`, "workflows"),
-    join(projectsRoot, clean, ".app", "workflows"),
-    join(projectsRoot, clean, "workflows"),
-  ];
-  const shortName = basename(clean);
-  if (shortName && shortName !== clean) {
-    candidates.push(join(projectsRoot, `${shortName}.app`, "workflows"));
-    candidates.push(join(projectsRoot, shortName, ".app", "workflows"));
-    candidates.push(join(projectsRoot, shortName, "workflows"));
-  }
-
-  return candidates.find((dir) => existsSync(dir)) ?? candidates[candidates.length - 1];
-}
-
 /**
  * Resolve the workflow directory for a project-app-owned agent.
  * When a project app provides its own agent (e.g. scout-knowledge-lib.app/agents/scout/),
@@ -99,17 +74,39 @@ export function agentWorkflowDirForProjectApp(
     .replace(/\/$/, "");
   if (!clean) return undefined;
 
-  const candidates = [
-    join(projectsRoot, `${clean}.app`, "agents", agentName, "workflows"),
-    join(projectsRoot, clean, ".app", "agents", agentName, "workflows"),
+  const appDirs = [
+    join(projectsRoot, `${clean}.app`),
+    join(projectsRoot, clean, ".app"),
   ];
   const shortName = basename(clean);
   if (shortName && shortName !== clean) {
-    candidates.push(join(projectsRoot, `${shortName}.app`, "agents", agentName, "workflows"));
-    candidates.push(join(projectsRoot, shortName, ".app", "agents", agentName, "workflows"));
+    appDirs.push(join(projectsRoot, `${shortName}.app`));
+    appDirs.push(join(projectsRoot, shortName, ".app"));
   }
 
-  return candidates.find((dir) => existsSync(dir));
+  for (const appDir of appDirs) {
+    const direct = join(appDir, "agents", agentName, "workflows");
+    if (existsSync(direct)) return direct;
+    const agentsDir = join(appDir, "agents");
+    let entries: string[];
+    try {
+      entries = readdirSync(agentsDir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries.sort()) {
+      const configPath = join(agentsDir, entry, "agent.json");
+      try {
+        const config = JSON.parse(readFileSync(configPath, "utf8")) as { name?: unknown };
+        if (config.name !== agentName) continue;
+        const workflows = join(agentsDir, entry, "workflows");
+        if (existsSync(workflows)) return workflows;
+      } catch {
+        // Ignore malformed or non-agent directories; registration reports them separately.
+      }
+    }
+  }
+  return undefined;
 }
 
 function messageOwner(target: string): string {
@@ -152,7 +149,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: deps.agentName,
       });
       const agentForWorkflow = opts?.source ?? deps.agentName;
-      const projectWorkflowDir = projectWorkflowDirFor(deps.projectsRoot, opts?.projectId);
       const globalWorkflowDir = join(deps.agentsRoot, agentForWorkflow, "workflows");
       // When a project app owns the agent (e.g. scout in scout-knowledge-lib.app/agents/scout/),
       // workflows live in the project-app agent dir, not the global agents/ dir.
@@ -161,9 +157,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         opts?.projectId,
         agentForWorkflow,
       );
-      const workflowDir = existsSync(globalWorkflowDir)
-        ? globalWorkflowDir
-        : (projectAppAgentWorkflowDir ?? globalWorkflowDir);
+      const workflowDir = projectAppAgentWorkflowDir ?? globalWorkflowDir;
       const { result, runId } = await runWorkflowDirect({
         workflowName: name,
         task,
@@ -172,7 +166,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: agentForWorkflow,
         persistDir: deps.persistDir,
         workflowDir,
-        projectWorkflowDir,
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
         sharedGuardsDir: join(deps.sharedRoot, "guards"),
         projectId: opts?.projectId,

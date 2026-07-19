@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
+import { prepareAgentExecution } from "./agent-execution.js";
 import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
@@ -18,6 +19,18 @@ function fakeModel(): Model<any> {
     contextWindow: 4096,
     maxTokens: 1024,
   };
+}
+
+function promptFor(manager: SubagentManager, name: string): string {
+  const definition = manager.getAgentDefinition(name);
+  if (!definition) throw new Error(`Missing test agent ${name}`);
+  return prepareAgentExecution({
+    definition,
+    projectRoot: "/app",
+    sessionId: "test-session",
+    task: "test task",
+    promptTimestamp: "2026-07-20T00:00:00.000Z",
+  }).systemPrompt;
 }
 
 describe("Instruction Hierarchy (P84)", () => {
@@ -54,9 +67,7 @@ describe("Instruction Hierarchy (P84)", () => {
       projectRoot: "/app",
     });
 
-    // Access the private method for testing
-    // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("ih-agent"));
+    const prompt = promptFor(manager, "ih-agent");
 
     expect(prompt).toMatch(/^<system_instructions>\n/);
     expect(prompt).toMatch(/\n<\/system_instructions>$/);
@@ -75,8 +86,7 @@ describe("Instruction Hierarchy (P84)", () => {
       apiKey: "fake-key",
     });
 
-    // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("direct-agent"));
+    const prompt = promptFor(manager, "direct-agent");
 
     // Direct prompts bypass convention-file assembly, so no wrapping
     expect(prompt).toBe("You are a direct prompt agent.");
@@ -98,11 +108,8 @@ describe("Instruction Hierarchy (P84)", () => {
       projectRoot: "/app",
     });
 
-    const def = manager.getAgentDefinition("cache-agent");
-    // @ts-expect-error Accessing private method
-    const prompt1: string = manager.resolveSystemPrompt(def);
-    // @ts-expect-error Accessing private method
-    const prompt2: string = manager.resolveSystemPrompt(def);
+    const prompt1 = promptFor(manager, "cache-agent");
+    const prompt2 = promptFor(manager, "cache-agent");
 
     expect(prompt1).toBe(prompt2);
     expect(prompt1).toMatch(/^<system_instructions>/);
@@ -127,8 +134,7 @@ describe("Instruction Hierarchy (P84)", () => {
       projectRoot: "/app",
     });
 
-    // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("full-agent"));
+    const prompt = promptFor(manager, "full-agent");
 
     // All content should be inside the tags
     const inner = prompt.slice("<system_instructions>\n".length, prompt.length - "\n</system_instructions>".length);
@@ -160,8 +166,7 @@ describe("Instruction Hierarchy (P84)", () => {
       workspace: join(agentDir, "workspace"),
     });
 
-    // @ts-expect-error Accessing private method
-    const prompt: string = manager.resolveSystemPrompt(manager.getAgentDefinition("nest-test"));
+    const prompt = promptFor(manager, "nest-test");
 
     // First line should be the opening tag
     const lines = prompt.split("\n");

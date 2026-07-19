@@ -1,11 +1,12 @@
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
 import { existsSync, readFileSync } from "node:fs";
-import { resolveTaskTreePath } from "@may-agent/sdk";
+import { projectRuntimePaths } from "@may-agent/sdk";
 import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
+import { PROJECT_APP_TASK_RECOVERY_OWNER } from "./project-app-task-reconciler.js";
 
 export interface CronRuntimeOptions {
   manager: SubagentManager;
@@ -20,79 +21,39 @@ function fieldFromPrompt(prompt: string, name: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
-function assignedTaskFromPrompt(prompt: string): Record<string, unknown> | null {
-  const marker = "Assigned task:";
-  const markerIndex = prompt.indexOf(marker);
-  if (markerIndex < 0) return null;
-  const fenceStart = prompt.indexOf("```json", markerIndex);
-  if (fenceStart < 0) return null;
-  const jsonStart = prompt.indexOf("\n", fenceStart);
-  if (jsonStart < 0) return null;
-  const fenceEnd = prompt.indexOf("```", jsonStart + 1);
-  if (fenceEnd < 0) return null;
-  try {
-    const parsed = JSON.parse(prompt.slice(jsonStart + 1, fenceEnd));
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
-
-function traceString(task: Record<string, unknown>, key: string): string | null {
-  const trace = task.trace;
-  if (!trace || typeof trace !== "object" || Array.isArray(trace)) return null;
-  const value = (trace as Record<string, unknown>)[key];
-  return typeof value === "string" ? value : null;
-}
-
-function currentTaskFromTree(appDir: string, taskId: string): Record<string, unknown> | null {
-  const treePath = resolveTaskTreePath(appDir);
+function currentProjectLifecycle(appDir: string): string | null {
+  const treePath = projectRuntimePaths(appDir).taskTreePath;
   if (!existsSync(treePath)) return null;
   try {
     const tree = JSON.parse(readFileSync(treePath, "utf8")) as {
-      tasks?: Record<string, unknown>;
+      project_lifecycle?: unknown;
     };
-    const task = tree.tasks?.[taskId];
-    return task && typeof task === "object" && !Array.isArray(task) ? (task as Record<string, unknown>) : null;
+    return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : null;
   } catch {
     return null;
   }
 }
 
-function shouldResumeStartupSession(
-  sessionId: string,
+export function shouldResumeStartupSession(
+  _sessionId: string,
   session: PersistedSession,
 ): { resume: true } | { resume: false; reason?: string } {
-  if (session.source !== "workflow:task-worker") return { resume: true };
+  if (
+    session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER ||
+    session.source === "project-app-task-owner"
+  ) {
+    return {
+      resume: false,
+      reason: "Task-bound project session recovery is owned by the app task reconciler",
+    };
+  }
   if (!session.projectId) return { resume: true };
 
   const appDir = fieldFromPrompt(session.task, "App") ?? `/app/projects/${session.projectId}.app`;
-  const assignedTask = assignedTaskFromPrompt(session.task);
-  const taskId = typeof assignedTask?.id === "string" ? assignedTask.id : null;
-  if (!taskId) return { resume: true };
-
-  const currentTask = currentTaskFromTree(appDir, taskId);
-  if (!currentTask) {
+  if (currentProjectLifecycle(appDir) === "paused") {
     return {
       resume: false,
-      reason: `Project task ${taskId} no longer exists in the runtime task tree for ${appDir}`,
-    };
-  }
-
-  const currentSessionId = typeof currentTask.session_id === "string" ? currentTask.session_id : null;
-  if (currentSessionId && currentSessionId !== sessionId) {
-    return {
-      resume: false,
-      reason: `Project task ${taskId} moved to newer session ${currentSessionId}`,
-    };
-  }
-
-  const promptAttempt = fieldFromPrompt(session.task, "Attempt");
-  const currentAttempt = traceString(currentTask, "current_attempt_id");
-  if (promptAttempt && currentAttempt && promptAttempt !== currentAttempt) {
-    return {
-      resume: false,
-      reason: `Project task ${taskId} moved to newer attempt ${currentAttempt}`,
+      reason: `Project ${session.projectId} is paused in ${projectRuntimePaths(appDir).taskTreePath}`,
     };
   }
 

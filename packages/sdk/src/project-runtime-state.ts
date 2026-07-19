@@ -5,8 +5,6 @@ export type ProjectRuntimePaths = {
   appDir: string;
   stateDir: string;
   taskTreePath: string;
-  kanbanPath: string;
-  taskArchiveDir: string;
   projectStatePath: string;
   journalPath: string;
   migrationLogPath: string;
@@ -15,7 +13,7 @@ export type ProjectRuntimePaths = {
 export type EnsureTaskTreeStateResult = {
   path: string;
   migrated: boolean;
-  source: "runtime" | "legacy-tree" | "seed" | "empty";
+  source: "runtime" | "seed" | "empty";
 };
 
 function ensureDir(path: string): void {
@@ -57,8 +55,6 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
     appDir,
     stateDir,
     taskTreePath: join(taskStateDir, "tree.json"),
-    kanbanPath: join(taskStateDir, "kanban.json"),
-    taskArchiveDir: join(taskStateDir, "archive"),
     projectStatePath: join(stateDir, "project-state.json"),
     journalPath: join(stateDir, "journal.jsonl"),
     migrationLogPath: join(stateDir, "runtime-state-migrations.jsonl"),
@@ -71,20 +67,8 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
     return { path: paths.taskTreePath, migrated: false, source: "runtime" };
   }
 
-  const legacyTreePath = join(appDir, "tasks", "tree.json");
   const seedPath = join(appDir, "tasks", "seed.json");
   ensureDir(dirname(paths.taskTreePath));
-
-  if (existsSync(legacyTreePath)) {
-    writeFileSync(paths.taskTreePath, readFileSync(legacyTreePath));
-    appendMigrationLog(appDir, {
-      kind: "task_tree_runtime_state_bootstrap",
-      source: "legacy-tree",
-      from: "tasks/tree.json",
-      to: ".state/tasks/tree.json",
-    });
-    return { path: paths.taskTreePath, migrated: true, source: "legacy-tree" };
-  }
 
   if (existsSync(seedPath)) {
     writeFileSync(paths.taskTreePath, readFileSync(seedPath));

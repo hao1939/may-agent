@@ -32,15 +32,7 @@ export type EventGraphEdge = {
 export type EventGraphDisplayNode = {
   key: string;
   kind:
-    | "event"
-    | "session"
-    | "workflow"
-    | "turn"
-    | "tool_call"
-    | "tool_result"
-    | "metric"
-    | "notification"
-    | "diagnostic";
+    "event" | "session" | "workflow" | "turn" | "tool_call" | "tool_result" | "metric" | "notification" | "diagnostic";
   role?: "primary" | "detail" | "diagnostic";
   parentKey?: string;
   level?: number;
@@ -171,7 +163,7 @@ function parseData(row: Row | null | undefined): Record<string, unknown> {
   if (typeof raw !== "string" || !raw.trim()) return {};
   try {
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};
   }
@@ -228,9 +220,8 @@ function eventTitle(type: string): string {
   if (type === "session.start") return "Session started";
   if (type === "session.end") return "Session ended";
   if (type === "session.completed") return "Session completed";
-  if (type === "project.task.assigned") return "Task assigned";
-  if (type === "project.task.completed") return "Task completed";
-  if (type === "project.task.reviewed") return "Task reviewed";
+  if (type === "project.task.reconcile.started") return "Task reconciliation started";
+  if (type === "project.task.reconciled") return "Task reconciled";
   if (type === "workflow.started") return "Workflow started";
   if (type === "workflow.completed") return "Workflow completed";
   if (type === "workflow.failed") return "Workflow failed";
@@ -528,45 +519,69 @@ function addCorrelationEdges(edges: Map<string, EventGraphEdge>, rows: Row[]): v
     if (workflowRunId) byWorkflow.set(workflowRunId, [...(byWorkflow.get(workflowRunId) ?? []), row]);
   }
   for (const rowsForSession of bySession.values()) {
-    const assigned = rowsForSession.find((row) => row.event_type === "project.task.assigned");
     const start = rowsForSession.find((row) => row.event_type === "session.start");
     const end = rowsForSession.find((row) => row.event_type === "session.end");
-    const completed = rowsForSession.find((row) => row.event_type === "project.task.completed");
     const sessionCompleted = rowsForSession.find((row) => row.event_type === "session.completed");
-    const assignedId = numberValue(assigned?.id);
     const startId = numberValue(start?.id);
     const endId = numberValue(end?.id);
-    const completedId = numberValue(completed?.id);
     const sessionCompletedId = numberValue(sessionCompleted?.id);
-    if (startId && endId) addEdge(edges, { source: startId, target: endId, type: "closure", label: "session", provenance: "correlation" });
-    if (assignedId && startId) addEdge(edges, { source: assignedId, target: startId, type: "reference", label: "session", provenance: "correlation" });
-    if (endId && completedId) addEdge(edges, { source: endId, target: completedId, type: "reference", label: "result", provenance: "correlation" });
+    if (startId && endId)
+      addEdge(edges, { source: startId, target: endId, type: "closure", label: "session", provenance: "correlation" });
     if (endId && sessionCompletedId) {
-      addEdge(edges, { source: endId, target: sessionCompletedId, type: "reference", label: "completed", provenance: "correlation" });
+      addEdge(edges, {
+        source: endId,
+        target: sessionCompletedId,
+        type: "reference",
+        label: "completed",
+        provenance: "correlation",
+      });
     }
   }
   for (const rowsForTask of byTask.values()) {
-    const completed = rowsForTask.find((row) => row.event_type === "project.task.completed");
-    const reviewed = rowsForTask.find((row) => row.event_type === "project.task.reviewed");
-    const completedId = numberValue(completed?.id);
-    const reviewedId = numberValue(reviewed?.id);
-    if (completedId && reviewedId) addEdge(edges, { source: completedId, target: reviewedId, type: "reference", label: "review", provenance: "correlation" });
+    const starts = rowsForTask.filter((row) => row.event_type === "project.task.reconcile.started");
+    const results = rowsForTask.filter((row) => row.event_type === "project.task.reconciled");
+    for (const start of starts) {
+      const attemptId = dataValue(parseData(start), ["attemptId", "attempt_id"]);
+      const result = results.find((candidate) => {
+        const candidateAttemptId = dataValue(parseData(candidate), ["attemptId", "attempt_id"]);
+        return attemptId
+          ? candidateAttemptId === attemptId
+          : (numberValue(candidate.id) ?? 0) > (numberValue(start.id) ?? 0);
+      });
+      const startId = numberValue(start.id);
+      const resultId = numberValue(result?.id);
+      if (startId && resultId) {
+        addEdge(edges, {
+          source: startId,
+          target: resultId,
+          type: "closure",
+          label: "reconcile",
+          provenance: "correlation",
+        });
+      }
+    }
   }
   for (const rowsForWorkflow of byWorkflow.values()) {
     const starts = rowsForWorkflow
       .filter((row) => row.event_type === "session.start")
-      .sort((a, b) =>
-        (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) ||
-        (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0)
+      .sort(
+        (a, b) =>
+          (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) ||
+          (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0),
       );
     for (let index = 0; index < starts.length - 1; index++) {
       const currentStart = starts[index];
       const nextStart = starts[index + 1];
       const currentSessionId = dataValue(parseData(currentStart), ["sessionId", "session_id"]);
-      const currentEnd = rowsForWorkflow.find((row) => row.event_type === "session.end" && dataValue(parseData(row), ["sessionId", "session_id"]) === currentSessionId);
+      const currentEnd = rowsForWorkflow.find(
+        (row) =>
+          row.event_type === "session.end" &&
+          dataValue(parseData(row), ["sessionId", "session_id"]) === currentSessionId,
+      );
       const source = numberValue(currentEnd?.id) ?? numberValue(currentStart.id);
       const target = numberValue(nextStart.id);
-      if (source && target) addEdge(edges, { source, target, type: "reference", label: "same workflow", provenance: "correlation" });
+      if (source && target)
+        addEdge(edges, { source, target, type: "reference", label: "same workflow", provenance: "correlation" });
     }
   }
 }
@@ -579,12 +594,18 @@ function normalizeEdgesForReview(edges: EventGraphEdge[], rowsById: Map<number, 
     const [targetTime, targetId] = eventOrder(target);
     return sourceTime > targetTime || (sourceTime === targetTime && sourceId > targetId);
   };
-  const hasClosure = new Set(edges.filter((edge) => edge.type === "closure").map((edge) => `${edge.source}:${edge.target}`));
+  const hasClosure = new Set(
+    edges.filter((edge) => edge.type === "closure").map((edge) => `${edge.source}:${edge.target}`),
+  );
   const persistedRelations = new Set(
     edges.filter((edge) => edge.provenance === "persisted").map((edge) => `${edge.source}:${edge.target}`),
   );
   return edges.filter((edge) => {
-    if (edge.type === "closure" && isAfter(edge.source, edge.target) && hasClosure.has(`${edge.target}:${edge.source}`)) {
+    if (
+      edge.type === "closure" &&
+      isAfter(edge.source, edge.target) &&
+      hasClosure.has(`${edge.target}:${edge.source}`)
+    ) {
       return false;
     }
     if (edge.type === "parent" && hasClosure.has(`${edge.source}:${edge.target}`)) {
@@ -610,11 +631,13 @@ function lifecycleStatus(pair: Row, now = Date.now()): EventReviewLifecycle["sta
 function rowSummary(row: Row | undefined): string | undefined {
   if (!row) return undefined;
   const data = parseData(row);
-  return compact(data.summary, 220) ??
+  return (
+    compact(data.summary, 220) ??
     compact(data.reason, 220) ??
     compact(data.message, 220) ??
     compact(data.status, 120) ??
-    compact(data.outcome, 120);
+    compact(data.outcome, 120)
+  );
 }
 
 function buildReviewLifecycle(pair: Row, rowsById: Map<number, Row>): EventReviewLifecycle | null {
@@ -640,7 +663,9 @@ function buildReviewLifecycle(pair: Row, rowsById: Map<number, Row>): EventRevie
     ...(numberValue(pair.opened_at) ? { openedAt: numberValue(pair.opened_at) } : {}),
     ...(numberValue(pair.expected_close_at) ? { expectedCloseAt: numberValue(pair.expected_close_at) } : {}),
     ...(numberValue(pair.closed_at) ? { closedAt: numberValue(pair.closed_at) } : {}),
-    ...(rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined) ? { summary: rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined) } : {}),
+    ...(rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined)
+      ? { summary: rowSummary(closeEventId ? rowsById.get(closeEventId) : undefined) }
+      : {}),
     ...(issues.length ? { issues } : {}),
   };
 }
@@ -669,7 +694,10 @@ function dedupeLifecycles(lifecycles: EventReviewLifecycle[]): EventReviewLifecy
       byKey.set(key, lifecycle);
       continue;
     }
-    if (!currentIsRequested && (lifecycle.openedAt ?? Number.MAX_SAFE_INTEGER) < (current.openedAt ?? Number.MAX_SAFE_INTEGER)) {
+    if (
+      !currentIsRequested &&
+      (lifecycle.openedAt ?? Number.MAX_SAFE_INTEGER) < (current.openedAt ?? Number.MAX_SAFE_INTEGER)
+    ) {
       byKey.set(key, lifecycle);
     }
   }
@@ -677,8 +705,10 @@ function dedupeLifecycles(lifecycles: EventReviewLifecycle[]): EventReviewLifecy
 }
 
 function focusLifecycle(focusEventId: number, lifecycles: EventReviewLifecycle[]): EventReviewLifecycle | undefined {
-  return lifecycles.find((lifecycle) => lifecycle.openEventId === focusEventId || lifecycle.closeEventId === focusEventId) ??
-    lifecycles[0];
+  return (
+    lifecycles.find((lifecycle) => lifecycle.openEventId === focusEventId || lifecycle.closeEventId === focusEventId) ??
+    lifecycles[0]
+  );
 }
 
 function lifecycleRowValues(lifecycle: EventReviewLifecycle, rowsById: Map<number, Row>, keys: string[]): string[] {
@@ -710,7 +740,9 @@ function markLifecycleRelations(
       lifecycle.openEventId === focusEventId ||
       lifecycle.closeEventId === focusEventId ||
       (focusSessionId && lifecycle.kind === "session" && lifecycle.id === focusSessionId) ||
-      (focusTaskId && lifecycle.kind === "project.task" && (lifecycle.id === focusTaskId || lifecycle.id.startsWith(`${focusTaskId}:`)))
+      (focusTaskId &&
+        lifecycle.kind === "project.task" &&
+        (lifecycle.id === focusTaskId || lifecycle.id.startsWith(`${focusTaskId}:`)))
     ) {
       relation = "focused";
     } else if (focusTaskId && lifecycleTaskIds.includes(focusTaskId)) {
@@ -773,8 +805,10 @@ function buildVerdict(focusEventId: number, lifecycles: EventReviewLifecycle[], 
   const hasTask = lifecycles.some((lifecycle) => lifecycle.kind === "project.task" && lifecycle.status === "closed");
   const hasSession = lifecycles.some((lifecycle) => lifecycle.kind === "session" && lifecycle.status === "closed");
   if (hasTask && hasSession) return { status: "healthy", text: "Task completed and the worker session completed." };
-  if (primary?.kind === "session" && primary.status === "closed") return { status: "healthy", text: "Session completed." };
-  if (primary?.status === "closed") return { status: "healthy", text: `${eventTitle(primary.closeType ?? primary.kind)} closed the lifecycle.` };
+  if (primary?.kind === "session" && primary.status === "closed")
+    return { status: "healthy", text: "Session completed." };
+  if (primary?.status === "closed")
+    return { status: "healthy", text: `${eventTitle(primary.closeType ?? primary.kind)} closed the lifecycle.` };
   return { status: "unknown", text: "No complete lifecycle verdict is available for this event yet." };
 }
 
@@ -789,8 +823,9 @@ function buildEventReview(
     .map((pair) => buildReviewLifecycle(pair, rowsById))
     .filter((item): item is EventReviewLifecycle => !!item)
     .reduce<EventReviewLifecycle[]>((items, item) => [...items, item], []);
-  const dedupedLifecycles = markLifecycleRelations(dedupeLifecycles(lifecycles), focusEventId, focus, rowsById)
-    .sort((a, b) => lifecyclePriority(a.kind) - lifecyclePriority(b.kind) || (a.openedAt ?? 0) - (b.openedAt ?? 0));
+  const dedupedLifecycles = markLifecycleRelations(dedupeLifecycles(lifecycles), focusEventId, focus, rowsById).sort(
+    (a, b) => lifecyclePriority(a.kind) - lifecyclePriority(b.kind) || (a.openedAt ?? 0) - (b.openedAt ?? 0),
+  );
   const focusType = stringValue(focus.event_type) ?? "event";
   const rows = [...rowsById.values()];
   return {
@@ -863,10 +898,18 @@ function loadTimelineRows(
   }
 
   if (!ids.length || !paths.length) {
-    const rows = [...rowsById.values()].sort((a, b) => (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) || (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0));
+    const rows = [...rowsById.values()].sort(
+      (a, b) =>
+        (numberValue(a.timestamp) ?? 0) - (numberValue(b.timestamp) ?? 0) ||
+        (numberValue(a.id) ?? 0) - (numberValue(b.id) ?? 0),
+    );
     return {
       rows,
-      scope: { kind: "graph", ids: [String(numberValue(focus.id) ?? "")].filter(Boolean), label: "visible graph events" },
+      scope: {
+        kind: "graph",
+        ids: [String(numberValue(focus.id) ?? "")].filter(Boolean),
+        label: "visible graph events",
+      },
     };
   }
 
@@ -909,14 +952,12 @@ function nodeWorkflowRunId(node: EventGraphNode | undefined): string | undefined
   return stringValue(node?.dataPreview?.workflowRunId) ?? stringValue(node?.dataPreview?.workflow_run_id);
 }
 
-function detailParentKeyForNode(
-  node: EventGraphNode,
-  primaryNodes: EventGraphNode[],
-  focusEventId: number,
-): string {
+function detailParentKeyForNode(node: EventGraphNode, primaryNodes: EventGraphNode[], focusEventId: number): string {
   const sessionId = nodeSessionId(node);
   if (sessionId) {
-    const sessionStart = primaryNodes.find((item) => item.type === "session.start" && nodeSessionId(item) === sessionId);
+    const sessionStart = primaryNodes.find(
+      (item) => item.type === "session.start" && nodeSessionId(item) === sessionId,
+    );
     if (sessionStart) return eventNodeKey(sessionStart.id);
     const sessionEnd = primaryNodes.find((item) => item.type === "session.end" && nodeSessionId(item) === sessionId);
     if (sessionEnd) return eventNodeKey(sessionEnd.id);
@@ -924,9 +965,13 @@ function detailParentKeyForNode(
 
   const workflowRunId = nodeWorkflowRunId(node);
   if (workflowRunId) {
-    const workflowNode = primaryNodes.find((item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("workflow."));
+    const workflowNode = primaryNodes.find(
+      (item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("workflow."),
+    );
     if (workflowNode) return eventNodeKey(workflowNode.id);
-    const sessionNode = primaryNodes.find((item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("session."));
+    const sessionNode = primaryNodes.find(
+      (item) => nodeWorkflowRunId(item) === workflowRunId && item.type.startsWith("session."),
+    );
     if (sessionNode) return eventNodeKey(sessionNode.id);
   }
 
@@ -996,9 +1041,7 @@ function buildDisplayGraph(
 
   const byKey = new Map(displayNodes);
   const chronological = (a: EventGraphDisplayNode, b: EventGraphDisplayNode) =>
-    (a.timestamp ?? 0) - (b.timestamp ?? 0) ||
-    (a.eventId ?? 0) - (b.eventId ?? 0) ||
-    a.key.localeCompare(b.key);
+    (a.timestamp ?? 0) - (b.timestamp ?? 0) || (a.eventId ?? 0) - (b.eventId ?? 0) || a.key.localeCompare(b.key);
   const levelFor = (node: EventGraphDisplayNode, seen = new Set<string>()): number => {
     if (!node.parentKey || seen.has(node.key)) return 0;
     const parent = byKey.get(node.parentKey);
@@ -1153,7 +1196,9 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphR
   loadRowsByIds(
     db,
     rowsById,
-    relatedPairs.flatMap((pair) => [numberValue(pair.open_event_id), numberValue(pair.close_event_id)]).filter((id): id is number => !!id),
+    relatedPairs
+      .flatMap((pair) => [numberValue(pair.open_event_id), numberValue(pair.close_event_id)])
+      .filter((id): id is number => !!id),
   );
   relationKeys = mergeRelationKeys([...rowsById.values()]);
   addPairEdges(edges, relatedPairs);
@@ -1174,8 +1219,9 @@ export function buildEventGraph(db: SqliteDb, focusEventId: number): EventGraphR
     .map(nodeFromRow)
     .filter((node): node is EventGraphNode => !!node)
     .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
-  const events = [...new Map([...graphNodes, ...timelineEvents].map((node) => [node.id, node])).values()]
-    .sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+  const events = [...new Map([...graphNodes, ...timelineEvents].map((node) => [node.id, node])).values()].sort(
+    (a, b) => a.timestamp - b.timestamp || a.id - b.id,
+  );
   const displayGraph = buildDisplayGraph(focusEventId, graphNodes, graphEdges, timelineEvents);
   const latestTimestamp = graphNodes.reduce((latest, node) => Math.max(latest, node.timestamp), 0);
   const revision = `${focusEventId}:${latestTimestamp}:${graphNodes.length}:${allEdges.length}`;
@@ -1249,7 +1295,8 @@ function assignTranscriptTurnTimestamps(
     const count = index - firstMissing;
     for (let offset = 0; offset < count; offset++) {
       if (previousTime != null && nextTime != null && nextTime > previousTime) {
-        turnNodes[firstMissing + offset].timestamp = previousTime + ((nextTime - previousTime) * (offset + 1)) / (count + 1);
+        turnNodes[firstMissing + offset].timestamp =
+          previousTime + ((nextTime - previousTime) * (offset + 1)) / (count + 1);
       } else if (previousTime != null) {
         turnNodes[firstMissing + offset].timestamp = previousTime + offset + 1;
       } else if (nextTime != null) {
@@ -1348,7 +1395,10 @@ export function addSessionTranscriptToEventGraph(
       timestamp: transcriptTimestamp(message.timestamp),
       type: `llm.${role}`,
       label: role,
-      summary: transcriptSummary(message.text, toolCalls.length ? `${toolCalls.length} tool call${toolCalls.length === 1 ? "" : "s"}` : role),
+      summary: transcriptSummary(
+        message.text,
+        toolCalls.length ? `${toolCalls.length} tool call${toolCalls.length === 1 ? "" : "s"}` : role,
+      ),
       refs: {
         sessionId: cleanSessionId,
         rawLine,

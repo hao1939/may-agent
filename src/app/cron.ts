@@ -328,6 +328,9 @@ export class Cron {
 
     const old = this.syntheticEntries.get(entry.name);
     if (old && JSON.stringify(old) === JSON.stringify(entry)) {
+      // Reinstalling a disabled entry must also repair timers left behind by
+      // an older runtime. This makes an app pause effective on hot reload.
+      if (entry.enabled === false) this.stopEntryScheduling(entry.name, true);
       this.buildEventSubscriptions();
       return;
     }
@@ -340,13 +343,12 @@ export class Cron {
       this.entries.push(entry);
     }
     this.buildEventSubscriptions();
-    if (this.started && entry.enabled !== false) {
-      const timer = this.timers.get(entry.name);
-      if (timer) clearInterval(timer);
-      this.timers.delete(entry.name);
-      const pending = this.pendingStartTimers.get(entry.name);
-      if (pending) clearTimeout(pending);
-      this.pendingStartTimers.delete(entry.name);
+    if (entry.enabled === false) {
+      this.stopEntryScheduling(entry.name, true);
+      return;
+    }
+    if (this.started) {
+      this.stopEntryScheduling(entry.name);
 
       // For handler-based entries not yet registered, try handlerResolver first.
       // Synthetic project-app schedules register their in-memory handler before
@@ -373,18 +375,22 @@ export class Cron {
     }
   }
 
-  removeSyntheticEntry(entryName: string): boolean {
-    if (!this.syntheticEntries.has(entryName)) return false;
-    this.syntheticEntries.delete(entryName);
-    this.entries = this.entries.filter((entry) => entry.name !== entryName);
-    this.handlers.delete(entryName);
-    this.queuedEventTriggers.delete(entryName);
+  private stopEntryScheduling(entryName: string, discardQueued = false): void {
     const timer = this.timers.get(entryName);
     if (timer) clearInterval(timer);
     this.timers.delete(entryName);
     const pending = this.pendingStartTimers.get(entryName);
     if (pending) clearTimeout(pending);
     this.pendingStartTimers.delete(entryName);
+    if (discardQueued) this.queuedEventTriggers.delete(entryName);
+  }
+
+  removeSyntheticEntry(entryName: string): boolean {
+    if (!this.syntheticEntries.has(entryName)) return false;
+    this.syntheticEntries.delete(entryName);
+    this.entries = this.entries.filter((entry) => entry.name !== entryName);
+    this.handlers.delete(entryName);
+    this.stopEntryScheduling(entryName, true);
     this.buildEventSubscriptions();
     return true;
   }
@@ -691,7 +697,7 @@ export class Cron {
    *  Returns false if entry not found, debounced, or already running. */
   triggerNow(entryName: string, opts?: { force?: boolean; triggerEvent?: EventEnvelope }): boolean {
     const entry = this.entries.find((e) => e.name === entryName);
-    if (!entry) return false;
+    if (!entry || entry.enabled === false) return false;
 
     if (!this.hasCapacity(entry)) {
       if (opts?.triggerEvent) {

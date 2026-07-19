@@ -16,7 +16,8 @@
  *   3. project.comment.created event lands in events table
  *   4. project.nudge event is emitted as a side effect
  *
- * Task dispatch and owner-judgment behavior are covered by E3a.
+ * Task reconciliation is covered by the controller, queue, Condition, and
+ * app-loader integration suites rather than this legacy project.md harness.
  *
  * Runs by default; does not require LLM access.
  */

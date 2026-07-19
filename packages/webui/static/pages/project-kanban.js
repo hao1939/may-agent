@@ -626,7 +626,7 @@ async function renderProjectKanban(el) {
   }
   if (!data.available) {
     const details = (data.errors || []).length ? `<pre>${esc((data.errors || []).join("\n"))}</pre>` : "";
-    el.innerHTML = `<div class="empty-state">${esc(data.reason || "This project has no tasks/tree.json yet.")}${details}</div>`;
+    el.innerHTML = `<div class="empty-state">${esc(data.reason || "This Agent App has no task attachment.")}${details}</div>`;
     return;
   }
 

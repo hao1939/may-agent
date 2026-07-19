@@ -22,7 +22,7 @@ import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { createTerminalManager } from "@may-agent/terminal";
-import { ensureTaskTreeState, loadProjectReadModel } from "@may-agent/sdk";
+import { loadProjectReadModel, projectRuntimePaths } from "@may-agent/sdk";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -45,7 +45,6 @@ const LIVE_VITAL_METRIC_IDS = [
   "capability.zombie-session-count",
   "runtime.stale-running-session-count",
   "eval.llm-coverage-lag-h",
-  "project.iterations-24h",
 ];
 
 export interface WebUIOptions {
@@ -55,21 +54,35 @@ export interface WebUIOptions {
 
 function platformUiContentTypeFor(path: string): string {
   switch (extname(path).toLowerCase()) {
-    case ".html": return "text/html; charset=utf-8";
-    case ".css": return "text/css; charset=utf-8";
-    case ".js": return "application/javascript; charset=utf-8";
-    case ".map": return "application/json; charset=utf-8";
-    case ".json": return "application/json; charset=utf-8";
-    case ".md": return "text/markdown; charset=utf-8";
-    case ".txt": return "text/plain; charset=utf-8";
-    case ".svg": return "image/svg+xml";
-    case ".png": return "image/png";
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".js":
+      return "application/javascript; charset=utf-8";
+    case ".map":
+      return "application/json; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".md":
+      return "text/markdown; charset=utf-8";
+    case ".txt":
+      return "text/plain; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
     case ".jpg":
-    case ".jpeg": return "image/jpeg";
-    case ".gif": return "image/gif";
-    case ".webp": return "image/webp";
-    case ".ico": return "image/x-icon";
-    default: return "application/octet-stream";
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    case ".ico":
+      return "image/x-icon";
+    default:
+      return "application/octet-stream";
   }
 }
 
@@ -132,7 +145,9 @@ export function extractMarkdownSection(body: string, headings: string | string[]
     const match = lines[i].match(/^##\s+(.+?)\s*$/);
     if (!match) continue;
     const heading = match[1].trim().toLowerCase();
-    const matched = [...wanted].some((name) => heading === name || heading.startsWith(`${name} `) || heading.startsWith(`${name} (`));
+    const matched = [...wanted].some(
+      (name) => heading === name || heading.startsWith(`${name} `) || heading.startsWith(`${name} (`),
+    );
     if (matched) {
       start = i + 1;
       break;
@@ -179,7 +194,6 @@ type ProjectTaskRecord = {
   id?: string;
   parent_id?: string | null;
   state?: string;
-  status?: string;
   kind?: string;
   priority?: string;
   owner?: string;
@@ -210,11 +224,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function normalizeProjectTaskState(task: { state?: unknown; status?: unknown }): string {
-  const raw = String(task.state ?? task.status ?? "backlog");
-  if (raw === "accepted" || raw === "superseded" || raw === "cancelled") return "done";
-  if (raw === "ready" || raw === "proposed" || raw === "decomposed") return "backlog";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
+export function normalizeProjectTaskState(task: { state?: unknown }): string {
+  const raw = String(task.state ?? "backlog");
   if (CANONICAL_TASK_STATES.has(raw)) return raw;
   return "unknown";
 }
@@ -238,7 +249,7 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
   const rawTasks = isRecord(tree.tasks) ? tree.tasks : {};
   if (tree.tasks === undefined) errors.push("tasks: missing task map");
 
-  const tasks: Record<string, ProjectTaskRecord & { id: string; state: string; status: string }> = {};
+  const tasks: Record<string, ProjectTaskRecord & { id: string; state: string }> = {};
   for (const [taskId, value] of Object.entries(rawTasks)) {
     if (!isRecord(value)) {
       errors.push(`tasks.${taskId}: expected object`);
@@ -252,21 +263,19 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     if (task.parent_id !== undefined && task.parent_id !== null && typeof task.parent_id !== "string") {
       errors.push(`tasks.${taskId}.parent_id: expected string or null`);
     }
-    if (task.children !== undefined && (!Array.isArray(task.children) || task.children.some((child) => typeof child !== "string"))) {
+    if (
+      task.children !== undefined &&
+      (!Array.isArray(task.children) || task.children.some((child) => typeof child !== "string"))
+    ) {
       errors.push(`tasks.${taskId}.children: expected string[]`);
     }
     const state = normalizeProjectTaskState(task);
     const children =
-      Array.isArray(task.children) && task.children.every((child) => typeof child === "string")
-        ? task.children
-        : [];
+      Array.isArray(task.children) && task.children.every((child) => typeof child === "string") ? task.children : [];
     tasks[taskId] = {
       ...task,
       id,
       state,
-      status: state,
-      raw_state: task.state,
-      raw_status: task.status,
       children,
     };
   }
@@ -334,12 +343,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function listConfiguredAgents(): string[] {
     try {
       return readdirSync(AGENTS_ROOT, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && !entry.name.startsWith("_") && entry.name !== "shared" && entry.name !== "gym")
+        .filter(
+          (entry) =>
+            entry.isDirectory() &&
+            !entry.name.startsWith(".") &&
+            !entry.name.startsWith("_") &&
+            entry.name !== "shared" &&
+            entry.name !== "gym",
+        )
         .map((entry) => {
           const configPath = join(AGENTS_ROOT, entry.name, "agent.json");
           if (!existsSync(configPath)) return null;
           try {
-            const config = JSON.parse(readFileSync(configPath, "utf-8")) as { name?: string; disabled?: boolean; heartbeat?: boolean };
+            const config = JSON.parse(readFileSync(configPath, "utf-8")) as {
+              name?: string;
+              disabled?: boolean;
+              heartbeat?: boolean;
+            };
             if (config.disabled || config.heartbeat === false) return null;
             return config.name ?? entry.name;
           } catch {
@@ -368,11 +388,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       for (const entry of cron) {
         if (entry.enabled === false) continue;
         const workflowHandler = entry.handler && typeof entry.handler === "object" ? entry.handler : undefined;
-        const isHeartbeat = entry.name === "heartbeat"
-          || entry.name?.startsWith("heartbeat-")
-          || entry.handler === "heartbeat"
-          || entry.handlerConfig?.workflow?.includes("heartbeat")
-          || workflowHandler?.workflow?.includes("heartbeat");
+        const isHeartbeat =
+          entry.name === "heartbeat" ||
+          entry.name?.startsWith("heartbeat-") ||
+          entry.handler === "heartbeat" ||
+          entry.handlerConfig?.workflow?.includes("heartbeat") ||
+          workflowHandler?.workflow?.includes("heartbeat");
         if (!isHeartbeat) continue;
         const agent = (workflowHandler?.agent || entry.handlerConfig?.agent || entry.agent || "").trim();
         if (agent && configured.has(agent)) agents.add(agent);
@@ -388,15 +409,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!data || typeof data !== "string") return {};
     try {
       const parsed = JSON.parse(data);
-      return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {};
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
     } catch {
       return {};
     }
   }
 
-  function latestAlertJudgment(db: SqliteDb, alert: { alertId?: number; metricId?: string; createdAt?: number }): Record<string, unknown> | null {
-    const row = db.prepare(
-      `SELECT id, owner, timestamp, data
+  function latestAlertJudgment(
+    db: SqliteDb,
+    alert: { alertId?: number; metricId?: string; createdAt?: number },
+  ): Record<string, unknown> | null {
+    const row = db
+      .prepare(
+        `SELECT id, owner, timestamp, data
        FROM events
        WHERE event_type = 'metric.alert_judged'
          AND timestamp >= ?
@@ -409,7 +434,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
          )
        ORDER BY timestamp DESC, id DESC
        LIMIT 1`,
-    ).get(alert.createdAt ?? 0, alert.alertId ?? null, alert.metricId ?? null) as {
+      )
+      .get(alert.createdAt ?? 0, alert.alertId ?? null, alert.metricId ?? null) as {
       id?: number;
       owner?: string | null;
       timestamp?: number;
@@ -434,10 +460,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function parseProjectIdentity(path: string, content?: string): { owner: string; name: string; projectId: string } {
     const normalized = normalizeProjectPathForCompare(path);
     const parts = normalized.split("/");
-    const name = parts[0] === "projects"
-      ? parts[1]?.replace(/\.md$/, "") ?? ""
-      : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    let owner = parts[0] === "projects" ? "shared" : parts[1] ?? "";
+    const name =
+      parts[0] === "projects"
+        ? (parts[1]?.replace(/\.md$/, "") ?? "")
+        : (parts[parts.length - 1]?.replace(/\.md$/, "") ?? "");
+    let owner = parts[0] === "projects" ? "shared" : (parts[1] ?? "");
     if (content?.trim().startsWith("{")) {
       try {
         const parsed = JSON.parse(content) as { owner?: unknown; id?: unknown };
@@ -459,18 +486,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function isAllowedProjectPath(path: string): boolean {
     const normalized = normalizeProjectPathForCompare(path);
-    return /^projects\/[^/]+(?:\/.*)?$/.test(normalized)
-      || /^[^/]+\/workspace\/projects\/[^/]+(?:\/.*)?$/.test(normalized);
+    return (
+      /^projects\/[^/]+(?:\/.*)?$/.test(normalized) || /^[^/]+\/workspace\/projects\/[^/]+(?:\/.*)?$/.test(normalized)
+    );
   }
 
   function projectPathCandidates(path: string): string[] {
     const normalized = normalizeProjectPathForCompare(path);
     const clean = normalized.replace(/\/project\.md$/, "").replace(/\/$/, "");
     const name = projectNameFromPath(clean);
-    const candidates = [
-      resolve(PROJECT_ROOT, clean),
-      resolve(PROJECT_ROOT, path),
-    ];
+    const candidates = [resolve(PROJECT_ROOT, clean), resolve(PROJECT_ROOT, path)];
     if (name) {
       candidates.push(resolve(PROJECTS_ROOT, name));
     }
@@ -524,7 +549,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const id = m[1];
         const block = m[2] || "";
         const type = block.match(/type:\s*["']([^"']+)["']/)?.[1] ?? "async";
-        const description = block.match(/description:\s*["']([\s\S]*?)["']/)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+        const description =
+          block
+            .match(/description:\s*["']([\s\S]*?)["']/)?.[1]
+            ?.replace(/\s+/g, " ")
+            .trim() ?? "";
         actions.push({ id, type, description });
       }
       return actions;
@@ -575,27 +604,26 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // Window for the activity timeline. Default 4h. Operator-selectable
     // from the WebUI via ?hours=N (clamped 1..72).
     const rawHours = Number(url?.searchParams.get("hours"));
-    const hours = Number.isFinite(rawHours) && rawHours > 0
-      ? Math.min(72, Math.max(1, rawHours))
-      : 4;
+    const hours = Number.isFinite(rawHours) && rawHours > 0 ? Math.min(72, Math.max(1, rawHours)) : 4;
     const since = now - hours * 60 * 60 * 1000;
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
     const scheduledHeartbeatAgents = new Set(listScheduledHeartbeatAgents(agents));
 
-    const heartbeatRows = db.prepare(
-      // Heartbeat detection covers all dispatch styles in production:
-      //   1. Cron-driven sessions whose task starts with "[heartbeat]".
-      //   2. Per-agent workflow sessions whose task is rebuilt internally
-      //      to start with "You are **<agent>** waking up for your heartbeat."
-      //      (Source is just "workflow"; only the task body identifies it.
-      //      We anchor at the start of task to avoid matching aftermath
-      //      reviews that embed a heartbeat session's JSON inside their task.)
-      //   3. Future workflows that adopt source="workflow:<agent>-heartbeat"
-      //      or source="heartbeat" once we standardize trigger typing.
-      // TODO: replace string matching once heartbeat workflows set a typed
-      // source / trigger field (see webui.md "Data model gaps to close" §2).
-      `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
+    const heartbeatRows = db
+      .prepare(
+        // Heartbeat detection covers all dispatch styles in production:
+        //   1. Cron-driven sessions whose task starts with "[heartbeat]".
+        //   2. Per-agent workflow sessions whose task is rebuilt internally
+        //      to start with "You are **<agent>** waking up for your heartbeat."
+        //      (Source is just "workflow"; only the task body identifies it.
+        //      We anchor at the start of task to avoid matching aftermath
+        //      reviews that embed a heartbeat session's JSON inside their task.)
+        //   3. Future workflows that adopt source="workflow:<agent>-heartbeat"
+        //      or source="heartbeat" once we standardize trigger typing.
+        // TODO: replace string matching once heartbeat workflows set a typed
+        // source / trigger field (see webui.md "Data model gaps to close" §2).
+        `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
        FROM sessions
        WHERE startedAt > ?
          AND (
@@ -604,21 +632,24 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
            OR task LIKE '[heartbeat]%'
            OR task LIKE 'You are %waking up for your heartbeat.%'
          )
-       ORDER BY startedAt ASC`
-    ).all(since) as any[];
+       ORDER BY startedAt ASC`,
+      )
+      .all(since) as any[];
 
     // All sessions in the selected window (not just heartbeats). The
     // timeline shows everything an agent did so the operator sees real
     // activity distribution, not only the cron tick. Each session is
     // classified into a 'category' bucket which maps to a color in the
     // frontend.
-    const allRows = db.prepare(
-      `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
+    const allRows = db
+      .prepare(
+        `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
               startedAt, endedAt
        FROM sessions
        WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
-       ORDER BY startedAt ASC`
-    ).all(since) as any[];
+       ORDER BY startedAt ASC`,
+      )
+      .all(since) as any[];
 
     // Heartbeat detection mirrors heartbeatRows above (same predicates).
     // Pre-build a Set of heartbeat sessionIds for O(1) classification.
@@ -636,9 +667,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (src === "telegram" || src === "web" || src === "human" || src === "cli") return "chat";
       if (src.includes("chat") || src.includes("message")) return "chat";
       // Workflow: any workflow-dispatched session that isn't a heartbeat or
-      // project. Catches aftermath, triage, orchestrator, goal-driver,
-      // closed-loop-steward, etc. — the bulk of background agent activity.
-      if (src.startsWith("workflow:") || src === "closed-loop-steward") return "workflow";
+      // project. Catches aftermath, triage, orchestrator, and goal-driver.
+      if (src.startsWith("workflow:")) return "workflow";
       return "other";
     }
 
@@ -652,25 +682,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       byAgent.get(row.agent)!.push({ ...row, category: classifyKind(row) });
     }
 
-    const agentRows = [...byAgent.entries()].map(([name, sessions]) => {
-      const heartbeatsForAgent = sessions.filter((s) => s.category === "heartbeat");
-      const lastHb = heartbeatsForAgent[heartbeatsForAgent.length - 1] ?? null;
-      const categoryCounts: Record<string, number> = { heartbeat: 0, project: 0, chat: 0, workflow: 0, other: 0 };
-      for (const s of sessions) categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
-      return {
-        name,
-        heartbeatCount: heartbeatsForAgent.length,
-        sessionCount: sessions.length,
-        categoryCounts,
-        lastHeartbeat: lastHb?.startedAt ?? null,
-        lastStatus: lastHb?.status ?? null,
-        sessions,
-      };
-    }).sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));
+    const agentRows = [...byAgent.entries()]
+      .map(([name, sessions]) => {
+        const heartbeatsForAgent = sessions.filter((s) => s.category === "heartbeat");
+        const lastHb = heartbeatsForAgent[heartbeatsForAgent.length - 1] ?? null;
+        const categoryCounts: Record<string, number> = { heartbeat: 0, project: 0, chat: 0, workflow: 0, other: 0 };
+        for (const s of sessions) categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
+        return {
+          name,
+          heartbeatCount: heartbeatsForAgent.length,
+          sessionCount: sessions.length,
+          categoryCounts,
+          lastHeartbeat: lastHb?.startedAt ?? null,
+          lastStatus: lastHb?.status ?? null,
+          sessions,
+        };
+      })
+      .sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));
 
-    const activeSessions = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
-    const openAlerts = enrichOpenAlerts(db, db.prepare(
-      `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
+    const activeSessions =
+      (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
+    const openAlerts = enrichOpenAlerts(
+      db,
+      db
+        .prepare(
+          `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
               COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
               m.project, m.priority, m.current, m.threshold, m.target
        FROM metric_alerts ma
@@ -679,24 +715,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
          AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
        WHERE ma.resolved_at IS NULL
        ORDER BY ma.created_at DESC
-       LIMIT 20`
-    ).all() as any[]);
+       LIMIT 20`,
+        )
+        .all() as any[],
+    );
 
     const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
     const vitalPlaceholders = LIVE_VITAL_METRIC_IDS.map(() => "?").join(", ");
     const openAlertMetricIds = new Set(openAlerts.map((alert) => alert.metricId));
-    const vitals = db.prepare(
-      `SELECT id, name, owner, current, target, threshold, unit, priority, alert_op, updated_at as updatedAt
+    const vitals = db
+      .prepare(
+        `SELECT id, name, owner, current, target, threshold, unit, priority, alert_op, updated_at as updatedAt
        FROM metrics
-       WHERE id IN (${vitalPlaceholders}) AND status = 'active'`
-    ).all(...LIVE_VITAL_METRIC_IDS) as any[];
+       WHERE id IN (${vitalPlaceholders}) AND status = 'active'`,
+      )
+      .all(...LIVE_VITAL_METRIC_IDS) as any[];
     const vitalMetrics = vitals
       .map((m) => {
         const current = typeof m.current === "number" ? m.current : null;
         const threshold = typeof m.threshold === "number" ? m.threshold : null;
-        const breached = current != null && threshold != null
-          ? (m.alert_op === ">" || m.alert_op === "above" ? current > threshold : current < threshold)
-          : false;
+        const breached =
+          current != null && threshold != null
+            ? m.alert_op === ">" || m.alert_op === "above"
+              ? current > threshold
+              : current < threshold
+            : false;
         return {
           ...m,
           owner: m.owner || "may",
@@ -706,13 +749,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       })
       .sort((a, b) => (metricOrder.get(a.id) ?? 999) - (metricOrder.get(b.id) ?? 999));
 
-    const messages = (db.prepare(
-      `SELECT event_type, source, owner, data, timestamp
+    const messages = (
+      db
+        .prepare(
+          `SELECT event_type, source, owner, data, timestamp
        FROM events
        WHERE event_type = 'message.created' AND timestamp > ?
        ORDER BY timestamp DESC
-       LIMIT 20`
-    ).all(oneHour) as any[]).map((row) => {
+       LIMIT 20`,
+        )
+        .all(oneHour) as any[]
+    ).map((row) => {
       const data = parseEventData(row.data);
       return {
         timestamp: row.timestamp,
@@ -724,8 +771,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       };
     });
 
-    const recentDecisions = (db.prepare(
-      `SELECT sessionId, agent, task, status, startedAt, outcome
+    const recentDecisions = (
+      db
+        .prepare(
+          `SELECT sessionId, agent, task, status, startedAt, outcome
        FROM sessions
        WHERE startedAt > ?
          AND (
@@ -735,15 +784,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
            OR task LIKE 'You are %waking up for your heartbeat.%'
          )
        ORDER BY startedAt DESC
-       LIMIT 8`
-    ).all(since) as any[])
-      .map((row) => ({
-        sessionId: row.sessionId,
-        agent: row.agent,
-        timestamp: row.startedAt,
-        status: row.status,
-        text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
-      }));
+       LIMIT 8`,
+        )
+        .all(since) as any[]
+    ).map((row) => ({
+      sessionId: row.sessionId,
+      agent: row.agent,
+      timestamp: row.startedAt,
+      status: row.status,
+      text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
+    }));
 
     const scheduledAgentRows = agentRows.filter((agent) => scheduledHeartbeatAgents.has(agent.name));
     const scheduledHeartbeatRows = scheduledAgentRows.filter((agent) => agent.lastHeartbeat);
@@ -801,7 +851,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return null;
   }
 
-  function resolveSessionEval(sessionId: string): { path: string; source: string; session: { path: string; source: string } } | null {
+  function resolveSessionEval(
+    sessionId: string,
+  ): { path: string; source: string; session: { path: string; source: string } } | null {
     const session = resolveSessionJsonl(sessionId);
     if (!session) return null;
     return {
@@ -817,7 +869,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       .split("\n")
       .filter(Boolean)
       .map((line) => {
-        try { return JSON.parse(line); } catch { return { parseError: true, raw: line }; }
+        try {
+          return JSON.parse(line);
+        } catch {
+          return { parseError: true, raw: line };
+        }
       });
   }
 
@@ -832,7 +888,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
-
   function firstSummaryRow(rows: unknown[]): Record<string, any> | null {
     for (let i = rows.length - 1; i >= 0; i--) {
       const row = rows[i] as Record<string, any>;
@@ -841,7 +896,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return null;
   }
 
-  function readSessionEvalSummary(sessionId: string): { source: string | null; rows: unknown[]; summary: Record<string, any> | null } {
+  function readSessionEvalSummary(sessionId: string): {
+    source: string | null;
+    rows: unknown[];
+    summary: Record<string, any> | null;
+  } {
     const resolved = resolveSessionEval(sessionId);
     if (!resolved || !existsSync(resolved.path)) return { source: resolved?.source ?? null, rows: [], summary: null };
     const rows = readEvalRows(resolved.path);
@@ -864,7 +923,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const now = Date.now();
     const since = now - days * 86400000;
 
-    const sessionWhere = ["status IN ('done','error','interrupted')", "agent NOT IN ('evaluator','judge')", "COALESCE(endedAt, startedAt) >= ?"];
+    const sessionWhere = [
+      "status IN ('done','error','interrupted')",
+      "agent NOT IN ('evaluator','judge')",
+      "COALESCE(endedAt, startedAt) >= ?",
+    ];
     const sessionParams: unknown[] = [since];
     if (projectId) {
       sessionWhere.push("projectId = ?");
@@ -873,13 +936,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     let sessions: Array<Record<string, any>> = [];
     try {
-      sessions = db.prepare(
-        `SELECT sessionId, agent, status, source, projectId, workflowRunId, startedAt, endedAt, opCount, substr(task, 1, 220) AS task
+      sessions = db
+        .prepare(
+          `SELECT sessionId, agent, status, source, projectId, workflowRunId, startedAt, endedAt, opCount, substr(task, 1, 220) AS task
          FROM sessions
          WHERE ${sessionWhere.join(" AND ")}
          ORDER BY COALESCE(endedAt, startedAt) DESC
          LIMIT 1200`,
-      ).all(...sessionParams) as Array<Record<string, any>>;
+        )
+        .all(...sessionParams) as Array<Record<string, any>>;
     } catch {
       sessions = [];
     }
@@ -887,20 +952,27 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const evaluatedIds = new Set<string>();
     const verdicts: Record<string, number> = {};
     try {
-      const rows = db.prepare("SELECT sessionId, verdict FROM evaluations").all() as Array<{ sessionId?: string; verdict?: string }>;
+      const rows = db.prepare("SELECT sessionId, verdict FROM evaluations").all() as Array<{
+        sessionId?: string;
+        verdict?: string;
+      }>;
       for (const row of rows) {
         if (!row.sessionId) continue;
         evaluatedIds.add(row.sessionId);
         incrementCount(verdicts, row.verdict || "unknown");
       }
-    } catch { /* tolerate missing table */ }
+    } catch {
+      /* tolerate missing table */
+    }
 
     const notifiedKeys = new Set<string>();
     let immediateEventCount = 0;
     try {
-      const eventRows = db.prepare(
-        `SELECT data FROM events WHERE event_type = 'learning.feedback' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
-      ).all(since) as Array<{ data?: string }>;
+      const eventRows = db
+        .prepare(
+          `SELECT data FROM events WHERE event_type = 'learning.feedback' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
+        )
+        .all(since) as Array<{ data?: string }>;
       for (const event of eventRows) {
         const data = parseEventData(event.data);
         const finding = (data.finding || {}) as Record<string, unknown>;
@@ -909,7 +981,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (sid && fid) notifiedKeys.add(`${sid}:${fid}`);
         if (!projectId || data.projectId === projectId) immediateEventCount += 1;
       }
-    } catch { /* events are best-effort */ }
+    } catch {
+      /* events are best-effort */
+    }
 
     const findings: Array<Record<string, any>> = [];
     const recentEvaluations: Array<Record<string, any>> = [];
@@ -917,7 +991,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const byOwner: Record<string, number> = {};
     const bySeverity: Record<string, number> = {};
     const byAgent: Record<string, number> = {};
-    const buckets: Record<string, { sessions: number; evaluated: number; findings: number; high: number; guards: number; guardBlocks: number }> = {};
+    const buckets: Record<
+      string,
+      { sessions: number; evaluated: number; findings: number; high: number; guards: number; guardBlocks: number }
+    > = {};
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(now - i * 86400000).toISOString().slice(0, 10);
       buckets[d] = { sessions: 0, evaluated: 0, findings: 0, high: 0, guards: 0, guardBlocks: 0 };
@@ -928,9 +1005,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const byGuardAction: Record<string, number> = {};
     let guardBlockCount = 0;
     try {
-      const guardRows = db.prepare(
-        `SELECT owner, data, timestamp FROM events WHERE event_type = 'guard.triggered' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
-      ).all(since) as Array<{ owner?: string; data?: string; timestamp?: number }>;
+      const guardRows = db
+        .prepare(
+          `SELECT owner, data, timestamp FROM events WHERE event_type = 'guard.triggered' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
+        )
+        .all(since) as Array<{ owner?: string; data?: string; timestamp?: number }>;
       for (const event of guardRows) {
         const data = parseEventData(event.data);
         if (projectId && data.projectId !== projectId) continue;
@@ -963,7 +1042,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           createdAt,
         });
       }
-    } catch { /* guard events are best-effort */ }
+    } catch {
+      /* guard events are best-effort */
+    }
 
     const backlogSessions: Array<Record<string, any>> = [];
     for (const session of sessions) {
@@ -999,7 +1080,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
 
       const ownerFindings = summary?.repairDecision?.ownerFindings;
-      const immediateIds = new Set((summary?.repairDecision?.notificationDecision?.immediateFindingIds || []).map(String));
+      const immediateIds = new Set(
+        (summary?.repairDecision?.notificationDecision?.immediateFindingIds || []).map(String),
+      );
       if (!Array.isArray(ownerFindings)) continue;
       for (const finding of ownerFindings) {
         const fid = String(finding?.id || "finding");
@@ -1051,18 +1134,22 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     let evaluatorFailures: Array<Record<string, any>> = [];
     let evaluatorReviewCount = 0;
     try {
-      const evalRows = db.prepare(
-        `SELECT sessionId, agent, status, source, startedAt, endedAt, error, substr(task, 1, 180) AS task
+      const evalRows = db
+        .prepare(
+          `SELECT sessionId, agent, status, source, startedAt, endedAt, error, substr(task, 1, 180) AS task
          FROM sessions
          WHERE agent = 'evaluator'
            AND COALESCE(endedAt, startedAt) >= ?
            AND (source LIKE 'workflow:evaluator-aftermath%' OR source = 'cli' OR task LIKE 'Review session aftermath%')
          ORDER BY COALESCE(endedAt, startedAt) DESC
          LIMIT 500`,
-      ).all(since) as Array<Record<string, any>>;
+        )
+        .all(since) as Array<Record<string, any>>;
       evaluatorReviewCount = evalRows.length;
       evaluatorFailures = evalRows.filter((row) => row.status === "error").slice(0, 50);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     const terminalSessions = sessions.length;
     const evaluatedSessions = sessions.filter((s) => evaluatedIds.has(String(s.sessionId || ""))).length;
@@ -1090,7 +1177,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         staleBlockerLoops,
         evaluatorReviewCount,
         evaluatorFailures: evaluatorFailures.length,
-        evaluatorFailureRatePct: evaluatorReviewCount ? Math.round((evaluatorFailures.length / evaluatorReviewCount) * 100) : 0,
+        evaluatorFailureRatePct: evaluatorReviewCount
+          ? Math.round((evaluatorFailures.length / evaluatorReviewCount) * 100)
+          : 0,
         guardSignals: guardSignals.length,
         guardBlocks: guardBlockCount,
         guardSignalsReviewed: 0,
@@ -1112,7 +1201,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!resolved) return json({ error: "Session not found" }, 404);
 
     let body: { line?: number } = {};
-    try { body = await req.json() as typeof body; } catch {}
+    try {
+      body = (await req.json()) as typeof body;
+    } catch {}
     const focusLine = Number(body.line || 0);
     const hasFocusLine = Number.isInteger(focusLine) && focusLine > 0;
     const rows = readEvalRows(resolved.path);
@@ -1137,7 +1228,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       `For user lines, critique whether the request clearly expressed purpose, provided necessary context, stayed clean/integral, could be simpler, or contained misleading/stale information.`,
       `For assistant/tool lines, explain what was good or bad, why it mattered, and how the agent should do better next time.`,
       `Use existing human-feedback rows in the eval trail as correction signal when present.`,
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
     const evaluator = await sendDaemonFrame({
       type: "evaluation.session.requested",
       source: "web-ui",
@@ -1165,7 +1258,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const resolved = resolveSessionEval(sessionId);
     if (!resolved) return json({ error: "Session not found" }, 404);
     let body: { line?: number; comment?: string; author?: string; originalEval?: unknown };
-    try { body = await req.json() as typeof body; } catch { return json({ error: "invalid json" }, 400); }
+    try {
+      body = (await req.json()) as typeof body;
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
     const line = Number(body.line || 0);
     const comment = String(body.comment || "").trim();
     if (!Number.isInteger(line) || line < 1) return json({ error: "line must be a positive integer" }, 400);
@@ -1207,7 +1304,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
               ? entry.content
               : "";
           // Skip session context injection (buildSessionContext output)
-          if (text && !text.startsWith("# Session Context")) messages.push({ role: "user", text, rawLine, rawSource: resolved.source });
+          if (text && !text.startsWith("# Session Context"))
+            messages.push({ role: "user", text, rawLine, rawSource: resolved.source });
         } else if (role === "assistant") {
           const blocks = Array.isArray(entry.content) ? entry.content : [];
           const text = blocks
@@ -1226,7 +1324,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
               rawBlockIndex: blockIndex,
             }));
           if (text || toolCalls.length) {
-            const msg: Record<string, unknown> = { role: "assistant", text, toolCalls, rawLine, rawSource: resolved.source };
+            const msg: Record<string, unknown> = {
+              role: "assistant",
+              text,
+              toolCalls,
+              rawLine,
+              rawSource: resolved.source,
+            };
             if (entry.api) msg.api = entry.api;
             if (entry.model) msg.model = entry.model;
             if (entry.provider) msg.provider = entry.provider;
@@ -1275,7 +1379,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const raw = rawLines[lineNo - 1];
     if (!raw) return json({ error: "line not found" }, 404);
     let parsed: unknown = null;
-    try { parsed = JSON.parse(raw); } catch {}
+    try {
+      parsed = JSON.parse(raw);
+    } catch {}
     return json({ sessionId, source: resolved.source, line: lineNo, raw, parsed });
   }
 
@@ -1578,13 +1684,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       .get(yesterdayStart, todayStart) as { total: number; errors: number };
 
     const activeAgents = _db()
-      .prepare(
-        `SELECT COUNT(DISTINCT agent) as cnt FROM sessions WHERE startedAt > ?`,
-      )
+      .prepare(`SELECT COUNT(DISTINCT agent) as cnt FROM sessions WHERE startedAt > ?`)
       .get(now - 2 * 60 * 60 * 1000) as { cnt: number };
 
     const todayErrorRate = todayStats.total > 0 ? Math.round((todayStats.errors / todayStats.total) * 100) : 0;
-    const yesterdayErrorRate = yesterdayStats.total > 0 ? Math.round((yesterdayStats.errors / yesterdayStats.total) * 100) : 0;
+    const yesterdayErrorRate =
+      yesterdayStats.total > 0 ? Math.round((yesterdayStats.errors / yesterdayStats.total) * 100) : 0;
 
     return json({
       sessionsToday: todayStats.total,
@@ -1601,21 +1706,30 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleAgentDetail(agentName: string): Response {
     // 1. Recent sessions
-    const recentSessions = (_db()
-      .prepare(
-        `SELECT sessionId, task, status, startedAt, endedAt, opCount, outcome
+    const recentSessions = (
+      _db()
+        .prepare(
+          `SELECT sessionId, task, status, startedAt, endedAt, opCount, outcome
          FROM sessions WHERE agent = ? ORDER BY startedAt DESC LIMIT 50`,
-      )
-      .all(agentName) as Array<{ sessionId: string; task: string | null; status: string; startedAt: number; endedAt: number | null; opCount: number | null; outcome: string | null }>)
-      .map((row) => ({
-        id: row.sessionId,
-        task: row.task?.slice(0, 120),
-        status: row.status,
-        startedAt: row.startedAt,
-        duration: row.endedAt ? Math.round((row.endedAt - row.startedAt) / 1000) : null,
-        opCount: row.opCount,
-        outcome: row.outcome?.slice(0, 100),
-      }));
+        )
+        .all(agentName) as Array<{
+        sessionId: string;
+        task: string | null;
+        status: string;
+        startedAt: number;
+        endedAt: number | null;
+        opCount: number | null;
+        outcome: string | null;
+      }>
+    ).map((row) => ({
+      id: row.sessionId,
+      task: row.task?.slice(0, 120),
+      status: row.status,
+      startedAt: row.startedAt,
+      duration: row.endedAt ? Math.round((row.endedAt - row.startedAt) / 1000) : null,
+      opCount: row.opCount,
+      outcome: row.outcome?.slice(0, 100),
+    }));
 
     // 2. Eval trend
     const evalTrend = _db()
@@ -1668,7 +1782,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Browse API: generic file/directory browser for knowledge base ──
   function handleMetrics(_url: URL): Response {
     const db = _db();
-    const metrics = db.prepare(`
+    const metrics = db
+      .prepare(
+        `
       SELECT m.id, m.name, m.type,
              COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
              m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
@@ -1679,9 +1795,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
       WHERE m.status = 'active'
       ORDER BY owner, m.priority, m.name
-    `).all() as any[];
+    `,
+      )
+      .all() as any[];
 
-    const openAlerts = enrichOpenAlerts(db, db.prepare(`
+    const openAlerts = enrichOpenAlerts(
+      db,
+      db
+        .prepare(
+          `
       SELECT ma.id as alertId, ma.metric_id as metricId, ma.alert_type as alertType,
              ma.message, ma.created_at as createdAt,
              m.name, m.type,
@@ -1696,17 +1818,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       WHERE ma.resolved_at IS NULL
         AND m.status = 'active'
       ORDER BY ma.created_at DESC
-    `).all() as any[]);
+    `,
+        )
+        .all() as any[],
+    );
 
     const openAlertByMetric = new Map(openAlerts.map((alert) => [alert.metricId, alert]));
     const metricsWithAlertState = metrics.map((metric) => {
       const alert = openAlertByMetric.get(metric.id);
       return alert
-        ? { ...metric, alertOpen: true, alertId: alert.alertId, alertMessage: alert.message, alertType: alert.alertType, latestJudgment: alert.latestJudgment }
+        ? {
+            ...metric,
+            alertOpen: true,
+            alertId: alert.alertId,
+            alertMessage: alert.message,
+            alertType: alert.alertType,
+            latestJudgment: alert.latestJudgment,
+          }
         : { ...metric, alertOpen: false };
     });
 
-    const snapshots = db.prepare(`
+    const snapshots = db
+      .prepare(
+        `
       SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.note
       FROM metric_snapshots ms
       INNER JOIN (
@@ -1714,16 +1848,30 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         FROM metric_snapshots GROUP BY metric_id
       ) latest ON ms.metric_id = latest.metric_id AND ms.measured_at = latest.max_at
       ORDER BY ms.measured_at DESC
-    `).all() as any[];
+    `,
+      )
+      .all() as any[];
 
-    const recentSnapshots = db.prepare(`
+    const recentSnapshots = db
+      .prepare(
+        `
       SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.measured_by, ms.note
       FROM metric_snapshots ms ORDER BY ms.measured_at DESC LIMIT 50
-    `).all() as any[];
+    `,
+      )
+      .all() as any[];
 
-    return new Response(JSON.stringify({ metrics: metricsWithAlertState, latestSnapshots: snapshots, recentSnapshots, alerts: openAlerts }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        metrics: metricsWithAlertState,
+        latestSnapshots: snapshots,
+        recentSnapshots,
+        alerts: openAlerts,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   function handleBrowse(url: URL): Response {
@@ -1819,7 +1967,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const contentIdx = lowerContent.indexOf(q);
         if (!pathHit && contentIdx === -1) continue;
         const start = contentIdx === -1 ? 0 : Math.max(0, contentIdx - 90);
-        const snippet = content.slice(start, Math.min(content.length, start + 240)).replace(/\s+/g, " ").trim();
+        const snippet = content
+          .slice(start, Math.min(content.length, start + 240))
+          .replace(/\s+/g, " ")
+          .trim();
         results.push({
           path: displayPath,
           browsePath: root.label === "shared/knowledge" ? `knowledge/${rel.replace(/\\/g, "/")}` : null,
@@ -1836,29 +1987,38 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function contentTypeFor(path: string): string {
     switch (extname(path).toLowerCase()) {
-      case ".html": return "text/html; charset=utf-8";
-      case ".css": return "text/css; charset=utf-8";
-      case ".js": return "text/javascript; charset=utf-8";
-      case ".json": return "application/json; charset=utf-8";
-      case ".md": return "text/markdown; charset=utf-8";
-      case ".txt": return "text/plain; charset=utf-8";
-      case ".svg": return "image/svg+xml";
-      case ".png": return "image/png";
+      case ".html":
+        return "text/html; charset=utf-8";
+      case ".css":
+        return "text/css; charset=utf-8";
+      case ".js":
+        return "text/javascript; charset=utf-8";
+      case ".json":
+        return "application/json; charset=utf-8";
+      case ".md":
+        return "text/markdown; charset=utf-8";
+      case ".txt":
+        return "text/plain; charset=utf-8";
+      case ".svg":
+        return "image/svg+xml";
+      case ".png":
+        return "image/png";
       case ".jpg":
-      case ".jpeg": return "image/jpeg";
-      case ".gif": return "image/gif";
-      case ".webp": return "image/webp";
-      case ".ico": return "image/x-icon";
-      default: return "application/octet-stream";
+      case ".jpeg":
+        return "image/jpeg";
+      case ".gif":
+        return "image/gif";
+      case ".webp":
+        return "image/webp";
+      case ".ico":
+        return "image/x-icon";
+      default:
+        return "application/octet-stream";
     }
   }
 
   function htmlEscape(value: string): string {
-    return value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   function isInsideProjectsRoot(path: string): boolean {
@@ -1899,18 +2059,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return { name, isDir: stat.isDirectory(), size: stat.size };
       })
       .sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name));
-    const rows = entries.map((entry) => {
-      const href = `${normalizedUrlPath}${encodeURIComponent(entry.name)}${entry.isDir ? "/" : ""}`;
-      const label = `${entry.name}${entry.isDir ? "/" : ""}`;
-      const meta = entry.isDir ? "dir" : `${entry.size} bytes`;
-      return `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a> <span>${htmlEscape(meta)}</span></li>`;
-    }).join("\n");
-    return new Response(`<!doctype html>
+    const rows = entries
+      .map((entry) => {
+        const href = `${normalizedUrlPath}${encodeURIComponent(entry.name)}${entry.isDir ? "/" : ""}`;
+        const label = `${entry.name}${entry.isDir ? "/" : ""}`;
+        const meta = entry.isDir ? "dir" : `${entry.size} bytes`;
+        return `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a> <span>${htmlEscape(meta)}</span></li>`;
+      })
+      .join("\n");
+    return new Response(
+      `<!doctype html>
 <html><head><meta charset="utf-8"><title>${htmlEscape(title)}</title>
 <style>body{font:14px system-ui,sans-serif;margin:32px;line-height:1.5}a{color:#0969da;text-decoration:none}a:hover{text-decoration:underline}ul{list-style:none;padding:0}li{padding:4px 0;border-bottom:1px solid #eee}span{color:#666;margin-left:12px;font-size:12px}</style>
-</head><body><h1>${htmlEscape(title)}</h1><ul>${parent}${rows}</ul></body></html>`, {
-      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" },
-    });
+</head><body><h1>${htmlEscape(title)}</h1><ul>${parent}${rows}</ul></body></html>`,
+      {
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" },
+      },
+    );
   }
 
   function serveProjectStatic(pathname: string): Response {
@@ -1950,7 +2115,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       try {
         const content = readFileSync(projectFile, "utf-8");
         const jsonProject = content.trim().startsWith("{")
-          ? (() => { try { return JSON.parse(content) as Record<string, any>; } catch { return null; } })()
+          ? (() => {
+              try {
+                return JSON.parse(content) as Record<string, any>;
+              } catch {
+                return null;
+              }
+            })()
           : null;
         // Parse YAML frontmatter if present (current convention).
         // Legacy per-agent projects may still use old `**Owner**: x` lines.
@@ -1969,7 +2140,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         for (const required of ["id", "owner", "status"]) {
           if (isSharedProject && !frontmatter[required]) formatErrors.push(`missing frontmatter field: ${required}`);
         }
-        if (isSharedProject && content.replace(/^---\n[\s\S]*?\n---\n/, "").match(/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi)) {
+        if (
+          isSharedProject &&
+          content.replace(/^---\n[\s\S]*?\n---\n/, "").match(/^\s*\*\*(Owner|Status):?\*\*:?\s*/im)
+        ) {
           formatErrors.push("metadata duplicated as bold body field");
         }
         const field = (n: string) => {
@@ -2003,11 +2177,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             const after = content.slice(mIdx + "## Metrics\n".length);
             const ns = after.indexOf("\n## ");
             const section = (ns === -1 ? after : after.slice(0, ns)).trim();
-            const ids = section.split("\n").filter((l: string) => l.startsWith("- ")).map((l: string) => {
-              const m = l.match(/^- `?(\S+?)`?:/);
-              const t = l.match(/target\s*([<>]=?\s*)?(\d[\d.]*%?)/);
-              return m ? { id: m[1].replace(/`/g, ""), target: t ? (t[1] || "") + t[2] : null } : null;
-            }).filter(Boolean) as Array<{id: string; target: string | null}>;
+            const ids = section
+              .split("\n")
+              .filter((l: string) => l.startsWith("- "))
+              .map((l: string) => {
+                const m = l.match(/^- `?(\S+?)`?:/);
+                const t = l.match(/target\s*([<>]=?\s*)?(\d[\d.]*%?)/);
+                return m ? { id: m[1].replace(/`/g, ""), target: t ? (t[1] || "") + t[2] : null } : null;
+              })
+              .filter(Boolean) as Array<{ id: string; target: string | null }>;
             if (ids.length === 0) return [];
             try {
               const db = _db();
@@ -2016,14 +2194,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
                 const current = row?.current ?? null;
                 const threshold = row?.threshold;
                 const above = row?.alert_op === "above" || row?.alert_op === ">";
-                const breached = threshold != null && current != null && (above ? current > threshold : current < threshold);
+                const breached =
+                  threshold != null && current != null && (above ? current > threshold : current < threshold);
                 return { id, current, target, breached };
               });
-            } catch { return ids.map(({ id, target }) => ({ id, current: null, target, breached: false })); }
+            } catch {
+              return ids.map(({ id, target }) => ({ id, current: null, target, breached: false }));
+            }
           })(),
           updatedAt: statSync(projectFile).mtimeMs,
         });
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     };
 
     try {
@@ -2058,7 +2241,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           processProject(projectFile, relPath, entry.name, dir.name);
         }
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
     return json(projects);
   }
 
@@ -2127,30 +2312,35 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!path) return json({ error: "path required" }, 400);
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
-    const projectDir = resolveProjectDir(path);
     const appDir = projectAppDirForPath(path);
-    let treePath = appDir ? ensureTaskTreeState(appDir).path : resolve(projectDir, "tasks", "tree.json");
-    if (treePath !== projectDir && !treePath.startsWith(`${projectDir}/`)) {
-      if (!appDir || (treePath !== appDir && !treePath.startsWith(`${appDir}/`))) return json({ error: "Access denied" }, 403);
+    if (!appDir) {
+      return json({
+        available: false,
+        path,
+        treePath: null,
+        reason: "Project has no Agent App task attachment.",
+      });
     }
+    const treePath = projectRuntimePaths(appDir).taskTreePath;
+    if (treePath !== appDir && !treePath.startsWith(`${appDir}/`)) return json({ error: "Access denied" }, 403);
 
     if (!existsSync(treePath)) {
       return json({
         available: false,
         path,
-        treePath: appDir ? `${projectNameFromPath(path)}.app/.state/tasks/tree.json` : "tasks/tree.json",
-        reason: "Project does not expose a task tree yet.",
+        treePath: `${projectNameFromPath(path)}.app/.state/tasks/tree.json`,
+        reason: "Agent App does not attach task reconciliation.",
       });
     }
 
     try {
       const tree = JSON.parse(readFileSync(treePath, "utf-8"));
-      return json(buildProjectTasksReadModel(tree, { path, treePath: appDir ? ".state/tasks/tree.json" : "tasks/tree.json" }));
+      return json(buildProjectTasksReadModel(tree, { path, treePath: ".state/tasks/tree.json" }));
     } catch (e) {
       return json({
         available: false,
         path,
-        treePath: appDir ? ".state/tasks/tree.json" : "tasks/tree.json",
+        treePath: ".state/tasks/tree.json",
         reason: "Task tree JSON could not be parsed.",
         errors: [e instanceof Error ? e.message : String(e)],
       });
@@ -2191,7 +2381,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
     let jsonProject = content.trim().startsWith("{")
-      ? (() => { try { return JSON.parse(content) as Record<string, any>; } catch { return null; } })()
+      ? (() => {
+          try {
+            return JSON.parse(content) as Record<string, any>;
+          } catch {
+            return null;
+          }
+        })()
       : null;
     const appDirForDetail = projectAppDirForPath(path);
     if (appDirForDetail && jsonProject) {
@@ -2217,15 +2413,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const projectId = `${owner}/${projectName}`;
 
     // Extract common summary sections (everything until the next "##").
-    const goal = jsonProject && typeof jsonProject.goal === "string"
-      ? jsonProject.goal
-      : extractMarkdownSection(body, "Goal");
+    const goal =
+      jsonProject && typeof jsonProject.goal === "string" ? jsonProject.goal : extractMarkdownSection(body, "Goal");
     const currentState = jsonProject
       ? typeof jsonProject.currentState === "string"
         ? jsonProject.currentState
         : typeof jsonProject.currentState?.summary === "string"
-        ? jsonProject.currentState.summary
-        : null
+          ? jsonProject.currentState.summary
+          : null
       : extractMarkdownSection(body, "Current State");
 
     // Count milestones: lines like '- [ ] foo' / '- [x] foo' anywhere in body.
@@ -2249,12 +2444,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     let ownedMetrics: Array<Record<string, unknown>> = [];
     let citedMetricsResolved: Array<Record<string, unknown>> = [];
     try {
-      ownedMetrics = db.prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE project = ?`).all(projectName) as any[];
+      ownedMetrics = db
+        .prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE project = ?`)
+        .all(projectName) as any[];
       if (cited.size > 0) {
         const placeholders = [...cited].map(() => "?").join(",");
-        citedMetricsResolved = db.prepare(`SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE id IN (${placeholders})`).all(...[...cited]) as any[];
+        citedMetricsResolved = db
+          .prepare(
+            `SELECT id, name, current, threshold, alert_op, unit, priority, type FROM metrics WHERE id IN (${placeholders})`,
+          )
+          .all(...[...cited]) as any[];
       }
-    } catch { /* tolerate missing column */ }
+    } catch {
+      /* tolerate missing column */
+    }
 
     // Recent sessions for this project. Two-tier:
     //   tier 1: rows tagged with projectId (canonical)
@@ -2263,27 +2466,33 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     let sessionCount = 0;
     let mentionCount = 0;
     try {
-      const tagged = db.prepare(
-        `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 10`
-      ).all(projectId) as any[];
+      const tagged = db
+        .prepare(
+          `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 10`,
+        )
+        .all(projectId) as any[];
       for (const r of tagged) recentSessions.push({ ...r, link: "tagged" });
       const cnt = db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE projectId = ?`).get(projectId) as any;
       sessionCount = cnt?.c ?? 0;
       // Tier 2 — only if tagged is short.
       if (tagged.length < 10 && projectName.length >= 6) {
-        const seen = new Set(tagged.map(t => t.sessionId));
-        const mentions = db.prepare(
-          `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 10`
-        ).all(`%${projectName}%`) as any[];
+        const seen = new Set(tagged.map((t) => t.sessionId));
+        const mentions = db
+          .prepare(
+            `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 10`,
+          )
+          .all(`%${projectName}%`) as any[];
         for (const r of mentions) {
           if (!seen.has(r.sessionId)) recentSessions.push({ ...r, link: "mention" });
         }
-        const mcnt = db.prepare(
-          `SELECT COUNT(*) as c FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ?`
-        ).get(`%${projectName}%`) as any;
+        const mcnt = db
+          .prepare(`SELECT COUNT(*) as c FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ?`)
+          .get(`%${projectName}%`) as any;
         mentionCount = mcnt?.c ?? 0;
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     return json({
       path,
@@ -2292,7 +2501,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       projectId,
       frontmatter,
       status: jsonProject?.status || frontmatter.status || null,
-      iteration: jsonProject?.iteration ? Number(jsonProject.iteration) : frontmatter.iteration ? Number(frontmatter.iteration) : 0,
+      iteration: jsonProject?.iteration
+        ? Number(jsonProject.iteration)
+        : frontmatter.iteration
+          ? Number(frontmatter.iteration)
+          : 0,
       priority: jsonProject?.priority || frontmatter.priority || null,
       type: jsonProject?.type || frontmatter.type || null,
       workflow: frontmatter.workflow || null,
@@ -2357,7 +2570,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
     let content = "";
-    try { content = readFileSync(resolveProjectFile(path), "utf-8"); } catch {}
+    try {
+      content = readFileSync(resolveProjectFile(path), "utf-8");
+    } catch {}
     const { name, projectId } = parseProjectIdentity(path, content);
 
     // link confidence ranking; lower = stronger.
@@ -2376,44 +2591,52 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     try {
       // tier 1: tagged.
-      for (const r of db.prepare(`${SELECT} WHERE projectId = ? ORDER BY startedAt DESC LIMIT 200`).all(projectId) as any[]) {
+      for (const r of db
+        .prepare(`${SELECT} WHERE projectId = ? ORDER BY startedAt DESC LIMIT 200`)
+        .all(projectId) as any[]) {
         accept(r, "tagged");
       }
 
       // tier 2: workflow_runs tagged with this project, plus legacy runs
       // whose task mentions the project path or name.
       // Project path appears in master-worker tasks like 'project: /app/projects/<name>'.
-      const runRows = db.prepare(
-        `SELECT runId FROM workflow_runs WHERE projectId = ? OR task LIKE ? OR task LIKE ? LIMIT 200`
-      ).all(projectId, `%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
+      const runRows = db
+        .prepare(`SELECT runId FROM workflow_runs WHERE projectId = ? OR task LIKE ? OR task LIKE ? LIMIT 200`)
+        .all(projectId, `%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
       if (runRows.length > 0) {
         const placeholders = runRows.map(() => "?").join(",");
-        const ids = runRows.map(r => r.runId);
-        for (const r of db.prepare(`${SELECT} WHERE workflowRunId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`).all(...ids) as any[]) {
+        const ids = runRows.map((r) => r.runId);
+        for (const r of db
+          .prepare(`${SELECT} WHERE workflowRunId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`)
+          .all(...ids) as any[]) {
           accept(r, "workflow");
         }
       }
 
       // tier 3: file_reads of any file inside the project dir.
       // filePath patterns vary: '/app/projects/<name>/...', './agents/...', 'agents/...'
-      const readRows = db.prepare(
-        `SELECT DISTINCT sessionId FROM file_reads WHERE filePath LIKE ? OR filePath LIKE ? OR filePath LIKE ? LIMIT 500`
-      ).all(
-        `%/projects/${name}/%`,
-        `%projects/${name}/%`,
-        `%${path}/%`,
-      ) as Array<{ sessionId: string }>;
+      const readRows = db
+        .prepare(
+          `SELECT DISTINCT sessionId FROM file_reads WHERE filePath LIKE ? OR filePath LIKE ? OR filePath LIKE ? LIMIT 500`,
+        )
+        .all(`%/projects/${name}/%`, `%projects/${name}/%`, `%${path}/%`) as Array<{ sessionId: string }>;
       if (readRows.length > 0) {
         const placeholders = readRows.map(() => "?").join(",");
-        const ids = readRows.map(r => r.sessionId);
-        for (const r of db.prepare(`${SELECT} WHERE sessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 500`).all(...ids) as any[]) {
+        const ids = readRows.map((r) => r.sessionId);
+        for (const r of db
+          .prepare(`${SELECT} WHERE sessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 500`)
+          .all(...ids) as any[]) {
           accept(r, "file-read");
         }
       }
 
       // tier 4: task mention. Only if name is distinctive.
       if (name.length >= 6) {
-        for (const r of db.prepare(`${SELECT} WHERE task LIKE ? AND (projectId IS NULL OR projectId != ?) ORDER BY startedAt DESC LIMIT 100`).all(`%${name}%`, projectId) as any[]) {
+        for (const r of db
+          .prepare(
+            `${SELECT} WHERE task LIKE ? AND (projectId IS NULL OR projectId != ?) ORDER BY startedAt DESC LIMIT 100`,
+          )
+          .all(`%${name}%`, projectId) as any[]) {
           accept(r, "mention");
         }
       }
@@ -2424,7 +2647,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const ids = [...byId.keys()];
       if (ids.length > 0 && ids.length <= 200) {
         const placeholders = ids.map(() => "?").join(",");
-        for (const r of db.prepare(`${SELECT} WHERE parentSessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`).all(...ids) as any[]) {
+        for (const r of db
+          .prepare(`${SELECT} WHERE parentSessionId IN (${placeholders}) ORDER BY startedAt DESC LIMIT 200`)
+          .all(...ids) as any[]) {
           accept(r, "child");
         }
       }
@@ -2441,19 +2666,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // Optionally pull session_digests for first N sessions — inline review fuel.
     // Capped to 30 to keep payload reasonable; the rest can be fetched on click.
-    const digestIds = sessions.slice(0, 30).map(s => s.sessionId);
+    const digestIds = sessions.slice(0, 30).map((s) => s.sessionId);
     const digestsBySession: Record<string, any[]> = {};
     if (digestIds.length > 0) {
       try {
         const placeholders = digestIds.map(() => "?").join(",");
-        const rows = db.prepare(
-          `SELECT sessionId, step, trigger, what_happened, outcome, still_open, action, action_reason, created_at FROM session_digests WHERE sessionId IN (${placeholders}) ORDER BY sessionId, step`
-        ).all(...digestIds) as any[];
+        const rows = db
+          .prepare(
+            `SELECT sessionId, step, trigger, what_happened, outcome, still_open, action, action_reason, created_at FROM session_digests WHERE sessionId IN (${placeholders}) ORDER BY sessionId, step`,
+          )
+          .all(...digestIds) as any[];
         for (const d of rows) {
           if (!digestsBySession[d.sessionId]) digestsBySession[d.sessionId] = [];
           digestsBySession[d.sessionId].push(d);
         }
-      } catch { /* digest table may differ */ }
+      } catch {
+        /* digest table may differ */
+      }
     }
 
     return json({
@@ -2472,7 +2701,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
     // Canonical projectId is owner/name, even for shared path.
     let content = "";
-    try { content = readFileSync(resolveProjectFile(path), "utf-8"); } catch {}
+    try {
+      content = readFileSync(resolveProjectFile(path), "utf-8");
+    } catch {}
     const { name, projectId } = parseProjectIdentity(path, content);
 
     // Two-tier query:
@@ -2486,23 +2717,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const sessions: any[] = [];
     try {
       const db = _db();
-      const tagged = db.prepare(
-        "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50"
-      ).all(projectId) as any[];
+      const tagged = db
+        .prepare(
+          "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50",
+        )
+        .all(projectId) as any[];
       for (const r of tagged) sessions.push({ ...r, link: "tagged" });
       // Tier 2: only if tagged is short, look for task mentions. Cap the
       // scan so big DBs don't get slow; project names are typically distinctive
       // (e.g. 'evaluator-low-quality-rate-calibration') so LIKE %name% is safe.
       if (tagged.length < 20 && name.length >= 6) {
-        const seen = new Set(tagged.map(t => t.sessionId));
-        const mentions = db.prepare(
-          "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 30"
-        ).all(`%${name}%`) as any[];
+        const seen = new Set(tagged.map((t) => t.sessionId));
+        const mentions = db
+          .prepare(
+            "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 30",
+          )
+          .all(`%${name}%`) as any[];
         for (const r of mentions) {
           if (!seen.has(r.sessionId)) sessions.push({ ...r, link: "mention" });
         }
       }
-    } catch { /* projectId column may not exist */ }
+    } catch {
+      /* projectId column may not exist */
+    }
 
     if (sessions.length > 0) return json(sessions);
 
@@ -2513,21 +2750,33 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         for (const f of readdirSync(dir)) {
           try {
             const run = JSON.parse(readFileSync(join(dir, f), "utf-8"));
-            if (searchPaths.some(sp => run.task?.includes(sp))) {
+            if (searchPaths.some((sp) => run.task?.includes(sp))) {
               for (const step of run.steps ?? []) {
-                if (step.sessionId) sessions.push({ sessionId: step.sessionId, agent: step.agent, status: step.status, startedAt: step.startedAt, task: step.task?.slice(0, 80), link: "workflow-file" });
+                if (step.sessionId)
+                  sessions.push({
+                    sessionId: step.sessionId,
+                    agent: step.agent,
+                    status: step.status,
+                    startedAt: step.startedAt,
+                    task: step.task?.slice(0, 80),
+                    link: "workflow-file",
+                  });
               }
             }
-          } catch { /* skip corrupted files */ }
+          } catch {
+            /* skip corrupted files */
+          }
         }
-      } catch { /* dir may not exist */ }
+      } catch {
+        /* dir may not exist */
+      }
     }
     return json(sessions);
   }
 
   async function handleProjectComment(req: Request): Promise<Response> {
     try {
-      const body = await req.json() as { path?: string; comment?: string };
+      const body = (await req.json()) as { path?: string; comment?: string };
       const { path, comment } = body;
       if (!path || !comment) return json({ error: "path and comment required" }, 400);
       if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
@@ -2548,13 +2797,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
-      return json({
-        ok: true,
-        triggered: true,
-        accepted: true,
-        eventType: "project.comment.created",
-        projectId,
-      }, 202);
+      return json(
+        {
+          ok: true,
+          triggered: true,
+          accepted: true,
+          eventType: "project.comment.created",
+          projectId,
+        },
+        202,
+      );
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
@@ -2568,8 +2820,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     let query = "SELECT * FROM events";
     const conditions: string[] = [];
     const params: unknown[] = [];
-    if (owner) { conditions.push("owner = ?"); params.push(owner); }
-    if (eventType) { conditions.push("event_type = ?"); params.push(eventType); }
+    if (owner) {
+      conditions.push("owner = ?");
+      params.push(owner);
+    }
+    if (eventType) {
+      conditions.push("event_type = ?");
+      params.push(eventType);
+    }
     if (conditions.length) query += " WHERE " + conditions.join(" AND ");
     query += " ORDER BY timestamp DESC LIMIT ?";
     params.push(limit);
@@ -2584,17 +2842,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleEventDeliveryHealth(url: URL): Response {
     const db = _db();
     const now = Date.now();
-    const lookbackMs = Math.max(1, Math.min(24 * 60 * 60_000, Number(url.searchParams.get("lookbackMs") || 6 * 60 * 60_000)));
+    const lookbackMs = Math.max(
+      1,
+      Math.min(24 * 60 * 60_000, Number(url.searchParams.get("lookbackMs") || 6 * 60 * 60_000)),
+    );
     const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || 25)));
     const since = now - lookbackMs;
     const pendingTtlMs = 2 * 60_000;
-    const eventColumns =
-      `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
+    const eventColumns = `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
        delivery_status as deliveryStatus, accepted_by as acceptedBy,
        accepted_at as acceptedAt, delivery_route as deliveryRoute,
        delivery_note as deliveryNote, data`;
-    const pairColumns =
-      `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
+    const pairColumns = `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
        p.open_event_id as openEventId, p.close_event_id as closeEventId,
        p.owner, p.status, p.opened_at as openedAt,
        p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
@@ -2603,7 +2862,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     try {
       const eventSchema = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: string }>;
       const eventColumnsSet = new Set(eventSchema.map((row) => row.name).filter(Boolean));
-      const pairTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'event_pair_runs'").get();
+      const pairTable = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'event_pair_runs'")
+        .get();
       if (!eventColumnsSet.has("delivery_status") || !eventColumnsSet.has("delivery_route") || !pairTable) {
         return json({
           now,
@@ -2618,48 +2879,58 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           overdueOpenPairs: [],
         });
       }
-      const unhandledEvents = db.prepare(
-        `SELECT ${eventColumns}
+      const unhandledEvents = db
+        .prepare(
+          `SELECT ${eventColumns}
          FROM events
          WHERE delivery_status = 'unhandled'
            AND timestamp >= ?
          ORDER BY timestamp DESC, id DESC
-         LIMIT ?`
-      ).all(since, limit);
-      const overduePendingEvents = db.prepare(
-        `SELECT ${eventColumns}
+         LIMIT ?`,
+        )
+        .all(since, limit);
+      const overduePendingEvents = db
+        .prepare(
+          `SELECT ${eventColumns}
          FROM events
          WHERE delivery_status = 'pending'
            AND timestamp >= ?
            AND timestamp + COALESCE(ttl_ms, ?) < ?
          ORDER BY timestamp DESC, id DESC
-         LIMIT ?`
-      ).all(since, pendingTtlMs, now, limit);
-      const orphanPairs = db.prepare(
-        `SELECT ${pairColumns}
+         LIMIT ?`,
+        )
+        .all(since, pendingTtlMs, now, limit);
+      const orphanPairs = db
+        .prepare(
+          `SELECT ${pairColumns}
          FROM event_pair_runs p
          LEFT JOIN events e ON e.id = p.open_event_id
          WHERE p.status = 'orphan'
            AND p.opened_at >= ?
          ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`
-      ).all(since, limit);
-      const overdueOpenPairs = db.prepare(
-        `SELECT ${pairColumns}
+         LIMIT ?`,
+        )
+        .all(since, limit);
+      const overdueOpenPairs = db
+        .prepare(
+          `SELECT ${pairColumns}
          FROM event_pair_runs p
          LEFT JOIN events e ON e.id = p.open_event_id
          WHERE p.status = 'open'
            AND p.opened_at >= ?
            AND p.expected_close_at < ?
          ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`
-      ).all(since, now, limit);
-      const ownerInbox = db.prepare(
-        `SELECT COUNT(*) as count
+         LIMIT ?`,
+        )
+        .all(since, now, limit);
+      const ownerInbox = db
+        .prepare(
+          `SELECT COUNT(*) as count
          FROM event_pair_runs
          WHERE pair_name = 'owner_inbox'
-           AND status = 'open'`
-      ).get() as { count?: number } | null;
+           AND status = 'open'`,
+        )
+        .get() as { count?: number } | null;
 
       return json({
         now,
@@ -2690,17 +2961,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleEventIngress(req: Request): Promise<Response> {
     try {
-      const body = await req.json() as Record<string, unknown>;
+      const body = (await req.json()) as Record<string, unknown>;
       const type = typeof body.type === "string" ? body.type.trim() : "";
       if (!type) return json({ error: "type required" }, 400);
-      const data = body.data && typeof body.data === "object" && !Array.isArray(body.data)
-        ? body.data as Record<string, unknown>
-        : {};
-      const projectPath = typeof data.projectPath === "string"
-        ? data.projectPath
-        : typeof body.projectPath === "string"
-        ? body.projectPath
-        : "";
+      const data =
+        body.data && typeof body.data === "object" && !Array.isArray(body.data)
+          ? (body.data as Record<string, unknown>)
+          : {};
+      const projectPath =
+        typeof data.projectPath === "string"
+          ? data.projectPath
+          : typeof body.projectPath === "string"
+            ? body.projectPath
+            : "";
 
       let projectId = typeof data.projectId === "string" ? data.projectId : "";
       let owner = typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : "agent:may";
@@ -2710,7 +2983,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
         const identity = parseProjectIdentity(projectPath, readFileSync(projectFile, "utf-8"));
         projectId = projectId || identity.projectId;
-        owner = typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : normalizeEventOwner(identity.owner);
+        owner =
+          typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : normalizeEventOwner(identity.owner);
       }
 
       const trigger = await sendDaemonFrame({
@@ -2722,14 +2996,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
-      return json({
-        ok: true,
-        triggered: true,
-        accepted: true,
-        eventType: type,
-        reason: typeof data.reason === "string" ? data.reason : null,
-        projectId: projectId || null,
-      }, 202);
+      return json(
+        {
+          ok: true,
+          triggered: true,
+          accepted: true,
+          eventType: type,
+          reason: typeof data.reason === "string" ? data.reason : null,
+          projectId: projectId || null,
+        },
+        202,
+      );
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
@@ -2770,11 +3047,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const eventId = Number(eventIdText);
     if (!Number.isFinite(eventId)) return json({ error: "event id must be numeric" }, 400);
     let graph = buildEventGraph(_db(), eventId);
-    const sessionIds = [...new Set(
-      graph.nodes
-        .map((node) => node.sessionId?.trim())
-        .filter((sessionId): sessionId is string => !!sessionId),
-    )];
+    const sessionIds = [
+      ...new Set(
+        graph.nodes.map((node) => node.sessionId?.trim()).filter((sessionId): sessionId is string => !!sessionId),
+      ),
+    ];
     for (const sessionId of sessionIds) {
       const transcript = readSessionTranscript(sessionId);
       if (transcript) graph = addSessionTranscriptToEventGraph(graph, sessionId, transcript);
@@ -2801,7 +3078,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleTerminalStart(req: Request): Promise<Response> {
     try {
-      const body = await req.json().catch(() => ({})) as { profileId?: string; cols?: number; rows?: number };
+      const body = (await req.json().catch(() => ({}))) as { profileId?: string; cols?: number; rows?: number };
       const profileId = body.profileId || "shell";
       await terminalManager.ensureSession(profileId, body.cols, body.rows);
       return json({ ok: true, terminalId: profileId });
@@ -2812,7 +3089,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleTerminalResize(req: Request, terminalId: string): Promise<Response> {
     try {
-      const body = await req.json().catch(() => ({})) as { cols?: number; rows?: number };
+      const body = (await req.json().catch(() => ({}))) as { cols?: number; rows?: number };
       terminalManager.resize(terminalId, Number(body.cols), Number(body.rows));
       return json({ ok: true, terminalId });
     } catch (err) {
@@ -2863,7 +3140,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   async function handleSessionMessage(req: Request, sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
     let body: { content?: string };
-    try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
+    try {
+      body = (await req.json()) as { content?: string };
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
     // The daemon owns active/idle/cold routing: active/idle sessions receive
@@ -2926,7 +3207,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           const agentJsonPath = join(root, dir.name, "agent.json");
           if (!existsSync(agentJsonPath)) continue;
           let cfg: Record<string, any> = {};
-          try { cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8")); } catch { /* skip */ }
+          try {
+            cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8"));
+          } catch {
+            /* skip */
+          }
           if (cfg.disabled) continue;
           const name = cfg.name || dir.name;
           if (seenAgentNames.has(name)) continue;
@@ -2958,29 +3243,44 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const name = a.name as string;
 
         // Sessions in 4h, partitioned into heartbeat vs other.
-        const sess4h = db.prepare(`
+        const sess4h = db
+          .prepare(
+            `
           SELECT
             COUNT(*) as total,
             SUM(CASE WHEN COALESCE(kind,'') = 'heartbeat' OR task LIKE '[heartbeat]%' OR task LIKE 'You are %waking up for your heartbeat.%' THEN 1 ELSE 0 END) as heartbeats,
             MAX(startedAt) as lastStart,
             SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
           FROM sessions WHERE agent = ? AND startedAt >= ?
-        `).get(name, fourHourAgo) as any;
+        `,
+          )
+          .get(name, fourHourAgo) as any;
         a.sessions4h = sess4h?.total ?? 0;
         a.heartbeats4h = sess4h?.heartbeats ?? 0;
         a.lastSessionAt = sess4h?.lastStart ?? null;
         a.errors4h = sess4h?.errors ?? 0;
 
         // Sessions in 24h (for context).
-        const sess24h = (db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE agent = ? AND startedAt >= ?`).get(name, dayAgo) as any)?.c ?? 0;
+        const sess24h =
+          (db.prepare(`SELECT COUNT(*) as c FROM sessions WHERE agent = ? AND startedAt >= ?`).get(name, dayAgo) as any)
+            ?.c ?? 0;
         a.sessions24h = sess24h;
 
         // Owned metrics + breaches.
-        const mets = db.prepare(`
+        const mets = db
+          .prepare(
+            `
           SELECT id, current, threshold, alert_op FROM metrics WHERE owner = ?
-        `).all(name) as Array<{id: string; current: number | null; threshold: number | null; alert_op: string | null}>;
+        `,
+          )
+          .all(name) as Array<{
+          id: string;
+          current: number | null;
+          threshold: number | null;
+          alert_op: string | null;
+        }>;
         a.metricCount = mets.length;
-        a.metricBreached = mets.filter(m => {
+        a.metricBreached = mets.filter((m) => {
           if (m.threshold == null || m.current == null) return false;
           const above = m.alert_op === "above" || m.alert_op === ">";
           return above ? m.current > m.threshold : m.current < m.threshold;
@@ -3008,7 +3308,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
                 if (oM) owner = oM[1];
                 if (sM) status = sM[1];
               }
-            } catch { /* skip */ }
+            } catch {
+              /* skip */
+            }
             const key = owner;
             if (!projByOwner[key]) projByOwner[key] = { active: 0, total: 0 };
             projByOwner[key].total += 1;
@@ -3020,7 +3322,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
           scanDir(join(AGENTS_ROOT, dir.name, "workspace", "projects"), dir.name);
         }
-      } catch { /* leave empty */ }
+      } catch {
+        /* leave empty */
+      }
       for (const a of agents) {
         const counts = projByOwner[a.name as string] || { active: 0, total: 0 };
         a.projectsActive = counts.active;
@@ -3062,21 +3366,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    */
   function handleAgentAbout(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
-    const agentDir = resolveRuntimeAgentDirectory(AGENTS_ROOT, agentName, PROJECTS_ROOT)?.dir
-      ?? join(AGENTS_ROOT, agentName);
+    const agentDir =
+      resolveRuntimeAgentDirectory(AGENTS_ROOT, agentName, PROJECTS_ROOT)?.dir ?? join(AGENTS_ROOT, agentName);
     if (!existsSync(agentDir)) return json({ error: "agent not found" }, 404);
     let agentJson: Record<string, any> | null = null;
     try {
       const cfgPath = join(agentDir, "agent.json");
       if (existsSync(cfgPath)) agentJson = JSON.parse(readFileSync(cfgPath, "utf-8"));
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     const readFile = (path: string, displayName: string, source: string) => {
       if (!existsSync(path)) return null;
       try {
         const content = readFileSync(path, "utf-8");
-        return { name: displayName, path: path.replace(STATE_DIR + "/..", "").replace(/^\//, ""), content, bytes: content.length, source };
-      } catch { return null; }
+        return {
+          name: displayName,
+          path: path.replace(STATE_DIR + "/..", "").replace(/^\//, ""),
+          content,
+          bytes: content.length,
+          source,
+        };
+      } catch {
+        return null;
+      }
     };
 
     const promptFiles: Array<Record<string, unknown>> = [];
@@ -3121,14 +3435,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const db = _db();
       // Resolve the agent's chat session — only human-initiated conversations,
       // not workflows, heartbeats, or fork-spawned task sessions.
-      const row = db.prepare(`
+      const row = db
+        .prepare(
+          `
         SELECT sessionId, status, startedAt, kind, substr(task, 1, 200) as task
         FROM sessions
         WHERE agent = ?
           AND (kind = 'chat' OR source IN ('telegram', 'web-ui', 'web', 'cli'))
         ORDER BY startedAt DESC
         LIMIT 1
-      `).get(agentName) as { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
+      `,
+        )
+        .get(agentName) as
+        { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
       if (!row) return json({ agent: agentName, sessionId: null });
       return json({
         agent: agentName,
@@ -3156,7 +3475,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   async function handleAgentMessage(req: Request, agentName: string, url?: URL): Promise<Response> {
     if (!agentName) return json({ error: "agent required" }, 400);
     let body: { content?: string };
-    try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
+    try {
+      body = (await req.json()) as { content?: string };
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
     const forceNew = url?.searchParams.get("new") === "true";
@@ -3164,7 +3487,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // Resolve default session (skip if forcing new chat).
     if (!forceNew) {
       const resolveResp = handleAgentDefaultSession(agentName);
-      const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
+      const resolved = (await resolveResp.json()) as { agent: string; sessionId: string | null };
       if (resolved.sessionId) {
         const result = await sendDaemonFrame({
           type: "human.input.received",
@@ -3178,7 +3501,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           },
         });
         if (!result.ok) return json({ error: result.error }, 503);
-        return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
+        return json({
+          ok: true,
+          agent: agentName,
+          sessionId: resolved.sessionId,
+          deliveredAt: Date.now(),
+          spawned: false,
+        });
       }
     }
 
@@ -3199,13 +3528,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
   }
 
-  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {    if (!agentName) return json({ error: "agent required" }, 400);
+  async function handleAgentHeartbeatNow(req: Request, agentName: string): Promise<Response> {
+    if (!agentName) return json({ error: "agent required" }, 400);
     // Resolve actor from request body if provided, default to "human" (UI).
     let actor = "human";
     try {
-      const body = await req.json() as { actor?: string };
+      const body = (await req.json()) as { actor?: string };
       if (body.actor) actor = String(body.actor);
-    } catch { /* body optional */ }
+    } catch {
+      /* body optional */
+    }
     const result = await sendDaemonFrame({
       type: "heartbeat.trigger",
       source: actor,
@@ -3219,11 +3551,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   async function handleMetricThreshold(req: Request, metricId: string): Promise<Response> {
     if (!metricId) return json({ error: "metricId required" }, 400);
     let body: { threshold?: number };
-    try { body = await req.json() as { threshold?: number }; } catch { return json({ error: "invalid json" }, 400); }
+    try {
+      body = (await req.json()) as { threshold?: number };
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
     if (typeof body.threshold !== "number" || !Number.isFinite(body.threshold)) {
       return json({ error: "threshold (finite number) required" }, 400);
     }
-    const existing = _db().prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; owner?: string | null; threshold: number | null } | undefined;
+    const existing = _db().prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as
+      { id: string; owner?: string | null; threshold: number | null } | undefined;
     if (!existing) return json({ error: "metric not found" }, 404);
     const result = await sendDaemonFrame({
       type: "metric.threshold_changed",
@@ -3243,13 +3580,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const id = parseInt(alertId, 10);
     if (!Number.isFinite(id)) return json({ error: "numeric alertId required" }, 400);
     let body: { reason?: string } = {};
-    try { body = await req.json() as { reason?: string }; } catch { /* body optional */ }
-    const existing = _db().prepare(
-      `SELECT ma.id, ma.metric_id, ma.resolved_at, m.owner
+    try {
+      body = (await req.json()) as { reason?: string };
+    } catch {
+      /* body optional */
+    }
+    const existing = _db()
+      .prepare(
+        `SELECT ma.id, ma.metric_id, ma.resolved_at, m.owner
        FROM metric_alerts ma
        LEFT JOIN metrics m ON m.id = ma.metric_id
        WHERE ma.id = ?`,
-    ).get(id) as { id: number; metric_id: string; owner?: string | null; resolved_at: number | null } | undefined;
+      )
+      .get(id) as { id: number; metric_id: string; owner?: string | null; resolved_at: number | null } | undefined;
     if (!existing) return json({ error: "alert not found" }, 404);
     if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
     const result = await sendDaemonFrame({
@@ -3328,7 +3671,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const cols = Number(url.searchParams.get("cols") || "");
         const rows = Number(url.searchParams.get("rows") || "");
         const terminalClientId = `terminal-${++terminalClientSeq}`;
-        if (server.upgrade(req, { data: { kind: "terminal", terminalId: decodeURIComponent(terminalWsMatch[1]), terminalClientId, cols, rows } })) return undefined;
+        if (
+          server.upgrade(req, {
+            data: {
+              kind: "terminal",
+              terminalId: decodeURIComponent(terminalWsMatch[1]),
+              terminalClientId,
+              cols,
+              rows,
+            },
+          })
+        )
+          return undefined;
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/ws") {
@@ -3340,7 +3694,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/terminals" && req.method === "GET") return handleTerminals();
       if (url.pathname === "/api/terminals" && req.method === "POST") return handleTerminalStart(req);
       if (url.pathname === "/api/agents") return handleAgents();
-      if (url.pathname === "/api/agents/activity") return handleAgentActivity();      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
+      if (url.pathname === "/api/agents/activity") return handleAgentActivity();
+      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
       if (url.pathname === "/api/agents/health") return handleSystemHealth();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
       if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1]);
@@ -3382,9 +3737,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
         const days = parseInt(url.searchParams.get("days") || "7", 10);
         const since = Date.now() - days * 86400000;
-        const rows = _db().prepare(
-          `SELECT value, sample_size, measured_at, measured_by, note FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? ORDER BY measured_at ASC`
-        ).all(metricId, since);
+        const rows = _db()
+          .prepare(
+            `SELECT value, sample_size, measured_at, measured_by, note FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? ORDER BY measured_at ASC`,
+          )
+          .all(metricId, since);
         return json({ metricId, days, snapshots: rows });
       }
       const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
@@ -3425,18 +3782,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const platformUiResponse = servePlatformUiRequest(req, PROJECTS_ROOT);
       if (platformUiResponse) return platformUiResponse;
       if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
-      if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/"))) return serveProjectStatic(url.pathname);
+      if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/")))
+        return serveProjectStatic(url.pathname);
       return new Response("Not found", { status: 404 });
     },
     websocket: {
       open(ws: any) {
         if (ws.data?.kind === "terminal") {
-          terminalManager.attach(ws.data.terminalId, ws, ws.data.cols, ws.data.rows, ws.data.terminalClientId).catch((err) => {
-            try {
-              ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
-              ws.close();
-            } catch {}
-          });
+          terminalManager
+            .attach(ws.data.terminalId, ws, ws.data.cols, ws.data.rows, ws.data.terminalClientId)
+            .catch((err) => {
+              try {
+                ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
+                ws.close();
+              } catch {}
+            });
           return;
         }
         proxyWebSocket(ws);
@@ -3445,9 +3805,22 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (ws.data?.kind === "terminal") {
           try {
             const frame = JSON.parse(String(msg)) as { type?: string; data?: string; cols?: number; rows?: number };
-            if (frame.type === "input") terminalManager.input(ws.data.terminalId, frame.data ?? "", ws.data.terminalClientId);
-            else if (frame.type === "focus") terminalManager.activate(ws.data.terminalId, ws.data.terminalClientId, Number(frame.cols), Number(frame.rows));
-            else if (frame.type === "resize") terminalManager.resize(ws.data.terminalId, Number(frame.cols), Number(frame.rows), ws.data.terminalClientId);
+            if (frame.type === "input")
+              terminalManager.input(ws.data.terminalId, frame.data ?? "", ws.data.terminalClientId);
+            else if (frame.type === "focus")
+              terminalManager.activate(
+                ws.data.terminalId,
+                ws.data.terminalClientId,
+                Number(frame.cols),
+                Number(frame.rows),
+              );
+            else if (frame.type === "resize")
+              terminalManager.resize(
+                ws.data.terminalId,
+                Number(frame.cols),
+                Number(frame.rows),
+                ws.data.terminalClientId,
+              );
           } catch (err) {
             try {
               ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
