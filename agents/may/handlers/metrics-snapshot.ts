@@ -552,11 +552,11 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 0,
+    threshold: 2,
     unit: "count",
     alert_op: ">",
     priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } },
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
   },
   {
     id: "escalation.pending-count",
