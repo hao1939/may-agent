@@ -84,7 +84,7 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "gauge",
     target: 0,
-    threshold: 300,
+    threshold: 500,
     unit: "count",
     alert_op: ">",
     priority: "P2",
