@@ -174,10 +174,6 @@ function finishAttempt(
   resource.status.currentAttemptId = undefined;
 }
 
-function isRouteCarrierTaskId(taskId: string): boolean {
-  return taskId.startsWith("route/");
-}
-
 function pruneTaskAttempts(tree: TaskTree, limit = 1_000): void {
   const entries = Object.entries(tree.attempts ?? {});
   if (entries.length <= limit) return;
@@ -406,18 +402,13 @@ export function releaseInterruptedProjectAppTaskAttempt(
     const attempt = currentResourceAttempt(tree, resource);
     if (!attempt || attempt.runtimeId === reconcilerRuntimeId) return false;
     const now = new Date().toISOString();
-    const routeCarrier = isRouteCarrierTaskId(taskId);
-    const recoveredSummary = routeCarrier
-      ? `${summary}; route carrier retired because its event payload is not replayable`
-      : `${summary}; retrying from current task evidence`;
+    const recoveredSummary = `${summary}; retrying from current task evidence`;
     finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
     attempt.metadata.resourceVersion += 1;
-    attempt.failureReason = routeCarrier
-      ? "previous-runtime-route-trigger-not-replayable"
-      : "previous-runtime-attempt-requeued";
+    attempt.failureReason = "previous-runtime-attempt-requeued";
     touchResource(resource, {
-      phase: routeCarrier ? "converged" : "pending",
-      observedGeneration: routeCarrier ? resource.metadata.generation : Math.max(0, resource.metadata.generation - 1),
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
       currentAttemptId: undefined,
       summary: recoveredSummary,
       conditionIds: [],
@@ -443,20 +434,15 @@ export function repairPreviousRuntimeRecoveryAttention(config: TaskTreeConfig): 
         .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
       if (attempt?.failureReason !== "previous-runtime-attempt-not-recoverable") continue;
 
-      const routeCarrier = isRouteCarrierTaskId(resource.metadata.id);
       const baseSummary =
         resource.status.summary?.trim() ||
         `Interrupted reconciliation ${resource.metadata.id} cannot resume because its previous runtime did not persist the trigger packet`;
-      const summary = routeCarrier
-        ? `${baseSummary}; route carrier retired because its event payload is not replayable`
-        : `${baseSummary}; retrying from current task evidence`;
+      const summary = `${baseSummary}; retrying from current task evidence`;
       attempt.metadata.resourceVersion += 1;
-      attempt.failureReason = routeCarrier
-        ? "previous-runtime-route-trigger-not-replayable"
-        : "previous-runtime-attempt-requeued";
+      attempt.failureReason = "previous-runtime-attempt-requeued";
       touchResource(resource, {
-        phase: routeCarrier ? "converged" : "pending",
-        observedGeneration: routeCarrier ? resource.metadata.generation : Math.max(0, resource.metadata.generation - 1),
+        phase: "pending",
+        observedGeneration: Math.max(0, resource.metadata.generation - 1),
         currentAttemptId: undefined,
         summary,
         conditionIds: [],
@@ -464,7 +450,7 @@ export function repairPreviousRuntimeRecoveryAttention(config: TaskTreeConfig): 
       syncTaskProjection(task, resource, attempt.owner);
       repairs.push({
         taskId: resource.metadata.id,
-        disposition: routeCarrier ? "retired" : "requeued",
+        disposition: "requeued",
         summary,
       });
     }
@@ -765,7 +751,6 @@ export function listRunnableProjectAppTaskIds(config: TaskTreeConfig): string[] 
     const tree = readTaskTree(config);
     const runnable = new Set(
       Object.values(tree.resources ?? {})
-        .filter((resource) => !isRouteCarrierTaskId(resource.metadata.id))
         .filter((resource) => isRunnableOnPassiveResync(tree, resource))
         .map((resource) => resource.metadata.id),
     );
@@ -814,18 +799,13 @@ export function claimObservedProjectAppTask(
     const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
     if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
       const now = new Date().toISOString();
-      const routeCarrier = isRouteCarrierTaskId(task.id);
-      const summary = routeCarrier
-        ? "Previous runtime route attempt had no persisted trigger; route carrier retired"
-        : "Previous runtime attempt had no persisted trigger; retrying from current task evidence";
+      const summary = "Previous runtime attempt had no persisted trigger; retrying from current task evidence";
       finishAttempt(tree, resource, "interrupted", summary, now);
       previousAttempt.metadata.resourceVersion += 1;
-      previousAttempt.failureReason = routeCarrier
-        ? "previous-runtime-route-trigger-not-replayable"
-        : "previous-runtime-attempt-requeued";
+      previousAttempt.failureReason = "previous-runtime-attempt-requeued";
       touchResource(resource, {
-        phase: routeCarrier ? "converged" : "pending",
-        observedGeneration: routeCarrier ? resource.metadata.generation : Math.max(0, resource.metadata.generation - 1),
+        phase: "pending",
+        observedGeneration: Math.max(0, resource.metadata.generation - 1),
         currentAttemptId: undefined,
         summary,
         conditionIds: [],
@@ -833,10 +813,6 @@ export function claimObservedProjectAppTask(
       syncTaskProjection(task, resource, resolvedOwner(tree, intent, input.appOwner));
       refreshActiveTaskProjection(tree);
       pruneTaskAttempts(tree);
-      if (routeCarrier) {
-        saveTaskTree(config, tree);
-        return { kind: "completed", taskId: task.id, generation: resource.metadata.generation };
-      }
     }
     if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {
       return { kind: "busy", taskId: task.id, attemptId: previousAttempt.metadata.id };
