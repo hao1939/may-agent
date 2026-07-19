@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Cron } from "../cron";
-import { EventBus } from "../event-bus";
+import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb } from "../../lib/requests";
 import {
   inferProjectAppOwner,
@@ -66,7 +66,10 @@ function writeApp(appDir: string, extra = "") {
       actions: {
         run: { type: "async", description: "run work", event(params) { return { type: "sample.work", project: "sample", ...params }; } }
       },
-      onEvent(ctx, event) { if (event.type === "sample.note") return ctx.noop("seen"); },
+      onEvent(ctx, event) {
+        if (event.type === "sample.note" && event.fail) throw new Error("sample handler failed");
+        if (event.type === "sample.note") return ctx.noop("seen");
+      },
       ${extra}
     };\n`,
   );
@@ -819,6 +822,52 @@ describe("project app loader", () => {
       } as any);
       await waitUntil(() => events.some((event) => event.type === "project.action.accepted"));
       expect(events.some((event) => event.type === "sample.work" && event.data?.itemId === "action")).toBe(true);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates app selectors and closes owner inbox work only after successful handling", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      let nextEventId = 1;
+      bus.setPersistenceSubscriber((event) => {
+        (event as any)[EVENT_ROW_ID] = nextEventId++;
+      });
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const wrongProject = bus.emit({ type: "sample.note", project: "other" } as any);
+      const failed = bus.emit({ type: "sample.note", project: "sample", fail: true } as any);
+      const handled = bus.emit({ type: "sample.note", project: "sample" } as any);
+      await waitUntil(
+        () =>
+          events.some((event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router") &&
+          events.some(
+            (event) =>
+              event.type === "owner.inbox.reviewed" && event.data?.openEventId === (handled as any)[EVENT_ROW_ID],
+          ),
+      );
+
+      const reviewedIds = events
+        .filter((event) => event.type === "owner.inbox.reviewed")
+        .map((event) => event.data?.openEventId);
+      expect(reviewedIds).toContain((handled as any)[EVENT_ROW_ID]);
+      expect(reviewedIds).not.toContain((wrongProject as any)[EVENT_ROW_ID]);
+      expect(reviewedIds).not.toContain((failed as any)[EVENT_ROW_ID]);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
