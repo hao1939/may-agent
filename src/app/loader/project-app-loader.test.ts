@@ -234,6 +234,37 @@ describe("project app loader handler result normalization", () => {
     });
   });
 
+  it("rejects project as a fake workflow name", () => {
+    expect(
+      normalizeTaskHandlerResult(
+        {
+          state: "converged",
+          summary: "create owner-handled domain work",
+          evidence: ["owner named the exact next task"],
+          actions: [
+            {
+              kind: "create-task",
+              id: "domain/fix-one-spec",
+              parentId: "domain/root",
+              goal: "Fix one spec",
+              mode: "achieve",
+              outputs: ["evidence/archive/fix-one-spec.json"],
+              acceptance: ["The exact spec has a live pass or exact blocker."],
+              owner: "aks-explorer",
+              workflow: "project",
+            },
+          ],
+        },
+        { type: "done", summary: "fallback", runId: "s_owner" },
+      ),
+    ).toMatchObject({
+      state: "failed",
+      summary:
+        "Workflow returned an invalid task action: actions[0].workflow must name a real workflow; omit workflow for owner-handled project work",
+      actions: [],
+    });
+  });
+
   it("accepts the supported task action shape", () => {
     expect(
       normalizeTaskHandlerResult(

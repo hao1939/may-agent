@@ -83,7 +83,14 @@ function stableValue(value: unknown): unknown {
   );
 }
 
+function normalizedTaskWorkflow(value: string | undefined): string | undefined {
+  const workflow = value?.trim();
+  if (!workflow || workflow === "project") return undefined;
+  return workflow;
+}
+
 export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
+  const workflow = normalizedTaskWorkflow(intent.workflow);
   return createHash("sha256")
     .update(
       JSON.stringify(
@@ -92,7 +99,7 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
           acceptance: intent.acceptance,
           mode: intent.mode,
           owner: intent.owner ?? null,
-          workflow: intent.workflow ?? null,
+          workflow: workflow ?? null,
           input: intent.input ?? {},
           outputs: intent.outputs ?? [],
           dependsOn: intent.dependsOn ?? [],
@@ -104,13 +111,14 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
 }
 
 function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spec"] {
+  const workflow = normalizedTaskWorkflow(intent.workflow);
   return {
     parentId: intent.parentId,
     outcome: intent.outcome,
     acceptance: [...intent.acceptance],
     mode: intent.mode,
     ...(intent.owner?.trim() ? { owner: intent.owner.trim() } : {}),
-    ...(intent.workflow?.trim() ? { workflow: intent.workflow.trim() } : {}),
+    ...(workflow ? { workflow } : {}),
     ...(intent.input ? { input: stableValue(intent.input) as Record<string, unknown> } : {}),
     ...(intent.outputs ? { outputs: [...intent.outputs] } : {}),
     ...(intent.dependsOn ? { dependsOn: [...intent.dependsOn] } : {}),
@@ -119,6 +127,7 @@ function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spe
 }
 
 function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent {
+  const workflow = normalizedTaskWorkflow(resource.spec.workflow);
   return {
     id: resource.metadata.id,
     parentId: resource.spec.parentId,
@@ -126,7 +135,7 @@ function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent 
     acceptance: [...resource.spec.acceptance],
     mode: resource.spec.mode,
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
-    ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
+    ...(workflow ? { workflow } : {}),
     ...(resource.spec.input ? { input: { ...resource.spec.input } } : {}),
     ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     ...(resource.spec.dependsOn ? { dependsOn: [...resource.spec.dependsOn] } : {}),
@@ -937,6 +946,14 @@ function requireNonEmptyString(value: unknown, label: string): string {
   return value.trim();
 }
 
+function requireValidTaskWorkflow(value: unknown, label: string): string {
+  const workflow = requireNonEmptyString(value, label);
+  if (workflow === "project") {
+    throw new Error(`${label} must name a real workflow; omit workflow for owner-handled project work`);
+  }
+  return workflow;
+}
+
 function requireStringList(value: unknown, label: string): asserts value is string[] {
   if (
     !Array.isArray(value) ||
@@ -1003,7 +1020,7 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
       }
       if (action.owner !== undefined) requireNonEmptyString(action.owner, `Handler create action ${action.id} owner`);
       if (action.workflow !== undefined) {
-        requireNonEmptyString(action.workflow, `Handler create action ${action.id} workflow`);
+        requireValidTaskWorkflow(action.workflow, `Handler create action ${action.id} workflow`);
       }
       if (action.input !== undefined && !isRecord(action.input)) {
         throw new Error(`Handler create action ${action.id} input must be an object`);
@@ -1244,6 +1261,10 @@ function applyTaskActions(
   return applied;
 }
 
+function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
+  return (task.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
+}
+
 export function completeProjectAppTask(
   config: TaskTreeConfig,
   claim: ProjectAppTaskClaim,
@@ -1257,6 +1278,14 @@ export function completeProjectAppTask(
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
     const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? []);
+    const liveChildren = liveChildTaskIds(tree, task);
+    if (claim.mode === "achieve" && liveChildren.length > 0) {
+      throw new Error(
+        `Task ${task.id} cannot converge while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
+          liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
+        }`,
+      );
+    }
     const now = new Date().toISOString();
     unlinkTaskConditions(tree, task);
     finishAttempt(tree, resource, "completed", input.summary, now);

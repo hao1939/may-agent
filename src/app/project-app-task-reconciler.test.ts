@@ -714,6 +714,52 @@ describe("project app task reconciler state", () => {
     expect(next).toMatchObject({ kind: "claimed", generation: claim.generation });
   });
 
+  it("rejects absorbing an achieve parent that still has live children", () => {
+    const { config } = fixture();
+    const parentIntent = {
+      id: "normalize-frontier",
+      parentId: "operations",
+      outcome: "Normalize the remaining frontier",
+      acceptance: ["The frontier is empty or every remainder has exact disposition"],
+      mode: "achieve",
+      workflow: "known-workflow",
+    } as const;
+    const childIntent = {
+      id: "normalize-frontier/spec-a",
+      parentId: parentIntent.id,
+      outcome: "Normalize spec A",
+      acceptance: ["Spec A has exact live proof or exact blocker"],
+      mode: "achieve",
+      workflow: "known-workflow",
+    } as const;
+
+    observeProjectAppTaskIntent(config, {
+      intent: parentIntent,
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: childIntent,
+      appOwner: "app-owner",
+    });
+    const claim = claimProjectAppTask(config, {
+      intent: parentIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "parent has no direct mutation to make",
+      }),
+    ).toThrow("cannot converge while it has live children");
+    const tree = readTaskTree(config);
+    expect(tree.tasks[parentIntent.id]).toBeTruthy();
+    expect(tree.resources?.[parentIntent.id]?.status.phase).toBe("running");
+    expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
+    expect(tree.tasks[childIntent.id]).toBeTruthy();
+  });
+
   it("rejects stale results after a fallback attempt takes ownership", () => {
     const { config } = fixture();
     const primary = claimProjectAppTask(config, {
@@ -902,6 +948,49 @@ describe("project app task reconciler state", () => {
       metadata: { generation: 1 },
       status: { phase: "pending" },
     });
+  });
+
+  it("treats legacy project workflow as owner-handled when reading intent", () => {
+    const { config } = fixture();
+    const tree = readTaskTree(config);
+    tree.tasks["categorized-task"].workflow = "project";
+    tree.resources!["categorized-task"].spec.workflow = "project";
+    saveTaskTree(config, tree);
+
+    const legacyIntent = readProjectAppTaskIntent(config, "categorized-task");
+    expect(legacyIntent?.id).toBe("categorized-task");
+    expect(legacyIntent?.workflow).toBeUndefined();
+  });
+
+  it("rejects project as a fake workflow in create actions", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "owner proposed a bounded child",
+        evidence: ["owner packet reviewed"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "owner-created-task",
+            parentId: "operations",
+            goal: "Verify the owner action boundary",
+            mode: "achieve",
+            outputs: ["proof.md"],
+            acceptance: ["The reconciler creates this task"],
+            owner: "branch-owner",
+            workflow: "project",
+          },
+        ],
+      }),
+    ).toThrow("workflow must name a real workflow; omit workflow for owner-handled project work");
+    expect(readTaskTree(config).tasks["owner-created-task"]).toBeUndefined();
   });
 
   it("updates task mode without overwriting its domain category", () => {
