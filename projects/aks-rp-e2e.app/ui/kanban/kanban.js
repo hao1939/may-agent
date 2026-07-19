@@ -851,7 +851,7 @@ function buildCoverageRows(tree, loops) {
         roots.length === 1
           ? "Tree structure is observable; semantic correctness still depends on review."
           : "Extra roots can hide work outside the intended project tree.",
-      evidence: "tasks/tree.json",
+      evidence: ".state/tasks/tree.json",
       action: roots.length === 1 ? "" : "Request Planner Review",
       actionKind: roots.length === 1 ? "" : "planner",
       key: "coverage.task-tree",
@@ -889,7 +889,7 @@ function buildCoverageRows(tree, loops) {
       coverage: "inferred",
       blindSpot:
         "The UI trusts workflowProgress and does not independently scan every .state loop record yet.",
-      evidence: "tasks/tree.json context.workflowProgress",
+      evidence: ".state/tasks/tree.json context.workflowProgress",
       action: "Challenge Classification",
       actionKind: "challenge",
       key: "coverage.loop-ledgers",
@@ -940,7 +940,7 @@ function buildProcessIssues(tree, loops) {
       currentAttempt: roots.slice(0, 3).join(", "),
       uncertainty:
         "The UI has not decided whether the extra root is legacy residue or active drift.",
-      evidence: "tasks/tree.json",
+      evidence: ".state/tasks/tree.json",
       requiredResponse: "Request planner review if this is not already owned.",
       clearCondition: "task tree root count is exactly 1",
       action: "Request Planner Review",
@@ -962,7 +962,7 @@ function buildProcessIssues(tree, loops) {
         currentAttempt: loop.task?.id || loop.id,
         uncertainty:
           "The UI reads workflowProgress; full ledger-level proof needs the loop state file.",
-        evidence: "tasks/tree.json context.workflowProgress",
+        evidence: ".state/tasks/tree.json context.workflowProgress",
         requiredResponse:
           "Review loop representation and create repair/wait work if needed.",
         clearCondition: "unrepresentedNonTerminalCount = 0",
@@ -990,7 +990,7 @@ function buildProcessIssues(tree, loops) {
         currentAttempt: loop.task?.id || loop.id,
         uncertainty:
           "Human may need to challenge whether each error is correctly classified and represented.",
-        evidence: "tasks/tree.json context.workflowProgress",
+        evidence: ".state/tasks/tree.json context.workflowProgress",
         requiredResponse:
           "Only intervene if the representation or classification looks wrong.",
         clearCondition:
