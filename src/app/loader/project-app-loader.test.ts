@@ -346,6 +346,46 @@ describe("project app loader", () => {
     }
   });
 
+  it("validates the complete app cohort before creating state or host attachments", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const invalidDir = join(f.projectsRoot, "z-invalid.app");
+      mkdirSync(invalidDir, { recursive: true });
+      writeFileSync(
+        join(invalidDir, "app.ts"),
+        `export default {
+          id: "invalid",
+          version: 1,
+          owner: "invalid-owner",
+          description: "invalid",
+          budget: { maxConcurrent: 0 }
+        };\n`,
+      );
+      const crons = new Map<string, Cron>();
+
+      await expect(
+        installProjectApps({
+          projectsRoot: f.projectsRoot,
+          projectRoot: f.root,
+          persistDir: f.persistDir,
+          agentsRoot: join(f.root, "agents"),
+          sharedRoot: join(f.root, "shared"),
+          manager: manager([]),
+          bus: new EventBus(),
+          agentCrons: crons,
+        }),
+      ).rejects.toThrow("Project app invalid maxConcurrent must be a positive integer");
+
+      expect(existsSync(join(f.appDir, ".state"))).toBe(false);
+      expect(existsSync(join(invalidDir, ".state"))).toBe(false);
+      expect(crons.size).toBe(0);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("reloads for lifecycle changes but not ordinary task-state writes", () => {
     const f = fixture();
     try {

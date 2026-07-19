@@ -83,14 +83,7 @@ function stableValue(value: unknown): unknown {
   );
 }
 
-function normalizedTaskWorkflow(value: string | undefined): string | undefined {
-  const workflow = value?.trim();
-  if (!workflow || workflow === "project") return undefined;
-  return workflow;
-}
-
 export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
-  const workflow = normalizedTaskWorkflow(intent.workflow);
   return createHash("sha256")
     .update(
       JSON.stringify(
@@ -99,7 +92,7 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
           acceptance: intent.acceptance,
           mode: intent.mode,
           owner: intent.owner ?? null,
-          workflow: workflow ?? null,
+          workflow: intent.workflow ?? null,
           input: intent.input ?? {},
           outputs: intent.outputs ?? [],
           dependsOn: intent.dependsOn ?? [],
@@ -111,14 +104,13 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
 }
 
 function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spec"] {
-  const workflow = normalizedTaskWorkflow(intent.workflow);
   return {
     parentId: intent.parentId,
     outcome: intent.outcome,
     acceptance: [...intent.acceptance],
     mode: intent.mode,
     ...(intent.owner?.trim() ? { owner: intent.owner.trim() } : {}),
-    ...(workflow ? { workflow } : {}),
+    ...(intent.workflow?.trim() ? { workflow: intent.workflow.trim() } : {}),
     ...(intent.input ? { input: stableValue(intent.input) as Record<string, unknown> } : {}),
     ...(intent.outputs ? { outputs: [...intent.outputs] } : {}),
     ...(intent.dependsOn ? { dependsOn: [...intent.dependsOn] } : {}),
@@ -127,7 +119,6 @@ function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spe
 }
 
 function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent {
-  const workflow = normalizedTaskWorkflow(resource.spec.workflow);
   return {
     id: resource.metadata.id,
     parentId: resource.spec.parentId,
@@ -135,7 +126,7 @@ function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent 
     acceptance: [...resource.spec.acceptance],
     mode: resource.spec.mode,
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
-    ...(workflow ? { workflow } : {}),
+    ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
     ...(resource.spec.input ? { input: { ...resource.spec.input } } : {}),
     ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     ...(resource.spec.dependsOn ? { dependsOn: [...resource.spec.dependsOn] } : {}),
@@ -536,6 +527,15 @@ function validateIntent(intent: ProjectAppTaskIntent): void {
   if (!intent.parentId.trim()) throw new Error(`Task ${intent.id} requires a parentId`);
   if (!intent.outcome.trim()) throw new Error(`Task ${intent.id} requires an outcome`);
   if (intent.acceptance.length === 0) throw new Error(`Task ${intent.id} requires acceptance criteria`);
+  if (intent.workflow !== undefined) {
+    const workflow = intent.workflow.trim();
+    if (!workflow) throw new Error(`Task ${intent.id} workflow must be a non-empty string when present`);
+    if (workflow === "project") {
+      throw new Error(
+        `Task ${intent.id} workflow must name a real workflow; omit workflow for owner-handled project work`,
+      );
+    }
+  }
 }
 
 function upsertTask(
