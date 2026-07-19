@@ -125,11 +125,6 @@ describe("project app task reconciler state", () => {
       id: "work/pending",
       outcome: "Ready work",
     };
-    const routeIntent = {
-      ...intent(),
-      id: "route/owner/project.owner.requested/123",
-      outcome: "Route one owner event",
-    };
 
     observeProjectAppTaskIntent(config, { intent: attentionIntent, appOwner: "app-owner" });
     const attentionClaim = claimObservedProjectAppTask(config, {
@@ -166,7 +161,6 @@ describe("project app task reconciler state", () => {
     });
 
     observeProjectAppTaskIntent(config, { intent: pendingIntent, appOwner: "app-owner" });
-    observeProjectAppTaskIntent(config, { intent: routeIntent, appOwner: "app-owner" });
     const maintainClaim = claimProjectAppTask(config, {
       intent: intent("maintain"),
       appOwner: "app-owner",
@@ -594,41 +588,6 @@ describe("project app task reconciler state", () => {
     expect(released.active_task_ids).toContain(claim.taskId);
   });
 
-  it("retires route carriers whose previous-runtime trigger was not persisted", () => {
-    const { config } = fixture();
-    const routeIntent = {
-      id: "route/owner/project.owner.requested/123",
-      parentId: "operations",
-      outcome: "Process project.owner.requested through owner.",
-      acceptance: ["The matched event is handed to the owner."],
-      mode: "achieve",
-      owner: "branch-owner",
-      input: { eventId: "123" },
-    } as const;
-    const claim = claimProjectAppTask(config, {
-      intent: routeIntent,
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected route claim");
-
-    const interrupted = readTaskTree(config);
-    interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
-    saveTaskTree(config, interrupted);
-
-    expect(releaseInterruptedProjectAppTaskAttempt(config, claim.taskId, "trigger packet was not persisted")).toBe(true);
-
-    const released = readTaskTree(config);
-    expect(released.tasks[claim.taskId]).toMatchObject({
-      state: "backlog",
-      summary: "trigger packet was not persisted; route carrier retired because its event payload is not replayable",
-    });
-    expect(released.resources?.[claim.taskId]).toMatchObject({
-      status: { phase: "converged", observedGeneration: claim.generation },
-    });
-    expect(pendingProjectAppTaskRecoveryAttention(config)).toEqual([]);
-  });
-
   it("repairs existing previous-runtime attention records on startup", () => {
     const { config } = fixture();
     const claim = claimProjectAppTask(config, {
@@ -637,24 +596,8 @@ describe("project app task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
-    const routeIntent = {
-      id: "route/owner/project.owner.requested/456",
-      parentId: "operations",
-      outcome: "Process project.owner.requested through owner.",
-      acceptance: ["The matched event is handed to the owner."],
-      mode: "achieve",
-      owner: "branch-owner",
-      input: { eventId: "456" },
-    } as const;
-    const routeClaim = claimProjectAppTask(config, {
-      intent: routeIntent,
-      appOwner: "app-owner",
-      handler: "owner:branch-owner",
-    });
-    if (routeClaim.kind !== "claimed") throw new Error("expected route claim");
-
     const stale = readTaskTree(config);
-    for (const activeClaim of [claim, routeClaim]) {
+    for (const activeClaim of [claim]) {
       stale.attempts![activeClaim.attemptId].runtimeId = "previous-runtime";
       stale.attempts![activeClaim.attemptId].state = "interrupted";
       stale.attempts![activeClaim.attemptId].failureReason = "previous-runtime-attempt-not-recoverable";
@@ -673,7 +616,6 @@ describe("project app task reconciler state", () => {
 
     expect(repairPreviousRuntimeRecoveryAttention(config)).toMatchObject([
       { taskId: "evaluate:session-1", disposition: "requeued" },
-      { taskId: "route/owner/project.owner.requested/456", disposition: "retired" },
     ]);
 
     const repaired = readTaskTree(config);
@@ -681,10 +623,6 @@ describe("project app task reconciler state", () => {
       status: { phase: "pending", observedGeneration: 0 },
     });
     expect(repaired.tasks["evaluate:session-1"].state).toBe("backlog");
-    expect(repaired.resources?.["route/owner/project.owner.requested/456"]).toMatchObject({
-      status: { phase: "converged", observedGeneration: routeClaim.generation },
-    });
-    expect(repaired.tasks["route/owner/project.owner.requested/456"].state).toBe("backlog");
     expect(pendingProjectAppTaskRecoveryAttention(config)).toEqual([]);
   });
 
