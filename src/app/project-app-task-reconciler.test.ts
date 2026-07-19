@@ -125,6 +125,11 @@ describe("project app task reconciler state", () => {
       id: "work/pending",
       outcome: "Ready work",
     };
+    const routeIntent = {
+      ...intent(),
+      id: "route/owner/project.owner.requested/123",
+      outcome: "Route one owner event",
+    };
 
     observeProjectAppTaskIntent(config, { intent: attentionIntent, appOwner: "app-owner" });
     const attentionClaim = claimObservedProjectAppTask(config, {
@@ -161,6 +166,7 @@ describe("project app task reconciler state", () => {
     });
 
     observeProjectAppTaskIntent(config, { intent: pendingIntent, appOwner: "app-owner" });
+    observeProjectAppTaskIntent(config, { intent: routeIntent, appOwner: "app-owner" });
     const maintainClaim = claimProjectAppTask(config, {
       intent: intent("maintain"),
       appOwner: "app-owner",
@@ -186,8 +192,8 @@ describe("project app task reconciler state", () => {
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
       "categorized-task",
       "work/attention",
-      "work/pending",
       "work/waiting",
+      "work/pending",
     ]);
   });
 
