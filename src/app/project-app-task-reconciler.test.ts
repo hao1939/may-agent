@@ -950,16 +950,17 @@ describe("project app task reconciler state", () => {
     });
   });
 
-  it("treats legacy project workflow as owner-handled when reading intent", () => {
+  it("rejects project as a fake workflow in observed intent", () => {
     const { config } = fixture();
-    const tree = readTaskTree(config);
-    tree.tasks["categorized-task"].workflow = "project";
-    tree.resources!["categorized-task"].spec.workflow = "project";
-    saveTaskTree(config, tree);
-
-    const legacyIntent = readProjectAppTaskIntent(config, "categorized-task");
-    expect(legacyIntent?.id).toBe("categorized-task");
-    expect(legacyIntent?.workflow).toBeUndefined();
+    expect(() =>
+      observeProjectAppTaskIntent(config, {
+        intent: {
+          ...intent("achieve"),
+          workflow: "project",
+        },
+        appOwner: "app-owner",
+      }),
+    ).toThrow("workflow must name a real workflow; omit workflow for owner-handled project work");
   });
 
   it("rejects project as a fake workflow in create actions", () => {
