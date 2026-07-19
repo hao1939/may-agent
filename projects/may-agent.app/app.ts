@@ -10,17 +10,6 @@ import {
 
 const projectId = "may-agent";
 const projectOwnerAgent = "tech-lead";
-const appTaskContext =
-  "app: /app/projects/may-agent.app\nproject: /app/projects/may-agent";
-
-const taskTreeContext = [
-  "projects/may-agent.app/project.json",
-  "projects/may-agent.app/.state/tasks/tree.json",
-  "projects/may-agent.app/docs/2a-design/project-app-v3.md",
-  "projects/may-agent.app/docs/2a-design/events.md",
-  "projects/may-agent.app/docs/2a-design/projects.md",
-  "projects/may-agent/README.md",
-];
 
 function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   return {
@@ -42,7 +31,6 @@ export function resolveMayAgentTask(
     case "project.ops_digest.tick":
       return {
         id: "runtime/daily-ops-digest",
-        parentId: "platform-ops-observe-act-loop",
         outcome:
           "Keep a current deterministic daily platform alert digest, notify the human, and request owner judgment only for actionable conditions.",
         acceptance: [
@@ -56,7 +44,6 @@ export function resolveMayAgentTask(
     case "project.ops_health.tick":
       return {
         id: "runtime/ops-health-observer",
-        parentId: "platform-ops-observe-act-loop",
         outcome:
           "Keep a deterministic observation of platform operational health and request owner judgment only for meaningful signals.",
         acceptance: [
@@ -77,6 +64,7 @@ export function resolveMayAgentTask(
           "The owner performs one useful platform step or records an evidence-backed no-op, with task-tree changes proposed as typed actions.",
         ],
         mode: "maintain",
+        workflow: "platform-owner-review",
         input: details,
         priority: "P1",
       };
@@ -355,64 +343,14 @@ export default defineProjectApp({
     },
   ],
 
-  ownerEntry: {
-    workflow: "platform-owner-review",
-    task: `${appTaskContext}\npersistent-task: skip\nReview the reconciled May-agent platform responsibility and perform the smallest useful owner step.`,
-    timeoutMs: 1_800_000,
-    context: taskTreeContext,
+  tasks: {
+    accepts: [
+      { type: "project.ops_digest.tick", project: projectId },
+      { type: "project.ops_health.tick", project: projectId },
+      { type: "project.owner.requested", project: projectId },
+    ],
+    resolve: resolveMayAgentTask,
   },
-
-  taskWorkflows: {
-    "daily-ops-digest": {
-      workflow: "daily-ops-digest",
-      task: `${appTaskContext}\npersistent-task: skip\nBuild the deterministic daily alert digest and route only actionable conditions to the owner.`,
-      timeoutMs: 120_000,
-      context: [
-        ...taskTreeContext,
-        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
-        "projects/may-agent.app/docs/2a-design/handler-audit.md",
-      ],
-    },
-    "ops-health-review": {
-      workflow: "ops-health-review",
-      task: `${appTaskContext}\npersistent-task: skip\nBuild and record the deterministic platform health packet without making owner judgments.`,
-      timeoutMs: 180_000,
-      context: [
-        ...taskTreeContext,
-        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
-      ],
-    },
-  },
-
-  taskRoutes: [
-    {
-      name: "may-agent-task-daily-ops-digest",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Reconciles the standing deterministic daily platform digest.",
-      accepts: ["project.ops_digest.tick"],
-      resolve: resolveMayAgentTask,
-    },
-    {
-      name: "may-agent-task-ops-health",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Reconciles the standing deterministic platform health observer.",
-      accepts: ["project.ops_health.tick"],
-      resolve: resolveMayAgentTask,
-    },
-    {
-      name: "may-agent-task-owner",
-      enabled: true,
-      maxConcurrentTriggers: 1,
-      description:
-        "Routes platform judgment and one-off work through the accountable owner entry.",
-      accepts: ["project.owner.requested"],
-      resolve: resolveMayAgentTask,
-    },
-  ],
 
   events: [
     { type: "project.comment.created", project: projectId },
@@ -424,99 +362,6 @@ export default defineProjectApp({
     { type: "metric.stalled" },
     { type: "metric.recovered" },
   ],
-
-  eventGraph: {
-    routes: {
-      "may-agent-task-daily-ops-digest": {
-        emits: [
-          "project.ops_digest.created",
-          "project.owner.requested",
-          "project.task.reconciled",
-        ],
-        description:
-          "Produces the daily alert digest, notifies the human, and wakes the project owner for open/noisy digest findings.",
-      },
-      "may-agent-task-ops-health": {
-        emits: [
-          "project.ops_health.observed",
-          "project.owner.requested",
-          "project.task.reconciled",
-        ],
-        description:
-          "Deterministically observes platform health and wakes the project owner only for meaningful signals.",
-      },
-      "may-agent-task-owner": {
-        emits: ["project.owner.reviewed", "project.task.reconciled"],
-        description:
-          "Tech-lead reviews platform project state and updates task tree, docs, or code when useful.",
-      },
-    },
-    adapters: [
-      {
-        event: "project.comment.created",
-        emits: ["project.owner.requested"],
-        description: "Human steering wakes the May-agent project owner.",
-      },
-      {
-        event: "project.tick",
-        emits: ["project.owner.requested"],
-        description: "Scheduled platform review wakes the owner.",
-      },
-      {
-        event: "project.action.invoked",
-        emits: ["project.owner.requested"],
-        description: "UI/API action wakes the owner.",
-      },
-      {
-        event: "metric.alerted",
-        emits: ["project.owner.requested"],
-        description:
-          "Platform metric alert wakes the project owner to inspect and react.",
-      },
-      {
-        event: "metric.breach",
-        emits: ["project.owner.requested"],
-        description:
-          "Platform metric breach wakes the project owner to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h; human-backlog: escalation.pending-count) are captured in scheduled project.tick instead of immediate wakes.",
-      },
-      {
-        event: "metric.stalled",
-        emits: ["project.owner.requested"],
-        description:
-          "Platform metric stall wakes the project owner to inspect and react.",
-      },
-      {
-        event: "metric.recovered",
-        emits: [],
-        description:
-          "Platform metric recovery is informational — nooped to prevent breach→recover→review loops from burning session budget.",
-      },
-      {
-        event: "project.tasks.ready",
-        emits: ["project.owner.requested"],
-        description:
-          "Reconciler signals ready task leaves; owner wakes to assign or advance them.",
-      },
-    ],
-    externalEvents: [
-      "project.owner.reviewed",
-      "project.ops_health.observed",
-      "project.ops_digest.created",
-      "handler.workflow_dispatched",
-      "project.task.reconcile.started",
-      "project.task.reconcile.skipped",
-      "project.task.handler.unavailable",
-      "project.task.reconciled",
-    ],
-    intentionalCycles: [
-      {
-        id: "human-or-timer-to-platform-review",
-        events: ["project.tick", "project.owner.requested"],
-        reason:
-          "Timer and human events periodically wake tech-lead to maintain the May-agent platform project.",
-      },
-    ],
-  },
 
   actions: {
     "advance-project": {
