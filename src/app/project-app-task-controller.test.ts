@@ -35,6 +35,35 @@ describe("ProjectAppTaskController", () => {
     controller.close();
   });
 
+  it("runs independent task keys concurrently up to the app limit", async () => {
+    const started: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releases.set(taskId, resolve);
+        }),
+    });
+
+    controller.enqueue("focus-a");
+    controller.enqueue("focus-b");
+    controller.enqueue("focus-c");
+    await waitUntil(() => started.length === 2);
+    expect(new Set(started)).toEqual(new Set(["focus-a", "focus-b"]));
+    expect(controller.snapshot().running).toHaveLength(2);
+    expect(controller.snapshot().pending).toEqual(["focus-c"]);
+
+    releases.get("focus-a")?.();
+    await waitUntil(() => started.includes("focus-c"));
+    expect(controller.snapshot().running).toHaveLength(2);
+    releases.get("focus-b")?.();
+    releases.get("focus-c")?.();
+    await waitUntil(() => !controller.snapshot().running.length);
+    controller.close();
+  });
+
   it("performs a fresh pass for a wake received during a run", async () => {
     let runs = 0;
     let release: (() => void) | undefined;
