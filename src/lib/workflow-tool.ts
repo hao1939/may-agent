@@ -530,6 +530,17 @@ export interface WorkflowRunner {
   readonly activeWorkflow: string | null;
 }
 
+/** A named workflow could not be resolved from the owning agent's catalog. */
+export class WorkflowHandlerUnavailable extends Error {
+  constructor(
+    public readonly workflow: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "WorkflowHandlerUnavailable";
+  }
+}
+
 // ── runWorkflowDirect — for system-level callers (handlers) ───────────
 
 export interface RunWorkflowDirectOpts {
@@ -583,6 +594,9 @@ export async function runWorkflowDirect(
     };
   }
   if (parsed.type === "error") {
+    if (parsed.category === "workflow_definition_missing") {
+      throw new WorkflowHandlerUnavailable(opts.workflowName, parsed.error);
+    }
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
   }
   if (parsed.type === "blocked") {
@@ -1647,7 +1661,16 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   async function runTyped(name: string, task: string, existingCatalog?: WorkflowCatalog): Promise<WorkflowToolResult> {
     const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir));
     const { workflow, error } = findWorkflow(catalog, name);
-    if (!workflow) return { type: "error", workflow: name, error: error ?? `Workflow "${name}" not found` };
+    if (!workflow) {
+      const message = error ?? `Workflow "${name}" not found`;
+      return {
+        type: "error",
+        workflow: name,
+        error: message,
+        reason: message,
+        category: "workflow_definition_missing",
+      };
+    }
     const callerSessionId = resolveCallerSessionId();
     const callerMeta = getCallerSessionMeta(callerSessionId);
     return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId);
