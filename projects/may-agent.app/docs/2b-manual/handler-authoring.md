@@ -36,10 +36,13 @@ the same controller. Do not add a second route or scheduler for them.
 
 ## Workflow convention
 
-`workflow: "handle-request"` resolves `workflows/handle-request.ts`. No
-workflow registry is needed. A task without a workflow runs its explicit or
-inherited owner. If a workflow returns `needs-owner`, the same task falls back
-to that owner; the app owner is always the final fallback.
+`workflow: "handle-request"` resolves
+`agents/<resolved-owner>/workflows/handle-request.ts`. No workflow registry is
+needed. A task without a workflow runs its explicit or inherited owner. If a
+workflow returns `needs-owner`, the same task is handed to that owner once. An
+unavailable or failed explicitly bound workflow moves the task to `attention`;
+the runtime does not substitute direct owner handling. After the binding is
+repaired, a successful app reload re-enqueues it.
 
 Every handler returns one envelope:
 
@@ -55,7 +58,7 @@ Every handler returns one envelope:
 
 - `converged` means the current generation satisfies its acceptance criteria.
 - `waiting` must carry exact typed Conditions.
-- `needs-owner` asks the runtime to use the ownership fallback.
+- `needs-owner` deliberately hands the task to its accountable owner.
 
 Handlers may use normal tools and skills, including database-backed tools.
 They must not edit task storage, create worker sessions, acknowledge inbox
@@ -72,3 +75,17 @@ translates `project.action.invoked` exactly once. Do not add an app-local action
 adapter.
 
 Validate with the app's `bun run check` and runtime reconciliation tests.
+
+## Handler boundary checklist
+
+A handler is a small infrastructure adapter. It may translate, observe,
+persist, or dispatch bounded work. It must not become a second task scheduler,
+task-state writer, domain owner, or learned process.
+
+- Does project work enter the app's single resolver/queue/controller?
+- Is reusable judgment implemented under its owning agent?
+- Does any watcher know task IDs or mutate task resources?
+- Can recovery start from durable state without replaying a synthetic scheduler
+  event?
+- Is every compatibility read isolated, with no compatibility writer or second
+  authority?

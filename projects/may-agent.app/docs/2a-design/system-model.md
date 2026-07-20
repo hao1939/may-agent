@@ -22,19 +22,19 @@ a domain-specific question.
 
 ## Core Objects
 
-| Object | One question it answers | Owner of truth |
-| --- | --- | --- |
-| Event | What durable signal crossed a boundary? | Event store during its retention window |
-| Event delivery | Did a responsible consumer accept the signal? | `delivery_*` fields on the event |
-| Event pair | Did the expected typed response arrive in time? | `event_pair_runs` |
-| Trace | What caused this work, and which event fulfilled it? | Event trace and closure links |
-| Project | What durable goal and operating posture does an owner maintain? | `project.json` and project-owned state |
-| Task resources | What desired and observed work state does the app currently own? | `.state/tasks/state.json` |
-| Metric alert | Which measured signal still needs judgment or recovery evidence? | Metric and alert tables |
-| Session | Which agent execution or conversation container ran? | Session registry and transcript |
-| Workflow run | Which ordered executable process ran, and how did it end? | Workflow-run record |
-| Escalation | Which blocker crossed an ownership boundary, and what action was requested? | Escalation events plus trace |
-| Skill | Which situational method was loaded for one model turn? | Canonical `SKILL.md`; no independent work state |
+| Object         | One question it answers                                                     | Owner of truth                                  |
+| -------------- | --------------------------------------------------------------------------- | ----------------------------------------------- |
+| Event          | What durable signal crossed a boundary?                                     | Event store during its retention window         |
+| Event delivery | Did a responsible consumer accept the signal?                               | `delivery_*` fields on the event                |
+| Event pair     | Did the expected typed response arrive in time?                             | `event_pair_runs`                               |
+| Trace          | What caused this work, and which event fulfilled it?                        | Event trace and closure links                   |
+| Project        | What durable goal and operating posture does an owner maintain?             | `project.json` and project-owned state          |
+| Task resources | What desired and observed work state does the app currently own?            | `.state/tasks/state.json`                       |
+| Metric alert   | Which measured signal still needs judgment or recovery evidence?            | Metric and alert tables                         |
+| Session        | Which agent execution or conversation container ran?                        | Session registry and transcript                 |
+| Workflow run   | Which ordered executable process ran, and how did it end?                   | Workflow-run record                             |
+| Escalation     | Which blocker crossed an ownership boundary, and what action was requested? | Escalation events plus trace                    |
+| Skill          | Which situational method was loaded for one model turn?                     | Canonical `SKILL.md`; no independent work state |
 
 These records are complementary, not alternate lifecycle systems. Do not copy
 domain state into an event, infer delivery from task completion, or treat a
@@ -63,14 +63,14 @@ emits a typed follow-up event.
 
 Choose the smallest controller that matches the work:
 
-| Need | Mechanism |
-| --- | --- |
-| Variable judgment or one bounded action | Agent session, optionally guided by a skill |
-| Repeatable ordered branching/retry/verification | Synchronous TypeScript workflow |
+| Need                                                              | Mechanism                                                            |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Variable judgment or one bounded action                           | Agent session, optionally guided by a skill                          |
+| Repeatable ordered branching/retry/verification                   | Synchronous TypeScript workflow                                      |
 | Wait for a human, timer, callback, restart, or external condition | Persist domain state and continue from a later event-linked workflow |
-| Mechanically detectable risk around tool/workflow execution | Guard |
-| New external or deterministic action capability | Tool |
-| Timer/event-to-workflow bridge or mechanical projection | Handler/app schedule |
+| Mechanically detectable risk around tool/workflow execution       | Guard                                                                |
+| New external or deterministic action capability                   | Tool                                                                 |
+| Timer/event-to-workflow bridge or mechanical projection           | Handler/app schedule                                                 |
 
 Workflows are ordered synchronous blocks even though their TypeScript uses
 `await`. They finish with `done` or local `blocked`. A durable wait never keeps
@@ -148,14 +148,15 @@ not proof of completion.
 
 Use terminal words only inside their owning layer:
 
-| Layer | Terminal vocabulary | Meaning |
-| --- | --- | --- |
-| Workflow | `done`, `blocked` | This ordered run finished or cannot continue locally |
-| Session finish | `success`, `partial`, `blocked`, `failure` | This agent attempt's claim |
-| Task | `done` | Owner accepted a final task disposition |
-| Project | `done`, `closed` | Goal completed, or ownership loop intentionally ended |
-| Escalation | `resolved`, `dismissed` | Cross-owner request received a disposition |
-| Metric alert | resolved/recovered evidence | Signal no longer needs active judgment |
+| Layer          | Terminal vocabulary                                | Meaning                                               |
+| -------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| Workflow       | `done`, `blocked`                                  | This ordered run finished or cannot continue locally  |
+| Session finish | `success`, `partial`, `blocked`, `failure`         | This agent attempt's claim                            |
+| Maintain task  | `converged`                                        | Current desired generation is satisfied               |
+| Achieve task   | completion receipt and removal from the live graph | Owner accepted finite work                            |
+| Project        | `done`, `closed`                                   | Goal completed, or ownership loop intentionally ended |
+| Escalation     | `resolved`, `dismissed`                            | Cross-owner request received a disposition            |
+| Metric alert   | resolved/recovered evidence                        | Signal no longer needs active judgment                |
 
 Never translate one terminal word into another without owner judgment. A
 successful session can produce a task claim that the project owner rejects. A

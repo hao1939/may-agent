@@ -37,7 +37,7 @@ projects/<id>.app/
   scripts/                  # integrity/projection/domain utilities
   ui/                       # optional domain-specific UI
   .state/tasks/state.json   # sole mutable task-resource authority
-  .state/tasks/tree.json    # generated tree/Kanban read projection
+  .state/tasks/tree.json    # generated current-state read projection
 ```
 
 The `.app` folder is the May-agent control plane. Domain product source and
@@ -79,15 +79,15 @@ domain relationship. App integrity checks keep them aligned.
 Project status answers one question: should the owner loop push now, wait for a
 known signal, request judgment, pause, or stop?
 
-| Status | Meaning |
-| --- | --- |
-| `active` | Concrete autonomous owner work remains now |
-| `waiting` | Current push reached a useful stop; a recorded signal resumes it |
-| `blocked` | The whole owner loop has no safe autonomous path because of an external dependency |
-| `pending-review` | Owner or human judgment is required before more work |
-| `paused` | Explicit intentional hold |
-| `done` | Goal completed |
-| `closed` | Ownership loop intentionally ended |
+| Status           | Meaning                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `active`         | Concrete autonomous owner work remains now                                         |
+| `waiting`        | Current push reached a useful stop; a recorded signal resumes it                   |
+| `blocked`        | The whole owner loop has no safe autonomous path because of an external dependency |
+| `pending-review` | Owner or human judgment is required before more work                               |
+| `paused`         | Explicit intentional hold                                                          |
+| `done`           | Goal completed                                                                     |
+| `closed`         | Ownership loop intentionally ended                                                 |
 
 Do not keep a project `active` merely for monitoring. Use events, schedules,
 Conditions, bounded resync, or owner review to wake it when facts
@@ -97,12 +97,12 @@ change.
 
 Project posture is not task execution state:
 
-| Layer | Vocabulary |
-| --- | --- |
-| Project posture | `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed` |
-| Task resource phase | `pending`, `running`, `waiting`, `attention`, `converged` |
-| Readiness projection | runnable, dependency-blocked, conflict-blocked, stale, needs-decomposition |
-| Worker/session claim | success, partial, blocked, failure plus evidence |
+| Layer                | Vocabulary                                                                   |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Project posture      | `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed` |
+| Task resource phase  | `pending`, `running`, `waiting`, `attention`, `converged`                    |
+| Readiness projection | runnable, dependency-blocked, conflict-blocked, stale, needs-decomposition   |
+| Worker/session claim | success, partial, blocked, failure plus evidence                             |
 
 A blocked worker is evidence, not proof that the task or project must become
 blocked. The owner may retry, split, repair, replace, verify, wait, or escalate.
@@ -138,12 +138,12 @@ completion.
 
 Policy changes owner posture, not runtime mechanics:
 
-| Mode | Posture |
-| --- | --- |
-| `standard` | Act on clear work; wait when no actionable signal remains |
-| `aggressive-push` | Inspect for the next bounded frontier while credible paths remain |
-| `stable-watch` | Prefer evidence-backed work and exact waits over speculative churn |
-| `maintenance` | React to incoming signals without continuously seeking new scope |
+| Mode              | Posture                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `standard`        | Act on clear work; wait when no actionable signal remains          |
+| `aggressive-push` | Inspect for the next bounded frontier while credible paths remain  |
+| `stable-watch`    | Prefer evidence-backed work and exact waits over speculative churn |
+| `maintenance`     | React to incoming signals without continuously seeking new scope   |
 
 Concurrency and attempt limits bound execution. They do not authorize automatic
 acceptance, retries without judgment, or task synthesis by infra.

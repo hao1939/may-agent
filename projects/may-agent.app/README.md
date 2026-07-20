@@ -7,7 +7,7 @@ domain workspace.
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` declares schedules, one event-to-task resolver, owner fallback, and
+- `app.ts` declares schedules, one event-to-task resolver, owner resolution, and
   actions. Reusable workflows are discovered by filename.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.

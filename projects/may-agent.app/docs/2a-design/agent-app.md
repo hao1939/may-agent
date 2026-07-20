@@ -146,9 +146,11 @@ task.workflow absent
 ```
 
 A workflow may return `needs-owner`; the runtime then hands the same task to
-that owner once. An unavailable named workflow records `HandlerUnavailable`
-before sequential owner fallback. It is not silently treated as an originally
-unbound task.
+that owner once. This is the only automatic workflow-to-owner handoff. An
+unavailable named workflow records `HandlerUnavailable` and moves the task to
+`attention`; it is not treated as an originally unbound task. After a
+successful app reload, a repaired binding is enqueued once when the named
+workflow resolves again.
 
 The exact result, Condition, acceptance, attempt, and completion contracts are
 owned by [Task Resource Engine](task-resource-engine.md), not repeated here.
@@ -217,4 +219,4 @@ from the amount of open work.
 
 Focused tests cover owner-only loading, hosted/direct preparation parity,
 scoped selectors, action translation, concurrency, restart recovery,
-Condition wakeup, receipt wakeup, and workflow-to-owner fallback.
+Condition wakeup, receipt wakeup, and explicit workflow-to-owner handoff.

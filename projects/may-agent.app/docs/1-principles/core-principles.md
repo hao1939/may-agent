@@ -30,21 +30,29 @@ Event fires
 
 Owner means: if this falls on the floor, it's your problem. Owners don't do all the work — they guarantee nothing is orphaned.
 
+This event-delivery fallback is not task-handler substitution. If a task
+explicitly binds a workflow, an unavailable workflow moves the task to
+attention. Only the workflow's explicit `needs-owner` result hands that task to
+its owner.
+
 Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
 **Elaborated in:** [system-model.md](../2a-design/system-model.md), [metrics.md](../2a-design/metrics.md)
 
 ## 3. Events must be consumed
 
-No event fires into the void. Something must consume it — a handler, a subscribed agent, a workflow. If nothing does, the owner picks it up. This is the **closed-loop guarantee**: every signal produces a response, even if that response is "owner judged it, recorded evidence, and decided no change is needed."
-
-The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
+No actionable event fires into the void. A targeted consumer accepts it or the
+accountable owner's inbox keeps it visible. If the next required action crosses
+an ownership boundary, the current owner creates an explicit escalation to the
+receiving agent or human role. Closed loop means the signal receives a typed
+disposition; it does not mean every event starts an agent session.
 
 **Elaborated in:** [projects.md](../2a-design/projects.md), [escalation.md](../2a-design/escalation.md)
 
 ## 4. Context is discovered, not dumped
 
 System prompt = just enough to START discovering. Agents get:
+
 - **AGENTS.md** — who you are
 - **common-sense.md** — how to think, where things are
 - **Tools** — what you can do
@@ -72,22 +80,25 @@ The context-learning project is the canonical case study: built infrastructure f
 
 **Elaborated in:** [evidence-first.md](evidence-first.md)
 
-## 6. Structure beats instructions
+## 6. Match structure to the cause
 
-When agents make judgment errors, the fix is **workflow structure** — not text rules, not brittle guards.
+Novel judgment belongs to an agent. Reusable guidance belongs in a skill.
+Workflow structure is justified when evidence shows that a repeatable sequence,
+branch, retry, or verification step is being lost or reordered.
 
-| Problem type | Right mechanism | Wrong mechanism |
-|-------------|----------------|-----------------|
-| Judgment error | Workflow (two-phase, reviewer, evaluator gate) | Text rules alone (unreliable across sessions) |
-| Environmental fact | context.md (data) | Code (doesn't adapt) |
-| Mechanical check | Guard or code (tsc, test runner) | Text rules |
-| Process enforcement | Workflow step ordering | Instructions ("remember to verify") |
+| Problem type                           | Right mechanism            | Avoid                                  |
+| -------------------------------------- | -------------------------- | -------------------------------------- |
+| Novel or ambiguous judgment            | Direct owner/agent session | Premature workflow encoding            |
+| Reusable situational method            | Skill                      | Permanent prompt dumping               |
+| Repeated ordering/verification failure | Workflow                   | Reminder text alone                    |
+| Environmental fact                     | Owned context/knowledge    | Hard-coded environment assumptions     |
+| Mechanical check                       | Code or calibrated guard   | Model judgment for deterministic facts |
 
 Guards are mechanical detectors first. A guard trigger should emit an event or
 risk signal; warning, repair, escalation, and blocking are intervention modes.
-Use hard blocking only for high-confidence, high-impact risks. context.md is for
-facts that change with the environment. Workflows are for everything that
-requires judgment.
+Use hard blocking only for high-confidence, high-impact risks. Owned context is
+for facts that change with the environment. Workflows preserve learned
+processes; they are not mandatory wrappers around every judgment.
 
 **Elaborated in:** [code-vs-data.md](code-vs-data.md), [evolution.md](evolution.md)
 
@@ -148,12 +159,14 @@ Complexity is justified only when simplicity has been tried and failed with evid
 When an agent behaves unexpectedly, the cause is almost always **something misleading in what the LLM received** — not a broken model or flawed logic. LLMs respond to their input faithfully; wrong output means wrong input.
 
 The misleading content could be anywhere in the API call:
+
 - System prompt (stale AGENTS.md, contradictory conventions)
 - User message (ambiguous task description, wrong context)
 - Tool output (unexpected format, error messages treated as instructions)
 - Injected docs (outdated knowledge, irrelevant context confusing the task)
 
 **Debug order:**
+
 1. Read the full session transcript — what did the LLM actually see?
 2. Find the misleading content that caused the wrong behavior
 3. Fix the source (the doc, the prompt builder, the tool output)
@@ -185,13 +198,13 @@ Something happens                           (Principle 1: event)
 
 These principles sometimes pull in opposite directions. The tensions are managed, not eliminated.
 
-| Tension | Resolution |
-|---------|-----------|
-| Event-driven (P1) vs timer-based review | Timers are event sources. Events are persisted with mutable delivery bookkeeping; domain state remains in its owning entity. |
-| Owner accountability (P2) vs May reviews everything (P8) | May supervises system-scope. Domain owners handle domain events. May is the fallback owner for unowned things, not the primary handler for everything. |
-| Metrics drive work (P7) vs don't chase numbers (P7) | Metric events wake the accountable owner, who combines the measurement with project/context evidence. |
-| Evidence first (P5) vs we need to ship (pragmatism) | Evidence-first applies to system changes and new mechanisms. Known patterns (add a handler, create a metric) can proceed directly. Don't A/B test adding a database index. |
-| Simple first (P10) vs structure beats instructions (P6) | Start with the smallest mechanism matching the cause. Knowledge, workflows, guards, tools, and handlers are choices, not one mandatory ladder. |
+| Tension                                                  | Resolution                                                                                                                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Event-driven (P1) vs timer-based review                  | Timers are event sources. Events are persisted with mutable delivery bookkeeping; domain state remains in its owning entity.                                               |
+| Owner accountability (P2) vs May reviews everything (P8) | May supervises system-scope. Domain owners handle domain events. May is the fallback owner for unowned things, not the primary handler for everything.                     |
+| Metrics drive work (P7) vs don't chase numbers (P7)      | Metric events wake the accountable owner, who combines the measurement with project/context evidence.                                                                      |
+| Evidence first (P5) vs we need to ship (pragmatism)      | Evidence-first applies to system changes and new mechanisms. Known patterns (add a handler, create a metric) can proceed directly. Don't A/B test adding a database index. |
+| Simple first (P10) vs structure beats instructions (P6)  | Start with the smallest mechanism matching the cause. Knowledge, workflows, guards, tools, and handlers are choices, not one mandatory ladder.                             |
 
 ## Relationship to common-sense.md
 

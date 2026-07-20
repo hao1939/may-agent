@@ -3,18 +3,16 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented; app-local registration is the preferred path.
 
-> **Status (2026-06-18):** Agent registration has two paths:
-> 1. **Global agents** — `agents/<name>/agent.json` discovered at startup
-> 2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`
->    auto-registered when the app loads (see agent-app.md)
->
-> App-local agents are preferred for app-owned work. The global `agents/`
-> directory is only for standalone agents that do not yet have a project-app.
-> Evaluator, scout, aks-explorer, arc, dev, tech-lead, bob, coach, optimizer,
-> qa, master, judge, amy, and amy-kimi are app-local — their identity lives in
-> their `.app/agents/` directory. Tech-lead owns `may-agent.app`; arc/dev and
-> the legacy platform specialists live under that project. Judge belongs to
-> `evaluation.app`; Amy/Amy-Kimi belong to `scout-knowledge-lib.app`.
+Agent registration has two paths:
+
+1. **Global agents** — `agents/<name>/agent.json`, for genuinely standalone
+   capability.
+2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`,
+   registered with the owning app.
+
+App-local registration is the convention for app-owned work. Avoid maintaining
+an agent roster in design documentation; the app packages are the current
+inventory.
 
 ## Calling Patterns
 
@@ -25,15 +23,15 @@ return a deprecation error.
 
 ### agents tool actions
 
-| Action | Behavior | When to use |
-|--------|----------|-------------|
-| `call` | Sync — blocks, returns result | Need the result to continue |
-| `fork` | Async — returns sessionId, you continue | Background work, don't need result now |
-| `list` | Returns registered agents and running sessions | Discovery |
-| `peek` | View recent messages from a running session | Monitor a forked session |
-| `cancel` | Cancel a running session | Abort background work |
-| `context` | Read/update agent context | Context management |
-| `sessions` | Query persisted execution sessions | Durable status/history lookup |
+| Action     | Behavior                                       | When to use                            |
+| ---------- | ---------------------------------------------- | -------------------------------------- |
+| `call`     | Sync — blocks, returns result                  | Need the result to continue            |
+| `fork`     | Async — returns sessionId, you continue        | Background work, don't need result now |
+| `list`     | Returns registered agents and running sessions | Discovery                              |
+| `peek`     | View recent messages from a running session    | Monitor a forked session               |
+| `cancel`   | Cancel a running session                       | Abort background work                  |
+| `context`  | Read/update agent context                      | Context management                     |
+| `sessions` | Query persisted execution sessions             | Durable status/history lookup          |
 
 The removed `requests` action is not a work identity or compatibility surface.
 Query active sessions with `list`/`peek`, persisted execution with `sessions`,
@@ -42,8 +40,8 @@ queryable owner inbox.
 
 ### message tool
 
-| Action | Behavior | When to use |
-|--------|----------|-------------|
+| Action                     | Behavior                                               | When to use                          |
+| -------------------------- | ------------------------------------------------------ | ------------------------------------ |
 | `message({ to, content })` | Fire-and-forget — queued in the receiver's owner inbox | FYI notification, not time-sensitive |
 
 ## SDK And Handler Equivalents
@@ -83,13 +81,13 @@ call creates children; fork creates independent sessions:
 
 ## When to Use What
 
-| Situation | Pattern |
-|-----------|---------|
-| Need answer before continuing | `call` (or `sdk.runAgent()`) |
-| Multiple agents in parallel | `Promise.all([sdk.runAgent(...), ...])` |
-| Background work, check later | `fork` (agents tool) |
-| FYI notification | `message` tool (or `sdk.message()`) |
-| Run a multi-step flow | `sdk.runWorkflow()` |
+| Situation                     | Pattern                                 |
+| ----------------------------- | --------------------------------------- |
+| Need answer before continuing | `call` (or `sdk.runAgent()`)            |
+| Multiple agents in parallel   | `Promise.all([sdk.runAgent(...), ...])` |
+| Background work, check later  | `fork` (agents tool)                    |
+| FYI notification              | `message` tool (or `sdk.message()`)     |
+| Run a multi-step flow         | `sdk.runWorkflow()`                     |
 
 ## Result Structure
 

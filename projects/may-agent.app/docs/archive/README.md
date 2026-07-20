@@ -26,6 +26,7 @@ contracts; Tier-2 design governs when wording conflicts.
 - [E2E harness findings](implementation/2026-05-19-e2e-harness-findings.md)
 - [Legacy cleanup and resume path](implementation/2026-05-20-legacy-cleanup-resume-path.md)
 - [System-boundary tracker](implementation/system-boundary-tracker.md)
+- [Handler boundary audit](implementation/handler-boundary-audit.md)
 
 ## V2
 

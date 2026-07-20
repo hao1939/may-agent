@@ -110,7 +110,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `getDb()`                     | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`.                                                              |
 | `log(level, msg)`             | Log a diagnostic message.                                                                                                            |
 | `message(target, content)`    | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox.                                                      |
-| `escalate(reason, opts?)`     | Create `escalation.created`, returning `{ eventId, compatibilityId }`; defaults to `owner: "agent:may"` and `severity: "P2"`. |
+| `escalate(reason, opts?)`     | Create `escalation.created`, returning `{ eventId, compatibilityId }`; defaults to `owner: "agent:may"` and `severity: "P2"`.        |
 | `paths`                       | `{ persist, root, agents, shared, projects }` — system directories.                                                                  |
 
 For escalations that should return to the original session after resolution,
@@ -198,10 +198,11 @@ owner-routed escalation event.
 At the top-level task boundary, the controller invokes the resolved owner or an
 owner-owned workflow. A blocked workflow is persisted as
 `workflow_runs.status = "blocked"` and normalized into the task handler result.
-For workflow-bound tasks, the same controller records attention and immediately
-tries the resolved owner fallback. No workflow emits a synthetic task completion
-event or mutates the task tree. Nested workflow blockers return synchronously to
-their parent workflow.
+For workflow-bound tasks, the same controller records attention. It invokes the
+resolved owner only when the workflow returns an admitted `needs-owner` result;
+blocked or unavailable workflows do not imply handoff. No workflow emits a
+synthetic task completion event or mutates the task tree. Nested workflow
+blockers return synchronously to their parent workflow.
 
 `runAgent` and `runWorkflow` should share option semantics where possible:
 source, project/session parentage, timeout, request id, and trace metadata. The
@@ -256,16 +257,16 @@ event starts a new workflow run from persisted app/domain state.
 
 The SDK and agent tools are two sides of the same coin:
 
-| Agent thinks                      | Agent tool                        | SDK method                                                 |
-| --------------------------------- | --------------------------------- | ---------------------------------------------------------- |
-| "Ask dev and wait for the answer" | `agents.call("dev", task)`        | `await sdk.runAgent("dev", task)`                          |
-| "Start dev in the background"     | `agents.fork("dev", task)`        | — (no SDK equivalent)                                      |
-| "Something happened"              | —                                 | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
-| "Tell humans"                     | Telegram/human message            | `sdk.message("human", msg)`                                |
-| "Tell dev"                        | `message({ to: "dev", content })` | `sdk.message("dev", msg)`                                  |
-| "I'm done"                        | `finish()`                        | `workflow.done(summary)`                                   |
-| "Workflow cannot continue locally" | `finish({ blocked })`           | `ctx.blocked(reason)`                                      |
-| "Another owner must act"          | route through owner/project     | `sdk.escalate(reason, opts)` from agent/handler SDK code   |
+| Agent thinks                       | Agent tool                        | SDK method                                                 |
+| ---------------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| "Ask dev and wait for the answer"  | `agents.call("dev", task)`        | `await sdk.runAgent("dev", task)`                          |
+| "Start dev in the background"      | `agents.fork("dev", task)`        | — (no SDK equivalent)                                      |
+| "Something happened"               | —                                 | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
+| "Tell humans"                      | Telegram/human message            | `sdk.message("human", msg)`                                |
+| "Tell dev"                         | `message({ to: "dev", content })` | `sdk.message("dev", msg)`                                  |
+| "I'm done"                         | `finish()`                        | `workflow.done(summary)`                                   |
+| "Workflow cannot continue locally" | `finish({ blocked })`             | `ctx.blocked(reason)`                                      |
+| "Another owner must act"           | route through owner/project       | `sdk.escalate(reason, opts)` from agent/handler SDK code   |
 
 ## Implementation
 

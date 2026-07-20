@@ -324,7 +324,7 @@ the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
-Reference: [handler-audit.md](../../3-proposals/handler-audit.md).
+Reference: [Handler boundary audit](handler-boundary-audit.md).
 
 First migration: `metric-alert-reactor`. It is the most self-contained
 judgment/action bridge and its loop trace value is immediately visible.

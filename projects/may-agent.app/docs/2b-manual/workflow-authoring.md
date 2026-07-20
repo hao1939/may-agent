@@ -29,7 +29,11 @@ one terminal result. It is fine to await an agent, function, tool, or nested
 workflow that is expected to finish within the current run.
 
 ```typescript
-import type { WorkflowContext, WorkflowModule, WorkflowResult } from "@may-agent/sdk";
+import type {
+  WorkflowContext,
+  WorkflowModule,
+  WorkflowResult,
+} from "@may-agent/sdk";
 
 export const name = "my-workflow";
 export const description = "Does X by coordinating dev and QA";
@@ -92,22 +96,22 @@ outbox or a reconciliation check that can safely emit the missing event.
 
 Available via `ctx`:
 
-| Method | Description |
-|--------|-------------|
-| `ctx.task` | The original task string |
-| `ctx.agent` | The agent that invoked this workflow |
-| `ctx.runAgent(name, task, opts?)` | Run a sub-agent to structured `finish()` completion; `opts.schema` defines typed `structuredResult` |
-| `ctx.runWorkflow(name, task)` | Run a sub-workflow, wait for result |
-| `ctx.runFunction(label, fn)` | Run a JS function as a step (no LLM cost) |
-| `ctx.summarize(result)` | Build rich context from a TaskResult for handoff |
-| `ctx.createSession(opts)` | Persistent multi-turn session (worker pattern) |
-| `ctx.done(summary)` | Mark workflow as successful |
-| `ctx.blocked(reason, context?)` | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
-| `ctx.emit(event)` | Emit a typed event |
-| `ctx.dispatchEvent(type, data)` | Dispatch to handler subscribers |
-| `ctx.getDb()` | Access shared SQLite database |
-| `ctx.log(msg)` | Log a diagnostic message |
-| `ctx.notify(msg)` | Send notification to human |
+| Method                            | Description                                                                                                                                                     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctx.task`                        | The original task string                                                                                                                                        |
+| `ctx.agent`                       | The agent that invoked this workflow                                                                                                                            |
+| `ctx.runAgent(name, task, opts?)` | Run a sub-agent to structured `finish()` completion; `opts.schema` defines typed `structuredResult`                                                             |
+| `ctx.runWorkflow(name, task)`     | Run a sub-workflow, wait for result                                                                                                                             |
+| `ctx.runFunction(label, fn)`      | Run a JS function as a step (no LLM cost)                                                                                                                       |
+| `ctx.summarize(result)`           | Build rich context from a TaskResult for handoff                                                                                                                |
+| `ctx.createSession(opts)`         | Persistent multi-turn session (worker pattern)                                                                                                                  |
+| `ctx.done(summary)`               | Mark workflow as successful                                                                                                                                     |
+| `ctx.blocked(reason, context?)`   | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
+| `ctx.emit(event)`                 | Emit a typed event                                                                                                                                              |
+| `ctx.dispatchEvent(type, data)`   | Dispatch to handler subscribers                                                                                                                                 |
+| `ctx.getDb()`                     | Access shared SQLite database                                                                                                                                   |
+| `ctx.log(msg)`                    | Log a diagnostic message                                                                                                                                        |
+| `ctx.notify(msg)`                 | Send notification to human                                                                                                                                      |
 
 ## Termination
 
@@ -134,7 +138,9 @@ const ReviewResult = Type.Object({
 
 const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
 if (review.status === "done" && review.structuredResult.verdict === "fail") {
-  return ctx.blocked("Review failed", { findings: review.structuredResult.findings });
+  return ctx.blocked("Review failed", {
+    findings: review.structuredResult.findings,
+  });
 }
 ```
 
@@ -146,10 +152,11 @@ the caller receives `{ type: "blocked", reason, context }`. This is local to the
 workflow call. The caller or handler may promote it to an external
 `escalation.created` event only when the blocker must route to another owner.
 For task-bound workflows, the app controller normalizes the blocker into a
-structured task result. It records attention and invokes the resolved owner as
-fallback through the same task key. The workflow does not emit task lifecycle
-events or mutate task storage. Nested workflows return the blocked result to
-their parent workflow synchronously.
+failed attempt and records task attention. It does not substitute the resolved
+owner. A workflow that deliberately requires accountable owner judgment must
+return an admitted task result with `state: "needs-owner"`. The workflow does
+not emit task lifecycle events or mutate task storage. Nested workflows return
+the blocked result to their parent workflow synchronously.
 
 Because workflow execution is synchronous, a workflow can handle a blocker
 inside the workflow before returning: run a repair step, ask another agent with
@@ -164,16 +171,16 @@ runtime boundary should promote the local result to `escalation.created`.
 
 Typical blocker paths:
 
-| Situation inside workflow | Preferred action |
-|---------------------------|------------------|
-| A step failed but the next fix is clear | Run a repair step, retry, then verify |
-| Another agent can answer synchronously | Use `ctx.runAgent(...)` and continue with its result |
-| A reusable recipe should handle the problem | Use `ctx.runWorkflow(...)` and continue or return based on its result |
-| A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary |
-| The workflow cannot safely decide the next action | `return ctx.blocked(reason, context)` and let the caller/boundary decide |
-| A top-level task workflow blocks | Runtime persists `workflow_runs.status = "blocked"`; the controller records task attention and invokes owner fallback |
-| A top-level non-task workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and wakes the project or workflow owner with lineage |
-| The blocker crosses an ownership boundary after the workflow returns | Caller/boundary may emit `escalation.created`; the workflow itself should not |
+| Situation inside workflow                                                       | Preferred action                                                                                                      |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| A step failed but the next fix is clear                                         | Run a repair step, retry, then verify                                                                                 |
+| Another agent can answer synchronously                                          | Use `ctx.runAgent(...)` and continue with its result                                                                  |
+| A reusable recipe should handle the problem                                     | Use `ctx.runWorkflow(...)` and continue or return based on its result                                                 |
+| A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary                                                   |
+| The workflow cannot safely decide the next action                               | `return ctx.blocked(reason, context)` and let the caller/boundary decide                                              |
+| A top-level task workflow blocks                                                | Runtime persists `workflow_runs.status = "blocked"`; the controller records task attention without owner substitution |
+| A top-level non-task workflow blocks                                            | Runtime persists `workflow_runs.status = "blocked"` and wakes the project or workflow owner with lineage              |
+| The blocker crosses an ownership boundary after the workflow returns            | Caller/boundary may emit `escalation.created`; the workflow itself should not                                         |
 
 Use the second argument only for compact boundary context. It may become
 owner-facing context later if the caller promotes the result to an external
@@ -198,7 +205,9 @@ const verify = await ctx.runFunction("verify", async () => {
   return "PASS";
 });
 if (verify.status === "error") {
-  return ctx.blocked("Verification failed", { output: verify.lastAssistantText });
+  return ctx.blocked("Verification failed", {
+    output: verify.lastAssistantText,
+  });
 }
 return ctx.done("Implemented and verified");
 ```
@@ -218,7 +227,9 @@ const reviewTask = `Review this:\n\n${ctx.summarize(dev)}`;
 const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
 
 if (review.status === "error") {
-  return ctx.blocked("Review did not return a valid result", { error: review.error });
+  return ctx.blocked("Review did not return a valid result", {
+    error: review.error,
+  });
 }
 
 if (review.structuredResult.verdict === "fail") {
@@ -264,11 +275,13 @@ return ctx.blocked("Failed after all attempts");
 ## Invoking a Workflow
 
 From an agent (LLM tool):
+
 ```
 workflow({ action: "run", name: "implement-and-verify", task: "Add retry logic" })
 ```
 
 From handler/SDK code:
+
 ```typescript
 const result = await ctx.runWorkflow("implement-and-verify", task);
 ```
@@ -277,10 +290,10 @@ const result = await ctx.runWorkflow("implement-and-verify", task);
 
 Put workflows next to the owner that operates them:
 
-| Location | Visibility | Use case |
-|----------|------------|----------|
-| `projects/<id>.app/agents/<name>/workflows/` | That app-local agent's workflow loader | Learned project-specific processes owned by that agent |
-| `agents/<name>/workflows/` | That standalone agent's workflow loader | Learned standalone or infrastructure processes owned by that agent |
+| Location                                     | Visibility                              | Use case                                                           |
+| -------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
+| `projects/<id>.app/agents/<name>/workflows/` | That app-local agent's workflow loader  | Learned project-specific processes owned by that agent             |
+| `agents/<name>/workflows/`                   | That standalone agent's workflow loader | Learned standalone or infrastructure processes owned by that agent |
 
 For project-specific behavior, prefer the app-local agent workflow. Global May
 handlers may deliver events or provide compatibility backstops, but they should

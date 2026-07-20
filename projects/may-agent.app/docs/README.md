@@ -41,6 +41,7 @@ system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
 4. [workflows.md](2a-design/workflows.md) — reusable processes owned by agents
 5. [sdk.md](2a-design/sdk.md) — stable TypeScript capability surface
 6. [workflow-authoring.md](2b-manual/workflow-authoring.md) — implementation guide
+7. [project-app-adoption-playbook.md](2b-manual/project-app-adoption-playbook.md) — adoption checklist
 
 ### I want to build or fix agent behavior
 

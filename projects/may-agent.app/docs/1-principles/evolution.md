@@ -1,6 +1,6 @@
 # Agent Evolution
 
-**Design status:** Draft promotion heuristic.
+**Design status:** Accepted.
 
 Evolution is evidence-backed improvement of an owner's behavior. It is not one
 linear ladder from lesson to handler. Two independent decisions are involved:
@@ -19,12 +19,12 @@ Knowledge becomes stronger only when evidence justifies a more durable form:
 experience -> lesson/context -> skill
 ```
 
-| Form | Use when | Location |
-| --- | --- | --- |
-| Experience | One session discovered something; durability is not yet justified | Session evidence |
-| Context/fact | Environment-specific truth should be available later | `context.md` or owned knowledge |
-| Lesson | A repeated mistake or useful rule should be reviewed for promotion | `LESSONS.md` or owned knowledge |
-| Skill | A reusable judgment-heavy method has stable triggers and useful guidance | Scoped `skills/<name>/SKILL.md` package |
+| Form         | Use when                                                                 | Location                                |
+| ------------ | ------------------------------------------------------------------------ | --------------------------------------- |
+| Experience   | One session discovered something; durability is not yet justified        | Session evidence                        |
+| Context/fact | Environment-specific truth should be available later                     | `context.md` or owned knowledge         |
+| Lesson       | A repeated mistake or useful rule should be reviewed for promotion       | `LESSONS.md` or owned knowledge         |
+| Skill        | A reusable judgment-heavy method has stable triggers and useful guidance | Scoped `skills/<name>/SKILL.md` package |
 
 Frequency alone does not justify automation. A recurring judgment-heavy method
 may remain a skill used by scheduled sessions.
@@ -33,16 +33,16 @@ may remain a skill used by scheduled sessions.
 
 Runtime mechanisms are selected by control need, not maturity level:
 
-| Need | Mechanism | Controller |
-| --- | --- | --- |
-| One bounded judgment/action | Agent session | Model |
-| Situational method for one turn | Skill | Model |
-| Repeatable ordered sequence, branch, retry, or verification | Workflow | TypeScript workflow runtime |
-| Mechanically detectable risk around execution | Guard | Guard hook/runtime |
-| New action or external integration | Tool | Tool implementation |
-| Timer/event bridge or mechanical projection | Handler/app schedule | Runtime callback |
-| Durable multi-session goal and state | Project app | Project owner through events/workflows |
-| Cross-owner blocker | Escalation | Receiving owner |
+| Need                                                        | Mechanism            | Controller                             |
+| ----------------------------------------------------------- | -------------------- | -------------------------------------- |
+| One bounded judgment/action                                 | Agent session        | Model                                  |
+| Situational method for one turn                             | Skill                | Model                                  |
+| Repeatable ordered sequence, branch, retry, or verification | Workflow             | TypeScript workflow runtime            |
+| Mechanically detectable risk around execution               | Guard                | Guard hook/runtime                     |
+| New action or external integration                          | Tool                 | Tool implementation                    |
+| Timer/event bridge or mechanical projection                 | Handler/app schedule | Runtime callback                       |
+| Durable multi-session goal and state                        | Project app          | Project owner through events/workflows |
+| Cross-owner blocker                                         | Escalation           | Receiving owner                        |
 
 These mechanisms compose. They do not supersede one another. A handler may
 start a workflow; a workflow may call an agent with a skill; a guard may observe
@@ -204,16 +204,16 @@ resume path, and a stable deduplication key.
 
 ## Examples
 
-| Observation | Smallest justified response |
-| --- | --- |
-| One agent forgot a command once | Record evidence; do not build yet |
-| Environment path repeatedly surprises one owner | Add owned context/knowledge |
-| A judgment method is useful across varied tasks | Add a scoped skill |
-| Implement-then-verify ordering repeatedly fails | Add a workflow |
-| High-confidence secret pattern appears in writes | Add an observable guard, then validate blocking |
-| Required API/action does not exist | Add or extend a tool/SDK capability |
-| Existing workflow should run daily | Add an app schedule/handler bridge |
-| Improvement needs rollout, calibration, and later outcome review | Track it as project work |
+| Observation                                                      | Smallest justified response                     |
+| ---------------------------------------------------------------- | ----------------------------------------------- |
+| One agent forgot a command once                                  | Record evidence; do not build yet               |
+| Environment path repeatedly surprises one owner                  | Add owned context/knowledge                     |
+| A judgment method is useful across varied tasks                  | Add a scoped skill                              |
+| Implement-then-verify ordering repeatedly fails                  | Add a workflow                                  |
+| High-confidence secret pattern appears in writes                 | Add an observable guard, then validate blocking |
+| Required API/action does not exist                               | Add or extend a tool/SDK capability             |
+| Existing workflow should run daily                               | Add an app schedule/handler bridge              |
+| Improvement needs rollout, calibration, and later outcome review | Track it as project work                        |
 
 ## Retirement
 

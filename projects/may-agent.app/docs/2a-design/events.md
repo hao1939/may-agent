@@ -174,12 +174,12 @@ only where an exact event relation cannot yet be carried.
 
 Examples:
 
-| Opening | Closing |
-| --- | --- |
-| `project.owner.requested` | `project.owner.reviewed` |
-| `escalation.created` | `escalation.resolved` or `escalation.dismissed` |
-| `cli.task.requested` | `cli.task.completed`, `failed`, or `orphaned` |
-| `runtime.restart.requested` | runtime restart result event |
+| Opening                     | Closing                                         |
+| --------------------------- | ----------------------------------------------- |
+| `project.owner.requested`   | `project.owner.reviewed`                        |
+| `escalation.created`        | `escalation.resolved` or `escalation.dismissed` |
+| `cli.task.requested`        | `cli.task.completed`, `failed`, or `orphaned`   |
+| `runtime.restart.requested` | runtime restart result event                    |
 
 Not every event is paired. `metric.breach` uses the metric-alert entity for its
 open/resolved lifecycle. An observation/result event with no promised later
@@ -191,13 +191,13 @@ fulfilled the earlier commitment.
 
 ## Lifecycle Separation
 
-| Record | Question |
-| --- | --- |
-| Event delivery | Did a responsible consumer accept the signal? |
-| Event pair | Did an expected typed response arrive before its deadline? |
-| Trace | What caused the work and which event fulfilled it? |
-| Domain entity | What is true now for the project/task/alert/escalation? |
-| Session/workflow run | How did this bounded execution attempt end? |
+| Record               | Question                                                   |
+| -------------------- | ---------------------------------------------------------- |
+| Event delivery       | Did a responsible consumer accept the signal?              |
+| Event pair           | Did an expected typed response arrive before its deadline? |
+| Trace                | What caused the work and which event fulfilled it?         |
+| Domain entity        | What is true now for the project/task/alert/escalation?    |
+| Session/workflow run | How did this bounded execution attempt end?                |
 
 Never infer project success from pair closure or task acceptance from workflow
 completion.
@@ -270,7 +270,8 @@ A workflow ends with local `done` or `blocked`. Nested blockers return to the
 parent synchronously. At a top-level project boundary:
 
 - task workflows return blocked evidence to the app controller, which records
-  attention and invokes owner fallback through the same task key;
+  attention; only an admitted `needs-owner` task result causes sequential owner
+  handoff through the same task key;
 - project workflows without task context wake `project.owner.requested`;
 - non-project workflows wake `workflow.owner.requested`.
 

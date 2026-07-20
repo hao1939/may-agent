@@ -1,422 +1,209 @@
 # Default Project UI
 
-**Design status:** Accepted.
-**Implementation status:** Partial; the phase-1 browser control readout is
-implemented and the remaining slices are described below.
+**Design status:** Accepted
 
-The default project UI should be the shared control surface for every project
-app. Project-specific UIs can go deeper into a domain, but the default UI must
-answer the operator's first question without domain knowledge:
+**Implementation status:** Partial; convergence is tracked in
+[Task Reconciliation WebUI and Reviewability](../3-proposals/task-reconciliation-webui-reviewability.md)
+
+The default project UI is the shared control surface for every Agent App.
+Domain UIs may go deeper, but a person should be able to open any project and
+answer:
 
 ```text
-Is this project moving, where can it be stuck, and what can I safely do next?
+What is this project trying to achieve?
+What is happening now?
+Why is work running, waiting, or asking for attention?
+What evidence supports that state?
+What can I safely ask the owner to do next?
 ```
 
-## What We Learned
-
-The current default UI is useful, but it is mostly a state viewer. It shows the
-project detail page, task board, task tree, metrics, sessions, lineage, and app
-actions.
-
-The `aks-rp-e2e.app` kanban UI adds a stronger operating model:
-
-- start with a process readout, not the raw board;
-- show raw facts separately from system hints;
-- show confidence, blind spots, and clear conditions;
-- make durable loops visible as first-class work queues;
-- make human actions structured, contextual, and async;
-- keep domain-specific feature/test knowledge out of the shared UI.
-
-The default UI should reuse the operating model, not copy AKS-specific labels,
-metrics, or test workflow assumptions.
-
-## Product Shape
-
-The project detail page should have these surfaces:
+## Product shape
 
 ```text
 Project overview
-  - goal, owner, status, current state, last movement
+  goal | owner | posture | last movement
 
-Control readout
-  - compact status strip
-  - one primary signal
-  - collapsed diagnostics for bottlenecks, trust, loops, and raw issue rows
+Task status
+  needs attention | running | ready | pending | waiting | healthy standing
 
-Task board
-  - backlog, active, review, blocked, done
+Current work
+  attention, running, and ready resources
 
-Task tree
-  - parent/child project understanding
+Waiting and standing work
+  exact Conditions and converged maintain resources
 
-Selected task
-  - readiness, evidence, blocker, escalation, done knowledge
+Structure and review
+  task tree | selected task | recent completion activity
 
-Actions
-  - structured steering and declared project actions
-
-Trace
-  - sessions, lineage, events, reports
+Diagnostics and trace
+  metrics | events | sessions | reports | blind spots
 ```
 
-The first screen for a project should not force the user to infer health from
-board columns, but it also should not front-load every diagnostic. Lead with a
-small readout, one primary signal, and the task board. Keep deeper diagnostic
-facts one click away.
+The first screen leads with one compact status readout and current work. Large
+diagnostic tables and healthy standing work stay collapsed until requested.
 
-## Layout Rule
+## Task semantics
 
-The default project page should stay lean:
+The UI presents the accepted task-resource model; it does not translate it
+back into a Kanban lifecycle.
 
-```text
-Status strip
-  - state, last movement, active/review/blocked/capacity
+| Human label      | Canonical basis                              | Meaning                                                        |
+| ---------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| Needs attention  | `phase=attention`                            | Normal recovery did not produce an applicable result           |
+| Running          | `phase=running`                              | One current attempt owns this generation                       |
+| Ready            | `phase=pending` and task-projected readiness | The resource can be claimed now                                |
+| Pending          | `phase=pending` but not ready                | A known dependency, lifecycle, or capacity fact prevents claim |
+| Waiting          | `phase=waiting`                              | One or more exact Conditions remain open                       |
+| Healthy standing | `mode=maintain`, `phase=converged`           | Current desired standing state is satisfied                    |
 
-Primary signal
-  - one question/fact to check first
-  - affected task ids
-  - one structured action
+Completed `achieve` resources leave the live graph. They appear only as bounded
+completion activity or trace evidence. `Review` is a human action or project
+posture, not a task phase.
 
-Task board
-  - backlog, active, review, blocked, done
+Structural groups explain containment. They appear in the tree, never in work
+lanes, readiness, or capacity counts.
 
-Task tree
-  - structure and drill-down
+## Shared task projection and server read model
 
-Diagnostics
-  - collapsed bottlenecks
-  - coverage and blind spots
-  - raw issue rows
-```
+The task-resource layer derives readiness and structural integrity once from a
+current state snapshot. The server joins that projection with app metadata and
+operational observations. The browser renders those facts and performs only
+presentation work.
 
-Visible by default means "operator needs this before choosing the next click".
-Everything else belongs in diagnostics or the selected task drawer.
+The collection read model must provide:
 
-## Read Model
+- project identity, owner, posture, and configured concurrency;
+- current task resources and structural groups;
+- canonical phase, mode, generation, and observed generation;
+- task-projected readiness and its exact reason;
+- current Conditions and task-to-Condition links;
+- current status summary and evidence;
+- active attempt and attempt count;
+- compact satisfied-dependency identities;
+- freshness timestamps and integrity problems; and
+- bounded recent completion activity.
 
-The shared UI should render a stable project readout instead of duplicating
-large amounts of browser-side inference.
+The browser must not infer readiness, capacity, worker liveness, or health from
+missing fields. Unknown stays unknown.
 
-Proposed endpoint:
+`.state/tasks/state.json` remains canonical. `.state/tasks/tree.json` is a
+compact disposable projection, not a second authority or a history archive.
 
-```text
-GET /api/projects/readout?path=<project-app-path>
-```
+## Task board and tree
 
-Response shape:
+Cards lead with human purpose, followed by task identity and machine state.
+Each executable card shows:
 
-```ts
-type ProjectReadout = {
-  project: {
-    id: string;
-    path: string;
-    owner?: string;
-    status?: string;
-    goal?: string;
-    currentState?: string;
-    updatedAt?: string;
-  };
-  movement: {
-    lastMovementAt?: string;
-    lastTaskTreeUpdateAt?: string;
-    lastMetricUpdateAt?: string;
-    lastWorkflowRunAt?: string;
-  };
-  taskStats: {
-    total: number;
-    leaves: number;
-    rootCount: number;
-    byState: Record<string, number>;
-    leafByState: Record<string, number>;
-    maxConcurrent?: number;
-    activeTaskIds: string[];
-  };
-  bottlenecks: ProjectBottleneck[];
-  coverage: ProjectCoverageRow[];
-  loops: ProjectLoopReadout[];
-  issues: ProjectIssueRow[];
-  actions: ProjectActionSuggestion[];
-};
-```
+- outcome;
+- phase and reconciliation mode;
+- owner and workflow or direct-owner binding;
+- priority and parent context;
+- current summary or exact wait reason;
+- evidence and Condition counts;
+- freshness; and
+- generation drift when desired and observed state differ.
 
-The browser can still compute light presentation details, but source-of-truth
-classification should live in the server/read-model layer or in project-owned
-state. That keeps the default UI consistent across projects and prevents each
-project UI from inventing its own health semantics.
+The default ordering is attention, running, ready, pending, waiting, then
+healthy standing. Waiting resources may be grouped by Condition type and
+subject. Healthy standing resources are collapsed by default.
 
-## Bottlenecks
+The tree explains decomposition and ownership, not scheduling. It shows groups
+and resources with descendant phase counts. Selecting a row opens the same
+task review surface as selecting a card.
 
-Bottlenecks are diagnostic inputs for the "start here" signal. They should be
-generic by default and project-extensible.
+## Selected task review
 
-Default bottlenecks:
+Task selection is routable and survives reload, copy link, back, and forward.
+The review surface shows:
 
-| Key | Question | Raw fact |
-| --- | --- | --- |
-| `task-tree-integrity` | Does the tree have exactly one root? | root count |
-| `work-assigned` | Is there runnable work when gaps remain? | backlog/active/review counts |
-| `worker-liveness` | Are active tasks attached to real work? | stale active count when available |
-| `review-backlog` | Is review blocking progress? | review leaf count and age |
-| `blocked-frontier` | Are waits exact and owned? | blocked leaf count and blocker shape |
-| `capacity` | Is active work under or over capacity? | active count vs max concurrent |
-| `unowned-work` | Is unfinished loop work represented? | unrepresented count when available |
-| `repo-visibility` | Are workflow-relevant changes published? | project-provided metric, optional |
+1. **Purpose:** outcome, acceptance, inputs, outputs, dependencies, owner, and
+   selected workflow.
+2. **Observation:** phase, summary, evidence, desired and observed generation,
+   and freshness.
+3. **Conditions:** expected observation, current observed value, owner, and
+   evidence for each exact wait.
+4. **Execution:** current attempt, handler, workflow run or session, trigger,
+   and acceptance basis when available.
+5. **Trace:** a bounded reconciliation timeline linked to existing event and
+   session surfaces.
 
-Each bottleneck should include:
+Evidence strings remain visible even when the UI can turn a safe reference
+into a link. Absolute filesystem paths do not become arbitrary browser reads.
 
-```ts
-type ProjectBottleneck = {
-  key: string;
-  name: string;
-  question: string;
-  rawValue: string | number | null;
-  tone: "ok" | "watch" | "bad" | "unknown";
-  meaning: string;
-  candidates: string[];
-  next: string;
-  action?: ProjectActionSuggestion;
-};
-```
+A missing dependency, unresolved Condition link, inverted generation, or
+running resource without an active attempt is an integrity problem. It never
+silently becomes ready or healthy.
 
-## Coverage And Blind Spots
+## Diagnostics
 
-The UI must show what it can prove. A green board without coverage context is
-misleading.
+Diagnostics show raw facts before hints. Useful generic inputs include:
 
-Default coverage rows:
+- malformed task structure or generation drift;
+- attention or interrupted work;
+- exact waits and missing Condition observations;
+- runnable work without controller movement;
+- configured concurrency and current claims;
+- metric alerts and blind spots; and
+- event, session, report, and projection freshness.
 
-| Surface | Expected | Typical evidence |
-| --- | --- | --- |
-| Task tree | Generated decomposition, owners, waits, evidence | `.state/tasks/tree.json` |
-| Metrics | Sensor values, trend, alert state | `/api/metrics` |
-| Loop ledgers | Durable queues and non-terminal records | project loop state or task context |
-| Runtime events | Events reached handlers/workflows | events and workflow runs |
-| Static graph | App event routes and emitted events are checked | app graph/check output |
-| Reports | Human-facing summaries exist when expected | reports/readout paths |
+Every hint names the raw fact, confidence, affected resources, and clear
+condition. Absence of a signal is not proof of health.
 
-Coverage values:
+Maintain tasks are the normal representation for durable loops. The shared UI
+does not need a separate loop scheduler, lifecycle, or registry.
 
-```text
-complete | partial | inferred | missing | unknown
-```
+## Steering
 
-Every incomplete coverage row should explain the blind spot and, when useful,
-offer a structured action to review or repair observability.
+The UI is not a task mutation authority. Shared actions are owner-mediated:
 
-Coverage is important, but it is not first-screen material. It should be shown
-inside the collapsed diagnostics section unless a coverage gap is selected as
-the primary signal.
+- ask the owner to audit;
+- challenge current state;
+- request a split;
+- request Condition review or unblock; and
+- request escalation.
 
-## Durable Loops
+Before submission, the UI shows editable structured context: project, task,
+purpose, generation, phase, summary, Conditions, selected evidence, and the
+expected owner response. Confirmation says `accepted` or `queued`, never
+`completed`.
 
-The default UI should understand loops as repeated business processes, not as
-AKS-specific machinery.
+Retry, rerun, pause, resume, and domain actions appear only when the Agent App
+declares a typed action.
 
-Projects can declare loops in `project.json` or app metadata:
+## Domain extensions
 
-```json
-{
-  "ui": {
-    "loops": [
-      {
-        "id": "spec-loop",
-        "label": "Spec loop",
-        "statePath": ".state/spec-loop/state.json",
-        "taskId": "spec-loop",
-        "expected": "Every non-terminal record is represented by work, exact wait, escalation, or terminal disposition."
-      }
-    ]
-  }
-}
-```
+The shared UI owns the frame and generic read models. A project may add a
+domain panel without changing shared task semantics.
 
-Readout shape:
+Examples include AKS feature/test evidence, Evaluation calibration reports,
+and Scout source findings. Extensions use stable project artifact, event,
+readout, and action APIs; they do not read private runtime storage directly.
 
-```ts
-type ProjectLoopReadout = {
-  id: string;
-  label: string;
-  expected: string;
-  owner?: string;
-  status:
-    | "complete"
-    | "represented"
-    | "unrepresented"
-    | "running"
-    | "missing"
-    | "unknown";
-  updatedAt?: string;
-  counts: {
-    pending?: number;
-    running?: number;
-    done?: number;
-    error?: number;
-    blocked?: number;
-    unrepresented?: number;
-  };
-  reason?: string;
-  confidence: "known" | "inferred" | "unknown";
-  clearCondition: string;
-  taskId?: string;
-  action?: ProjectActionSuggestion;
-};
-```
+## Source ownership
 
-If a project does not declare loops, the default UI should still work. It simply
-shows "no declared durable loops" and relies on task tree and metrics.
-
-## Issue Rows
-
-Issue rows are not verdicts. They are raw facts plus hints, and should normally
-stay in diagnostics. The main page may surface only the highest-priority issue
-as the primary signal.
-
-```ts
-type ProjectIssueRow = {
-  key: string;
-  severity: "P0" | "P1" | "P2" | "P3";
-  group: string;
-  rawFact: string;
-  hint: string;
-  confidence: "known" | "inferred" | "unknown";
-  owner?: string;
-  currentAttempt?: string;
-  evidence?: string;
-  clearCondition: string;
-  requiredResponse: string;
-  taskId?: string;
-  action?: ProjectActionSuggestion;
-};
-```
-
-This is the most important pattern to generalize from `aks-rp-e2e.app`: the UI
-should not say "bad" without showing the raw fact, why it thinks the fact
-matters, and what would clear the signal.
-
-## Structured Steering
-
-The default UI should stop treating human input as a vague project comment when
-the user is acting from a concrete row.
-
-Every button should prepare a structured request in a textarea before sending:
-
-```text
-[project-steer] <project> <topic>
-
-action: review_bottleneck
-
-Raw fact: ...
-System hint: ...
-Confidence: ...
-Evidence: ...
-Clear condition: ...
-
-Expected response:
-Convert this into concrete work, an exact wait, an escalation, or an accepted
-no-op. Preserve the raw fact in the task tree or discussion.
-```
-
-Send behavior:
-
-- project-wide steering emits `project.owner.requested` with selected project
-  context;
-- task-specific steering includes task id, parent chain, state, and local row
-  context;
-- declared project actions emit canonical project action events;
-- UI never mutates task meaning directly unless it uses the same owner-reviewed
-  task-tree tool path.
-
-The confirmation text must be honest: the request was accepted, not completed.
-Follow-up should appear as task-tree, wait, escalation, report, event, or
-message changes.
-
-## Selected Task Detail
-
-The default task detail should include the fields that make owner state
-auditable:
-
-- id, goal, state, priority, kind;
-- parent, children, top branch;
-- readiness projection for backlog tasks;
-- blocker, blocked owner, resume condition, next review time;
-- escalation state, owner, requested action, resolution;
-- acceptance, gates, forbidden paths/actions;
-- outputs and evidence refs;
-- done knowledge and `reusable_for`;
-- conflict scope and dependency list;
-- claimed worker, lease, session, latest attempt;
-- verification verdict and reason.
-
-The drawer should be a steering surface. It should offer actions such as:
-
-- audit task;
-- split task;
-- challenge state;
-- escalate or resolve escalation;
-- rerun/retry when the project declares that action.
-
-## Project-Specific Extensions
-
-The shared UI owns the frame and generic control readout. A project app may add
-domain-specific panels by declaring UI extensions, but those extensions should
-not replace the shared readout.
-
-Examples:
-
-- `aks-rp-e2e.app`: feature knowledge map, spec verification, compact test
-  plans, live run artifacts.
-- `evaluation.app`: project/app health reports, session aftermath findings,
-  calibration drift.
-- `scout-knowledge-lib.app`: source queues, findings, synthesis status.
-
-Extension rules:
-
-- use stable `/api/projects/artifact`, readout, event, and action APIs;
-- do not call private runtime DB routes directly from domain UI;
-- show action receipts for async actions;
-- keep domain-specific terms out of the shared default UI.
-
-## Source Ownership
-
-The only editable source is:
+The editable default UI source is:
 
 ```text
 /app/projects/may-agent/packages/webui/static
 ```
 
-The HTTP server reads one generated deployment target:
+The server reads the generated deployment target:
 
 ```text
 /app/projects/platform/ui
 ```
 
-`bun run ui:sync` in `/app/projects/may-agent` refreshes vendor assets and
-replaces that served target. The sync also removes the retired `/app/ui`,
-`projects/may-agent/ui`, and `projects/may-agent.app/ui` copies so stale assets
-cannot masquerade as another source. Project-specific UI directories remain
-independent overrides and are never generated from the default source.
-
-## Current Implementation
-
-- Shipped: compact control readout, task-tree facts, coverage/issue diagnostics,
-  one editable default source, and one served deployment target.
-- Remaining: stable server-side `/api/projects/readout`, structured steering
-  from every diagnostic/task row, and project-declared loop metadata.
-- Keep `aks-rp-e2e.app` as the proving ground for domain extensions, not as
-  copied platform code.
+`bun run ui:sync` refreshes that target. Project-specific UI directories are
+independent extensions, not copies of the shared source.
 
 ## Acceptance
 
-The refined default UI is good enough when a human can open any project and
-answer:
+The default UI is complete when a person can:
 
-- What is the project trying to do?
-- Is it moving?
-- What is the first bottleneck to check?
-- Which facts are known, inferred, or missing?
-- Which loops are incomplete?
-- Which task or owner should handle the next move?
-- What exact request will the UI send if I click an action?
-- What evidence or clear condition would make the signal go away?
-
-If the UI cannot answer those questions, it is still only a board viewer.
+- distinguish current work, exact waits, and healthy standing state;
+- see desired state beside current observation;
+- explain every readiness or attention classification from raw facts;
+- inspect Conditions, evidence, and current execution without reading JSON;
+- follow bounded links into events and sessions;
+- steer through the accountable owner; and
+- tell when information is unknown, stale, or structurally inconsistent.

@@ -1,69 +1,80 @@
-# Code vs Data Decision Guide
+# Choosing the Right Mechanism
 
-When you want to enforce a constraint on agent behavior, choose the right mechanism.
+**Design status:** Accepted.
 
-## Decision Tree
+Start from the cause of the problem, not the mechanism you happen to know.
 
+## Decision guide
+
+```text
+Is this one novel or ambiguous decision?
+  -> let the accountable agent judge it directly
+
+Is this reusable guidance whose application depends on context?
+  -> skill or owned knowledge
+
+Is a stable sequence, branch, retry, or verification repeatedly missed?
+  -> agent-owned workflow
+
+Is this a deterministic fact or invariant?
+  -> code, test, schema, or tool
+
+Is this a mechanically detectable execution risk?
+  -> observe/warn guard first; block only after evidence
+
+Is a new external action unavailable?
+  -> tool or SDK capability
+
+Does work need durable ownership across multiple executions?
+  -> project app and, when useful, task resources
+
+Does existing behavior only need a wake or observation?
+  -> event, schedule, watcher, metric, or small handler
 ```
-Is this constraint PERMANENT and UNIVERSAL (true in all environments, forever)?
-  YES → Consider code (but still prefer workflow or observe/warn guard before hard blocking)
-  NO  → Use context.md (data, not code)
 
-Does the constraint depend on the current ENVIRONMENT?
-  (paths, tools available, runtime, config locations)
-  YES → context.md — environment changes, code doesn't adapt
-  NO  → Keep reading
-
-Is this about JUDGMENT (agent makes wrong decision)?
-  YES → Workflow enforcement (two-phase, evidence-gate, etc.)
-        NOT text rules (0/18 proven), NOT guards (brittle)
-  NO  → Keep reading
-
-Is this about a TOOL BUG (tool produces wrong output)?
-  YES → Fix the tool code
-  NO  → context.md
-```
+These mechanisms compose. A scheduled task may bind a workflow whose agent
+steps use skills and tools while guards observe mechanical risk.
 
 ## Examples
 
-| Constraint | Mechanism | Why |
-|-----------|-----------|-----|
-| "npx not available" | context.md | Environment fact, changes when we install npx |
-| "Project root is /app" | context.md | Environment fact, changes if we remount |
-| "Don't use /home/* paths" | context.md | We just mounted /home/hao for flexnodehelper |
-| "finish(success) must match reality" | context.md | Behavioral reminder, not enforceable by regex |
-| "Verify before finishing" | Workflow (two-phase) | Judgment task, structure beats instructions |
-| "Evidence before design brief" | Workflow (evidence-gate) | Judgment task, gate enforces process |
-| "tsc must pass before commit" | Code (npm run check) | Permanent, universal, mechanical check |
+| Need                                              | Mechanism                                  | Why                                             |
+| ------------------------------------------------- | ------------------------------------------ | ----------------------------------------------- |
+| Current repository path or credential location    | Owned context                              | Environment-specific fact                       |
+| Investigate one unfamiliar failure                | Direct owner session                       | Novel judgment                                  |
+| Apply a known review method across varied changes | Skill                                      | Reusable guidance, context-sensitive use        |
+| Always implement, test, then independently review | Workflow                                   | Stable ordered process                          |
+| TypeScript must compile                           | Test/code                                  | Deterministic invariant                         |
+| Detect likely secret material in writes           | Observable guard, then calibrated blocking | Mechanical risk with measurable false positives |
+| Call a provider API                               | Tool                                       | Explicit external capability                    |
+| Maintain a domain goal over time                  | Project app/task resources                 | Durable owner and state                         |
+| Recheck provider readiness                        | Watcher event plus Condition               | External level observation                      |
 
-## Why NOT Blocking Guards
+## Why not default to prompt rules or blocking guards?
 
-Blocking guards hardcode assumptions into regexes:
-```typescript
-// This WILL break:
-const BAD_PATHS = /\/home\/\w+/;  // But /home/hao is now mounted
-const BLOCKERS = /missing|not found/;  // But "was missing, I created it" is success
-```
+Text reminders are weak when the real problem is missing structure. Blocking
+guards are harmful when the detector encodes changing environment assumptions
+or subjective interpretation.
 
-When the environment changes:
-- **Blocking guard**: find the regex, edit code, rebuild image, redeploy pod — and you won't know it's broken until an agent gets incorrectly blocked
-- **context.md**: edit one line, takes effect next session
+Before adding a blocking guard, require:
 
-Guards are still valuable as detectors, but they should not be the first tool
-for uncertain behavior. Prefer metrics or evaluator review first. Promote to an
-`observe` or `warn` guard only after the signal is repeated, useful, and needs
-near-action visibility. A guard event can reveal agent weakness, missing
-context, misleading prompt text, or workflow design gaps without interrupting
-productive work.
+1. a mechanically identifiable signal;
+2. repeated evidence that observation or warning is insufficient;
+3. measured false positives;
+4. a clear intervention point and owner; and
+5. a regression or Gym scenario proving that blocking improves the outcome.
 
-## The Test
+Before adding a workflow, require:
 
-Before adding any blocking guard, ask:
-1. Will this regex produce false positives when the environment changes?
-2. Could a metric or evaluator review collect the signal first?
-3. Could a context.md fact or workflow step achieve the same result?
-4. Has an observe/warn guard already proven the detector is reliable?
-5. Is there a gym scenario proving the blocking guard works better?
+1. a repeatable process rather than one novel task;
+2. explicit inputs, outputs, bounds, and terminal conditions;
+3. evidence that preserving the sequence is valuable; and
+4. tests or verification appropriate to its risk.
 
-If you can't answer "no, no, no, yes, yes" — do not block. Use metrics,
-evaluator review, context.md, workflow structure, or an observe/warn guard.
+## Prefer deletion and reuse
+
+Check for an existing convention, skill, workflow, tool, SDK capability,
+Condition type, or handler before adding another. Retire mechanisms when they
+duplicate a clearer owner or no longer improve outcomes.
+
+See [evolution.md](evolution.md) for promotion and retirement and
+[work-model.md](work-model.md) for the complete work loop.

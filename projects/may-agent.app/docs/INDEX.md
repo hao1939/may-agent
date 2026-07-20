@@ -78,24 +78,27 @@ current-design list.
 
 ## Tier 2b — Manuals
 
-| Document                                                   | Purpose                                            |
-| ---------------------------------------------------------- | -------------------------------------------------- |
-| [user-guide.md](2b-manual/user-guide.md)                   | CLI flags, Docker, socket, and chat commands.      |
-| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)           | SDK usage examples.                                |
-| [handler-authoring.md](2b-manual/handler-authoring.md)     | Event handler authoring.                           |
-| [workflow-authoring.md](2b-manual/workflow-authoring.md)   | Workflow authoring and invocation.                 |
-| [agent-convention.md](2b-manual/agent-convention.md)       | Agent directory and definition conventions.        |
-| [metric-alerts.md](2b-manual/metric-alerts.md)             | Alert triage, repair, calibration, and escalation. |
-| [event-runtime-audit.md](2b-manual/event-runtime-audit.md) | Compare event runtime behavior with design.        |
-| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) | Inspect guard volume and signal quality.           |
+| Document                                                                       | Purpose                                                     |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| [user-guide.md](2b-manual/user-guide.md)                                       | CLI flags, Docker, socket, and chat commands.               |
+| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                               | SDK usage examples.                                         |
+| [handler-authoring.md](2b-manual/handler-authoring.md)                         | Event handler authoring.                                    |
+| [workflow-authoring.md](2b-manual/workflow-authoring.md)                       | Workflow authoring and invocation.                          |
+| [project-app-adoption-playbook.md](2b-manual/project-app-adoption-playbook.md) | Adopt the Agent App and optional task-resource conventions. |
+| [agent-convention.md](2b-manual/agent-convention.md)                           | Agent directory and definition conventions.                 |
+| [metric-alerts.md](2b-manual/metric-alerts.md)                                 | Alert triage, repair, calibration, and escalation.          |
+| [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                     | Compare event runtime behavior with design.                 |
+| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md)                     | Inspect guard volume and signal quality.                    |
 
 ## Tier 3 — Active proposals and trackers
 
-| Document                                                             | Status                      | Purpose                                                             |
-| -------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
-| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)     | Draft / partial             | Separate persistent chat turns from bounded jobs.                   |
-| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted concepts / partial | Converge platform operational health under May Agent App ownership. |
-| [handler-audit.md](3-proposals/handler-audit.md)                     | Tracker                     | Audit remaining handler and compatibility surfaces.                 |
+| Document                                                                                                           | Status                           | Purpose                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------- |
+| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)                                                   | Active tracker                   | Close remaining chat restart, trace, and delegation gaps.                                    |
+| [system-operations-model.md](3-proposals/system-operations-model.md)                                               | Active tracker                   | Close remaining platform operations ownership gaps.                                          |
+| [task-handler-resolution-refinement.md](3-proposals/task-handler-resolution-refinement.md)                         | Accepted; canary pending         | Make explicit workflow binding authoritative and surface unavailable workflows as attention. |
+| [task-reconciliation-closeout-and-reviewability.md](3-proposals/task-reconciliation-closeout-and-reviewability.md) | Accepted; delivery proof pending | Close persistent-task policy, Scout evidence, and delivery gaps.                             |
+| [task-reconciliation-webui-reviewability.md](3-proposals/task-reconciliation-webui-reviewability.md)               | Draft                            | Align task HTTP and WebUI read models with reconciliation semantics.                         |
 
 Completed proposals do not remain in the active proposal folder.
 

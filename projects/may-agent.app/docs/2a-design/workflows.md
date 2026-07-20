@@ -31,16 +31,16 @@ a parallel request type to represent either one.
 
 Skills and workflows share a resource architecture, not execution semantics.
 
-| Concern | Skill | Workflow |
-|---|---|---|
-| Primary source | `SKILL.md` instructions | TypeScript module |
-| Controller | Model judgment | Workflow runtime |
-| Unit of use | One model turn | Durable workflow run |
-| Selection | Model match or explicit invocation | Explicit tool, SDK, handler, or schedule invocation |
-| Sequencing | Advisory | Enforced by code |
-| State and closure | Enclosing session/work owns it | `workflowRunId` and terminal workflow result |
-| Optional code | Helper scripts run through normal tools | Imported helpers or `ctx.runFunction(...)` steps |
-| Best fit | Variable, judgment-heavy method | Repeatable, testable orchestration |
+| Concern           | Skill                                   | Workflow                                            |
+| ----------------- | --------------------------------------- | --------------------------------------------------- |
+| Primary source    | `SKILL.md` instructions                 | TypeScript module                                   |
+| Controller        | Model judgment                          | Workflow runtime                                    |
+| Unit of use       | One model turn                          | Durable workflow run                                |
+| Selection         | Model match or explicit invocation      | Explicit tool, SDK, handler, or schedule invocation |
+| Sequencing        | Advisory                                | Enforced by code                                    |
+| State and closure | Enclosing session/work owns it          | `workflowRunId` and terminal workflow result        |
+| Optional code     | Helper scripts run through normal tools | Imported helpers or `ctx.runFunction(...)` steps    |
+| Best fit          | Variable, judgment-heavy method         | Repeatable, testable orchestration                  |
 
 A script bundled with a skill does not make the skill a workflow. The model
 still decides whether and how to run that helper. Conversely, prose beside a
@@ -86,17 +86,13 @@ agents/<agent>/workflows/<name>.ts
 ```
 
 ```ts
-import type {
-  WorkflowContext,
-  WorkflowResult,
-} from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "implement-and-verify";
-export const description = "Implement a change, run deterministic checks, and return the verified result.";
+export const description =
+  "Implement a change, run deterministic checks, and return the verified result.";
 
-export async function execute(
-  ctx: WorkflowContext,
-): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const implementation = await ctx.runAgent("dev", ctx.task);
   if (implementation.status === "error") {
     return ctx.blocked("Implementation failed", {
@@ -271,9 +267,11 @@ sessions, status, and terminal summary or reason. Terminal outcomes are:
 - runtime interruption or error, recorded by the runtime.
 
 A local blocked result is not automatically a cross-owner escalation. The
-top-level caller or runtime boundary decides whether to wake the task owner,
-workflow owner, or escalation path. Nested workflows return their result to
-their parent synchronously.
+top-level caller or runtime boundary decides whether to record attention or
+create an explicit escalation. For a task-bound workflow, `blocked` records a
+failed attempt and task attention; only an admitted `needs-owner` task result
+causes sequential owner handoff. Nested workflows return their result to their
+parent synchronously.
 
 Resume creates a new run linked to the prior run. It must resolve the same
 workflow identity deliberately. If the original content hash is unavailable,

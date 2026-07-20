@@ -61,6 +61,22 @@ The runtime never restores canonical state from `tree.json`, and generic task
 operations never rewrite `project.json`. Read models may be regenerated at any
 time.
 
+### Generated task projection
+
+`tree.json` explains current work; it is not a copy of canonical history. Its
+stable content is intentionally small:
+
+- projected structural groups and live tasks;
+- each task's current summary, evidence, attempt count, and active attempt;
+- current Conditions;
+- active task IDs; and
+- satisfaction facts only for dependencies referenced by live tasks.
+
+Full resources, historical attempts, triggers, and receipt payloads remain in
+canonical state and are omitted from the projection. Consumers that need
+recovery or audit history must read the appropriate canonical or trace surface,
+not infer it from `tree.json`.
+
 ## Task resource
 
 Each executable task has:
@@ -123,9 +139,15 @@ If `task.workflow` is present, the runtime resolves that workflow under the
 resolved agent. The workflow is reusable experience delegated by that owner.
 Without a workflow, the owner handles the task directly.
 
-An unavailable workflow records `HandlerUnavailable` and hands the same task
-to its owner sequentially. A workflow may also return `needs-owner` explicitly.
-Neither path creates a concurrent second claim or hides the broken binding.
+An explicit workflow binding is the selected execution method for that task
+generation. An unavailable workflow records `HandlerUnavailable` and moves the
+task to `attention`; it is not replaced by direct owner execution. A successful
+app reload enqueues the task once after the named workflow resolves again.
+
+A workflow may return `needs-owner` explicitly. This is the only automatic
+workflow-to-owner handoff, and it creates at most one sequential owner attempt.
+Missing, blocked, thrown, timed-out, and invalid workflows do not imply
+handoff.
 
 ## One executable result contract
 
