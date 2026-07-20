@@ -8,6 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import type {
   ProjectAppCondition,
@@ -420,6 +421,79 @@ export function setProjectLifecycle(config: TaskStateConfig, lifecycle: string, 
     if (normalizedLifecycle(tree.project_lifecycle) === nextLifecycle) return;
     tree.project_lifecycle = nextLifecycle;
     saveTaskState(config, tree, { projectLifecycleReason: transitionReason });
+  });
+}
+
+export type TaskStateMigrationResult = {
+  revision: string;
+  changed: boolean;
+  written: boolean;
+  taskCountBefore: number;
+  taskCountAfter: number;
+};
+
+function storedTaskStateRevision(config: TaskStateConfig): string {
+  return createHash("sha256").update(readFileSync(config.statePath)).digest("hex");
+}
+
+function comparableTaskState(tree: TaskTree): string {
+  const copy = structuredClone(tree);
+  delete copy.updated_at;
+  normalizeTaskStateInPlace(copy);
+  return JSON.stringify(canonicalTaskStateForWrite(copy));
+}
+
+function taskStateResourceCount(tree: TaskTree): number {
+  return Object.keys(tree.groups ?? {}).length + Object.keys(tree.resources ?? {}).length;
+}
+
+/** Apply one reviewed migration while the project is paused and the state revision is unchanged. */
+export function migrateTaskState(
+  config: TaskStateConfig,
+  input: {
+    expectedRevision?: string;
+    dryRun?: boolean;
+    allowShrinkage?: boolean;
+    migrate: (tree: TaskTree) => void;
+  },
+): TaskStateMigrationResult {
+  return withTaskStateLock(config, () => {
+    const revision = storedTaskStateRevision(config);
+    if (input.expectedRevision && revision !== input.expectedRevision) {
+      throw new Error(
+        `Task state changed after review: expected ${input.expectedRevision}, found ${revision}`,
+      );
+    }
+    const current = readTaskState(config);
+    if (normalizedLifecycle(current.project_lifecycle) !== "paused") {
+      throw new Error("Task state migration requires project_lifecycle=paused");
+    }
+    const runningAttemptIds = Object.values(current.attempts ?? {})
+      .filter((attempt) => attempt.state === "running")
+      .map((attempt) => attempt.metadata.id);
+    if (runningAttemptIds.length > 0) {
+      throw new Error(
+        `Task state migration requires drained attempts; still running: ${runningAttemptIds.slice(0, 8).join(", ")}`,
+      );
+    }
+
+    const next = structuredClone(current);
+    input.migrate(next);
+    if (normalizedLifecycle(next.project_lifecycle) !== "paused") {
+      throw new Error("Task state migration cannot resume or change project lifecycle");
+    }
+    const changed = comparableTaskState(current) !== comparableTaskState(next);
+    const result = {
+      revision,
+      changed,
+      written: Boolean(changed && !input.dryRun),
+      taskCountBefore: taskStateResourceCount(current),
+      taskCountAfter: taskStateResourceCount(next),
+    };
+    if (result.written) {
+      saveTaskState(config, next, { allowShrinkage: input.allowShrinkage });
+    }
+    return result;
   });
 }
 

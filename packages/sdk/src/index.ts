@@ -972,6 +972,7 @@ export type {
 export {
   buildProjectTaskTreeProjection,
   isLeaf,
+  migrateTaskState,
   normalizeTaskStateInPlace,
   normalizeStringArray,
   readTaskState,
@@ -982,7 +983,10 @@ export {
   taskState,
   withTaskStateLock,
 } from "./project-task-tree-store.js";
-export type { SaveTaskStateOptions } from "./project-task-tree-store.js";
+export type {
+  SaveTaskStateOptions,
+  TaskStateMigrationResult,
+} from "./project-task-tree-store.js";
 export type {
   ProjectTaskIntegrityFinding,
   ProjectTaskPhase,

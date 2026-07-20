@@ -720,6 +720,10 @@ export function observeProjectAppTaskIntent(
     }
     tree.resources = { ...(tree.resources ?? {}), [input.intent.id]: resource };
     const task = upsertTask(tree, resource, owner);
+    if (generation > previousGeneration) {
+      pruneUnlinkedConditions(tree);
+      if (tree.taskTriggers) delete tree.taskTriggers[task.id];
+    }
     const suppressTrigger =
       input.trigger &&
       resource.status.phase === "waiting" &&
@@ -829,11 +833,12 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
   if (pendingTrigger) return true;
   if (!dependenciesSatisfied(tree, intent)) return false;
+  if (resource.metadata.generation > resource.status.observedGeneration) return true;
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") return hasSatisfiedTaskCondition(tree, task.id);
   if (resource.status.phase === "attention") return needsOwnerHandoff(tree, resource);
   if (resource.status.phase === "running") return false;
-  return resource.metadata.generation > resource.status.observedGeneration;
+  return false;
 }
 
 export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[] {
@@ -1010,16 +1015,6 @@ export function claimObservedProjectAppTask(
         summary: resource.status.summary ?? "Task is waiting for owner/reviewer attention",
       };
     }
-    const openConditionIds = openTaskConditionIds(tree, task);
-    const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, task.id);
-    if (
-      resource.status.phase === "waiting" &&
-      openConditionIds.length > 0 &&
-      !pendingTrigger &&
-      !hasSatisfiedCondition
-    ) {
-      return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
-    }
     const dependencyIds = [...(intent.dependsOn ?? [])].filter((id) => {
       if (tree.receipts?.[id]) return false;
       const dependency = tree.resources?.[id];
@@ -1030,6 +1025,23 @@ export function claimObservedProjectAppTask(
     });
     if (dependencyIds.length > 0) {
       return { kind: "waiting", taskId: task.id, conditionIds: [], dependencyIds };
+    }
+
+    if (
+      resource.metadata.generation > resource.status.observedGeneration &&
+      resource.status.conditionIds?.length
+    ) {
+      unlinkTaskConditions(tree, task);
+    }
+    const openConditionIds = openTaskConditionIds(tree, task);
+    const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, task.id);
+    if (
+      resource.status.phase === "waiting" &&
+      openConditionIds.length > 0 &&
+      !pendingTrigger &&
+      !hasSatisfiedCondition
+    ) {
+      return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
     }
 
     if (resource.status.phase === "waiting" && hasSatisfiedCondition) {
