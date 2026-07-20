@@ -221,6 +221,8 @@ describe("app event contract", () => {
     });
     expect(ownerB?.id).toBe(ownerA?.id);
     expect(ownerA?.workflow).toBeUndefined();
+    expect(ownerA?.input).toBeUndefined();
+    expect(ownerB?.input).toBeUndefined();
     expect(
       resolveAksTask({
         type: "project.problem.investigation.requested",
@@ -340,6 +342,7 @@ describe("app event contract", () => {
     expect(focusB?.owner).toBe("app-ops");
     expect(focusA?.id).not.toBe(focusB?.id);
     expect(focusAAgain?.id).toBe(focusA?.id);
+    expect(focusAAgain?.input).toEqual(focusA?.input);
     expect(focusA?.id.startsWith("route/")).toBe(false);
 
     expect(

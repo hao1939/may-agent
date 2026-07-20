@@ -109,7 +109,7 @@ export function resolveAksTask(
 
   const details = eventDetails(event);
   const taskId = targetTaskId(event);
-  const input = { ...details, targetTaskId: taskId || null };
+  const triggerInput = { ...details, targetTaskId: taskId || null };
 
   if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
     return {
@@ -122,7 +122,6 @@ export function resolveAksTask(
       ],
       mode: "maintain",
       owner: "app-ops",
-      input,
       priority: "P1",
     };
   }
@@ -147,7 +146,7 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "problem-solver",
-        input,
+        input: triggerInput,
         priority: "P1",
       };
     }
@@ -163,7 +162,6 @@ export function resolveAksTask(
         mode: "maintain",
         owner: "app-ops",
         workflow: "project-stall-review",
-        input,
         priority: "P0",
       };
     case "project.focus.review.requested": {
@@ -188,7 +186,7 @@ export function resolveAksTask(
         mode: "maintain",
         owner: "app-ops",
         workflow: "focus-plan",
-        input,
+        input: { focusKey: focusKey || "current" },
         priority: "P1",
       };
     }
@@ -215,7 +213,7 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "approval-dispatch",
-        input,
+        input: triggerInput,
         priority: "P1",
       };
     }
