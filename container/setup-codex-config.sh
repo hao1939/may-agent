@@ -19,7 +19,7 @@ model_provider = "litellm"
 model = "${codex_model}"
 model_reasoning_effort = "high"
 personality = "pragmatic"
-update_on_startup = false
+check_for_update_on_startup = false
 
 [model_providers.litellm]
 name = "LiteLLM"
