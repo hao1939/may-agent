@@ -357,8 +357,8 @@ const ALL_METRICS: MetricDef[] = [
   {
     id: "scout.knowledge-practice-loaded",
     name: "Scout knowledge practice loaded",
-    owner: "scout",
-    project: "scout-second-brain-learning",
+    owner: "may",
+    project: "scout-knowledge-lib.app",
     type: "health",
     target: 1,
     threshold: 1,
@@ -371,37 +371,27 @@ const ALL_METRICS: MetricDef[] = [
     id: "scout.knowledge-preamble-coverage",
     name: "Scout knowledge preamble coverage",
     owner: "scout",
-    project: "scout-second-brain-learning",
+    project: "scout-knowledge-lib.app",
     type: "gauge",
     target: 0.25,
     threshold: 0.15,
     unit: "ratio",
     alert_op: "<",
     priority: "P3",
+    config: { alert: { mode: "disabled", disabled: true } },
   },
   {
-    id: "scout.sourced-artifacts-24h",
-    name: "Scout sourced artifacts (24h)",
+    id: "scout.accepted-source-outputs-24h",
+    name: "Scout accepted source outputs (24h)",
     owner: "scout",
-    project: "scout-second-brain-learning",
+    project: "scout-knowledge-lib.app",
     type: "gauge",
     target: 2,
     threshold: 1,
     unit: "count",
     alert_op: "<",
     priority: "P2",
-  },
-  {
-    id: "scout.downstream-reference-files-7d",
-    name: "Scout downstream reference files (7d)",
-    owner: "scout",
-    project: "scout-second-brain-learning",
-    type: "gauge",
-    target: 3,
-    threshold: 1,
-    unit: "count",
-    alert_op: "<",
-    priority: "P3",
+    config: { alert: { mode: "disabled", disabled: true } },
   },
   {
     id: "handler.p95-duration",
@@ -650,6 +640,8 @@ const ALL_METRICS: MetricDef[] = [
 ];
 
 const RETIRED_METRIC_IDS = [
+  "scout.sourced-artifacts-24h",
+  "scout.downstream-reference-files-7d",
   "evaluator.stale-running-session-count",
   "evaluator.success-candidates-24h",
   "evaluator.success-learnings-24h",
@@ -807,39 +799,27 @@ function fileContainsAny(path: string, patterns: RegExp[]): boolean {
 }
 
 function scoutKnowledgePracticeLoaded(root: string): boolean {
-  // Scout agent migrated to projects/scout-knowledge-lib.app/agents/scout/ (ea04018c3)
-  // Check both new and legacy paths for resilience
-  const paths = [
-    join(
-      root,
-      "projects",
-      "scout-knowledge-lib.app",
-      "agents",
-      "scout",
-      "AGENTS.md",
-    ),
-    join(root, "agents", "scout", "AGENTS.md"),
-  ];
-  return paths.some((p) =>
-    fileContains(p, [
-      /search .*existing|existing .*update|update .*existing/i,
-      /<ai_context>/i,
-    ]),
+  const path = join(
+    root,
+    "projects",
+    "scout-knowledge-lib.app",
+    "agents",
+    "scout",
+    "AGENTS.md",
   );
+  return fileContains(path, [
+    /search .*existing|existing .*update|update .*existing/i,
+    /<ai_context>/i,
+  ]);
 }
 
 function scoutKnowledgePreambleCoverage(root: string): {
   value: number;
   sampleSize: number;
 } {
-  const files = [
-    // Scout knowledge migrated to projects/scout-knowledge-lib/ (ea04018c3)
-    ...walkMarkdownFiles(
-      join(root, "projects", "scout-knowledge-lib", "knowledge"),
-    ),
-    ...walkMarkdownFiles(join(root, "agents", "scout", "knowledge")),
-    ...walkMarkdownFiles(join(root, "shared", "knowledge", "entries")),
-  ];
+  const files = walkMarkdownFiles(
+    join(root, "projects", "scout-knowledge-lib", "knowledge"),
+  );
   if (files.length === 0) return { value: 1, sampleSize: 0 };
   const withPreamble = files.filter((file) =>
     fileContainsAny(file, [/<ai_context>/i]),
@@ -848,88 +828,6 @@ function scoutKnowledgePreambleCoverage(root: string): {
     value: parseFloat((withPreamble / files.length).toFixed(4)),
     sampleSize: files.length,
   };
-}
-
-function scoutSourcedArtifacts24h(root: string, now: number): number {
-  const cutoff = now - 24 * 60 * 60 * 1000;
-  const roots = [
-    // Scout agent/knowledge migrated to project paths (ea04018c3)
-    join(root, "projects", "scout-knowledge-lib", "knowledge"),
-    join(
-      root,
-      "projects",
-      "scout-knowledge-lib.app",
-      "agents",
-      "scout",
-      "workspace",
-    ),
-    join(root, "agents", "scout", "knowledge"),
-    join(root, "agents", "scout", "workspace"),
-    join(root, "shared", "knowledge", "entries"),
-  ];
-  return roots
-    .flatMap((dir) => walkMarkdownFiles(dir))
-    .filter((file) => {
-      try {
-        if (statSync(file).mtimeMs < cutoff) return false;
-        return fileContainsAny(file, [
-          /^Sources?:/im,
-          /\*\*Sources?:?\*\*:?/i,
-          /https?:\/\//i,
-        ]);
-      } catch {
-        return false;
-      }
-    }).length;
-}
-
-function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
-  const cutoff = now - 7 * 24 * 60 * 60 * 1000;
-  // Walk agents + shared normally; for projects, walk specific relevant subtrees
-  // to avoid the 5000-file cap being exhausted by huge irrelevant dirs (aks-rp-e2e, _archive).
-  const projectsDir = join(root, "projects");
-  const projectSubdirs: string[] = [];
-  try {
-    for (const entry of readdirSync(projectsDir)) {
-      // Skip huge irrelevant directories that exhaust the walk cap
-      if (
-        entry === "aks-rp-e2e" ||
-        entry === "aks-rp-e2e.app" ||
-        entry === "runs"
-      )
-        continue;
-      if (entry === "_archive" || entry === "aks-explorer") continue;
-      const p = join(projectsDir, entry);
-      try {
-        if (statSync(p).isDirectory()) projectSubdirs.push(p);
-      } catch {
-        /* skip */
-      }
-    }
-  } catch {
-    /* skip */
-  }
-
-  return [
-    ...walkMarkdownFiles(join(root, "agents")),
-    ...projectSubdirs.flatMap((d) => walkMarkdownFiles(d)),
-    ...walkMarkdownFiles(join(root, "shared", "may-agent-docs")),
-  ].filter((file) => {
-    // Exclude scout's own files (both legacy and new paths)
-    if (file.includes("/agents/scout/")) return false;
-    if (file.includes("/scout-knowledge-lib")) return false;
-    try {
-      if (statSync(file).mtimeMs < cutoff) return false;
-      return fileContainsAny(file, [
-        /agents\/scout\/knowledge/i,
-        /scout-second-brain-learning/i,
-        /scout-knowledge-lib/i,
-        /\bScout\b/,
-      ]);
-    } catch {
-      return false;
-    }
-  }).length;
 }
 
 function sessionJsonlPath(
@@ -1085,6 +983,38 @@ export const create: HandlerModule["create"] = (
 
     function count(query: string, ...args: any[]): number {
       return (db.prepare(query).get(...args) as any)?.c || 0;
+    }
+
+    function scoutAcceptedSourceOutputsSince(since: number): number {
+      const rows = db
+        .prepare(
+          `SELECT data
+             FROM events
+            WHERE event_type = 'project.task.reconciled'
+              AND project_id = 'scout-knowledge-lib'
+              AND task_id LIKE 'explore-%'
+              AND timestamp > ?`,
+        )
+        .all(since) as Array<{ data?: string | null }>;
+      let outputs = 0;
+      for (const row of rows) {
+        if (!row.data) continue;
+        try {
+          const data = JSON.parse(row.data) as {
+            disposition?: unknown;
+            evidence?: unknown;
+          };
+          if (data.disposition !== "converged" || !Array.isArray(data.evidence))
+            continue;
+          outputs += data.evidence.filter(
+            (item): item is string =>
+              typeof item === "string" && item.startsWith("output:/"),
+          ).length;
+        } catch {
+          // Ignore malformed historical event data.
+        }
+      }
+      return outputs;
     }
 
     function terminalSessionsWithoutEndEvent(
@@ -2037,25 +1967,15 @@ export const create: HandlerModule["create"] = (
 
     try {
       record(
-        "scout.sourced-artifacts-24h",
-        scoutSourcedArtifacts24h(ctx.sdk.paths.root, now),
+        "scout.accepted-source-outputs-24h",
+        scoutAcceptedSourceOutputsSince(twentyFourH),
+        undefined,
+        "Semantic cutover 2026-07-20: counts admitted output evidence from converged Scout source reconciliations.",
       );
     } catch (e) {
       ctx.sdk.log(
         "info",
-        `[metrics-snapshot] Error measuring scout.sourced-artifacts-24h: ${e}`,
-      );
-    }
-
-    try {
-      record(
-        "scout.downstream-reference-files-7d",
-        scoutDownstreamReferenceFiles7d(ctx.sdk.paths.root, now),
-      );
-    } catch (e) {
-      ctx.sdk.log(
-        "info",
-        `[metrics-snapshot] Error measuring scout.downstream-reference-files-7d: ${e}`,
+        `[metrics-snapshot] Error measuring scout.accepted-source-outputs-24h: ${e}`,
       );
     }
 

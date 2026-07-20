@@ -5,6 +5,11 @@ import {
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
+import {
+  buildExperienceReviewPacket,
+  experiencePacketPrompt,
+  isExperienceReviewTask,
+} from "./experience-review.js";
 
 type OwnerResult = Exclude<
   ProjectAppTaskHandlerResult,
@@ -30,6 +35,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     field(ctx.task, "project") ?? "/app/projects/scout-knowledge-lib";
   const taskTreePath = resolveTaskTreePath(appDir);
+  const experienceContext = isExperienceReviewTask(ctx.task)
+    ? experiencePacketPrompt(buildExperienceReviewPacket(ctx.query))
+    : "";
   const prompt =
     `You are Scout maintaining the Scout Knowledge Library as a project.
 
@@ -59,24 +67,15 @@ Valid durable outcomes:
 - propose a typed task action when project understanding or next work changes
 
 Health-signal closure rules:
-- If the trigger contains library-health signals, do not only refresh a broad
-  parent task. For each P1 signal, either propose one concrete child-task action
-  with current evidence and next action, or record an exact accepted no-op reason.
+- Library-health signals are current domain facts, not task-progress judgments
+  or instructions to create work. Review only the facts listed in this trigger.
+- For each meaningful fact, perform the smallest useful domain step, propose at
+  most one independently closable child task, or record an exact no-op reason.
 - Treat future-dated project/library content as a time-trust repair before
   doing more synthesis. Correct the date when it is wrong; otherwise record why
   the future date is intentional.
-- If a repeated-library-health-signal appears, inspect the matching task. If the
-  task is real, propose an update with current facts and a next action. If no
-  concrete task exists, propose one.
-- A bare nonterminal task with only a projected next_action is not closure. When a represented
-  health task lacks progress evidence, do one small concrete library step or
-  record the exact reason it cannot move yet.
-- If the trigger contains active-task-not-moving, inspect each named task and
-  finish one of these outcomes: make a small domain change and record evidence,
-  close the task with result, or escalate with the exact blocker and waiting
-  condition.
-- If oversized notes are intentionally tolerated, record that per note with the
-  reason. Do not let tolerated notes keep firing as unexplained drift.
+- An unchanged fact may be a valid no-op. The observer itself controls when the
+  fact is next due for review; do not encode owner decisions into observer state.
 - If unsourced backlog keeps growing, select a small batch or record the exact
   capacity blocker and next batch target.
 - If human-navigation-missing appears, create knowledge/README.md first. Keep it
@@ -104,6 +103,8 @@ Operating rules:
 - Finish with state, summary, evidence, actions, and exact Conditions when
   waiting. Use \`converged\` after applying the current bounded actions, and
   \`waiting\` only for an identified external fact that an observer will emit.
+
+${experienceContext}
 
 ${triggerBlock(ctx.task)}`.trim();
 

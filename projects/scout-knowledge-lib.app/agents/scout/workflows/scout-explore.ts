@@ -1,9 +1,11 @@
 /**
  * Scout explore — routine discovery cron task.
  *
- * Called by cron with a source-specific task (arXiv, HN, XHS, GitHub).
- * No gates, no heartbeat context loading — just runs the agent with the task.
+ * Called with a source-specific task (arXiv, HN, XHS, GitHub). The workflow
+ * prepares source evidence where available, then admits one bounded result.
  */
+import { createHash } from "node:crypto";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";
 import {
   type ProjectAppTaskHandlerResult,
@@ -33,16 +35,35 @@ export const description =
 const defaultAppDir = "/app/projects/scout-knowledge-lib.app";
 const defaultProjectDir = "/app/projects/scout-knowledge-lib";
 const defaultXhsQuery = "AI agent 智能体";
+const sourceNames = ["arxiv", "hn", "xhs", "github"] as const;
+
+type SourceName = (typeof sourceNames)[number];
+
+type SourceObservation = {
+  name: SourceName;
+  queryOrFeed: string;
+  checkedAt: string;
+  fingerprint?: string;
+  itemIdsOrUrls: string[];
+};
 
 const ExploreAgentResultSchema = Type.Object({
-  summary: Type.String({ minLength: 1 }),
-  evidence: Type.Array(Type.String()),
-  outputs: Type.Array(Type.String()),
+  summary: Type.String({ minLength: 1, maxLength: 1000 }),
+  source: Type.Object({
+    name: Type.Union(sourceNames.map((source) => Type.Literal(source))),
+    queryOrFeed: Type.String({ minLength: 1, maxLength: 300 }),
+    checkedAt: Type.String({ minLength: 1, maxLength: 40 }),
+    fingerprint: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    itemIdsOrUrls: Type.Array(Type.String({ maxLength: 500 }), {
+      maxItems: 20,
+    }),
+  }),
+  outputs: Type.Array(Type.String({ maxLength: 1000 }), { maxItems: 20 }),
 });
 
 type ExploreAgentResult = {
   summary: string;
-  evidence: string[];
+  source: SourceObservation;
   outputs: string[];
 };
 
@@ -79,15 +100,16 @@ ${JSON.stringify(xhsPacket ?? { query: "missing", items: [] }, null, 2)}
 \`\`\`
 `
       : "";
-  const resultContract =
-    source === "xhs"
-      ? `
+  const resultContract = `
 Result contract:
-- Return summary, evidence, and outputs through finish().
+- Return summary, source, and outputs through finish().
+- source must identify the source name, exact query or feed checked, current
+  checkedAt timestamp, optional retrieval fingerprint, and at most 20 stable
+  item IDs or credential-free URLs.
 - List every created or updated file as an absolute path in outputs.
-- For an evidence-backed no-op, return outputs: [].
-`
-      : "";
+- For an evidence-backed no-op, return outputs: [] and explain in summary why
+  the current source observation did not justify a useful library change.
+`;
 
   return `${task}${sourceContract}
 
@@ -135,6 +157,13 @@ function reconciliationSource(task: string): string {
   return String(input.source ?? "").toLowerCase();
 }
 
+function sourceName(task: string): SourceName | null {
+  const source = reconciliationSource(task);
+  return sourceNames.includes(source as SourceName)
+    ? (source as SourceName)
+    : null;
+}
+
 export function xhsWaitResult(
   task: string,
   credential: XhsCredentialStatus,
@@ -168,7 +197,7 @@ function xhsAccessEvidence(credential: XhsCredentialStatus): string[] {
   return [`access:${credential.state}`, ...credential.evidence];
 }
 
-function admittedOutputPaths(
+export function admittedOutputPaths(
   outputs: string[],
   paths: { appDir: string; projectDir: string },
 ): string[] | null {
@@ -176,14 +205,118 @@ function admittedOutputPaths(
     resolve(paths.projectDir, "knowledge"),
     resolve(paths.appDir, "agents", "scout", "workspace"),
   ];
-  const normalized = outputs.map((output) => output.trim()).filter(Boolean);
+  const normalized = [
+    ...new Set(outputs.map((output) => output.trim()).filter(Boolean)),
+  ];
   if (normalized.some((output) => !isAbsolute(output))) return null;
-  const resolved = normalized.map((output) => resolve(output));
-  return resolved.every((output) =>
-    roots.some((root) => output.startsWith(`${root}${sep}`)),
-  )
-    ? resolved
-    : null;
+  try {
+    const realRoots = roots.map((root) => realpathSync(root));
+    const resolved = normalized.map((output) => {
+      if (!existsSync(output) || !statSync(output).isFile()) throw new Error();
+      return realpathSync(resolve(output));
+    });
+    return resolved.every((output) =>
+      realRoots.some(
+        (root) => output === root || output.startsWith(`${root}${sep}`),
+      ),
+    )
+      ? resolved
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeSourceItem(value: string): string {
+  const compact = value.trim().slice(0, 500);
+  try {
+    const url = new URL(compact);
+    for (const key of [...url.searchParams.keys()]) {
+      if (
+        /(auth|authorization|cookie|credential|key|password|secret|signature|token|xsec)/i.test(
+          key,
+        )
+      ) {
+        url.searchParams.delete(key);
+      }
+    }
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return compact;
+  }
+}
+
+function admitSourceObservation(
+  value: unknown,
+  expectedSource: SourceName,
+  now: number,
+): SourceObservation | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const checkedAt = String(source.checkedAt ?? "").trim();
+  const checkedTime = Date.parse(checkedAt);
+  const queryOrFeed = sanitizeSourceItem(
+    String(source.queryOrFeed ?? "")
+      .trim()
+      .slice(0, 300),
+  );
+  if (
+    source.name !== expectedSource ||
+    !queryOrFeed ||
+    !Number.isFinite(checkedTime) ||
+    checkedTime > now + 5 * 60_000 ||
+    now - checkedTime > 24 * 60 * 60_000 ||
+    !Array.isArray(source.itemIdsOrUrls)
+  ) {
+    return null;
+  }
+  const itemIdsOrUrls = [
+    ...new Set(
+      source.itemIdsOrUrls
+        .filter((item): item is string => typeof item === "string")
+        .map(sanitizeSourceItem)
+        .filter(Boolean),
+    ),
+  ].slice(0, 20);
+  return {
+    name: expectedSource,
+    queryOrFeed,
+    checkedAt: new Date(checkedTime).toISOString(),
+    ...(typeof source.fingerprint === "string" && source.fingerprint.trim()
+      ? { fingerprint: source.fingerprint.trim().slice(0, 200) }
+      : {}),
+    itemIdsOrUrls,
+  };
+}
+
+function xhsObservation(
+  packet: { query: string; items: XhsSearchItem[] },
+  now: number,
+): SourceObservation {
+  const itemIdsOrUrls = [
+    ...new Set(packet.items.map((item) => sanitizeSourceItem(item.id))),
+  ].slice(0, 20);
+  return {
+    name: "xhs",
+    queryOrFeed: packet.query,
+    checkedAt: new Date(now).toISOString(),
+    fingerprint: createHash("sha256")
+      .update(JSON.stringify(itemIdsOrUrls))
+      .digest("hex")
+      .slice(0, 16),
+    itemIdsOrUrls,
+  };
+}
+
+function sourceResultEvidence(
+  source: SourceObservation,
+  provenance: "workflow" | "agent-result",
+): string[] {
+  return [
+    `source-result:${JSON.stringify(source)}`,
+    `source-provenance:${provenance}`,
+  ];
 }
 
 export async function executeScoutExplore(
@@ -193,7 +326,10 @@ export async function executeScoutExplore(
   const agent = "scout";
   const appDir = ctx.appDir ?? defaultAppDir;
   const projectDir = ctx.projectDir ?? defaultProjectDir;
-  const source = reconciliationSource(ctx.task);
+  const source = sourceName(ctx.task);
+  if (!source)
+    return ctx.blocked("Scout exploration source is missing or unsupported");
+  const now = Date.now();
   let xhsPacket: { query: string; items: XhsSearchItem[] } | undefined;
   let sourceEvidence: string[] = [];
 
@@ -211,10 +347,18 @@ export async function executeScoutExplore(
     }
     if (search.items.length === 0) {
       const summary = `XHS search for "${search.query}" returned no current source items; no artifact was created.`;
+      const observation = xhsObservation(
+        { query: search.query, items: [] },
+        now,
+      );
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [...sourceEvidence, "result:evidence-backed-no-op"],
+        evidence: [
+          ...sourceEvidence,
+          ...sourceResultEvidence(observation, "workflow"),
+          "result:evidence-backed-no-op",
+        ],
         actions: [],
       } satisfies TaskHandlerResult);
     }
@@ -226,12 +370,9 @@ export async function executeScoutExplore(
     ctx.task || "Explore sources and update the Scout knowledge library.";
   const agentTask = buildExploreTask(task, { appDir, projectDir }, xhsPacket);
 
-  const result =
-    source === "xhs"
-      ? await ctx.runAgent(agent, agentTask, {
-          schema: ExploreAgentResultSchema,
-        })
-      : await ctx.runAgent(agent, agentTask);
+  const result = await ctx.runAgent(agent, agentTask, {
+    schema: ExploreAgentResultSchema,
+  });
 
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Scout exploration session failed", {
@@ -240,41 +381,55 @@ export async function executeScoutExplore(
       summary: result.lastAssistantText,
     });
   }
-  if (source === "xhs") {
-    const structured = result.structuredResult as ExploreAgentResult;
-    const outputs = admittedOutputPaths(structured.outputs, {
-      appDir,
-      projectDir,
-    });
-    if (!outputs) {
-      return ctx.blocked(
-        "Scout exploration returned an output outside the allowed roots",
-        {
-          outputs: structured.outputs,
-        },
-      );
-    }
-    return ctx.done(structured.summary, {
-      state: "converged",
-      summary: structured.summary,
-      evidence: [
-        ...new Set([
-          ...sourceEvidence,
-          ...structured.evidence,
-          ...outputs.map((output) => `output:${output}`),
-          ...(result.sessionId ? [`session:${result.sessionId}`] : []),
-        ]),
-      ],
-      actions: [],
-    } satisfies TaskHandlerResult);
+  const structured = result.structuredResult as ExploreAgentResult | undefined;
+  if (!structured || !Array.isArray(structured.outputs)) {
+    return ctx.blocked(
+      "Scout exploration did not return a structured source result",
+      {
+        sessionId: result.sessionId,
+      },
+    );
   }
-  const summary = ctx.summarize(result, { maxLength: 500 });
-  return ctx.done(summary, {
-    state: "converged",
-    summary,
-    evidence: [`session:${result.sessionId}`],
-    actions: [],
+  const observation =
+    source === "xhs" && xhsPacket
+      ? xhsObservation(xhsPacket, now)
+      : admitSourceObservation(structured.source, source, Date.now());
+  if (!observation) {
+    return ctx.blocked(
+      "Scout exploration returned invalid current-source evidence",
+      {
+        source,
+        sessionId: result.sessionId,
+      },
+    );
+  }
+  const outputs = admittedOutputPaths(structured.outputs, {
+    appDir,
+    projectDir,
   });
+  if (!outputs) {
+    return ctx.blocked(
+      "Scout exploration returned a missing output or an output outside the allowed roots",
+      { outputs: structured.outputs },
+    );
+  }
+  return ctx.done(structured.summary, {
+    state: "converged",
+    summary: structured.summary,
+    evidence: [
+      ...new Set([
+        ...sourceEvidence,
+        ...sourceResultEvidence(
+          observation,
+          source === "xhs" ? "workflow" : "agent-result",
+        ),
+        ...outputs.map((output) => `output:${output}`),
+        ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
+        ...(result.sessionId ? [`session:${result.sessionId}`] : []),
+      ]),
+    ],
+    actions: [],
+  } satisfies TaskHandlerResult);
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

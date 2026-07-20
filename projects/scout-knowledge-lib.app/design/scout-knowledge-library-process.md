@@ -1,6 +1,6 @@
 # Scout Knowledge Library Process
 
-Status: aligned target; code and live-state cutover pending
+Status: implemented baseline; observation and tuning continue
 
 This document defines Scout-specific behavior. The generic task/result,
 generation, Condition, attempt, and receipt contracts come from May-agent's
@@ -17,12 +17,11 @@ The real library lives in `/app/projects/scout-knowledge-lib`. The app keeps
 that library useful.
 
 ```text
-sources find raw material
-Scout writes findings
+source workflows record what was checked
+Scout writes source-grounded findings when useful
 useful findings become durable notes
-health checks find mess or stuck work
-the task tree keeps unfinished cleanup visible
-the planner pushes one small useful step at a time
+health checks report unusual library facts
+the planner chooses one small useful step or a reviewable no-op
 ```
 
 The app is not the knowledge library. The app keeps the process moving. The
@@ -59,8 +58,9 @@ Reusable research and maintenance processes belong to Scout and live under:
 
 The app manifest binds stable tasks to those workflows. It does not contain a
 second planner, a workflow registry, or domain strategy in the generic
-reconciler. A missing workflow is visible failure followed by the normal Scout
-owner fallback; it is never repaired by guessing from task prose.
+reconciler. A missing named workflow remains visible in `attention` until the
+binding is repaired. The runtime does not guess from task prose or silently
+substitute the owner.
 
 Every task owner must resolve to a runnable agent. `human` is not a Scout task
 owner. Human notification and task accountability are separate concerns.
@@ -87,7 +87,6 @@ Ops work keeps the library process healthy:
 - detect oversized notes and digest logs;
 - detect index coverage gaps;
 - detect future-dated or time-confused library state;
-- detect repeated health signals that are not closing;
 - wake Scout when judgment is needed and notify or escalate to a human when an
   external decision or action is required.
 
@@ -136,7 +135,7 @@ schedule ticks and every individual source observation are not new tasks.
 The app is event-driven:
 
 ```text
-schedule/action/comment/metric
+schedule/action/comment
   -> project event
   -> resolve or wake one stable task identity
   -> generic reconciler invokes Scout's workflow or Scout directly
@@ -180,6 +179,22 @@ Convergence records how acceptance was established:
 The runtime validates mechanics. Scout owns semantic knowledge decisions. A
 generic reconciler never decides whether a research claim is good.
 
+### Source results
+
+Every source lane returns the same bounded result: a summary, current source
+observation, and absolute output paths. The observation names the source,
+query or feed, check time, optional fingerprint, and bounded item IDs or URLs.
+Credential-bearing query strings are removed before it becomes task evidence.
+
+XHS acquisition is currently workflow-observed. The other source lanes return
+structured agent-reported observations until a small deterministic acquisition
+is justified for that source; task evidence labels that provenance explicitly.
+A session ID alone never satisfies source acceptance.
+
+A changed result must name files that exist and whose resolved real paths stay
+inside the allowed Scout roots. A no-op has zero outputs and explains why the
+current source evidence did not justify a useful change.
+
 ## External Waits
 
 External facts are Conditions, not blocked holder tasks and not fake agents.
@@ -198,16 +213,11 @@ explore-xhs finds credentials unavailable
 Scout remains the owner throughout. The design must not create or repeatedly
 run a child task owned by `human`.
 
-Observation is not completion. A health packet closes only when the signal is
-resolved, accepted with a durable reason, or represented by clear follow-up
-work that shows progress. A bare active task with only a next action is not
-enough; it must either do a small library step, record evidence, or explain why
-it cannot move yet.
-
 ## Library Health
 
-`agents/scout/workflows/library-health.ts` is code-only observation. It should collect facts
-and emit signals. It should not decide content quality by itself.
+`agents/scout/workflows/library-health.ts` is code-only observation. It
+collects bounded domain facts and emits signals. It does not decide content
+quality or task progress.
 
 Good signals name raw facts:
 
@@ -219,8 +229,18 @@ Good signals name raw facts:
   `reports/health`, `reports/merge`, `reports/triage`, `reports/migration`, or
   `reports/operations`;
 - whether the digest log needs reset;
-- whether future dates appear in project truth;
-- whether the same signal has repeated across health packets without closing.
+- whether explicit truth fields or canonical filenames are future-dated.
+
+The observer does not inspect task progress, task summaries, or the task tree.
+It does not map facts to finite task IDs and does not store owner decisions.
+Each fact has a stable `kind + subject` key and a fingerprint of its bounded
+canonical value.
+
+The existing bounded packet history controls wakes. Scout is woken only for a
+new fact, a deterministically worse value, or a fact still present when its
+review interval expires. An unchanged fact remains visible without paging the
+owner every six hours. A fact disappears when current domain truth no longer
+produces it.
 
 Scout decides what to do with those facts. The useful outcomes are:
 
@@ -231,24 +251,8 @@ Scout decides what to do with those facts. The useful outcomes are:
 - update `INDEX.md`;
 - write a compact report;
 - move a small report batch into the right report folder;
-- update the task tree;
+- propose a typed task action for the generic reconciler;
 - record an exact no-op reason.
-
-## Closure Rule
-
-Every repeated abnormal signal needs a visible ending:
-
-```text
-resolved
-accepted with reason
-tracked by a durable task with progress evidence
-or escalated to human
-```
-
-If a signal repeats for several health packets and there is no clear task,
-report, or no-op reason, the app should treat that as a process concern. This
-does not mean the observer should fix the content. It means the observer should
-wake Scout with enough raw facts to decide.
 
 ## Recurring Responsibilities
 
@@ -268,20 +272,14 @@ of these:
 - a result that closes the task;
 - or a concrete blocker that needs a human.
 
-If library health sees that a current signal is represented by a nonterminal
-task but that task has no progress evidence, it emits the current transitional
-`active-task-not-moving` signal. The planner must then do one small real step,
-close the task, or escalate with the exact reason. `active` and `assigned` are
-read-model language, not additional canonical task phases.
-
 ## Date Trust
 
 This project is a research library. Dates are part of the product.
 
-Future dates can be valid when they describe predictions or planned windows,
-but future-dated `last_updated`, task completion text, report names, or
-finding dates can make the library look like it came from the future. Health
-checks should flag future-dated project/library content for Scout review.
+Future dates can be valid when they describe predictions or planned windows.
+The observer therefore checks canonical knowledge/report filenames and explicit
+truth fields such as `date`, `last_updated`, and `generated_at`. It does not
+scan free-form task history or treat quoted forecasts as domain truth.
 
 Scout should either correct the date or record why it is intentionally future
 dated.
@@ -303,8 +301,9 @@ Allowed Scout writes are intentionally small:
 `/app/shared/knowledge` is external source material for these workflows unless
 an explicit capability grants a particular write. A path such as
 `projects/scout-knowledge-lib/...` is not an acceptable output instruction
-because it changes meaning with the current working directory. Output
-admission must reject a resolved path outside the allowed roots.
+because it changes meaning with the current working directory. Source-output
+admission requires an absolute existing file and rejects a real path outside
+the allowed roots, including a symlink that escapes them.
 
 The existing nested
 `/app/projects/scout-knowledge-lib/projects/scout-knowledge-lib/` tree is
@@ -339,35 +338,30 @@ current observations.
 
 Do not commit runtime packets or current task snapshots as source truth.
 
-## Cutover And Existing State
+## Metrics And Experience Review
 
-Alignment requires one reviewed migration; it is not an automatic reconciler
-policy:
+Scout metrics are advisory infrastructure observations, never task acceptance
+or content-edit instructions. Deployment-practice loading is runtime health.
+Preamble coverage watches only canonical Scout knowledge. Accepted source
+outputs count admitted `output:` evidence from converged source
+reconciliations; evidence-backed no-ops are not failures. Textual downstream
+reference counting is retired. The app does not subscribe directly to Scout
+metric breaches during the observation window.
 
-1. replace Scout's copied planner schema with the shared SDK contract and run
-   its output through production admission in tests;
-2. replace the human-owned XHS holder with the credential Condition;
-3. use absolute resolved paths and add an output-boundary assertion;
-4. review live `attention` tasks, remove obsolete workflow bindings, close only
-   absorbed work, and preserve real unfinished work;
-5. compare nested project artifacts with canonical knowledge before removing
-   verified duplicates;
-6. reduce the seed to standing responsibilities; and
-7. deploy, wake each maintain task once, and verify stable generations,
-   Conditions, receipts, and output paths before normal schedules resume.
+One daily owner review may receive a bounded, redacted 36-hour reconciliation
+packet prepared before `runAgent`. Only complete, correctly scoped history is
+learning evidence. Unavailable, truncated, or scope-mismatched history is
+withheld and the planner continues as an ordinary current-state owner review.
+No task archive, learning agent, or experience database is needed.
 
-The generic reconciler must not auto-close unfamiliar tasks or delete misplaced
-files. Those are Scout migration decisions.
+## Current Observation Priorities
 
-## What To Improve First
+Keep the next steps empirical and small:
 
-Keep the next steps small:
-
-1. Complete the reviewed task/runtime cutover above.
-2. Keep `knowledge/README.md` useful as the human landing page.
-3. Move reports into `reports/health`, `reports/merge`, `reports/triage`,
-   `reports/migration`, or `reports/operations` in small batches.
-4. Make `library-health` detect repeated unresolved signals.
-5. Make `library-health` detect future-dated project/library content.
-6. Let Scout use those signals to update notes, reports, or tasks.
-7. Only add more workflows after the same manual process repeats.
+1. observe seven clean days of source results, no-ops, failures, health facts,
+   owner wakes, and session use;
+2. add deterministic source acquisition only where a source exposes a small,
+   reliable interface and the stronger provenance is useful;
+3. tune one source schedule only when accepted results and no-op cost justify
+   it; and
+4. add another workflow only after the same useful manual process repeats.

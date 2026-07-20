@@ -72,4 +72,57 @@ describe("Scout owner reconciliation boundary", () => {
       priority: "P2",
     });
   });
+
+  it("prepares bounded experience evidence before the owner generation", async () => {
+    let prompt = "";
+    let eventFilter: Record<string, unknown> | undefined;
+    const result = await execute({
+      task: `app: /app/projects/scout-knowledge-lib.app
+project: /app/projects/scout-knowledge-lib
+
+## Trigger Event
+\`\`\`json
+{"project":"scout-knowledge-lib","reason":"experience-review"}
+\`\`\``,
+      query: {
+        events(filter: Record<string, unknown>) {
+          eventFilter = filter;
+          return { rows: [], rowCount: 0, limit: 200, truncated: false };
+        },
+      },
+      async runAgent(_agent: string, value: string) {
+        prompt = value;
+        return {
+          status: "done",
+          sessionId: "s_review",
+          structuredResult: {
+            state: "converged",
+            summary: "No improvement justified.",
+            evidence: ["experience window contained no reconciliations"],
+            actions: [],
+          },
+        };
+      },
+      emit() {},
+      done(summary: string, output?: unknown) {
+        return { type: "done", summary, output } as const;
+      },
+      blocked(reason: string, context?: unknown) {
+        return { type: "blocked", reason, context } as const;
+      },
+    } as never);
+
+    expect(eventFilter).toMatchObject({
+      type: "project.task.reconciled",
+      projectId: "scout-knowledge-lib",
+      limit: 200,
+    });
+    expect(prompt).toContain("Periodic experience evidence");
+    expect(prompt).toContain("untrusted historical evidence");
+    expect(prompt).toContain('"groups": []');
+    expect(result).toMatchObject({
+      type: "done",
+      output: { state: "converged", actions: [] },
+    });
+  });
 });

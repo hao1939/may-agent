@@ -57,7 +57,7 @@ describe("Scout task reconciliation", () => {
     ).toBeUndefined();
   });
 
-  it("reuses learned maintenance and keeps the accountable owner fallback", () => {
+  it("routes explicit owner requests to the accountable owner workflow", () => {
     expect(
       resolveScoutTask({
         type: "project.owner.requested",
@@ -96,6 +96,9 @@ describe("Scout task reconciliation", () => {
       type: "project.xhs_credential.check",
       project: "scout-knowledge-lib",
     });
+    expect(app.events.some((event) => event.type === "metric.breach")).toBe(
+      false,
+    );
     expect(app.schedules).toContainEqual(
       expect.objectContaining({ id: "xhs-credential-watcher", enabled: true }),
     );
@@ -103,5 +106,49 @@ describe("Scout task reconciliation", () => {
     expect(app).not.toHaveProperty("taskWorkflows");
     expect(app).not.toHaveProperty("taskRoutes");
     expect(app).not.toHaveProperty("eventGraph");
+  });
+
+  it("keeps routine source demand within the planning envelope", () => {
+    const intervals = Object.fromEntries(
+      app.schedules.map((schedule) => [schedule.id, schedule.intervalMs]),
+    );
+
+    expect(intervals["scout-explore-arxiv"]).toBe(14_400_000);
+    expect(intervals["scout-explore-hn"]).toBe(7_200_000);
+    expect(intervals["scout-explore-xhs"]).toBe(14_400_000);
+    expect(intervals["scout-explore-github"]).toBe(7_200_000);
+  });
+
+  it("uses one daily combined owner review", () => {
+    const ownerSchedules = app.schedules.filter(
+      (schedule) => schedule.id === "owner-review",
+    );
+
+    expect(ownerSchedules).toHaveLength(1);
+    expect(ownerSchedules[0]).toMatchObject({
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [
+        {
+          type: "project.owner.requested",
+          project: "scout-knowledge-lib",
+          reason: "experience-review",
+        },
+      ],
+    });
+    expect(
+      app.schedules.some((schedule) => schedule.id === "owner-heartbeat"),
+    ).toBe(false);
+    expect(
+      resolveScoutTask({
+        type: "project.owner.requested",
+        project: "scout-knowledge-lib",
+        reason: "experience-review",
+      }),
+    ).toMatchObject({
+      id: "library-maintenance",
+      mode: "maintain",
+      workflow: "knowledge-planner",
+    });
   });
 });

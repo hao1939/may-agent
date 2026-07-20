@@ -1,9 +1,26 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  admittedOutputPaths,
   buildExploreTask,
   executeScoutExplore,
   xhsWaitResult,
 } from "./scout-explore";
+
+const temporaryRoots: string[] = [];
+
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0))
+    rmSync(root, { recursive: true, force: true });
+});
 
 const xhsTask = `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source: "xhs" } })}\n\`\`\``;
 
@@ -13,9 +30,10 @@ function workflowContext(
     task: string,
     options?: unknown,
   ) => Promise<unknown>,
+  source = "xhs",
 ): any {
   return {
-    task: xhsTask,
+    task: `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source } })}\n\`\`\``,
     appDir: "/app/projects/scout-knowledge-lib.app",
     projectDir: "/app/projects/scout-knowledge-lib",
     runAgent,
@@ -32,6 +50,36 @@ function workflowContext(
 }
 
 describe("scout-explore workflow prompt", () => {
+  it("admits only existing files whose real path stays inside an output root", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-output-admission-"));
+    temporaryRoots.push(root);
+    const appDir = join(root, "scout.app");
+    const projectDir = join(root, "scout");
+    const knowledgeDir = join(projectDir, "knowledge");
+    const workspaceDir = join(appDir, "agents", "scout", "workspace");
+    mkdirSync(knowledgeDir, { recursive: true });
+    mkdirSync(workspaceDir, { recursive: true });
+    const admitted = join(knowledgeDir, "finding.md");
+    const outside = join(root, "outside.md");
+    const escapingLink = join(knowledgeDir, "escaping-link.md");
+    writeFileSync(admitted, "finding");
+    writeFileSync(outside, "outside");
+    symlinkSync(outside, escapingLink);
+
+    expect(admittedOutputPaths([admitted], { appDir, projectDir })).toEqual([
+      admitted,
+    ]);
+    expect(
+      admittedOutputPaths([join(knowledgeDir, "missing.md")], {
+        appDir,
+        projectDir,
+      }),
+    ).toBeNull();
+    expect(
+      admittedOutputPaths([escapingLink], { appDir, projectDir }),
+    ).toBeNull();
+  });
+
   it("adds an explicit output contract to routine discovery tasks", () => {
     const task = buildExploreTask(
       "Explore Hacker News for AI agent discussions.",
@@ -49,7 +97,7 @@ describe("scout-explore workflow prompt", () => {
       "Never create new top-level folders under `projects/`",
     );
     expect(task).toContain("do not write paths like `projects/explore/...`");
-    expect(task).not.toContain("Return summary, evidence, and outputs");
+    expect(task).toContain("Return summary, source, and outputs");
   });
 
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
@@ -225,9 +273,14 @@ describe("scout-explore workflow prompt", () => {
           sessionId: "s_xhs",
           structuredResult: {
             summary: "Recorded one source-grounded XHS finding.",
-            evidence: ["note:note-1"],
+            source: {
+              name: "xhs",
+              queryOrFeed: "ignored because the workflow owns XHS evidence",
+              checkedAt: new Date().toISOString(),
+              itemIdsOrUrls: [],
+            },
             outputs: [
-              "/app/projects/scout-knowledge-lib/knowledge/findings/xhs-note-1.md",
+              "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
             ],
           },
         };
@@ -275,8 +328,8 @@ describe("scout-explore workflow prompt", () => {
           "query:AI agent 智能体",
           "items:1",
           "source-ids:note-1",
-          "note:note-1",
-          "output:/app/projects/scout-knowledge-lib/knowledge/findings/xhs-note-1.md",
+          "source-provenance:workflow",
+          "output:/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
           "session:s_xhs",
         ]),
         actions: [],
@@ -291,7 +344,12 @@ describe("scout-explore workflow prompt", () => {
         sessionId: "s_xhs",
         structuredResult: {
           summary: "Wrote a finding.",
-          evidence: [],
+          source: {
+            name: "xhs",
+            queryOrFeed: "ignored",
+            checkedAt: new Date().toISOString(),
+            itemIdsOrUrls: [],
+          },
           outputs: [
             "projects/scout-knowledge-lib/knowledge/findings/xhs-note-1.md",
           ],
@@ -323,7 +381,88 @@ describe("scout-explore workflow prompt", () => {
 
     expect(result).toMatchObject({
       type: "blocked",
-      reason: "Scout exploration returned an output outside the allowed roots",
+      reason:
+        "Scout exploration returned a missing output or an output outside the allowed roots",
+    });
+  });
+
+  it("rejects a successful non-XHS session without a structured source result", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(
+        async () => ({ status: "done", sessionId: "s_hn" }),
+        "hn",
+      ),
+    );
+    expect(result).toMatchObject({
+      type: "blocked",
+      reason: "Scout exploration did not return a structured source result",
+    });
+  });
+
+  it("accepts a reviewable non-XHS no-op and labels its provenance", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(
+        async (_agent, _task, options) => ({
+          status: "done",
+          sessionId: "s_hn",
+          structuredResult: {
+            summary: "The current feed had no useful new agent finding.",
+            source: {
+              name: "hn",
+              queryOrFeed: "https://news.ycombinator.com/newest?token=secret",
+              checkedAt: new Date().toISOString(),
+              itemIdsOrUrls: [
+                "https://news.ycombinator.com/item?id=123&token=secret",
+              ],
+            },
+            outputs: [],
+          },
+          options,
+        }),
+        "hn",
+      ),
+    );
+    const serialized = JSON.stringify(result);
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "converged",
+        evidence: expect.arrayContaining([
+          "source-provenance:agent-result",
+          "result:evidence-backed-no-op",
+          "session:s_hn",
+        ]),
+      },
+    });
+    expect(serialized).toContain("item?id=123");
+    expect(serialized).not.toContain("token=secret");
+  });
+
+  it("rejects source evidence for a different lane", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(
+        async () => ({
+          status: "done",
+          sessionId: "s_hn",
+          structuredResult: {
+            summary: "Checked a source.",
+            source: {
+              name: "github",
+              queryOrFeed: "agents",
+              checkedAt: new Date().toISOString(),
+              itemIdsOrUrls: [],
+            },
+            outputs: [],
+          },
+        }),
+        "hn",
+      ),
+    );
+
+    expect(result).toMatchObject({
+      type: "blocked",
+      reason: "Scout exploration returned invalid current-source evidence",
     });
   });
 });

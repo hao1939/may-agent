@@ -5,64 +5,65 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
-import {
-  resolveTaskTreePath,
-  type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "library-health";
 export const description =
-  "Deterministic Scout knowledge-library health observer. Builds a compact packet and wakes Scout only when library shape needs owner judgment.";
+  "Deterministic Scout library observer. Records bounded domain facts and wakes Scout only for new, worse, or review-due facts.";
 
 const projectId = "scout-knowledge-lib";
+const packetFile = "library-health-packets.jsonl";
+const maxFacts = 50;
+const maxWakeSignals = 16;
+const historyPackets = 64;
 
 type Severity = "P0" | "P1" | "P2";
 
-type Signal = {
-  kind: string;
+type FactKind =
+  | "human-navigation-missing"
+  | "oversized-canonical-note"
+  | "unsourced-backlog"
+  | "digest-log-oversized"
+  | "index-coverage-gap"
+  | "reports-layout-backlog"
+  | "future-dated-library-truth";
+
+export type LibraryHealthFact = {
+  key: string;
+  kind: FactKind;
+  subject: string;
   severity: Severity;
   reason: string;
+  observedValue: string | number | boolean;
+  fingerprint: string;
   evidence?: unknown;
 };
 
-type FileStat = {
-  path: string;
-  lines: number;
+export type WakeDecision = {
+  key: string;
+  wake: boolean;
+  reason: "new" | "worse" | "review-due" | "unchanged";
 };
 
-type FutureDateRef = {
-  path: string;
-  date: string;
-  line?: number;
-  text?: string;
+export type LibraryHealthPacket = {
+  schema_version: 2;
+  generated_at: string;
+  role: "observer";
+  project: string;
+  facts: LibraryHealthFact[];
+  wake_decisions: WakeDecision[];
+  wake_signals: LibraryHealthFact[];
+  truncated: boolean;
+  observations: Record<string, unknown>;
 };
 
-type RepeatedSignal = {
-  kind: string;
-  consecutivePacketsIncludingCurrent: number;
-};
-
-type SignalTaskCoverage = {
-  kind: string;
-  taskId: string;
-  state: string;
-  hasProgressEvidence: boolean;
-  progressEvidence?: string;
-};
-
-type ActiveTaskProgressIssue = {
-  taskId: string;
-  state: string;
-  owner?: string;
-  priority?: string;
-  hasProgressEvidence: false;
-};
+type FileStat = { path: string; lines: number };
+type FutureTruth = { path: string; field: string; date: string; line?: number };
 
 function field(task: string, name: string): string | undefined {
-  const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
-  return task.match(pattern)?.[1]?.trim();
+  return task.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim();
 }
 
 function safeRead(path: string): string {
@@ -82,8 +83,7 @@ function fileExists(path: string): boolean {
 }
 
 function lineCount(text: string): number {
-  if (!text) return 0;
-  return text.split(/\r?\n/).length;
+  return text ? text.split(/\r?\n/).length : 0;
 }
 
 function toPosix(path: string): string {
@@ -92,297 +92,86 @@ function toPosix(path: string): string {
 
 function listMarkdownFiles(root: string): string[] {
   const files: string[] = [];
-  function visit(dir: string): void {
-    let entries: string[] = [];
+  const visit = (dir: string): void => {
+    let entries: string[];
     try {
       entries = readdirSync(dir);
     } catch {
       return;
     }
     for (const entry of entries) {
-      if (entry === ".git" || entry === "node_modules" || entry === ".state") {
+      if (entry === ".git" || entry === "node_modules" || entry === ".state")
         continue;
-      }
-      const full = join(dir, entry);
-      let st;
+      const path = join(dir, entry);
       try {
-        st = statSync(full);
+        const stat = statSync(path);
+        if (stat.isDirectory()) visit(path);
+        else if (stat.isFile() && entry.endsWith(".md")) files.push(path);
       } catch {
-        continue;
-      }
-      if (st.isDirectory()) {
-        visit(full);
-      } else if (st.isFile() && entry.endsWith(".md")) {
-        files.push(full);
+        // Ignore files that disappear during observation.
       }
     }
-  }
+  };
   visit(root);
   return files.sort();
-}
-
-function countFiles(root: string, suffix?: string): number {
-  let count = 0;
-  function visit(dir: string): void {
-    let entries: string[] = [];
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (entry === ".git" || entry === "node_modules" || entry === ".state") {
-        continue;
-      }
-      const full = join(dir, entry);
-      let st;
-      try {
-        st = statSync(full);
-      } catch {
-        continue;
-      }
-      if (st.isDirectory()) visit(full);
-      else if (st.isFile() && (!suffix || entry.endsWith(suffix))) count += 1;
-    }
-  }
-  visit(root);
-  return count;
 }
 
 function listRootMarkdownFiles(root: string): string[] {
   try {
     return readdirSync(root)
-      .map((entry) => join(root, entry))
-      .filter((path) => {
+      .filter((entry) => {
         try {
-          return statSync(path).isFile() && path.endsWith(".md");
+          return statSync(join(root, entry)).isFile() && entry.endsWith(".md");
         } catch {
           return false;
         }
       })
-      .map((path) => toPosix(relative(root, path)))
       .sort();
   } catch {
     return [];
   }
 }
 
-function compactFileStats(stats: FileStat[], limit = 8): FileStat[] {
-  return [...stats].sort((a, b) => b.lines - a.lines).slice(0, limit);
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    return `{${Object.keys(object)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonical(object[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
-function readJsonl(path: string): unknown[] {
-  return safeRead(path)
+function fact(
+  input: Omit<LibraryHealthFact, "key" | "fingerprint">,
+): LibraryHealthFact {
+  const key = `${input.kind}:${input.subject}`;
+  const fingerprint = createHash("sha256")
+    .update(canonical({ key, ...input }))
+    .digest("hex")
+    .slice(0, 16);
+  return { ...input, key, fingerprint };
+}
+
+function readHistory(appDir: string): LibraryHealthPacket[] {
+  return safeRead(join(appDir, ".state", packetFile))
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
       try {
-        return JSON.parse(line) as unknown;
+        return JSON.parse(line) as LibraryHealthPacket;
       } catch {
         return undefined;
       }
     })
-    .filter((value): value is unknown => value !== undefined);
-}
-
-function signalKinds(packet: unknown): Set<string> {
-  if (!packet || typeof packet !== "object") return new Set();
-  const signals = (packet as { signals?: unknown }).signals;
-  if (!Array.isArray(signals)) return new Set();
-  return new Set(
-    signals
-      .map((signal) =>
-        signal && typeof signal === "object"
-          ? (signal as { kind?: unknown }).kind
-          : undefined,
-      )
-      .filter(
-        (kind): kind is string =>
-          typeof kind === "string" &&
-          kind.length > 0 &&
-          kind !== "repeated-library-health-signal",
-      ),
-  );
-}
-
-function repeatedSignals(
-  appDir: string,
-  currentSignals: Signal[],
-): RepeatedSignal[] {
-  const currentKinds = new Set(
-    currentSignals
-      .map((signal) => signal.kind)
-      .filter((kind) => kind !== "repeated-library-health-signal"),
-  );
-  if (currentKinds.size === 0) return [];
-
-  const historyPath = join(appDir, ".state", "library-health-packets.jsonl");
-  const previousPackets = readJsonl(historyPath).slice(-8).reverse();
-  const repeated: RepeatedSignal[] = [];
-
-  for (const kind of currentKinds) {
-    const coverage = taskCoverageForSignal(appDir, kind);
-    if (coverage?.hasProgressEvidence) continue;
-    let previousConsecutive = 0;
-    for (const packet of previousPackets) {
-      if (!signalKinds(packet).has(kind)) break;
-      previousConsecutive += 1;
-    }
-    if (previousConsecutive >= 2) {
-      repeated.push({
-        kind,
-        consecutivePacketsIncludingCurrent: previousConsecutive + 1,
-      });
-    }
-  }
-
-  return repeated;
-}
-
-function parseTaskTree(appDir: string): Record<string, unknown> {
-  try {
-    const tree = JSON.parse(safeRead(resolveTaskTreePath(appDir))) as {
-      tasks?: Record<string, unknown>;
-    };
-    return tree.tasks ?? {};
-  } catch {
-    return {};
-  }
-}
-
-function taskCoverageForSignal(
-  appDir: string,
-  kind: string,
-): SignalTaskCoverage | undefined {
-  const taskBySignal: Record<string, string[]> = {
-    "future-dated-library-content": ["repair-library-time-trust"],
-    "oversized-canonical-notes": ["document-oversized-note-decisions"],
-    "unsourced-backlog": ["source-unsourced-high-value-findings"],
-  };
-  const candidateIds = taskBySignal[kind] ?? [];
-  const tasks = parseTaskTree(appDir);
-  for (const taskId of candidateIds) {
-    const task = tasks[taskId] as Record<string, unknown> | undefined;
-    const phase = typeof task?.phase === "string" ? task.phase : "";
-    if (task && phase !== "converged") {
-      const progressEvidence = taskProgressEvidence(task);
-      return {
-        kind,
-        taskId,
-        state: phase,
-        hasProgressEvidence: progressEvidence !== undefined,
-        progressEvidence,
-      };
-    }
-  }
-  return undefined;
-}
-
-function activeTaskExists(appDir: string, taskId: string): boolean {
-  const task = parseTaskTree(appDir)[taskId] as
-    Record<string, unknown> | undefined;
-  if (!task) return false;
-  const phase = typeof task.phase === "string" ? task.phase : "";
-  return phase !== "converged";
-}
-
-function hasNonEmptyValue(value: unknown): boolean {
-  if (typeof value === "string") return value.trim().length > 0;
-  if (Array.isArray(value)) return value.length > 0;
-  return value !== undefined && value !== null;
-}
-
-function taskProgressEvidence(
-  task: Record<string, unknown>,
-): string | undefined {
-  for (const key of ["result", "summary", "evidence", "updated_at"]) {
-    if (hasNonEmptyValue(task[key])) return key;
-  }
-
-  const context = task.context;
-  if (!context || typeof context !== "object" || Array.isArray(context)) {
-    return undefined;
-  }
-
-  const contextRecord = context as Record<string, unknown>;
-  for (const key of [
-    "progress",
-    "latest_progress",
-    "last_action",
-    "last_reviewed_at",
-    "decision",
-    "decisions",
-    "accepted_reason",
-    "accepted_reasons",
-    "evidence",
-  ]) {
-    if (hasNonEmptyValue(contextRecord[key])) return `context.${key}`;
-  }
-
-  return undefined;
-}
-
-function taskCoverageForSignals(
-  appDir: string,
-  signals: Signal[],
-): SignalTaskCoverage[] {
-  const coverage: SignalTaskCoverage[] = [];
-  for (const signal of signals) {
-    const match = taskCoverageForSignal(appDir, signal.kind);
-    if (match) coverage.push(match);
-  }
-  return coverage;
-}
-
-function activeFinishableTasksWithoutProgress(
-  appDir: string,
-  representedSignals: SignalTaskCoverage[],
-): ActiveTaskProgressIssue[] {
-  const standingTaskIds = new Set([
-    "project",
-    "ongoing-research",
-    "explore-arxiv",
-    "explore-hn",
-    "explore-xhs",
-    "explore-github",
-    "daily-digest",
-    "library-maintenance",
-  ]);
-  const representedTaskIds = new Set(
-    representedSignals.map((signal) => signal.taskId),
-  );
-  const issues: ActiveTaskProgressIssue[] = representedSignals
-    .filter((signal) => !signal.hasProgressEvidence)
-    .map((signal) => ({
-      taskId: signal.taskId,
-      state: signal.state,
-      hasProgressEvidence: false,
-    }));
-
-  for (const [taskId, task] of Object.entries(parseTaskTree(appDir))) {
-    if (representedTaskIds.has(taskId) || standingTaskIds.has(taskId)) continue;
-    if (!task || typeof task !== "object" || Array.isArray(task)) continue;
-    const record = task as Record<string, unknown>;
-    if (record.state !== "active") continue;
-    const children = Array.isArray(record.children) ? record.children : [];
-    if (children.length > 0) continue;
-    if (taskProgressEvidence(record)) continue;
-    issues.push({
-      taskId,
-      state: "active",
-      owner: typeof record.owner === "string" ? record.owner : undefined,
-      priority:
-        typeof record.priority === "string" ? record.priority : undefined,
-      hasProgressEvidence: false,
-    });
-  }
-
-  return issues;
-}
-
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+    .filter(
+      (packet): packet is LibraryHealthPacket =>
+        packet?.schema_version === 2 && Array.isArray(packet.facts),
+    )
+    .slice(-historyPackets);
 }
 
 function validIsoDate(date: string): boolean {
@@ -392,379 +181,401 @@ function validIsoDate(date: string): boolean {
   );
 }
 
-function futureDateRefsInText(
-  path: string,
-  text: string,
+function futureDatesInPaths(
+  projectDir: string,
+  paths: string[],
   today: string,
-  limit: number,
-): FutureDateRef[] {
-  const refs: FutureDateRef[] = [];
-  const lines = text.split(/\r?\n/);
-  for (let index = 0; index < lines.length && refs.length < limit; index += 1) {
-    const line = lines[index] ?? "";
-    for (const match of line.matchAll(/\b20\d{2}-\d{2}-\d{2}\b/g)) {
-      const date = match[0];
-      if (validIsoDate(date) && date > today) {
-        refs.push({
-          path,
-          date,
-          line: index + 1,
-          text: line.trim().slice(0, 180),
-        });
-        if (refs.length >= limit) break;
+): FutureTruth[] {
+  const result: FutureTruth[] = [];
+  for (const path of paths) {
+    const relativePath = toPosix(relative(projectDir, path));
+    for (const match of relativePath.matchAll(/\b20\d{2}-\d{2}-\d{2}\b/g)) {
+      if (validIsoDate(match[0]) && match[0] > today) {
+        result.push({ path: relativePath, field: "filename", date: match[0] });
       }
     }
   }
-  return refs;
+  return result;
 }
 
-function futureDateRefsInPath(
-  path: string,
+function futureTruthFields(
+  projectDir: string,
+  paths: string[],
   today: string,
-  limit: number,
-): FutureDateRef[] {
-  const refs: FutureDateRef[] = [];
-  for (const match of path.matchAll(/\b20\d{2}-\d{2}-\d{2}\b/g)) {
-    const date = match[0];
-    if (validIsoDate(date) && date > today) {
-      refs.push({ path, date });
-      if (refs.length >= limit) break;
+): FutureTruth[] {
+  const result: FutureTruth[] = [];
+  const pattern =
+    /^\s*(date|last_updated|generated_at)\s*:\s*["']?(20\d{2}-\d{2}-\d{2})/i;
+  for (const path of paths) {
+    const lines = safeRead(path).split(/\r?\n/);
+    for (let index = 0; index < lines.length; index += 1) {
+      const match = lines[index]?.match(pattern);
+      if (!match || !validIsoDate(match[2]) || match[2] <= today) continue;
+      result.push({
+        path: toPosix(relative(projectDir, path)),
+        field: match[1].toLowerCase(),
+        date: match[2],
+        line: index + 1,
+      });
+      if (result.length >= 40) return result;
     }
   }
-  return refs;
+  return result;
 }
 
-function findFutureDateRefs(params: {
+function reviewIntervalMs(kind: FactKind): number {
+  switch (kind) {
+    case "oversized-canonical-note":
+    case "unsourced-backlog":
+    case "future-dated-library-truth":
+      return 7 * 24 * 60 * 60_000;
+    default:
+      return 24 * 60 * 60_000;
+  }
+}
+
+function worseningDelta(kind: FactKind): number {
+  switch (kind) {
+    case "oversized-canonical-note":
+      return 100;
+    case "unsourced-backlog":
+      return 10;
+    case "digest-log-oversized":
+      return 100;
+    default:
+      return 1;
+  }
+}
+
+function materiallyWorse(
+  current: LibraryHealthFact,
+  previous: LibraryHealthFact,
+): boolean {
+  if (
+    typeof current.observedValue === "number" &&
+    typeof previous.observedValue === "number"
+  ) {
+    return (
+      current.observedValue - previous.observedValue >=
+      worseningDelta(current.kind)
+    );
+  }
+  if (
+    current.kind === "future-dated-library-truth" &&
+    typeof current.observedValue === "string" &&
+    typeof previous.observedValue === "string"
+  ) {
+    return current.observedValue > previous.observedValue;
+  }
+  return false;
+}
+
+function lastWakeAt(
+  history: LibraryHealthPacket[],
+  key: string,
+): number | undefined {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const packet = history[index];
+    if (
+      !packet.wake_decisions?.some(
+        (decision) => decision.key === key && decision.wake,
+      )
+    )
+      continue;
+    const timestamp = Date.parse(packet.generated_at);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return undefined;
+}
+
+function decideWakes(
+  facts: LibraryHealthFact[],
+  history: LibraryHealthPacket[],
+  now: number,
+): WakeDecision[] {
+  const previousFacts = new Map(
+    (history.at(-1)?.facts ?? []).map((item) => [item.key, item]),
+  );
+  return facts.map((current) => {
+    const previous = previousFacts.get(current.key);
+    if (!previous) return { key: current.key, wake: true, reason: "new" };
+    if (materiallyWorse(current, previous))
+      return { key: current.key, wake: true, reason: "worse" };
+    const lastWake = lastWakeAt(history, current.key);
+    if (
+      lastWake === undefined ||
+      now - lastWake >= reviewIntervalMs(current.kind)
+    ) {
+      return { key: current.key, wake: true, reason: "review-due" };
+    }
+    return { key: current.key, wake: false, reason: "unchanged" };
+  });
+}
+
+export function buildLibraryHealthPacket(input: {
   appDir: string;
   projectDir: string;
-  knowledgeDir: string;
-  knowledgeRelFiles: string[];
-  today: string;
-  limit?: number;
-}): FutureDateRef[] {
-  const limit = params.limit ?? 40;
-  const refs: FutureDateRef[] = [];
-  const add = (next: FutureDateRef[]) => {
-    for (const ref of next) {
-      if (refs.length >= limit) return;
-      refs.push(ref);
+  now?: number;
+}): LibraryHealthPacket {
+  const now = input.now ?? Date.now();
+  const history = readHistory(input.appDir);
+  const knowledgeDir = join(input.projectDir, "knowledge");
+  const reportsDir = join(input.projectDir, "reports");
+  const knowledgeFiles = listMarkdownFiles(knowledgeDir);
+  const reportFiles = listMarkdownFiles(reportsDir);
+  const indexPath = join(knowledgeDir, "INDEX.md");
+  const indexText = safeRead(indexPath);
+  const facts: LibraryHealthFact[] = [];
+
+  if (!fileExists(join(knowledgeDir, "README.md"))) {
+    facts.push(
+      fact({
+        kind: "human-navigation-missing",
+        subject: "knowledge/README.md",
+        severity: "P1",
+        reason: "The short human-facing knowledge landing page is missing.",
+        observedValue: false,
+      }),
+    );
+  }
+
+  const topLevelStats: FileStat[] = knowledgeFiles
+    .map((path) => ({
+      path: toPosix(relative(knowledgeDir, path)),
+      lines: lineCount(safeRead(path)),
+    }))
+    .filter((item) => !item.path.includes("/") && item.path !== "INDEX.md");
+  for (const item of topLevelStats.filter(
+    (candidate) => candidate.lines > 800,
+  )) {
+    facts.push(
+      fact({
+        kind: "oversized-canonical-note",
+        subject: `knowledge/${item.path}`,
+        severity: "P1",
+        reason: `${item.path} has ${item.lines} lines and needs periodic split/rollup review.`,
+        observedValue: item.lines,
+      }),
+    );
+  }
+
+  const unsourcedCount = (indexText.match(/Not yet sourced/g) ?? []).length;
+  if (unsourcedCount >= 50) {
+    const previousValue = history
+      .at(-1)
+      ?.facts.find(
+        (item) => item.key === "unsourced-backlog:knowledge/INDEX.md",
+      )?.observedValue;
+    let unchangedWindows = 0;
+    for (let index = history.length - 1; index >= 0; index -= 1) {
+      const value = history[index]?.facts.find(
+        (item) => item.key === "unsourced-backlog:knowledge/INDEX.md",
+      )?.observedValue;
+      if (value !== unsourcedCount) break;
+      unchangedWindows += 1;
     }
-  };
+    facts.push(
+      fact({
+        kind: "unsourced-backlog",
+        subject: "knowledge/INDEX.md",
+        severity: "P1",
+        reason: `${unsourcedCount} INDEX entries remain marked Not yet sourced.`,
+        observedValue: unsourcedCount,
+        evidence: {
+          previous:
+            typeof previousValue === "number" ? previousValue : undefined,
+          delta:
+            typeof previousValue === "number"
+              ? unsourcedCount - previousValue
+              : undefined,
+          unchanged_windows: unchangedWindows,
+        },
+      }),
+    );
+  }
 
-  const taskTreePath = resolveTaskTreePath(params.appDir);
-  const focusedFiles = [
-    {
-      label: toPosix(
-        relative(params.projectDir, join(params.projectDir, "README.md")),
-      ),
-      path: join(params.projectDir, "README.md"),
-    },
-    {
-      label: toPosix(
-        relative(params.projectDir, join(params.knowledgeDir, "INDEX.md")),
-      ),
-      path: join(params.knowledgeDir, "INDEX.md"),
-    },
-    {
-      label: toPosix(relative(params.appDir, taskTreePath)),
-      path: taskTreePath,
-    },
+  const digestPath = join(
+    input.appDir,
+    "agents",
+    "scout",
+    "workspace",
+    "digest",
+    "today.md",
+  );
+  const digestLines = lineCount(safeRead(digestPath));
+  if (digestLines > 1000) {
+    facts.push(
+      fact({
+        kind: "digest-log-oversized",
+        subject: "agents/scout/workspace/digest/today.md",
+        severity: "P1",
+        reason: `The current digest accumulator has ${digestLines} lines.`,
+        observedValue: digestLines,
+      }),
+    );
+  }
+
+  const structuralOrphans = knowledgeFiles
+    .map((path) => toPosix(relative(knowledgeDir, path)))
+    .filter(
+      (path) =>
+        path !== "INDEX.md" &&
+        !path.startsWith("inbox/") &&
+        !path.startsWith("findings/") &&
+        !indexText.includes(path),
+    );
+  if (structuralOrphans.length > 0) {
+    facts.push(
+      fact({
+        kind: "index-coverage-gap",
+        subject: "knowledge/INDEX.md",
+        severity: "P2",
+        reason: `${structuralOrphans.length} canonical knowledge file(s) are not referenced by INDEX.md.`,
+        observedValue: structuralOrphans.length,
+        evidence: structuralOrphans.slice(0, 20),
+      }),
+    );
+  }
+
+  const rootReports = listRootMarkdownFiles(reportsDir);
+  if (rootReports.length > 0) {
+    facts.push(
+      fact({
+        kind: "reports-layout-backlog",
+        subject: "reports",
+        severity: "P2",
+        reason: `${rootReports.length} report file(s) remain directly under reports/.`,
+        observedValue: rootReports.length,
+        evidence: rootReports.slice(0, 20),
+      }),
+    );
+  }
+
+  const today = new Date(now).toISOString().slice(0, 10);
+  const futureTruth = [
+    ...futureDatesInPaths(
+      input.projectDir,
+      [...knowledgeFiles, ...reportFiles],
+      today,
+    ),
+    ...futureTruthFields(
+      input.projectDir,
+      [
+        join(input.projectDir, "README.md"),
+        indexPath,
+        ...knowledgeFiles,
+        ...reportFiles,
+      ],
+      today,
+    ),
   ];
-
-  for (const file of focusedFiles) {
-    add(
-      futureDateRefsInText(
-        file.label,
-        safeRead(file.path),
-        params.today,
-        limit - refs.length,
-      ),
+  const distinctFutureTruth = [
+    ...new Map(
+      futureTruth.map((item) => [
+        `${item.path}:${item.field}:${item.date}`,
+        item,
+      ]),
+    ).values(),
+  ].slice(0, 40);
+  for (const item of distinctFutureTruth) {
+    facts.push(
+      fact({
+        kind: "future-dated-library-truth",
+        subject: `${item.path}:${item.field}`,
+        severity: "P1",
+        reason: `${item.path} declares future ${item.field} ${item.date}.`,
+        observedValue: item.date,
+        evidence: item.line ? { line: item.line } : undefined,
+      }),
     );
   }
 
-  for (const relPath of params.knowledgeRelFiles) {
-    if (refs.length >= limit) break;
-    add(
-      futureDateRefsInPath(
-        `knowledge/${relPath}`,
-        params.today,
-        limit - refs.length,
-      ),
-    );
-  }
+  const distinctFacts = [
+    ...new Map(facts.map((item) => [item.key, item])).values(),
+  ].sort((left, right) => left.key.localeCompare(right.key));
+  const boundedFacts = distinctFacts.slice(0, maxFacts);
+  const wakeDecisions = decideWakes(boundedFacts, history, now);
+  const wakeKeys = new Set(
+    wakeDecisions
+      .filter((decision) => decision.wake)
+      .map((decision) => decision.key),
+  );
+  const wakeSignals = boundedFacts
+    .filter((item) => wakeKeys.has(item.key))
+    .slice(0, maxWakeSignals);
 
-  return refs;
+  return {
+    schema_version: 2,
+    generated_at: new Date(now).toISOString(),
+    role: "observer",
+    project: projectId,
+    facts: boundedFacts,
+    wake_decisions: wakeDecisions,
+    wake_signals: wakeSignals,
+    truncated:
+      distinctFacts.length > maxFacts || wakeKeys.size > maxWakeSignals,
+    observations: {
+      knowledge: {
+        markdown_files: knowledgeFiles.length,
+        index_lines: lineCount(indexText),
+        unsourced_count: unsourcedCount,
+        structural_orphan_count: structuralOrphans.length,
+      },
+      digest: { lines: digestLines },
+      reports: { root_markdown_count: rootReports.length },
+      history_packets_considered: history.length,
+    },
+  };
 }
 
-function writePacket(appDir: string, packet: Record<string, unknown>): string {
+function writePacket(appDir: string, packet: LibraryHealthPacket): string {
   const stateDir = join(appDir, ".state");
   mkdirSync(stateDir, { recursive: true });
-  const path = join(stateDir, "library-health-packets.jsonl");
+  const path = join(stateDir, packetFile);
   appendFileSync(path, `${JSON.stringify(packet)}\n`, "utf8");
   return path;
 }
 
-function buildPacket(ctx: WorkflowContext): {
-  packet: Record<string, unknown>;
-  signals: Signal[];
-} {
-  const appDir =
-    field(ctx.task, "app") ?? "/app/projects/scout-knowledge-lib.app";
-  const projectDir =
-    field(ctx.task, "project") ?? "/app/projects/scout-knowledge-lib";
-  const knowledgeDir = join(projectDir, "knowledge");
-  const reportsDir = join(projectDir, "reports");
-  const sharedKnowledgeDir =
-    field(ctx.task, "sharedKnowledge") ?? join(ctx.sharedRoot, "knowledge");
-
-  const indexPath = join(knowledgeDir, "INDEX.md");
-  const indexText = safeRead(indexPath);
-  const knowledgeReadmeExists = fileExists(join(knowledgeDir, "README.md"));
-  const rootReportFiles = listRootMarkdownFiles(reportsDir);
-  const knowledgeFiles = listMarkdownFiles(knowledgeDir);
-  const knowledgeRelFiles = knowledgeFiles.map((path) =>
-    toPosix(relative(knowledgeDir, path)),
-  );
-
-  const topLevelStats = knowledgeRelFiles
-    .filter((path) => !path.includes("/") && path !== "INDEX.md")
-    .map((path) => ({
-      path,
-      lines: lineCount(safeRead(join(knowledgeDir, path))),
-    }));
-  const oversizedTopLevel = topLevelStats.filter((file) => file.lines > 800);
-
-  const oversizedFindings = knowledgeRelFiles
-    .filter((path) => path.startsWith("findings/"))
-    .map((path) => ({
-      path,
-      lines: lineCount(safeRead(join(knowledgeDir, path))),
-    }))
-    .filter((file) => file.lines > 1500);
-
-  const nonInboxOrphans = knowledgeRelFiles.filter((path) => {
-    if (path === "INDEX.md" || path.startsWith("inbox/")) return false;
-    return !indexText.includes(path);
-  });
-  const structuralOrphans = nonInboxOrphans.filter(
-    (path) => !path.startsWith("findings/"),
-  );
-
-  const unsourcedCount = (indexText.match(/Not yet sourced/g) ?? []).length;
-
-  const digestCandidates = [
-    join(projectDir, "agents/scout/workspace/digest/today.md"),
-    join(appDir, "agents/scout/workspace/digest/today.md"),
-  ];
-  const digestStats = digestCandidates
-    .map((path) => ({
-      path: toPosix(path),
-      lines: lineCount(safeRead(path)),
-    }))
-    .filter((file) => file.lines > 0);
-
-  const sharedMdCount = countFiles(sharedKnowledgeDir, ".md");
-  const sharedEntryCount = countFiles(
-    join(sharedKnowledgeDir, "entries"),
-    ".md",
-  );
-  const sharedLibraryCount = countFiles(
-    join(sharedKnowledgeDir, "library"),
-    ".md",
-  );
-  const sharedIndexExists =
-    lineCount(safeRead(join(sharedKnowledgeDir, "INDEX.md"))) > 0;
-  const sharedRouterIndexExists =
-    lineCount(safeRead(join(sharedKnowledgeDir, "knowledge-index.json"))) > 0;
-
-  const hasSharedConvergenceTask = activeTaskExists(
-    appDir,
-    "shared-knowledge-convergence",
-  );
-  const today = todayIsoDate();
-  const futureDateRefs = findFutureDateRefs({
-    appDir,
-    projectDir,
-    knowledgeDir,
-    knowledgeRelFiles,
-    today,
-  });
-
-  const signals: Signal[] = [];
-  if (!knowledgeReadmeExists) {
-    signals.push({
-      kind: "human-navigation-missing",
-      severity: "P1",
-      reason:
-        "knowledge/README.md is missing; humans only have the exhaustive INDEX.md, so Scout should create a short landing page.",
-      evidence: {
-        expectedPath: "knowledge/README.md",
-      },
-    });
-  }
-  if (oversizedTopLevel.length > 0) {
-    signals.push({
-      kind: "oversized-canonical-notes",
-      severity: "P1",
-      reason: `${oversizedTopLevel.length} top-level knowledge note(s) exceed 800 lines and need Scout split/rollup judgment.`,
-      evidence: compactFileStats(oversizedTopLevel),
-    });
-  }
-  if (unsourcedCount >= 50) {
-    signals.push({
-      kind: "unsourced-backlog",
-      severity: "P1",
-      reason: `${unsourcedCount} INDEX entries are marked Not yet sourced; findings are outpacing canonical absorption.`,
-    });
-  }
-  const oversizedDigest = digestStats.filter((file) => file.lines > 1000);
-  if (oversizedDigest.length > 0) {
-    signals.push({
-      kind: "digest-log-oversized",
-      severity: "P1",
-      reason: `${oversizedDigest.length} Scout digest today.md file(s) exceed 1000 lines and should be archived/reset by Scout.`,
-      evidence: compactFileStats(oversizedDigest),
-    });
-  }
-  if (structuralOrphans.length > 0) {
-    signals.push({
-      kind: "index-coverage-gap",
-      severity: "P2",
-      reason: `${structuralOrphans.length} non-finding knowledge markdown file(s) are not referenced by knowledge/INDEX.md.`,
-      evidence: structuralOrphans.slice(0, 20),
-    });
-  }
-  if (rootReportFiles.length > 0) {
-    signals.push({
-      kind: "reports-layout-backlog",
-      severity: "P2",
-      reason: `${rootReportFiles.length} report file(s) still live directly under reports/; Scout should move a small verified batch into reports/health, reports/merge, reports/triage, reports/migration, or reports/operations.`,
-      evidence: rootReportFiles.slice(0, 30),
-    });
-  }
-  if (sharedMdCount > 1000 && !hasSharedConvergenceTask) {
-    signals.push({
-      kind: "shared-corpus-unmapped",
-      severity: "P2",
-      reason:
-        "shared/knowledge is a large external corpus but the Scout task tree has no convergence task to merge useful content and remove replaced source files.",
-      evidence: {
-        sharedMdCount,
-        sharedEntryCount,
-        sharedLibraryCount,
-        sharedIndexExists,
-        sharedRouterIndexExists,
-      },
-    });
-  }
-  if (futureDateRefs.length > 0) {
-    signals.push({
-      kind: "future-dated-library-content",
-      severity: "P1",
-      reason: `${futureDateRefs.length} future-dated project/library reference(s) were sampled after ${today}; Scout should correct them or record why they are intentional.`,
-      evidence: futureDateRefs,
-    });
-  }
-  const representedSignals = taskCoverageForSignals(appDir, signals);
-  const activeTasksNotMoving = activeFinishableTasksWithoutProgress(
-    appDir,
-    representedSignals,
-  );
-  if (activeTasksNotMoving.length > 0) {
-    signals.push({
-      kind: "active-task-not-moving",
-      severity: "P1",
-      reason: `${activeTasksNotMoving.length} active finishable task(s) have no progress evidence; Scout should do a small real step, record proof, close with result, or escalate with a concrete reason.`,
-      evidence: activeTasksNotMoving,
-    });
-  }
-  const repeated = repeatedSignals(appDir, signals);
-  if (repeated.length > 0) {
-    signals.push({
-      kind: "repeated-library-health-signal",
-      severity: "P1",
-      reason: `${repeated.length} library-health signal kind(s) have repeated across at least 3 consecutive packets; observation is working but closure may be weak.`,
-      evidence: repeated,
-    });
-  }
-
-  const packet = {
-    generated_at: new Date().toISOString(),
-    role: "observer",
-    project: projectId,
-    observations: {
-      knowledge: {
-        md_count: knowledgeFiles.length,
-        index_lines: lineCount(indexText),
-        has_readme: knowledgeReadmeExists,
-        unsourced_count: unsourcedCount,
-        oversized_top_level: compactFileStats(oversizedTopLevel, 12),
-        oversized_findings: compactFileStats(oversizedFindings, 8),
-        non_inbox_orphan_sample: nonInboxOrphans.slice(0, 30),
-        structural_orphan_sample: structuralOrphans.slice(0, 30),
-        future_date_sample: futureDateRefs,
-      },
-      digest: {
-        files: digestStats,
-      },
-      reports: {
-        root_markdown_count: rootReportFiles.length,
-        root_markdown_sample: rootReportFiles.slice(0, 30),
-      },
-      process: {
-        repeated_health_signals: repeated,
-        represented_health_signals: representedSignals,
-        active_tasks_not_moving: activeTasksNotMoving,
-      },
-      shared_knowledge: {
-        path: toPosix(sharedKnowledgeDir),
-        md_count: sharedMdCount,
-        entries_count: sharedEntryCount,
-        library_count: sharedLibraryCount,
-        has_index: sharedIndexExists,
-        has_router_index: sharedRouterIndexExists,
-        convergence_task_exists: hasSharedConvergenceTask,
-      },
-    },
-    signals,
-  };
-
-  return { packet, signals };
-}
-
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir =
-    field(ctx.task, "app") ?? "/app/projects/scout-knowledge-lib.app";
-  const { packet, signals } = buildPacket(ctx);
+    ctx.appDir ??
+    field(ctx.task, "app") ??
+    "/app/projects/scout-knowledge-lib.app";
+  const projectDir =
+    ctx.projectDir ??
+    field(ctx.task, "project") ??
+    "/app/projects/scout-knowledge-lib";
+  const packet = buildLibraryHealthPacket({ appDir, projectDir });
   const packetPath = writePacket(appDir, packet);
 
   ctx.emit({
     type: "project.library_health.observed",
     project: projectId,
     packetPath,
-    signalCount: signals.length,
-    signals,
+    factCount: packet.facts.length,
+    wakeCount: packet.wake_signals.length,
+    wakeSignals: packet.wake_signals,
   });
 
-  if (signals.length > 0) {
+  if (packet.wake_signals.length > 0) {
     ctx.emit({
       type: "project.owner.requested",
       project: projectId,
       reason: "library-health-signal",
       params: {
         packetPath,
-        signalCount: signals.length,
-        signals,
+        signalCount: packet.wake_signals.length,
+        signals: packet.wake_signals,
         instruction:
-          "Review the deterministic library-health packet. Update the task tree and perform the smallest useful maintenance step. For shared/knowledge cleanup, merge durable content into Scout-owned notes/reports, migrate references, then remove old source files only after the replacement is recorded.",
+          "Review the deterministic Scout-library facts and perform the smallest useful maintenance step or record an exact no-op reason.",
       },
     });
   }
 
   const summary =
-    signals.length > 0
-      ? `Library health observer recorded ${signals.length} signal(s); owner wake emitted.`
-      : "Library health observer recorded packet with no owner wake.";
+    packet.wake_signals.length > 0
+      ? `Library health recorded ${packet.facts.length} fact(s) and requested owner review for ${packet.wake_signals.length}.`
+      : `Library health recorded ${packet.facts.length} fact(s); no owner wake was needed.`;
   return ctx.done(summary, {
     state: "converged",
     summary,

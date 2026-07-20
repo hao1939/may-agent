@@ -43,7 +43,7 @@ export function resolveScoutTask(
         parentId: "ongoing-research",
         outcome: `Continuously explore ${source} for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.`,
         acceptance: [
-          "The source is checked without simulated data and useful findings update an existing note or a source-grounded finding.",
+          "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op.",
         ],
         mode: "maintain",
         workflow: "scout-explore",
@@ -133,10 +133,6 @@ async function routeScoutEvent(
     );
   }
 
-  if (event.type === "metric.breach") {
-    return ctx.emit(ownerRequested("metric-breach", eventDetails(event)));
-  }
-
   if (event.type === "project.xhs_credential.check") {
     return observeXhsCredential(ctx);
   }
@@ -174,18 +170,18 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "owner-heartbeat",
+      id: "owner-review",
       enabled: true,
-      intervalMs: 14_400_000,
+      intervalMs: 86_400_000,
       emits: [
-        ownerRequested("owner-heartbeat", {
+        ownerRequested("experience-review", {
           instruction:
-            "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
+            "Daily knowledge-library owner review: inspect current library needs and the bounded reconciliation-history packet. Choose ordinary maintenance, at most one finite process improvement or investigation task, or an evidence-backed no-op. Do not create standalone projects.",
           reviewChecklist: [
             "Look for cross-source connections that should become library tasks, not ad hoc notes.",
             "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
-            "Look for source schedules that are producing noise or leaving useful gaps.",
-            "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+            "Look for exact repeated failures, owner handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
+            "Check the current tree before proposing work and do not duplicate a live task.",
             "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
           ],
         }),
@@ -217,7 +213,7 @@ export default defineProjectApp({
     {
       id: "scout-explore-hn",
       enabled: true,
-      intervalMs: 3_600_000, // 1h
+      intervalMs: 7_200_000, // 2h
       emits: [
         {
           type: "scout.explore",
@@ -229,7 +225,7 @@ export default defineProjectApp({
     {
       id: "scout-explore-xhs",
       enabled: true,
-      intervalMs: 3_600_000, // 1h
+      intervalMs: 14_400_000, // 4h
       emits: [
         {
           type: "scout.explore",
@@ -241,7 +237,7 @@ export default defineProjectApp({
     {
       id: "scout-explore-github",
       enabled: true,
-      intervalMs: 3_600_000, // 1h
+      intervalMs: 7_200_000, // 2h
       emits: [
         {
           type: "scout.explore",
@@ -289,7 +285,6 @@ export default defineProjectApp({
     { type: "project.xhs_credential.check", project: projectId },
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
-    { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },
   ],
 
   actions: {

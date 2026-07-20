@@ -19,6 +19,60 @@ function sourceBlock(
 }
 
 describe("metrics-snapshot registry and queries", () => {
+  it("keeps Scout metrics advisory and scoped to the current project", () => {
+    const source = metricsSnapshotSource();
+    const activeRegistry = source.slice(
+      source.indexOf("const ALL_METRICS"),
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
+    const retiredRegistry = source.slice(
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
+
+    expect(activeRegistry).toContain('id: "scout.accepted-source-outputs-24h"');
+    expect(activeRegistry).toContain('project: "scout-knowledge-lib.app"');
+    const scoutContentMetrics = sourceBlock(
+      activeRegistry,
+      'id: "scout.knowledge-preamble-coverage"',
+      'id: "handler.p95-duration"',
+    );
+    expect(scoutContentMetrics.match(/mode: "disabled"/g)).toHaveLength(2);
+    expect(activeRegistry).not.toContain('id: "scout.sourced-artifacts-24h"');
+    expect(activeRegistry).not.toContain(
+      'id: "scout.downstream-reference-files-7d"',
+    );
+    expect(retiredRegistry).toContain('"scout.sourced-artifacts-24h"');
+    expect(retiredRegistry).toContain('"scout.downstream-reference-files-7d"');
+  });
+
+  it("counts admitted outputs from converged Scout source reconciliations", () => {
+    const source = metricsSnapshotSource();
+    const block = sourceBlock(
+      source,
+      "function scoutAcceptedSourceOutputsSince",
+      "function terminalSessionsWithoutEndEvent",
+    );
+
+    expect(block).toContain("event_type = 'project.task.reconciled'");
+    expect(block).toContain("project_id = 'scout-knowledge-lib'");
+    expect(block).toContain("task_id LIKE 'explore-%'");
+    expect(block).toContain('data.disposition !== "converged"');
+    expect(block).toContain('item.startsWith("output:/")');
+  });
+
+  it("measures preamble coverage only in canonical Scout knowledge", () => {
+    const source = metricsSnapshotSource();
+    const block = sourceBlock(
+      source,
+      "function scoutKnowledgePreambleCoverage",
+      "function sessionJsonlPath",
+    );
+
+    expect(block).toContain('"scout-knowledge-lib", "knowledge"');
+    expect(block).not.toContain('"shared", "knowledge"');
+    expect(block).not.toContain('"agents", "scout", "knowledge"');
+  });
+
   it("keeps the stale trace-completeness metric retired", () => {
     const source = metricsSnapshotSource();
 
