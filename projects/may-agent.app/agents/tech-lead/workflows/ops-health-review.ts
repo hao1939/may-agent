@@ -555,8 +555,16 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(platformRepeatedSymptoms, 8),
     });
   }
-  const actionableUnhandled = unhandledEvents;
-  const actionableOverdue = overduePendingEvents;
+  // session.end events are naturally unhandled — they are informational
+  // lifecycle events emitted by the SDK when a session completes. No handler
+  // is expected to accept them. Exclude from signal generation to avoid
+  // false-positive P1 event-delivery-unaccepted wakes.
+  const actionableUnhandled = unhandledEvents.filter(
+    (row) => stringValue(row.eventType ?? row.event_type) !== "session.end",
+  );
+  const actionableOverdue = overduePendingEvents.filter(
+    (row) => stringValue(row.eventType ?? row.event_type) !== "session.end",
+  );
   if (actionableUnhandled.length > 0 || actionableOverdue.length > 0) {
     signals.push({
       kind: "event-delivery-unaccepted",
@@ -633,7 +641,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
+  const appDir =
+    ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const { packet, signals } = buildPacket(ctx);
   const packetPath = writePacket(appDir, packet);
 

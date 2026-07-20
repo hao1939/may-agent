@@ -434,8 +434,10 @@ function buildPacketSummary(packet: Record<string, unknown>): string {
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
-  const projectDir = field(ctx.task, "project") ?? "/app/projects/may-agent";
+  const appDir =
+    ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
+  const projectDir =
+    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/may-agent";
 
   // Retire stale owner-inbox message work older than 24h on each review cycle.
   try {

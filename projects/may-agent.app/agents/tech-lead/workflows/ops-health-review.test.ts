@@ -494,7 +494,7 @@ describe("ops-health-review", () => {
     });
   });
 
-  it("wakes the owner when canonical session.end is unhandled", async () => {
+  it("does NOT wake the owner when session.end is unhandled (false-positive suppression)", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();
     db.run(
@@ -519,20 +519,11 @@ describe("ops-health-review", () => {
     await execute(ctx);
     close();
 
+    // session.end events are naturally unhandled lifecycle events.
+    // They should appear in delivery health observations but NOT generate signals.
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
-      "project.owner.requested",
     ]);
-    expect(emitted[1]).toMatchObject({
-      type: "project.owner.requested",
-      params: {
-        signals: [
-          expect.objectContaining({
-            kind: "event-delivery-unaccepted",
-            severity: "P1",
-          }),
-        ],
-      },
-    });
+    expect(emitted[0].signalCount).toBe(0);
   });
 });

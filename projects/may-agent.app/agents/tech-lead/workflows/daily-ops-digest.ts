@@ -168,7 +168,8 @@ function reportFor(ctx: WorkflowContext): {
   reportPath: string;
   signal: Row;
 } {
-  const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
+  const appDir =
+    ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const now = Date.now();
   const since = now - 24 * 60 * 60_000;
   const day = dateId(new Date(now));
