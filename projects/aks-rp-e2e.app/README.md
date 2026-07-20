@@ -68,7 +68,8 @@ events may likewise target independent focus task IDs.
 
 ## State
 
-- `.state/tasks/tree.json` — sole mutable task resource authority.
+- `.state/tasks/state.json` — sole mutable task resource authority.
+- `.state/tasks/tree.json` — generated disposable read projection.
 - `.state/spec-loop/state.json` — spec verification domain ledger.
 - `.state/feature-compact-loop/state.json` — compact-package domain ledger.
 - `.state/*-runs.jsonl` — workflow evidence ledgers.

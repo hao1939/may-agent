@@ -10,12 +10,7 @@ import {
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import {
-  normalizeTaskTreeInPlace,
-  type TaskTree,
-  type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk";
+import { type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
 
 export const name = "project-health-evaluator";
 export const description =
@@ -591,8 +586,7 @@ function compactTaskForReport(task: TaskRecord): Record<string, unknown> {
 function normalizedTaskMap(
   tree: Record<string, unknown>,
 ): Record<string, TaskRecord> {
-  const normalized = normalizeTaskTreeInPlace(tree as unknown as TaskTree);
-  return normalized.tasks as Record<string, TaskRecord>;
+  return objectRecord(tree.tasks) as Record<string, TaskRecord>;
 }
 
 function isDesignHygieneTask(task: TaskRecord): boolean {

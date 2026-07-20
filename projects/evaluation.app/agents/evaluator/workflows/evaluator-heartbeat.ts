@@ -11,7 +11,9 @@ export const name = "evaluator-heartbeat";
 export const description = "evaluation app owner review.";
 
 const APP_DIR = "/app/projects/evaluation.app";
-const TASK_TREE_PATH = resolveTaskTreePath(APP_DIR);
+function taskTreePath(appDir: string): string {
+  return process.env.MAY_AGENT_TASK_TREE_PATH ?? resolveTaskTreePath(appDir);
+}
 
 type OwnerResult = Exclude<
   ProjectAppTaskHandlerResult,
@@ -68,11 +70,12 @@ function compactTask(task: TaskRecord): Record<string, unknown> {
   };
 }
 
-function taskPacket(): Record<string, unknown> {
-  if (!existsSync(TASK_TREE_PATH)) {
-    return { error: `missing ${TASK_TREE_PATH}` };
+function taskPacket(appDir = APP_DIR): Record<string, unknown> {
+  const path = taskTreePath(appDir);
+  if (!existsSync(path)) {
+    return { error: `missing ${path}` };
   }
-  const tree = readJson(TASK_TREE_PATH);
+  const tree = readJson(path);
   const tasks = Object.values((tree.tasks ?? {}) as Record<string, TaskRecord>);
   const byState = tasks.reduce<Record<string, number>>((acc, task) => {
     const state = task.state ?? "unknown";
@@ -268,7 +271,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const packet = {
     app: "evaluation.app",
     trigger,
-    taskTree: taskPacket(),
+    taskTree: taskPacket(ctx.appDir ?? APP_DIR),
     runtime: runtimePacket(ctx),
     allowedActions: [
       "create-task",

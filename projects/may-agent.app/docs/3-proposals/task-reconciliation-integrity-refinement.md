@@ -1,12 +1,13 @@
 # Proposal: Task Reconciliation Integrity Refinement
 
 **Design status:** Revised after review; recommended for acceptance.
-**Implementation status:** Runtime complete; paused-state cutover in progress.
-Shared admission, acceptance provenance for new receipts, runnable-owner
-admission, execution-only generations, path boundaries, strict live-parent
-admission, Condition-trigger preservation, and projection non-authority are
-implemented. Existing receipts, dangling legacy parents, app-owned waits, and
-final deploy/restart/resume verification still require the reviewed cutover.
+**Implementation status:** Source and paused-state migration complete; deployment pending.
+Canonical state, acceptance provenance, runnable-owner admission,
+execution-only generations, path boundaries, strict live-parent admission, and
+projection non-authority are implemented. Key-only claim and atomic
+Condition-trigger persistence are committed, stale attempts from the older
+deployed binary were interrupted, and all five apps remain paused on migrated
+canonical state. Final deploy, restart, and cohort resume verification remain.
 
 ## Requested Decision
 
@@ -91,6 +92,11 @@ The compact rule remains:
 > Apps organize work. Agents decide. Workflows repeat learned processes. The
 > reconciler enforces mechanics. Conditions represent external facts. Read
 > models explain canonical state.
+
+Trigger and resync paths address an existing task only by stable identity.
+They never carry a copied desired spec back into admission. A worker atomically
+claims the current generation and snapshots its current spec and trigger; this
+prevents a stale queue reader from restoring older intent.
 
 ## Decision 1: Keep The Generic Reconciler Generic
 
@@ -281,8 +287,10 @@ target a human, but notification ownership and task ownership are not the same
 concept.
 
 The event that satisfies a Condition is also persisted as the task's next
-trigger observation before the task key is enqueued. The handler therefore
-sees why it woke. A queue hint alone must not erase the observation.
+trigger observation in the same canonical-state transaction before the task
+key is enqueued. The handler therefore sees why it woke. A queue hint alone
+must not erase the observation, and a Condition observer must never reconstruct
+or rewrite task intent.
 
 ## Decision 5: Separate Execution Generation From Organization
 
@@ -385,10 +393,11 @@ does not authorize deleting live project data.
    owner, while keeping organization changes on `resourceVersion`.
 7. **Runtime done:** Provide resolved absolute paths and generic output-boundary admission;
    finish app workflow adoption during cutover.
-8. Migrate all paused app live state through reviewed one-off operations,
+8. **Done:** Migrate all paused app live state through reviewed one-off operations,
    using Scout as the focused validation case.
-9. Remove `tree.json` bootstrap, legacy action shapes, and stale documentation;
-   then deploy, restart-validate, and resume the apps.
+9. **Source done; deployment pending:** Remove `tree.json` bootstrap and legacy action shapes.
+10. Deploy, rerun the paused-state cleanup, restart-validate, and resume the
+    apps in reviewed cohorts.
 
 Each step remains independently testable and revertible. Live-state migration
 comes after code admission and recovery tests, not before.
@@ -421,6 +430,12 @@ The proposal is complete only when tests prove:
     mutation; and
 14. an exact Condition wake reaches the next handler attempt as its trigger
     observation.
+15. an event, Condition wake, or passive resync cannot mutate any desired spec
+    field or advance generation;
+16. Condition satisfaction and its task trigger survive as one atomic write;
+    and
+17. a worker that read an older task version still claims the current canonical
+    spec by task identity rather than restoring the older copy.
 
 ## Non-Goals
 

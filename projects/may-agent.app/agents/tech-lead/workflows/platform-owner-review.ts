@@ -2,12 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   projectAppTaskOwnerResultSchema,
-  readTaskTree,
   resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
   type TaskNode,
   type TaskTree,
-  type TaskTreeConfig,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
@@ -91,15 +89,7 @@ function parseJsonFile(path: string): Record<string, unknown> {
 function taskTreePacket(appDir: string): Record<string, unknown> {
   const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return { available: false, path: treePath };
-  const treeConfig: TaskTreeConfig = {
-    appDir,
-    projectDir: appDir,
-    treePath,
-    journalPath: join(appDir, ".state", "journal.jsonl"),
-    worker: ownerAgent,
-    maxConcurrent: 3,
-  };
-  const tree = readTaskTree(treeConfig);
+  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as TaskTree;
   const tasks = tree.tasks;
   const counts: Record<string, number> = {};
   for (const task of Object.values(tasks)) {

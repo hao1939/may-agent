@@ -9,10 +9,10 @@ import {
 import { dirname, join, resolve } from "node:path";
 import {
   projectRuntimePaths,
-  readTaskTree,
-  saveTaskTree,
+  readTaskState,
+  saveTaskState,
   type TaskTree,
-  type TaskTreeConfig,
+  type TaskStateConfig,
 } from "@may-agent/sdk";
 
 type JsonObject = Record<string, any>;
@@ -253,6 +253,39 @@ function migrateReceipts(state: JsonObject): number {
     changed += 1;
   }
   return changed;
+}
+
+function interruptRunningAttempts(state: JsonObject, now: string): number {
+  let interrupted = 0;
+  for (const attempt of Object.values(
+    state.attempts ?? {},
+  ) as JsonObject[]) {
+    if (attempt.state !== "running") continue;
+
+    attempt.state = "interrupted";
+    attempt.finishedAt = now;
+    attempt.failureReason = "task-integrity-cutover";
+    attempt.summary = "Interrupted by canonical task-state deployment";
+    if (attempt.metadata) {
+      attempt.metadata.resourceVersion =
+        Number(attempt.metadata.resourceVersion ?? 0) + 1;
+    }
+
+    const resource = state.resources?.[attempt.taskId];
+    if (resource?.status?.currentAttemptId === attempt.metadata?.id) {
+      resource.status.phase = "pending";
+      resource.status.observedGeneration = Math.max(
+        0,
+        Number(resource.metadata?.generation ?? 0) - 1,
+      );
+      delete resource.status.currentAttemptId;
+      resource.status.updatedAt = now;
+      resource.metadata.resourceVersion =
+        Number(resource.metadata.resourceVersion ?? 0) + 1;
+    }
+    interrupted += 1;
+  }
+  return interrupted;
 }
 
 function nearestLiveParent(
@@ -626,6 +659,7 @@ function migrate(
   delete state.active_task_id;
   delete state.active_task_ids;
 
+  const attempts = interruptRunningAttempts(state, now);
   const receipts = migrateReceipts(state);
   let specs = 0;
   let retired = 0;
@@ -672,6 +706,7 @@ function migrate(
       resources: Object.keys(state.resources ?? {}).length,
       receipts: Object.keys(state.receipts ?? {}).length,
       conditions: Object.keys(state.conditions ?? {}).length,
+      attemptsInterrupted: attempts,
       receiptsMigrated: receipts,
       specsNormalized: specs,
       parentsRepaired: parents,
@@ -711,16 +746,16 @@ if (apply) {
       `${JSON.stringify(result.state, null, 2)}\n`,
       "utf8",
     );
-    const config: TaskTreeConfig = {
+    const config: TaskStateConfig = {
       appDir: result.app.appDir,
       projectDir: result.app.projectDir,
-      treePath: paths.taskStatePath,
+      statePath: paths.taskStatePath,
       journalPath: paths.journalPath,
       worker: "task-integrity-cutover",
       maxConcurrent: 1,
     };
-    const normalized = readTaskTree(config);
-    saveTaskTree(config, normalized, { allowShrinkage: true });
+    const normalized = readTaskState(config);
+    saveTaskState(config, normalized, { allowShrinkage: true });
     const logPath = paths.migrationLogPath;
     mkdirSync(dirname(logPath), { recursive: true });
     const existing = existsSync(logPath) ? readFileSync(logPath, "utf8") : "";
