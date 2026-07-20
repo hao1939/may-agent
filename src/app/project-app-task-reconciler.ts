@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   ensureTaskTreeState,
+  isTypedProjectAppConditionSubject,
   isLeaf,
   normalizeStringArray,
   projectRuntimePaths,
@@ -20,7 +21,6 @@ import {
 } from "@may-agent/sdk";
 
 export const PROJECT_APP_TASK_RECOVERY_OWNER = "project-app-task-reconciler";
-import { isTypedProjectAppConditionSubject } from "./project-app-condition-tracker.js";
 
 export type ProjectAppTaskClaim = {
   kind: "claimed";
@@ -89,7 +89,7 @@ function stableValue(value: unknown): unknown {
   );
 }
 
-export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
+export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent, effectiveOwner?: string): string {
   return createHash("sha256")
     .update(
       JSON.stringify(
@@ -97,13 +97,11 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
           outcome: intent.outcome,
           acceptance: intent.acceptance,
           mode: intent.mode,
-          owner: intent.owner ?? null,
+          owner: effectiveOwner ?? intent.owner ?? null,
           workflow: intent.workflow ?? null,
           input: intent.input ?? {},
           outputs: intent.outputs ?? [],
           dependsOn: intent.dependsOn ?? [],
-          parentId: intent.parentId,
-          category: intent.category ?? null,
         }),
       ),
     )
@@ -581,6 +579,7 @@ function upsertTask(tree: TaskTree, resource: ProjectAppTaskResource, owner: str
     children: [],
     state: "backlog",
   };
+  const previousParentId = task.parent_id;
   syncTaskProjection(task, resource, owner);
   if (task.context) delete task.context.reconciliation;
   task.trace = {
@@ -595,6 +594,10 @@ function upsertTask(tree: TaskTree, resource: ProjectAppTaskResource, owner: str
     worker_started_at: undefined,
   };
   tree.tasks[intent.id] = task;
+  if (previousParentId && previousParentId !== intent.parentId) {
+    const previousParent = tree.tasks[previousParentId];
+    if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
+  }
   parent.children = [...new Set([...(parent.children ?? []), intent.id])];
   return task;
 }
@@ -632,9 +635,10 @@ export function observeProjectAppTaskIntent(
   },
 ): ProjectAppTaskObservationResult {
   validateIntent(input.intent);
-  const specHash = projectAppTaskSpecHash(input.intent);
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
+    const owner = resolvedOwner(tree, input.intent, input.appOwner);
+    const specHash = projectAppTaskSpecHash(input.intent, owner);
     const receipt = tree.receipts?.[input.intent.id];
     if (receipt && receipt.specHash === specHash && input.intent.mode === "achieve") {
       return {
@@ -650,14 +654,30 @@ export function observeProjectAppTaskIntent(
       : receipt && Number.isInteger(receipt.metadata.generation)
         ? receipt.metadata.generation
         : 0;
-    const sameSpec = existingResource ? projectAppTaskSpecHash(resourceIntent(existingResource)) === specHash : false;
+    const existingIntent = existingResource ? resourceIntent(existingResource) : null;
+    const existingOwner = existingIntent ? resolvedOwner(tree, existingIntent, input.appOwner) : null;
+    const sameSpec = existingIntent
+      ? projectAppTaskSpecHash(existingIntent, existingOwner ?? undefined) === specHash
+      : false;
     const generation = sameSpec ? previousGeneration : Math.max(1, previousGeneration + 1);
-    const owner = resolvedOwner(tree, input.intent, input.appOwner);
-    const changed = !existingResource || generation !== previousGeneration;
+    const nextSpec = resourceSpec(input.intent);
+    const desiredStateChanged =
+      !existingResource || JSON.stringify(stableValue(existingResource.spec)) !== JSON.stringify(stableValue(nextSpec));
+    const changed = !existingResource || generation !== previousGeneration || desiredStateChanged;
     const now = new Date().toISOString();
     let resource: ProjectAppTaskResource;
     if (existingResource && sameSpec) {
-      resource = existingResource;
+      resource = desiredStateChanged
+        ? {
+            ...existingResource,
+            metadata: {
+              ...existingResource.metadata,
+              resourceVersion: existingResource.metadata.resourceVersion + 1,
+            },
+            spec: nextSpec,
+            status: { ...existingResource.status, updatedAt: now },
+          }
+        : existingResource;
     } else {
       if (existingResource?.status.currentAttemptId) {
         finishAttempt(
@@ -674,7 +694,7 @@ export function observeProjectAppTaskIntent(
           generation,
           resourceVersion: (existingResource?.metadata.resourceVersion ?? 0) + 1,
         },
-        spec: resourceSpec(input.intent),
+        spec: nextSpec,
         status: {
           observedGeneration: Math.min(existingResource?.status.observedGeneration ?? 0, generation - 1),
           phase: "pending",
@@ -871,7 +891,7 @@ export function claimObservedProjectAppTask(
       finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
     }
     const trigger = pendingTrigger?.event ?? previousAttempt?.trigger;
-    const specHash = projectAppTaskSpecHash(intent);
+    const specHash = projectAppTaskSpecHash(intent, owner);
     const attempt: ProjectAppTaskAttempt = {
       metadata: { id: attemptId, resourceVersion: 1 },
       taskId: task.id,
@@ -917,7 +937,6 @@ function matchingTask(
   if (!task) return null;
   const resource = tree.resources?.[claim.taskId];
   if (!resource || resource.metadata.generation !== claim.generation) return null;
-  if (resource.metadata.resourceVersion !== claim.resourceVersion) return null;
   if (resource.status.currentAttemptId !== claim.attemptId) return null;
   const attempt = tree.attempts?.[claim.attemptId];
   if (
@@ -982,10 +1001,10 @@ function requireValidTaskWorkflow(value: unknown, label: string): string {
   return workflow;
 }
 
-function requireStringList(value: unknown, label: string): asserts value is string[] {
+function requireStringList(value: unknown, label: string, allowEmpty = false): asserts value is string[] {
   if (
     !Array.isArray(value) ||
-    value.length === 0 ||
+    (!allowEmpty && value.length === 0) ||
     !value.every((entry) => typeof entry === "string" && entry.trim())
   ) {
     throw new Error(`${label} requires one or more non-empty strings`);
@@ -1044,11 +1063,11 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
 
     if (action.kind === "create-task") {
       requireNonEmptyString(action.parentId, `Handler create action ${action.id} parentId`);
-      requireNonEmptyString(action.goal, `Handler create action ${action.id} goal`);
+      requireNonEmptyString(action.outcome, `Handler create action ${action.id} outcome`);
       if (!["achieve", "maintain"].includes(String(action.mode))) {
         throw new Error(`Handler create action ${action.id} requires mode achieve or maintain`);
       }
-      requireStringList(action.outputs, `Handler create action ${action.id} outputs`);
+      requireStringList(action.outputs, `Handler create action ${action.id} outputs`, true);
       requireStringList(action.acceptance, `Handler create action ${action.id} acceptance`);
       if (action.priority !== undefined && !["P0", "P1", "P2", "P3"].includes(action.priority)) {
         throw new Error(`Handler create action ${action.id} has an invalid priority`);
@@ -1078,17 +1097,44 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
     }
 
     requireExpectedGeneration(action.expectedGeneration, `Handler ${action.kind} action ${action.taskId}`);
-    if (action.kind === "update-task" && action.goal !== undefined) {
-      requireNonEmptyString(action.goal, `Handler update for ${action.taskId} goal`);
+    if (action.kind === "update-task" && action.parentId !== undefined) {
+      requireNonEmptyString(action.parentId, `Handler update for ${action.taskId} parentId`);
+      if (!tree.tasks[action.parentId]) throw new Error(`Handler action parent not found: ${action.parentId}`);
+      if (action.parentId === action.taskId) throw new Error(`Handler update cannot parent ${action.taskId} to itself`);
+    }
+    if (action.kind === "update-task" && action.outcome !== undefined) {
+      requireNonEmptyString(action.outcome, `Handler update for ${action.taskId} outcome`);
     }
     if (action.kind === "update-task" && action.mode !== undefined && !["achieve", "maintain"].includes(action.mode)) {
       throw new Error(`Handler update for ${action.taskId} has invalid mode ${String(action.mode)}`);
     }
     if (action.kind === "update-task" && action.outputs !== undefined) {
-      requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`);
+      requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`, true);
     }
     if (action.kind === "update-task" && action.acceptance !== undefined) {
       requireStringList(action.acceptance, `Handler update for ${action.taskId} acceptance`);
+    }
+    if (
+      action.kind === "update-task" &&
+      action.priority !== undefined &&
+      !["P0", "P1", "P2", "P3"].includes(action.priority)
+    ) {
+      throw new Error(`Handler update for ${action.taskId} has an invalid priority`);
+    }
+    if (action.kind === "update-task" && action.owner !== undefined && action.owner !== null) {
+      requireNonEmptyString(action.owner, `Handler update for ${action.taskId} owner`);
+    }
+    if (action.kind === "update-task" && action.workflow !== undefined && action.workflow !== null) {
+      requireValidTaskWorkflow(action.workflow, `Handler update for ${action.taskId} workflow`);
+    }
+    if (action.kind === "update-task" && action.input !== undefined && !isRecord(action.input)) {
+      throw new Error(`Handler update for ${action.taskId} input must be an object`);
+    }
+    if (action.kind === "update-task" && action.dependsOn !== undefined) {
+      requireStringList(action.dependsOn, `Handler update for ${action.taskId} dependsOn`, true);
+    }
+    if (action.kind === "update-task" && action.category !== undefined && action.category !== null) {
+      requireNonEmptyString(action.category, `Handler update for ${action.taskId} category`);
     }
     if (action.kind === "close-task") {
       requireNonEmptyString(action.summary, `Handler close for ${action.taskId} summary`);
@@ -1110,10 +1156,17 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
     }
     if (
       action.kind === "update-task" &&
-      action.goal === undefined &&
+      action.parentId === undefined &&
+      action.outcome === undefined &&
       action.mode === undefined &&
       action.outputs === undefined &&
-      action.acceptance === undefined
+      action.acceptance === undefined &&
+      action.priority === undefined &&
+      action.owner === undefined &&
+      action.workflow === undefined &&
+      action.input === undefined &&
+      action.dependsOn === undefined &&
+      action.category === undefined
     ) {
       throw new Error(`Handler update for ${action.taskId} contains no change`);
     }
@@ -1159,6 +1212,7 @@ function applyTaskActions(
   claim: ProjectAppTaskClaim,
   actions: ProjectAppTaskAction[],
   evidence: string[],
+  appOwner: string,
 ): string[] {
   validateTaskActions(tree, actions);
   const now = new Date().toISOString();
@@ -1179,7 +1233,7 @@ function applyTaskActions(
         const intent: ProjectAppTaskIntent = {
           id: action.id,
           parentId: action.parentId,
-          outcome: action.goal.trim(),
+          outcome: action.outcome.trim(),
           acceptance: [...action.acceptance],
           mode: action.mode,
           ...(action.owner ? { owner: action.owner } : {}),
@@ -1187,7 +1241,8 @@ function applyTaskActions(
           ...(action.input ? { input: structuredClone(action.input) } : {}),
           outputs: [...action.outputs],
           ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
-          priority: action.priority ?? "P2",
+          priority: action.priority,
+          ...(action.category ? { category: action.category } : {}),
         };
         const resource: ProjectAppTaskResource = {
           metadata: { id: action.id, generation: 1, resourceVersion: 1 },
@@ -1214,18 +1269,41 @@ function applyTaskActions(
       case "update-task": {
         const { task, resource } = mutableActionResource(tree, action);
         const current = resourceIntent(resource);
-        if (resource.status.currentAttemptId) {
-          finishAttempt(tree, resource, "interrupted", "Task specification changed by reconciliation action", now);
-        }
-        unlinkTaskConditions(tree, task);
-        const generation = resource.metadata.generation + 1;
         const nextIntent: ProjectAppTaskIntent = {
           ...current,
-          outcome: action.goal?.trim() ?? current.outcome,
+          parentId: action.parentId ?? current.parentId,
+          outcome: action.outcome?.trim() ?? current.outcome,
           acceptance: action.acceptance ? [...action.acceptance] : current.acceptance,
           mode: action.mode ?? current.mode,
           outputs: action.outputs ? [...action.outputs] : current.outputs,
+          priority: action.priority ?? current.priority,
+          ...(action.input ? { input: structuredClone(action.input) } : {}),
+          ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
         };
+        if (action.owner !== undefined) {
+          if (action.owner === null) delete nextIntent.owner;
+          else nextIntent.owner = action.owner;
+        }
+        if (action.workflow !== undefined) {
+          if (action.workflow === null) delete nextIntent.workflow;
+          else nextIntent.workflow = action.workflow;
+        }
+        if (action.category !== undefined) {
+          if (action.category === null) delete nextIntent.category;
+          else nextIntent.category = action.category;
+        }
+        const currentOwner = resolvedOwner(tree, current, appOwner);
+        const nextOwner = resolvedOwner(tree, nextIntent, appOwner);
+        const executionChanged =
+          projectAppTaskSpecHash(current, currentOwner) !== projectAppTaskSpecHash(nextIntent, nextOwner);
+        const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
+        if (executionChanged) {
+          if (resource.status.currentAttemptId) {
+            finishAttempt(tree, resource, "interrupted", "Task execution intent changed by reconciliation action", now);
+          }
+          unlinkTaskConditions(tree, task);
+        }
+        const previousParentId = task.parent_id;
         const nextResource: ProjectAppTaskResource = {
           metadata: {
             id: resource.metadata.id,
@@ -1233,15 +1311,23 @@ function applyTaskActions(
             resourceVersion: resource.metadata.resourceVersion + 1,
           },
           spec: resourceSpec(nextIntent),
-          status: {
-            observedGeneration: Math.min(resource.status.observedGeneration, generation - 1),
-            phase: "pending",
-            evidence: resource.status.evidence,
-            updatedAt: now,
-          },
+          status: executionChanged
+            ? {
+                observedGeneration: Math.min(resource.status.observedGeneration, generation - 1),
+                phase: "pending",
+                evidence: resource.status.evidence,
+                updatedAt: now,
+              }
+            : { ...resource.status, updatedAt: now },
         };
         tree.resources![task.id] = nextResource;
-        syncTaskProjection(task, nextResource, nextIntent.owner ?? task.owner ?? claim.owner);
+        syncTaskProjection(task, nextResource, nextOwner);
+        if (previousParentId && previousParentId !== nextIntent.parentId) {
+          const previousParent = tree.tasks[previousParentId];
+          if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
+          const nextParent = tree.tasks[nextIntent.parentId];
+          nextParent.children = [...new Set([...(nextParent.children ?? []), task.id])];
+        }
         applied.push(`updated ${task.id}`);
         break;
       }
@@ -1267,7 +1353,7 @@ function applyTaskActions(
               generation: resource.metadata.generation,
               resourceVersion: 1,
             },
-            specHash: projectAppTaskSpecHash(intent),
+            specHash: projectAppTaskSpecHash(intent, intent.owner ?? task.owner ?? claim.owner),
             parentId: intent.parentId,
             outcome: intent.outcome,
             acceptance: [...intent.acceptance],
@@ -1323,7 +1409,7 @@ export function completeProjectAppTask(
     const { task, resource } = match;
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker);
     const liveChildren = liveChildTaskIds(tree, task);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
@@ -1426,7 +1512,7 @@ export function deferProjectAppTask(
     validateConditions(input.conditions, { required: input.disposition === "waiting", taskId: claim.taskId });
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (input.conditions?.length) {
