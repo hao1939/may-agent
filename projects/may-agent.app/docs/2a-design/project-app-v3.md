@@ -158,7 +158,8 @@ reconciliation.
 
 ## Lifecycle
 
-`.state/tasks/tree.json` is the sole mutable task resource authority. When
+`.state/tasks/state.json` is the sole mutable task resource authority;
+`.state/tasks/tree.json` is a generated read projection. When
 `project_lifecycle` is `paused`, the loader installs no schedules, controller,
 event routing, recovery, or resync for that app.
 

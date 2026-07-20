@@ -10,7 +10,8 @@ state converge through one controller path.
 
 - `app.ts` owns event correlation, schedules, actions, and the accountable
   owner.
-- `.state/tasks/tree.json` is the sole mutable task-resource authority.
+- `.state/tasks/state.json` is the sole mutable task-resource authority.
+- `.state/tasks/tree.json` is regenerated from resources and structural groups.
 - Workflows preserve reusable processes and return structured results.
 - Agents supply adaptive capability and ownership fallback.
 - Infrastructure owns event delivery, the app queue, attempts, concurrency,

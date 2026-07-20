@@ -189,6 +189,7 @@ type Task = {
     dependsOn?: string[];
     outputs?: string[];
     priority?: "P0" | "P1" | "P2" | "P3"; // default: P2
+    category?: string; // domain classification for views, not execution mode
   };
 
   status: {
@@ -591,6 +592,18 @@ same resources. They do not own scheduling or duplicate parent/child state.
 Attempts, sessions, workflow runs, reviews, and delivery traces remain runtime
 facts linked by task ID and generation.
 
+The storage convention makes that authority visible:
+
+```text
+.state/tasks/state.json  -> resources, Conditions, attempts, receipts, groups
+.state/tasks/tree.json   -> generated human/agent read projection
+```
+
+Resource `spec.parentId`, explicit `spec.owner`, and status always win when a
+stale projected node disagrees. Structural groups may provide containment and
+inherited ownership, but they are not executable tasks and never enter the
+work queue.
+
 A parent task has status only for its own desired state and attempt. Branch
 health such as "three children waiting" is a projection and never overwrites
 that status. If a node exists only to label a group and has no outcome to
@@ -732,7 +745,9 @@ The convention-first contract is implemented across the active Agent Apps:
 
 Steady state has no task routes, owner-entry wrapper, workflow registry,
 manual event graph, assignment/review pipeline, task archive, mirrored
-`tasks/tree.json`, or app-specific scheduler. Declared actions are translated
+`tasks/tree.json`, or app-specific scheduler. Canonical task state lives in
+`.state/tasks/state.json`; `.state/tasks/tree.json` is generated only for
+reading. Declared actions are translated
 once by infrastructure. Targeted events, Condition observations, restart
 recovery, and resync all enqueue the same task key in one app work queue.
 

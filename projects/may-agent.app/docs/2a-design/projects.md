@@ -36,7 +36,8 @@ projects/<id>.app/
   agents/                   # app-local identities and their learned workflows
   scripts/                  # integrity/projection/domain utilities
   ui/                       # optional domain-specific UI
-  .state/tasks/tree.json    # sole mutable task-resource authority
+  .state/tasks/state.json   # sole mutable task-resource authority
+  .state/tasks/tree.json    # generated tree/Kanban read projection
 ```
 
 The `.app` folder is the May-agent control plane. Domain product source and

@@ -544,7 +544,7 @@ bounded metadata, indexes, and coordination state. See
 | Heartbeat instructions | `agents/<name>/heartbeat.md` | |
 | Config | `agents/<name>/agent.json` | |
 | Workflows | `projects/<id>.app/agents/<name>/workflows/*.ts`, `agents/<name>/workflows/*.ts` | Owned by the agent that learned and operates the process |
-| Projects | `projects/<id>.app/project.json`, `projects/<id>.app/tasks/seed.json`, runtime `.state/tasks/tree.json`, legacy `projects/<id>/project.md` | App definition and seed are source; runtime task resources are the sole mutable work-state authority |
+| Projects | `projects/<id>.app/project.json`, `projects/<id>.app/tasks/seed.json`, runtime `.state/tasks/state.json`, generated `.state/tasks/tree.json`, legacy `projects/<id>/project.md` | App definition and seed are source; runtime resources are authoritative and the tree is a read view |
 | Work queue | `shared/work-queue.md` | |
 | Session transcripts | Pi-coding-agent SessionManager format | |
 

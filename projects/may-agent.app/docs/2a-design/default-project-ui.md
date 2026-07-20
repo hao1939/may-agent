@@ -187,7 +187,7 @@ Default coverage rows:
 
 | Surface | Expected | Typical evidence |
 | --- | --- | --- |
-| Task tree | Current decomposition, owners, waits, evidence | `.state/tasks/tree.json` |
+| Task tree | Generated decomposition, owners, waits, evidence | `.state/tasks/tree.json` |
 | Metrics | Sensor values, trend, alert state | `/api/metrics` |
 | Loop ledgers | Durable queues and non-terminal records | project loop state or task context |
 | Runtime events | Events reached handlers/workflows | events and workflow runs |

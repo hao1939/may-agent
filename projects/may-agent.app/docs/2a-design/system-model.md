@@ -29,7 +29,7 @@ a domain-specific question.
 | Event pair | Did the expected typed response arrive in time? | `event_pair_runs` |
 | Trace | What caused this work, and which event fulfilled it? | Event trace and closure links |
 | Project | What durable goal and operating posture does an owner maintain? | `project.json` and project-owned state |
-| Task resources | What desired and observed work state does the app currently own? | `.state/tasks/tree.json` |
+| Task resources | What desired and observed work state does the app currently own? | `.state/tasks/state.json` |
 | Metric alert | Which measured signal still needs judgment or recovery evidence? | Metric and alert tables |
 | Session | Which agent execution or conversation container ran? | Session registry and transcript |
 | Workflow run | Which ordered executable process ran, and how did it end? | Workflow-run record |

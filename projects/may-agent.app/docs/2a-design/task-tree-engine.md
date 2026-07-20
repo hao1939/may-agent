@@ -113,9 +113,11 @@ execution.
 
 ## Storage and lifecycle
 
-`.state/tasks/tree.json` is the sole mutable authority. `tasks/seed.json` may
-initialize a new app once. `tasks/tree.json` is neither mirrored nor used as a
-runtime bootstrap source.
+`.state/tasks/state.json` is the sole mutable authority. It stores task
+resources, Conditions, attempts, receipts, and structural groups.
+`.state/tasks/tree.json` is a generated read projection and is never read back
+as mutation input once canonical state exists. `tasks/seed.json` may initialize
+a new app once; the retired `tasks/tree.json` path is not a runtime source.
 
 All writes are locked, validated, normalized, and atomically renamed. An app
 with `project_lifecycle: "paused"` has no installed controller, schedules,
