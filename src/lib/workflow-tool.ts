@@ -192,7 +192,9 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 }
 
 async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"): Promise<WorkflowModule> {
-  const mod = await importRuntimeModule<{ name?: unknown; description?: unknown; execute?: unknown }>(filePath);
+  const mod = await importRuntimeModule<{ name?: unknown; description?: unknown; execute?: unknown; verify?: unknown }>(
+    filePath,
+  );
   if (typeof mod.name !== "string" || !mod.name.trim()) {
     throw new Error(`Workflow file ${filePath} must export a non-empty 'name' string`);
   }
@@ -203,10 +205,14 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   if (typeof execute !== "function") {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
   }
+  if (mod.verify !== undefined && typeof mod.verify !== "function") {
+    throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
+  }
   return {
     name: mod.name.trim(),
     description: mod.description.trim(),
     execute: execute as WorkflowModule["execute"],
+    ...(typeof mod.verify === "function" ? { verify: mod.verify as WorkflowModule["verify"] } : {}),
     sourcePath: filePath,
     sourceScope,
     entryContentHash: createHash("sha256").update(readFileSync(filePath)).digest("hex"),
@@ -525,6 +531,7 @@ export interface WorkflowTool extends AgentTool {
 
 export interface WorkflowRunner {
   run(name: string, task: string): Promise<WorkflowToolResult>;
+  resolve(name: string): Promise<WorkflowModule | null>;
   steer(message: string): boolean;
   readonly isRunning: boolean;
   readonly activeWorkflow: string | null;
@@ -567,9 +574,11 @@ export interface RunWorkflowDirectOpts {
  * Gets the same guards, step tracking, persistence, and createSession
  * as agent-invoked workflows.
  */
-export async function runWorkflowDirect(
-  opts: RunWorkflowDirectOpts,
-): Promise<{ result: WorkflowResult; runId: string }> {
+export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
+  result: WorkflowResult;
+  runId: string;
+  verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
+}> {
   const runner = createWorkflowRunner({
     manager: opts.manager,
     workflowDir: opts.workflowDir ?? "",
@@ -585,12 +594,17 @@ export async function runWorkflowDirect(
     runtimeCtx: opts.runtimeCtx,
   });
 
+  const workflow = await runner.resolve(opts.workflowName);
   const parsed = await runner.run(opts.workflowName, opts.task);
+  const verifier = workflow?.verify
+    ? { name: workflow.name, sourcePath: workflow.sourcePath, verify: workflow.verify }
+    : undefined;
 
   if (parsed.type === "done") {
     return {
       result: { type: "done", summary: parsed.summary, output: parsed.output },
       runId: parsed.workflowRunId,
+      ...(verifier ? { verifier } : {}),
     };
   }
   if (parsed.type === "error") {
@@ -600,7 +614,11 @@ export async function runWorkflowDirect(
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
   }
   if (parsed.type === "blocked") {
-    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId };
+    return {
+      result: { type: "blocked", reason: parsed.reason, context: parsed.context },
+      runId: parsed.workflowRunId,
+      ...(verifier ? { verifier } : {}),
+    };
   }
   if (parsed.type === "interrupted") {
     throw new Error(`Workflow "${opts.workflowName}" interrupted: ${parsed.steeringMessage}`);
@@ -1678,6 +1696,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
   const runner: WorkflowRunner = {
     run: runTyped,
+
+    async resolve(name: string): Promise<WorkflowModule | null> {
+      const catalog = await buildWorkflowCatalog(workflowDir);
+      return findWorkflow(catalog, name).workflow;
+    },
 
     steer(message: string): boolean {
       if (!activeSteeringQueue) return false;

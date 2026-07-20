@@ -137,7 +137,7 @@ describe("project app task reconciler state", () => {
     if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
     markProjectAppTaskAttention(config, attentionClaim, {
       summary: "owner must decide",
-      reason: "handler-blocked",
+      reason: "needs-owner",
     });
 
     observeProjectAppTaskIntent(config, { intent: waitingIntent, appOwner: "app-owner" });
@@ -491,6 +491,7 @@ describe("project app task reconciler state", () => {
       outcome: "Evaluate session 1",
       workflow: "known-workflow",
       evidence: [],
+      verification: { method: "workflow-contract", evidence: [] },
       failureFingerprints: [],
     });
     expect(tree.attempts?.[claim.attemptId]).toMatchObject({
@@ -548,6 +549,7 @@ describe("project app task reconciler state", () => {
             handler: "owner:app-owner",
             summary: "Completed",
             evidence: [],
+            verification: { method: "owner-judgment", evidence: [] },
             failureFingerprints: [],
             completedAt: new Date(index).toISOString(),
           },

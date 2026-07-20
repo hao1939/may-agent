@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { admitProjectAppTaskHandlerResult } from "./project-task-handler-contract.js";
+import {
+  admitProjectAppTaskHandlerResult,
+  admitProjectAppTaskVerificationResult,
+} from "./project-task-handler-contract.js";
 
 const workflowOptions = { allowNeedsOwner: true, defaultParentId: "app-root" };
 
@@ -141,5 +144,29 @@ describe("project task handler contract", () => {
         workflowOptions,
       ).ok,
     ).toBe(true);
+  });
+
+  it("admits only explicit verifier verdicts", () => {
+    expect(
+      admitProjectAppTaskVerificationResult({
+        accepted: true,
+        summary: "Postcondition holds.",
+        evidence: ["artifact:present"],
+      }),
+    ).toEqual({
+      ok: true,
+      result: {
+        accepted: true,
+        summary: "Postcondition holds.",
+        evidence: ["artifact:present"],
+      },
+    });
+    expect(
+      admitProjectAppTaskVerificationResult({
+        accepted: "yes",
+        summary: "Ambiguous verdict",
+        evidence: [],
+      }),
+    ).toEqual({ ok: false, error: "verifier accepted must be boolean" });
   });
 });

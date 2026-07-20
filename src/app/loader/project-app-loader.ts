@@ -11,6 +11,7 @@ import { getDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
 import {
   admitProjectAppTaskHandlerResult,
+  admitProjectAppTaskVerificationResult,
   loadProjectReadModel,
   matchesEventSelector,
   projectAppTaskOwnerResultSchema,
@@ -22,7 +23,10 @@ import {
   type ProjectAppEvent as AppEvent,
   type ProjectAppEventTarget as EventTarget,
   type ProjectAppTaskAction,
+  type ProjectAppTaskAcceptance,
+  type ProjectAppTaskHandlerResult,
   type ProjectAppTaskIntent,
+  type ProjectAppTaskVerifier,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskController } from "../project-app-task-controller.js";
@@ -521,6 +525,7 @@ function pruneProjectAppNames(
 type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
   runId: string | null;
+  verifier?: { name: string; sourcePath: string; verify: ProjectAppTaskVerifier };
   unavailable?: boolean;
 };
 
@@ -642,7 +647,7 @@ async function runTaskCapability(input: {
       projectsRoot: opts.projectsRoot,
       agentName,
     });
-    const { result, runId } = await runWorkflowDirect({
+    const { result, runId, verifier } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
       manager: opts.manager,
@@ -685,7 +690,18 @@ async function runTaskCapability(input: {
       },
       ...(trace ? { trace } : {}),
     } as unknown as AgentEvent);
-    return { handlerResult, runId };
+    return {
+      handlerResult,
+      runId,
+      ...(verifier
+        ? {
+            verifier: {
+              ...verifier,
+              verify: verifier.verify as ProjectAppTaskVerifier,
+            },
+          }
+        : {}),
+    };
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
@@ -839,6 +855,81 @@ function recoverStaleTaskResult(
   };
 }
 
+async function establishTaskAcceptance(input: {
+  descriptor: ProjectAppDescriptor;
+  intent: ProjectAppTaskIntent;
+  claim: ProjectAppTaskClaim;
+  capability: TaskCapabilityRun;
+}): Promise<{ ok: true; acceptance: ProjectAppTaskAcceptance } | { ok: false; summary: string; evidence: string[] }> {
+  const { descriptor, intent, claim, capability } = input;
+  const workflow = claim.handler.startsWith("workflow:");
+  if (!workflow) {
+    return {
+      ok: true,
+      acceptance: {
+        method: "owner-judgment",
+        evidence: [...capability.handlerResult.evidence],
+      },
+    };
+  }
+  if (!capability.verifier) {
+    return {
+      ok: true,
+      acceptance: {
+        method: "workflow-contract",
+        evidence: [
+          ...capability.handlerResult.evidence,
+          ...(capability.runId ? [`workflow-run:${capability.runId}`] : []),
+        ],
+      },
+    };
+  }
+
+  try {
+    const raw = await capability.verifier.verify(
+      {
+        appId: descriptor.id,
+        taskId: claim.taskId,
+        generation: claim.generation,
+        appDir: descriptor.appDir,
+        projectDir: descriptor.projectDir,
+        workspaceDir: descriptor.projectDir,
+        intent: structuredClone(intent),
+      },
+      capability.handlerResult as ProjectAppTaskHandlerResult,
+    );
+    const admitted = admitProjectAppTaskVerificationResult(raw);
+    if (!admitted.ok) {
+      return {
+        ok: false,
+        summary: `Verifier ${capability.verifier.name} returned an invalid result: ${admitted.error}`,
+        evidence: capability.runId ? [`workflow-run:${capability.runId}`] : [],
+      };
+    }
+    if (!admitted.result.accepted) {
+      return {
+        ok: false,
+        summary: admitted.result.summary,
+        evidence: admitted.result.evidence,
+      };
+    }
+    return {
+      ok: true,
+      acceptance: {
+        method: "deterministic",
+        verifier: capability.verifier.name,
+        evidence: admitted.result.evidence,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      summary: `Verifier ${capability.verifier.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+      evidence: capability.runId ? [`workflow-run:${capability.runId}`] : [],
+    };
+  }
+}
+
 async function reconcileTaskIntent(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
@@ -929,28 +1020,50 @@ async function reconcileTaskIntent(input: {
     });
   }
   if (primaryHandlerResult.state === "converged") {
-    try {
-      const apply = completeProjectAppTask(config, primary, {
-        summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        actions: primaryHandlerResult.actions,
-      });
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+    const accepted = await establishTaskAcceptance({
+      descriptor,
+      intent,
+      claim: primary,
+      capability: primaryResult,
+    });
+    if (!accepted.ok) {
+      primaryHandlerResult.state = "error";
+      primaryHandlerResult.summary = accepted.summary;
+      primaryHandlerResult.evidence = accepted.evidence;
+      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.verification.failed", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: apply.status === "applied" ? "converged" : "stale",
-        summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
+        summary: accepted.summary,
+        evidence: accepted.evidence,
         workflowRunId: primaryResult.runId,
       });
-      return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
-    } catch (error) {
-      primaryHandlerResult.state = "error";
-      primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+    } else {
+      try {
+        const apply = completeProjectAppTask(config, primary, {
+          summary: primaryHandlerResult.summary,
+          evidence: primaryHandlerResult.evidence,
+          actions: primaryHandlerResult.actions,
+          verification: accepted.acceptance,
+        });
+        const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          disposition: apply.status === "applied" ? "converged" : "stale",
+          summary: primaryHandlerResult.summary,
+          evidence: primaryHandlerResult.evidence,
+          acceptance: accepted.acceptance,
+          actionsApplied: apply.actionsApplied,
+          ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
+          workflowRunId: primaryResult.runId,
+        });
+        return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
+      } catch (error) {
+        primaryHandlerResult.state = "error";
+        primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
+      }
     }
   }
 
@@ -990,7 +1103,8 @@ async function reconcileTaskIntent(input: {
         ? "needs-owner"
         : "handler-blocked",
   });
-  if (!workflowKey) {
+  const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
+  if (!ownerHandoff) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
       attemptId: primary.attemptId,
@@ -1054,9 +1168,11 @@ function isTaskWakeEvent(event: Record<string, unknown>): boolean {
   const type = typeof event.type === "string" ? event.type : "";
   return ![
     "handler.workflow_dispatched",
+    "project.task.handler.unavailable",
     "project.task.reconcile.started",
     "project.task.reconcile.skipped",
     "project.task.reconciled",
+    "project.task.verification.failed",
   ].includes(type);
 }
 
