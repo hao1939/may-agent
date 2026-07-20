@@ -47,8 +47,8 @@ describe("cron startup recovery", () => {
       const treeDir = join(appDir, ".state", "tasks");
       mkdirSync(treeDir, { recursive: true });
       writeFileSync(
-        join(treeDir, "tree.json"),
-        `${JSON.stringify({ project_lifecycle: "paused", tasks: {} }, null, 2)}\n`,
+        join(treeDir, "state.json"),
+        `${JSON.stringify({ project_lifecycle: "paused", groups: {}, resources: {} }, null, 2)}\n`,
       );
 
       for (const source of ["workflow:project-planner", "workflow:focus-plan"]) {

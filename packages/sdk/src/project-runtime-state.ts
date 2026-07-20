@@ -71,23 +71,11 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
   }
 
   ensureDir(dirname(paths.taskStatePath));
-  if (existsSync(paths.taskTreePath)) {
-    writeFileSync(paths.taskStatePath, readFileSync(paths.taskTreePath));
-    appendMigrationLog(appDir, {
-      kind: "task_resource_authority_moved",
-      source: "runtime-tree-projection",
-      from: ".state/tasks/tree.json",
-      to: ".state/tasks/state.json",
-    });
-    return { path: paths.taskStatePath, migrated: true, source: "runtime" };
-  }
-
   const seedPath = join(appDir, "tasks", "seed.json");
 
   if (existsSync(seedPath)) {
     const seed = readFileSync(seedPath);
     writeFileSync(paths.taskStatePath, seed);
-    writeFileSync(paths.taskTreePath, seed);
     appendMigrationLog(appDir, {
       kind: "task_tree_runtime_state_bootstrap",
       source: "seed",
@@ -99,10 +87,10 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
 
   const empty = {
     updated_at: new Date().toISOString(),
-    tasks: {},
+    groups: {},
+    resources: {},
   };
   writeJson(paths.taskStatePath, empty);
-  writeJson(paths.taskTreePath, empty);
   appendMigrationLog(appDir, {
     kind: "task_tree_runtime_state_bootstrap",
     source: "empty",

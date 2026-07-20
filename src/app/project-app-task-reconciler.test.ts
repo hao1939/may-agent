@@ -14,6 +14,7 @@ import {
   observeProjectAppTaskIntent,
   listRunnableProjectAppTaskIds,
   readProjectAppTaskIntent,
+  readProjectAppTaskTrigger,
   pendingProjectAppTaskRecoveryAttention,
   repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
@@ -34,9 +35,10 @@ function fixture() {
     `${JSON.stringify(
       {
         root_task_id: "root",
-        tasks: {
+        groups: {
           root: {
             id: "root",
+            parent_id: null,
             state: "backlog",
             owner: "branch-owner",
             children: ["operations"],
@@ -45,16 +47,6 @@ function fixture() {
             id: "operations",
             parent_id: "root",
             state: "backlog",
-            children: ["categorized-task"],
-          },
-          "categorized-task": {
-            id: "categorized-task",
-            revision: 1,
-            parent_id: "operations",
-            state: "backlog",
-            kind: "domain",
-            goal: "Categorized bounded work",
-            acceptance: ["The categorized work converges"],
             children: [],
           },
         },
@@ -70,6 +62,7 @@ function fixture() {
               outcome: "Categorized bounded work",
               acceptance: ["The categorized work converges"],
               mode: "achieve",
+              category: "domain",
             },
             status: {
               observedGeneration: 0,
@@ -109,6 +102,23 @@ afterEach(() => {
 });
 
 describe("project app task reconciler state", () => {
+  it("rejects a missing or completed parent instead of creating an orphan", () => {
+    const { config } = fixture();
+
+    expect(() =>
+      observeProjectAppTaskIntent(config, {
+        intent: {
+          ...intent(),
+          id: "work/orphan",
+          parentId: "already-absorbed-parent",
+        },
+        appOwner: "app-owner",
+      }),
+    ).toThrow("parent does not exist in the live graph");
+
+    expect(readProjectAppTaskIntent(config, "work/orphan")).toBeNull();
+  });
+
   it("lists pending and workflow-to-owner handoff task ids for passive resync", () => {
     const { config } = fixture();
     const attentionIntent = {
@@ -239,6 +249,57 @@ describe("project app task reconciler state", () => {
       trigger: { type: "pipeline.changed" },
     });
     expect(claimedTree.tasks["pipeline-monitor"].trace?.reconciliation).toBeUndefined();
+  });
+
+  it("persists the exact Condition observation as the next attempt trigger", () => {
+    const { config } = fixture();
+    const waitingIntent = {
+      ...intent(),
+      id: "work/condition-trigger",
+      outcome: "Continue after the exact session observation",
+    };
+    observeProjectAppTaskIntent(config, { intent: waitingIntent, appOwner: "app-owner" });
+    const first = claimObservedProjectAppTask(config, {
+      taskId: waitingIntent.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected initial claim");
+    deferProjectAppTask(config, first, {
+      disposition: "waiting",
+      summary: "waiting for session",
+      conditions: [
+        {
+          id: "session-terminal:s_condition",
+          type: "session.end",
+          subject: "session:s_condition",
+          expected: "done",
+        },
+      ],
+    });
+
+    const event = {
+      type: "session.end",
+      sessionId: "s_condition",
+      status: "done",
+      evidence: "session completed cleanly",
+    };
+    const [wake] = trackProjectAppConditionEvent(config, event);
+    expect(wake?.taskId).toBe(waitingIntent.id);
+    observeProjectAppTaskIntent(config, {
+      intent: wake!.intent,
+      appOwner: "app-owner",
+      trigger: event,
+    });
+
+    expect(readProjectAppTaskTrigger(config, waitingIntent.id)).toEqual(event);
+    const resumed = claimObservedProjectAppTask(config, {
+      taskId: waitingIntent.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+    expect(readTaskTree(config).attempts?.[resumed.attemptId]?.trigger).toEqual(event);
   });
 
   it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
@@ -515,7 +576,7 @@ describe("project app task reconciler state", () => {
       outcome: "Evaluate session 1",
       workflow: "known-workflow",
       evidence: [],
-      verification: { method: "workflow-contract", evidence: [] },
+      acceptanceBasis: { method: "workflow-contract", evidence: [] },
       failureFingerprints: [],
     });
     expect(tree.attempts?.[claim.attemptId]).toMatchObject({
@@ -573,7 +634,7 @@ describe("project app task reconciler state", () => {
             handler: "owner:app-owner",
             summary: "Completed",
             evidence: [],
-            verification: { method: "owner-judgment", evidence: [] },
+            acceptanceBasis: { method: "owner-judgment", evidence: [] },
             failureFingerprints: [],
             completedAt: new Date(index).toISOString(),
           },

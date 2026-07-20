@@ -25,7 +25,7 @@ import {
   type ProjectAppEvent as AppEvent,
   type ProjectAppEventTarget as EventTarget,
   type ProjectAppTaskAction,
-  type ProjectAppTaskAcceptance,
+  type ProjectAppTaskAcceptanceBasis,
   type ProjectAppTaskHandlerResult,
   type ProjectAppTaskIntent,
   type ProjectAppTaskVerifier,
@@ -872,13 +872,15 @@ async function establishTaskAcceptance(input: {
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
   capability: TaskCapabilityRun;
-}): Promise<{ ok: true; acceptance: ProjectAppTaskAcceptance } | { ok: false; summary: string; evidence: string[] }> {
+}): Promise<
+  { ok: true; acceptanceBasis: ProjectAppTaskAcceptanceBasis } | { ok: false; summary: string; evidence: string[] }
+> {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
   if (!workflow) {
     return {
       ok: true,
-      acceptance: {
+      acceptanceBasis: {
         method: "owner-judgment",
         evidence: [...capability.handlerResult.evidence],
       },
@@ -887,7 +889,7 @@ async function establishTaskAcceptance(input: {
   if (!capability.verifier) {
     return {
       ok: true,
-      acceptance: {
+      acceptanceBasis: {
         method: "workflow-contract",
         evidence: [
           ...capability.handlerResult.evidence,
@@ -927,7 +929,7 @@ async function establishTaskAcceptance(input: {
     }
     return {
       ok: true,
-      acceptance: {
+      acceptanceBasis: {
         method: "deterministic",
         verifier: capability.verifier.name,
         evidence: admitted.result.evidence,
@@ -1032,7 +1034,15 @@ async function reconcileTaskIntent(input: {
       executionPaths,
       declaredOutputPaths,
       event,
-      ...(intent.workflow ? { fallbackReason: "The bound workflow handed this task to its accountable owner." } : {}),
+      ...(primary.handoff
+        ? {
+            fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
+              primary.handoff.evidence.length
+                ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                : ""
+            }`,
+          }
+        : {}),
     });
   }
 
@@ -1070,7 +1080,7 @@ async function reconcileTaskIntent(input: {
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           actions: primaryHandlerResult.actions,
-          verification: accepted.acceptance,
+          acceptanceBasis: accepted.acceptanceBasis,
         });
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1080,7 +1090,7 @@ async function reconcileTaskIntent(input: {
           disposition: apply.status === "applied" ? "converged" : "stale",
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
-          acceptance: accepted.acceptance,
+          acceptanceBasis: accepted.acceptanceBasis,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
@@ -1123,6 +1133,7 @@ async function reconcileTaskIntent(input: {
 
   markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
+    evidence: primaryHandlerResult.evidence,
     reason: primaryResult.unavailable
       ? "HandlerUnavailable"
       : primaryHandlerResult.state === "needs-owner"
@@ -1425,7 +1436,14 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
         });
         const conditionWakes = trackProjectAppConditionEvent(config, event);
-        for (const wake of conditionWakes) taskController?.enqueue(wake.taskId);
+        for (const wake of conditionWakes) {
+          observeProjectAppTaskIntent(config, {
+            intent: wake.intent,
+            appOwner: descriptor.owner,
+            trigger: event,
+          });
+          taskController?.enqueue(wake.taskId);
+        }
       }
       if (taskController && descriptor.app.tasks) {
         const targetedTaskId =
@@ -1673,8 +1691,7 @@ function hashFile(path: string): string {
 function projectAppLifecycle(appDir: string): string {
   try {
     const paths = projectRuntimePaths(appDir);
-    const statePath = existsSync(paths.taskStatePath) ? paths.taskStatePath : paths.taskTreePath;
-    const tree = JSON.parse(readFileSync(statePath, "utf8")) as {
+    const tree = JSON.parse(readFileSync(paths.taskStatePath, "utf8")) as {
       project_lifecycle?: unknown;
     };
     return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : "";
