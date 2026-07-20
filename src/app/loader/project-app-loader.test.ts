@@ -896,7 +896,6 @@ describe("project app loader", () => {
           status: { observedGeneration: 1, state: "false" },
         },
       };
-      waiting.tasks["work/maintain-wake"].state = "blocked";
       waiting.resources["work/maintain-wake"].status = {
         ...waiting.resources["work/maintain-wake"].status,
         phase: "waiting",

@@ -103,6 +103,7 @@ export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent): string {
           outputs: intent.outputs ?? [],
           dependsOn: intent.dependsOn ?? [],
           parentId: intent.parentId,
+          category: intent.category ?? null,
         }),
       ),
     )
@@ -121,6 +122,7 @@ function resourceSpec(intent: ProjectAppTaskIntent): ProjectAppTaskResource["spe
     ...(intent.outputs ? { outputs: [...intent.outputs] } : {}),
     ...(intent.dependsOn ? { dependsOn: [...intent.dependsOn] } : {}),
     ...(intent.priority ? { priority: intent.priority } : {}),
+    ...(intent.category?.trim() ? { category: intent.category.trim() } : {}),
   };
 }
 
@@ -137,6 +139,7 @@ function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent 
     ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     ...(resource.spec.dependsOn ? { dependsOn: [...resource.spec.dependsOn] } : {}),
     ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
+    ...(resource.spec.category ? { category: resource.spec.category } : {}),
   };
 }
 
@@ -378,6 +381,7 @@ function syncTaskProjection(task: TaskNode, resource: ProjectAppTaskResource, ow
   task.owner = owner;
   task.workflow = intent.workflow;
   task.reconcile_mode = intent.mode;
+  task.kind = intent.category;
   task.summary = resource.status.summary;
   task.state =
     resource.status.phase === "running"
@@ -761,29 +765,10 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
 export function listRunnableProjectAppTaskIds(config: TaskTreeConfig): string[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
-    const runnable = new Set(
-      Object.values(tree.resources ?? {})
-        .filter((resource) => isRunnableOnPassiveResync(tree, resource))
-        .map((resource) => resource.metadata.id),
-    );
-    const ordered: string[] = [];
-    const visited = new Set<string>();
-    const visit = (taskId: string): void => {
-      if (visited.has(taskId)) return;
-      visited.add(taskId);
-      if (runnable.has(taskId)) ordered.push(taskId);
-      for (const childId of tree.tasks[taskId]?.children ?? []) visit(childId);
-    };
-    const rootId = typeof tree.root_task_id === "string" ? tree.root_task_id : "";
-    if (rootId && tree.tasks[rootId]) visit(rootId);
-    for (const taskId of Object.keys(tree.tasks).sort()) {
-      const parentId = tree.tasks[taskId]?.parent_id;
-      if (!parentId || !tree.tasks[parentId]) visit(taskId);
-    }
-    for (const taskId of [...runnable].sort()) {
-      if (!visited.has(taskId)) ordered.push(taskId);
-    }
-    return ordered;
+    return Object.values(tree.resources ?? {})
+      .filter((resource) => isRunnableOnPassiveResync(tree, resource))
+      .map((resource) => resource.metadata.id)
+      .sort();
   });
 }
 
