@@ -264,13 +264,13 @@ function taskCoverageForSignal(
   const tasks = parseTaskTree(appDir);
   for (const taskId of candidateIds) {
     const task = tasks[taskId] as Record<string, unknown> | undefined;
-    const state = typeof task?.state === "string" ? task.state : "";
-    if (task && state !== "done") {
+    const phase = typeof task?.phase === "string" ? task.phase : "";
+    if (task && phase !== "converged") {
       const progressEvidence = taskProgressEvidence(task);
       return {
         kind,
         taskId,
-        state,
+        state: phase,
         hasProgressEvidence: progressEvidence !== undefined,
         progressEvidence,
       };
@@ -283,8 +283,8 @@ function activeTaskExists(appDir: string, taskId: string): boolean {
   const task = parseTaskTree(appDir)[taskId] as
     Record<string, unknown> | undefined;
   if (!task) return false;
-  const state = typeof task.state === "string" ? task.state : "";
-  return state !== "done";
+  const phase = typeof task.phase === "string" ? task.phase : "";
+  return phase !== "converged";
 }
 
 function hasNonEmptyValue(value: unknown): boolean {

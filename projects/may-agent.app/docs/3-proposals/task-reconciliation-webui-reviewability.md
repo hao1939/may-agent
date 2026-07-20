@@ -1,11 +1,29 @@
 # Task Reconciliation WebUI Cutover
 
-**Status:** Draft for review
+**Status:** Implemented (2026-07-20)
 
 **Design authority:** [Default Project UI](../2a-design/default-project-ui.md)
 and [Task Resource Engine](../2a-design/task-resource-engine.md)
 
 **Scope:** Default May WebUI task surface and server-owned read models
+
+## Implementation
+
+The cutover is implemented as one canonical path:
+
+- the SDK builds schema-v2 current-state projection, readiness, and integrity;
+- HTTP preserves that projection, joins app identity, and reads bounded
+  reconciliation/completion evidence from the event log;
+- `/api/projects/task` returns `live | completed` detail and at most 20 timeline
+  records;
+- the default WebUI renders reconciliation sections and stable task URLs
+  without controller or readiness policy; and
+- direct repository consumers use `phase`, `outcome`, `category`, `mode`,
+  Conditions, projected readiness, and bounded desired input/trigger fields.
+
+Canonical `state.json` and controller behavior were not changed. Generated
+`tree.json` remains disposable current-state projection, and completed work
+remains event-backed rather than retained in the live graph.
 
 ## Goal
 

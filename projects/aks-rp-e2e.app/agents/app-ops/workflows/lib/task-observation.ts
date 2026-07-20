@@ -3,34 +3,27 @@ import { resolveTaskTreePath } from "@may-agent/sdk";
 
 export type ObservedTask = {
   id: string;
-  state?: string;
+  item_type?: "group" | "task";
+  phase?: string;
   parent_id?: string;
   children?: string[];
-  goal?: string;
+  outcome?: string;
   acceptance?: string[];
   owner?: string;
   priority?: string;
-  blocker?: unknown;
-  kind?: string;
+  category?: string;
+  readiness?: { state?: string; reason?: string; related_ids?: string[] };
+  depends_on?: string[];
+  input?: Record<string, unknown>;
+  trigger?: Record<string, unknown>;
+  condition_ids?: string[];
   context?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
 export type ObservedTaskTree = {
   tasks: Record<string, ObservedTask>;
-  resources?: Record<
-    string,
-    {
-      metadata?: { id?: string; generation?: number; resourceVersion?: number };
-      spec?: {
-        input?: Record<string, unknown>;
-        owner?: string;
-        [key: string]: unknown;
-      };
-      status?: { phase?: string; conditionIds?: string[] };
-    }
-  >;
-  receipts?: Record<string, unknown>;
+  satisfied_dependency_ids?: string[];
   conditions?: Record<
     string,
     {
@@ -42,10 +35,6 @@ export type ObservedTaskTree = {
         owner?: string;
       };
     }
-  >;
-  taskTriggers?: Record<
-    string,
-    { taskId?: string; event?: Record<string, unknown> }
   >;
   active_task_ids?: string[];
 };
@@ -60,14 +49,14 @@ export type TaskPlanningObservation = {
   };
   tasks: Array<{
     id: string;
-    state: string;
+    phase: string;
     owner?: string;
-    goal?: string;
+    outcome?: string;
   }>;
 };
 
 export function taskState(tree: ObservedTaskTree, task: ObservedTask): string {
-  return tree.resources?.[task.id]?.status?.phase ?? task.state ?? "backlog";
+  return task.phase ?? "unknown";
 }
 
 export function readTaskObservation(appDir: string): ObservedTaskTree {
@@ -81,27 +70,15 @@ function isLeaf(task: ObservedTask): boolean {
   return (task.children ?? []).length === 0;
 }
 
-function dependenciesOpen(tree: ObservedTaskTree, task: ObservedTask): boolean {
-  const dependencies = Array.isArray(task.depends_on)
-    ? task.depends_on.filter(
-        (value): value is string => typeof value === "string",
-      )
-    : [];
-  return dependencies.some(
-    (id) =>
-      tree.tasks[id] &&
-      taskState(tree, tree.tasks[id]) !== "done" &&
-      !tree.receipts?.[id],
-  );
-}
-
 export function planningObservation(
   appDir: string,
   limit = 50,
 ): TaskPlanningObservation {
   const tree = readTaskObservation(appDir);
   const counts: Record<string, number> = {};
-  const leaves = Object.values(tree.tasks).filter(isLeaf);
+  const leaves = Object.values(tree.tasks).filter(
+    (task) => task.item_type === "task" && isLeaf(task),
+  );
   for (const task of leaves) {
     const state = taskState(tree, task);
     counts[state] = (counts[state] ?? 0) + 1;
@@ -115,15 +92,11 @@ export function planningObservation(
   const active = [
     ...new Set([
       ...(tree.active_task_ids ?? []),
-      ...ids("active"),
       ...ids("running"),
     ]),
   ];
   const runnable = leaves
-    .filter((task) =>
-      ["backlog", "pending", "ready"].includes(taskState(tree, task)),
-    )
-    .filter((task) => !dependenciesOpen(tree, task))
+    .filter((task) => task.readiness?.state === "ready")
     .map((task) => task.id)
     .sort()
     .slice(0, limit);
@@ -131,15 +104,15 @@ export function planningObservation(
     counts,
     active_task_ids: active,
     frontier: {
-      review: [...new Set([...ids("review"), ...ids("attention")])],
+      review: ids("attention"),
       runnable,
-      waiting: [...new Set([...ids("blocked"), ...ids("waiting")])],
+      waiting: ids("waiting"),
     },
     tasks: leaves.slice(0, limit).map((task) => ({
       id: task.id,
-      state: taskState(tree, task),
+      phase: taskState(tree, task),
       ...(task.owner ? { owner: task.owner } : {}),
-      ...(task.goal ? { goal: task.goal } : {}),
+      ...(task.outcome ? { outcome: task.outcome } : {}),
     })),
   };
 }

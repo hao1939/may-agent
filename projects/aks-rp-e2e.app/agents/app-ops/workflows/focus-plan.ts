@@ -224,31 +224,31 @@ function liveFrontierEvidence(packet: TaskPlanningObservation): {
   reviewTaskIds: string[];
   runnableTaskIds: string[];
   waitingTaskIds: string[];
-  activeCount: number;
-  blockedCount: number;
-  backlogCount: number;
+  runningCount: number;
+  waitingCount: number;
+  pendingCount: number;
 } {
   return {
     activeTaskIds: [...(packet.active_task_ids ?? [])],
     reviewTaskIds: [...(packet.frontier.review ?? [])],
     runnableTaskIds: [...(packet.frontier.runnable ?? [])],
     waitingTaskIds: [...(packet.frontier.waiting ?? [])],
-    activeCount: packetCount(packet, "active"),
-    blockedCount: packetCount(packet, "blocked"),
-    backlogCount: packetCount(packet, "backlog"),
+    runningCount: packetCount(packet, "running"),
+    waitingCount: packetCount(packet, "waiting"),
+    pendingCount: packetCount(packet, "pending"),
   };
 }
 
 function liveFrontierEvidenceText(packet: TaskPlanningObservation): string {
   const evidence = liveFrontierEvidence(packet);
   return [
-    `counts.active=${evidence.activeCount}`,
+    `counts.running=${evidence.runningCount}`,
     `active_task_ids=${JSON.stringify(evidence.activeTaskIds)}`,
     `frontier.review=${JSON.stringify(evidence.reviewTaskIds)}`,
     `frontier.runnable=${JSON.stringify(evidence.runnableTaskIds)}`,
     `frontier.waiting=${JSON.stringify(evidence.waitingTaskIds)}`,
-    `counts.blocked=${evidence.blockedCount}`,
-    `counts.backlog=${evidence.backlogCount}`,
+    `counts.waiting=${evidence.waitingCount}`,
+    `counts.pending=${evidence.pendingCount}`,
   ].join(", ");
 }
 
@@ -259,9 +259,9 @@ function hasNonterminalLiveFrontier(packet: TaskPlanningObservation): boolean {
     evidence.reviewTaskIds.length > 0 ||
     evidence.runnableTaskIds.length > 0 ||
     evidence.waitingTaskIds.length > 0 ||
-    evidence.activeCount > 0 ||
-    evidence.blockedCount > 0 ||
-    evidence.backlogCount > 0
+    evidence.runningCount > 0 ||
+    evidence.waitingCount > 0 ||
+    evidence.pendingCount > 0
   );
 }
 
@@ -546,12 +546,17 @@ function stringList(value: unknown): string[] {
 }
 
 function taskState(task: ObservedTask | undefined): string {
-  return stringValue(task?.status ?? task?.state ?? "backlog") || "backlog";
+  return stringValue(task?.phase ?? "unknown") || "unknown";
 }
 
 function liveFocusPlanTask(tree: ObservedTaskTree): ObservedTask | null {
   const live = Object.values(tree.tasks ?? {})
-    .filter((task) => task.kind === "focus_plan" && taskState(task) !== "done")
+    .filter(
+      (task) =>
+        task.item_type === "task" &&
+        task.category === "focus_plan" &&
+        taskState(task) !== "converged",
+    )
     .sort((a, b) => a.id.localeCompare(b.id));
   return live[0] ?? null;
 }
@@ -624,21 +629,21 @@ function resolveFocusApprovalLineage(
   const focusTask = liveFocusPlanTask(tree);
   if (!focusTask) return null;
 
-  for (const [taskId, resource] of Object.entries(tree.resources ?? {})) {
-    if (resource.status?.phase !== "waiting") continue;
-    const hasApprovalCondition = (resource.status.conditionIds ?? []).some(
+  for (const [taskId, resource] of Object.entries(tree.tasks ?? {})) {
+    if (resource.phase !== "waiting") continue;
+    const hasApprovalCondition = (resource.condition_ids ?? []).some(
       (conditionId) =>
         tree.conditions?.[conditionId]?.spec?.type ===
         "project.approval.submitted",
     );
     if (!hasApprovalCondition) continue;
 
-    const resourceInput = recordValue(resource.spec?.input);
+    const resourceInput = recordValue(resource.input);
     const approvalInput =
       recordValue(resourceInput?.approval) ??
       recordValue(resourceInput?.approvalLineage) ??
       resourceInput;
-    const trigger = recordValue(tree.taskTriggers?.[taskId]?.event);
+    const trigger = recordValue(resource.trigger);
     for (const approval of [trigger, approvalInput]) {
       const resolved = lineageFromApprovalRecord({
         approval,

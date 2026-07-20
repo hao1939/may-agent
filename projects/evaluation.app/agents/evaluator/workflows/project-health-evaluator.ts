@@ -52,12 +52,14 @@ const VERDICTS = new Set([
 
 type TaskRecord = {
   id: string;
-  state?: string;
+  item_type?: "group" | "task";
+  phase?: string;
+  readiness?: { state?: string };
   priority?: string;
   owner?: string;
   parent_id?: string | null;
   children?: string[];
-  goal?: string;
+  outcome?: string;
   summary?: string;
   context?: unknown;
   updated_at?: string;
@@ -311,7 +313,7 @@ function humanFactSummary(
     "",
     "Task tree:",
     `- total=${String(counts.total ?? "unknown")}; leaves=${String(counts.leaves ?? "unknown")}`,
-    `- leaf states: ${formatCountMap(counts.leafByState)}`,
+    `- leaf phases: ${formatCountMap(counts.leafByPhase)}`,
     `- active: ${compactList(taskTree.active, 5)}`,
     `- review: ${compactList(taskTree.review, 5)}`,
     `- runnable: ${compactList(taskTree.runnable, 5)}`,
@@ -554,12 +556,12 @@ function rowMatchesTarget(
 function compactTask(task: TaskRecord): Record<string, unknown> {
   return {
     id: task.id,
-    state: task.state ?? "unknown",
+    phase: task.phase ?? "unknown",
     priority: task.priority ?? "P2",
     owner: task.owner,
     parent: task.parent_id ?? null,
     children: task.children?.length ?? 0,
-    goal: task.goal ? truncate(task.goal, 500) : undefined,
+    outcome: task.outcome ? truncate(task.outcome, 500) : undefined,
     summary: task.summary ? truncate(task.summary, 700) : undefined,
     context: compactValue(task.context, 0, {
       maxDepth: 4,
@@ -574,11 +576,11 @@ function compactTask(task: TaskRecord): Record<string, unknown> {
 function compactTaskForReport(task: TaskRecord): Record<string, unknown> {
   return {
     id: task.id,
-    state: task.state ?? "unknown",
+    phase: task.phase ?? "unknown",
     priority: task.priority ?? "P2",
     owner: task.owner,
     parent: task.parent_id ?? null,
-    goal: task.goal,
+    outcome: task.outcome,
     updated_at: task.updated_at,
   };
 }
@@ -592,7 +594,7 @@ function normalizedTaskMap(
 function isDesignHygieneTask(task: TaskRecord): boolean {
   const text = JSON.stringify({
     id: task.id,
-    goal: task.goal,
+    outcome: task.outcome,
     conflict_scope: (task as any).conflict_scope,
   });
   return /legacy|design[- ]?hygiene|terminology|cleanup|obsolete|stale design|stale assumption/i.test(
@@ -611,23 +613,22 @@ export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
   const typed = tree as Record<string, unknown>;
   const taskMap = normalizedTaskMap(typed);
   const tasks = Object.values(taskMap);
-  const leaves = tasks.filter((task) => (task.children ?? []).length === 0);
-  const byState = countBy(tasks, (task) => task.state);
-  const leafByState = countBy(leaves, (task) => task.state);
+  const resources = tasks.filter((task) => task.item_type === "task");
+  const leaves = resources.filter((task) => (task.children ?? []).length === 0);
+  const byPhase = countBy(resources, (task) => task.phase);
+  const leafByPhase = countBy(leaves, (task) => task.phase);
   const active = leaves
-    .filter((task) => task.state === "active")
+    .filter((task) => task.phase === "running")
     .map(compactTask);
   const review = leaves
-    .filter((task) => task.state === "review")
+    .filter((task) => task.phase === "attention")
     .map(compactTask);
   const blocked = leaves
-    .filter((task) => task.state === "blocked")
+    .filter((task) => task.phase === "waiting")
     .slice(0, 12)
     .map(compactTask);
   const runnable = leaves
-    .filter((task) =>
-      ["backlog", "ready", "todo", "pending"].includes(task.state ?? ""),
-    )
+    .filter((task) => task.readiness?.state === "ready")
     .slice(0, 12)
     .map(compactTask);
   const designHygiene = leaves
@@ -637,7 +638,7 @@ export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
 
   return {
     path,
-    version: typed.version,
+    schema_version: typed.schema_version,
     project: typed.project,
     updated_at: typed.updated_at,
     project_lifecycle: typed.project_lifecycle,
@@ -647,8 +648,8 @@ export function taskTreePacket(targetAppDir: string): Record<string, unknown> {
     counts: {
       total: tasks.length,
       leaves: leaves.length,
-      byState,
-      leafByState,
+      byPhase,
+      leafByPhase,
     },
     active,
     review,
@@ -674,17 +675,13 @@ function selfRecoveryContractPacket(
   const appTsPath = join(target.targetAppDir, "app.ts");
   const appSource = readText(appTsPath);
   const counts = objectRecord(taskTree.counts);
-  const leafByState = objectRecord(counts.leafByState);
+  const leafByPhase = objectRecord(counts.leafByPhase);
   const totalLeaves = numberFromRecord(counts, "leaves");
-  const active = numberFromRecord(leafByState, "active");
-  const review = numberFromRecord(leafByState, "review");
-  const runnable =
-    numberFromRecord(leafByState, "backlog") +
-    numberFromRecord(leafByState, "ready") +
-    numberFromRecord(leafByState, "todo") +
-    numberFromRecord(leafByState, "pending");
-  const blocked = numberFromRecord(leafByState, "blocked");
-  const unfinished = totalLeaves - numberFromRecord(leafByState, "done");
+  const active = numberFromRecord(leafByPhase, "running");
+  const review = numberFromRecord(leafByPhase, "attention");
+  const runnable = asArray(taskTree.runnable).length;
+  const blocked = numberFromRecord(leafByPhase, "waiting");
+  const unfinished = totalLeaves - numberFromRecord(leafByPhase, "converged");
   const hasTaskTree = totalLeaves > 0;
   const hasOwnerWake = hasAny(appSource, [
     /project\.owner\.requested/,
@@ -974,45 +971,18 @@ export function taskEscalationPacket(
 
   const record = objectRecord(tree);
   const taskMap = normalizedTaskMap(record);
-  const resources = Object.values(objectRecord(record.resources)).map(
-    objectRecord,
+  const resources = Object.values(taskMap).filter(
+    (task) => task.item_type === "task",
   );
   const conditions = objectRecord(record.conditions);
-  const taskFor = (resource: Record<string, unknown>): TaskRecord => {
-    const metadata = objectRecord(resource.metadata);
-    const spec = objectRecord(resource.spec);
-    const status = objectRecord(resource.status);
-    const id = String(metadata.id ?? "");
-    return (
-      taskMap[id] ?? {
-        id,
-        state:
-          status.phase === "waiting"
-            ? "blocked"
-            : status.phase === "attention"
-              ? "review"
-              : status.phase === "running"
-                ? "active"
-                : "backlog",
-        owner: stringValue(spec.owner),
-        parent_id: stringValue(spec.parentId),
-        goal: stringValue(spec.outcome),
-        summary: stringValue(status.summary),
-        children: [],
-      }
-    );
-  };
-  const conditionFor = (resource: Record<string, unknown>) => {
-    const status = objectRecord(resource.status);
-    return asArray(status.conditionIds)
+  const conditionFor = (resource: TaskRecord) => {
+    return asArray((resource as TaskRecord & { condition_ids?: unknown }).condition_ids)
       .map((id) => objectRecord(conditions[String(id)]))
       .filter((condition) => Object.keys(condition).length > 0);
   };
   const exactWaitFromResource = (
-    resource: Record<string, unknown>,
+    resource: TaskRecord,
   ): ExactWait | null => {
-    const spec = objectRecord(resource.spec);
-    const task = taskFor(resource);
     const [condition] = conditionFor(resource);
     if (!condition) return null;
     const metadata = objectRecord(condition.metadata);
@@ -1021,7 +991,7 @@ export function taskEscalationPacket(
     const subject = stringValue(conditionSpec.subject);
     const conditionId = stringValue(metadata.id);
     const owner =
-      stringValue(conditionSpec.owner) ?? stringValue(spec.owner) ?? task.owner;
+      stringValue(conditionSpec.owner) ?? resource.owner;
     if (
       !type ||
       !subject ||
@@ -1038,41 +1008,33 @@ export function taskEscalationPacket(
       linkage: conditionId,
     };
   };
-  const hasEscalationHint = (resource: Record<string, unknown>): boolean => {
-    const task = taskFor(resource);
-    const spec = objectRecord(resource.spec);
+  const hasEscalationHint = (resource: TaskRecord): boolean => {
     return /escalat|approval|human|owner decision|owner-response|requestedAction/i.test(
       JSON.stringify({
-        id: task.id,
-        owner: task.owner,
-        outcome: spec.outcome,
-        input: spec.input,
-        summary: objectRecord(resource.status).summary,
+        id: resource.id,
+        owner: resource.owner,
+        outcome: resource.outcome,
+        input: (resource as TaskRecord & { input?: unknown }).input,
+        summary: resource.summary,
       }),
     );
   };
 
-  const waiting = resources.filter(
-    (resource) => objectRecord(resource.status).phase === "waiting",
-  );
-  const attention = resources.filter(
-    (resource) => objectRecord(resource.status).phase === "attention",
-  );
+  const waiting = resources.filter((resource) => resource.phase === "waiting");
+  const attention = resources.filter((resource) => resource.phase === "attention");
   const escalationResources = resources.filter(hasEscalationHint);
   const waitingWithEscalation = waiting.filter(hasEscalationHint);
   const waitingExact = waiting
     .map((resource) => ({ resource, wait: exactWaitFromResource(resource) }))
     .filter(
-      (item): item is { resource: Record<string, unknown>; wait: ExactWait } =>
+      (item): item is { resource: TaskRecord; wait: ExactWait } =>
         item.wait !== null,
     );
   const exactIds = new Set(
-    waitingExact.map(({ resource }) =>
-      String(objectRecord(resource.metadata).id),
-    ),
+    waitingExact.map(({ resource }) => resource.id),
   );
   const waitingWithoutExactCondition = waiting.filter(
-    (resource) => !exactIds.has(String(objectRecord(resource.metadata).id)),
+    (resource) => !exactIds.has(resource.id),
   );
 
   return {
@@ -1091,20 +1053,20 @@ export function taskEscalationPacket(
     },
     escalationTaskSample: escalationResources
       .slice(0, 20)
-      .map((resource) => compactTask(taskFor(resource))),
+      .map(compactTask),
     blockedWithEscalationSample: waitingWithEscalation
       .slice(0, 20)
-      .map((resource) => compactTask(taskFor(resource))),
+      .map(compactTask),
     blockedWithOwnerOrExternalPathSample: waitingExact
       .slice(0, 20)
-      .map(({ resource }) => compactTask(taskFor(resource))),
+      .map(({ resource }) => compactTask(resource)),
     blockedWithoutOwnerOrExternalPathSample: waitingWithoutExactCondition
       .slice(0, 10)
-      .map((resource) => compactTask(taskFor(resource))),
+      .map(compactTask),
     blockedExactWaitSample: waitingExact
       .slice(0, 10)
       .map(({ resource, wait }) => ({
-        ...compactTask(taskFor(resource)),
+        ...compactTask(resource),
         exactWait: wait,
       })),
   };
@@ -1672,15 +1634,11 @@ function fallbackJudgment(
 ): Judgment {
   const taskTree = packet.taskTree as Record<string, unknown> | undefined;
   const counts = taskTree?.counts as Record<string, unknown> | undefined;
-  const leafByState = counts?.leafByState as Record<string, number> | undefined;
-  const blocked = leafByState?.blocked ?? 0;
-  const active = leafByState?.active ?? 0;
-  const review = leafByState?.review ?? 0;
-  const runnable =
-    (leafByState?.backlog ?? 0) +
-    (leafByState?.ready ?? 0) +
-    (leafByState?.todo ?? 0) +
-    (leafByState?.pending ?? 0);
+  const leafByPhase = counts?.leafByPhase as Record<string, number> | undefined;
+  const blocked = leafByPhase?.waiting ?? 0;
+  const active = leafByPhase?.running ?? 0;
+  const review = leafByPhase?.attention ?? 0;
+  const runnable = Array.isArray(taskTree?.runnable) ? taskTree.runnable.length : 0;
   const selfRecovery = objectRecord(packet.selfRecovery);
   const selfRecoveryStatus = String(selfRecovery.status ?? "unknown");
   const criticalMissing = asArray(selfRecovery.criticalMissing).map(String);
@@ -1698,7 +1656,7 @@ function fallbackJudgment(
     0,
   );
   const totalLeaves = typeof counts?.leaves === "number" ? counts.leaves : 0;
-  const unfinished = totalLeaves - (leafByState?.done ?? 0);
+  const unfinished = totalLeaves - (leafByPhase?.converged ?? 0);
 
   if (
     unfinished > 0 &&
@@ -1961,19 +1919,15 @@ function stableDedupeKey(
     !Array.isArray(taskTree.counts)
       ? (taskTree.counts as Record<string, unknown>)
       : {};
-  const leafByState =
-    counts.leafByState &&
-    typeof counts.leafByState === "object" &&
-    !Array.isArray(counts.leafByState)
-      ? (counts.leafByState as Record<string, unknown>)
+  const leafByPhase =
+    counts.leafByPhase &&
+    typeof counts.leafByPhase === "object" &&
+    !Array.isArray(counts.leafByPhase)
+      ? (counts.leafByPhase as Record<string, unknown>)
       : {};
-  const active = numberFromRecord(leafByState, "active");
-  const runnable =
-    numberFromRecord(leafByState, "backlog") +
-    numberFromRecord(leafByState, "ready") +
-    numberFromRecord(leafByState, "todo") +
-    numberFromRecord(leafByState, "pending");
-  const blocked = numberFromRecord(leafByState, "blocked");
+  const active = numberFromRecord(leafByPhase, "running");
+  const runnable = Array.isArray(taskTree.runnable) ? taskTree.runnable.length : 0;
+  const blocked = numberFromRecord(leafByPhase, "waiting");
   const requestedAction = judgment.requestedHumanAction.toLowerCase();
   const focusPlanStatus = String(currentFocus.focusPlanStatus ?? "");
   const focusReviewResult = String(focusReview.result ?? "");

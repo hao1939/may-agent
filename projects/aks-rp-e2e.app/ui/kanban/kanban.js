@@ -205,13 +205,13 @@ function formatCount(value) {
 }
 
 function taskState(task) {
-  const raw = task?.state || task?.status || "unknown";
-  if (raw === "ready" || raw === "proposed") return "backlog";
-  if (raw === "claimed_done" || raw === "rejected") return "review";
-  if (raw === "accepted" || raw === "superseded") return "done";
-  if (["backlog", "active", "review", "blocked", "done"].includes(raw))
-    return raw;
-  return "unknown";
+  return ({
+    pending: "backlog",
+    running: "active",
+    attention: "review",
+    waiting: "blocked",
+    converged: "done",
+  })[task?.phase] || "unknown";
 }
 
 function normalizedStatus(task) {
@@ -242,9 +242,9 @@ function isLeaf(task) {
 function isReviewTask(task) {
   const id = task?.id || "";
   return (
-    task?.kind === "blocked_review" ||
-    task?.kind === "parent_review" ||
-    task?.kind === "rework_review" ||
+    task?.category === "blocked_review" ||
+    task?.category === "parent_review" ||
+    task?.category === "rework_review" ||
     id === "blocked-frontier-review" ||
     id.endsWith("-blocker-review") ||
     id.endsWith("-rollup-review") ||
@@ -254,19 +254,19 @@ function isReviewTask(task) {
 
 function isPlanningTask(task) {
   return (
-    task?.kind === "frontier_replan" ||
-    task?.kind === "domain_planner" ||
-    task?.kind === "loop_task"
+    task?.category === "frontier_replan" ||
+    task?.category === "domain_planner" ||
+    task?.category === "loop_task"
   );
 }
 
 function isHumanQuestionTask(task) {
-  return task?.kind === "human_question" || task?.owner === "human";
+  return task?.category === "human_question" || task?.owner === "human";
 }
 
 function hasExternalBlockSignal(task) {
   if (!task || taskState(task) !== "blocked") return false;
-  if (task.kind === "human_question") return true;
+  if (task.category === "human_question") return true;
   if (hasClosedGate(task) || (task.gates || []).length > 0) return true;
   if (isReviewTask(task) || isPlanningTask(task)) return false;
   if (task.owner === "human") return true;
@@ -277,7 +277,7 @@ function hasExternalBlockSignal(task) {
     )
   )
     return false;
-  const text = [task.goal, taskBlocker(task), ...(task.gates || [])]
+  const text = [task.outcome, taskBlocker(task), ...(task.gates || [])]
     .filter(Boolean)
     .join("\n");
   return /(?:external|credential|auth|token|azure cli|\baz\b|owner|capacity|quota|rollout|environment|precondition|human|input|approval|unsafe|safety|not installed|unavailable|source signal|subscription|msi|hcp|staging)/i.test(
@@ -441,8 +441,8 @@ function conflictScopesOverlap(a, b) {
 }
 
 function taskClarity(task) {
-  if (!String(task?.goal || "").trim())
-    return { ok: false, reason: "missing goal" };
+  if (!String(task?.outcome || "").trim())
+    return { ok: false, reason: "missing outcome" };
   if (!(task?.acceptance || []).length)
     return { ok: false, reason: "missing acceptance" };
   if (!(task?.outputs || []).length)
@@ -478,46 +478,11 @@ function taskReusableFor(task) {
 }
 
 function readinessInfo(tree, task) {
-  if (!task || !isLeaf(task) || taskState(task) !== "backlog") return null;
-  const depends = (task.depends_on || []).filter(Boolean);
-  const unmet = depends.find((id) => taskState(tree?.tasks?.[id]) !== "done");
-  if (unmet) {
-    const dep = tree?.tasks?.[unmet];
-    return {
-      label: "dependency blocked",
-      detail: `${unmet} is ${dep ? taskState(dep) : "missing"}`,
-      color: "var(--yellow)",
-    };
-  }
-  const clarity = taskClarity(task);
-  if (!clarity.ok) {
-    return {
-      label: "needs clarity",
-      detail: clarity.reason,
-      color: "var(--orange)",
-    };
-  }
-  if (hasClosedGate(task)) {
-    return {
-      label: "gated",
-      detail: "gate is not satisfied",
-      color: "var(--yellow)",
-    };
-  }
-  const conflict = activeLeaves(tree).find((other) =>
-    conflictScopesOverlap(other, task),
-  );
-  if (conflict) {
-    return {
-      label: "conflict blocked",
-      detail: `conflicts with ${conflict.id}`,
-      color: "var(--yellow)",
-    };
-  }
+  if (!task?.readiness) return null;
   return {
-    label: "runnable",
-    detail: "backlog leaf with dependencies satisfied",
-    color: "var(--green)",
+    label: String(task.readiness.state || "unknown").replace(/-/g, " "),
+    detail: task.readiness.reason || "No projected reason",
+    color: task.readiness.state === "ready" ? "var(--green)" : "var(--yellow)",
   };
 }
 
@@ -1865,7 +1830,7 @@ function renderSummary(tree) {
     activeTasks.length > 1
       ? activeTasks
           .slice(0, 4)
-          .map((task) => `${task.id}: ${task.goal || ""}`)
+          .map((task) => `${task.id}: ${task.outcome || ""}`)
           .join(" | ")
       : active?.goal ||
         "The task tree has no active pointer. Review backlog, review, and blocked work below.";
@@ -1877,7 +1842,7 @@ function renderSummary(tree) {
           .map(
             (task) => `<div class="active-task-row">
               <span>${esc(task.id)}</span>
-              <strong>${esc(task.goal || "")}</strong>
+              <strong>${esc(task.outcome || "")}</strong>
             </div>`,
           )
           .join("")}
@@ -1954,7 +1919,7 @@ function renderCard(task) {
     task.priority || "",
     task.claimed_by ? `claimed by ${task.claimed_by}` : "",
     branch && branch !== task.id ? branch : "",
-    task.kind ? String(task.kind).replace(/_/g, " ") : "",
+    task.category ? String(task.category).replace(/_/g, " ") : "",
     isLeaf(task) ? "leaf" : `${(task.children || []).length} children`,
   ].filter(Boolean);
   const blocker = taskBlocker(task);
@@ -1962,10 +1927,10 @@ function renderCard(task) {
     blocker ||
     taskKnowledgeSummary(task) ||
     readiness?.detail ||
-    task.goal ||
+    task.outcome ||
     "";
-  return `<article class="card${selected}" style="--task-color:${taskColor(normalizedStatus(task))}" data-task-id="${attrEsc(task.id)}" onclick="selectTask(this.dataset.taskId)" title="${attrEsc(task.goal || task.id)}">
-    <div class="card-id">${esc(task.goal || task.id)}</div>
+  return `<article class="card${selected}" style="--task-color:${taskColor(normalizedStatus(task))}" data-task-id="${attrEsc(task.id)}" onclick="selectTask(this.dataset.taskId)" title="${attrEsc(task.outcome || task.id)}">
+    <div class="card-id">${esc(task.outcome || task.id)}</div>
     <div class="card-goal">${esc(note)}</div>
     ${escalation ? `<div class="card-badges"><span class="escalation-badge">${hasOpenEscalation(task) ? "Escalated" : "Escalation"}: ${esc(escalation.owner || escalation.state || "owner")}</span></div>` : ""}
     <div class="card-badges">
@@ -2083,7 +2048,7 @@ function renderTree(tree) {
                 : `<span class="tree-toggle-spacer"></span>`
             }
             <div class="tree-copy">
-              <div class="tree-goal">${esc(task.goal || task.id)}</div>
+              <div class="tree-goal">${esc(task.outcome || task.id)}</div>
               ${rowSummary ? `<div class="tree-description">${esc(rowSummary)}</div>` : ""}
               <div class="tree-id">${esc(task.id)}</div>
               ${summary}
@@ -2150,12 +2115,12 @@ function renderDetail() {
   return `<aside class="detail panel" data-testid="task-detail">
     <div>
       <div class="kicker">Selected Node</div>
-      <h2>${esc(task.goal || task.id)}</h2>
+      <h2>${esc(task.outcome || task.id)}</h2>
       <div class="muted">${esc(task.id)}</div>
       <div class="actions" style="margin-top:10px">
         <span class="pill" style="color:${taskColor(normalizedStatus(task))}">${esc(statusLabel(task))}</span>
         ${readiness ? `<span class="pill" style="color:${readiness.color}">${esc(readiness.label)}</span>` : ""}
-        ${task.kind ? `<span class="pill">${esc(String(task.kind).replace(/_/g, " "))}</span>` : ""}
+        ${task.category ? `<span class="pill">${esc(String(task.category).replace(/_/g, " "))}</span>` : ""}
         ${task.priority ? `<span class="pill">${esc(task.priority)}</span>` : ""}
       </div>
     </div>
@@ -2309,7 +2274,7 @@ function prefillReviewFrontier() {
       (task) => taskState(task) === "blocked" && hasExternalBlockSignal(task),
     )
     .slice(0, 8)
-    .map((task) => `- ${task.id}: ${task.blocker || task.goal}`)
+    .map((task) => `- ${task.id}: ${task.blocker || task.outcome}`)
     .join("\n");
   setSteerText(
     `[task-steer] aks-rp-e2e frontier review\n\naction: review_frontier\n\nReview the current blocked/review frontier and decide what can still move locally. Convert vague no-work/waiting into concrete backlog work, exact blocker, human question, or obsolete done work. Preserve done knowledge that future tasks can reuse.\n\nBlocked sample:\n${blocked || "- none"}`,

@@ -45,25 +45,17 @@ export const workflowContract: WorkflowIoContract = {
 
 type GraphTask = {
   id?: string;
-  state?: string;
-  goal?: string;
+  phase?: string;
+  outcome?: string;
   summary?: string;
   result?: string;
   acceptance?: unknown;
   conflict_scope?: unknown;
 };
 
-type GraphResource = {
-  status?: {
-    phase?: string;
-    conditionIds?: string[];
-  };
-};
-
 type Graph = {
   tasks?: Record<string, GraphTask>;
-  resources?: Record<string, GraphResource>;
-  receipts?: Record<string, unknown>;
+  satisfied_dependency_ids?: string[];
 };
 
 function readGraph(appDir: string): Graph {
@@ -77,9 +69,7 @@ function readGraph(appDir: string): Graph {
 }
 
 function represented(graph: Graph, taskId: string | null | undefined): boolean {
-  return Boolean(
-    taskId && (graph.tasks?.[taskId] || graph.resources?.[taskId]),
-  );
+  return Boolean(taskId && graph.tasks?.[taskId]);
 }
 
 function escapeRegExp(value: string): string {
@@ -87,18 +77,14 @@ function escapeRegExp(value: string): string {
 }
 
 function openTask(task: GraphTask | null | undefined): boolean {
-  const state = String(task?.state ?? "")
+  const state = String(task?.phase ?? "")
     .trim()
     .toLowerCase();
   return !["done", "closed", "converged"].includes(state);
 }
 
 function representedTaskState(graph: Graph, taskId: string): string {
-  const phase = String(graph.resources?.[taskId]?.status?.phase ?? "")
-    .trim()
-    .toLowerCase();
-  if (phase) return phase;
-  return String(graph.tasks?.[taskId]?.state ?? "backlog")
+  return String(graph.tasks?.[taskId]?.phase ?? "unknown")
     .trim()
     .toLowerCase();
 }
@@ -168,7 +154,7 @@ function taskRepresentsSpec(
     `(^|[^A-Za-z0-9_.-])${escapeRegExp(specId)}([^A-Za-z0-9_.-]|$)`,
   );
   const evidenceFields = [
-    task.goal,
+    task.outcome,
     task.summary,
     task.result,
     ...(Array.isArray(task.acceptance)

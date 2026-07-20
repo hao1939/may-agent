@@ -7,6 +7,10 @@ import { execute } from "./focus-plan.ts";
 
 async function makeWorkspace(options?: { leafState?: string }) {
   const leafState = options?.leafState ?? "backlog";
+  const leafPhase =
+    ({ backlog: "pending", active: "running", review: "attention", blocked: "waiting", done: "converged" } as const)[
+      leafState as "backlog" | "active" | "review" | "blocked" | "done"
+    ] ?? leafState;
   const root = await mkdtemp(join(tmpdir(), "aks-focus-plan-"));
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
@@ -17,38 +21,44 @@ async function makeWorkspace(options?: { leafState?: string }) {
     resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
-        version: 1,
+        schema_version: 2,
         project: "aks-rp-e2e",
         project_lifecycle: "active",
         root_task_id: "project",
         updated_at: new Date().toISOString(),
         tasks: {
           project: {
+            item_type: "group",
             id: "project",
-            state: leafState === "done" ? "done" : "backlog",
             children: ["execution-and-verification"],
-            goal: "Learn AKS RP input and expectation space.",
+            outcome: "Learn AKS RP input and expectation space.",
             outputs: [".state/tasks/tree.json"],
             acceptance: ["project advances"],
           },
           "execution-and-verification": {
+            item_type: "group",
             id: "execution-and-verification",
             parent_id: "project",
-            state: leafState === "done" ? "done" : "backlog",
-            kind: "lane",
+            category: "lane",
             children: ["run-rest-spec-batch"],
-            goal: "Execute runnable specs and feed evidence back.",
+            outcome: "Execute runnable specs and feed evidence back.",
             outputs: ["runs/executions/", "model/knowledge-map/model.json"],
             acceptance: ["live evidence updates the model"],
           },
           "run-rest-spec-batch": {
+            item_type: "task",
             id: "run-rest-spec-batch",
             parent_id: "execution-and-verification",
-            state: leafState,
-            kind: "domain_leaf",
+            phase: leafPhase,
+            category: "domain_leaf",
             priority: "P1",
             children: [],
-            goal: "Run a small REST replay batch.",
+            outcome: "Run a small REST replay batch.",
+            readiness: {
+              state: leafPhase === "pending" ? "ready" : "not-applicable",
+              reason: "test fixture",
+              related_ids: [],
+            },
             outputs: ["runs/executions/rest-batch/"],
             acceptance: ["result.json files exist"],
             conflict_scope: ["staging-rest-runs"],
@@ -74,45 +84,73 @@ async function makeOwnerReturnAlignedWorkspace() {
     resolveTaskTreePath(appDir),
     `${JSON.stringify(
       {
-        version: 1,
+        schema_version: 2,
         project: "aks-rp-e2e",
         project_lifecycle: "active",
         root_task_id: "project",
         updated_at: new Date().toISOString(),
         tasks: {
           project: {
+            item_type: "group",
             id: "project",
-            state: "blocked",
             children: [
               "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
               "ops/wait-project-approval-owner-return-primary-blocker-20260713",
             ],
-            goal: "Learn AKS RP input and expectation space.",
+            outcome: "Learn AKS RP input and expectation space.",
             outputs: [".state/tasks/tree.json"],
             acceptance: ["project advances"],
           },
           "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711":
             {
+              item_type: "task",
               id: "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
               parent_id: "project",
-              state: "blocked",
-              kind: "focus_plan",
+              phase: "waiting",
+              category: "focus_plan",
               priority: "P1",
               children: [],
               owner: "aks-explorer",
-              goal: "Keep the focus branch normalized behind the governing owner-return wait.",
+              outcome: "Keep the focus branch normalized behind the governing owner-return wait.",
+              condition_ids: ["condition-focus-governing-wait"],
               outputs: ["evidence/archive/focus.md"],
               acceptance: ["focus stays aligned"],
             },
           "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
+            item_type: "task",
             id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
             parent_id: "project",
-            state: "blocked",
-            kind: "domain_leaf",
+            phase: "waiting",
+            category: "domain_leaf",
             priority: "P2",
             children: [],
             owner: "app-ops",
-            goal: "Carry the governing project-level owner-return wait.",
+            outcome: "Carry the governing project-level owner-return wait.",
+            condition_ids: ["condition-project-approval"],
+            input: {
+              approval: {
+                type: "project.approval.submitted",
+                taskId:
+                  "ops/wait-project-approval-owner-return-primary-blocker-20260713",
+                acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+                lineages: [
+                  {
+                    taskId:
+                      "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
+                    planId: "focus-review-off_track",
+                    pathId: "focus-review-off_track-approval-refresh-20260712",
+                    approvalId:
+                      "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    waitId:
+                      "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    packetPath:
+                      "evidence/archive/ops-repair-focus-review-off-track-approval-refresh-20260712.md",
+                    requestEventId: 3069971,
+                    messageId: 3069974,
+                  },
+                ],
+              },
+            },
             outputs: ["evidence/archive/wait.md"],
             acceptance: ["wait stays exact"],
           },
@@ -285,8 +323,8 @@ describe("focus-plan workflow", () => {
       "Terminal/completed or disable-review guidance was suppressed",
     );
     expect(result.message).toContain('active_task_ids=["run-rest-spec-batch"]');
-    expect(result.message).toContain("counts.blocked=0");
-    expect(result.message).toContain("counts.backlog=0");
+    expect(result.message).toContain("counts.waiting=0");
+    expect(result.message).toContain("counts.pending=0");
     expect(result).toMatchObject({
       output: {
         state: "converged",
@@ -341,8 +379,8 @@ describe("focus-plan workflow", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
     expect(result.message).toContain("frontier.review=[]");
-    expect(result.message).toContain("counts.blocked=0");
-    expect(result.message).toContain("counts.backlog=0");
+    expect(result.message).toContain("counts.waiting=0");
+    expect(result.message).toContain("counts.pending=0");
   });
 
   test("suppresses failed-known-issues when live frontier is still nonterminal", async () => {
@@ -380,7 +418,7 @@ describe("focus-plan workflow", () => {
     expect(result.message).toContain(
       "Terminal/completed or disable-review guidance was suppressed",
     );
-    expect(result.message).toContain("counts.blocked=1");
+    expect(result.message).toContain("counts.waiting=1");
   });
 
   test("accepts failed-known-issues when the focus frontier is terminal", async () => {
@@ -416,7 +454,7 @@ describe("focus-plan workflow", () => {
       "Focus-plan review completed with result failed_known_issues",
     );
     expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
-    expect(result.message).toContain("counts.blocked=0");
+    expect(result.message).toContain("counts.waiting=0");
   });
 
   test("asks for human approval and still wakes owner review for a proposed focus", async () => {

@@ -175,7 +175,7 @@ function tailLines(path: string, limit: number): string[] {
 
 function nodeState(task: TaskNode | undefined): string | null {
   if (!task) return null;
-  return String(task.state ?? "backlog");
+  return String((task as TaskNode & { phase?: string }).phase ?? "unknown");
 }
 
 function taskContext(task: TaskNode | undefined): Record<string, unknown> {

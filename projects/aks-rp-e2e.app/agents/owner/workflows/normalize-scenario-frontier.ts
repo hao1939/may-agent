@@ -325,7 +325,7 @@ function graphNodes(appDir: string): GraphNode[] {
       ? (tree.tasks as Record<string, Record<string, unknown>>)
       : {};
   for (const [id, task] of Object.entries(tasks)) {
-    const state = String(task.state ?? "")
+    const state = String(task.phase ?? "")
       .trim()
       .toLowerCase();
     if (["done", "closed", "converged"].includes(state)) continue;

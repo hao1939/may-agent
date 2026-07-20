@@ -22,10 +22,10 @@ type OwnerResult = Exclude<
 
 type TaskRecord = {
   id: string;
-  revision?: number;
-  goal?: string;
+  item_type?: "group" | "task";
+  outcome?: string;
   parent_id?: string | null;
-  state?: string;
+  phase?: string;
   priority?: string;
   owner?: string;
   children?: string[];
@@ -56,17 +56,47 @@ function readJson(path: string): any {
   return JSON.parse(readFileSync(path, "utf-8"));
 }
 
+function contextSummary(value: unknown): Record<string, unknown> | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return { omitted: true, kind: "null" };
+  if (Array.isArray(value)) {
+    return { omitted: true, kind: "array", items: value.length };
+  }
+  if (typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>);
+    return {
+      omitted: true,
+      kind: "object",
+      keyCount: keys.length,
+      keys: keys.slice(0, 8),
+      keysOmitted: Math.max(0, keys.length - 8),
+    };
+  }
+  return { omitted: true, kind: typeof value };
+}
+
 function compactTask(task: TaskRecord): Record<string, unknown> {
   return {
     id: task.id,
-    revision: task.revision ?? 0,
     parent: task.parent_id ?? null,
-    state: task.state ?? "unknown",
+    phase: task.phase ?? (task.item_type === "group" ? "structural" : "unknown"),
     priority: task.priority ?? "P2",
-    goal: task.goal ?? "",
+    outcome: truncate(task.outcome ?? "", 360),
     children: task.children?.length ?? 0,
-    summary: task.summary,
-    context: task.context,
+    summary: task.summary ? truncate(task.summary, 500) : undefined,
+    contextSummary: contextSummary(task.context),
+  };
+}
+
+function compactTasks(
+  tasks: TaskRecord[],
+  phase: string,
+  max: number,
+): { items: Array<Record<string, unknown>>; omitted: number } {
+  const matching = tasks.filter((task) => task.phase === phase);
+  return {
+    items: matching.slice(0, max).map(compactTask),
+    omitted: Math.max(0, matching.length - max),
   };
 }
 
@@ -76,31 +106,39 @@ function taskPacket(appDir = APP_DIR): Record<string, unknown> {
     return { error: `missing ${path}` };
   }
   const tree = readJson(path);
-  const tasks = Object.values((tree.tasks ?? {}) as Record<string, TaskRecord>);
-  const byState = tasks.reduce<Record<string, number>>((acc, task) => {
-    const state = task.state ?? "unknown";
-    acc[state] = (acc[state] ?? 0) + 1;
+  const allItems = Object.values((tree.tasks ?? {}) as Record<string, TaskRecord>);
+  const tasks = allItems.filter((task) => task.item_type === "task");
+  const byPhase = tasks.reduce<Record<string, number>>((acc, task) => {
+    const phase = task.phase ?? "unknown";
+    acc[phase] = (acc[phase] ?? 0) + 1;
     return acc;
   }, {});
-  const active = tasks
-    .filter((task) => task.state === "active")
-    .map(compactTask);
-  const backlog = tasks
-    .filter((task) => task.state === "backlog")
-    .map(compactTask);
-  const blocked = tasks
-    .filter((task) => task.state === "blocked")
-    .map(compactTask);
+  const root = allItems.find((task) => task.id === tree.root_task_id);
+  const runningSlice = compactTasks(tasks, "running", 10);
+  const waitingSlice = compactTasks(tasks, "waiting", 10);
+  const attentionSlice = compactTasks(tasks, "attention", 8);
+  const pendingSlice = compactTasks(tasks, "pending", 8);
   return {
-    version: tree.version,
+    schemaVersion: tree.schema_version,
     project: tree.project,
     updated_at: tree.updated_at,
     root_task_id: tree.root_task_id,
-    active_task_ids: tree.active_task_ids ?? [],
-    byState,
-    active,
-    blocked,
-    nextBacklog: backlog.slice(0, 8),
+    active_task_ids: (tree.active_task_ids ?? []).slice(0, 20),
+    active_task_ids_omitted: Math.max(
+      0,
+      (tree.active_task_ids ?? []).length - 20,
+    ),
+    taskCount: tasks.length,
+    byPhase,
+    root: root ? compactTask(root) : undefined,
+    running: runningSlice.items,
+    runningOmitted: runningSlice.omitted,
+    waiting: waitingSlice.items,
+    waitingOmitted: waitingSlice.omitted,
+    attention: attentionSlice.items,
+    attentionOmitted: attentionSlice.omitted,
+    nextPending: pendingSlice.items,
+    pendingOmitted: pendingSlice.omitted,
   };
 }
 

@@ -124,7 +124,11 @@ describe("spec loop reconciliation workflow", () => {
         },
       },
       tasks: {
-        "existing-spec-task": { id: "existing-spec-task", state: "active" },
+        "existing-spec-task": {
+          id: "existing-spec-task",
+          item_type: "task",
+          phase: "running",
+        },
       },
     });
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
@@ -157,15 +161,9 @@ describe("spec loop reconciliation workflow", () => {
       tasks: {
         "existing-spec-task": {
           id: "existing-spec-task",
-          state: "review",
-          goal: "Repair the malformed result for spec.example.",
-        },
-      },
-      resources: {
-        "existing-spec-task": {
-          status: {
-            phase: "attention",
-          },
+          item_type: "task",
+          phase: "attention",
+          outcome: "Repair the malformed result for spec.example.",
         },
       },
     });
@@ -198,8 +196,9 @@ describe("spec loop reconciliation workflow", () => {
       tasks: {
         "wait-spec-example-holder": {
           id: "wait-spec-example-holder",
-          state: "blocked",
-          goal: "Preserve the exact wait for spec.example until the external signal changes.",
+          item_type: "task",
+          phase: "waiting",
+          outcome: "Preserve the exact wait for spec.example until the external signal changes.",
           conflict_scope: ["spec:spec.example"],
         },
       },
@@ -240,8 +239,9 @@ describe("spec loop reconciliation workflow", () => {
       tasks: {
         "hold-compact-kms-holder": {
           id: "hold-compact-kms-holder",
-          state: "blocked",
-          goal: "Preserve the kms-etcd-encryption split frontier.",
+          item_type: "task",
+          phase: "waiting",
+          outcome: "Preserve the kms-etcd-encryption split frontier.",
           conflict_scope: ["feature:kms-etcd-encryption"],
         },
       },
@@ -276,8 +276,9 @@ describe("spec loop reconciliation workflow", () => {
       tasks: {
         "wait-ccp-family-holder": {
           id: "wait-ccp-family-holder",
-          state: "blocked",
-          goal: "Preserve the shared ccp security patch owner-response frontier.",
+          item_type: "task",
+          phase: "waiting",
+          outcome: "Preserve the shared ccp security patch owner-response frontier.",
           conflict_scope: ["spec-loop-followup:pending:ccp-security-patch"],
         },
       },
@@ -321,8 +322,9 @@ describe("spec loop reconciliation workflow", () => {
       tasks: {
         "wait-spec-represented-holder": {
           id: "wait-spec-represented-holder",
-          state: "blocked",
-          goal: "Hold spec.represented until reviewed evidence changes.",
+          item_type: "task",
+          phase: "waiting",
+          outcome: "Hold spec.represented until reviewed evidence changes.",
         },
       },
     });

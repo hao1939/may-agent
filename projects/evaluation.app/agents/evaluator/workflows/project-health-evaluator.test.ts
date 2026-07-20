@@ -274,17 +274,19 @@ describe("project health evaluator escalation audit", () => {
     const appDir = await makeAppDirWithTree({
       tasks: {
         project: {
+          item_type: "group",
           id: "project",
-          state: "active",
           children: ["wait-runtime-input"],
         },
         "wait-runtime-input": {
+          item_type: "task",
           id: "wait-runtime-input",
           parent_id: "project",
-          state: "blocked",
+          phase: "waiting",
           children: [],
           owner: "human",
-          goal: "Hold exact external runtime input wait.",
+          outcome: "Hold exact external runtime input wait.",
+          condition_ids: ["condition-underlay-kubeconfig"],
         },
       },
       resources: {
@@ -341,17 +343,19 @@ describe("project health evaluator escalation audit", () => {
     const appDir = await makeAppDirWithTree({
       tasks: {
         project: {
+          item_type: "group",
           id: "project",
-          state: "active",
           children: ["xhs-cookie-refresh-blocked"],
         },
         "xhs-cookie-refresh-blocked": {
+          item_type: "task",
           id: "xhs-cookie-refresh-blocked",
           parent_id: "project",
-          state: "blocked",
+          phase: "waiting",
           children: [],
           owner: "human",
-          goal: "Refresh expired XHS session cookies so scout-explore can resume XHS scans.",
+          outcome: "Refresh expired XHS session cookies so scout-explore can resume XHS scans.",
+          condition_ids: ["condition-xhs-cookie"],
         },
       },
       resources: {
@@ -508,16 +512,19 @@ describe("project health evaluator escalation audit", () => {
     const appDir = await makeAppDirWithTree({
       tasks: {
         project: {
+          item_type: "group",
           id: "project",
-          state: "active",
           children: ["prose-only-wait"],
         },
         "prose-only-wait": {
+          item_type: "task",
           id: "prose-only-wait",
           parent_id: "project",
-          state: "blocked",
+          phase: "waiting",
           children: [],
-          goal: "Human owner should approve this escalation, resume when done, and fallback tomorrow.",
+          owner: "human",
+          outcome: "Human owner should approve this escalation, resume when done, and fallback tomorrow.",
+          condition_ids: [],
           summary:
             "This text mentions requested action, resume condition, fallback, and escalation, but it does not expose structured fields.",
         },
@@ -563,15 +570,19 @@ describe("project health evaluator escalation audit", () => {
     const appDir = await makeAppDirWithTree({
       tasks: {
         project: {
+          item_type: "group",
           id: "project",
-          state: "active",
           children: ["nested-blocker-wait"],
         },
         "nested-blocker-wait": {
+          item_type: "task",
           id: "nested-blocker-wait",
           parent_id: "project",
-          state: "blocked",
+          phase: "waiting",
           children: [],
+          owner: "agent:may",
+          outcome: "Refresh runtime credential.",
+          condition_ids: ["condition-runtime-credential"],
         },
       },
       resources: {
@@ -813,8 +824,8 @@ describe("project health evaluator task reporting", () => {
   test("surfaces design and legacy hygiene tasks separately from runnable sample", async () => {
     const tasks: Record<string, unknown> = {
       project: {
+        item_type: "group",
         id: "project",
-        state: "active",
         children: [
           "work-1",
           "work-2",
@@ -828,19 +839,23 @@ describe("project health evaluator task reporting", () => {
     };
     for (let i = 1; i <= 6; i += 1) {
       tasks[`work-${i}`] = {
+        item_type: "task",
         id: `work-${i}`,
         parent_id: "project",
-        state: "backlog",
+        phase: "pending",
+        readiness: { state: "ready" },
         children: [],
-        goal: `Generic backlog work ${i}`,
+        outcome: `Generic backlog work ${i}`,
       };
     }
     tasks["legacy-design-hygiene-audit"] = {
+      item_type: "task",
       id: "legacy-design-hygiene-audit",
       parent_id: "project",
-      state: "backlog",
+      phase: "pending",
+      readiness: { state: "ready" },
       children: [],
-      goal: "Review legacy terms, stale design assumptions, and hygiene debt.",
+      outcome: "Review legacy terms, stale design assumptions, and hygiene debt.",
       conflict_scope: ["evaluation-design-hygiene"],
     };
 
@@ -853,7 +868,7 @@ describe("project health evaluator task reporting", () => {
     ]);
   });
 
-  test("normalizes list-shaped task trees before reporting", async () => {
+  test("does not interpret list-shaped legacy task trees", async () => {
     const appDir = await makeAppDirWithTree({
       tasks: [
         {
@@ -874,15 +889,8 @@ describe("project health evaluator task reporting", () => {
     const taskPacket = taskTreePacket(appDir);
     const escalationPacket = taskEscalationPacket(appDir);
 
-    expect(taskPacket.counts).toMatchObject({
-      total: 2,
-      leaves: 1,
-    });
-    expect(taskPacket.runnable).toEqual([
-      expect.objectContaining({ id: "task-a" }),
-    ]);
-    expect(escalationPacket.counts).toMatchObject({
-      leafTasks: 1,
-    });
+    expect(taskPacket.counts).toMatchObject({ total: 0, leaves: 0 });
+    expect(taskPacket.runnable).toEqual([]);
+    expect(escalationPacket.counts).toMatchObject({ leafTasks: 0 });
   });
 });

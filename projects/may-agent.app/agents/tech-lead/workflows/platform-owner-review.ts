@@ -4,36 +4,22 @@ import {
   projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
-  type TaskNode,
-  type TaskTree,
+  type ProjectTaskProjectionItem,
+  type ProjectTaskTreeProjection,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
 
-function isLeaf(task: TaskNode): boolean {
-  return (task.children ?? []).length === 0;
+function isResource(task: ProjectTaskProjectionItem): boolean {
+  return task.item_type === "task";
 }
 
-function observedTaskState(tree: TaskTree, task: TaskNode): string {
-  const phase = tree.resources?.[task.id]?.status.phase;
-  if (phase === "running") return "active";
-  if (phase === "waiting") return "blocked";
-  if (phase === "attention") return "review";
-  if (phase === "converged") return "done";
-  return phase ?? task.state ?? "backlog";
+function observedTaskPhase(task: ProjectTaskProjectionItem): string {
+  return task.phase ?? "unknown";
 }
 
-function dependenciesSatisfied(tree: TaskTree, task: TaskNode): boolean {
-  const dependencyValue =
-    tree.resources?.[task.id]?.spec.dependsOn ?? task.depends_on ?? [];
-  const dependencies = Array.isArray(dependencyValue)
-    ? dependencyValue
-    : [dependencyValue];
-  return dependencies.every(
-    (id) =>
-      tree.receipts?.[id] !== undefined ||
-      tree.resources?.[id]?.status.phase === "converged",
-  );
+function dependenciesSatisfied(task: ProjectTaskProjectionItem): boolean {
+  return task.readiness?.state === "ready";
 }
 
 type OwnerResult = Exclude<
@@ -89,40 +75,40 @@ function parseJsonFile(path: string): Record<string, unknown> {
 function taskTreePacket(appDir: string): Record<string, unknown> {
   const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return { available: false, path: treePath };
-  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as TaskTree;
+  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as ProjectTaskTreeProjection;
   const tasks = tree.tasks;
   const counts: Record<string, number> = {};
   for (const task of Object.values(tasks)) {
-    const state = observedTaskState(tree, task);
-    counts[state] = (counts[state] ?? 0) + 1;
+    if (!isResource(task)) continue;
+    const phase = observedTaskPhase(task);
+    counts[phase] = (counts[phase] ?? 0) + 1;
   }
-  const leaves = Object.entries(tasks).filter(([, task]) => isLeaf(task));
-  const runnable = leaves
+  const resources = Object.entries(tasks).filter(([, task]) => isResource(task));
+  const runnable = resources
     .filter(
       ([, task]) =>
-        observedTaskState(tree, task) === "backlog" &&
-        dependenciesSatisfied(tree, task),
+        observedTaskPhase(task) === "pending" && dependenciesSatisfied(task),
     )
-    .map(([id, task]) => ({ id, goal: task.goal }));
-  const active = leaves
-    .filter(([, task]) => observedTaskState(tree, task) === "active")
-    .map(([id, task]) => ({ id, goal: task.goal }));
-  const review = leaves
-    .filter(([, task]) => observedTaskState(tree, task) === "review")
-    .map(([id, task]) => ({ id, goal: task.goal }));
-  const blocked = leaves
-    .filter(([, task]) => observedTaskState(tree, task) === "blocked")
-    .map(([id, task]) => ({ id, goal: task.goal }));
+    .map(([id, task]) => ({ id, outcome: task.outcome }));
+  const running = resources
+    .filter(([, task]) => observedTaskPhase(task) === "running")
+    .map(([id, task]) => ({ id, outcome: task.outcome }));
+  const attention = resources
+    .filter(([, task]) => observedTaskPhase(task) === "attention")
+    .map(([id, task]) => ({ id, outcome: task.outcome }));
+  const waiting = resources
+    .filter(([, task]) => observedTaskPhase(task) === "waiting")
+    .map(([id, task]) => ({ id, outcome: task.outcome }));
 
   return {
     available: true,
     updated_at: tree.updated_at,
-    total: Object.keys(tasks).length,
+    total: resources.length,
     counts,
     runnable: runnable.slice(0, 12),
-    active,
-    review,
-    blocked,
+    running,
+    attention,
+    waiting,
   };
 }
 
