@@ -214,7 +214,7 @@ describe.skipIf(E2E_NO_UI)("E8: project comment via served UI", () => {
           return (
             el &&
             (el as HTMLElement).style.display !== "none" &&
-            /Comment accepted/.test(el.textContent ?? "")
+            /Comment recorded/.test(el.textContent ?? "") && /event \d+/.test(el.textContent ?? "")
           );
         },
         { timeout: 10_000 },

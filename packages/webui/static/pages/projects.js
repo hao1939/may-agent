@@ -503,7 +503,7 @@ async function emitProjectAction() {
     if (!res.ok) throw new Error(body.error || res.statusText);
     window._projectActionRequestKey = '';
     if (status) status.innerHTML = `Emitted <code>${esc(body.eventType || '')}</code>${body.eventId ? ` · <a href="/events/${encodeURIComponent(body.eventId)}">event ${esc(body.eventId)}</a>` : ''}`;
-    toast('Project shortcut accepted', 'ok');
+    toast('Project shortcut emitted', 'ok');
   } catch (e) {
     if (status) status.textContent = `Failed: ${e.message}`;
     toast(`Project shortcut failed: ${e.message}`, 'error');
@@ -662,11 +662,11 @@ async function addProjectComment() {
     if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
     input.value = '';
     delete input.dataset.idempotencyKey;
-    if (data.accepted) {
-      statusEl.innerHTML = `✅ Comment accepted — project owner will process the event${data.eventId ? ` · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a>` : ''}`;
+    if (data.eventId) {
+      statusEl.innerHTML = `✅ Comment recorded · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a> — owner handling is tracked separately`;
       statusEl.style.color = 'var(--green)';
     } else if (data.triggered) {
-      statusEl.textContent = '⚠️ Comment event sent, acceptance not confirmed';
+      statusEl.textContent = '⚠️ Comment event sent, but no durable receipt was returned';
       statusEl.style.color = 'var(--orange)';
     } else {
       statusEl.textContent = '⚠️ Comment added — trigger not confirmed';

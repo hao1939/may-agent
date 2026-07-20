@@ -919,11 +919,11 @@ export class EventBus {
 
   /** Emit an event. Persists first, then runs "first" and "normal" subscribers.
    *
-   *  IMPORTANT: All subscribers are always invoked regardless of delivery status.
-   *  The delivery result records which subscriber "claimed" the event for persistence
-   *  tracking, but does NOT gate execution of subsequent subscribers. Multiple cron
-   *  instances (e.g. May's session-recovery + evaluator's evaluation-aftermath) must
-   *  all see bus events even when one claims delivery first. */
+   *  For an ordinary emission, all subscribers run regardless of which one records
+   *  delivery acceptance. A retry of an already-persisted pending event is different:
+   *  it uses only the built-in idempotent recovery routes because an ordinary
+   *  subscriber may already have performed its effect before the earlier process
+   *  stopped. */
   emit(input: AgentEvent): AgentEvent & { [EVENT_ROW_ID]?: number } {
     const tracedEvent = inheritedEventTrace(input, eventContext.getStore());
     // DbWriter attaches the durable row id to the routed envelope. Frozen
