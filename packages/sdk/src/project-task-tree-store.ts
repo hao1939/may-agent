@@ -84,6 +84,8 @@ export type TaskTree = {
   attempts?: Record<string, ProjectAppTaskAttempt>;
   taskTriggers?: Record<string, ProjectAppTaskTrigger>;
   receipts?: Record<string, TaskCompletionReceipt>;
+  /** Structural labels/containers only. Executable task nodes are projected from resources. */
+  groups?: Record<string, TaskNode>;
   tasks: Record<string, TaskNode>;
 };
 
@@ -280,18 +282,27 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   }
 
   tree.updated_at = new Date().toISOString();
-  const serialized = `${JSON.stringify(canonicalTaskTreeForWrite(tree), null, 2)}\n`;
+  const runtimePaths = projectRuntimePaths(config.appDir);
+  const writesCanonicalState = config.treePath === runtimePaths.taskStatePath;
+  const serialized = `${JSON.stringify(
+    writesCanonicalState ? canonicalTaskStateForWrite(tree) : taskTreeProjectionForWrite(tree),
+    null,
+    2,
+  )}\n`;
   ensureDir(dirname(config.treePath));
   const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.treePath);
 
-  const runtimePaths = projectRuntimePaths(config.appDir);
-  if (config.treePath === runtimePaths.taskStatePath) {
+  if (writesCanonicalState) {
     const projectionPath = runtimePaths.taskTreePath;
     const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
     ensureDir(dirname(projectionPath));
-    writeFileSync(projectionTempPath, serialized, "utf-8");
+    writeFileSync(
+      projectionTempPath,
+      `${JSON.stringify(taskTreeProjectionForWrite(tree), null, 2)}\n`,
+      "utf-8",
+    );
     renameSync(projectionTempPath, projectionPath);
   }
 
@@ -330,20 +341,107 @@ export function setProjectLifecycle(config: TaskTreeConfig, lifecycle: string, r
 }
 
 export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
-  const liveTaskIds = new Set(Object.keys(tree.tasks ?? {}));
-  for (const task of Object.values(tree.tasks ?? {})) {
-    task.state ??= "backlog";
-    if (task.children === undefined) {
-      task.children = [];
-      continue;
-    }
-    task.children = normalizeStringArray(task.children).filter((childId) => liveTaskIds.has(childId));
+  const resources = tree.resources ?? {};
+  const groups: Record<string, TaskNode> = { ...(tree.groups ?? {}) };
+  for (const [id, task] of Object.entries(tree.tasks ?? {})) {
+    const resource = resources[id];
+    if (resource && task.kind?.trim() && !resource.spec.category) resource.spec.category = task.kind.trim();
+    if (!resources[id] && !groups[id]) groups[id] = { ...task, id };
   }
+  tree.groups = groups;
+  tree.tasks = buildTaskTreeProjection(groups, resources);
+  tree.active_task_ids = Object.values(resources)
+    .filter((resource) => resource.status.phase === "running")
+    .map((resource) => resource.metadata.id)
+    .sort();
+  tree.active_task_id = tree.active_task_ids[0] ?? null;
+  tree.root_task_id ??= Object.values(groups).find((group) => group.parent_id === null)?.id;
   return tree;
 }
 
-function canonicalTaskTreeForWrite(tree: TaskTree): TaskTree {
-  return JSON.parse(JSON.stringify(tree)) as TaskTree;
+function projectedTaskState(resource: ProjectAppTaskResource): string {
+  switch (resource.status.phase) {
+    case "running":
+      return "active";
+    case "waiting":
+      return "blocked";
+    case "attention":
+      return "review";
+    default:
+      return "backlog";
+  }
+}
+
+function buildTaskTreeProjection(
+  groups: Record<string, TaskNode>,
+  resources: Record<string, ProjectAppTaskResource>,
+): Record<string, TaskNode> {
+  const tasks: Record<string, TaskNode> = {};
+  for (const [id, group] of Object.entries(groups)) {
+    tasks[id] = { ...group, id, state: group.state ?? "backlog", children: [] };
+  }
+
+  const inheritedOwner = (resource: ProjectAppTaskResource): string | undefined => {
+    if (resource.spec.owner?.trim()) return resource.spec.owner.trim();
+    let parentId: string | undefined = resource.spec.parentId;
+    const seen = new Set<string>();
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      const parentResource: ProjectAppTaskResource | undefined = resources[parentId];
+      if (parentResource?.spec.owner?.trim()) return parentResource.spec.owner.trim();
+      if (parentResource) {
+        parentId = parentResource.spec.parentId;
+        continue;
+      }
+      const group: TaskNode | undefined = groups[parentId];
+      if (group?.owner?.trim()) return group.owner.trim();
+      parentId = group?.parent_id ?? undefined;
+    }
+    return undefined;
+  };
+
+  for (const resource of Object.values(resources)) {
+    const { spec, status, metadata } = resource;
+    tasks[metadata.id] = {
+      id: metadata.id,
+      revision: metadata.generation,
+      parent_id: spec.parentId,
+      state: projectedTaskState(resource),
+      ...(spec.category ? { kind: spec.category } : {}),
+      priority: spec.priority ?? "P2",
+      ...(inheritedOwner(resource) ? { owner: inheritedOwner(resource) } : {}),
+      ...(spec.workflow ? { workflow: spec.workflow } : {}),
+      goal: spec.outcome,
+      children: [],
+      depends_on: [...(spec.dependsOn ?? [])],
+      outputs: [...(spec.outputs ?? [])],
+      acceptance: [...spec.acceptance],
+      ...(status.summary ? { summary: status.summary } : {}),
+      ...(status.evidence ? { evidence: [...status.evidence] } : {}),
+      reconcile_mode: spec.mode,
+    };
+  }
+
+  for (const task of Object.values(tasks)) {
+    const parent = task.parent_id ? tasks[task.parent_id] : undefined;
+    if (parent) parent.children = [...(parent.children ?? []), task.id];
+  }
+  for (const task of Object.values(tasks)) task.children = [...new Set(task.children ?? [])].sort();
+  return tasks;
+}
+
+function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
+  const state = JSON.parse(JSON.stringify(tree)) as Record<string, unknown>;
+  delete state.tasks;
+  delete state.active_task_id;
+  delete state.active_task_ids;
+  return state;
+}
+
+function taskTreeProjectionForWrite(tree: TaskTree): TaskTree {
+  const projection = JSON.parse(JSON.stringify(tree)) as TaskTree;
+  delete projection.groups;
+  return projection;
 }
 
 export function isLeaf(task: TaskNode): boolean {

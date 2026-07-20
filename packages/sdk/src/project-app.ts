@@ -194,6 +194,8 @@ export type ProjectAppTaskIntent = {
   outputs?: string[];
   dependsOn?: string[];
   priority?: "P0" | "P1" | "P2" | "P3";
+  /** Domain classification for views; distinct from reconciliation mode. */
+  category?: string;
 };
 
 export type ProjectAppTaskResource = {
