@@ -43,7 +43,7 @@ function isPersistentTaskRequired(taskText: string): boolean {
   // Task has a project: field pointing to a directory — indicates a
   // persistent-task ask. (Single-file `.md` project format is gone, so the
   // legacy `.endsWith('.md')` exclusion was removed; see
-  // projects/may-agent.app/docs/proposals/2026-05-20-legacy-cleanup-resume-path.md L1.)
+  // projects/may-agent.app/docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md L1.)
   const projectMatch = taskText.match(/^project:\s*(.+)$/m);
   if (projectMatch) {
     const projectPath = projectMatch[1].trim();

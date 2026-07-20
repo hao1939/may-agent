@@ -127,7 +127,7 @@ locations for backward compatibility:
 2. **Flat:** `projects/<project>/agents/`
 
 V3 is canonical for new and migrated projects. Legacy paths remain for backward
-compatibility but should not be used in new projects (see `project-app-v3.md`).
+compatibility but should not be used in new projects (see `agent-app.md`).
 
 Project-wide platform behavior, such as reconciling all projects or routing
 canonical escalation events, remains owned by a global agent such as May. A

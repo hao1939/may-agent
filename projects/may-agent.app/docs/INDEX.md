@@ -1,132 +1,109 @@
 # Documentation Index
 
-## Hierarchy of Truth
-
-Docs are organized by authority level. Higher tiers govern lower tiers — when there's a conflict, the higher tier wins and the lower tier gets updated.
-
-| Tier | Folder | Authority | Authorship |
-|------|--------|-----------|------------|
-| **1** | `1-principles/` | Requirements, goals, conventions | Human-authored, human-reviewed |
-| **2a** | `2a-design/` | System design & architecture | Agent-drafted, human-signed-off |
-| **2b** | `2b-manual/` | How-to guides & references | Derived from principles + implementation |
-| **3** | `3-proposals/` | Plans, specs, historical | Ephemeral — may be outdated or superseded |
-
----
+Start with [README.md](README.md) for task-oriented reading paths. This index
+lists every current design/manual and routes historical material to the
+archive.
 
 ## Tier 1 — Principles
 
-| Doc | What |
-|-----|------|
-| [core-principles.md](1-principles/core-principles.md) | 11 architecture principles. Read this first. |
-| [work-model.md](1-principles/work-model.md) | Unified model: projects hold context, metrics signal, triggers wake, agents judge |
-| [evidence-first.md](1-principles/evidence-first.md) | How to validate ideas: hypothesis → evidence → build |
-| [code-vs-data.md](1-principles/code-vs-data.md) | When to use guards vs context.md vs workflows |
-| [evolution.md](1-principles/evolution.md) | Evidence-backed knowledge encoding and mechanism selection *(draft)* |
+| Document                                              | Purpose                                                |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| [core-principles.md](1-principles/core-principles.md) | Governing architecture principles.                     |
+| [work-model.md](1-principles/work-model.md)           | Projects hold context; signals wake; agents judge.     |
+| [evidence-first.md](1-principles/evidence-first.md)   | Hypothesis, evidence, and validation discipline.       |
+| [code-vs-data.md](1-principles/code-vs-data.md)       | Choose code, instructions, skills, workflows, or data. |
+| [evolution.md](1-principles/evolution.md)             | Evidence-backed mechanism and knowledge evolution.     |
 
-## Tier 2 — Design
+## Tier 2a — Current design
 
-System architecture and subsystem designs.
+### System and storage
 
-| Doc | What |
-|-----|------|
-| [system-model.md](2a-design/system-model.md) | Compact governing model: objects, ownership, execution, closure, and reliability. Read this before subsystem designs. |
-| [architecture.md](2a-design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
-| [storage.md](2a-design/storage.md) | Runtime storage: authoritative artifacts, bounded SQLite projections, migration, and maintenance |
-| [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
-| [events.md](2a-design/events.md) | Event-native architecture: delivery, inbox, event types |
-| [event-graph.md](2a-design/event-graph.md) | Event trace graph: causality, closure links, delivery evidence, and graph read model |
-| [sessions.md](2a-design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
-| [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
-| [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console contract: targeted sessions and event-shaped human intents |
-| [native-coding-workers.md](2a-design/native-coding-workers.md) | Native coding workers: Codex/Claude CLI adapter model, event contract, session continuity |
-| [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
-| [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
-| [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
-| [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
-| [projects.md](2a-design/projects.md) | Project system: V3 app layout, lifecycle, task tree, legacy compatibility |
-| [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
-| [app-project-integrity.md](2a-design/app-project-integrity.md) | Compact integrity contract tying project apps, events, task trees, metrics, and escalation together |
-| [app-root-layout.md](2a-design/app-root-layout.md) | Repository-root classification: durable source, runtime state, project workspaces, and scratch |
-| [task-tree-engine.md](2a-design/task-tree-engine.md) | Task resource engine: canonical state, key queue, claims, Conditions, results, recovery, and projections |
-| [default-project-ui.md](2a-design/default-project-ui.md) | Shared project operating readout and structured steering contract |
+| Document                                           | Purpose                                                           |
+| -------------------------------------------------- | ----------------------------------------------------------------- |
+| [system-model.md](2a-design/system-model.md)       | Compact whole-system model; read first.                           |
+| [architecture.md](2a-design/architecture.md)       | Detailed runtime architecture and subsystem map.                  |
+| [system-boundary.md](2a-design/system-boundary.md) | Infrastructure primitives versus agent/app patterns.              |
+| [storage.md](2a-design/storage.md)                 | Authoritative artifacts, projections, migration, and maintenance. |
+| [app-root-layout.md](2a-design/app-root-layout.md) | Durable source, runtime state, workspaces, and scratch layout.    |
 
-### Design Status And Convergence
+### Agents and execution
 
-| Doc | Status | What |
-|-----|--------|------|
-| [system-boundary.md](2a-design/system-boundary.md) | Accepted / mostly implemented | North-star: infra primitives, agent patterns, SDK/control surfaces |
-| [system-boundary-tracker.md](proposals/system-boundary-tracker.md) | Historical tracker | Completed/superseded handler-centric migration record; retained outside the accepted design tier |
-| [guards.md](2a-design/guards.md) | Accepted / partial | Guards as detection signals with default observability |
-| [escalation.md](2a-design/escalation.md) | Accepted / partial | Owner-boundary escalation contract; terminal handling and closure health still converge |
-| [telegram-notifications.md](2a-design/telegram-notifications.md) | Accepted / partial | Channel envelope shipped; interaction refinement remains |
-| [webui.md](2a-design/webui.md) | Accepted / partial | Web UI design: surfaces, steering, nav; modular-route subsection remains draft |
-| [http-boundary.md](2a-design/http-boundary.md) | Accepted / partial | Separate HTTP adapter from webui package |
-| [session-eval-trail.md](2a-design/session-eval-trail.md) | Draft / partial | Summary projection plus append-only line evidence beside raw session logs |
-| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Draft / partial | Event-rooted learning loop from eval evidence through owner action and later validation |
-| [skills.md](2a-design/skills.md) | Accepted / implemented core | Scoped discovery, bounded catalogs, per-turn invocation, and load evidence |
-| [workflows.md](2a-design/workflows.md) | Accepted / implemented core | Validated TypeScript catalogs, entry provenance, lifecycle events, and safe replay |
-| [may-console.md](2a-design/may-console.md) | Draft / partial | Terminal REPL over the daemon socket, session switching, and canonical steering intents |
-| [web-terminal.md](2a-design/web-terminal.md) | Draft / partial | Browser terminal transport and tmux ownership contract |
-| [handler-audit.md](2a-design/handler-audit.md) | Tracker | Handler migration audit governed by architecture, cron, and system-boundary design |
+| Document                                                       | Purpose                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------- |
+| [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration. |
+| [runtime.md](2a-design/runtime.md)                             | Model/tool execution and runtime internals.              |
+| [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.             |
+| [workflows.md](2a-design/workflows.md)                         | Agent-owned reusable process and execution contract.     |
+| [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                       |
+| [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.            |
+| [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.               |
 
-## Tier 2 — Manual
+### Agent Apps and projects
 
-How-to guides derived from principles and implementation.
+| Document                                                     | Purpose                                                                |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [agent-app.md](2a-design/agent-app.md)                       | Agent App package, ownership, and optional autonomy.                   |
+| [projects.md](2a-design/projects.md)                         | Durable goal context, project posture, and workspace layout.           |
+| [task-resource-engine.md](2a-design/task-resource-engine.md) | Canonical tasks, key queue, Conditions, claims, results, and recovery. |
+| [default-project-ui.md](2a-design/default-project-ui.md)     | Shared project readout and steering contract.                          |
 
-| Doc | What |
-|-----|------|
-| [user-guide.md](2b-manual/user-guide.md) | CLI flags, Docker, socket, chat commands |
-| [sdk-quickstart.md](2b-manual/sdk-quickstart.md) | Code examples for all SDK methods |
-| [handler-authoring.md](2b-manual/handler-authoring.md) | End-to-end handler writing guide |
-| [workflow-authoring.md](2b-manual/workflow-authoring.md) | How to write and invoke workflows |
-| [metric-alerts.md](2b-manual/metric-alerts.md) | How agents triage, fix, downgrade, resolve, or escalate alerts |
-| [event-runtime-audit.md](2b-manual/event-runtime-audit.md) | How to compare live event emitters, consumers, delivery, and pair health against the design |
-| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) | How to inspect live guard volume, repeat signals, and threshold quality |
-| [agent-convention.md](2b-manual/agent-convention.md) | Directory layout, convention files, agent.json |
+### Events, scheduling, and reliability
 
-## Tier 3 — Proposals & History
+| Document                                                         | Purpose                                              |
+| ---------------------------------------------------------------- | ---------------------------------------------------- |
+| [events.md](2a-design/events.md)                                 | Event envelope, delivery, and ownership.             |
+| [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and delivery read model.         |
+| [cron.md](2a-design/cron.md)                                     | Time-based event production.                         |
+| [heartbeat.md](2a-design/heartbeat.md)                           | Owner heartbeat workflows and loaders.               |
+| [metrics.md](2a-design/metrics.md)                               | Metrics, alerts, pairs, and blind spots.             |
+| [guards.md](2a-design/guards.md)                                 | Detection signals and observability.                 |
+| [escalation.md](2a-design/escalation.md)                         | Owner-boundary escalation and closure.               |
+| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Evaluation evidence to learned improvement.          |
+| [session-eval-trail.md](2a-design/session-eval-trail.md)         | Session summary and append-only evaluation evidence. |
 
-Proposals under consideration and historical docs preserved for context.
+### Human and network interfaces
 
-| Doc | Status | What |
-|-----|--------|------|
-| [task-reconciliation-integrity-refinement.md](3-proposals/task-reconciliation-integrity-refinement.md) | Historical / implemented | Decision record for key-only claims, atomic Condition triggers, executable admission, acceptance provenance, and compatibility removal. |
-| [agent-app-boundary-refinement.md](3-proposals/agent-app-boundary-refinement.md) | Accepted / implemented | Agent execution is independently runnable; workflows belong to agents; task reconciliation is optional autonomy. Identity renaming remains deferred. |
-| [implementation-simplification.md](3-proposals/implementation-simplification.md) | Accepted / implemented | Explicit Gym tool denials, effective-tool construction, execution manifests, and direct/hosted preparation parity. |
-| [agent-app-scenario-audit-2026-07-16.md](3-proposals/agent-app-scenario-audit-2026-07-16.md) | Design review | Exercise the Agent App proposal against idle, production, Gym, live-diagnostic, parallel, multi-app, and recovery scenarios |
-| [agent-app-runtime-model.md](3-proposals/agent-app-runtime-model.md) | Draft / partial implementation | Unify app and owner agent as one public Agent App while keeping policy and durable task runtime as separate, evaluable layers |
-| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted concepts / partial implementation | Ops health as may-agent.app responsibility; remaining migration is tracked in the document |
-| [chat-agent-separation.md](3-proposals/chat-agent-separation.md) | Draft / partial implementation | Separate persistent chat execution from bounded jobs while preserving the shared event and trace model |
-| [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Historical / partially superseded | Earlier rationale for artifact-based coordination; current project and event designs govern. |
-| [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
+| Document                                                         | Purpose                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------- |
+| [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console intent contract. |
+| [http-boundary.md](2a-design/http-boundary.md)                   | HTTP adapter boundary.                                  |
+| [telegram-notifications.md](2a-design/telegram-notifications.md) | Telegram delivery and interaction contract.             |
+| [webui.md](2a-design/webui.md)                                   | Web UI surfaces and steering.                           |
+| [may-console.md](2a-design/may-console.md)                       | Terminal REPL over the daemon socket.                   |
+| [web-terminal.md](2a-design/web-terminal.md)                     | Browser terminal transport and ownership.               |
 
-Old V2 project-app proposals were moved to [`archive/v2/`](archive/v2/). They
-are historical only; [project-app-v3.md](2a-design/project-app-v3.md) is the
-single current project-app design.
+Documents declare `Accepted`, `Draft`, or `Tracker` independently from their
+implementation status. Trackers belong under active proposals, not this
+current-design list.
 
-Dated implementation records under [`proposals/`](proposals/) are historical
-evidence, not Tier 2 contracts. Completed records remain useful for migration
-rationale; unresolved findings must link to the active design or tracker that
-owns convergence.
+## Tier 2b — Manuals
 
----
+| Document                                                   | Purpose                                            |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| [user-guide.md](2b-manual/user-guide.md)                   | CLI flags, Docker, socket, and chat commands.      |
+| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)           | SDK usage examples.                                |
+| [handler-authoring.md](2b-manual/handler-authoring.md)     | Event handler authoring.                           |
+| [workflow-authoring.md](2b-manual/workflow-authoring.md)   | Workflow authoring and invocation.                 |
+| [agent-convention.md](2b-manual/agent-convention.md)       | Agent directory and definition conventions.        |
+| [metric-alerts.md](2b-manual/metric-alerts.md)             | Alert triage, repair, calibration, and escalation. |
+| [event-runtime-audit.md](2b-manual/event-runtime-audit.md) | Compare event runtime behavior with design.        |
+| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) | Inspect guard volume and signal quality.           |
 
-## Removed Archive
+## Tier 3 — Active proposals and trackers
 
-The old `2a-design/archive-legacy-shared-designs/` files were deleted because
-their direct-read statuses conflicted with active docs. Useful ideas were
-preserved in
-[retired-design-alternatives.md](3-proposals/retired-design-alternatives.md).
+| Document                                                             | Status                      | Purpose                                                             |
+| -------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
+| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)     | Draft / partial             | Separate persistent chat turns from bounded jobs.                   |
+| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted concepts / partial | Converge platform operational health under May Agent App ownership. |
+| [handler-audit.md](3-proposals/handler-audit.md)                     | Tracker                     | Audit remaining handler and compatibility surfaces.                 |
 
----
+Completed proposals do not remain in the active proposal folder.
 
-## Quick Lookup
+## Historical material
 
-| Need | Read |
-|------|------|
-| Understand the whole system | [system-model.md](2a-design/system-model.md), [core-principles.md](1-principles/core-principles.md) |
-| Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [event-runtime-audit.md](2b-manual/event-runtime-audit.md), [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md), [runtime.md](2a-design/runtime.md) |
-| Handle an alert | [metric-alerts.md](2b-manual/metric-alerts.md), [metrics.md](2a-design/metrics.md), [events.md](2a-design/events.md) |
-| Write behavior | [work-model.md](1-principles/work-model.md), [skills.md](2a-design/skills.md), [workflows.md](2a-design/workflows.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |
-| Change infra boundaries | [architecture.md](2a-design/architecture.md), [system-boundary.md](2a-design/system-boundary.md) |
-| Update agent conventions | [agent-convention.md](2b-manual/agent-convention.md), [heartbeat.md](2a-design/heartbeat.md), [projects.md](2a-design/projects.md) |
+[Archive index](archive/README.md) contains:
+
+- accepted decision records whose durable rules moved into Tier 2;
+- dated design reviews;
+- completed implementation plans and trackers; and
+- V2 specifications and migration records.

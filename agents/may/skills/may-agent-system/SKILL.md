@@ -62,11 +62,9 @@ relevant to the change:
 - Workflow discovery and execution: `/app/projects/may-agent.app/docs/2a-design/workflows.md`
 - Metrics: `/app/projects/may-agent.app/docs/2a-design/metrics.md`
 - Escalation: `/app/projects/may-agent.app/docs/2a-design/escalation.md`
-- Project apps: `/app/projects/may-agent.app/docs/2a-design/project-app-v3.md`
+- Agent Apps: `/app/projects/may-agent.app/docs/2a-design/agent-app.md`
 - Project posture: `/app/projects/may-agent.app/docs/2a-design/projects.md`
-- App/project integrity: `/app/projects/may-agent.app/docs/2a-design/app-project-integrity.md`
-- Task trees: `/app/projects/may-agent.app/docs/2a-design/task-tree-engine.md`
-- Convention task reconciliation: `/app/projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`
+- Task resources: `/app/projects/may-agent.app/docs/2a-design/task-resource-engine.md`
 - Agent directories: `/app/projects/may-agent.app/docs/2b-manual/agent-convention.md`
 - Metric alert triage: `/app/projects/may-agent.app/docs/2b-manual/metric-alerts.md`
 
@@ -82,8 +80,9 @@ doc with evidence, or call out the mismatch.
 1. Locate the owner boundary: runtime, app, project owner, worker, problem
    solver, May, or human.
 2. Read the active project/app files that own the work: `app.ts`,
-   `project.json`, `.state/tasks/tree.json`, agent `AGENTS.md`, workflows,
-   metrics, and recent traces as needed.
+   `project.json`, canonical `.state/tasks/state.json`, the generated task-tree
+   projection when useful, agent `AGENTS.md`, workflows, metrics, and recent
+   traces as needed.
 3. Preserve the loop:
    `project + metrics + trigger -> bounded work -> agent judgment -> evidence -> project update`.
 4. Make the smallest change that keeps the loop closed. Prefer existing
@@ -178,8 +177,9 @@ Keep domain projects portable and May-agent control planes separate.
 - Treat the project owner as the semantic backstop. Workflows preserve a proven
   process; the app runtime owns claims, retries, validation, and atomic task
   mutation.
-- `.state/tasks/tree.json` is the sole mutable task-resource store.
-  `tasks/seed.json` is bootstrap intent; `tasks/tree.json` is not a live mirror.
+- `.state/tasks/state.json` is the sole mutable task-resource store.
+  `tasks/seed.json` is bootstrap intent; `.state/tasks/tree.json` is a generated
+  read projection.
 - Workflows and agents read task state but never edit the store directly. They
   return `converged`, `waiting` with exact Conditions, or `needs-owner`, plus
   typed actions for the app to validate and apply.

@@ -13,7 +13,7 @@ owned by their linked design docs and trackers.
 >
 > Project-apps own their agents, schedules, task routing, and task trees.
 > Legacy handlers on may's cron are being consolidated — see
-> [project-app-v3.md](project-app-v3.md) for the canonical app model and
+> [agent-app.md](agent-app.md) for the canonical app model and
 > [system-operations-model.md](../3-proposals/system-operations-model.md) for
 > the ops consolidation plan.
 
@@ -645,7 +645,8 @@ The current direction is not "more infra logic." It is fewer execution paths:
 Mechanical infra code may still call manager/runtime internals directly, but
 new project judgment/action paths should follow task reconciliation. See
 `system-boundary.md` for the design and
-`../proposals/system-boundary-tracker.md` for historical implementation evidence.
+`../archive/implementation/system-boundary-tracker.md` for historical
+implementation evidence.
 
 ### Runtime Code Shape
 

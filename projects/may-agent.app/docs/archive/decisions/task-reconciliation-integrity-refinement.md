@@ -1,7 +1,7 @@
 # Task Reconciliation Integrity Refinement
 
 **Design status:** Historical; accepted and incorporated into
-[Task Resource Engine](../2a-design/task-tree-engine.md).
+[Task Resource Engine](../../2a-design/task-resource-engine.md).
 **Implementation status:** Implemented, migrated, deployed, and live-verified.
 
 This record explains why the task engine's integrity boundary was tightened.

@@ -21,7 +21,7 @@ holds durable intent and posture; those other records represent signals,
 execution, orchestration, and decomposition.
 
 See [system-model.md](system-model.md) for the whole-system model and
-[project-app-v3.md](project-app-v3.md) for the executable app contract.
+[agent-app.md](agent-app.md) for the executable app contract.
 
 ## Canonical Layout
 
@@ -107,7 +107,7 @@ Project posture is not task execution state:
 A blocked worker is evidence, not proof that the task or project must become
 blocked. The owner may retry, split, repair, replace, verify, wait, or escalate.
 
-The task-tree contract lives in [task-tree-engine.md](task-tree-engine.md); do
+The task contract lives in [task-resource-engine.md](task-resource-engine.md); do
 not duplicate its node schema or transition rules in project documents.
 
 ## Owner Loop
@@ -186,7 +186,8 @@ Historical `projects/<id>/project.md`, embedded task lists, sibling
 `discussion.md`/`journal.md`, embedded `.app/`, and old project-local layouts
 may remain as archived evidence. The autonomous host does not load, mirror, or
 write them as task state. Migrated apps use only the sibling app manifest,
-agent-owned workflows, and `.state/tasks/tree.json`.
+agent-owned workflows, canonical `.state/tasks/state.json`, and the generated
+`.state/tasks/tree.json` projection.
 
 ## Integrity Checklist
 

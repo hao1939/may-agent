@@ -1,7 +1,7 @@
 # Proposal: App Task Reconciliation Model
 
 **Design status:** Historical accepted decision record; the durable contract is
-now [Task Resource Engine](../2a-design/task-tree-engine.md).
+now [Task Resource Engine](../../2a-design/task-resource-engine.md).
 **Implementation status:** Implemented, migrated, deployed, and live-verified
 across all five Agent Apps.
 

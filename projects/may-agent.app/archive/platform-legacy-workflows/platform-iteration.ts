@@ -54,7 +54,7 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
 
   // Project directory format: <projectDir>/project.md + <projectDir>/journal.md
   // (Single-file `.md` format dropped; see
-  // projects/platform/proposals/2026-05-20-legacy-cleanup-resume-path.md L1.)
+  // projects/may-agent.app/docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md L1.)
   const projectDir: string = projectInput;
   const projectPath: string = join(projectInput, "project.md");
   const journalPath: string = join(projectInput, "journal.md");

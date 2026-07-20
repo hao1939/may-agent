@@ -494,11 +494,11 @@ If accepted, this proposal changes the interpretation of several documents:
 
 - `2a-design/system-model.md` should lead with independent agent capability and
   optional autonomy.
-- `2a-design/project-app-v3.md` should become the Agent App package contract,
+- `2a-design/agent-app.md` is the Agent App package contract,
   with task fields optional.
-- `3-proposals/app-task-reconciliation-model.md` remains the detailed task
+- `archive/decisions/app-task-reconciliation-model.md` retains the detailed task
   runtime basis but no longer defines every Agent App.
-- `2a-design/task-tree-engine.md` remains the internal task-runtime contract.
+- `2a-design/task-resource-engine.md` is the task-runtime contract.
 - `2a-design/workflows.md` must make workflows exclusively agent-owned.
 - `2a-design/runtime.md` and `2a-design/storage.md` must distinguish direct
   execution from optional durable wrapping.

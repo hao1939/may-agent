@@ -8,17 +8,18 @@
 > Key completed items: project-app loader, app-local agent registration,
 > centralized cron lifecycle, legacy project handler disabled, evaluation/scout
 > migrated to apps. The remaining work is tracked in
-> [system-operations-model.md](../3-proposals/system-operations-model.md)
+> [system-operations-model.md](../../3-proposals/system-operations-model.md)
 > (handler consolidation, static checks, ops health packet).
 >
 > This file is preserved as historical context for the phases that shipped.
-> For current architecture direction, see [project-app-v3.md](project-app-v3.md).
+> For current architecture direction, see
+> [agent-app.md](../../2a-design/agent-app.md).
 
 **Design status:** Historical tracker. It records completed and superseded
 handler-centric migration slices. Current gaps belong in the governing Tier 2
 design doc or the explicitly linked operations migration record above.
 
-This plan pushes [system-boundary.md](system-boundary.md) from accepted direction to
+This plan pushes [system-boundary.md](../../2a-design/system-boundary.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one
 source of boundary confusion and leave visible evidence that the system is
 easier to operate.
@@ -34,10 +35,10 @@ judges.
 
 ## Plan Boundaries
 
-- [system-boundary.md](system-boundary.md) is the north-star design.
+- [system-boundary.md](../../2a-design/system-boundary.md) is the north-star design.
 - This file is the implementation tracker and review plan.
 - The earlier archived tracker was removed; useful alternatives are preserved in
-  [retired-design-alternatives.md](../3-proposals/retired-design-alternatives.md).
+  [retired-design-alternatives.md](../decisions/retired-design-alternatives.md).
 
 Do not create another parallel infra-surface plan. If a new gap appears, add it
 to this tracker under the smallest matching phase.
@@ -98,7 +99,7 @@ old gaps.
 
 Scope:
 
-- Update [system-boundary.md](system-boundary.md) so shipped work is described as
+- Update [system-boundary.md](../../2a-design/system-boundary.md) so shipped work is described as
   current state, not future work.
 - Keep detailed status in this tracker.
 - Mark `sdk.query`, `packages/control`, convention-path operator emit,
@@ -323,7 +324,7 @@ the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
-Reference: [handler-audit.md](handler-audit.md).
+Reference: [handler-audit.md](../../3-proposals/handler-audit.md).
 
 First migration: `metric-alert-reactor`. It is the most self-contained
 judgment/action bridge and its loop trace value is immediately visible.

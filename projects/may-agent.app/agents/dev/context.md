@@ -5,7 +5,7 @@
 - App manifest: `projects/may-agent.app/app.ts`
 - Project model: `projects/may-agent.app/project.json`
 - Task resources: `projects/may-agent.app/.state/tasks/tree.json`
-- App integrity design: `projects/may-agent.app/docs/2a-design/app-project-integrity.md`
+- Agent App design: `projects/may-agent.app/docs/2a-design/agent-app.md`
 - Events design: `projects/may-agent.app/docs/2a-design/events.md`
 - Metrics design: `projects/may-agent.app/docs/2a-design/metrics.md`
 - Runtime workspace: `projects/may-agent/`

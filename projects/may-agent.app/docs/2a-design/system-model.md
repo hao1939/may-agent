@@ -181,9 +181,8 @@ project task.
   `1-principles/work-model.md`
 - Events, delivery, and inbox: `2a-design/events.md`
 - Trace and closure: `2a-design/event-graph.md`
-- Project app manifest: `2a-design/project-app-v3.md`
-- Project/task integrity: `2a-design/app-project-integrity.md` and
-  `2a-design/task-tree-engine.md`
+- Agent App contract: `2a-design/agent-app.md`
+- Task runtime: `2a-design/task-resource-engine.md`
 - Sessions and human turns: `2a-design/sessions.md` and
   `2a-design/human-control-surfaces.md`
 - Skills and workflows: `2a-design/skills.md` and `2a-design/workflows.md`

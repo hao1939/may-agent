@@ -2,7 +2,7 @@
 
 May-agent is easiest to understand as:
 
-```
+```text
 events move work
 metrics expose signals
 agents judge and act
@@ -10,59 +10,64 @@ workflows make repeated work explicit
 projects hold durable goal context
 ```
 
-## Documentation Tiers
+## Documentation tiers
 
-Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts are resolved by updating the lower tier.
+Higher tiers govern lower tiers. When documents conflict, update the lower
+tier.
 
-- **`1-principles/`** (Tier 1) — Requirements, goals, conventions. Human-authored.
-- **`2a-design/`** (Tier 2a) — Architecture and subsystem designs. Agent-drafted, human-signed-off.
-- **`2b-manual/`** (Tier 2b) — How-to guides. Derived from principles + implementation.
-- **`3-proposals/`** (Tier 3) — Plans, specs, historical. May be outdated or superseded.
+| Folder          | Purpose                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| `1-principles/` | Stable requirements, goals, and conventions.                            |
+| `2a-design/`    | Current architecture and subsystem contracts.                           |
+| `2b-manual/`    | How-to guidance derived from design and implementation.                 |
+| `3-proposals/`  | Active proposals and convergence trackers only.                         |
+| `archive/`      | Historical decisions, reviews, implementation records, and V2 material. |
 
-Folder tier expresses authority, not implementation progress. Use these fields
-inside a document when status matters:
+Each current design records separate `Design status` and `Implementation
+status` fields. Stable design documents define contracts and current gaps, not
+dated incident narration. Historical documents must link to the current design
+that replaced them.
 
-- **Design status:** `Accepted`, `Draft`, `Tracker`, or `Historical`.
-- **Implementation status:** `Implemented`, `Partial`, `Gap`, or `N/A`.
+## Start here
 
-Keep those axes separate. An accepted design may still have implementation
-gaps; shipped code does not promote a proposal into authoritative design. A
-tracker records convergence work and must link to the accepted design it is
-tracking. Historical documents must say which active document replaces them.
+Read [system-model.md](2a-design/system-model.md) first for the compact whole
+system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
 
-Stable design docs define contracts and current gaps, not dated row counts or
-incident narration. Put live findings in manuals, task evidence, or dated
-proposals and link back to the governing design.
+### I want to build an autonomous Agent App
 
-## Reading Paths
-
-### I want to operate the running system
-
-1. [manual/user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
-2. [design/metrics.md](2a-design/metrics.md) — what the live metrics mean
-3. [manual/event-runtime-audit.md](2b-manual/event-runtime-audit.md) — compare live event emitters, consumers, delivery, and pair health against the design
-4. [manual/guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) — inspect guard volume, repeat signals, and threshold quality
-5. [manual/metric-alerts.md](2b-manual/metric-alerts.md) — how alerts should be handled
-6. [design/runtime.md](2a-design/runtime.md) — runtime internals when something is broken
+1. [agent-app.md](2a-design/agent-app.md) — package, ownership, optional host attachments
+2. [projects.md](2a-design/projects.md) — durable goal and project posture
+3. [task-resource-engine.md](2a-design/task-resource-engine.md) — optional task reconciliation
+4. [workflows.md](2a-design/workflows.md) — reusable processes owned by agents
+5. [sdk.md](2a-design/sdk.md) — stable TypeScript capability surface
+6. [workflow-authoring.md](2b-manual/workflow-authoring.md) — implementation guide
 
 ### I want to build or fix agent behavior
 
-1. [principles/work-model.md](1-principles/work-model.md) — projects, heartbeats, metrics, and triggers
-2. [design/skills.md](2a-design/skills.md) — reusable situational methods and progressive disclosure
-3. [design/workflows.md](2a-design/workflows.md) — executable orchestration and its boundary with skills
-4. [manual/workflow-authoring.md](2b-manual/workflow-authoring.md) — write workflow-backed behavior
-5. [manual/handler-authoring.md](2b-manual/handler-authoring.md) — bridge events to workflows
-6. [design/project-app-v3.md](2a-design/project-app-v3.md) — project apps, owner events, and domain/app boundaries
-7. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
+1. [work-model.md](1-principles/work-model.md) — projects, signals, and ownership
+2. [agents.md](2a-design/agents.md) — independent execution and cooperation
+3. [skills.md](2a-design/skills.md) — reusable judgment guidance
+4. [workflows.md](2a-design/workflows.md) — learned repeatable process
+5. [workflow-authoring.md](2b-manual/workflow-authoring.md) — authoring guide
+6. [sdk.md](2a-design/sdk.md) — supplied capabilities
 
-Project App V3 is the only current project-app design. Earlier V2 project-app
-notes live under `archive/v2/` for history only.
+### I want to operate the running system
 
-### I want to change infra
+1. [user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
+2. [metrics.md](2a-design/metrics.md) — live metrics and alerts
+3. [event-runtime-audit.md](2b-manual/event-runtime-audit.md) — event delivery audit
+4. [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) — guard signal audit
+5. [metric-alerts.md](2b-manual/metric-alerts.md) — alert handling
+6. [runtime.md](2a-design/runtime.md) — runtime internals
 
-1. [design/architecture.md](2a-design/architecture.md) — current system architecture
-2. [design/system-boundary.md](2a-design/system-boundary.md) — north-star infra boundary
-3. [system-boundary-tracker.md](proposals/system-boundary-tracker.md) — historical migration evidence, not an active contract
-4. [design/events.md](2a-design/events.md), [design/sessions.md](2a-design/sessions.md), [design/cron.md](2a-design/cron.md) — subsystem details
+### I want to change infrastructure
 
-See [INDEX.md](INDEX.md) for complete navigation.
+1. [architecture.md](2a-design/architecture.md) — detailed system architecture
+2. [system-boundary.md](2a-design/system-boundary.md) — infrastructure boundary
+3. [events.md](2a-design/events.md) — event contract
+4. [sessions.md](2a-design/sessions.md) — durable execution lifecycle
+5. [cron.md](2a-design/cron.md) — time-based event production
+6. [storage.md](2a-design/storage.md) — source and projection authority
+
+Historical migration rationale lives under [archive/](archive/README.md), not
+in the current reading path.

@@ -6,11 +6,11 @@
 > **Update (2026-06-18):** The SDK now also exports project-app primitives:
 > `defineProjectApp`, `eventDetails`, `eventData`, and `eventString`. These are
 > used in `*.app/app.ts` declarations. See
-> [project-app-v3.md](project-app-v3.md) §Shared SDK Boundary.
+> [agent-app.md](agent-app.md) for the Agent App boundary.
 >
 > The task-tree SDK (`planningPacket`, `seedModelGapBacklog`,
 > `assignRunnableBacklogTasks`, etc.) is also exported for project-app
-> workflows. See [task-tree-engine.md](task-tree-engine.md).
+> workflows. See [task-resource-engine.md](task-resource-engine.md).
 
 The canonical interface between agent code (handlers, workflows, gym) and the system.
 

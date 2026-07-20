@@ -8,4 +8,4 @@ reconciliation migration.
 The current design is
 [`app-task-reconciliation-model.md`](app-task-reconciliation-model.md). Current
 authoring guidance is
-[`handler-authoring.md`](../2b-manual/handler-authoring.md).
+[`handler-authoring.md`](../../2b-manual/handler-authoring.md).

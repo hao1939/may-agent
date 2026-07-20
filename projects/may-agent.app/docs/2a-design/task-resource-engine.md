@@ -8,8 +8,8 @@ work. It follows the Kubernetes pattern: an app declares desired state, one
 generic controller reconciles observed state toward it, and the task tree is a
 read model rather than a scheduler.
 
-See [Project App V3](project-app-v3.md) for the app boundary and the historical
-[App Task Reconciliation Model](../3-proposals/app-task-reconciliation-model.md)
+See [Agent App Contract](agent-app.md) for the app boundary and the historical
+[App Task Reconciliation Model](../archive/decisions/app-task-reconciliation-model.md)
 for the decision rationale.
 
 ## Mental model

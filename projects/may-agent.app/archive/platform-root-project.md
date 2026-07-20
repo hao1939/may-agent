@@ -89,7 +89,7 @@ Historical project references:
 - [x] Review sock/api documentation and features (iter17 — `outputs/iter14-sock-api-review.md`)
 - [x] Design UI features: session→API mapping, logs+API tab, LLM summarization, session scoring, investigation UX (iter20)
 - [x] Implement Logs + API session inspector view (iter25-26)
-- [x] Codify hygiene discipline (trigger-driven, not scheduled) — see "Hygiene discipline" section below; evidence in `proposals/2026-05-20-legacy-cleanup-resume-path.md`
+- [x] Codify hygiene discipline (trigger-driven, not scheduled) — see "Hygiene discipline" section below; evidence in `docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md`
 - [x] Redesign web UI to foreground infrastructure fundamentals (iter38 — hao directive + codex design advice in discussion.md)
 - [x] Implement structural receipt persistence at successful session closeout (iter39 — contract in projects/agent-system-evolution/contracts/structural-receipt-contract.md)
 - [x] Add Project App V2 runtime control-plane files under `.app/` (iter40)
@@ -165,7 +165,7 @@ same PR cycle, **either**:
 
 `@deprecated` markers without a forcing function are how bugs hide.
 The resume-vocabulary post-mortem in
-`proposals/2026-05-20-legacy-cleanup-resume-path.md` is the evidence:
+`docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md` is the evidence:
 three resume verbs (`resumeInterrupted` / `resumeStaleSessions` /
 `resumeSession`) let tests mock the broken one while validating only
 the working one. Production auto-resume was a no-op for an unknown

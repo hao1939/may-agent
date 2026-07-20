@@ -111,4 +111,4 @@ motion, delivery, and evidence—not on standalone heartbeat coverage.
 - Auto-generation: `src/app/loader/heartbeat-loader.ts`.
 - Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
 - App owner schedules: `projects/<id>.app/app.ts`.
-- Governing project loop: [app-project-integrity.md](app-project-integrity.md).
+- Governing Agent App contract: [agent-app.md](agent-app.md).

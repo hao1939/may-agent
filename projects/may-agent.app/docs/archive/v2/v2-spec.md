@@ -3,7 +3,7 @@
 **Status**: Historical — v2 conformance framing. Do not use this document as
 the current execution model. For current infra direction, see
 [system-boundary.md](../../2a-design/system-boundary.md), [architecture.md](../../2a-design/architecture.md),
-and [system-boundary-tracker.md](../../2a-design/system-boundary-tracker.md).
+and [system-boundary-tracker.md](../implementation/system-boundary-tracker.md).
 **Date**: 2026-05-06 (revised 2026-05-08)
 **Companion to**: `../../2a-design/architecture.md` (intent), `v2-implementation-notes.md` (history)
 

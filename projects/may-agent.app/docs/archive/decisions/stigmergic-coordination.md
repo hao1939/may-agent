@@ -2,7 +2,9 @@
 
 **Status:** historical / partially superseded by Project App V3
 **Date:** 2026-05-03 (revised 2026-05-08)
-**References:** [../architecture.md](../2a-design/architecture.md), [../work-model.md](../1-principles/work-model.md), [../2a-design/heartbeat.md](../2a-design/heartbeat.md)
+**References:** [architecture.md](../../2a-design/architecture.md),
+[work-model.md](../../1-principles/work-model.md), and
+[heartbeat.md](../../2a-design/heartbeat.md)
 
 ## Claim
 

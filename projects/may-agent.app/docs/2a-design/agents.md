@@ -6,7 +6,7 @@
 > **Status (2026-06-18):** Agent registration has two paths:
 > 1. **Global agents** — `agents/<name>/agent.json` discovered at startup
 > 2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`
->    auto-registered when the app loads (see project-app-v3.md)
+>    auto-registered when the app loads (see agent-app.md)
 >
 > App-local agents are preferred for app-owned work. The global `agents/`
 > directory is only for standalone agents that do not yet have a project-app.

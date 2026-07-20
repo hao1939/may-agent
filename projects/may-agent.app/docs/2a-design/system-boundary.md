@@ -698,7 +698,7 @@ Keep this incremental.
 
 ## Implementation Checklist
 
-See [system-boundary-tracker.md](../proposals/system-boundary-tracker.md) for the
+See [system-boundary-tracker.md](../archive/implementation/system-boundary-tracker.md) for the
 canonical implementation tracker. Do not create another parallel tracker.
 
 The target principle:

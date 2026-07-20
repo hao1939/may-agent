@@ -1,7 +1,7 @@
 /**
  * Task Tree Engine - pure-function library for project task trees.
  *
- * Design: projects/may-agent.app/docs/2a-design/task-tree-engine.md
+ * Design: projects/may-agent.app/docs/2a-design/task-resource-engine.md
  *
  * Compatibility note: older trees may use `status` and old values such as
  * accepted/ready/proposed/decomposed/superseded. Read paths normalize those

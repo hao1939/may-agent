@@ -321,7 +321,7 @@ observability is itself a project/app concern.
 ## Task Reconciliation
 
 `evaluation.app` follows the shared task schema in
-`projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`. It does
+`projects/may-agent.app/docs/2a-design/task-resource-engine.md`. It does
 not define an evaluation-specific task kind or lifecycle.
 
 ```text

@@ -6,7 +6,7 @@ and database rows are evidence linked to a task generation; they are not extra
 task-state authorities.
 
 The normative schema and authoring rules live in
-`projects/may-agent.app/docs/3-proposals/app-task-reconciliation-model.md`.
+`projects/may-agent.app/docs/2a-design/task-resource-engine.md`.
 
 ## Stable Responsibilities
 

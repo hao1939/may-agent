@@ -1094,7 +1094,7 @@ No action needed — no new signals in discussion. Platform remains stable and w
 Resume when: a non-automated comment appears in discussion.md, a platform test fails, or a human/May directive arrives.
 
 ### Iteration 38 — 2026-05-20 (human-directed)
-**Worker**: Codified hygiene discipline into `project.md` per human request after the legacy-cleanup arc converged. Added "Hygiene discipline" section between Validation and References, distinguishing trigger-driven hygiene (vocabulary audit at PR time; migration-tail sweep) from out-of-scope calendar-driven sweeps and aesthetic refactors. Evidence: `proposals/2026-05-20-legacy-cleanup-resume-path.md` — resume-vocabulary post-mortem where three resume verbs let tests mock the broken path while only validating the working one; auto-resume was a silent no-op until E9 surfaced it.
+**Worker**: Codified hygiene discipline into `project.md` per human request after the legacy-cleanup arc converged. Added "Hygiene discipline" section between Validation and References, distinguishing trigger-driven hygiene (vocabulary audit at PR time; migration-tail sweep) from out-of-scope calendar-driven sweeps and aesthetic refactors. Evidence: `docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md` — resume-vocabulary post-mortem where three resume verbs let tests mock the broken path while only validating the working one; auto-resume was a silent no-op until E9 surfaced it.
 
 **Plan delta**: marked one new item complete ("Codify hygiene discipline").
 
