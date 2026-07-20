@@ -18,6 +18,7 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
+  releaseStaleProjectAppTaskResult,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -238,6 +239,95 @@ describe("project app task reconciler state", () => {
       trigger: { type: "pipeline.changed" },
     });
     expect(claimedTree.tasks["pipeline-monitor"].trace?.reconciliation).toBeUndefined();
+  });
+
+  it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+
+    observeProjectAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    const firstClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "task-controller",
+    });
+    if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
+
+    deferProjectAppTask(config, firstClaim, {
+      disposition: "waiting",
+      summary: "waiting for old condition",
+      conditions: [
+        {
+          id: "external-run-finished",
+          type: "ado.pipeline.completed",
+          subject: "ado:run:123",
+          expected: "completed",
+        },
+      ],
+    });
+
+    expect(
+      claimObservedProjectAppTask(config, {
+        taskId: monitor.id,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+        reason: "passive-resync",
+      }),
+    ).toMatchObject({
+      kind: "waiting",
+      conditionIds: ["external-run-finished"],
+    });
+
+    const trigger = {
+      type: "project.task.tick",
+      data: {
+        project: "sample",
+        taskId: monitor.id,
+        action: "spec-loop",
+      },
+    };
+    observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      trigger,
+    });
+
+    const duplicateClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "task-controller",
+    });
+    expect(duplicateClaim).toMatchObject({ kind: "waiting", taskId: monitor.id });
+
+    const overrideTrigger = {
+      type: "project.task.tick",
+      data: {
+        project: "sample",
+        taskId: monitor.id,
+        overrideWait: true,
+      },
+    };
+    observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      trigger: overrideTrigger,
+    });
+
+    const secondClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "task-controller",
+    });
+    expect(secondClaim).toMatchObject({ kind: "claimed", taskId: monitor.id });
+    if (secondClaim.kind !== "claimed") throw new Error("expected second claim");
+
+    expect(readTaskTree(config).attempts?.[secondClaim.attemptId]).toMatchObject({
+      state: "running",
+      trigger: overrideTrigger,
+    });
   });
 
   it("invalidates an old attempt when desired state changes generation", () => {
@@ -842,6 +932,57 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("can release a stale current attempt so the task is judged again from current evidence", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const concurrent = readTaskTree(config);
+    concurrent.resources![claim.taskId].metadata.resourceVersion += 1;
+    concurrent.resources![claim.taskId].status.summary = "concurrent observation";
+    saveTaskTree(config, concurrent);
+
+    expect(
+      completeProjectAppTask(config, claim, {
+        summary: "late result",
+        evidence: ["stale result must not apply actions"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "stale-action-must-not-apply",
+            parentId: "operations",
+            goal: "This task must not exist",
+            mode: "achieve",
+            outputs: ["proof.md"],
+            acceptance: ["Never applied"],
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "stale", actionsApplied: [] });
+    expect(readTaskTree(config).tasks["stale-action-must-not-apply"]).toBeUndefined();
+
+    expect(releaseStaleProjectAppTaskResult(config, claim)).toEqual({
+      status: "released",
+      taskId: claim.taskId,
+    });
+    const tree = readTaskTree(config);
+    expect(tree.resources?.[claim.taskId]).toMatchObject({
+      status: {
+        phase: "pending",
+      },
+    });
+    expect(tree.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
+    expect(tree.attempts?.[claim.attemptId]).toMatchObject({
+      state: "interrupted",
+      failureReason: "stale-reconciliation-result",
+    });
+    expect(listRunnableProjectAppTaskIds(config)).toContain(claim.taskId);
+  });
+
   it("applies handler actions atomically with reconciliation completion", () => {
     const { config } = fixture();
     const claim = claimProjectAppTask(config, {
@@ -1002,6 +1143,68 @@ describe("project app task reconciler state", () => {
     const tree = readTaskTree(config);
     expect(tree.tasks["must-roll-back"]).toBeUndefined();
     expect(tree.tasks[claim.taskId].state).toBe("active");
+  });
+
+  it("treats actions against already receipted tasks as stale no-ops", () => {
+    const { config } = fixture();
+    const first = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+
+    expect(
+      completeProjectAppTask(config, first, {
+        summary: "close completed child",
+        evidence: ["first reconciliation"],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "categorized-task",
+            expectedGeneration: 1,
+            summary: "child finished",
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied", actionsApplied: ["closed categorized-task"] });
+
+    const second = claimProjectAppTask(config, {
+      intent: {
+        id: "route-review",
+        parentId: "operations",
+        outcome: "Review route residue",
+        acceptance: ["Route residue is reconciled"],
+        mode: "achieve",
+        workflow: "known-workflow",
+      },
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+
+    expect(
+      completeProjectAppTask(config, second, {
+        summary: "stale child close observed",
+        evidence: ["second reconciliation"],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "categorized-task",
+            expectedGeneration: 1,
+            summary: "already finished",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["already completed categorized-task"],
+    });
+
+    const tree = readTaskTree(config);
+    expect(tree.tasks["categorized-task"]).toBeUndefined();
+    expect(tree.receipts?.["categorized-task"]).toBeDefined();
+    expect(tree.tasks["route-review"]).toBeUndefined();
   });
 
   it("rejects malformed action payloads and blank evidence before mutation", () => {

@@ -320,9 +320,14 @@ export function setProjectLifecycle(config: TaskTreeConfig, lifecycle: string, r
 }
 
 export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
+  const liveTaskIds = new Set(Object.keys(tree.tasks ?? {}));
   for (const task of Object.values(tree.tasks ?? {})) {
     task.state ??= "backlog";
-    if (task.children === undefined) task.children = [];
+    if (task.children === undefined) {
+      task.children = [];
+      continue;
+    }
+    task.children = normalizeStringArray(task.children).filter((childId) => liveTaskIds.has(childId));
   }
   return tree;
 }
