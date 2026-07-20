@@ -2985,7 +2985,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         {
           ok: true,
           triggered: true,
-          accepted: true,
           eventType: "project.comment.created",
           eventId: trigger.eventId,
           projectId,
@@ -3231,7 +3230,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const trigger = await sendDaemonFrame({
         ...body,
         type,
-        source: typeof body.source === "string" && body.source.trim() ? body.source.trim() : "web-ui",
+        source: "web-ui",
         owner: normalizeEventOwner(owner),
         data,
       });
@@ -3241,7 +3240,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         {
           ok: true,
           triggered: true,
-          accepted: true,
           eventType: type,
           eventId: trigger.eventId,
           reason: typeof data.reason === "string" ? data.reason : null,
