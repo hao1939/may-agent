@@ -4,6 +4,7 @@ import { basename, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
 import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
+import { Check, Errors } from "typebox/value";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
@@ -34,7 +35,14 @@ import {
 import { Cron } from "../cron.js";
 import { ProjectAppTaskController } from "../project-app-task-controller.js";
 import { trackProjectAppConditionEvent } from "../project-app-condition-tracker.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
+import {
+  childEventTrace,
+  EVENT_INGRESS_SOURCE,
+  EVENT_ROW_ID,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "../event-bus.js";
 import {
   acknowledgeProjectAppTaskRecoveryAttention,
   claimObservedProjectAppTask,
@@ -44,9 +52,11 @@ import {
   markProjectAppTaskAttention,
   listProjectAppTaskIntents,
   listRunnableProjectAppTaskIds,
+  isProjectAppTaskActionStaleError,
   observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
   readProjectAppTaskIntent,
+  readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
   releaseHandlerUnavailableProjectAppTask,
   repairPreviousRuntimeRecoveryAttention,
@@ -103,6 +113,13 @@ export interface ProjectAppWatcher {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function firstNonEmptyString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
 }
 
 function configuredAgentName(agentDir: string, fallback: string): string | null {
@@ -427,7 +444,11 @@ function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>): bool
   return false;
 }
 
-function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): ProjectAppContext {
+function makeContext(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  parentEvent?: AgentEvent,
+): ProjectAppContext {
   return {
     appPath: (path: string) => resolve(descriptor.appDir, path),
     emit: (event) => {
@@ -435,8 +456,20 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
         source: `project-app:${descriptor.id}`,
         owner: `agent:${descriptor.owner}`,
       });
-      opts.bus.emit(envelope as unknown as AgentEvent);
-      return envelope;
+      if (envelope.type === "project.owner.requested" && parentEvent?.type === "project.comment.created") {
+        const inputEventId = Number(
+          (parentEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID],
+        );
+        if (Number.isInteger(inputEventId) && inputEventId > 0) {
+          if (envelope.data.inputEventId === undefined) envelope.data.inputEventId = inputEventId;
+          if (envelope.data.inputEventType === undefined) envelope.data.inputEventType = parentEvent.type;
+        }
+      }
+      if (!envelope.trace && parentEvent) {
+        const trace = childEventTrace(parentEvent);
+        if (trace) envelope.trace = trace;
+      }
+      return opts.bus.emit(envelope as unknown as AgentEvent) as unknown as AppEvent;
     },
     noop: (reason: string) => ({ type: "noop", reason }),
     ...(opts.persistDir ? { query: createQueryService({ getDb: () => getDb(opts.persistDir!) }) } : {}),
@@ -835,14 +868,13 @@ async function runTaskOwner(input: {
     toolPolicy: "full",
     timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
   });
+  const done = result.status === "done";
   const handlerResult = normalizeTaskHandlerResult(
-    result.structuredResult,
+    done ? result.structuredResult : undefined,
     {
-      type: result.status === "done" ? "done" : "blocked",
+      type: done ? "done" : "blocked",
       summary:
-        result.finishResult?.summary ??
-        result.lastAssistantText ??
-        result.error ??
+        firstNonEmptyString(result.finishResult?.summary, result.lastAssistantText, result.error) ??
         `Owner session ${result.sessionId || "unknown"} returned no result`,
       runId: result.sessionId || null,
     },
@@ -863,7 +895,17 @@ function emitTaskReconciliationEvent(
   taskId: string,
   data: Record<string, unknown>,
 ): void {
-  const trace = childEventTrace(event);
+  const persistedEventId = Number((event as Record<string, unknown> | undefined)?.eventId);
+  const trace =
+    Number.isInteger(persistedEventId) && persistedEventId > 0
+      ? {
+          traceId:
+            event?.trace && typeof event.trace === "object" && typeof event.trace.traceId === "string"
+              ? event.trace.traceId
+              : `event:${persistedEventId}`,
+          parentEventId: persistedEventId,
+        }
+      : childEventTrace(event);
   opts.bus.emit({
     type,
     source: `project-app:${descriptor.id}:task-reconciler`,
@@ -874,6 +916,99 @@ function emitTaskReconciliationEvent(
   } as unknown as AgentEvent);
 }
 
+function emitOwnerResultForTask(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  trigger: EventEnvelope | undefined,
+  taskId: string,
+  summary: string,
+  disposition: string,
+): void {
+  if (trigger?.type !== "project.owner.requested" && trigger?.type !== "project.comment.created") return;
+  const triggerRecord = trigger as unknown as Record<string, unknown>;
+  for (const intent of ownerIntentRefs(triggerRecord)) {
+    if (opts.persistDir) {
+      const existing = getDb(opts.persistDir)
+        .prepare(
+          `SELECT id
+           FROM events
+           WHERE event_type = 'project.owner.reviewed'
+             AND json_extract(data, '$.openEventId') = ?
+           LIMIT 1`,
+        )
+        .get(intent.eventId) as { id?: unknown } | undefined;
+      if (Number(existing?.id) > 0) continue;
+    }
+    opts.bus.emit({
+      type: "project.owner.reviewed",
+      source: `project-app:${descriptor.id}:task-reconciler`,
+      owner: `agent:${descriptor.owner}`,
+      target: { project: descriptor.id, taskId },
+      data: {
+        openEventId: intent.eventId,
+        openEventType: intent.eventType,
+        project: descriptor.id,
+        projectId: descriptor.id,
+        disposition: "task-updated",
+        taskDisposition: disposition,
+        summary,
+        taskRefs: [{ projectId: descriptor.id, taskId }],
+      },
+      trace: {
+        traceId:
+          trigger.trace && typeof trigger.trace === "object" && typeof trigger.trace.traceId === "string"
+            ? trigger.trace.traceId
+            : `event:${intent.eventId}`,
+        parentEventId: Number(triggerRecord.eventId) || intent.eventId,
+        links: [{ eventId: intent.eventId, type: "closure", label: "project.owner.reviewed" }],
+      },
+    } as unknown as AgentEvent);
+  }
+}
+
+type OwnerIntentRef = { eventId: number; eventType: string };
+
+function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
+  const declared = Array.isArray(event.ownerIntentRefs) ? event.ownerIntentRefs : [];
+  const refs: OwnerIntentRef[] = declared.flatMap((value) => {
+    if (!isRecord(value)) return [];
+    const eventId = Number(value.eventId);
+    return Number.isInteger(eventId) && eventId > 0 && typeof value.eventType === "string"
+      ? [{ eventId, eventType: value.eventType }]
+      : [];
+  });
+  const inputEventId = Number(event.inputEventId);
+  if (Number.isInteger(inputEventId) && inputEventId > 0) {
+    refs.push({
+      eventId: inputEventId,
+      eventType: typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created",
+    });
+  } else {
+    const eventId = Number(event.eventId);
+    if (Number.isInteger(eventId) && eventId > 0 && typeof event.type === "string") {
+      refs.push({ eventId, eventType: event.type });
+    }
+  }
+  return [...new Map(refs.map((ref) => [ref.eventId, ref])).values()];
+}
+
+function taskTriggerWithOwnerIntents(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  taskId: string,
+  event: Record<string, unknown>,
+): Record<string, unknown> {
+  if (event.type !== "project.owner.requested" && event.type !== "project.comment.created") return event;
+  const previous = readProjectAppTaskTrigger(config, taskId);
+  const refs = [
+    ...(previous ? ownerIntentRefs(previous) : []),
+    ...ownerIntentRefs(event),
+  ];
+  return {
+    ...event,
+    ownerIntentRefs: [...new Map(refs.map((ref) => [ref.eventId, ref])).values()],
+  };
+}
+
 function recoverStaleTaskResult(
   config: ReturnType<typeof taskReconciliationConfig>,
   claim: ProjectAppTaskClaim,
@@ -882,6 +1017,23 @@ function recoverStaleTaskResult(
     config,
     claim,
     `Stale reconciliation result for ${claim.taskId} was rejected; retrying from current task evidence`,
+  );
+  return {
+    staleRecovery: recovery.status,
+    reconcileTaskIds: recovery.status === "missing" ? [] : [claim.taskId],
+  };
+}
+
+function recoverStaleTaskActionResult(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  claim: ProjectAppTaskClaim,
+  error: unknown,
+): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
+  if (!isProjectAppTaskActionStaleError(error)) return null;
+  const recovery = releaseStaleProjectAppTaskResult(
+    config,
+    claim,
+    `Stale handler action for ${error.taskId} was rejected; retrying ${claim.taskId} from current task evidence`,
   );
   return {
     staleRecovery: recovery.status,
@@ -1115,8 +1267,37 @@ async function reconcileTask(input: {
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
+        emitOwnerResultForTask(
+          opts,
+          descriptor,
+          event,
+          intent.id,
+          primaryHandlerResult.summary,
+          apply.status === "applied" ? "converged" : "stale",
+        );
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
+        const stale = recoverStaleTaskActionResult(config, primary, error);
+        if (stale) {
+          const summary = error instanceof Error ? error.message : String(error);
+          emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+            generation: primary.generation,
+            attemptId: primary.attemptId,
+            handler: primary.handler,
+            disposition: "stale",
+            outcome: intent.outcome,
+            mode: intent.mode,
+            owner: intent.owner ?? descriptor.owner,
+            ...(intent.workflow ? { workflow: intent.workflow } : {}),
+            input: intent.input ?? {},
+            summary,
+            evidence: primaryHandlerResult.evidence,
+            staleRecovery: stale.staleRecovery,
+            workflowRunId: primaryResult.runId,
+          });
+          emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
+          return stale.reconcileTaskIds;
+        }
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -1145,8 +1326,33 @@ async function reconcileTask(input: {
         ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
         workflowRunId: primaryResult.runId,
       });
+      emitOwnerResultForTask(
+        opts,
+        descriptor,
+        event,
+        intent.id,
+        primaryHandlerResult.summary,
+        apply.status === "applied" ? primaryHandlerResult.state : "stale",
+      );
       return stale?.reconcileTaskIds ?? apply.reconcileTaskIds;
     } catch (error) {
+      const stale = recoverStaleTaskActionResult(config, primary, error);
+      if (stale) {
+        const summary = error instanceof Error ? error.message : String(error);
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          disposition: "stale",
+          input: intent.input ?? {},
+          summary,
+          evidence: primaryHandlerResult.evidence,
+          staleRecovery: stale.staleRecovery,
+          workflowRunId: primaryResult.runId,
+        });
+        emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
+        return stale.reconcileTaskIds;
+      }
       primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -1171,6 +1377,14 @@ async function reconcileTask(input: {
       input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
+    emitOwnerResultForTask(
+      opts,
+      descriptor,
+      event,
+      intent.id,
+      primaryHandlerResult.summary,
+      "attention",
+    );
     return [];
   }
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1215,6 +1429,74 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
+
+export type ProjectAppActionDescription = {
+  id: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+};
+
+function loadedProjectAppDescriptor(bus: EventBus, projectId: string): ProjectAppDescriptor | undefined {
+  const normalized = projectId.trim().replace(/\.app$/, "");
+  return (appRouterDescriptorsByBus.get(bus) ?? []).find((descriptor) => descriptor.id === normalized);
+}
+
+export function describeLoadedProjectAppActions(
+  bus: EventBus,
+  projectId: string,
+): ProjectAppActionDescription[] {
+  const descriptor = loadedProjectAppDescriptor(bus, projectId);
+  if (!descriptor) throw new Error(`Project app ${projectId} is not loaded`);
+  return Object.entries(descriptor.app.actions ?? {}).map(([id, action]) => ({
+    id,
+    description: action.description,
+    inputSchema: structuredClone(action.inputSchema) as Record<string, unknown>,
+  }));
+}
+
+export function invokeLoadedProjectAppAction(input: {
+  bus: EventBus;
+  projectId: string;
+  actionId: string;
+  params: unknown;
+  idempotencyKey?: string;
+  ingressSource?: string;
+}): { eventId: number; eventType: string } {
+  const descriptor = loadedProjectAppDescriptor(input.bus, input.projectId);
+  if (!descriptor) throw new Error(`Project app ${input.projectId} is not loaded`);
+  const action = descriptor.app.actions?.[input.actionId];
+  if (!action) throw new Error(`Project app ${descriptor.id} has no action ${input.actionId}`);
+  if (!Check(action.inputSchema, input.params)) {
+    const first = [...Errors(action.inputSchema, input.params)][0];
+    throw new Error(
+      `Invalid input for ${descriptor.id}.${input.actionId}: ${first?.message ?? "schema mismatch"}`,
+    );
+  }
+  const semantic = normalizeEvent(action.event(input.params), {
+    source: `project-app:${descriptor.id}:action:${input.actionId}`,
+    owner: `agent:${descriptor.owner}`,
+  }) as AgentEvent;
+  const semanticRecord = semantic as unknown as Record<string, unknown>;
+  const data = isRecord(semanticRecord.data) ? semanticRecord.data : {};
+  semanticRecord.data = {
+    ...data,
+    project: projectValue(flattenEvent(semantic)) || descriptor.id,
+    action: input.actionId,
+    ...(input.idempotencyKey?.trim() ? { idempotencyKey: input.idempotencyKey.trim() } : {}),
+  };
+  if (input.ingressSource) {
+    Object.defineProperty(semanticRecord, EVENT_INGRESS_SOURCE, {
+      value: input.ingressSource,
+      configurable: true,
+    });
+  }
+  const emitted = input.bus.emit(semantic);
+  const eventId = Number(emitted[EVENT_ROW_ID]);
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    throw new Error(`Action ${descriptor.id}.${input.actionId} did not produce a persisted semantic event`);
+  }
+  return { eventId, eventType: semantic.type };
+}
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
 
 function taskIdFromEvent(event: Record<string, unknown>): string {
@@ -1421,51 +1703,6 @@ async function requeueRepairedProjectAppTaskHandlers(
   }
 }
 
-async function dispatchProjectAppAction(
-  opts: ProjectAppLoaderOptions,
-  descriptor: ProjectAppDescriptor,
-  rawEvent: AgentEvent,
-  event: Record<string, unknown>,
-): Promise<boolean> {
-  if (event.type !== "project.action.invoked" || !isProjectScopedForApp(event, descriptor.id)) return false;
-
-  const actionName = typeof event.action === "string" ? event.action.trim() : "";
-  const action = actionName ? descriptor.app.actions?.[actionName] : undefined;
-  const trace = childEventTrace(rawEvent);
-  if (!action) {
-    opts.bus.emit({
-      type: "project.action.rejected",
-      source: `project-app:${descriptor.id}`,
-      owner: `agent:${descriptor.owner}`,
-      target: { project: descriptor.id },
-      data: {
-        project: descriptor.id,
-        action: actionName || null,
-        reason: actionName ? "unknown-action" : "missing-action",
-      },
-      ...(trace ? { trace } : {}),
-    } as unknown as AgentEvent);
-    return true;
-  }
-
-  const params = isRecord(event.params) ? event.params : {};
-  const emitted = normalizeEvent(action.event(params), {
-    source: `project-app:${descriptor.id}:action:${actionName}`,
-    owner: `agent:${descriptor.owner}`,
-  });
-  opts.bus.emit(emitted as unknown as AgentEvent);
-
-  opts.bus.emit({
-    type: "project.action.accepted",
-    source: `project-app:${descriptor.id}`,
-    owner: `agent:${descriptor.owner}`,
-    target: { project: descriptor.id },
-    data: { project: descriptor.id, action: actionName },
-    ...(trace ? { trace } : {}),
-  } as unknown as AgentEvent);
-  return true;
-}
-
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
   const existing = appRouterDescriptorsByBus.get(opts.bus);
   if (existing) {
@@ -1479,22 +1716,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-      if (event.type === "project.action.invoked" && isProjectScopedForApp(event, descriptor.id)) {
-        void dispatchProjectAppAction(opts, descriptor, rawEvent, event).catch((err) => {
-          opts.bus.emit({
-            type: "handler.failed",
-            source: "cron",
-            owner: `agent:${descriptor.owner}`,
-            data: {
-              handler: "project-app-action",
-              agent: descriptor.owner,
-              error: err instanceof Error ? err.message : String(err),
-              durationMs: 0,
-            },
-          });
-        });
-        continue;
-      }
       if (
         descriptor.app.tasks &&
         (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner)
@@ -1527,14 +1748,19 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           ) {
             const resolved = descriptor.app.tasks.resolve(event);
             if (resolved?.id === targetedTaskId) {
+              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
               observeProjectAppTaskIntent(config, {
                 intent: resolved,
                 appOwner: descriptor.owner,
-                trigger: event,
+                trigger,
               });
             }
           }
-          const triggerResult = recordProjectAppTaskTrigger(config, targetedTaskId, event);
+          const triggerResult = recordProjectAppTaskTrigger(
+            config,
+            targetedTaskId,
+            taskTriggerWithOwnerIntents(config, targetedTaskId, event),
+          );
           if (triggerResult.kind === "recorded") {
             taskController.enqueue(targetedTaskId);
             return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
@@ -1556,10 +1782,11 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
             const resolved = descriptor.app.tasks.resolve(event);
             if (resolved?.id === targetedTaskId) {
+              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
               const observation = observeProjectAppTaskIntent(config, {
                 intent: resolved,
                 appOwner: descriptor.owner,
-                trigger: event,
+                trigger,
               });
               if (observation.kind === "observed") taskController.enqueue(observation.taskId);
               return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
@@ -1573,22 +1800,26 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
           const intent = descriptor.app.tasks.resolve(event);
           if (intent) {
-            const observation = observeProjectAppTaskIntent(
-              taskReconciliationConfig({
-                appDir: descriptor.appDir,
-                projectDir: descriptor.projectDir,
-                owner: descriptor.owner,
-                maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-              }),
-              { intent, appOwner: descriptor.owner, trigger: event },
-            );
+            const config = taskReconciliationConfig({
+              appDir: descriptor.appDir,
+              projectDir: descriptor.projectDir,
+              owner: descriptor.owner,
+              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+            });
+            const observation = observeProjectAppTaskIntent(config, {
+              intent,
+              appOwner: descriptor.owner,
+              trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
+            });
             if (observation.kind === "observed") taskController.enqueue(observation.taskId);
             return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
           }
           continue;
         }
       }
-      if (!shouldOfferToApp(descriptor.app, event)) continue;
+      const projectCommentForApp =
+        event.type === "project.comment.created" && isProjectScopedForApp(event, descriptor.id);
+      if (!projectCommentForApp && !shouldOfferToApp(descriptor.app, event)) continue;
       if (isMetricFeedbackEvent(event)) {
         const eventOwner = ownerValue(event);
         opts.bus.emit({
@@ -1608,9 +1839,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       }
       void Promise.resolve()
         .then(async () => {
-          const ctx = makeContext(opts, descriptor);
-          const result =
-            typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
+          const ctx = makeContext(opts, descriptor, rawEvent);
           const closeInbox = (route: string): void => {
             const openEventId = (rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
             if (!Number.isInteger(openEventId) || Number(openEventId) <= 0) return;
@@ -1626,6 +1855,54 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               },
             } as any);
           };
+          const result =
+            typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
+          if (projectCommentForApp) {
+            const resultEvent = isRecord(result) && typeof result.type === "string" ? result : null;
+            if (!resultEvent) {
+              ctx.emit({
+                type: "project.owner.requested",
+                target: { project: descriptor.id },
+                data: {
+                  project: descriptor.id,
+                  projectId: descriptor.id,
+                  reason: "project-comment",
+                  comment: typeof event.comment === "string" ? event.comment : "",
+                  inputEventId: event.eventId ?? null,
+                },
+              });
+              closeInbox("app-owner-request");
+            } else if (resultEvent.type !== "project.owner.requested") {
+              const openEventId = Number((rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+              if (Number.isInteger(openEventId) && openEventId > 0) {
+                const resultTarget = isRecord(resultEvent.target) ? resultEvent.target : {};
+                const taskId = typeof resultTarget.taskId === "string" ? resultTarget.taskId : "";
+                opts.bus.emit({
+                  type: "project.owner.reviewed",
+                  source: `project-app:${descriptor.id}`,
+                  owner: `agent:${descriptor.owner}`,
+                  target: { project: descriptor.id, ...(taskId ? { taskId } : {}) },
+                  data: {
+                    openEventId,
+                    openEventType: "project.comment.created",
+                    project: descriptor.id,
+                    projectId: descriptor.id,
+                    disposition: taskId ? "task-updated" : resultEvent.type === "noop" ? "no-op" : "answered",
+                    summary:
+                      typeof resultEvent.reason === "string"
+                        ? resultEvent.reason
+                        : `App handled project intent through ${resultEvent.type}`,
+                    taskRefs: taskId ? [{ projectId: descriptor.id, taskId }] : [],
+                  },
+                  trace: {
+                    traceId: rawEvent.trace?.traceId ?? `event:${openEventId}`,
+                    parentEventId: openEventId,
+                    links: [{ eventId: openEventId, type: "closure", label: "project.owner.reviewed" }],
+                  },
+                } as unknown as AgentEvent);
+              }
+            }
+          }
           if (result !== undefined) {
             closeInbox("app-onEvent");
           }

@@ -843,6 +843,10 @@ export type SubscribeOptions = { priority?: "first" | "normal" };
 export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
 
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
+export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
+export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
+export const EVENT_SUBSCRIBER_WARN_MS = 25;
 
 const eventContext = new AsyncLocalStorage<AgentEvent>();
 
@@ -931,23 +935,37 @@ export class EventBus {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
       if (this.persistenceSubscriber) {
-        delivery = normalizeDeliveryResult(eventContext.run(event, () => this.persistenceSubscriber!(event)));
+        delivery = normalizeDeliveryResult(this.runSubscriber(event, "persistence", this.persistenceSubscriber));
       }
-      for (const fn of this.firstSubscribers) {
-        try {
-          const result = normalizeDeliveryResult(eventContext.run(event, () => fn(event)));
-          delivery ??= result;
-        } catch (err) {
-          this.reportSubscriberFailure(event, "first", err);
+      // Retry-safe ingress may resolve to an already-persisted event. Return
+      // that receipt without delivering the same intent or effect again.
+      const retry = event as AgentEvent & {
+        [EVENT_DEDUPLICATED]?: boolean;
+        [EVENT_REDELIVERY_REQUIRED]?: boolean;
+      };
+      if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
+        return event as AgentEvent & { [EVENT_ROW_ID]?: number };
+      }
+      // Pending retry recovery deliberately uses only the built-in idempotent
+      // pair/evidence/owner routes below. Ordinary fan-out subscribers may
+      // already have performed an effect before the original process stopped.
+      if (!retry[EVENT_REDELIVERY_REQUIRED]) {
+        for (const fn of this.firstSubscribers) {
+          try {
+            const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
+            delivery ??= result;
+          } catch (err) {
+            this.reportSubscriberFailure(event, "first", err);
+          }
         }
-      }
-      for (const fn of this.normalSubscribers) {
-        try {
-          const result = normalizeDeliveryResult(eventContext.run(event, () => fn(event)));
-          delivery ??= result;
-        } catch (err) {
-          /* subscriber errors never break the bus */
-          this.reportSubscriberFailure(event, "normal", err);
+        for (const fn of this.normalSubscribers) {
+          try {
+            const result = normalizeDeliveryResult(this.runSubscriber(event, "normal", fn));
+            delivery ??= result;
+          } catch (err) {
+            /* subscriber errors never break the bus */
+            this.reportSubscriberFailure(event, "normal", err);
+          }
         }
       }
       delivery ??= ownerInboxFallback(event);
@@ -965,6 +983,25 @@ export class EventBus {
   /** Number of subscribers. */
   get listenerCount(): number {
     return this.firstSubscribers.length + this.normalSubscribers.length + (this.persistenceSubscriber ? 1 : 0);
+  }
+
+  private runSubscriber(
+    event: AgentEvent,
+    priority: "persistence" | "first" | "normal",
+    fn: Subscriber,
+  ): SubscriberResult {
+    const startedAt = performance.now();
+    try {
+      return eventContext.run(event, () => fn(event));
+    } finally {
+      const durationMs = performance.now() - startedAt;
+      if (durationMs >= EVENT_SUBSCRIBER_WARN_MS) {
+        log(
+          "warn",
+          `[event-bus] ${priority} subscriber took ${durationMs.toFixed(1)}ms on event '${event.type}'`,
+        );
+      }
+    }
   }
 
   private reportSubscriberFailure(event: AgentEvent, priority: "first" | "normal", err: unknown): void {

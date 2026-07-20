@@ -226,7 +226,11 @@ CREATE TABLE IF NOT EXISTS events (
   accepted_by TEXT,
   accepted_at INTEGER,
   delivery_route TEXT,
-  delivery_note TEXT
+  delivery_note TEXT,
+  idempotency_key TEXT,
+  idempotency_scope TEXT NOT NULL DEFAULT '',
+  idempotency_hash TEXT,
+  ingress_source TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
@@ -413,5 +417,64 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 `;
 
 export function applyDbSchema(db: SqliteDb): void {
+  ensureExistingEventsTableColumns(db);
   db.exec(SCHEMA);
+  ensureExistingEventsTableColumns(db);
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
+    ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
+    WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
+  `);
+}
+
+const EVENT_COLUMNS: Array<[string, string]> = [
+  ["source", "TEXT"],
+  ["owner", "TEXT"],
+  ["data", "TEXT"],
+  ["body_ref", "TEXT"],
+  ["body_sha256", "TEXT"],
+  ["body_bytes", "INTEGER"],
+  ["session_id", "TEXT"],
+  ["workflow_run_id", "TEXT"],
+  ["project_id", "TEXT"],
+  ["task_id", "TEXT"],
+  ["attempt_id", "TEXT"],
+  ["handler", "TEXT"],
+  ["metric_id", "TEXT"],
+  ["alert_id", "TEXT"],
+  ["escalation_id", "TEXT"],
+  ["subject_status", "TEXT"],
+  ["duration_ms", "INTEGER"],
+  ["timestamp", "INTEGER NOT NULL DEFAULT 0"],
+  ["ttl_ms", "INTEGER"],
+  ["urgency", "TEXT DEFAULT 'normal'"],
+  ["delivery_status", "TEXT DEFAULT 'pending'"],
+  ["accepted_by", "TEXT"],
+  ["accepted_at", "INTEGER"],
+  ["delivery_route", "TEXT"],
+  ["delivery_note", "TEXT"],
+  ["idempotency_key", "TEXT"],
+  ["idempotency_scope", "TEXT NOT NULL DEFAULT ''"],
+  ["idempotency_hash", "TEXT"],
+  ["ingress_source", "TEXT NOT NULL DEFAULT ''"],
+];
+
+function ensureExistingEventsTableColumns(db: SqliteDb): void {
+  if (!tableExists(db, "events")) return;
+  for (const [column, definition] of EVENT_COLUMNS) {
+    ensureColumn(db, "events", column, definition);
+  }
+}
+
+function tableExists(db: SqliteDb, table: string): boolean {
+  const row = db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(table);
+  return Boolean(row);
+}
+
+function ensureColumn(db: SqliteDb, table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: unknown }>;
+  if (columns.some((item) => item.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }

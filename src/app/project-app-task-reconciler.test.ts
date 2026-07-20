@@ -1268,10 +1268,19 @@ describe("project app task reconciler state", () => {
     expect(convergedTree.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
     expect(convergedTree.attempts?.[claim.attemptId]).toMatchObject({ state: "completed" });
 
+    expect(
+      claimObservedProjectAppTask(config, {
+        taskId: claim.taskId,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+      }),
+    ).toMatchObject({ kind: "completed", generation: claim.generation });
+
     const next = declareAndClaimTask(config, {
       intent: intent("maintain"),
       appOwner: "app-owner",
       handler: "workflow:known-workflow",
+      trigger: { type: "pipeline.changed", revision: 2 },
     });
     expect(next).toMatchObject({ kind: "claimed", generation: claim.generation });
   });

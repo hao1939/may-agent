@@ -1,3 +1,5 @@
+import type { Static, TSchema } from "@earendil-works/pi-ai";
+
 export type ProjectAppEventUrgency = "low" | "normal" | "high" | "immediate";
 
 export type ProjectAppEventTarget = {
@@ -103,10 +105,11 @@ export type ProjectAppContext = {
   };
 };
 
-export type ProjectAppAction = {
+export type ProjectAppAction<TInputSchema extends TSchema = TSchema> = {
   type: "async";
   description: string;
-  event(params: unknown): ProjectAppEvent;
+  inputSchema: TInputSchema;
+  event(params: Static<TInputSchema>): ProjectAppEvent;
 };
 
 export type ProjectAppTaskMode = "achieve" | "maintain";

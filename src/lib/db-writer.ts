@@ -7,18 +7,28 @@
  * See: shared/may-agent-docs/events.md
  */
 
-import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult } from "../app/event-bus.js";
+import { createHash } from "node:crypto";
+import {
+  EVENT_DEDUPLICATED,
+  EVENT_INGRESS_SOURCE,
+  EVENT_REDELIVERY_REQUIRED,
+  EVENT_ROW_ID,
+  type AgentEvent,
+  type DeliveryResult,
+} from "../app/event-bus.js";
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
+import { log } from "./log.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
 const INLINE_EVENT_DATA_BYTES = 4_096;
 const MAX_EVENT_PROJECTION_LENGTH = 12_000;
 
 const DURABLE_COMMAND_EVENTS = new Set([
+  "fork",
   "input",
   "steer",
   "cancel",
@@ -60,6 +70,44 @@ function eventUrgency(event: Record<string, unknown>): string {
 function eventTtlMs(event: Record<string, unknown>): number | null {
   const ttl = isCanonicalEventEnvelope(event) ? event.ttl_ms : eventPayload(event).ttl_ms;
   return typeof ttl === "number" ? ttl : null;
+}
+
+function stableEventValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableEventValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, stableEventValue(item)]),
+  );
+}
+
+function idempotencyHash(
+  event: AgentEvent,
+  payload: Record<string, unknown>,
+): string {
+  const record = event as AgentEvent & Record<string, unknown>;
+  const canonical = isCanonicalEventEnvelope(record)
+    ? {
+        ...Object.fromEntries(
+          Object.entries(record).filter(([key]) => key !== "data" && key !== "timestamp" && key !== "trace"),
+        ),
+        data: payload,
+      }
+    : {
+        type: event.type,
+        data: Object.fromEntries(Object.entries(payload).filter(([key]) => key !== "timestamp")),
+      };
+  return createHash("sha256").update(JSON.stringify(stableEventValue(canonical))).digest("hex");
+}
+
+function ingressSource(event: AgentEvent, fallback: string | null): string {
+  const trusted = (event as AgentEvent & { [EVENT_INGRESS_SOURCE]?: unknown })[EVENT_INGRESS_SOURCE];
+  return typeof trusted === "string" && trusted.trim() ? trusted.trim() : fallback ?? "internal";
+}
+
+function idempotencyScope(correlation: ReturnType<typeof eventCorrelation>, owner: string | null): string {
+  return correlation.projectId ?? correlation.taskId ?? correlation.workflowRunId ?? correlation.sessionId ?? owner ?? "global";
 }
 
 function compactEventValue(value: unknown, depth = 0): unknown {
@@ -352,6 +400,13 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     key: cliTaskKey,
   },
   {
+    name: "project.intent",
+    open: "project.comment.created",
+    closes: ["project.owner.reviewed"],
+    timeoutMs: 60 * 60 * 1000,
+    key: projectOwnerKey,
+  },
+  {
     name: "project.owner",
     open: "project.owner.requested",
     closes: ["project.owner.reviewed"],
@@ -492,10 +547,12 @@ export class DbWriter {
   };
 
   recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
+    const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+    if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
     try {
-      const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-      if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
       const now = Date.now();
+      this.db.exec("BEGIN IMMEDIATE");
+      if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
       this.db.run(
         `UPDATE events
          SET delivery_status = 'accepted',
@@ -506,9 +563,17 @@ export class DbWriter {
          WHERE id = ?`,
         [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
       );
-      if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
-    } catch {
-      /* best-effort delivery metadata */
+      this.db.exec("COMMIT");
+    } catch (error) {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        /* preserve the original failure */
+      }
+      log(
+        "warn",
+        `[event-delivery] failed to record acceptance for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   };
 
@@ -529,15 +594,72 @@ export class DbWriter {
       if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
         (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
       }
-      const body = prepareEventBody(this.persistDir, persistedPayload);
       const correlation = eventCorrelation(persistedPayload);
+      const idempotencyKey =
+        typeof persistedPayload.idempotencyKey === "string" ? persistedPayload.idempotencyKey.trim() : "";
+      const trustedIngressSource = ingressSource(event, source);
+      const scope = idempotencyScope(correlation, owner);
+      const inputHash = idempotencyHash(event, persistedPayload);
+      if (idempotencyKey) {
+        const existing = this.db
+          .prepare(
+            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.source, e.owner, e.timestamp,
+                    t.trace_id, t.parent_event_id
+             FROM events e
+             LEFT JOIN event_traces t ON t.event_id = e.id
+             WHERE e.event_type = ?
+               AND e.ingress_source = ?
+               AND e.idempotency_scope = ?
+               AND e.idempotency_key = ?
+             LIMIT 1`,
+          )
+          .get(event.type, trustedIngressSource, scope, idempotencyKey) as
+          | {
+              id?: unknown;
+              idempotency_hash?: unknown;
+              delivery_status?: unknown;
+              source?: unknown;
+              owner?: unknown;
+              timestamp?: unknown;
+              trace_id?: unknown;
+              parent_event_id?: unknown;
+            }
+          | undefined;
+        const existingId = Number(existing?.id);
+        if (Number.isInteger(existingId) && existingId > 0) {
+          if (existing?.idempotency_hash !== inputHash) {
+            throw new Error(
+              `Idempotency key ${idempotencyKey} was already used with different event input`,
+            );
+          }
+          const retryEvent = event as AgentEvent & Record<string, unknown>;
+          if (typeof existing.source === "string") retryEvent.source = existing.source;
+          if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
+          if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
+          if (typeof existing.trace_id === "string") {
+            event.trace = {
+              traceId: existing.trace_id,
+              ...(typeof existing.parent_event_id === "number" ? { parentEventId: existing.parent_event_id } : {}),
+            };
+          }
+          Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
+          Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+          if (existing.delivery_status === "pending" || existing.delivery_status === "unhandled") {
+            Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+          }
+          this.db.exec("COMMIT");
+          return existingId;
+        }
+      }
+      const body = prepareEventBody(this.persistDir, persistedPayload);
       const info = this.db.run(
         `INSERT INTO events
           (event_type, source, owner, data, body_ref, body_sha256, body_bytes,
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
-           timestamp, urgency, ttl_ms)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
+           idempotency_hash, ingress_source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           event.type,
           source,
@@ -560,6 +682,10 @@ export class DbWriter {
           timestamp,
           urgency,
           ttlMs,
+          idempotencyKey || null,
+          scope,
+          idempotencyKey ? inputHash : null,
+          trustedIngressSource,
         ],
       );
       const rowId = Number(info.lastInsertRowid);

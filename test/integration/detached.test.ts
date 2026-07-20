@@ -57,6 +57,22 @@ function mockEndpoint(handler: ClientHandler): SocketEndpoint {
   };
 }
 
+function onSubscription(socket: Duplex, emit: () => void): void {
+  let buffer = "";
+  socket.on("data", (data) => {
+    buffer += data.toString();
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const frame = JSON.parse(line) as Record<string, unknown>;
+      if (frame.type !== "subscribe") continue;
+      socket.write(JSON.stringify({ type: "ok", command: "subscribe" }) + "\n");
+      emit();
+    }
+  });
+}
+
 // ── readIdentity() tests ───────────────────────────────────────────────
 
 describe("readIdentity", () => {
@@ -162,7 +178,7 @@ describe("sendSocketCommand", () => {
         const lines = buffer.split("\n");
         buffer = lines.pop()!;
         for (const _line of lines) {
-          socket.write(JSON.stringify({ type: "error", message: "Unknown command" }) + "\n");
+          socket.write(JSON.stringify({ type: "error", command: "bad", message: "Unknown command" }) + "\n");
         }
       });
     });
@@ -214,8 +230,7 @@ describe("waitForSocketEvent", () => {
   it("resolves when matching event is received", async () => {
     endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
-      // After a short delay, emit the event we're waiting for
-      setTimeout(() => {
+      onSubscription(socket, () => setTimeout(() => {
         socket.write(
           JSON.stringify({
             type: "session.end",
@@ -224,7 +239,7 @@ describe("waitForSocketEvent", () => {
             data: { sessionId: "s_1", status: "done" },
           }) + "\n",
         );
-      }, 100);
+      }, 10));
     });
 
     const event = await waitForSocketEvent(endpoint, "session.end", { timeoutMs: 5000 });
@@ -236,7 +251,7 @@ describe("waitForSocketEvent", () => {
   it("filters by sessionId when provided", async () => {
     endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
-      setTimeout(() => {
+      onSubscription(socket, () => setTimeout(() => {
         // Wrong session
         socket.write(
           JSON.stringify({
@@ -255,7 +270,7 @@ describe("waitForSocketEvent", () => {
             data: { sessionId: "s_target", status: "error" },
           }) + "\n",
         );
-      }, 100);
+      }, 10));
     });
 
     const event = await waitForSocketEvent(endpoint, "session.end", {
@@ -282,6 +297,7 @@ describe("waitForSocketEvent", () => {
       const timer = setInterval(() => {
         if (!destroyed) socket.write(JSON.stringify({ type: "info", message: "tick" }) + "\n");
       }, 50);
+      onSubscription(socket, () => {});
     });
 
     await expect(waitForSocketEvent(endpoint, "session.end", { timeoutMs: 300 })).rejects.toThrow(
@@ -292,9 +308,9 @@ describe("waitForSocketEvent", () => {
   it("rejects when socket closes before event", async () => {
     endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
-      setTimeout(() => {
+      onSubscription(socket, () => setTimeout(() => {
         socket.destroy();
-      }, 100);
+      }, 10));
     });
 
     await expect(waitForSocketEvent(endpoint, "session.end", { timeoutMs: 5000 })).rejects.toThrow(
@@ -305,11 +321,11 @@ describe("waitForSocketEvent", () => {
   it("ignores non-matching event types", async () => {
     endpoint = mockEndpoint((socket) => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
-      setTimeout(() => {
+      onSubscription(socket, () => setTimeout(() => {
         socket.write(JSON.stringify({ type: "text", agent: "bob", text: "working" }) + "\n");
         socket.write(JSON.stringify({ type: "tool_call", agent: "bob", tool: "exec" }) + "\n");
         socket.write(JSON.stringify({ type: "info", message: "[task] Completed" }) + "\n");
-      }, 100);
+      }, 10));
     });
 
     const event = await waitForSocketEvent(endpoint, "info", { timeoutMs: 5000 });

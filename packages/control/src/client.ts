@@ -6,7 +6,7 @@ import { buildCanonicalEventEnvelope, normalizeEventOwner } from "./event-envelo
 
 export interface SocketResponse {
   type: "ok" | "error" | "status";
-  command?: string;
+  command?: string | null;
   message?: string;
   [key: string]: unknown;
 }
@@ -43,6 +43,7 @@ export function sendSocketCommand(
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
   return new Promise((resolve, reject) => {
+    const expectedCommand = typeof command.type === "string" ? command.type : null;
     let settled = false;
     const settle = (fn: () => void) => {
       if (!settled) {
@@ -97,7 +98,10 @@ export function sendSocketCommand(
         if (!trimmed) continue;
         try {
           const parsed = JSON.parse(trimmed) as SocketResponse;
-          if (parsed.type === "ok" || parsed.type === "error" || parsed.type === command.type) {
+          const isStatusReply = expectedCommand === "status" && parsed.type === "status";
+          const isReply = parsed.command === expectedCommand
+            && (parsed.type === "ok" || parsed.type === "error" || isStatusReply);
+          if (isReply) {
             clearTimeout(timeout);
             client.destroy();
             if (parsed.type === "error") {
@@ -117,7 +121,7 @@ export function sendSocketCommand(
     client.on("close", () => {
       clearTimeout(timeout);
       if (sent) {
-        settle(() => resolve({ type: "ok", command: command.type as string }));
+        settle(() => reject(new Error(`Socket closed before acknowledgement for ${expectedCommand ?? "unknown command"}; outcome unknown`)));
       } else {
         settle(() => reject(new Error("Socket closed before command sent")));
       }
@@ -148,13 +152,18 @@ export function waitForSocketEvent(
       }
     };
     const client = connectSocketEndpoint(socketPath);
+    const sessions = opts?.sessionId ? [opts.sessionId] : ["*"];
     const timeoutMs = opts?.timeoutMs ?? 600_000;
     const timeout = setTimeout(() => {
       client.destroy();
       settle(() => reject(new Error(`Timeout waiting for ${eventType} (${timeoutMs}ms)`)));
     }, timeoutMs);
 
+    let subscribed = false;
     let buffer = "";
+    client.on("connect", () => {
+      client.write(JSON.stringify({ type: "subscribe", sessions }) + "\n");
+    });
     client.on("data", (data) => {
       buffer += data.toString();
       const lines = buffer.split("\n");
@@ -164,6 +173,17 @@ export function waitForSocketEvent(
         if (!trimmed) continue;
         try {
           const event = JSON.parse(trimmed) as SocketEvent;
+          if (!subscribed) {
+            if (event.command !== "subscribe") continue;
+            if (event.type === "error") {
+              clearTimeout(timeout);
+              client.destroy();
+              settle(() => reject(new Error(event.message ?? "Socket subscription failed")));
+              return;
+            }
+            if (event.type === "ok") subscribed = true;
+            continue;
+          }
           if (event.type === eventType) {
             const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
               ? event.data as Record<string, unknown>

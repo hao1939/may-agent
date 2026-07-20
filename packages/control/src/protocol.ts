@@ -1,9 +1,18 @@
 import { buildCanonicalEventEnvelope, isRecord, normalizeEventOwner } from "./event-envelope.js";
 
-export const SOCKET_CONTROL_TYPES = new Set(["subscribe", "status"]);
+export const SOCKET_CONTROL_TYPES = new Set([
+  "subscribe",
+  "status",
+  "project.actions.describe",
+  "project.action.invoke",
+]);
 
 export type SocketFrame =
-  | { kind: "control"; command: "subscribe" | "status"; frame: Record<string, unknown> }
+  | {
+      kind: "control";
+      command: "subscribe" | "status" | "project.actions.describe" | "project.action.invoke";
+      frame: Record<string, unknown>;
+    }
   | { kind: "event"; command: string; event: Record<string, unknown> }
   | { kind: "error"; command: unknown; message: string };
 
@@ -144,7 +153,11 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
   }
 
   if (SOCKET_CONTROL_TYPES.has(cmdType)) {
-    return { kind: "control", command: cmdType as "subscribe" | "status", frame };
+    return {
+      kind: "control",
+      command: cmdType as "subscribe" | "status" | "project.actions.describe" | "project.action.invoke",
+      frame,
+    };
   }
 
   if (UNSUPPORTED_SOCKET_FRAME_TYPES.has(cmdType)) {

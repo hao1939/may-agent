@@ -5,7 +5,7 @@ describe("project-app event helpers", () => {
   it("merges data, payload, and params in eventData", () => {
     expect(
       eventData({
-        type: "project.action.invoked",
+        type: "sample.work.requested",
         data: { action: "old", project: "p1" },
         payload: { action: "run" },
         params: { specId: "spec.a" },

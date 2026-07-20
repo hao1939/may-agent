@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { EventBus } from "./event-bus.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import {
   addSessionTranscriptToEventGraph,
@@ -39,7 +39,168 @@ function attachPersistence(bus: EventBus, root: string): void {
   bus.setDeliveryRecorder(writer.recordDelivery);
 }
 
+describe("retry-safe event ingress", () => {
+  it("returns the original receipt and delivers an idempotent intent once", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const delivered: string[] = [];
+      bus.subscribe((event) => delivered.push(event.type));
+      const intent = {
+        type: "project.comment.created",
+        source: "web-ui",
+        owner: "agent:sample-owner",
+        data: {
+          project: "sample",
+          comment: "advance the project",
+          idempotencyKey: "comment-1",
+        },
+      } as any;
+
+      const first = bus.emit(structuredClone(intent));
+      const retry = bus.emit(structuredClone(intent));
+
+      expect(first[EVENT_ROW_ID]).toBeGreaterThan(0);
+      expect(retry[EVENT_ROW_ID]).toBe(first[EVENT_ROW_ID]);
+      expect(delivered).toEqual(["project.comment.created"]);
+      expect(
+        getDb(root).prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.comment.created'").get(),
+      ).toMatchObject({ count: 1 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects reuse of an idempotency key for different input", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "project.comment.created",
+        source: "web-ui",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "first", idempotencyKey: "comment-1" },
+      } as any);
+
+      expect(() =>
+        bus.emit({
+          type: "project.comment.created",
+          source: "web-ui",
+          owner: "agent:sample-owner",
+          data: { project: "sample", comment: "different", idempotencyKey: "comment-1" },
+        } as any),
+      ).toThrow("already used with different event input");
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("recovers a persisted pending event through the idempotent owner inbox route", () => {
+    const root = tempRoot();
+    try {
+      const writer = new DbWriter(root);
+      const original = {
+        type: "project.comment.created",
+        source: "web-ui",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "advance", idempotencyKey: "pending-1" },
+      } as any;
+      writer.handler(original);
+      const originalId = original[EVENT_ROW_ID];
+
+      const bus = new EventBus();
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const broadFanout: number[] = [];
+      bus.subscribe((event) => {
+        if (event.type !== "project.comment.created") return;
+        broadFanout.push(Number(event[EVENT_ROW_ID]));
+      });
+
+      const retry = bus.emit(structuredClone(original));
+      expect(retry[EVENT_ROW_ID]).toBe(originalId);
+      expect(broadFanout).toEqual([]);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM events").get()).toMatchObject({ count: 1 });
+      expect(getDb(root).prepare("SELECT delivery_status, delivery_route FROM events WHERE id = ?").get(originalId)).toMatchObject({
+        delivery_status: "accepted",
+        delivery_route: "owner_inbox",
+      });
+      expect(getDb(root).prepare(
+        "SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ? AND pair_name = 'owner_inbox'",
+      ).get(originalId))
+        .toMatchObject({ count: 1 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("scopes retries by trusted ingress identity instead of caller source", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const event = {
+        type: "project.comment.created",
+        source: "caller-controlled",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "advance", idempotencyKey: "shared-1" },
+      } as any;
+      const web = structuredClone(event);
+      const telegram = structuredClone(event);
+      Object.defineProperty(web, EVENT_INGRESS_SOURCE, { value: "web-ui" });
+      Object.defineProperty(telegram, EVENT_INGRESS_SOURCE, { value: "telegram" });
+
+      bus.emit(web);
+      bus.emit(telegram);
+
+      expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM events").get()).toMatchObject({ count: 2 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("event delivery metadata", () => {
+  it("rolls back owner-inbox acceptance when its durable continuation cannot be created", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const db = getDb(root);
+      db.exec(`
+        CREATE TRIGGER reject_owner_inbox_pair
+        BEFORE INSERT ON event_pair_runs
+        WHEN NEW.pair_name = 'owner_inbox'
+        BEGIN
+          SELECT RAISE(ABORT, 'owner inbox unavailable');
+        END;
+      `);
+
+      const event = bus.emit({
+        type: "custom.requested",
+        source: "test",
+        owner: "agent:owner",
+        data: { message: "review" },
+      } as any);
+      const rowId = event[EVENT_ROW_ID];
+
+      expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(rowId)).toMatchObject({
+        delivery_status: "pending",
+      });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ?").get(rowId))
+        .toMatchObject({ count: 0 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("creates event trace side tables for graphable history", () => {
     const root = tempRoot();
     try {
@@ -1439,6 +1600,45 @@ describe("event delivery metadata", () => {
         )
         .get() as Record<string, unknown>;
       expect(pair).toMatchObject({ status: "closed", link_type: "closure" });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("closes a project intent with the correlated owner result", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const comment = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "advance" },
+      } as any);
+      const openEventId = Number(comment[EVENT_ROW_ID]);
+      bus.emit({
+        type: "project.owner.reviewed",
+        source: "project-app:sample:task-reconciler",
+        owner: "agent:sample-owner",
+        data: {
+          project: "sample",
+          openEventId,
+          summary: "owner reviewed current state",
+          taskRefs: [{ projectId: "sample", taskId: "runtime/owner-review" }],
+        },
+      } as any);
+
+      expect(
+        getDb(root)
+          .prepare(
+            `SELECT status, open_event_id, close_event_id
+             FROM event_pair_runs
+             WHERE pair_name = 'project.intent'`,
+          )
+          .get(),
+      ).toMatchObject({ status: "closed", open_event_id: openEventId });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
