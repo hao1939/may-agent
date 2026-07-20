@@ -213,6 +213,35 @@ describe("project app loader handler result normalization", () => {
     });
   });
 
+  it("does not apply task actions from a failed result", () => {
+    expect(
+      normalizeTaskHandlerResult(
+        {
+          state: "failed",
+          summary: "the attempt could not complete",
+          evidence: ["command exited 1"],
+          actions: [
+            {
+              kind: "create-task",
+              id: "must-not-apply",
+              parentId: "operations",
+              goal: "This action is not authoritative",
+              mode: "achieve",
+              outputs: ["proof.md"],
+              acceptance: ["Never applied"],
+            },
+          ],
+        },
+        { type: "done", summary: "fallback", runId: "s_owner" },
+      ),
+    ).toMatchObject({
+      state: "failed",
+      summary: "the attempt could not complete; failed results cannot apply task actions",
+      evidence: ["command exited 1"],
+      actions: [],
+    });
+  });
+
   it("rejects the removed progressing result state", () => {
     expect(
       normalizeTaskHandlerResult(
@@ -322,7 +351,6 @@ describe("project app loader handler result normalization", () => {
       ],
     });
   });
-
 });
 
 describe("project app loader", () => {
@@ -571,7 +599,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("applies structured successor actions from failed owner results", async () => {
+  it("applies structured successor actions only from converged owner results", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
     const ownerOptions: Array<Record<string, unknown>> = [];
@@ -592,11 +620,11 @@ describe("project app loader", () => {
             ownerCalls.push(task);
             ownerOptions.push(options);
             return {
-              sessionId: "owner-failed-with-action",
+              sessionId: "owner-converged-with-action",
               status: "done",
               structuredResult: {
-                state: "failed",
-                summary: "current carrier failed but has an exact successor",
+                state: "converged",
+                summary: "current carrier organized an exact successor",
                 evidence: ["owner inspected current facts"],
                 actions: [
                   {
@@ -612,7 +640,7 @@ describe("project app loader", () => {
                   },
                 ],
               },
-              lastAssistantText: "owner failed with action",
+              lastAssistantText: "owner converged with action",
               messages: [],
               duration: "0s",
               outputDir: "",
@@ -629,7 +657,7 @@ describe("project app loader", () => {
           (event) =>
             event.type === "project.task.reconciled" &&
             event.data?.taskId === "work/owner-failed-action" &&
-            event.data?.disposition === "failed-followup",
+            event.data?.disposition === "converged",
         ),
       );
 

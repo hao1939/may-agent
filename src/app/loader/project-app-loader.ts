@@ -753,6 +753,15 @@ export function normalizeTaskHandlerResult(
   }
   const normalizedActions = actionList as ProjectAppTaskAction[];
 
+  if (normalizedState === "failed" && normalizedActions.length > 0) {
+    return {
+      state: "failed",
+      summary: `${normalizedSummary}; failed results cannot apply task actions`,
+      evidence: [...evidence],
+      actions: [],
+    };
+  }
+
   if (normalizedState === "waiting" && exactConditions.length === 0) {
     return {
       state: "failed",
@@ -1051,12 +1060,10 @@ async function reconcileTaskIntent(input: {
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
-  const workflowKey = intent.workflow?.trim() || "";
-  const primaryHandler = workflowKey ? `workflow:${workflowKey}` : "owner";
   const primary = claimProjectAppTask(config, {
     intent,
     appOwner: descriptor.owner,
-    handler: primaryHandler,
+    handler: "auto",
     reason: input.reason ?? event?.type ?? "task-controller",
     trigger: event ? flattened : undefined,
   });
@@ -1085,10 +1092,9 @@ async function reconcileTaskIntent(input: {
     owner: primary.owner,
   });
 
+  const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
   let primaryResult: TaskCapabilityRun;
-  if (!workflowKey) {
-    primaryResult = await runTaskOwner({ opts, descriptor, intent, claim: primary, event });
-  } else {
+  if (workflowKey) {
     primaryResult = await runTaskCapability({
       opts,
       descriptor,
@@ -1100,6 +1106,15 @@ async function reconcileTaskIntent(input: {
       intent,
       claim: primary,
       event,
+    });
+  } else {
+    primaryResult = await runTaskOwner({
+      opts,
+      descriptor,
+      intent,
+      claim: primary,
+      event,
+      ...(intent.workflow ? { fallbackReason: "The bound workflow handed this task to its accountable owner." } : {}),
     });
   }
 
@@ -1166,33 +1181,6 @@ async function reconcileTaskIntent(input: {
     }
   }
 
-  if (primaryHandlerResult.state === "failed" && primaryHandlerResult.actions.length > 0) {
-    try {
-      const apply = completeProjectAppTask(config, primary, {
-        summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        actions: primaryHandlerResult.actions,
-      });
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: primary.generation,
-        attemptId: primary.attemptId,
-        handler: primary.handler,
-        disposition: apply.status === "applied" ? "failed-followup" : "stale",
-        summary: primaryHandlerResult.summary,
-        evidence: primaryHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
-        workflowRunId: primaryResult.runId,
-      });
-      return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
-    } catch (error) {
-      primaryHandlerResult.summary = `Handler failed-action handoff was rejected: ${
-        error instanceof Error ? error.message : String(error)
-      }`;
-    }
-  }
-
   markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
     reason: primaryResult.unavailable
@@ -1211,139 +1199,14 @@ async function reconcileTaskIntent(input: {
     });
     return [];
   }
-
-  const fallback = claimProjectAppTask(config, {
-    intent,
-    appOwner: descriptor.owner,
-    handler: `owner:${primary.owner}`,
-    reason: "workflow-fallback",
-    trigger: event ? flattened : undefined,
-  });
-  if (fallback.kind !== "claimed") {
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-      generation: primary.generation,
-      handler: primary.handler,
-      disposition: "attention",
-      summary: primaryHandlerResult.summary,
-      fallback: fallback.kind,
-    });
-    return [];
-  }
-
-  emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
-    route: "task-controller",
-    generation: fallback.generation,
-    attemptId: fallback.attemptId,
-    handler: fallback.handler,
-    owner: fallback.owner,
-    fallbackFrom: primary.handler,
-  });
-  const fallbackResult = await runTaskOwner({
-    opts,
-    descriptor,
-    intent,
-    claim: fallback,
-    event,
-    fallbackReason: primaryHandlerResult.summary,
-  });
-  const fallbackHandlerResult = fallbackResult.handlerResult;
-  if (fallbackHandlerResult.state === "converged") {
-    try {
-      const apply = completeProjectAppTask(config, fallback, {
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actions: fallbackHandlerResult.actions,
-      });
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, fallback) : null;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: fallback.generation,
-        attemptId: fallback.attemptId,
-        handler: fallback.handler,
-        disposition: apply.status === "applied" ? "converged" : "stale",
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
-        workflowRunId: fallbackResult.runId,
-        fallbackFrom: primary.handler,
-      });
-      return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
-    } catch (error) {
-      fallbackHandlerResult.state = "failed";
-      fallbackHandlerResult.summary = `Owner actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-
-  if (fallbackHandlerResult.state === "waiting") {
-    try {
-      const apply = deferProjectAppTask(config, fallback, {
-        disposition: fallbackHandlerResult.state,
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actions: fallbackHandlerResult.actions,
-        conditions: fallbackHandlerResult.conditions,
-      });
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, fallback) : null;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: fallback.generation,
-        attemptId: fallback.attemptId,
-        handler: fallback.handler,
-        disposition: apply.status === "applied" ? fallbackHandlerResult.state : "stale",
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
-        workflowRunId: fallbackResult.runId,
-        fallbackFrom: primary.handler,
-      });
-      return stale?.reconcileTaskIds ?? apply.reconcileTaskIds;
-    } catch (error) {
-      fallbackHandlerResult.state = "failed";
-      fallbackHandlerResult.summary = `Owner result was rejected: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-
-  if (fallbackHandlerResult.state === "failed" && fallbackHandlerResult.actions.length > 0) {
-    try {
-      const apply = completeProjectAppTask(config, fallback, {
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actions: fallbackHandlerResult.actions,
-      });
-      const stale = apply.status === "stale" ? recoverStaleTaskResult(config, fallback) : null;
-      emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-        generation: fallback.generation,
-        attemptId: fallback.attemptId,
-        handler: fallback.handler,
-        disposition: apply.status === "applied" ? "failed-followup" : "stale",
-        summary: fallbackHandlerResult.summary,
-        evidence: fallbackHandlerResult.evidence,
-        actionsApplied: apply.actionsApplied,
-        ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
-        workflowRunId: fallbackResult.runId,
-        fallbackFrom: primary.handler,
-      });
-      return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
-    } catch (error) {
-      fallbackHandlerResult.summary = `Owner failed-action handoff was rejected: ${
-        error instanceof Error ? error.message : String(error)
-      }`;
-    }
-  }
-
-  markProjectAppTaskAttention(config, fallback, {
-    summary: fallbackHandlerResult.summary,
-    reason: "owner-handler-failed",
-  });
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-    generation: fallback.generation,
-    attemptId: fallback.attemptId,
-    handler: fallback.handler,
-    disposition: "attention",
-    summary: fallbackHandlerResult.summary,
-    fallbackFrom: primary.handler,
+    generation: primary.generation,
+    attemptId: primary.attemptId,
+    handler: primary.handler,
+    disposition: "owner-handoff",
+    summary: primaryHandlerResult.summary,
   });
-  return [];
+  return [intent.id];
 }
 
 function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {

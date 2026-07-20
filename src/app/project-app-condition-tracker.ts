@@ -12,7 +12,6 @@ export type ProjectAppConditionWake = {
   conditionId: string;
   taskId: string;
   intent: ProjectAppTaskIntent;
-  recovery: boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -173,9 +172,8 @@ export function trackProjectAppConditionEvent(
 
     for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
       if (!isCondition(condition)) continue;
-      const recovery = condition.status.state === "true";
-      if (!recovery && !matches(condition, event)) continue;
-      if (!recovery) {
+      if (!matches(condition, event)) continue;
+      if (condition.status.state !== "true") {
         condition.metadata.resourceVersion += 1;
         condition.status = {
           observedGeneration: condition.metadata.generation,
@@ -194,7 +192,6 @@ export function trackProjectAppConditionEvent(
           conditionId: id,
           taskId,
           intent: resourceIntent(resource),
-          recovery,
         });
       }
     }
