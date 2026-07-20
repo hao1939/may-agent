@@ -1099,7 +1099,7 @@ describe("project app task reconciler state", () => {
     });
   });
 
-  it("requeues a previous-runtime attempt when no trigger was persisted", () => {
+  it("requeues a manually orphaned previous-runtime attempt when no trigger was persisted", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
@@ -1110,6 +1110,7 @@ describe("project app task reconciler state", () => {
 
     const interrupted = readTaskState(config);
     interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
+    delete interrupted.attempts![claim.attemptId].trigger;
     saveTaskState(config, interrupted);
 
     const [recovery] = recoverableProjectAppTaskAttempts(config);
@@ -1133,18 +1134,38 @@ describe("project app task reconciler state", () => {
     expect(acknowledgeProjectAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
   });
 
-  it("reclaims a previous-runtime attempt without a trigger from current evidence during resync", () => {
+  it("persists a synthetic controller trigger so task-controller attempts survive restart", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
       appOwner: "app-owner",
       handler: "workflow:known-workflow",
     });
+    expect(claim).toMatchObject({
+      kind: "claimed",
+      trigger: {
+        type: "project.task.tick",
+        source: "project-app:sample:task-controller",
+        target: { project: "sample", taskId: "evaluate:session-1" },
+        reason: "task-controller",
+      },
+    });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     const interrupted = readTaskState(config);
     interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
     saveTaskState(config, interrupted);
+
+    const [recovery] = recoverableProjectAppTaskAttempts(config);
+    expect(recovery).toMatchObject({
+      taskId: claim.taskId,
+      trigger: {
+        type: "project.task.tick",
+        source: "project-app:sample:task-controller",
+        target: { project: "sample", taskId: "evaluate:session-1" },
+        reason: "task-controller",
+      },
+    });
 
     const reclaimed = declareAndClaimTask(config, {
       intent: intent(),
@@ -1156,6 +1177,12 @@ describe("project app task reconciler state", () => {
       kind: "claimed",
       taskId: claim.taskId,
       generation: claim.generation,
+      trigger: {
+        type: "project.task.tick",
+        source: "project-app:sample:task-controller",
+        target: { project: "sample", taskId: "evaluate:session-1" },
+        reason: "task-controller",
+      },
     });
     if (reclaimed.kind !== "claimed") throw new Error("expected reclaimed claim");
 
@@ -1165,11 +1192,16 @@ describe("project app task reconciler state", () => {
     });
     expect(released.attempts?.[claim.attemptId]).toMatchObject({
       state: "interrupted",
-      failureReason: "previous-runtime-attempt-requeued",
     });
     expect(released.attempts?.[reclaimed.attemptId]).toMatchObject({
       state: "running",
       reason: "task-controller",
+      trigger: {
+        type: "project.task.tick",
+        source: "project-app:sample:task-controller",
+        target: { project: "sample", taskId: "evaluate:session-1" },
+        reason: "task-controller",
+      },
     });
     expect(released.active_task_ids).toContain(claim.taskId);
   });
