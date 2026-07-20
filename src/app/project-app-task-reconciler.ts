@@ -621,6 +621,42 @@ export function observeProjectAppTaskIntent(
     const specHash = projectAppTaskSpecHash(input.intent, owner);
     const receipt = tree.receipts?.[input.intent.id];
     if (receipt && receipt.specHash === specHash && input.intent.mode === "achieve") {
+      const duplicateTask = tree.tasks[input.intent.id];
+      const duplicateResource = tree.resources?.[input.intent.id];
+      if (duplicateTask || duplicateResource) {
+        const liveChildren = (duplicateTask?.children ?? []).filter((childId) => tree.tasks[childId]);
+        if (liveChildren.length > 0) {
+          throw new Error(
+            `Task ${input.intent.id} has a matching completion receipt but its stale live duplicate cannot be pruned while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
+              liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
+            }`,
+          );
+        }
+        const now = new Date().toISOString();
+        if (duplicateResource?.status.currentAttemptId) {
+          finishAttempt(
+            tree,
+            duplicateResource,
+            "interrupted",
+            "Matching completion receipt already exists; pruning stale live duplicate",
+            now,
+          );
+        }
+        if (duplicateTask) {
+          unlinkTaskConditions(tree, duplicateTask);
+          const parent = duplicateTask.parent_id ? tree.tasks[duplicateTask.parent_id] : undefined;
+          if (parent) parent.children = (parent.children ?? []).filter((id) => id !== duplicateTask.id);
+          delete tree.tasks[duplicateTask.id];
+        } else if (duplicateResource?.status.conditionIds?.length) {
+          touchResource(duplicateResource, { conditionIds: [] });
+          pruneUnlinkedConditions(tree);
+        }
+        delete tree.resources?.[input.intent.id];
+        delete tree.taskTriggers?.[input.intent.id];
+        pruneTaskAttempts(tree);
+        refreshActiveTaskProjection(tree);
+        saveTaskState(config, tree);
+      }
       return {
         kind: "completed",
         taskId: input.intent.id,

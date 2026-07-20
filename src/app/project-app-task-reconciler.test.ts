@@ -681,6 +681,142 @@ describe("project app task reconciler state", () => {
     expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("evaluate:session-1");
   });
 
+  it("prunes a stale live duplicate when a matching achieve receipt already exists", () => {
+    const { config } = fixture();
+    const taskIntent = intent();
+    const claim = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    completeProjectAppTask(config, claim, { summary: "session evaluated" });
+
+    const tree = readTaskState(config);
+    tree.resources = {
+      ...(tree.resources ?? {}),
+      [taskIntent.id]: {
+        metadata: { id: taskIntent.id, generation: claim.generation, resourceVersion: 2 },
+        spec: {
+          parentId: taskIntent.parentId,
+          outcome: taskIntent.outcome,
+          acceptance: [...taskIntent.acceptance],
+          mode: taskIntent.mode,
+          owner: "branch-owner",
+          workflow: taskIntent.workflow,
+          outputs: [...(taskIntent.outputs ?? [])],
+        },
+        status: {
+          observedGeneration: claim.generation,
+          phase: "attention",
+          updatedAt: "2026-07-20T00:00:00.000Z",
+          summary: "stale duplicate attention",
+          conditionIds: [],
+        },
+      },
+    };
+    tree.tasks[taskIntent.id] = {
+      id: taskIntent.id,
+      parent_id: taskIntent.parentId,
+      children: [],
+      state: "review",
+    };
+    tree.tasks.operations.children = [...new Set([...(tree.tasks.operations.children ?? []), taskIntent.id])];
+    saveTaskState(config, tree);
+
+    expect(
+      observeProjectAppTaskIntent(config, {
+        intent: taskIntent,
+        appOwner: "app-owner",
+      }),
+    ).toMatchObject({ kind: "completed", taskId: taskIntent.id, generation: claim.generation });
+
+    const repaired = readTaskState(config);
+    expect(repaired.resources?.[taskIntent.id]).toBeUndefined();
+    expect(repaired.tasks[taskIntent.id]).toBeUndefined();
+    expect(repaired.tasks.operations.children).not.toContain(taskIntent.id);
+    expect(repaired.receipts?.[taskIntent.id]).toBeDefined();
+  });
+
+  it("does not orphan live children while pruning a stale receipt duplicate", () => {
+    const { config } = fixture();
+    const taskIntent = intent();
+    const claim = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    completeProjectAppTask(config, claim, { summary: "session evaluated" });
+
+    const tree = readTaskState(config);
+    tree.resources = {
+      ...(tree.resources ?? {}),
+      [taskIntent.id]: {
+        metadata: { id: taskIntent.id, generation: claim.generation, resourceVersion: 2 },
+        spec: {
+          parentId: taskIntent.parentId,
+          outcome: taskIntent.outcome,
+          acceptance: [...taskIntent.acceptance],
+          mode: taskIntent.mode,
+          owner: "branch-owner",
+          workflow: taskIntent.workflow,
+          outputs: [...(taskIntent.outputs ?? [])],
+        },
+        status: {
+          observedGeneration: claim.generation,
+          phase: "attention",
+          updatedAt: "2026-07-20T00:00:00.000Z",
+          summary: "stale duplicate attention",
+          conditionIds: [],
+        },
+      },
+      "work/live-child": {
+        metadata: { id: "work/live-child", generation: 1, resourceVersion: 1 },
+        spec: {
+          parentId: taskIntent.id,
+          outcome: "Finish live child work",
+          acceptance: ["Live child work is complete"],
+          mode: "achieve",
+          owner: "branch-owner",
+          outputs: [],
+        },
+        status: {
+          observedGeneration: 0,
+          phase: "pending",
+          updatedAt: "2026-07-20T00:00:00.000Z",
+          summary: "Live child is still pending",
+          conditionIds: [],
+        },
+      },
+    };
+    tree.tasks[taskIntent.id] = {
+      id: taskIntent.id,
+      parent_id: taskIntent.parentId,
+      children: ["work/live-child"],
+      state: "review",
+    };
+    tree.tasks["work/live-child"] = {
+      id: "work/live-child",
+      parent_id: taskIntent.id,
+      children: [],
+      state: "backlog",
+    };
+    tree.tasks.operations.children = [...new Set([...(tree.tasks.operations.children ?? []), taskIntent.id])];
+    saveTaskState(config, tree);
+
+    expect(() =>
+      observeProjectAppTaskIntent(config, {
+        intent: taskIntent,
+        appOwner: "app-owner",
+      }),
+    ).toThrow("cannot be pruned while it has live children: work/live-child");
+
+    const preserved = readTaskState(config);
+    expect(preserved.tasks[taskIntent.id]?.children).toEqual(["work/live-child"]);
+    expect(preserved.tasks["work/live-child"]?.parent_id).toBe(taskIntent.id);
+  });
+
   it("creates a new achieve generation when a completed task specification changes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
