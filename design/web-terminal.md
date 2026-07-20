@@ -28,22 +28,38 @@ Only the active browser client should control the pty size:
 This keeps stale localhost/tunnel tabs from fighting over the terminal size
 while preserving normal multi-window viewing.
 
-## Scrollback
+## Mouse, Clipboard, and Scrollback
 
-All web terminal profiles use tmux scrollback/copy-mode.
+The browser owns mouse selection, copy, paste, and the context menu. Tmux mouse
+support is disabled for every web terminal session. Wheel scrolling is handled
+separately: the browser sends an explicit scroll request and the bridge moves
+the shared tmux pane through copy mode.
 
-Even Shell and Ops are displayed by attaching a browser pty to a tmux session.
-That means the browser is not connected directly to the shell process; it is
-viewing a tmux client. Browser/xterm scrollback is therefore not a reliable way
-to inspect previous output.
+This keeps the interaction model simple:
 
-Tmux mouse support is enabled for every web terminal session. Wheel/PageUp
-behavior should inspect the real tmux pane history instead of trying to fake
-browser scrollback.
+- ordinary drag selects text in xterm;
+- the browser context menu exposes copy and paste;
+- the toolbar Copy and Paste buttons use the browser clipboard; and
+- tmux does not open a second menu or capture selection.
 
-This is especially important for full-screen TUIs such as Claude and Codex,
-which use the terminal alternate screen. It also applies to Shell, Ops, and May
-Console because they are still viewed through tmux.
+Scrolling the wheel over the terminal enters server-side history without
+enabling tmux mouse handling. Scrolling down to the bottom returns to the live
+pane automatically. The toolbar **Live** button and any keyboard/paste input
+also leave history view immediately. Tmux's copy-mode position label is hidden
+because it would otherwise cover terminal content while scrolling.
+
+Tmux remains the persistent server-side process boundary. Its advanced mouse
+copy-mode UI is intentionally not exposed through the web terminal.
+
+xterm keeps local scrollback as a convenience. It is per browser client and is
+not durable session history. Tmux keeps the shared server-side history used by
+wheel scrolling, including after a browser refresh. Because this history view
+belongs to the shared tmux pane, all browser viewers see it; typing from an
+active viewer returns the pane to the live application.
+
+Codex is launched with `--no-alt-screen`, its documented inline mode for
+preserving terminal scrollback. Claude has no equivalent launch flag in the
+installed CLI, so the tmux history path is the common fallback.
 
 ## Expected Refresh Behavior
 
@@ -83,8 +99,8 @@ tmux -L may-web display-message -p -t may-web-codex '#{pane_width}x#{pane_height
 Use the matching tmux target for the profile being checked, such as
 `may-web-shell`, `may-web-claude`, or `may-web-codex`.
 
-If a profile cannot scroll to previous output, confirm its tmux session has
-mouse enabled:
+If tmux and the browser both react to a mouse click, confirm the profile has
+tmux mouse handling disabled:
 
 ```sh
 tmux -L may-web show-options -t may-web-codex mouse
@@ -92,3 +108,6 @@ tmux -L may-web show-options -t may-web-claude mouse
 tmux -L may-web show-options -t may-web-shell mouse
 tmux -L may-web show-options -t may-web-ops mouse
 ```
+
+Each command should report `mouse off`. Restart the affected web terminal
+profile after deploying a change to the bridge, then hard-refresh the browser.
