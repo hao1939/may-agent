@@ -610,6 +610,12 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain('kind: "create-task"');
       expect(ownerCalls[0]).toContain("Do not invent action names");
       expect(ownerCalls[0]).toContain("missing evidence is work to do");
+      expect(ownerCalls[0]).toContain(
+        'Conditions belong only to the current task when you return state "waiting"',
+      );
+      expect(ownerCalls[0]).toContain(
+        "If you return state \"converged\" with a successor wait task action",
+      );
       expect(ownerCalls[0]).toContain("Parent relationships express containment and decomposition only");
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
       expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
