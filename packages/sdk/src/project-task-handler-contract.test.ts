@@ -47,6 +47,35 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("normalizes app/project root aliases on create actions", () => {
+    const admitted = admitProjectAppTaskHandlerResult(
+      {
+        state: "converged",
+        summary: "Created one bounded follow-up",
+        evidence: ["review:current-frontier"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "work/follow-up",
+            parentId: "aks-rp-e2e",
+            outcome: "Finish the bounded follow-up.",
+            acceptance: ["The follow-up has exact evidence."],
+          },
+        ],
+      },
+      {
+        ...workflowOptions,
+        rootParentAliases: ["aks-rp-e2e"],
+      },
+    );
+
+    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
+      kind: "create-task",
+      id: "work/follow-up",
+      parentId: "app-root",
+    });
+  });
+
   it("preserves domain input, dependencies, and explicit standing mode", () => {
     const admitted = admitProjectAppTaskHandlerResult(
       {
