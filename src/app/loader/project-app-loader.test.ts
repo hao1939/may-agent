@@ -210,6 +210,21 @@ describe("project app loader handler result normalization", () => {
     });
   });
 
+  it("rejects a done owner session without a schema-backed task result", () => {
+    expect(
+      normalizeTaskHandlerResult(
+        undefined,
+        { type: "done", summary: "owner said done without result", runId: "s_owner" },
+        { allowNeedsOwner: false },
+      ),
+    ).toMatchObject({
+      state: "error",
+      summary: expect.stringContaining("Handler result was rejected:"),
+      evidence: ["workflow-run:s_owner"],
+      actions: [],
+    });
+  });
+
   it("rejects failed as a removed handler decision state", () => {
     expect(
       normalizeTaskHandlerResult(
@@ -610,12 +625,8 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain('kind: "create-task"');
       expect(ownerCalls[0]).toContain("Do not invent action names");
       expect(ownerCalls[0]).toContain("missing evidence is work to do");
-      expect(ownerCalls[0]).toContain(
-        'Conditions belong only to the current task when you return state "waiting"',
-      );
-      expect(ownerCalls[0]).toContain(
-        "If you return state \"converged\" with a successor wait task action",
-      );
+      expect(ownerCalls[0]).toContain('Conditions belong only to the current task when you return state "waiting"');
+      expect(ownerCalls[0]).toContain('If you return state "converged" with a successor wait task action');
       expect(ownerCalls[0]).toContain("Parent relationships express containment and decomposition only");
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
       expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
@@ -943,7 +954,17 @@ describe("project app loader", () => {
       );
 
       expect(ownerCalls).toHaveLength(1);
-      expect(ownerOptions[0]).toMatchObject({ projectId: "sample" });
+      expect(ownerOptions[0]).toMatchObject({
+        projectId: "sample",
+        requireFinish: true,
+        source: "project-app-task-owner",
+      });
+      expect(ownerOptions[0]?.outputSchema).toBeTruthy();
+      expect(ownerCalls[0]).toContain("## Required final call shape");
+      expect(ownerCalls[0]).toContain('"result"');
+      expect(ownerCalls[0]).toContain('"state": "converged"');
+      expect(ownerCalls[0]).toContain('"state": "waiting"');
+      expect(ownerCalls[0]).toContain("A completion without result leaves this task unresolved.");
       const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(state.receipts["work/owner-failed-action"]).toBeTruthy();
@@ -1027,6 +1048,10 @@ describe("project app loader", () => {
       await waitUntil(() => {
         const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
         return state.resources["work/target"]?.metadata?.generation === 2;
+      });
+      await waitUntil(() => {
+        const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+        return state.resources["work/target"]?.status?.observedGeneration === 2;
       });
 
       bus.emit({ type: "sample.work", project: "sample", itemId: "owner-stale-action", ownerOnly: true } as any);
@@ -1806,8 +1831,7 @@ describe("project app loader", () => {
       });
       expect(
         events.filter(
-          (event) =>
-            event.type === "project.owner.reviewed" && event.data?.openEventId === secondCommentEventId,
+          (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondCommentEventId,
         ),
       ).toHaveLength(1);
     } finally {

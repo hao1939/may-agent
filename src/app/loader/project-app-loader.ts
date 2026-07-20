@@ -457,9 +457,7 @@ function makeContext(
         owner: `agent:${descriptor.owner}`,
       });
       if (envelope.type === "project.owner.requested" && parentEvent?.type === "project.comment.created") {
-        const inputEventId = Number(
-          (parentEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID],
-        );
+        const inputEventId = Number((parentEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
         if (Number.isInteger(inputEventId) && inputEventId > 0) {
           if (envelope.data.inputEventId === undefined) envelope.data.inputEventId = inputEventId;
           if (envelope.data.inputEventType === undefined) envelope.data.inputEventType = parentEvent.type;
@@ -809,12 +807,58 @@ async function runTaskOwner(input: {
     `You are the accountable owner for Agent App ${descriptor.id}.`,
     "Resolve the task from current evidence and, for achieve tasks, perform the bounded work required by the outcome and acceptance when your tools can do it. Do not edit task-tree storage directly.",
     "Return your decision through finish().result using state, summary, evidence, actions, and conditions.",
+    "",
+    "## Required final call shape",
+    "Call finish() exactly once as your final action. The session status only says whether the agent turn succeeded; the task decision must be inside result.state.",
+    "A completion without result leaves this task unresolved.",
+    "Converged example:",
+    "```json",
+    JSON.stringify(
+      {
+        status: "success",
+        summary: "Task converged with evidence.",
+        result: {
+          state: "converged",
+          summary: "Task converged with evidence.",
+          evidence: ["path/or/run/proof"],
+          actions: [],
+        },
+      },
+      null,
+      2,
+    ),
+    "```",
+    "Waiting example:",
+    "```json",
+    JSON.stringify(
+      {
+        status: "success",
+        summary: "Waiting for an exact observable condition.",
+        result: {
+          state: "waiting",
+          summary: "Waiting for an exact observable condition.",
+          evidence: ["queued pipeline-run:123"],
+          actions: [],
+          conditions: [
+            {
+              id: "pipeline-run:123-completed",
+              type: "pipeline.run.completed",
+              subject: "pipeline-run:123",
+              expected: { field: "state", equals: "completed" },
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+    "```",
     'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting with exact Conditions.',
     "Valid states for this owner result are exactly: converged or waiting.",
     'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, either do that concrete work now and report the evidence, or absorb the failed carrier through a converged result with exact failure evidence and a bounded successor/escalation action.',
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up.",
     "Use waiting only when there is a real machine-observable wake event. Every Condition must be an object with id, type, subject, and expected.",
-    "Conditions belong only to the current task when you return state \"waiting\". If you return state \"converged\" with a successor wait task action, put the wake facts in that task action input/acceptance and omit top-level conditions.",
+    'Conditions belong only to the current task when you return state "waiting". If you return state "converged" with a successor wait task action, put the wake facts in that task action input/acceptance and omit top-level conditions.',
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
     "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
     "If no exact machine-observable Condition exists, do not return waiting. Return converged with exact evidence and supported successor/escalation actions when this carrier is finished; execution errors are reported by the runtime, not as a fourth task state.",
@@ -1000,10 +1044,7 @@ function taskTriggerWithOwnerIntents(
 ): Record<string, unknown> {
   if (event.type !== "project.owner.requested" && event.type !== "project.comment.created") return event;
   const previous = readProjectAppTaskTrigger(config, taskId);
-  const refs = [
-    ...(previous ? ownerIntentRefs(previous) : []),
-    ...ownerIntentRefs(event),
-  ];
+  const refs = [...(previous ? ownerIntentRefs(previous) : []), ...ownerIntentRefs(event)];
   return {
     ...event,
     ownerIntentRefs: [...new Map(refs.map((ref) => [ref.eventId, ref])).values()],
@@ -1378,14 +1419,7 @@ async function reconcileTask(input: {
       input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
-    emitOwnerResultForTask(
-      opts,
-      descriptor,
-      event,
-      intent.id,
-      primaryHandlerResult.summary,
-      "attention",
-    );
+    emitOwnerResultForTask(opts, descriptor, event, intent.id, primaryHandlerResult.summary, "attention");
     return [];
   }
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1442,10 +1476,7 @@ function loadedProjectAppDescriptor(bus: EventBus, projectId: string): ProjectAp
   return (appRouterDescriptorsByBus.get(bus) ?? []).find((descriptor) => descriptor.id === normalized);
 }
 
-export function describeLoadedProjectAppActions(
-  bus: EventBus,
-  projectId: string,
-): ProjectAppActionDescription[] {
+export function describeLoadedProjectAppActions(bus: EventBus, projectId: string): ProjectAppActionDescription[] {
   const descriptor = loadedProjectAppDescriptor(bus, projectId);
   if (!descriptor) throw new Error(`Project app ${projectId} is not loaded`);
   return Object.entries(descriptor.app.actions ?? {}).map(([id, action]) => ({
@@ -1469,9 +1500,7 @@ export function invokeLoadedProjectAppAction(input: {
   if (!action) throw new Error(`Project app ${descriptor.id} has no action ${input.actionId}`);
   if (!Check(action.inputSchema, input.params)) {
     const first = [...Errors(action.inputSchema, input.params)][0];
-    throw new Error(
-      `Invalid input for ${descriptor.id}.${input.actionId}: ${first?.message ?? "schema mismatch"}`,
-    );
+    throw new Error(`Invalid input for ${descriptor.id}.${input.actionId}: ${first?.message ?? "schema mismatch"}`);
   }
   const semantic = normalizeEvent(action.event(input.params), {
     source: `project-app:${descriptor.id}:action:${input.actionId}`,
