@@ -86,8 +86,10 @@ projects/<id>.app/
 ```
 
 The public unit is the app. The execution unit remains an agent. Workflows live
-under the agent that owns the experience. Historical Markdown projects and
-app-root workflow registries are not runtime compatibility paths.
+under the agent that owns the experience. New work uses the `.app` layout;
+legacy project-agent discovery remains a bounded migration reader, not a model
+for new apps. Historical Markdown project content and app-root workflow
+registries are not task-runtime authorities.
 
 Each task-enabled app has one resolver, one controller, and one deduplicating
 key queue. Loops, focus plans, and one-off work are task resources, not
@@ -159,14 +161,14 @@ authority. See [storage.md](storage.md).
 
 | Area                        | Current implementation                                                             |
 | --------------------------- | ---------------------------------------------------------------------------------- |
-| Daemon assembly             | `src/app/app-runtime.ts`, `src/app/daemon.ts`                                      |
-| Agent preparation/execution | `src/app/loader/`, `src/lib/agent-execution.ts`, `src/lib/agent-runner.ts`         |
-| Agent App hosting           | `src/app/loader/project-app-loader.ts`                                             |
-| Task mechanics              | `src/app/project-app-task-controller.ts`, `src/app/project-app-task-reconciler.ts` |
-| Events and persistence      | `src/app/event-bus.ts`, `src/lib/db/`                                              |
-| Workflow runtime            | `src/lib/workflow-tool.ts`                                                         |
-| HTTP/UI                     | `src/app/http/`, `packages/webui/`                                                 |
-| Public SDK                  | `packages/sdk/`                                                                    |
+| Daemon assembly             | `projects/may-agent/src/app/app-runtime.ts`, `projects/may-agent/src/app/daemon.ts`                                      |
+| Agent preparation/execution | `projects/may-agent/src/app/loader/`, `projects/may-agent/src/lib/agent-execution.ts`, `projects/may-agent/src/lib/agent-runner.ts`         |
+| Agent App hosting           | `projects/may-agent/src/app/loader/project-app-loader.ts`                                             |
+| Task mechanics              | `projects/may-agent/src/app/project-app-task-controller.ts`, `projects/may-agent/src/app/project-app-task-reconciler.ts` |
+| Events and persistence      | `projects/may-agent/src/app/event-bus.ts`, `projects/may-agent/src/lib/db/`                                              |
+| Workflow runtime            | `projects/may-agent/src/lib/workflow-tool.ts`                                                         |
+| HTTP/UI                     | `projects/may-agent/src/app/http/`, `projects/may-agent/packages/webui/`                                                 |
+| Public SDK                  | `projects/may-agent/packages/sdk/`                                                                    |
 
 ## Invariants
 

@@ -1,302 +1,173 @@
 # HTTP API and WebUI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Partial.
+**Implementation status:** Implemented; compatibility endpoints remain thin
+adapters over the same daemon/event and read-model boundaries.
 
-## Problem
+## Purpose
 
-The May Agent browser UI used to live under `packages/webui`, next to server-adapter code. That made the package name misleading because the server code does more than render UI:
+The HTTP adapter is the browser-facing read and control boundary for May-agent.
+It serves the default WebUI, exposes bounded read models, streams live events,
+and translates human controls into the same daemon/event paths used by CLI,
+Telegram, and May Console.
 
-- reads `.state/may.db` and transcript files
-- resolves agent, project, and state paths
-- exposes `/api/*` routes
-- serves static WebUI assets
-- proxies websocket subscriptions to the daemon socket
-- sends steering commands to the daemon control interface
-- builds WebUI read models such as loop traces and project summaries
+It is infrastructure, not a project controller:
 
-Those are infra adapter responsibilities. Project UIs should remain first-class project resources, but they should not own the API server.
+```text
+browser
+  -> HTTP read model or canonical control event
+  -> daemon/runtime authority
+  -> project, task, session, metric, or event state
+```
 
-## Decision
+The adapter must not own project strategy, task acceptance, workflow policy, or
+another copy of runtime state.
 
-Move the HTTP adapter into the May Agent root application under
-`projects/may-agent/src/app/http`. Keep the default browser UI source in the
-private `@may-agent/webui` package and generate one served deployment target at
-`PROJECTS_ROOT/platform/ui`. Project-owned UIs remain independent static
-resources rather than copies of the default UI.
+## Source and process ownership
 
-The HTTP adapter is the Web-facing control/read interface for May Agent. It should align with the infra SDK and control-plane vocabulary, with extra read-model endpoints that make the WebUI efficient and understandable.
+There is one runtime binary: `may-agent`. Web mode runs with
+`may-agent --web`; deployment may use a separate process group, but it executes
+the same binary.
 
-There is one compiled runtime binary: `may-agent`. WebUI runs as a mode of that binary with `may-agent --web`. Supervisor may keep a separate `may-agent-web` process group for lifecycle isolation, but it should execute the same `may-agent` binary instead of a dedicated WebUI binary.
+Current source ownership:
 
-Static project resources are visible under `/projects/*`, backed directly by
-`PROJECTS_ROOT`. The root path and browser application routes serve
-`PROJECTS_ROOT/platform/ui/index.html`; if it is absent, the root falls back to
-the `/projects` directory listing.
+```text
+projects/may-agent/src/app/http/       # HTTP, websocket, and read-model adapter
+projects/may-agent/packages/webui/static/  # editable default browser UI
+projects/platform/ui/                 # generated served UI target
+projects/<id>.app/ui/                 # optional independent domain UI
+```
 
-## Ownership
+Edit the default UI only under `projects/may-agent/packages/webui/static`, then run
+`bun run ui:sync`. Do not hand-edit the generated platform target. A
+project-specific UI remains owned by its app and uses the shared HTTP/control
+contracts rather than private runtime storage.
 
-| Area | Owner | Notes |
-| --- | --- | --- |
-| HTTP route dispatch | `projects/may-agent/src/app/http` | Bun server, route table, request/response shape |
-| Static file serving | `projects/may-agent/src/app/http` | Serves files from `PROJECTS_ROOT`; `/api/*` and `/ws` stay reserved |
-| Daemon socket bridge | `projects/may-agent/src/app/http` + `projects/may-agent/packages/control` | HTTP adapter sends events through control package |
-| DB/file read models | `projects/may-agent/src/app/http/read-model` | Projections for UI and diagnostics |
-| WebUI source package | `packages/webui/static` | Source of truth for the default May Agent browser UI; no HTTP adapter code |
-| Generated default UI assets | `PROJECTS_ROOT/platform/ui` | Sole deployment copy generated from `packages/webui/static` |
-| Project-specific UI assets | `PROJECTS_ROOT/<project>/ui` or a matching `.app/ui` | Optional independent domain UI; never a generated default-UI copy |
-| Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
-| Project-local agents | `PROJECTS_ROOT/<project>/agents` | Optional agents shipped with a project; loaded by normal runtime discovery |
-| Socket protocol | `packages/control` | Transport protocol and daemon socket client/server |
+## Read boundary
 
-## API Shape
+GET endpoints may aggregate bounded SQLite projections, task read models, and
+owned artifacts. They return an explicit API model rather than exposing table
+rows or filesystem layout as the public contract.
 
-The API has two layers.
+A read model should:
 
-### Infra-Aligned API
+- identify its source and measurement/freshness time;
+- distinguish missing, unknown, stale, and structurally invalid data;
+- use stable project, task, session, workflow, event, metric, and alert IDs;
+- bound timelines, transcripts, completion summaries, and large collections;
+- preserve canonical task phase, generation, Conditions, readiness, and
+  integrity findings; and
+- surface trace/read failures without changing the underlying domain meaning.
 
-These endpoints should map to May Agent infra concepts and use the same vocabulary as SDK/control events.
+The server may read canonical task state to build a projection. The browser
+does not infer controller eligibility or write a repaired interpretation back.
 
-Examples:
+The executable route table in `projects/may-agent/src/app/http/server.ts` is the current endpoint
+catalog. Stable API families include:
 
-- `POST /api/agents/:agent/sessions` -> run an agent session
-- `POST /api/workflows/:workflow/runs` -> run a workflow
-- `POST /api/sessions/:sessionId/resume` -> resume a session
-- `POST /api/sessions/:sessionId/cancel` -> request session cancellation
-- `POST /api/events` -> emit a daemon event
-- `GET /api/metrics` and `GET /api/metrics/:id/history` -> metric state and observations
-- `GET /api/projects` and `GET /api/projects/:projectId` -> project state
-- `POST /api/projects/:projectId/comments` -> append human direction and trigger work
+| Family | Responsibility |
+| --- | --- |
+| Health and overview | Liveness, stats, digest, and bounded dashboard readouts |
+| Events and traces | Event queries, delivery health, graph detail, ingress, and live websocket updates |
+| Agents and sessions | Agent identity, activity, transcript/result detail, evaluation, and steering |
+| Projects and tasks | Project readout, canonical task collection/detail, bounded completions, artifacts, and comments |
+| Metrics and alerts | Current metric/alert state, history, calibration, and explicit resolution |
+| Terminal | Shared browser terminal profiles and websocket transport |
 
-Mutation rule: mutating endpoints should go through infra/control events unless the mutation itself is an established infra primitive. The HTTP adapter should not silently bypass the daemon for session/workflow/project execution.
-
-### WebUI View API
-
-These endpoints are allowed to aggregate DB/files into WebUI-specific read models. They exist to support operator cognition, not to define core infra.
-
-Examples:
-
-- `GET /api/views/dashboard`
-- `GET /api/views/agents/:agent`
-- `GET /api/views/projects/:projectId`
-- `GET /api/views/projects/:projectId/capability-model`
-- `GET /api/views/sessions/:sessionId/timeline`
-- `GET /api/views/loop-trace?...`
-
-Read-model rule: view endpoints may read the DB and project files directly, but should return explicit projections rather than leaking schema details as the public API.
-
-## Current API Inventory
-
-This inventory reflects the route table in `projects/may-agent/src/app/http/server.ts` as of
-2026-06-08. It is intentionally grouped by role instead of by implementation
-order.
-
-| Role | Current endpoints | Boundary read |
-|------|-------------------|---------------|
-| Platform health | `GET /api/liveness`, `GET /api/stats`, `GET /api/digest` | Infra/read model. |
-| Event stream and ingress | `GET /api/events`, `POST /api/events`, `GET /ws` | Events can be queried, streamed, and emitted through the daemon socket. |
-| Agent views | `GET /api/agents`, `/activity`, `/timeline`, `/health`, `/:agent/detail`, `/:agent/about`, `/:agent/default-session` | WebUI projections over agents, sessions, and files. |
-| Agent/session steering | `POST /api/agents/:agent/message`, `POST /api/agents/:agent/heartbeat-now`, `POST /api/sessions/:id/message`, `POST /api/sessions/:id/cancel` | Convenience steering endpoints. They should keep routing through the daemon socket and leave durable events/traces. |
-| Session diagnostics | `GET /api/sessions/:id`, `/transcript`, `/raw-log`, `/eval`, `POST /api/sessions/:id/eval`, `/eval/comment` | Read models plus evaluator dispatch convenience. |
-| Metrics and alerts | `GET /api/metrics`, `GET /api/metrics/:id/history`, `POST /api/metrics/:id/threshold`, `POST /api/alerts/:id/resolve` | Mixed: reads are projections; threshold/resolve currently update DB directly and emit best-effort events. |
-| Projects | `GET /api/projects`, `/content`, `/artifact`, `/detail`, `/lineage`, `/journal`, `/discussion`, `/sessions`, `POST /api/projects/comment` | WebUI project projections plus a comment convenience endpoint. |
-| Terminals | `GET/POST /api/terminals`, terminal websocket, resize, restart | Local WebUI operator tool, not project/domain API. |
-| Static project UI | `/projects/<name>/...` | Static files from project-owned UI directories. `/api/*` remains infra-owned. |
-| Benchmarks/browse/learning/trace | `/api/benchmarks*`, `/api/browse`, `/api/learning`, `/api/loop-trace` | Diagnostics/read-model surfaces; keep or migrate behind explicit view endpoints. |
-
-No generic project action endpoint is part of the current accepted API. A
-hardcoded `/api/projects/action` experiment was rejected because it put
-project-domain execution inside the HTTP adapter and bypassed the event-first
+Do not duplicate the full route list here; it changes more often than the
 boundary.
 
-## API Convergence Proposal
+## Write and control boundary
 
-Keep the HTTP adapter small:
+State-changing HTTP actions enter one of two paths:
 
-1. **Reads return views.** Project dashboards, feature maps, session timelines,
-   metrics, and diagnostics should be explicit read models. They may aggregate
-   DB rows and project artifacts, but they should not become hidden project
-   controllers.
-2. **Writes enter through events or established infra commands.** If a browser
-   action starts work, changes ownership, runs a project behavior, or asks an
-   agent to do something, the durable activation path is an event/control frame
-   through the daemon.
-3. **Project code owns project meaning.** The HTTP adapter must not know AKS,
-   evaluator calibration, platform operations, or any other project domain.
-4. **Compatibility endpoints are allowed when they are simpler for users.**
-   Their implementation should still route through the daemon/event path and
-   should not introduce a second semantics.
+1. a canonical event/control intent sent through the daemon; or
+2. a dedicated infrastructure service that owns the mutation and emits its
+   evidence.
 
-### Event Ingress
+Examples:
 
-Add one generic event ingress endpoint:
+| Human intent | Canonical path |
+| --- | --- |
+| Start or steer chat/session | `chat.start.requested` or `session.steer.requested` |
+| Cancel a session | `session.cancel.requested` |
+| Comment on a project | `project.comment.created` |
+| Invoke an app action | `project.action.invoked` through generic event ingress |
+| Reload/restart runtime | `runtime.*.requested` |
+| Resolve an alert | Metric service/command with alert and owner evidence |
 
-```http
-POST /api/events
-```
+`POST /api/events` is the generic canonical event ingress. It validates the
+envelope and hands it to the daemon path; it is not permission to invent domain
+events or bypass an app's declared actions.
 
-Body:
+HTTP acceptance means the intent was accepted or queued. It never means the
+session, task, project action, escalation, or repair completed. Later typed
+state/evidence provides that answer.
 
-```json
-{
-  "type": "project.action.requested",
-  "source": "web-ui",
-  "owner": "agent:aks-explorer",
-  "data": {
-    "projectPath": "projects/aks-rp-e2e",
-    "action": "replan",
-    "params": {
-      "selectedPathIds": ["path.managedsystem.rest-add-existing.minimal-rest"]
-    }
-  }
-}
-```
+The adapter must not:
 
-Rules:
+- write task files or task phases directly;
+- execute project workflows from hard-coded project routes;
+- mutate SQLite with ad hoc SQL when a service/command owns the change;
+- turn a successful POST into a domain-completion claim; or
+- create a second owner, retry, or scheduling policy.
 
-- Dot-named events must use the canonical envelope from `events.md`:
-  `type`, `source`, `owner`, `data`.
-- The HTTP adapter validates the envelope and sends it to the daemon socket.
-- The response only means the event was accepted by the transport; it does not
-  mean downstream handlers finished.
-- Event-specific fields stay under `data`.
+## Project and task boundary
 
-### Project UI Activation
+Generic project pages consume the shared read model described by
+[Default Project UI](default-project-ui.md). Completed achieve tasks remain out
+of the live graph; bounded completion evidence supports old task links and
+recent activity. `state.json` remains canonical and `tree.json` remains a
+disposable projection.
 
-Do not add `/api/projects/action`.
+Domain-specific browser panels may present deeper AKS, Evaluation, Scout, or
+other facts. They call stable artifact/event/action APIs and do not query
+private SQLite tables or derive task meaning independently.
 
-For project UIs:
+Project actions are declared by the app. The browser emits
+`project.action.invoked` with the project/action/parameters; the app/runtime
+validates and translates it exactly once.
 
-- Read current state from project artifacts or view endpoints.
-- For side-effecting requests, emit a canonical event through `POST /api/events`.
-- Let the project app or owner route decide whether to start an agent
-  session, run a workflow, write evidence, or ignore the request.
+## Event and websocket boundary
 
-Recommended event names:
+Historical event queries use bounded HTTP reads. Live observation uses the
+websocket event stream. Both expose the same canonical envelopes and trace IDs.
 
-| Event | Meaning |
-|-------|---------|
-| `project.comment.created` | Human comment/direction for a project. |
-| `project.action.requested` | UI or operator requested a named project behavior. |
-| `project.tick` | Timer-triggered project lane. |
-| App-specific semantic observation | Correlated by `tasks.resolve` into desired task state. |
-| Event with `target.taskId` | Wakes that exact task through the app queue. |
+Websocket delivery is observation, not event acceptance. A browser subscriber
+does not satisfy owner delivery or a typed event pair merely by receiving a
+frame.
 
-Task reconciliation lifecycle events are emitted by infrastructure for
-observation. UI code must not manufacture task assignment, completion, review,
-dispatch, or finish events.
+## Files and path safety
 
-### Existing Convenience Routes
+Browser requests use stable project and artifact identifiers. Server path
+resolution must remain inside declared project/app roots. Absolute filesystem
+paths in evidence remain text unless a dedicated safe artifact endpoint admits
+them.
 
-Keep these as user-friendly aliases while converging the internals:
+API routes are matched before static and project UI routes. One-project
+deployment uses the same `PROJECTS_ROOT/*` shape as multi-project deployment;
+there is no special `/project` filesystem contract.
 
-| Route | Target behavior |
-|-------|-----------------|
-| `POST /api/projects/comment` | Emit `project.comment.created`; project app/handler decides wake behavior. |
-| `POST /api/agents/:agent/message` | Resolve or start an agent chat through the daemon; leave canonical message/session trace events. |
-| `POST /api/sessions/:id/message` | Steer/resume the existing session through the daemon. |
-| `POST /api/sessions/:id/cancel` | Send the established session cancel control event. |
-| `POST /api/agents/:agent/heartbeat-now` | Emit canonical `heartbeat.trigger`. |
-| `POST /api/metrics/:id/threshold` and `/api/alerts/:id/resolve` | Either become established infra primitives with durable trace events or move behind event ingress. |
+## Compatibility
 
-### Route Shape Target
+Compatibility endpoints are acceptable when they provide a useful ergonomic
+alias and still enter the canonical event/service boundary. New code uses
+canonical events and current read models. Compatibility aliases do not define a
+second payload, lifecycle, mutation authority, or project execution path.
 
-Near-term target:
+The HTTP adapter and read models use the shared database/schema modules.
+`projects/may-agent/src/lib/db/schema.ts` remains the sole schema/migration
+owner.
 
-```text
-GET  /api/events
-POST /api/events
+## Integrity checklist
 
-GET  /api/projects...
-POST /api/projects/comment      # compatibility alias for project.comment.created
-
-GET  /api/views/...             # new explicit read models as pages are touched
-POST /api/agents/:agent/message # compatibility steering alias
-POST /api/sessions/:id/message  # compatibility steering alias
-POST /api/sessions/:id/cancel   # established infra command
-```
-
-Avoid adding new route families until they answer one of two questions:
-
-- "What read model does the UI need?"
-- "What canonical event/control action is being accepted?"
-
-## Layout
-
-Target layout:
-
-```text
-projects/may-agent/src/app/http/
-  server.ts
-  static.ts
-  api/
-    agents.ts
-    workflows.ts
-    sessions.ts
-    projects.ts
-    metrics.ts
-    events.ts
-    views.ts
-  read-model/
-    state-db.ts
-    loop-trace.ts
-    project-sections.ts
-
-packages/
-  webui/
-    package.json       # @may-agent/webui
-    static/            # source browser assets; no HTTP server
-      index.html
-      app.js
-      styles.css
-
-projects/
-  may-agent.app/
-    ui/                # generated/synced static copy served by HTTP
-      index.html
-  <project>.app/
-    app.ts
-    project.json
-    agents/            # optional app-local project agents
-      <agent>/
-        agent.json
-        AGENTS.md
-    ui/
-      index.html      # optional project-specific UI
-      assets/...
-```
-
-`read-model/state-db.ts` is only a cached adapter over the shared SQLite
-module. Schema creation and idempotent migrations have one owner:
-`src/lib/db/schema.ts`. HTTP/read-model code must not carry a second schema or
-migration copy.
-
-Container rule: mount one project at the same shape used for many projects, e.g. `/projects/aks-rp-e2e`, not a special `/project` path. The runtime scans `PROJECTS_ROOT/*`; one discovered project is just the one-project case of the same model.
-
-Boundary rule: edit the default UI only in `packages/webui/static`, then run
-`bun run ui:sync` to replace `PROJECTS_ROOT/platform/ui`. Do not hand-edit that
-generated target. A project-specific UI is owned and edited by that project;
-the sync step does not touch it. All UIs call the infra API through `/api/*`.
-The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are
-handled before static routes. Development and deployment run `may-agent --web`.
-
-## Current Implementation
-
-- HTTP and read-model code lives under `src/app/http`.
-- The private `packages/webui` package is static-only.
-- Web mode runs through the single `may-agent --web` binary.
-- `packages/webui/static` syncs only to `projects/platform/ui`.
-- Route modules may be split when a concrete sub-concern changes
-  independently; endpoint names remain stable unless a migration removes more
-  complexity than it adds.
-
-## Non-Goals
-
-- Do not remove or de-prioritize the WebUI; make it project-scoped instead.
-- Do not turn the SDK into an HTTP API mechanically.
-- Do not expose raw DB schema as the stable Web API.
-- Do not move browser UI code into infra modules.
-
-Compatibility aliases remain only while a live caller uses them. New read
-models use the existing `/api/*` namespace; do not introduce `/api/views/*`
-merely to rename working endpoints.
+- Default UI source and generated served assets have distinct ownership.
+- Reads are bounded projections with freshness and explicit unknown/error state.
+- Writes use canonical daemon events or a dedicated infrastructure service.
+- HTTP acceptance is never presented as completion.
+- Project/task meaning remains in app-owned canonical state.
+- Browser logic does not implement readiness, reconciliation, or repair policy.
+- Event streaming does not count as owner delivery.
+- Paths remain within admitted roots.
+- Route compatibility adds no second semantics.
+- The HTTP layer contains no project-specific controller logic.

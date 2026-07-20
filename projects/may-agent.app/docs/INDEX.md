@@ -96,9 +96,10 @@ current-design list.
 | ------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------- |
 | [chat-agent-separation.md](3-proposals/chat-agent-separation.md)                                                   | Active tracker                   | Close remaining chat restart, trace, and delegation gaps.                                    |
 | [system-operations-model.md](3-proposals/system-operations-model.md)                                               | Active tracker                   | Close remaining platform operations ownership gaps.                                          |
+| [task-authorship-and-workflow-governance.md](3-proposals/task-authorship-and-workflow-governance.md)               | Draft                            | Assign task specification management by creation path without per-task authority config.      |
 | [task-handler-resolution-refinement.md](3-proposals/task-handler-resolution-refinement.md)                         | Accepted; canary pending         | Make explicit workflow binding authoritative and surface unavailable workflows as attention. |
 | [task-reconciliation-closeout-and-reviewability.md](3-proposals/task-reconciliation-closeout-and-reviewability.md) | Accepted; delivery proof pending | Close persistent-task policy, Scout evidence, and delivery gaps.                             |
-| [task-reconciliation-webui-reviewability.md](3-proposals/task-reconciliation-webui-reviewability.md)               | Draft                            | Align task HTTP and WebUI read models with reconciliation semantics.                         |
+| [task-reconciliation-simplification-and-integrity.md](3-proposals/task-reconciliation-simplification-and-integrity.md) | Approved; cleanup in progress | Remove active compatibility vocabulary without changing the task model.                       |
 
 Completed proposals do not remain in the active proposal folder.
 

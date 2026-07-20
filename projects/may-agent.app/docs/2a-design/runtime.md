@@ -3,8 +3,8 @@
 How the binary processes input, runs sessions concurrently, and structures LLM calls.
 
 **Design status:** Accepted runtime reference.
-**Implementation status:** Partial; compatibility frames remain while human
-control paths converge on the event contract below.
+**Implementation status:** Implemented; compatibility socket frames and legacy
+project-agent discovery remain supported migration surfaces.
 
 ## Input Routing
 
@@ -127,7 +127,9 @@ the compaction decision, summary, persistence, and event evidence. Reconsider
 the full harness compactor only if May adopts the Pi harness session model as a
 whole.
 
-**Overflow recovery:** When context window is hit, extract progress into handoff document for a new session.
+**Overflow recovery:** A context-overflow terminal result is handled by the
+normal session recovery/digest path. Any new session receives an explicit
+handoff task; the runtime does not silently continue the old context.
 
 ### What the LLM Doesn't See
 
@@ -142,7 +144,7 @@ whole.
 | Field | Effect |
 |-------|--------|
 | `model` | Which LLM to call |
-| `memoryLimit` | Legacy limit for caller-managed memory injection |
+| `memoryLimit` | Retained compatibility field; it does not change current system-prompt assembly |
 | `compaction` | Whether to enable context compaction |
 | `tools` | Which tools available (mapped to presets) |
 | `context_files` | Files resolved relative to agent dir, passed as `contextFiles` to `SubagentDefinition`; injected into fork/call task text, not the system prompt |

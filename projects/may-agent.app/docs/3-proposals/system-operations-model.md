@@ -60,6 +60,14 @@ Keep volatile incidents, metric snapshots, and migration measurements in dated
 evidence. Stable design documents contain only current ownership and runtime
 contracts.
 
+### 4. App heartbeat overlap
+
+Audit app-local `*-heartbeat.ts` workflows against each app's schedules. Keep
+only one recurring owner cadence per responsibility. The loader may retain
+app-local heartbeat discovery as compatibility, but a platform/app schedule and
+an auto-generated heartbeat must not both review the same responsibility by
+accident.
+
 ## Migration gate
 
 Before retiring either remaining handler, prove:
@@ -73,5 +81,6 @@ Before retiring either remaining handler, prove:
 ## Completion
 
 This tracker is complete when both remaining handlers have an explicit retained
-or migrated disposition, tests prove the selected paths, and the current
-handler inventory is documented only in runtime configuration and audit tools.
+or migrated disposition, overlapping app heartbeat ownership has an explicit
+disposition, tests prove the selected paths, and the current handler inventory
+is documented only in runtime configuration and audit tools.

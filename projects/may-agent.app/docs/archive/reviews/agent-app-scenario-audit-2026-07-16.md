@@ -1,6 +1,8 @@
 # Agent App Scenario Audit — 2026-07-16
 
 **Status:** Design review.
+**Current authority:** [Agent App Contract](../../2a-design/agent-app.md) and
+[Task Resource Engine](../../2a-design/task-resource-engine.md).
 **Scope:** Test the proposed Agent App model against typical use, Gym, live
 diagnostics, parallel evaluation, production events, multi-app hosting, and
 recovery. This report does not accept or implement the proposal.

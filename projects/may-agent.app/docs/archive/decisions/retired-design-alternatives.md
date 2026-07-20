@@ -7,8 +7,9 @@ This note preserves useful ideas from the retired
 `2a-design/archive-legacy-shared-designs/` folder. The source archive docs were
 removed so active readers do not mistake old statuses for current guidance.
 
-Use this file as background only. Canonical design lives in `1-principles/`,
-`2a-design/`, and `2b-manual/`.
+Use this file as background only. Canonical design starts with the current
+[System model](../../2a-design/system-model.md) and its linked subsystem
+contracts.
 
 ## Metrics As Vitals
 

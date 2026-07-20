@@ -101,7 +101,7 @@ Project posture is not task execution state:
 | -------------------- | ---------------------------------------------------------------------------- |
 | Project posture      | `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed` |
 | Task resource phase  | `pending`, `running`, `waiting`, `attention`, `converged`                    |
-| Readiness projection | runnable, dependency-blocked, conflict-blocked, stale, needs-decomposition   |
+| Readiness projection | ready, dependency-blocked, condition-blocked, capacity-blocked, paused, not-applicable |
 | Worker/session claim | success, partial, blocked, failure plus evidence                             |
 
 A blocked worker is evidence, not proof that the task or project must become

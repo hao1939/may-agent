@@ -1,9 +1,8 @@
 # Design: May Console
 
-**Design status:** Draft.
-**Implementation status:** Partial; the event-convergence slices below remain
-the acceptance contract.
-**Date**: 2026-06-05
+**Design status:** Accepted.
+**Implementation status:** Implemented; older socket shortcuts remain
+compatibility ingress outside the console.
 **Aligned with**: `human-control-surfaces.md`, `runtime.md`, `sessions.md`, `events.md`, `webui.md`, `web-terminal.md`
 
 ## Purpose
@@ -450,12 +449,13 @@ The transport is different, but daemon-side behavior is intentionally shared.
 
 The current implementation still accepts shortcut ingress frames such as
 `input`, `steer`, `fork`, `cancel_all`, `reload`, and `shutdown`. Those are
-compatibility frames. They should normalize at the socket boundary into the
+compatibility frames. They normalize at the socket boundary into the
 canonical intent events above.
 
 ## Current Implementation Status
 
-`packages/terminal/bin/may-console.cjs` has the terminal UX slice:
+`projects/may-agent/packages/terminal/bin/may-console.cjs` has the terminal UX
+slice:
 
 - attach-only startup with `subscribe ["chat"]` and `status`
 - reconnect with resubscribe/status refresh
@@ -471,29 +471,19 @@ Compatibility status:
 - May Console emits canonical human intent envelopes for state-changing input.
 - The daemon socket may still accept older shortcut ingress frames for older
   clients, but those are compatibility inputs at the socket boundary.
-- Command routing should consume the canonical intent events:
+- Command routing consumes the canonical intent events:
   `chat.start.requested`, `session.steer.requested`,
   `session.cancel.requested`, `session.cancel_all.requested`,
   `runtime.reload.requested`, and `runtime.restart.requested`.
 
-## Implementation Slices
+## Implementation ownership
 
-1. **Daemon intent handlers**
-   - handle `chat.start.requested` as create-or-bind, not always-create
-   - handle `session.steer.requested` with the existing resume-or-send behavior
-   - handle `session.cancel.requested`
-   - handle `session.cancel_all.requested`
-   - handle `runtime.reload.requested` and `runtime.restart.requested`
-
-2. **May Console event emission**
-   - emit canonical intent events for every state-changing command
-   - keep read controls such as `subscribe` and `status` transport-local
-
-3. **Cross-surface convergence**
-   - migrate CLI send/steer/cancel to canonical events
-   - migrate Telegram normal/reply/cancel/new behavior to canonical events
-   - migrate Web POST actions to canonical events
-   - add shared e2e assertions for emitted intent event shapes
+- `projects/may-agent/packages/terminal/bin/may-console.cjs` owns terminal interaction and emits
+  canonical intents.
+- `projects/may-agent/packages/control` owns socket framing and compatibility normalization.
+- daemon command routing owns session/chat/control mechanics.
+- CLI, Telegram, Web, and console share the intent contracts in
+  [Human Control Surfaces](human-control-surfaces.md).
 
 ## Test Contract
 

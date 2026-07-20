@@ -2,8 +2,8 @@
 
 **Status:** Implemented (2026-07-20)
 
-**Design authority:** [Default Project UI](../2a-design/default-project-ui.md)
-and [Task Resource Engine](../2a-design/task-resource-engine.md)
+**Design authority:** [Default Project UI](../../2a-design/default-project-ui.md)
+and [Task Resource Engine](../../2a-design/task-resource-engine.md)
 
 **Scope:** Default May WebUI task surface and server-owned read models
 
@@ -25,6 +25,10 @@ Canonical `state.json` and controller behavior were not changed. Generated
 `tree.json` remains disposable current-state projection, and completed work
 remains event-backed rather than retained in the live graph.
 
+The sections below preserve the implemented proposal's rationale and
+acceptance criteria. Gap and decision wording is historical; current behavior
+is governed by the linked Tier-2 design.
+
 ## Goal
 
 Make the current task UI explain the accepted reconciliation model without
@@ -38,7 +42,7 @@ The operator should be able to answer:
 4. What evidence and causal trace support that state?
 5. What can the operator safely ask the owner to do next?
 
-## Current gap
+## Historical gap
 
 The runtime and UI currently speak different languages.
 
@@ -56,7 +60,7 @@ state. The browser then reconstructs readiness, capacity, and liveness from
 incomplete data. The detail drawer is a state dump rather than a review path,
 and task selection does not survive reload.
 
-## Proposed decisions
+## Accepted decisions
 
 1. Use the reconciliation sections defined by the accepted Default Project UI;
    do not keep Kanban lanes as another task lifecycle.
@@ -210,7 +214,7 @@ changed before later evidence proves a disposition.
 Retry, rerun, pause, resume, and domain operations appear only when the Agent
 App declares a typed action.
 
-## Delivery slices
+## Implemented delivery slices
 
 Each slice is independently reviewable. Only the first slice changes shared
 task meaning and therefore must move projection, HTTP, browser, query, and test

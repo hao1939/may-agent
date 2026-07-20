@@ -93,6 +93,10 @@ The queue carries task IDs only. Targeted wakes for an existing task,
 Condition observations, recovery, and passive resync enter that same
 controller without another app route.
 
+`maxConcurrent` is enforced by the task controller. The daily session and
+token values are planning envelopes today; they do not stop schedules from
+requesting more work. Keep routine demand below them and review actual usage.
+
 ## 4. Choose owner or workflow execution
 
 ```text

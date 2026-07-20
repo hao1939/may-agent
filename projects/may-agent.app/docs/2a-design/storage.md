@@ -118,10 +118,10 @@ reclaim can remain opportunistic.
 
 ## Canonical Layout
 
-The runtime supports one current schema and one session layout. Historical
-state is normalized once during deployment; runtime readers do not carry
-fallback paths or legacy-schema branches. Missing references are integrity
-errors, not an alternate storage mode.
+Current writes use one schema and one session layout. Explicit bounded read or
+migration adapters may interpret retained historical rows, but compatibility
+never becomes a second writer, path, or mutable authority. Missing references
+in current state are integrity errors, not an alternate storage mode.
 
 ## Agent Boundary
 

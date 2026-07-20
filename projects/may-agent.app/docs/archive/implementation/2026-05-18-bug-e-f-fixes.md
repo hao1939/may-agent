@@ -1,8 +1,10 @@
 # Bug E + F: Multi-line stop_reason truncation and Current State overwrite
 
 **Date:** 2026-05-18
-**Status:** ✅ Fixed
+**Status:** Historical completed fix record.
 **Owner:** platform
+**Current authority:** [Projects](../../2a-design/projects.md) and the current
+project schema/runtime source.
 
 ## Background
 

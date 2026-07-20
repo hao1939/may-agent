@@ -59,7 +59,7 @@ The platform uses real browser paths and `history.pushState`:
 | `/` | Live owner/project/agent/metric overview |
 | `/agents` and `/agents/:name` | Agent identity, context, projects, sessions, chat |
 | `/projects` and `/projects/:id` | Project readout and steering |
-| `/projects/:id/tasks` | Task-tree/Kanban projection |
+| `/projects/:id/tasks` | Task reconciliation board, tree, and selected-task review |
 | `/projects/:id/functions` | Declared project actions |
 | `/metrics` and `/metrics/:id` | Metric/alert detail and evidence |
 | `/sessions/:id` | Transcript, result, lineage, tools, and steering |
@@ -185,7 +185,8 @@ a surface that lacks a live feed, not a hidden second source of state.
 
 - UI code calls documented `/api/*` read/steering endpoints.
 - Domain UIs do not query private SQLite tables directly.
-- The HTTP adapter remains in `src/app/http`; `packages/webui` is static-only.
+- The HTTP adapter remains in `projects/may-agent/src/app/http`;
+  `projects/may-agent/packages/webui` is static-only.
 - API routes run before static/project routes.
 - Project paths exposed to the browser use stable project ids, not arbitrary
   server filesystem paths.

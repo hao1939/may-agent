@@ -437,9 +437,9 @@ type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknow
 ```
 
 `data` remains domain attributes. Do not put general trace relations into
-`data`. Until trace storage exists, producers may keep legacy context fields
-such as `conversationId`, `originalIssue`, or correlation keys. New code should
-prefer `trace` whenever the related event id is known.
+`data`. Historical rows may keep legacy context fields such as
+`conversationId`, `originalIssue`, or correlation keys. New producers use
+`trace` whenever the related event id is known.
 
 ## Storage
 
@@ -794,9 +794,9 @@ UI defaults:
 - preserve all nodes returned by the API, including skipped/unhandled
   diagnostics
 
-React Flow is a good renderer for the interactive UI, with ELK.js or a similar
-layout engine for left-to-right DAG layout. Mermaid export is useful for static
-reports.
+The renderer is an implementation detail. It must honor backend node keys,
+hierarchy, chronology, edge kinds, and provenance rather than deriving a second
+graph model in the browser.
 
 ## Current Implementation
 

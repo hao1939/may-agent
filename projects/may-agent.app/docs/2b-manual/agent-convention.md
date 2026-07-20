@@ -63,8 +63,9 @@ skill, while model-driven activation is evidenced by a successful full-file
 read.
 
 Skills and workflows share scoped discovery conventions but not execution.
-Skills are interpreted per-turn guidance; workflow TypeScript controls a
-durable run. See [workflows.md](../2a-design/workflows.md).
+Skills are interpreted per-turn guidance; workflow TypeScript controls one
+bounded ordered run. Durable waits end that run and resume through a later
+event. See [workflows.md](../2a-design/workflows.md).
 
 ## What Goes Where
 
@@ -116,11 +117,13 @@ needing a May-specific identity filename.
 
 ## System Prompt Assembly
 
-`resolveSystemPrompt()` in `src/lib/manager.ts` builds:
+`resolveSystemPrompt()` in `projects/may-agent/src/lib/manager.ts` builds:
 
 1. `shared/common-sense.md`
-2. `agents/<name>/AGENTS.md`
-3. generated runtime facts: project root, agent directory, workspace, knowledge path, available tools
+2. the registered agent's `AGENTS.md` (global or app-local)
+3. bounded skill metadata when the toolset can read skill files
+4. generated runtime facts: project root, agent directory, workspace,
+   knowledge path, and available tools
 
 If `systemPrompt` is set directly on `SubagentDefinition`, convention-file
 assembly is bypassed. That escape hatch is for tests and special runtime
@@ -137,12 +140,13 @@ sessions, not normal agent configuration.
   "domain": "may-agent implementation",
   "model": "opus",
   "tools": ["coding", "agents", "finish"],
-  "memoryLimit": 20,
   "compaction": true
 }
 ```
 
 Do not put prose instructions in `agent.json`.
+`memoryLimit` is a retained compatibility field with no effect on current
+system-prompt assembly; omit it from new configurations.
 
 Skills are convention-discovered rather than enumerated in `agent.json`.
 Operational enable/disable policy may be added later without moving skill

@@ -66,7 +66,8 @@ For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 ## Chat Session
 
 When `--chat` is enabled, may-agent creates a **persistent chat session** (`ChatSession`).
-The session survives across messages — the LLM sees full conversation history, not summaries.
+The session survives across messages. The append-only transcript keeps full
+history; long active contexts may use the runtime's compact resume snapshot.
 
 ```
 you> implement a retry mechanism for failed API calls
@@ -113,25 +114,11 @@ peek at the result, and report back.
 
 ### Configured agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| **may** | opus | Supervisor — delegates, coordinates |
-| **bob** | opus | System architect, philosophy, meta-loop |
-| **tech-lead** | opus | Designs and supervises implementation |
-| **dev** | gpt-5.5 | System reliability, metrics, debugging |
-| **qa** | gpt52 | Reviews code |
-| **evaluator** | gpt-5.4 | Scores sessions, extracts lessons |
-| **optimizer** | opus | Implements system improvements |
-| **coach** | opus | Trains agents via fork/verify cycle |
-| **master** | opus | Uses CLI agents for complex tasks |
-| **arc** | opus | Architecture synthesis |
-| **judge** | opus | Convention compliance evaluation |
-| **scout** | opus | Research and discovery |
-| **amy** | opus | XHS exploration |
-
-The runtime discovers agents from `agents/<name>/agent.json` and project-local
-agent roots. Treat this table as the current normal fleet, not a hardcoded
-protocol list.
+The runtime discovers standalone agents from `agents/<name>/agent.json` and
+app-local agents from `projects/<id>.app/agents/<name>/agent.json`. Use the
+`agents` tool `list` action, the WebUI Agents page, or runtime status to inspect
+the current fleet. Documentation does not maintain a hard-coded agent/model
+roster because app ownership and model selection change independently.
 
 ### agent.json Format
 
@@ -142,7 +129,6 @@ protocol list.
   "domain": "system reliability, metrics, debugging",
   "model": "opus",
   "tools": ["coding", "query_db", "finish"],
-  "memoryLimit": 20,
   "compaction": true
 }
 ```
@@ -154,7 +140,7 @@ protocol list.
 | `domain` | Yes | Domain of expertise |
 | `model` | Yes | Model key: `opus`, `gpt52`, `gpt-5.4`, `gemini-3.1-pro`, etc. |
 | `tools` | Yes | Tool presets (see below) |
-| `memoryLimit` | No | Number of recent memory entries in prompt (default: 20) |
+| `memoryLimit` | No | Retained compatibility field; omit in new configs because it does not affect current prompt assembly |
 | `compaction` | No | Enable automatic context compaction for long sessions |
 | `delegateDeny` | No | Block delegation to specific agents |
 
@@ -178,6 +164,7 @@ indexes are read on demand.
 | `query_db` / `query-db` | Read-only DB query tool |
 | `system-status` / `system_status` | Runtime status summary |
 | `checkpoint` | Persist explicit session checkpoints |
+| `cli-delegation` | Start durable native coding-worker tasks through `run_cli_agent` |
 | `finish` | Finish the current task with a structured result |
 
 ### Adding a New Agent
@@ -214,8 +201,8 @@ For async communication, use the `message` tool (emits `message.created`).
 | Kind | Created by | Lifecycle |
 |------|-----------|-----------|
 | `chat` | ChatSession | Persistent — stays idle between messages. User owns. |
-| `job` | Cron, heartbeat, send, task mode | Ephemeral — auto-resumed on restart if stale. |
-| `call` | `agents.call` | Ephemeral — parent re-dispatches on its own resume. |
+| `job` | `agents.fork` and other background/detached dispatch | Bounded background work with restart recovery policy. |
+| `call` | `agents.call`, workflow `ctx.runAgent`, heartbeat agent step | Bounded synchronous work owned by its caller/workflow. |
 
 See [sessions.md](../2a-design/sessions.md) for details.
 
@@ -278,7 +265,7 @@ You usually interact with events through features, not through the event schema:
 | Send work to another agent asynchronously | Use `sdk.message(...)` or the `message` tool; this emits `message.created` |
 | Route a blocker outside current ownership | Use `sdk.escalate(...)`; for humans use `owner: "human:<role>"` |
 | Finish an escalation | Emit `escalation.resolved` or `escalation.dismissed` with a closure link; wake the source owner, which still judges whether the project/task is unblocked |
-| Need human input before unblocking | Keep the source work blocked and emit a linked child escalation owned by `human:<role>` with an exact requested action and resume context |
+| Need human input before continuing | Record an exact wait/Condition or visible attention, then emit a linked child escalation owned by `human:<role>` with the requested action and resume context |
 
 `trigger.*` events are control shortcuts. They are useful for operators and
 tests, but they are not domain lifecycle events. Lifecycle docs and handlers
@@ -315,12 +302,17 @@ See [cron.md](../2a-design/cron.md) for details.
   sessions/
     <id>/
       meta.json               # Session metadata (status, kind, agent, task)
-      session.jsonl            # Conversation history
+      session.jsonl           # Append-only conversation history
+      session-compact.jsonl   # Optional active-context/recovery snapshot
+      session.eval.jsonl      # Optional append-only evaluation trail
       output/                 # Task deliverables
-  evaluations/
-    <sessionId>.json          # Session evaluation scores
-  may.db                      # events, sessions, workflow_runs, metrics, alerts
+  event-bodies/               # Content-addressed large event payloads
+  cli-tasks/                  # Native coding-worker requests and results
+  may.db                      # Query/projection store
 ```
+
+The `evaluations` SQLite table is the query projection for session summaries.
+Historical `.state/evaluations/` files are not the current authority.
 
 ## Docker
 

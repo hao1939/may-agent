@@ -314,31 +314,23 @@ runtime enforcement is safer than model choice. Frequency alone is not enough:
 a schedule may invoke a skill-bearing session without turning the skill into a
 workflow. See [`workflows.md`](workflows.md#promotion-heuristic).
 
-## Rollout
+## Current Implementation And Remaining Work
 
-### Slice 1: discovery and catalog
+May currently discovers scoped packages during agent load/reload, resolves
+precedence and diagnostics, inserts a bounded catalog into eligible session
+prompts, supports explicit and model-selected activation, and emits
+trace-aligned `skill.loaded` evidence. Invalid packages and untrusted symlinks
+are omitted with diagnostics.
 
-- Add a May adapter around pi-agent's skill helpers.
-- Discover scoped packages during agent load/reload.
-- Resolve precedence and diagnostics.
-- Append the bounded metadata catalog to new-session prompts.
-- Migrate or ignore loose Markdown files under active `skills/` roots.
+Two follow-ups remain:
 
-### Slice 2: explicit invocation and trace
+- existing persistent chats retain their original prompt snapshot, so a new
+  session is required to see refreshed catalog metadata; and
+- evaluation records the exact content hash but does not yet provide a stable
+  outcome/regression comparison by hash.
 
-- Add `skill` to manager run/send and agent call/fork options.
-- Normalize `$skill-name` human input without adding a second intent.
-- Emit trace-aligned `skill.loaded` evidence.
-- Make reload safe for idle persistent chats.
-
-### Slice 3: evaluation
-
-- Teach session evaluation to consume `skill.loaded`.
-- Compare relevant outcome and regression rates by content hash.
-- Remove, rewrite, or promote skills based on evidence rather than activation
-  volume.
-
-Do not migrate the full manager to `AgentHarness` in these slices.
+Improve these paths in place. Skill activation must continue to use the same
+agent runtime and must not create another work lifecycle.
 
 ## Acceptance Criteria
 

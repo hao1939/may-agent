@@ -28,22 +28,12 @@ const [dev, qa] = await Promise.all([
 
 ## Emit an Event
 
-Use events for durable facts: metric breaches, project task lifecycle, handler
-decisions, recovery attempts, and similar things that other handlers or the UI
-may query later. Put routing metadata in the envelope argument and domain
-context in `data`.
+Use events for durable boundary signals and observations that another component
+can react to. Put routing metadata in the envelope argument and domain context
+in `data`. Use dedicated services for metrics and controller-owned task
+lifecycle; do not forge their events directly.
 
 ```typescript
-sdk.emit("metric.breach", {
-  metricId: "handler.success-rate",
-  metricName: "Handler success rate",
-  current: 0.5,
-  threshold: 0.8,
-  target: 0.95,
-  message: "Handler success rate is below threshold.",
-  priority: "P1",
-}, { owner: "agent:may", source: "metrics-snapshot", urgency: "high" });
-
 sdk.emit("platform.change.observed", {
   project: "platform",
   subject: "release-validation",
@@ -54,6 +44,25 @@ sdk.emit("platform.change.observed", {
 
 Do not put `owner` or `source` inside `data` for canonical events. Use the
 envelope argument so persistence and routing can see those fields consistently.
+
+## Record a Metric
+
+Use the metric capability so definition, snapshots, alert state, recovery, and
+owner routing remain consistent:
+
+```typescript
+sdk.metrics.define({
+  id: "platform.release-check-failures",
+  owner: "may",
+  type: "counter",
+  threshold: 0,
+  alertOp: ">",
+});
+sdk.metrics.record("platform.release-check-failures", failures, {
+  sampleSize: checks,
+});
+sdk.metrics.evaluate("platform.release-check-failures");
+```
 
 ## Query Runtime Facts
 

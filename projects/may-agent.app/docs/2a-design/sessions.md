@@ -82,13 +82,11 @@ Root (May heartbeat)
 - **call** = synchronous, parent waits, child linked via `workflowRunId` (not `parentSessionId`)
 - **fork** = asynchronous, returns sessionId, child linked via `parentSessionId`
 
-**Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
-workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
-`parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
-Verified structurally: almost no `call` session has a non-null
-`parentSessionId`; sessions with `parentSessionId` are overwhelmingly `job` or `chat` kind.
-(Census 2026-06-19: 1/22,866 call sessions has parentSessionId — likely an edge case;
-17 total with parentSessionId — 9 job, 8 chat.)
+**Linking note:** Despite the diagram, workflow `call` sessions use
+`workflowRunId` for ordered step lineage rather than relying on
+`parentSessionId`. Asynchronous `agents.fork()` jobs use `parentSessionId`.
+Trace links remain the authority for event causality; neither session field is
+a substitute for the trace.
 
 ## Persistence
 

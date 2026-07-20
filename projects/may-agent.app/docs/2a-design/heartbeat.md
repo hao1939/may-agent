@@ -1,8 +1,9 @@
 # Heartbeat
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for standalone agents. Project-app
-owners use app schedules and owner workflows instead of standalone heartbeats.
+**Implementation status:** Implemented. The loader still supports app-local
+heartbeat workflows as a compatibility path; new project responsibilities use
+app schedules and owner workflows.
 
 ## Purpose
 
@@ -31,6 +32,11 @@ that no project app owns.
 
 Do not run both a standalone heartbeat and a project-app owner cadence for the
 same responsibility. App-local agents normally set `"heartbeat": false`.
+
+The current loader can auto-generate a heartbeat for an app-local agent when a
+matching `<agent>-heartbeat.ts` exists. That is implementation compatibility,
+not a reason to add a second cadence. Existing apps should retire or explicitly
+justify overlaps during their normal convergence work.
 
 ## Work Context
 
@@ -108,7 +114,7 @@ motion, delivery, and evidence—not on standalone heartbeat coverage.
 ## Implementation
 
 - Helper: `@may-agent/sdk` heartbeat-data utilities.
-- Auto-generation: `src/app/loader/heartbeat-loader.ts`.
+- Auto-generation: `projects/may-agent/src/app/loader/heartbeat-loader.ts`.
 - Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
 - App owner schedules: `projects/<id>.app/app.ts`.
 - Governing Agent App contract: [agent-app.md](agent-app.md).

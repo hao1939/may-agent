@@ -1,7 +1,9 @@
 # Guards As Signals
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for observe, warn, repair, and block; escalation remains an owner-boundary action.
+**Implementation status:** Partial; the runtime recognizes observe, warn,
+repair/run-step, and block, while the public SDK authoring type still exposes
+only warn, run-step, and block.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -61,41 +63,47 @@ a false positive.
 | `warn` | Emit event and inject warning/context into the current session or next workflow step. | Likely issue but agent may self-correct. |
 | `repair` | Emit event and inject/run a recovery step. | Mechanically recoverable issue such as missing verification. |
 | `block` | Stop the action/session/workflow and emit event. | High-confidence, high-impact risk. |
-| `escalate` | Stop or pause and route to owner/human. | Security, destructive action, repeated unresolved failure, unclear risk. |
 
 Use `block` sparingly. Good blocking cases include secret leakage, destructive
 commands, cross-owner writes without permission, committing unrelated work,
 irreversible DB/filesystem mutation, or a known violation with high confidence
 and high cost.
 
-## Default Guard Handler
+Escalation is not a guard demand. After a guard exposes a blocker, the owning
+runtime/agent may create an explicit escalation only when the next required
+action crosses an ownership boundary.
+
+Until the public `@may-agent/sdk` demand type includes `observe` and `repair`,
+app-authored guards must use its supported `warn`, `run_step`, and `block`
+vocabulary. Do not bypass the type contract with casts.
+
+## Default Observation Path
 
 Following convention over configuration, every guard should get default
-observability without each guard author wiring custom logging.
+observability without each guard author wiring a custom event handler.
 
 Default path:
 
 ```text
 guard fires
   -> emit guard.triggered
-  -> default guard handler records metrics/projection
+  -> event/evidence projection accepts the diagnostic fact
   -> optional intervention happens in guard runtime
-  -> evaluator/May/owner can review patterns later
+  -> metrics snapshot and evaluator/owner review can inspect patterns later
 ```
 
-The guard runtime detects and intervenes. The default handler observes and
-measures. Agents, evaluator, and owners judge and improve the system.
+The guard runtime detects and intervenes. Persistence and read projections make
+the signal observable; no dedicated work item or handler run is created for
+each trigger. Agents, evaluator, and owners judge and improve the system.
 
 ## Standard Event
 
 ```ts
-type GuardTriggeredEvent = {
-  type: "guard.triggered";
+type GuardTriggeredData = {
   guard: string;
-  demandType: "warn" | "block" | "run_step";
-  action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
-  source: "workflow" | "tool";
-  owner: string;
+  demandType: "observe" | "warn" | "repair" | "run_step" | "block";
+  action: "observed" | "warned" | "blocked" | "injected"
+    | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
   sessionId?: string;
   workflowRunId?: string;
   projectId?: string;
@@ -105,6 +113,13 @@ type GuardTriggeredEvent = {
   sourceEventType: string;
   injectedStepLabel?: string;
   injectedAgent?: string;
+};
+
+type GuardTriggeredEvent = {
+  type: "guard.triggered";
+  source: "workflow" | "tool";
+  owner: string;
+  data: GuardTriggeredData;
 };
 ```
 
@@ -121,7 +136,7 @@ Workflow guards live under `shared/guards/*.ts` and are loaded by
 `step_done` or `step_started`.
 
 Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
-returns demands such as `warn`, `block`, or `run_step`. Events use
+returns demands from the supported SDK vocabulary. Events use
 `source: "workflow"` and the guard's own name in the `guard` field.
 
 Workflow guards are best for process-level expectations: read before edit,

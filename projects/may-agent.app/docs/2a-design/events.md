@@ -150,7 +150,7 @@ closes the inbox pair.
 
 Typical follow-ups include:
 
-- `message.reviewed` or `message.consumed`;
+- `message.reviewed`;
 - `project.owner.reviewed`;
 - a project/task/problem event;
 - `escalation.resolved` or `escalation.dismissed`;

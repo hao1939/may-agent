@@ -243,7 +243,8 @@ pi-coding-agent event
 
 Examples:
 
-- tool call -> `tool_call`
+- tool call -> neutral runtime notification, then infrastructure
+  `tool.call.started` / `tool.call.completed` evidence
 - finish -> `session.end`
 - message tool -> `message.created`
 - workflow step -> `workflow`
@@ -292,7 +293,8 @@ Do not turn the socket into a large query API until there is a clear need.
 
 Current state:
 
-- `packages/control` owns the protocol, client helpers, and server core.
+- `projects/may-agent/packages/control` owns the protocol, client helpers, and
+  server core.
 - The daemon socket is shared by the running instance. It is not one socket per
   agent, even though the legacy filename still includes the interface agent.
 - Web UI steering and CLI send already use the control client package.
@@ -363,12 +365,13 @@ surface becomes useful outside the daemon and has no app-specific imports.
 
 ## Public Surfaces
 
-There should be two stable public surfaces:
+There should be three stable public surfaces:
 
 1. Agent tools for LLM sessions.
 2. Infra SDK for TypeScript workflows and handlers.
+3. Control client/protocol for CLI, Web UI, Telegram, and other external
+   adapters.
 
-The control client is the external adapter surface for CLI/Web UI/Telegram.
 Workflow and handler contexts may expose different handles (`ctx.*` vs
 `ctx.sdk.*`), but they should converge on the same underlying SDK semantics.
 
@@ -477,7 +480,7 @@ interface InfraSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
-  metrics: MetricAPI;
+  metrics: MetricService;
   query: QueryAPI;
 
   message(target: string, content: string, opts?: MessageOpts): void;
@@ -518,7 +521,7 @@ blocked by guard, missing state, or unsafe to continue.
 Metric API:
 
 ```ts
-interface MetricAPI {
+interface MetricService {
   define(def: MetricDefinition): void;
   record(id: string, value: number, opts?: RecordOpts): void;
   alert(id: string, message: string, opts?: AlertOpts): void;
@@ -611,7 +614,7 @@ provably wrong.
 | Workflow blocked by guard | Preserve completed steps and block reason; emit guard signal; route to owner or next recovery path. | local `workflow.blocked` callback, durable `workflow_runs.status = "blocked"`, `guard.triggered`. |
 | `resumeWorkflow` sees corrupted/partial state | Inspect durable state first; recover only when lineage and one safe synchronous continuation are clear. Otherwise return diagnostic status and escalate/requeue rather than replay blindly. Never use resume for an expected business wait. | `workflow.resume_failed` with reason. |
 | Session resume sees missing/corrupt transcript | Preserve original session id/state; inject recovery context only when safe; otherwise mark interrupted/error with reason. | session status + recovery event. |
-| Owner resolution is ambiguous or wrong | Prefer explicit owner, then project owner, then convention, then `may`. If owner is invalid, route to `may` and emit routing anomaly. | `routing.owner_invalid` / metric. |
+| Event/infra owner resolution is ambiguous or wrong | Prefer explicit owner, then project owner, then convention, then `may`; emit a routing anomaly. A task with an unresolved owner or unavailable explicit workflow instead remains in `attention` without handler substitution. | `routing.owner_invalid` / task attention evidence. |
 | Metric source/query fails | Record metric measurement failure without updating value as success; keep last known value distinguishable from fresh measurement. | metric measurement error event/metric. |
 | Adapter/socket client disconnects mid-command | Event acceptance is separate from subscriber completion. If event was accepted, trace it; if frame invalid, reject locally. | socket `ok`/`error`, event trace. |
 
@@ -621,7 +624,10 @@ Default failover conventions:
 - **Recover** when durable state identifies one safe next action.
 - **Requeue** work when the prior execution failed before side effects or has a clear continuation point.
 - **Route** failures to the resolved owner by default.
-- **Fallback to `may`** when owner resolution fails, owner config is invalid, or the owning agent cannot be started.
+- **Fallback to `may`** only for event/infrastructure accountability when that
+  route is unresolved. Never use it to substitute a task's resolved owner or
+  explicitly bound workflow; task resolution failure remains visible in
+  `attention`.
 - **Escalate to human** only when `may` cannot safely continue, state is corrupt, or replay could duplicate side effects.
 - **Drop** only invalid external frames that were never accepted as events.
 
@@ -663,8 +669,8 @@ Existing pieces already align with this direction:
 | Agent loading | `projects/may-agent/src/app/agent-loader.ts`, `projects/may-agent/src/app/loader/*` |
 | Telegram adapter | `projects/may-agent/src/app/transport/telegram.ts` |
 | Telegram transport/reply/outbound helpers | `projects/may-agent/src/app/transport/telegram-client.ts`, `projects/may-agent/src/app/transport/telegram-reply-router.ts`, `projects/may-agent/src/app/transport/telegram-outbound.ts` |
-| HTTP/Web API adapter | `src/app/http/server.ts` |
-| WebUI source assets | `packages/webui/static/*`, generated only into the served `projects/platform/ui/` target |
+| HTTP/Web API adapter | `projects/may-agent/src/app/http/server.ts` |
+| WebUI source assets | `projects/may-agent/packages/webui/static/*`, generated only into the served `projects/platform/ui/` target |
 | Agent patterns | agent/project workflows, project docs, heartbeat docs |
 
 The main gap is not a missing grand architecture. The remaining work is keeping

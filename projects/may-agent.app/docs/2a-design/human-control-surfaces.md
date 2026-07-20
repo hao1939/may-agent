@@ -3,7 +3,6 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented for canonical CLI, Telegram, Web/control
 socket, and console paths. Legacy socket frames remain compatibility ingress.
-**Date**: 2026-06-05
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -25,6 +24,9 @@ socket-local/read-model controls. They do not change system state. Anything
 that starts work, steers work, cancels work, comments on a project, reloads
 runtime config, or shuts down the system should be normalized into an event
 envelope before it reaches runtime logic.
+
+Direct and Gym agent runs are separate portable execution surfaces; they do not
+control the autonomous daemon and therefore do not require its event bus.
 
 ## Layers
 
@@ -101,8 +103,9 @@ emits normal session lifecycle events.
 This is a create-or-bind request, not a strict "always create" command. If the
 daemon already has an active chat session for the same channel/agent identity,
 it should bind the request to that session and deliver the message there. A
-surface that truly wants a fresh conversation must say so explicitly with a
-future field such as `forceNew: true`; absent that flag, continuity wins.
+surface that truly wants a fresh conversation must explicitly reset/close the
+binding or send supported `forceNew` context; absent that intent, continuity
+wins.
 
 ### Steer an existing session
 
@@ -170,7 +173,8 @@ the fact to persist and route:
 {
   "type": "project.comment.created",
   "source": "web-ui",
-  "owner": "agent:may",
+  "owner": "agent:aks-explorer",
+  "target": { "project": "aks-rp-e2e" },
   "data": {
     "projectPath": "projects/aks-rp-e2e",
     "comment": "Focus next on managedsystem pool coverage.",
@@ -278,15 +282,17 @@ message. It should not silently send the text to May as a fallback.
 
 The CLI should be scriptable and explicit. Good commands are shaped by intent:
 
-```text
-may chat may "hello"
-may chat dev "please review this"
-may steer s_123 "continue"
-may cancel s_123
-may cancel --all
-may comment projects/aks-rp-e2e "managedsystem pool should be next"
-may emit metric.breach '{"metricId":"x"}'
-may status
+```bash
+may-agent --emit chat.start.requested \
+  '{"agent":"may","message":"hello","channel":"cli"}'
+may-agent --emit session.steer.requested \
+  '{"sessionId":"s_123","message":"continue"}'
+may-agent --emit session.cancel.requested '{"sessionId":"s_123"}'
+may-agent --emit session.cancel_all.requested \
+  '{"reason":"human requested cancel all"}'
+may-agent --emit project.comment.created \
+  '{"projectPath":"projects/aks-rp-e2e","comment":"managedsystem pool should be next","author":"hao"}'
+may-agent --status
 ```
 
 Exit behavior:
@@ -354,20 +360,17 @@ adapter over event emission. For example:
 The current daemon socket accepts older shortcut frames such as `input`,
 `steer`, `fork`, `cancel_all`, `reload`, and `shutdown`. Those are compatibility
 ingress frames. They should normalize at the socket boundary before events are
-emitted to the bus. In code terms, the target is `packages/control/src/protocol.ts`
-or a normalization layer immediately beside `packages/control/src/server.ts`,
-not the command router. The command router should consume canonical intent
-events after normalization, while temporarily keeping old cases only as a
-compatibility bridge.
+emitted to the bus. That normalization lives in
+`projects/may-agent/packages/control/src/protocol.ts` beside the socket server. The command router
+consumes canonical intent events and retains only explicit compatibility cases
+for older internal producers.
 
 This keeps old clients working while giving every channel one durable semantic
 contract.
 
-`session.cancel.requested` is currently special-cased as a socket command type
-so legacy flat frames can bypass canonical envelope validation. That is a
-transitional compatibility rule. After socket-boundary normalization, durable
-`session.cancel.requested` events should use the canonical envelope with
-`source`, `owner`, and object `data`.
+A flat `session.cancel.requested` shortcut is explicitly normalized into the
+canonical envelope. A caller that already sends canonical `source`, `owner`,
+and object `data` passes ordinary envelope validation.
 
 ## Test Contract
 

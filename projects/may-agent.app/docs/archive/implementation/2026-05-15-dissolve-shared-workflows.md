@@ -3,6 +3,8 @@
 **Date:** 2026-05-15 (review applied 2026-05-17; all phases complete 2026-05-17)
 **Status:** ✅ Complete — shared/workflows/ dissolved
 **Owner:** platform
+**Current authority:** [Workflows](../../2a-design/workflows.md) and
+[Agent App Contract](../../2a-design/agent-app.md).
 
 ## Principle
 

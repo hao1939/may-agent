@@ -60,15 +60,28 @@ Every handler returns one envelope:
 - `waiting` must carry exact typed Conditions.
 - `needs-owner` deliberately hands the task to its accountable owner.
 
-Handlers may use normal tools and skills, including database-backed tools.
-They must not edit task storage, create worker sessions, acknowledge inbox
-delivery, or implement retries/recovery. Those are infrastructure duties.
+The selected handler may be a direct owner agent or an owner-owned workflow.
+It may use supplied tools and skills; a workflow may also run bounded agent
+steps. Those capabilities may access a database behind an explicit tool or SDK
+boundary. The handler must not edit task storage, acknowledge inbox delivery,
+or implement controller retries/recovery. Those are infrastructure duties.
 
 ## Actions and safety
 
 Actions create, update, close, or unblock resources. Updates use
 `expectedGeneration`; the reconciler checks generation and resource version,
 then commits task state, receipts, Conditions, and dependent wakeups atomically.
+
+Parent relationships express containment and decomposition only. They do not
+schedule children, establish ordering, or make child completion satisfy parent
+acceptance. Use `dependsOn` for ordering. Use a structural group when a node has
+no independently reconcilable outcome. An achieve task cannot close while it
+still contains live child tasks.
+
+A running handler must not include an update, close, unblock, or rebind action
+for its own task. Its admitted `converged` or `waiting` result owns that
+transition. Broad reprioritization, duplicate cleanup, and unrelated-branch
+changes belong to a bounded owner-review pass.
 
 App UI actions declare a semantic event factory in `app.actions`. Infrastructure
 translates `project.action.invoked` exactly once. Do not add an app-local action

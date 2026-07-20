@@ -1,6 +1,9 @@
 # Proposal: Explicit and Auditable Agent Execution
 
-**Status:** Accepted and implemented.
+**Status:** Historical accepted and implemented decision record.
+**Current authority:** [Architecture](../../2a-design/architecture.md),
+[System Boundary](../../2a-design/system-boundary.md), and
+[SDK](../../2a-design/sdk.md).
 **Implementation status:** Shared execution, strict direct tool policy, Gym
 denials/manifests, shared config parsing, and shared local-tool loading are
 implemented. Hosted and direct definition construction now use one builder,

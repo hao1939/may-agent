@@ -3,7 +3,7 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented through the centralized cron runtime.
 
-> **Status (2026-06-18):** Cron lifecycle is centralized in `cron-startup.ts`.
+> Cron lifecycle is centralized in `cron-startup.ts`.
 > All crons (agent-level from toolset-loader, app-level from ensureOwnerCron)
 > are created and loaded by their respective loaders, but subscribe+start
 > happens in ONE place: `startCronRuntime()`. This prevents double-dispatch
@@ -112,7 +112,7 @@ it is scoped by the `cron.json` file it sits beside:
 
 | Scope              | Trigger file                                       | Named handler file                                          | Use for                                                                                  |
 | ------------------ | -------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Agent-owned        | `agents/<agent>/cron.json`                         | `agents/<agent>/handlers/<name>.ts`                         | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
+| Agent-owned        | `agents/<agent>/cron.json`                         | `agents/<agent>/handlers/<name>.ts`                         | Standalone agent/system duties such as evaluation scans or metric handling                |
 | Legacy embedded app | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Backward-compatible embedded project apps                                                |
 
 V3 sibling apps do not use project-local `cron.json`. They declare schedules,
@@ -239,8 +239,8 @@ handler.routed               (rare — handler forwarded to another handler)
 | `handler.started`             | Handler fire began                                                                                                                                                |
 | `handler.completed`           | Handler fire finished successfully                                                                                                                                |
 | `handler.skipped`             | An explicit request could not be handled, was malformed, or was deliberately declined; routine event filtering returns silently                             |
-| `handler.workflow_dispatched` | Workflow-backed handler dispatched an agent session                                                                                                               |
-| `handler.failed`              | Handler fire threw an error (dominated by task-execution-worker timeouts)                                                                                         |
+| `handler.workflow_dispatched` | Workflow-backed handler dispatched a workflow run                                                                                                                 |
+| `handler.failed`              | Handler fire threw an error                                                                                                                                       |
 | `handler.routed`              | Handler forwarded work to another handler                                                                                                                         |
 
 Routine filtering is not a durable event. This keeps `handler.skipped` useful:
@@ -260,11 +260,16 @@ These events drive the `handler.success-rate`, `handler.fires-per-hour`, and
 
 ## Auto-Heartbeat
 
-Agents with heartbeat workflows get auto-generated trigger entries:
+Registered agents with matching heartbeat workflows get auto-generated trigger
+entries:
 
 - Hash-based offset (spreads heartbeats evenly)
 - 30-minute default interval
 - Opt-out: `"heartbeat": false` in agent.json
+
+This loader also recognizes app-local agents for compatibility. New app-owned
+recurring responsibility should use an app schedule and owner workflow, not an
+additional agent heartbeat for the same responsibility.
 
 ## Implementation
 

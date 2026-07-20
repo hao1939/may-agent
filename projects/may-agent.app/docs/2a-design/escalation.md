@@ -190,9 +190,10 @@ The project owner records escalation state on the affected task/branch:
 - next review/fallback;
 - terminal escalation event and applied disposition.
 
-The task may be `blocked` when the owner confirms an external blocker. The
-project should become `blocked` only when the whole owner loop lacks other safe
-autonomous work.
+The task may be `waiting` on an exact escalation/approval Condition, or
+`attention` when no safe exact continuation exists. Tasks do not have a
+`blocked` phase. The project should become `blocked` only when the whole owner
+loop lacks other safe autonomous work.
 
 ## Workflow Blocking
 

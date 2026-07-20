@@ -2,9 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for durable tasks, native session reuse,
-classified failures, expected JSON output, and required prepared worktrees;
-partial-result parsing, automatic worktree creation, UI, and metrics remain
-open.
+classified failures, expected-output validation, and opt-in prepared-worktree
+enforcement; partial-result parsing, automatic worktree creation, UI, and
+metrics remain open.
 
 May can delegate bounded coding work to native coding agents such as Codex CLI
 and Claude Code. These tools are not terminal tabs and they are not project
@@ -90,10 +90,10 @@ The current runtime has two layers:
 
 | Layer | File | Responsibility |
 |-------|------|----------------|
-| Tool surface | `src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately. |
-| Runtime runner | `src/app/cli-task-runner.ts` | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
-| Event schema | `src/app/event-bus.ts` | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`. |
-| Restart recovery | `src/app/daemon-events.ts` | Marks in-flight CLI tasks as orphaned after runtime restart. |
+| Tool surface | `projects/may-agent/src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately. |
+| Runtime runner | `projects/may-agent/src/app/cli-task-runner.ts` | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
+| Event schema | `projects/may-agent/src/app/event-bus.ts` | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`. |
+| Restart recovery | `projects/may-agent/src/app/daemon-events.ts` | Marks in-flight CLI tasks as orphaned after runtime restart. |
 
 The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
 retired. Keeping two execution paths produced different session, failure,
@@ -105,8 +105,8 @@ Shipped behavior today:
 - `run_cli_agent` writes `prompt.md` and `request.json`.
 - `cli-task-runner` writes `task.json`, `events.jsonl`, `result.md`, and
   `result.json`, plus `session.json` when the native session id is known.
-- Completion is based mostly on process exit code plus a compact summary from
-  `result.md`.
+- Completion requires a successful process, usable output, and any requested
+  JSON/required-field contract. Failures are classified by category.
 - The source May session receives a compact `session.steer.requested` update
   with paths and session id when `sourceSessionId` is available.
 - `files` are added to the worker prompt as scoped context.
@@ -232,6 +232,11 @@ cli.task.requested {
   reuseSession?: boolean;
   files?: string[];
   worktree?: string;
+  worktreePolicy?: "use-existing" | "require";
+  expectedOutput?: {
+    format: "markdown" | "json";
+    requiredFields?: string[];
+  };
 }
 
 cli.task.started {
@@ -274,6 +279,13 @@ cli.task.failed {
   structuredResultPath?;
   eventsPath?;
   error;
+  failureCategory?:
+    | "timeout"
+    | "permission"
+    | "tool"
+    | "no_output"
+    | "output_schema"
+    | "process";
   exitCode?;
   sourceSessionId?;
   cliSessionId?;
@@ -428,10 +440,10 @@ Mutation-heavy work should prefer an isolated worktree when practical. Full
 permission modes are acceptable only inside the trusted May container or an
 explicitly prepared worktree.
 
-The runner should record both requested sandbox and effective sandbox. If the
-runtime must normalize or override a stale request, the task record and events
-must explain the effective value and reason. Hidden permission changes make
-worker output hard to audit.
+The runner records both requested sandbox and effective sandbox. The current
+trusted-container adapter normalizes requests to `danger-full-access` and
+records the reason when that differs from the request. Callers must treat the
+effective value, not the requested value, as the execution fact.
 
 Worktree isolation is the default answer for parallel patch work:
 
@@ -447,10 +459,9 @@ the project owner reviews and merges; the worker does not own broad repo state.
 The runner accepts worktrees inside the project parent, so sibling git
 worktrees are supported.
 
-Do not rely only on process exit code. Some native tools can emit failure
-details in a structured stream even when the process exits successfully. The
-runner must inspect the event stream, stderr, final result, and expected
-artifacts before declaring the task completed.
+Do not rely only on process exit code. The current runner also rejects missing
+output and invalid requested JSON shapes. Richer partial-success interpretation
+from native streams remains a follow-up.
 
 ## Review Boundary
 

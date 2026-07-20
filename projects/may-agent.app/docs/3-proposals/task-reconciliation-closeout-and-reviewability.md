@@ -4,8 +4,8 @@
 
 **Design authority:** [Task Resource Engine](../2a-design/task-resource-engine.md)
 
-**Related follow-up:**
-[Task Reconciliation WebUI and Reviewability](task-reconciliation-webui-reviewability.md)
+**Related current design:**
+[Default Project UI](../2a-design/default-project-ui.md)
 
 ## Goal
 
@@ -20,7 +20,7 @@ while app-owned workflows retain domain policy and evidence.
 | Canonical reconciliation | Implemented and tested locally                                                | Reproduce from a clean checkout and run the delivery canary |
 | Persistent-task policy   | Project paths no longer select the workflow; the prompt marker is gone        | Reproduce the focused guard tests from a clean checkout     |
 | Scout proof case         | Deterministic access, failure, no-op, evidence, and path-admission tests pass | Run the optional credential-backed deployment smoke test    |
-| `tree.json` projection   | Compact current-state projection is implemented locally                       | Continue under the separate WebUI proposal                  |
+| `tree.json` projection   | Compact current-state projection and canonical WebUI read path are implemented | No remaining closeout work in this tracker                   |
 
 Local implementation is not delivery evidence. This tracker remains active
 until the clean-checkout and app-boundary checks below pass.

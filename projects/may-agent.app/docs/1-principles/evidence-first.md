@@ -1,6 +1,7 @@
 # Evidence-First Process
 
-How to validate ideas before building systems. Based on the context learning experiment (2026-03-27).
+How to validate ideas before building systems. The historical context-learning
+experiment below is an illustration, not a report of current runtime state.
 
 ## The Pattern
 
@@ -30,7 +31,7 @@ How to validate ideas before building systems. Based on the context learning exp
 | Honest A/B | With vs without context.md, same scenario | **Zero improvement** on derivable knowledge |
 | Real data check | 82/100 coder sessions tried unavailable `npx` | Clear repeating failure |
 | Focused A/B | npx-avoidance scenario, 3 runs each | **3/3 consistent improvement** |
-| Deploy | Curated facts for 6 agents, LLM merge pipeline | Running on k3s |
+| Deploy | Curated facts for 6 agents, LLM merge pipeline | Deployed for the experiment |
 
 Key finding: context learning helps with **environmental knowledge** (not in any file) but not **derivable knowledge** (agent reads from project files). The synthetic scenarios tested the wrong type.
 

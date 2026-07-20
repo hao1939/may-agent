@@ -1,8 +1,8 @@
 # Metrics & Alerts
 
 **Design status:** Accepted.
-**Implementation status:** Implemented with explicit blind spots and
-convergence gaps documented below.
+**Implementation status:** Partial; recording, evaluation, alerts, and the
+generic reactor are implemented. Project-app feedback remains selector-driven.
 
 ## Overview
 
@@ -17,21 +17,20 @@ signals only.
 Metrics do not directly drive work. The unified work model is:
 
 - A metric breaches → the breach is recorded as state and emitted as an event.
-- Every breach resolves to one owner. Project-scoped metrics default that owner
-  to the project owner and carry project context; apps do not need to subscribe
-  to every project metric for the common feedback path.
+- Every breach resolves to one accountable owner route and carries project
+  context when available.
 - Project blocked-frontier metrics should first wake the project owner with
   compact blocked/dependency context. The owner classifies blockers, creates or
   links local problem/unblock work, keeps true external waits precise, and
   escalates only when the blocker crosses an ownership boundary.
-- Non-project breaches are routed to the metric owner, heartbeat context, or
-  generic alert reactor.
+- A project app consumes the event only through a declared event/task selector.
+  Otherwise the owner inbox and generic alert reactor keep it visible.
 - The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
-- Only **P0 (urgent) metrics fork the agent directly**, bypassing the heartbeat. Everything else waits for the agent to look.
+- Only **P0 (urgent) metrics may fork an agent directly**. Lower priorities use
+  normal app, owner-inbox, heartbeat, or delayed fallback review.
 
-This is intentional — see `heartbeat.md`. Forking on every breach makes agents
-reactive; deferring to heartbeats makes them deliberative. Metrics are vitals,
-not pagers.
+This is intentional. Forking on every breach creates reactive churn. Metrics
+are observations that enter an ownership loop, not acceptance decisions.
 
 Built-in metrics are owned by `agents/may/handlers/metrics-snapshot.ts`; custom
 metrics can be added with `source_query` or `source_command`.
@@ -85,151 +84,59 @@ CREATE TABLE metric_snapshots (
 - `health` — pass/fail or count-of-failures signal.
 - `derived` — computed from other metrics.
 
-## System Metrics Registry
+## Runtime metric catalog
 
-The tables below are the prioritized metrics. See the `metrics` table in DB or
-`ALL_METRICS` in `agents/may/handlers/metrics-snapshot.ts` for the registry of
-record. Per KE-722, this doc and the runtime registry must agree on concrete
-numbers; when in doubt, the registry wins.
+The runtime catalog, not this design document, is the authority for concrete
+metric IDs, formulas, targets, thresholds, priorities, and active/retired
+status:
 
-The active system set is intentionally small. Metrics useful for research,
-conformance tracking, coaching detail, or debugging stay out of active alerting
-until they become necessary for keeping the loop running.
+- built-in definitions: `ALL_METRICS` in
+  `agents/may/handlers/metrics-snapshot.ts`;
+- current runtime status and custom definitions: the `metrics` table; and
+- historical values: `metric_snapshots`.
 
-### Infrastructure
+Do not copy the full catalog into design docs. It changes independently and a
+stale table is worse than no table.
 
-| ID                                             | What it answers                                                     | Source                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Target | Threshold | Alert |
-| ---------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------- | ----- |
-| `handler.success-rate`                         | Are handlers working?                                               | `handler.completed / (completed + failed)` from events (6h)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | 0.95   | 0.80      | below |
-| `handler.heartbeat-coverage`                   | Are heartbeat sessions happening broadly?                           | `COUNT(DISTINCT agent)` from heartbeat sessions (2h)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | 2      | 2         | below |
-| `agent.heartbeat-dark-count-2h`                | Did any scheduled heartbeat agent go dark?                          | enabled heartbeat cron agents with no heartbeat session in 2h                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | 0      | 0         | above |
-| `agent.config-invalid-count-1h`                | Did runtime skip an agent due to invalid config?                    | durable `agent.config_invalid` events (1h)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | 0      | 0         | above |
-| `runtime.daemon-heartbeat-stale`               | Is the daemon keepalive still emitting durable observations?        | latest `runtime.daemon.heartbeat` event age                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | 0      | 0         | above |
-| `runtime.project-app-schedule-orphan-count-1h` | Are project-app schedules actually driving owner/workflow progress? | mature `project-app:*:schedule:*` events with no workflow/owner follow-up within 2 minutes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | 0      | 0         | above |
-| `session.error-rate-6h`                        | Is anything failing?                                                | `error+interrupted / total` from sessions (6h). The `error='Clean start (fresh)'` exclusion (KE-797) is **non-functional** because `sessions.error` is nearly always NULL (KE-1558, KE-1878); the COALESCE fallback makes all interrupted sessions count as errors (KE-1778). **Known distortion sources (updated 2026-06-17):** (1) Zero-op startup failures (bundle compilation errors, concurrent dispatch collisions) inflate the error count — sessions that never reached an LLM turn (KE-2017: 75% of errors are 0-op in spike windows). (2) `planning_update` workflow interruptions historically ran ~60% (KE-2015) but collapsed to <6% after planner improvements (KE-2018, 2026-06-17); contribution is now negligible. The metric's 48h average is ~0.15 (range 0.01–0.64 depending on burst presence). The "real" agent error rate (opCount > 0 errors only / total) is ~4–7%. **Failure conservation (KE-1900):** a 36-hour measurement across an architectural transition showed total non-success rate conserved at ~10% while error-only dropped 12× (10.1% → 0.85%) — failures reclassified from `error` to `interrupted`, not eliminated. This metric measures label assignment, not reliability. Fix requires src/ change (ORDER-010). | 0.10   | 0.30      | above |
-| `session.planner-timeout-rate-6h`              | Is project planning repeatedly interrupted or timing out?           | timeout-like `workflow:project-planner` terminal sessions / all terminal planner sessions (6h, neutral if sample <5)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | 0.05   | 0.25      | above |
-| `session.first-turn-error-count-1h`            | Is the provider/model failing before the agent can act?             | recent error/interrupted sessions whose first assistant transcript row has `stopReason=error` or provider error text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | 0      | 15        | above |
-| `message.delivery-failed-count-1h`             | Are inter-agent messages failing to route?                          | `message.delivery_failed` events (1h)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | 0      | 0         | above |
-| `escalation.pending-count`                     | Are escalations accumulating without closure?                       | unresolved `escalation.created` events with no resolved/dismissed event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 0      | 3         | above |
-| `runtime.stale-running-session-count`          | Is work hanging?                                                    | running/idle non-evaluator sessions older than stale cutoff (30min). Platform-wide session health metric, owned by May. | 0      | 1         | above |
+Every operational metric definition must state:
 
-### Quality / Output
+- the question it answers;
+- accountable owner and optional project;
+- source, window, sample requirements, and known blind spots;
+- direction, target, threshold, and priority;
+- whether it is alerting, watch-only, or retired; and
+- what observation closes or recovers an alert.
 
-| ID                                           | What it answers                                                                       | Source                                                                                              | Target | Threshold | Alert      | Status      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ | --------- | ---------- | ----------- |
-| `session.failed-triage-rate-3h`              | Are failures being acted on?                                                          | failed/interrupted sessions with `needs_improvement` evaluation (3h)                                | 1.00   | 0.80      | below      | active      |
-| `eval.llm-coverage-lag-h`                    | Has the LLM evaluation lane gone silent?                                              | hours since latest `evaluatedByHeuristic=0` evaluation                                              | 1      | 4         | above      | active      |
-| `eval.llm-evals-24h`                         | Did enough sessions get deep evaluation recently?                                     | count of non-evaluator `evaluatedByHeuristic=0` evaluations (24h)                                   | 4      | 1         | below      | active      |
-| `evaluator.low-quality-rate-24h`             | Is evaluated work frequently `needs_improvement` or low-scoring? (dashboard-only, P3) | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10   | 0.80      | above      | active      |
-| `evaluator.substantive-low-quality-rate-24h` | Of _substantive_ evaluations, are quality failures frequent?                          | substantive needs-improvement count / substantive evaluations (24h)                                 | 0.10   | 0.30      | above      | active      |
-| `system.real-output-24h`                     | Is the system producing?                                                              | `git log` substantive files changed (24h)                                                           | 100    | 30        | below      | **retired** |
-| `project.blocked-over-6h`                    | Is work stuck on true blockers?                                                       | `COUNT(*)` from projects where blocked >6h                                                          | 0      | 4         | above      | active      |
-| `metric.stale-active-count`                  | Is measurement coverage stale?                                                        | active metrics without a recent snapshot                                                            | 0      | 8         | above      | active      |
-| `metric.structurally-pinned-count`           | Are any metrics stuck at a single value?                                              | active metrics with coefficient of variation = 1 over 7d snapshots (KE-938/939/940)                 | 0      | 0         | above      | active      |
-| `capability.status-reality-mismatch-count`   | Does runtime state match durable facts?                                               | stale projects, stale metrics, orphan terminal sessions, missing heartbeat agents                   | 0      | 3         | above      | active      |
-| `capability.zombie-session-count`            | Are sessions stuck alive?                                                             | running/idle sessions older than stale cutoff                                                       | 0      | 2         | above      | active      |
+A formula change that changes meaning requires a new metric ID or an explicit
+semantic cutover. Values from different meanings must not be compared as one
+series. Retiring a metric preserves history, marks it retired, resolves open
+alerts, and stops future measurement.
 
-### Additional Built-In Metrics
+### Interpretation
 
-These are measured but not in the prioritized tables above.
+A breach is evidence to investigate, not proof of failure. An all-green
+dashboard is a bounded statement about the registered measurements, not proof
+that useful work is happening. Confirm domain claims with the owning project's
+facts, task receipts, workflow evidence, sessions, and traces.
 
-**Handler / Infrastructure:**
+Useful metric classes include:
 
-- `handler.completed-count` — completions in 6h
-- `handler.failed-count` — failures in 6h
-- `handler.p95-duration` — 95th percentile handler duration in 6h
-- `handler.fires-per-hour` — handler starts in 1h
-- `runtime.daemon-heartbeat-stale` — daemon keepalive observation is missing or older than 7 minutes
-- `runtime.project-app-schedule-orphan-count-1h` — project-app schedule ticks that do not produce owner/workflow progress within 2 minutes
-- `infra.bus.event-count-1h` — total event bus events in 1h (volume indicator)
-- `infra.bus.subscriber-failed-count-1h` — event bus subscriber failures in 1h
-- `infra.messages.delivery-rate` — inter-agent message delivery success rate
-- `infra.persist.db-size-mb` — SQLite DB file size in MB
-- `infra.sessions.active-count` — currently running sessions
+| Class | Examples of questions |
+| --- | --- |
+| Infrastructure | Are handlers, delivery, persistence, schedules, and the daemon operating? |
+| Execution | Are sessions starting, finishing, and recovering honestly? |
+| Evaluation | Is quality review live, substantive, delivered, and closed? |
+| Project/domain | Is an owned domain fact outside its expected operating range? |
+| Meta-metric | Is measurement itself stale, pinned, noisy, or structurally invalid? |
 
-**Evaluator:**
+Project and content metrics should default to watch-only until evidence shows
+that an immediate wake improves outcomes. A count of activity is not a quality
+measure, and an evidence-backed no-op is not automatically a failure.
 
-- `evaluator.aftermath-coverage-rate-3h` — aftermath pipeline liveness, not a north-star quality goal
-- `evaluator.false-good-rate-sample` — reviewed good sessions overturned (24h); quality control on the evaluator itself
-- `evaluator.meaningful-review-rate-24h` — fraction of evaluations that are substantive (24h)
-- `evaluator.project-finding-delivery-rate-24h` — share of evaluation findings handled by the target owner's workflow; this measures routing completion, not owner agreement or remediation
-- `evaluator.project-feedback-pending-age-h` — age of the oldest evaluation finding still pending in the owner-delivery path
-- `evaluator.triage-closure-rate-24h` — fraction of failed sessions triaged and closed (24h)
-
-**Guard:**
-
-- `guard.blocked-count-15m` — guard blocks in 15m window
-- `guard.repeat-trigger-count-24h` — repeated guard triggers (same rule, same session) in 24h
-- `guard.triggered-count-24h` — total guard triggers in 24h (watch-only)
-- `guard.warned-count-24h` — total guard warnings in 24h (watch-only)
-
-**Project:**
-
-- `project.active-count` — observable count of projects currently pushing; not a health target by itself
-- `project.blocked-count` — true blocked projects only
-- `project.stale-active-count` — active apps with no owner or task-controller activity for 48h
-- `project.reconcile.event-latency-ms` — latency from project event to reconciler action (**retired** — legacy project handler disabled 2026-06-15; see KE-2011. DB status set to 'retired' as of 2026-06-17.)
-- `project.reconcile.launched-count` — reconciler-launched actions (**retired** — see above)
-- `project.reconcile.trigger-count` — reconciler invocations (**retired** — see above)
-
-**Scout:**
-
-- `scout.downstream-reference-files-7d` — files referencing scout knowledge (7d)
-- `scout.knowledge-practice-loaded` — whether scout knowledge practice is loaded (boolean)
-- `scout.knowledge-preamble-coverage` — fraction of KE entries with preamble coverage
-- `scout.sourced-artifacts-24h` — scout-sourced artifacts (24h)
-
-**Session:**
-
-- `session.empty-assistant-stop-count-1h` — sessions ending with empty assistant response (1h)
-- `session.finish-blocked-uncommitted-count-24h` — finish blocked by uncommitted changes (24h raw count)
-- `session.finish-blocked-unresolved-count-24h` — unresolved finish-blocked dirty exits (24h strict)
-- `session.planner-timeout-rate-6h` — project planner interruption/timeout reliability
-- `session.provider-error-count-1h` — provider errors at any turn (1h)
-
-**Escalation:**
-
-- `escalation.pending-count` — open escalation backlog that still needs owner closure
-
-### Retired From Active Alerting
-
-These metrics were useful while investigating specific questions, but they are
-not critical runtime-health signals now: `system.real-output-24h`,
-`project.blocked-rate-7d`, `v2.*`,
-`capability.session-trace-completeness`,
-`capability.self-directed-iteration-rate-24h`,
-`capability.process-uptime-h`, `capability.concurrent-session-max-1h`,
-`capability.tool-preset-drift-count`, and dynamic
-`agent.<name>.low-quality-streak` rows.
-
-Retiring a metric means: keep DB history, mark the metric `retired`, resolve any
-open alert for it, and stop measuring it in `metrics-snapshot.ts`.
-
-### All-Green ≠ Healthy: Known Structural Blind Spots (KE-726)
-
-**Reading the dashboard:** if any prioritized metric is red, treat it as a signal to investigate that layer. **All-green is necessary but not sufficient** — see below before treating green as evidence of healthy production.
-
-The "all green → healthy" reading was falsified at 2026-05-03 20:17Z: every prioritized metric was green at the moment the system had been producing zero real project iterations for 7h. Each metric has a floor or counting rule that prevents it from alerting in a specific failure mode the metric _names_:
-
-- `project.active-count` — formerly required `>=1`, which encouraged fake active projects. It is now observability only: zero active projects is healthy when waiting projects have clear resume signals.
-- `project.blocked-over-6h` — now counts only true `blocked` projects. `waiting` is a normal watch state and should not page by itself.
-- `project.stale-active-count` — registry `threshold=2`, alert_op=`>`. Demands ≥3 simultaneous stale-active projects to fire, but with `active-count` capped near 1 in practice this metric cannot breach in the failure mode it describes. **Not currently in the prioritized set** despite being the most direct signal for KE-724-class drift.
-- `system.real-output-24h` — can distinguish "system completely dark" from "system alive" but not "substance" from "plumbing."
-
-Read this dashboard as a liveness check on plumbing plus a first-pass quality
-signal, not proof of substance. Confirm direction with session transcripts,
-task receipts, workflow evidence, and `project.task.reconciled` events before
-concluding the system is producing meaningful work.
-
-### Evaluator LLM Lane Signals
-
-`eval.llm-coverage-lag-h` and `eval.llm-evals-24h` are deliberately separate.
-The lag metric catches lane death and is urgent. The count metric catches
-sampling starvation and is advisory. A low count is not proof that evaluator
-should create more reviews; evaluator should first check whether there were
-eligible recent sessions, whether Evaluation's `evaluation.deep.scan` schedule
-ran, and whether model/runtime failures or skip rules prevented useful deep
-evaluation.
+Coverage and quality are different. For example, evaluation-lane lag can prove
+that a review lane is quiet; it cannot by itself prove why it is quiet or that
+more reviews should be created. The owner checks eligibility, schedules,
+runtime failures, and skip rules before acting.
 
 ## Pipeline
 
@@ -240,11 +147,9 @@ metrics-snapshot handler
   -> records values to metrics + metric_snapshots
   -> custom metric section runs source_query/source_command metrics
   -> alerts are represented in metric_alerts
-  -> metric.breach routes to the resolved metric owner
-     -> project metric with no explicit owner: infer owner from project.owner
-     -> project owner: project.owner.requested with metric context
-     -> non-project owner: owner heartbeat/alert path
-  -> owner auto-handlers handle known metric patterns or project feedback
+  -> metric.breach routes to the resolved metric/project owner
+  -> matching app selectors may translate it into project work
+  -> owner inbox and known auto-handlers preserve unclaimed signals
   -> metric-alert-reactor is the generic fallback for unhandled alerts
 ```
 
@@ -272,7 +177,7 @@ configured grace period. P3 gets a longer grace period and longer retriage
 cooldown, but it is not exempt from owner judgment.
 
 Agents handling an alert must follow
-[manual/metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
+[metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
 operation, and either investigate then fix, calibrate, downgrade, upgrade or
 escalate, resolve stale state, or document an exception.
 
@@ -284,80 +189,75 @@ escalate, resolve stale state, or document an exception.
 Owner convention:
 
 1. `metrics.owner` if set.
-2. `projects.owner` when `metrics.owner` is empty and `metrics.project` points
-   to a project row.
+2. `project:<id>` when the definition names a project but no explicit owner.
 3. Metric id prefix if it matches an agent name.
 4. `may` by default.
 
 System-wide `project.*` metrics with no `metrics.project` stay owned by `may`.
-Project-scoped metrics should usually leave `metrics.owner` empty or set it to
-the project owner, so the resolver targets `projects.owner`. If a project metric
-declares another owner, that owner wins and is responsible for preserving the
-project context or handing the issue back to the project owner when needed.
+An explicit owner wins and is responsible for preserving project context or
+handing the issue back when needed.
 
 Ownership routing is runtime behavior, not an agent triage operation. Agents
 should not manually reroute alerts by editing `metrics.owner`; if routing is
 wrong, fix `metrics.project`, the project row's `owner`, or the resolver code.
 
-Default project feedback:
+Project feedback:
 
-- `metric.breach` with `data.project` or a metric row `project` field resolves
-  to the metric owner. If no explicit metric owner is set, the owner is inferred
-  from the project row.
-- When the resolved owner is the project owner, the default wake event is
-  `project.owner.requested`.
+- `metric.breach` preserves the resolved owner and project target.
+- A project app must declare a matching selector before it translates that
+  signal into `project.owner.requested` or a task intent.
 - The event carries `metricId`, current value, threshold, priority, direction,
   snapshot time, alert id, and any recent trend points available.
 - The project owner decides what the signal means. The runtime does not create
   task-tree branches, mark tasks blocked, or page a human except for P0.
 - `metric.recovered` follows the same project owner path so stale alert context
   can be closed or annotated instead of silently disappearing.
-- App-local `metricIds` subscriptions are optional escape hatches for metrics
-  that need deterministic custom handling. They are not required for ordinary
-  project feedback.
+- Prefer narrow `metricIds` selectors when only known metrics need app-specific
+  handling. A bare selector is appropriate only for an app that intentionally
+  owns all matching project metric feedback.
 
 Some built-ins also define handler-local alert config in
 `metrics-snapshot.ts` for rate, sustained, or stall semantics.
 
 ## Custom Metrics
 
-Agents can add domain metrics by inserting rows with a query or command:
+Define and record metrics through the supplied metric capability rather than
+writing runtime tables directly:
 
-```sql
-INSERT INTO metrics (id, name, owner, type, source_query, threshold, alert_op, status)
-VALUES (
-  'scout.avg-quality-7d',
-  'Scout average quality (7d)',
-  'scout',
-  'gauge',
-  'SELECT avg(quality) FROM evaluations WHERE agent = "scout" AND createdAt > strftime(''%s'',''now'')*1000 - 604800000',
-  0.4,
-  '<',
-  'active'
-);
+```ts
+sdk.metrics.define({
+  id: "scout.source-check-failures",
+  owner: "scout",
+  project: "scout-knowledge-lib",
+  type: "counter",
+  threshold: 3,
+  alertOp: ">",
+  status: "active",
+});
+
+sdk.metrics.record("scout.source-check-failures", failures, {
+  sampleSize: checks,
+  measuredBy: "scout-source-observer",
+});
 ```
 
-The snapshot handler runs custom `source_query` / `source_command` rows and
-records their values.
+Deterministic infrastructure handlers may define `sourceQuery` or
+`sourceCommand` metrics. Agent reasoning should use supplied tools/SDK
+capabilities rather than embedding database access into the agent runtime core.
 
-## Balanced Pairs (for project metrics)
+## Balanced interpretation
 
-Every project should track at least 2 metrics on different dimensions:
+When a project uses outcome metrics, compare different dimensions where that
+reduces gaming:
 
 ```
 Activity  → "Am I doing the work?"
 Impact    → "Is the work making a difference?"
 ```
 
-Without both, agents optimize pathologically. Examples:
-
-| Project                         | Activity metric      | Impact metric              |
-| ------------------------------- | -------------------- | -------------------------- |
-| Knowledge pipeline (scout)      | artifacts sourced    | downstream reference files |
-| System health (evaluator)       | sessions evaluated   | triage closure rate        |
-| Feature delivery (aks-explorer) | iterations completed | test pass rate             |
-
-Anti-gaming: if activity is high but impact is low, the agent is busy but not effective. The impact metric catches it.
+This is guidance, not a requirement to invent two metrics for every project.
+Use a metric only when its source and meaning are trustworthy. Activity without
+impact may indicate busywork; impact without enough observations may be noise.
 
 ### Cadence & Phase Awareness
 
@@ -370,168 +270,66 @@ Metrics are **slow-moving signals**. Don't chase them daily.
 
 ## Metric Lifecycle
 
-Metrics evolve — meeting a target is not done:
+Metrics evolve:
 
 1. **Create** — define in the metric registry or project/app metric setup with
    owner, project context when applicable, target, threshold, and closure path
 2. **Measure** — metrics-snapshot handler records automatically
-3. **Alert** — breach triggers heartbeat attention
-4. **Raise target** — target met consistently? Raise the bar or add dimensions
-5. **Graduate** — move to watch-only (requires human approval)
+3. **Observe** — start watch-only and validate meaning and noise
+4. **Alert** — enable a wake only when it improves the ownership loop
+5. **Calibrate** — revise threshold, priority, or interpretation from evidence
+6. **Retire or replace** — stop a metric whose meaning is weak or obsolete
 
-A metric at target is a signal the bar is too low. Never coast.
+Meeting a target may mean the system is healthy, the threshold is too weak, or
+the metric is no longer useful. Owner judgment decides which.
 
 ## Implementation
 
-- **Source of truth**: `metrics` table in DB. This doc is design rationale.
+- **Definition authority:** built-ins in `ALL_METRICS`; custom/current runtime
+  definitions and status in the `metrics` table.
 - **Snapshot handler:** `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, emits `metric.breach` events when `breached && !openAlert`
 - **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts` — consumes `metric.breach` events. P0 forks the owner directly. P1/P2/P3 remain visible for heartbeat/project handling first, then get fallback owner triage if still open after their grace period.
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts`
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others
 
-## Default Metric Feedback Routing
+## Metric feedback routing
 
-### Problem
+`metric.breach`, `metric.recovered`, and `metric.stalled` preserve the
+metric ID, owner, project target, current value, threshold, priority, alert ID,
+measurement time, and bounded trend.
 
-`metric.breach` is useful because it says "something changed enough to deserve
-judgment." The failure mode is losing that context:
-
-1. Bare `"metric.breach"` app subscriptions can catch unrelated metrics.
-2. Converting the breach into a generic heartbeat loses metric id, current
-   value, threshold, trend, alert id, and project context.
-3. Creating synthetic alert tasks by default adds process noise. The real owner
-   usually needs to review the task tree and decide whether the right response
-   is a task change, a metric calibration, a domain fix, or an escalation.
-
-### Design: Built-In Feedback First
-
-Metric breach routing should work without app-specific configuration.
+The current routing contract is:
 
 ```text
-metrics-snapshot
-  -> metric.breach { metricId, project?, owner?, current, threshold, priority, trend }
-  -> default metric feedback router
-     -> resolve owner from metric.owner, project.owner, metric prefix, or may
-     -> resolved project owner: project.owner.requested with metric context
-     -> resolved non-project owner: owner heartbeat/alert context
-     -> no owner: may generic alert reactor
-  -> owner judges the signal and closes the loop
+metric service records/evaluates
+  -> emit owner-targeted metric event
+  -> matching app event/task selector, when declared
+     -> deterministic app translation or owner task intent
+     -> metric.feedback.routed receipt
+  -> otherwise owner inbox remains queryable
+  -> generic reactor handles urgent or still-open fallback
 ```
 
-The metric owner is the event target. For project metrics, the default owner
-should be the project owner because the task tree is the durable project
-thinking surface. A breached metric should feed that thinking; it should not
-require a new metric-specific workflow or task lane before the project can
-react.
+An app is not selected merely because its owner name resembles the metric
+prefix. It must declare a matching selector. Prefer a narrow project or
+`metricIds` selector; use a type-only selector only when the app intentionally
+owns every matching metric event.
 
-The owner receives a compact packet:
+`metric.feedback.routed` proves that the app route accepted the signal. It
+does not prove owner judgment, remediation, metric recovery, or project/task
+completion. The generic reactor may still triage an alert that remains open
+after the configured grace period.
 
-- metric id, name, owner, project, priority, direction, current value, target,
-  threshold, alert operation, alert id, snapshot time, and recent trend.
-- related project link, task tree summary, and dashboard link when available.
-- original event id so the event trace can explain how the owner was woken.
+The owner then chooses one evidence-backed disposition:
 
-### Runtime Routing Contract
+- create or repair meaningful domain work;
+- repair broken execution or observation;
+- calibrate, downgrade, retire, or replace a weak metric;
+- record an accepted exception; or
+- escalate when the next required action crosses an ownership boundary.
 
-`metrics-snapshot` does not choose an app handler directly. It records metric
-state through the metric service. The metric service resolves the metric owner,
-creates or closes the `metric_alerts` row, and emits an owner-targeted event:
-
-```json
-{
-  "type": "metric.breach",
-  "owner": "agent:<resolved-owner>",
-  "data": {
-    "metricId": "...",
-    "project": "...",
-    "alertId": 123,
-    "current": 0,
-    "threshold": 1,
-    "target": 3,
-    "priority": "P1"
-  }
-}
-```
-
-The project-app loader then offers metric events to an app when the event owner
-matches the app owner. Project context remains in the payload, but it is not a
-second routing authority. If the owner app turns the signal into
-`project.owner.requested`, that wake uses the original metric packet as context.
-The legacy project reconciler should not subscribe directly to `metric.breach`
-or `metric.recovered`; otherwise the same alert can produce two owner wakes.
-Project reconciliation should happen because the owner app judged the metric
-signal or because a project event was emitted.
-
-When a metric event is offered to the owner app, the loader emits a durable
-receipt:
-
-```json
-{
-  "type": "metric.feedback.routed",
-  "owner": "agent:<resolved-owner>",
-  "data": {
-    "metricId": "...",
-    "alertId": 123,
-    "project": "...",
-    "appId": "...",
-    "route": "owner-app"
-  }
-}
-```
-
-This receipt proves delivery to the owner path. It is not a judgment and does
-not resolve the alert. The generic `metric-alert-reactor` treats a recent routed
-receipt as evidence that the owner path is active and defers fallback triage
-during the grace window. If the alert remains open with no judgment or recovery
-after the grace window, the reactor may still run fallback triage.
-
-This means `aks-rp-e2e.app` and `evaluation.app` do not need explicit
-`metricIds` subscriptions for ordinary feedback. Their owner receives the event
-because the metric owner resolves to `aks-explorer` or `evaluator`.
-
-### Owner Behavior
-
-The owner handles the breach as part of normal project judgment:
-
-- If the metric reveals missing work, add or repair meaningful tasks.
-- If the metric reveals broken execution, create a diagnosis/fix task near the
-  relevant branch.
-- If the metric is stale, noisy, or miscalibrated, fix the metric definition or
-  record an accepted exception.
-- If the breach is an ownership-boundary blocker or P0, escalate to the human
-  with the context needed to act.
-- When `metric.recovered` arrives, annotate or close the relevant context.
-
-The runtime must not decide the project response. It only records the signal,
-wakes the right owner, and preserves enough context for the owner to decide.
-
-### Optional Specialization
-
-Apps may still register explicit metric handlers when they add real value:
-
-- deterministic remediation for a known infrastructure metric.
-- expensive analysis that should run only for a small metric set.
-- app-local metrics that are not project-scoped and cannot be inferred.
-
-In those cases, `metricIds` filtering is an escape hatch, not the common path.
-Bare catch-all `metric.breach` subscriptions should be avoided unless the
-handler is the platform default router or generic fallback.
-
-### Task Tree
-
-Do not require every app to add a `metric-alerts` lane. The default path is:
-metric breach -> owner review -> owner updates the existing project/task tree.
-
-A project may create a standing task such as `project-health-feedback` when it
-helps the owner keep recurring metric work visible. That task should represent
-real project thinking and repeated review, not one child per alert by default.
-
-### What This Prevents
-
-- Metrics from one domain waking the wrong app.
-- Loss of metric context through generic tick conversion.
-- Duplicate standalone investigations for the same breach.
-- Alert-task clutter that hides the actual project plan.
-- Human notifications that do not include enough context to approve, reject, or
-  steer the work.
+The runtime does not choose that response. It also does not create one task per
+alert, mutate task state, satisfy a Condition from metric age, or treat recovery
+as proof that related project work is complete. A standing metric-review task is
+optional app organization, not a required runtime lane.

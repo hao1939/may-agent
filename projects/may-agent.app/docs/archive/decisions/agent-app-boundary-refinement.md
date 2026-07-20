@@ -1,6 +1,9 @@
 # Proposal: Agent App and Optional Autonomy Boundary
 
-**Design status:** Accepted.
+**Design status:** Historical accepted decision record.
+**Current authority:** [Agent App Contract](../../2a-design/agent-app.md),
+[Task Resource Engine](../../2a-design/task-resource-engine.md), and
+[Workflows](../../2a-design/workflows.md).
 **Implementation status:** Implemented, including canonical task state,
 compatibility removal, shared direct/hosted preparation, Gym parity, and
 deployed-binary verification.

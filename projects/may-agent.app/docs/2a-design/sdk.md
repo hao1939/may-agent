@@ -1,16 +1,8 @@
 # AgentSDK
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for runtime, event, workflow, project-app, and task-tree boundaries.
-
-> **Update (2026-06-18):** The SDK now also exports project-app primitives:
-> `defineProjectApp`, `eventDetails`, `eventData`, and `eventString`. These are
-> used in `*.app/app.ts` declarations. See
-> [agent-app.md](agent-app.md) for the Agent App boundary.
->
-> The task-tree SDK (`planningPacket`, `seedModelGapBacklog`,
-> `assignRunnableBacklogTasks`, etc.) is also exported for project-app
-> workflows. See [task-resource-engine.md](task-resource-engine.md).
+**Implementation status:** Implemented for runtime, event, workflow,
+project-app, and canonical task-state boundaries.
 
 The canonical interface between agent code (handlers, workflows, gym) and the system.
 
@@ -39,7 +31,7 @@ interface AgentSDK {
     data?: Record<string, unknown>,
     envelope?: EventEnvelopeOptions,
   ): void;
-  metrics: MetricAPI;
+  metrics: MetricService;
   query: QueryAPI;
   commands: CommandAPI;
   getDb(): Database; // compatibility escape hatch
@@ -58,8 +50,12 @@ interface AgentSDK {
 type EventEnvelopeOptions = {
   owner?: string; // "agent:<name>" or "human:<role>"
   source?: string;
+  target?: Record<string, unknown>;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
+  visibility?: "default" | "detail";
+  trace?: EventTrace;
 };
 
 type EscalationOptions = EventEnvelopeOptions & {
@@ -82,6 +78,21 @@ should prefer `query`, `commands`, and `metrics`.
 canonical events; they must not hide writes behind a method named as a read.
 Use `getDb()` only where a handler/workflow needs an escape hatch for mechanical
 projection or bookkeeping, and keep those reads bounded.
+
+## Project-app and task helpers
+
+The SDK exports the current authored and runtime boundaries:
+
+- `defineProjectApp`, event selectors, and event-data helpers for `app.ts`;
+- exact task result/action and Condition schemas plus admission helpers;
+- canonical task-state read/save/lock/lifecycle helpers;
+- generated task-tree projection helpers; and
+- project-app execution/output path resolution.
+
+Domain planning packets, frontier analysis, and app-specific decomposition
+belong in the owning app. They are not shared task-runtime SDK concepts. See
+[agent-app.md](agent-app.md) and
+[task-resource-engine.md](task-resource-engine.md).
 
 ## How Handlers Get It
 
@@ -181,7 +192,7 @@ interface WorkflowContext {
 }
 ```
 
-The external `WorkflowSDK` interface used by the legacy builder follows the
+The external `WorkflowSDK` interface follows the
 same terminal vocabulary: `done(summary, opts?)` or `blocked(reason,
 context?)`. Workflow modules normally receive `WorkflowContext`; both surfaces
 must remain semantically identical.

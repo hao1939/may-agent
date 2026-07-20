@@ -1,8 +1,10 @@
 # Design: Session Evaluation Trail
 
-**Design status:** Draft.
-**Implementation status:** Partial.
-**Date:** 2026-05-16.
+**Design status:** Accepted.
+**Implementation status:** Implemented for append-only trails, the SQLite
+summary projection, heuristic routing, selective evaluator review, inline Web
+UI review, and human feedback. Calibration and richer effectiveness analysis
+remain ongoing evaluation concerns.
 **Aligned with**: `sessions.md`, `webui.md`, `runtime.md`, `sdk.md`
 
 ## Purpose
@@ -149,35 +151,26 @@ The session page is an enriched chat window. Evaluation evidence appears beside 
 
 The human should not mentally match a separate evaluation rail to the transcript. When scrolling to a turn, the relevant evaluation evidence should be visible beside it.
 
-## Known Structural Distortions (KE-1644, KE-1645)
+## Interpretation And Calibration
 
-Empirical analysis (2026-06-08, 7-day window, 3,419 sessions) revealed two
-verdict-determination mechanisms that bypass content evaluation:
+The heuristic summary is a fast, versioned routing judgment, not ground truth.
+Terminal status, tool failures, material-output signals, and verification
+evidence can affect its verdict. Non-routine lanes receive a separate evaluator
+review, which may override the stored verdict and records its own artifact and
+session evidence.
 
-1. **Outcome-verdict collapse (KE-1644):** 97.3% of `needs_improvement`
-   verdicts come from heuristic auto-classification rules that check terminal
-   status (`interrupted`, `error`, `opCount≤2`), not work quality. Sessions
-   with `outcome=interrupted` receive 0% good verdicts despite averaging 24.8
-   productive ops — comparable to `done` sessions (23.5 ops). The heuristic
-   evaluator classifies terminal states, not work.
+Consumers should therefore:
 
-2. **repair_execution downgrade (KE-1645):** A single rule reclassifies 52.9%
-   of all evaluated sessions. If `targetBreakdown.execution === "issue"` or
-   `targetBreakdown.result === "issue"`, the aftermath downgrades a "good"
-   verdict to "acceptable" (quality capped at 0.65). The system's reported
-   good rate of 22.2% would be 67.8% without this rule. The downgrade does
-   not re-evaluate the session's work — it applies a blanket cap based on
-   structural signals (evidence of output, verification steps) orthogonal to
-   quality.
+- read `heuristicVersion`, lane, issues, and review evidence with the verdict;
+- separate execution failures from substantive output-quality findings;
+- compare metrics only across compatible evaluator/heuristic versions; and
+- use human feedback and reviewed verdicts as correction evidence rather than
+  rewriting prior rows.
 
-These distortions mean the evaluation trail's `verdict` field is primarily a
-function of session termination mode and structural checklist compliance, not
-substantive work quality. Consumers of evaluation data should be aware that
-`needs_improvement` may indicate scheduling/timeout behavior rather than poor
-agent work, and `acceptable` may indicate missing verification steps rather
-than mediocre output.
+Dated calibration findings and samples belong in the Evaluation app's
+criteria/calibration records, not in this stable May-agent contract.
 
-## Open Questions
+## Remaining Questions
 
 - How much line-level heuristic seeding is useful before it becomes noise.
 - Whether deeper LLM review should annotate every turn or only important/controversial turns.

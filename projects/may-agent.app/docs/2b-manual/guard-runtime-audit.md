@@ -9,7 +9,7 @@ one-off findings in runtime reports or task evidence, not in
 The audit answers four questions:
 
 1. Which guards are firing?
-2. Are they warning, blocking, repairing, or only observing?
+2. Are they warning, blocking, injecting guidance, or being skipped?
 3. Are repeated signals real behavior or duplicated noise?
 4. Does a metric breach indicate a bad threshold or a real process issue?
 
@@ -76,7 +76,8 @@ When a guard metric breaches:
 
 1. Check whether the breach is dominated by one guard or broad-based.
 2. Check whether the dominant signal is repeated within sessions.
-3. Check whether the action is mostly `warned` or includes `blocked`.
+3. Check whether the action is mostly `warned`, includes `blocked`, injects
+   guidance, or records a skip reason.
 4. Check recent throughput, because higher session volume can reveal a
    structural detector floor.
 5. Prefer root-cause repair over repeated threshold raises.

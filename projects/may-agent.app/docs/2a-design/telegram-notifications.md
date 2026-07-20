@@ -3,7 +3,6 @@
 **Design status:** Accepted.
 **Implementation status:** Partial; the foundation is implemented and the
 interaction refinements below remain.
-**Updated**: 2026-06-14
 
 ## Purpose
 
@@ -66,6 +65,12 @@ Observed weaknesses:
   human reply.
 - Slash-command help advertises status-like flows, but `/status` currently
   becomes a normal chat request rather than a fast read-model response.
+- `/cancel` without a resolvable session currently widens to cancel-all instead
+  of failing locally; this violates the shared human-control contract.
+- Unknown slash commands currently lose the slash and become ordinary chat
+  input instead of showing help or failing locally.
+- Help says `@agent` runs an agent directly, while the current chat contract
+  routes explicit delegation through May's persistent conversation.
 - Stale notifications remain actionable. A reply to an old message may wake the
   wrong session or reopen already-resolved work.
 
@@ -83,14 +88,14 @@ Why now
 Check-mode coverage is high, but evidence quality is missing live staging.
 
 Current state
-153/173 paths pass. 20 non-passing paths remain classified.
+Most paths pass. The remaining paths are classified and need live evidence.
 
 Reply
 approve
 adjust <changes>
 hold
 
-Open: /projects/aks-rp-e2e.app/ui/kanban/
+Open: /projects/aks-rp-e2e/tasks
 ```
 
 The message should answer four questions without requiring a web UI:
@@ -105,7 +110,7 @@ small typed event:
 
 ```json
 {
-  "type": "project.focus.approval.submitted",
+  "type": "project.approval.submitted",
   "source": "telegram",
   "owner": "agent:aks-explorer",
   "data": {
@@ -121,13 +126,13 @@ small typed event:
 The human-facing acknowledgement should describe the effect:
 
 ```text
-Approved. aks-rp-e2e planner is reviewing the focus plan now.
+Approved. The aks-rp-e2e owner is applying the decision now.
 ```
 
 Not:
 
 ```text
-Approval sent to project event project.focus.approval.submitted.
+Approval sent to project event project.approval.submitted.
 ```
 
 ## Reply Context Model
@@ -216,7 +221,7 @@ This is not human-authored text. It is a system-generated work packet for the
 receiver. The structured context must also remain attached to the routed event
 so reports and health checks can track whether the loop closed.
 
-## Priority 1: One May Human-Chat Session
+## Priority 1: One Default May Human-Chat Session
 
 The first priority is smooth communication and no lost replies:
 
@@ -224,10 +229,11 @@ The first priority is smooth communication and no lost replies:
 > context to pick the safest existing receiver and to enrich the delivered work
 > packet.
 
-Telegram, Web UI, and default terminal input should all connect to the same May
-human-chat session. Telegram reply chains are still useful, but only as local
-context attached to the message. They should not select or create separate May
-sessions.
+Unscoped Telegram, Web UI, and default terminal input should all connect to the
+same May human-chat session. Telegram reply chains are local context, not a
+reason to create separate May sessions. A reply may still steer an explicitly
+recorded worker session when that is the intended live receiver; escalation
+replies return to May first.
 
 Terminal can be more flexible: by default it uses the canonical May chat
 session, but operator/debug commands may attach to other sessions explicitly.
@@ -570,8 +576,9 @@ Then emit normal May input with the stale context attached.
 
 For now, do not introduce a new built-in service concept. The simpler rule is:
 
-> Human channels are platform adapters. They all feed the canonical May
-> human-chat session.
+> Human channels are platform adapters. Unscoped input feeds the canonical May
+> human-chat session; an explicit live session target may use the normal steer
+> path.
 
 Each adapter should stay small:
 
@@ -701,9 +708,9 @@ Natural language should remain primary. Slash commands are for fast mobile
 read-models and safety controls:
 
 - `/status` - compact system/project status, no LLM session required.
-- `/projects` - list project health: active, blocked, backlog, last progress.
+- `/projects` - list project posture, current attention, exact waits, and last movement.
 - `/project <id>` - focused project status and useful links.
-- `/tasks <id>` - project task summary / current active leaves.
+- `/tasks <id>` - canonical task sections and current Conditions.
 - `/sessions` - active sessions and what they are doing.
 - `/quiet <duration>` - mute P2/P3 notifications.
 - `/watch <project>` - raise attention level for one project.
@@ -721,7 +728,7 @@ High-value refinements:
   it understands.
 - **Human acknowledgements**: confirmations describe the outcome, not internal
   event names.
-- **Project links**: include web links for kanban, task, event trace, or feature
+- **Project links**: include web links for task review, event trace, or feature
   page when relevant.
 - **Digest mode**: grouped summary for repeated low-priority events.
 - **Stale reply detection**: avoid applying old approvals or steering to
@@ -749,12 +756,17 @@ High-value refinements:
    - Implement `/status`, `/projects`, `/project`, `/tasks`, `/sessions`.
    - Keep them fast and deterministic.
 
-4. Add notification lifecycle controls.
+4. Make commands fail narrow.
+   - `/cancel` without a target must not become cancel-all.
+   - Unknown slash commands show help or an error.
+   - Help describes `@agent` as May-managed delegation.
+
+5. Add notification lifecycle controls.
    - Dedupe by `dedupKey`.
    - Support quiet mode.
    - Detect stale replies using `staleAfterMs`.
 
-5. Add metrics.
+6. Add metrics.
    - `telegram.notification-context-rate`
    - `telegram.reply-actionable-rate`
    - `telegram.notification-dedupe-suppressed`

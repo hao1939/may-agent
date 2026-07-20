@@ -109,7 +109,10 @@ Available via `ctx`:
 | `ctx.blocked(reason, context?)`   | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
 | `ctx.emit(event)`                 | Emit a typed event                                                                                                                                              |
 | `ctx.dispatchEvent(type, data)`   | Dispatch to handler subscribers                                                                                                                                 |
-| `ctx.getDb()`                     | Access shared SQLite database                                                                                                                                   |
+| `ctx.query`                       | Read bounded runtime facts through the stable query facade                                                                                                      |
+| `ctx.commands`                    | Request supported typed runtime state changes                                                                                                                   |
+| `ctx.metrics`                     | Define, record, evaluate, and inspect metrics                                                                                                                    |
+| `ctx.getDb()`                     | Compatibility escape hatch for mechanical infrastructure queries not covered by the facades                                                                     |
 | `ctx.log(msg)`                    | Log a diagnostic message                                                                                                                                        |
 | `ctx.notify(msg)`                 | Send notification to human                                                                                                                                      |
 
@@ -121,6 +124,11 @@ Every workflow must end with either:
 - `return ctx.blocked(reason)` — locally blocked
 
 Never return without calling one of these.
+
+Prefer `ctx.query`, `ctx.commands`, and `ctx.metrics` over raw SQLite. A
+workflow may access the database through `ctx.getDb()` when a required
+mechanical operation has no stable facade yet, but database access must not
+become task-state mutation or hidden scheduling.
 
 Every agent step inside the workflow must likewise end through `finish()`.
 The runtime sends one corrective prompt and then returns an error result if the
@@ -329,9 +337,10 @@ export const guard: WorkflowGuard = {
 Guards are pure functions: event in → demands out. Do not add one just because
 a session looked bad once. Default to metrics or evaluator review first; add a
 guard only after the signal is repeated and precise, or when the risk is
-high-impact enough to prevent immediately. Current demand types are `warn`,
-`run_step`, and `block`. The design target also includes an `observe` mode for
-recording a guard signal without interrupting work.
+high-impact enough to prevent immediately. The current public
+`@may-agent/sdk` authoring types support `warn`, `run_step`, and `block`. The
+runtime also recognizes `observe` and `repair`, but do not author those through
+the public SDK until its type contract is aligned.
 
 By convention, every guard trigger should be observable through a
 `guard.triggered` event. The default guard handler owns common metrics such as

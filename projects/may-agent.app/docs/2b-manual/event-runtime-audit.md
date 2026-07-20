@@ -55,8 +55,8 @@ ORDER BY runs DESC;
 Then compare the emitted event types with handler subscriptions in code:
 
 ```bash
-rg -n 'on:|events:|subscribe|project\\.owner\\.requested|session\\.completed|metric\\.breach' \
-  agents projects packages src
+rg -n 'on:|events:|subscribe|project\\.owner\\.requested|session\\.end|metric\\.breach' \
+  agents projects packages projects/may-agent/src
 ```
 
 Before adding a new `on:`-only handler:

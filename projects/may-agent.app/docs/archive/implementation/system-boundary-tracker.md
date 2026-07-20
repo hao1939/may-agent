@@ -9,13 +9,13 @@
 > centralized cron lifecycle, legacy project handler disabled, evaluation/scout
 > migrated to apps. The remaining work is tracked in
 > [system-operations-model.md](../../3-proposals/system-operations-model.md)
-> (handler consolidation, static checks, ops health packet).
+> (current operations-ownership convergence).
 >
 > This file is preserved as historical context for the phases that shipped.
 > For current architecture direction, see
 > [agent-app.md](../../2a-design/agent-app.md).
 
-**Design status:** Historical tracker. It records completed and superseded
+It records completed and superseded
 handler-centric migration slices. Current gaps belong in the governing Tier 2
 design doc or the explicitly linked operations migration record above.
 

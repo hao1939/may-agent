@@ -7,7 +7,9 @@ events move work
 metrics expose signals
 agents judge and act
 workflows make repeated work explicit
-projects hold durable goal context
+apps organize durable domain work
+projects hold goal and posture
+task resources optionally track desired and observed work state
 ```
 
 ## Documentation tiers

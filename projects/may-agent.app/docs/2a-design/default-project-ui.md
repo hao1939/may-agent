@@ -1,9 +1,7 @@
 # Default Project UI
 
-**Design status:** Accepted
-
-**Implementation status:** Partial; convergence is tracked in
-[Task Reconciliation WebUI and Reviewability](../3-proposals/task-reconciliation-webui-reviewability.md)
+**Design status:** Accepted.
+**Implementation status:** Implemented.
 
 The default project UI is the shared control surface for every Agent App.
 Domain UIs may go deeper, but a person should be able to open any project and

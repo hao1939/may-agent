@@ -2,6 +2,9 @@
 
 **Status:** Historical; all recorded findings are resolved. Active contracts
 now live in the linked Tier 2 design and manual documents.
+**Current authority:** [Architecture](../../2a-design/architecture.md),
+[SDK](../../2a-design/sdk.md), and
+[Workflow authoring](../../2b-manual/workflow-authoring.md).
 **Author:** assistant via e2e-suite work
 **Date:** 2026-05-19
 

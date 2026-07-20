@@ -135,8 +135,9 @@ Do not migrate existing workflows until that need and loader contract exist.
 ## Scope And Ownership
 
 Every workflow has one owning agent. For an app task, resolve the task's owner
-first, then discover workflows only in that agent's app-local directory. A
-standalone agent uses its standalone directory. App-root workflow discovery is
+first. If that agent is registered app-locally, its app-local workflow
+directory is the complete scope; otherwise use the standalone agent directory.
+The runtime does not merge the two directories. App-root workflow discovery is
 unsupported.
 
 Workflow names need only be unique for their owning agent. Cross-owner reuse
@@ -144,9 +145,8 @@ uses an explicit qualified call or a shared helper module; discovery never
 merges catalogs from multiple owners.
 
 The effective name is the exported `name`, not only the filename. Duplicate
-effective names within one scope are invalid. Discovery must report and omit
-an ambiguous name instead of selecting it by directory order. A closer-scope
-workflow may intentionally override one valid farther-scope workflow.
+effective names within the selected scope are invalid. Discovery reports and
+omits an ambiguous name instead of selecting it by directory order.
 
 ## Discovery And Reload
 

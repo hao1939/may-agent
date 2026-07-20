@@ -18,8 +18,8 @@ inventory.
 
 There are two tool surfaces: the `agents` tool (for session management) and the
 separate `message` tool (for async inter-agent communication). The old
-`agents.message` / `agents.send` actions were removed in commit d15c5249 and
-return a deprecation error.
+`agents.message` / `agents.send` actions are removed and return a deprecation
+error.
 
 ### agents tool actions
 
@@ -65,19 +65,21 @@ sdk.message("arc", "Review this design");
 ## Session Tree
 
 ```
-call creates children; fork creates independent sessions:
+call and fork both create causal child sessions; only call blocks:
 
   Root (project owner review)
     ├── call("dev", task)              ← child (blocks)
     ├── call("arc", review)            ← child
     ├── call("scout", review)          ← child
-    └── fork("evaluator", task)        ← independent (non-blocking)
+    └── fork("evaluator", task)        ← child (non-blocking)
 ```
 
 ## Context Passing
 
-- **call:** child sees parent's task + context. Result flows back.
-- **message (tool):** no session until picked up. Agent sees it in heartbeat inbox.
+- **call:** child sees the supplied task, explicit context files/skill, and
+  runtime lineage. The result flows back to the caller.
+- **message (tool):** no session starts immediately. The item remains in the
+  receiver's owner inbox until an owner review path consumes it.
 
 ## When to Use What
 

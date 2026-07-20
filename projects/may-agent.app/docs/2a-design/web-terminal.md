@@ -1,8 +1,8 @@
 # Design: Web Terminal
 
-**Design status:** Draft.
-**Implementation status:** Partial.
-**Date**: 2026-07-10
+**Design status:** Accepted.
+**Implementation status:** Implemented for shared profiles, streaming UTF-8,
+active-client resize ownership, tmux continuity, and browser xterm rendering.
 **Aligned with**: `webui.md`, `may-console.md`, `http-boundary.md`
 
 ## Purpose
@@ -85,18 +85,15 @@ same profile cannot have independent server-side sizes at the same time. This is
 acceptable: refreshing or focusing the window the human is using should make
 that window the current size owner.
 
-### Reconnect and Replay
+### Reconnect and redraw
 
 Browser refresh is an attach, not a process restart. The terminal manager keeps
 the tmux-backed profile warm for its idle TTL.
 
-Bounded replay is allowed so a refresh does not leave the browser blank. Replay
-is a recent-output convenience, not an authoritative terminal screen model. For
-interactive TUI programs, the live tmux attach and subsequent redraw are the
-source of truth.
-
-If replay causes corruption for a TUI, prefer a simpler attach/current-stream
-behavior over adding server-side terminal emulation.
+The manager does not replay raw terminal bytes when a browser attaches or
+reattaches. Replaying an arbitrary ANSI tail can corrupt an interactive TUI
+because it is not a complete screen state. The live tmux attach and the
+program's subsequent redraw are the source of truth.
 
 Browser scrollback is useful but not the durable audit source. tmux owns the
 long-lived terminal session, and xterm keeps local scrollback for the attached
@@ -106,7 +103,7 @@ plain terminal output, scrolling cannot reconstruct them. When durable review of
 such content matters, use a transcript or explicit command output artifact
 rather than relying on browser scrollback.
 
-## Implementation Checks
+## Implementation checks
 
 - Split UTF-8 inside a JSONL frame must round-trip without replacement
   characters.
@@ -115,5 +112,10 @@ rather than relying on browser scrollback.
 - A browser resize must resize tmux through the normal websocket frame path.
 - CSS must give the terminal mount a stable real container; it should not hide
   fit problems with profile-specific spacing.
-- May Console, shell, Claude, Codex, and ops should keep using the same code
-  path.
+- Passive concurrent clients must not resize or receive synthetic replay.
+- May Console, shell, Claude, Codex, and ops use the same code path.
+
+Focused coverage lives in
+`projects/may-agent/packages/terminal/src/manager.test.ts`,
+`projects/may-agent/packages/terminal/src/terminal-bridge.test.ts`, and the
+browser terminal page.

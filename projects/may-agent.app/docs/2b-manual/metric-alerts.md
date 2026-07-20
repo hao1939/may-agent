@@ -9,9 +9,10 @@ Alert ownership is resolved by code, not by agent judgement. Every metric has
 an owner by convention:
 
 1. `metrics.owner` if set.
-2. If `metrics.owner` is empty and `metrics.project` is set and matches a row
-   in `projects`, use `projects.owner`.
-3. The metric id prefix if it matches an agent name, for example `arc.*`.
+2. `project:<id>` if `metrics.project` is set, so the normal project route can
+   resolve the current app/owner.
+3. The metric id prefix if it is an eligible agent convention, for example
+   `arc.*`.
 4. `may` as the default owner.
 
 System-wide `project.*` metrics with no `metrics.project` are owned by `may`
@@ -22,7 +23,7 @@ Do not manually reroute an alert by editing `metrics.owner` during triage. If
 ownership is wrong, fix the source metadata that the resolver uses:
 
 - For project-scoped metrics, set `metrics.project` to the project id/path/name
-  and make sure the project row has the correct `projects.owner`, unless the
+  and make sure the project app/registry has the correct owner, unless the
   metric intentionally has its own explicit `metrics.owner`.
 - For a system metric with no project, fix the metric definition or owner
   resolver code.

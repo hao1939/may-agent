@@ -27,6 +27,8 @@ contracts; Tier-2 design governs when wording conflicts.
 - [Legacy cleanup and resume path](implementation/2026-05-20-legacy-cleanup-resume-path.md)
 - [System-boundary tracker](implementation/system-boundary-tracker.md)
 - [Handler boundary audit](implementation/handler-boundary-audit.md)
+- [App root cleanup — 2026-06-13](implementation/2026-06-13-app-root-cleanup.md)
+- [Task reconciliation WebUI cutover](implementation/task-reconciliation-webui-reviewability.md)
 
 ## V2
 

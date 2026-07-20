@@ -77,6 +77,12 @@ resync. An app without schedules installs no Cron entries. Direct and Gym
 execution load only the requested agent preparation; they do not attach the
 autonomous host.
 
+`budget.maxConcurrent` bounds the app task controller. `sessionsPerDay` and
+`tokensPerDay` are currently planning and observation metadata, not enforced
+daily quotas. Schedules must therefore be designed below the planning envelope,
+and actual use must be observed. Hard quota enforcement is a separate runtime
+capability, not an implied app guarantee.
+
 App IDs and owner-agent IDs are independent. Existing mappings remain valid;
 same-name identity is not required.
 
