@@ -1617,6 +1617,9 @@ export class SubagentManager {
     if (!errorText && session.requireFinish && !finishParams) {
       errorText = "Workflow agent step ended without calling finish() after one corrective prompt";
     }
+    if (!errorText && session.outputSchema && finishParams && finishParams.result === undefined) {
+      errorText = "Workflow agent step completed without the required schema-backed finish().result payload";
+    }
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
