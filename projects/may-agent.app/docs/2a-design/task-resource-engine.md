@@ -173,6 +173,7 @@ Unknown fields are rejected. Task actions use the same schema and convention
 defaults in model output, authored workflows, tests, and production admission:
 
 - parent defaults to the app root;
+- app/project id aliases may normalize to that same app root during admission;
 - mode defaults to `achieve`;
 - priority defaults to `P2`;
 - outputs default to an empty list; and
