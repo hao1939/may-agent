@@ -1,9 +1,12 @@
 # Proposal: Explicit and Auditable Agent Execution
 
-**Status:** Accepted; implementation in progress.  
+**Status:** Accepted and implemented.
 **Implementation status:** Shared execution, strict direct tool policy, Gym
 denials/manifests, shared config parsing, and shared local-tool loading are
-implemented. Preparation-parity coverage remains.  
+implemented. Hosted and direct definition construction now use one builder,
+and deterministic preparation-parity coverage verifies prompt, model, tool
+names, skill catalog, guards, finish policy, compaction policy, timestamp, and
+context paths.
 **Scope:** Make every direct or Gym run explicit about which configured tools
 the environment denies and which tools the agent actually receives.
 
@@ -81,9 +84,11 @@ sets, and Gym includes that manifest in the trial result and prints the compact
 counts/restrictions. An effective tool without a direct implementation fails
 before generation.
 
-The remaining gap is proof that, given the same effective definition and
-environment inputs, hosted and direct preparation produce the same prompt,
-skills, guards, model, finish policy, and tool names.
+Given the same effective definition and environment inputs, hosted and direct
+preparation now produce the same prompt, skills, guards, model, finish policy,
+compaction policy, context paths, and tool names. The parity test fixes both the
+session identity and prompt timestamp so differences cannot be hidden by
+volatile prompt data.
 
 ## Required Contract
 
