@@ -194,13 +194,21 @@ query or feed, check time, optional fingerprint, and bounded item IDs or URLs.
 Credential-bearing query strings are removed before it becomes task evidence.
 
 XHS acquisition is currently workflow-observed. The other source lanes return
-structured agent-reported observations until a small deterministic acquisition
-is justified for that source; task evidence labels that provenance explicitly.
-A session ID alone never satisfies source acceptance.
+structured agent-reported query/feed and item observations until a small
+deterministic acquisition is justified for that source. The workflow supplies
+their `checkedAt` value from its own clock and labels the mixed provenance
+explicitly. A session ID alone never satisfies source acceptance.
 
 A changed result must name files that exist and whose resolved real paths stay
 inside the allowed Scout roots. A no-op has zero outputs and explains why the
 current source evidence did not justify a useful change.
+
+Before dispatch, the workflow records which knowledge files already exist. A
+new Markdown finding is not admitted when one of its credential-free source
+URLs already occurs in another knowledge file. Updating that existing file is
+allowed. This is a narrow exact-source guard, not semantic similarity or a new
+deduplication registry; Scout still decides whether related content should be
+updated, consolidated, or left unchanged.
 
 ## External Waits
 

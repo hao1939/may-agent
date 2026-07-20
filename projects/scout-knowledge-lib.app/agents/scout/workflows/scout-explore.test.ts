@@ -11,6 +11,7 @@ import { join } from "node:path";
 import {
   admittedOutputPaths,
   buildExploreTask,
+  duplicateSourceReferences,
   executeScoutExplore,
   xhsWaitResult,
 } from "./scout-explore";
@@ -98,6 +99,11 @@ describe("scout-explore workflow prompt", () => {
     );
     expect(task).toContain("do not write paths like `projects/explore/...`");
     expect(task).toContain("Return summary, source, and outputs");
+    expect(task).toContain("The workflow supplies checkedAt");
+    expect(task).toContain("open it before deciding");
+    expect(task).toContain(
+      "Never create a new finding that repeats a source URL",
+    );
   });
 
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
@@ -276,7 +282,6 @@ describe("scout-explore workflow prompt", () => {
             source: {
               name: "xhs",
               queryOrFeed: "ignored because the workflow owns XHS evidence",
-              checkedAt: new Date().toISOString(),
               itemIdsOrUrls: [],
             },
             outputs: [
@@ -347,7 +352,6 @@ describe("scout-explore workflow prompt", () => {
           source: {
             name: "xhs",
             queryOrFeed: "ignored",
-            checkedAt: new Date().toISOString(),
             itemIdsOrUrls: [],
           },
           outputs: [
@@ -410,7 +414,6 @@ describe("scout-explore workflow prompt", () => {
             source: {
               name: "hn",
               queryOrFeed: "https://news.ycombinator.com/newest?token=secret",
-              checkedAt: new Date().toISOString(),
               itemIdsOrUrls: [
                 "https://news.ycombinator.com/item?id=123&token=secret",
               ],
@@ -429,7 +432,7 @@ describe("scout-explore workflow prompt", () => {
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
-          "source-provenance:agent-result",
+          "source-provenance:agent-result+workflow-time",
           "result:evidence-backed-no-op",
           "session:s_hn",
         ]),
@@ -450,7 +453,6 @@ describe("scout-explore workflow prompt", () => {
             source: {
               name: "github",
               queryOrFeed: "agents",
-              checkedAt: new Date().toISOString(),
               itemIdsOrUrls: [],
             },
             outputs: [],
@@ -471,7 +473,7 @@ describe("scout-explore workflow prompt", () => {
     });
   });
 
-  it("names the invalid current-source field", async () => {
+  it("owns checkedAt instead of trusting an agent-reported clock", async () => {
     const result = await executeScoutExplore(
       workflowContext(
         async () => ({
@@ -493,12 +495,92 @@ describe("scout-explore workflow prompt", () => {
     );
 
     expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "converged",
+        evidence: expect.arrayContaining([
+          "source-provenance:agent-result+workflow-time",
+        ]),
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("not-a-time");
+  });
+
+  it("rejects a newly created finding whose source URL already exists", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-duplicate-admission-"));
+    temporaryRoots.push(root);
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    mkdirSync(findingsDir, { recursive: true });
+    const existing = join(findingsDir, "existing.md");
+    const duplicate = join(findingsDir, "duplicate.md");
+    writeFileSync(
+      existing,
+      "Source: https://user:pass@example.com/research?token=secret\n",
+    );
+    const before = new Set([existing]);
+    writeFileSync(
+      duplicate,
+      "Same source: https://other:secret@example.com/research?token=other\n",
+    );
+
+    expect(duplicateSourceReferences([duplicate], before, projectDir)).toEqual([
+      {
+        output: duplicate,
+        sourceUrl: "https://example.com/research",
+        existingFiles: [existing],
+      },
+    ]);
+    expect(duplicateSourceReferences([existing], before, projectDir)).toEqual(
+      [],
+    );
+  });
+
+  it("does not converge a run that creates an exact-source duplicate", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-duplicate-run-"));
+    temporaryRoots.push(root);
+    const appDir = join(root, "scout.app");
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    const workspaceDir = join(appDir, "agents", "scout", "workspace");
+    mkdirSync(findingsDir, { recursive: true });
+    mkdirSync(workspaceDir, { recursive: true });
+    const existing = join(findingsDir, "existing.md");
+    const duplicate = join(findingsDir, "duplicate.md");
+    writeFileSync(existing, "Source: https://example.com/research\n");
+
+    const ctx = workflowContext(async () => {
+      writeFileSync(duplicate, "Source: https://example.com/research\n");
+      return {
+        status: "done",
+        sessionId: "s_duplicate",
+        structuredResult: {
+          summary: "Created a new finding.",
+          source: {
+            name: "hn",
+            queryOrFeed: "topstories",
+            itemIdsOrUrls: ["https://example.com/research"],
+          },
+          outputs: [duplicate],
+        },
+      };
+    }, "hn");
+    ctx.appDir = appDir;
+    ctx.projectDir = projectDir;
+
+    expect(await executeScoutExplore(ctx)).toMatchObject({
       type: "blocked",
+      reason:
+        "Scout exploration created a new finding with source URLs already present in the knowledge library",
       context: {
-        source: "github",
-        invalidField: "checkedAt",
-        reason: "timestamp is invalid",
-        sessionId: "s_github",
+        duplicates: [
+          {
+            output: duplicate,
+            sourceUrl: "https://example.com/research",
+            existingFiles: [existing],
+          },
+        ],
+        sessionId: "s_duplicate",
       },
     });
   });

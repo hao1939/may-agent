@@ -344,21 +344,26 @@ documentation of a possibility.
 Keep the current three mechanical claims separate:
 
 1. XHS source acquisition is workflow-observed.
-2. arXiv, HN, and GitHub source observations are structured but agent-reported.
+2. arXiv, HN, and GitHub query/feed and item observations are structured but
+   agent-reported; the workflow supplies their check time.
 3. output admission proves that a reported file exists and resolves inside an
-   allowed root.
+   allowed root, and rejects a newly created Markdown finding when one of its
+   exact source URLs already exists elsewhere in the knowledge library.
 
 Output admission does not prove that a pre-existing file changed in that run,
 and the workflow does not deterministically verify semantic source grounding.
 Those are Scout/workflow-contract judgments under May's acceptance model.
 
-Do not add an artifact ledger or broad filesystem snapshot to claim more. Add a
-small deterministic source fetch only when repeated failures show that stronger
-provenance is worth its source-specific code.
+Do not add an artifact ledger or content snapshot to claim more. The exact URL
+guard records only the file paths that existed before dispatch and scans current
+Markdown source URLs during admission. Add a small deterministic source fetch
+only when repeated failures show that stronger provenance is worth its
+source-specific code.
 
 Make invalid-source failures diagnostic without exposing secrets. Evidence
-should name the invalid field (`name`, `checkedAt`, `queryOrFeed`, or item list)
-instead of only saying `invalid current-source evidence`.
+should name the invalid agent field (`name`, `queryOrFeed`, or item list)
+instead of only saying `invalid current-source evidence`. `checkedAt` is not an
+agent field; the workflow supplies it from its own clock.
 
 ### 7. Make experience-review policy enforceable or advisory
 

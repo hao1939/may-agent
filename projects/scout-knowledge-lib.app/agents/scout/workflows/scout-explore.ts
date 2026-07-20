@@ -5,7 +5,13 @@
  * prepares source evidence where available, then admits one bounded result.
  */
 import { createHash } from "node:crypto";
-import { existsSync, realpathSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";
 import {
   type ProjectAppTaskHandlerResult,
@@ -47,12 +53,13 @@ type SourceObservation = {
   itemIdsOrUrls: string[];
 };
 
+type AgentSourceObservation = Omit<SourceObservation, "checkedAt">;
+
 const ExploreAgentResultSchema = Type.Object({
   summary: Type.String({ minLength: 1, maxLength: 1000 }),
   source: Type.Object({
     name: Type.Union(sourceNames.map((source) => Type.Literal(source))),
     queryOrFeed: Type.String({ minLength: 1, maxLength: 300 }),
-    checkedAt: Type.String({ minLength: 1, maxLength: 40 }),
     fingerprint: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
     itemIdsOrUrls: Type.Array(Type.String({ maxLength: 500 }), {
       maxItems: 20,
@@ -63,7 +70,7 @@ const ExploreAgentResultSchema = Type.Object({
 
 type ExploreAgentResult = {
   summary: string;
-  source: SourceObservation;
+  source: AgentSourceObservation;
   outputs: string[];
 };
 
@@ -103,9 +110,9 @@ ${JSON.stringify(xhsPacket ?? { query: "missing", items: [] }, null, 2)}
   const resultContract = `
 Result contract:
 - Return summary, source, and outputs through finish().
-- source must identify the source name, exact query or feed checked, current
-  checkedAt timestamp, optional retrieval fingerprint, and at most 20 stable
-  item IDs or credential-free URLs.
+- source must identify the source name, exact query or feed checked, optional
+  retrieval fingerprint, and at most 20 stable item IDs or credential-free
+  URLs. The workflow supplies checkedAt; do not invent or return a timestamp.
 - List every created or updated file as an absolute path in outputs.
 - For an evidence-backed no-op, return outputs: [] and explain in summary why
   the current source observation did not justify a useful library change.
@@ -119,6 +126,7 @@ Output contract:
 - Run-level drafts may go under \`${paths.appDir}/agents/scout/workspace/findings/\`.
 - Append short user-facing highlights to \`${paths.appDir}/agents/scout/workspace/digest/today.md\` when useful.
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
+- Search source URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a source URL already present elsewhere; update the matched file or return an evidence-backed no-op.
 - Treat these absolute roots as authoritative. Never prepend \`projects/scout-knowledge-lib\` to the current working directory.
 - Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
 - If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.
@@ -231,6 +239,8 @@ function sanitizeSourceItem(value: string): string {
   const compact = value.trim().slice(0, 500);
   try {
     const url = new URL(compact);
+    url.username = "";
+    url.password = "";
     for (const key of [...url.searchParams.keys()]) {
       if (
         /(auth|authorization|cookie|credential|key|password|secret|signature|token|xsec)/i.test(
@@ -251,8 +261,7 @@ type SourceObservationAdmission =
   | { ok: true; observation: SourceObservation }
   | {
       ok: false;
-      invalidField:
-        "source" | "name" | "queryOrFeed" | "checkedAt" | "itemIdsOrUrls";
+      invalidField: "source" | "name" | "queryOrFeed" | "itemIdsOrUrls";
       reason: string;
     };
 
@@ -276,8 +285,6 @@ function admitSourceObservation(
       reason: `expected ${expectedSource}`,
     };
   }
-  const checkedAt = String(source.checkedAt ?? "").trim();
-  const checkedTime = Date.parse(checkedAt);
   const queryOrFeed = sanitizeSourceItem(
     String(source.queryOrFeed ?? "")
       .trim()
@@ -288,27 +295,6 @@ function admitSourceObservation(
       ok: false,
       invalidField: "queryOrFeed",
       reason: "query or feed is empty",
-    };
-  }
-  if (!Number.isFinite(checkedTime)) {
-    return {
-      ok: false,
-      invalidField: "checkedAt",
-      reason: "timestamp is invalid",
-    };
-  }
-  if (checkedTime > now + 5 * 60_000) {
-    return {
-      ok: false,
-      invalidField: "checkedAt",
-      reason: "timestamp is in the future",
-    };
-  }
-  if (now - checkedTime > 24 * 60 * 60_000) {
-    return {
-      ok: false,
-      invalidField: "checkedAt",
-      reason: "timestamp is older than 24 hours",
     };
   }
   if (
@@ -334,13 +320,108 @@ function admitSourceObservation(
     observation: {
       name: expectedSource,
       queryOrFeed,
-      checkedAt: new Date(checkedTime).toISOString(),
+      checkedAt: new Date(now).toISOString(),
       ...(typeof source.fingerprint === "string" && source.fingerprint.trim()
         ? { fingerprint: source.fingerprint.trim().slice(0, 200) }
         : {}),
       itemIdsOrUrls,
     },
   };
+}
+
+function markdownFiles(root: string): string[] {
+  const files: string[] = [];
+  const visit = (directory: string) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) visit(path);
+      else if (entry.isFile() && entry.name.endsWith(".md")) files.push(path);
+    }
+  };
+  try {
+    visit(root);
+  } catch {
+    return files;
+  }
+  return files;
+}
+
+function realMarkdownFiles(root: string): string[] {
+  return markdownFiles(root).flatMap((path) => {
+    try {
+      return [realpathSync(path)];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function sourceUrls(content: string): string[] {
+  const matches = content.match(/https?:\/\/[^\s<>()[\]{}"']+/gi) ?? [];
+  return [
+    ...new Set(
+      matches
+        .map((value) => value.replace(/[.,;:!?]+$/, ""))
+        .map(sanitizeSourceItem)
+        .filter(Boolean),
+    ),
+  ];
+}
+
+type DuplicateSourceReference = {
+  output: string;
+  sourceUrl: string;
+  existingFiles: string[];
+};
+
+export function duplicateSourceReferences(
+  outputs: string[],
+  existingKnowledgeFiles: Set<string>,
+  projectDir: string,
+): DuplicateSourceReference[] {
+  const knowledgeRoot = realpathSync(resolve(projectDir, "knowledge"));
+  const currentFiles = realMarkdownFiles(knowledgeRoot);
+  const urlIndex = new Map<string, Set<string>>();
+  for (const path of currentFiles) {
+    let content = "";
+    try {
+      content = readFileSync(path, "utf8");
+    } catch {
+      continue;
+    }
+    for (const url of sourceUrls(content)) {
+      const paths = urlIndex.get(url) ?? new Set<string>();
+      paths.add(path);
+      urlIndex.set(url, paths);
+    }
+  }
+
+  const duplicates: DuplicateSourceReference[] = [];
+  for (const output of outputs) {
+    if (
+      existingKnowledgeFiles.has(output) ||
+      (output !== knowledgeRoot &&
+        !output.startsWith(`${knowledgeRoot}${sep}`)) ||
+      !output.endsWith(".md")
+    ) {
+      continue;
+    }
+    let content = "";
+    try {
+      content = readFileSync(output, "utf8");
+    } catch {
+      continue;
+    }
+    for (const sourceUrl of sourceUrls(content)) {
+      const existingFiles = [...(urlIndex.get(sourceUrl) ?? [])]
+        .filter((path) => path !== output)
+        .sort();
+      if (existingFiles.length > 0) {
+        duplicates.push({ output, sourceUrl, existingFiles });
+      }
+    }
+  }
+  return duplicates.slice(0, 20);
 }
 
 function xhsObservation(
@@ -364,7 +445,7 @@ function xhsObservation(
 
 function sourceResultEvidence(
   source: SourceObservation,
-  provenance: "workflow" | "agent-result",
+  provenance: "workflow" | "agent-result+workflow-time",
 ): string[] {
   return [
     `source-result:${JSON.stringify(source)}`,
@@ -422,6 +503,9 @@ export async function executeScoutExplore(
   const task =
     ctx.task || "Explore sources and update the Scout knowledge library.";
   const agentTask = buildExploreTask(task, { appDir, projectDir }, xhsPacket);
+  const existingKnowledgeFiles = new Set(
+    realMarkdownFiles(resolve(projectDir, "knowledge")),
+  );
 
   const result = await ctx.runAgent(agent, agentTask, {
     schema: ExploreAgentResultSchema,
@@ -472,6 +556,20 @@ export async function executeScoutExplore(
       { outputs: structured.outputs },
     );
   }
+  const duplicateReferences = duplicateSourceReferences(
+    outputs,
+    existingKnowledgeFiles,
+    projectDir,
+  );
+  if (duplicateReferences.length > 0) {
+    return ctx.blocked(
+      "Scout exploration created a new finding with source URLs already present in the knowledge library",
+      {
+        duplicates: duplicateReferences,
+        sessionId: result.sessionId,
+      },
+    );
+  }
   return ctx.done(structured.summary, {
     state: "converged",
     summary: structured.summary,
@@ -480,7 +578,7 @@ export async function executeScoutExplore(
         ...sourceEvidence,
         ...sourceResultEvidence(
           observation,
-          source === "xhs" ? "workflow" : "agent-result",
+          source === "xhs" ? "workflow" : "agent-result+workflow-time",
         ),
         ...outputs.map((output) => `output:${output}`),
         ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
