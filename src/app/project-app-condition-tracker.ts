@@ -94,10 +94,6 @@ function typedSubject(subject: string): { field: string; value: string } | null 
   return field ? { field, value: subject.slice(separator + 1) } : null;
 }
 
-export function isTypedProjectAppConditionSubject(subject: string): boolean {
-  return typedSubject(subject) !== null;
-}
-
 function fieldAliases(field: string): string[] {
   return (
     {

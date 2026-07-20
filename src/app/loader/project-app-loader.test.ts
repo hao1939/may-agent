@@ -172,7 +172,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Workflow returned an invalid Condition at conditions[0]",
+      summary: "Handler result was rejected: conditions[0].id must be a non-empty string",
       actions: [],
     });
   });
@@ -190,7 +190,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Workflow returned waiting without an exact Condition",
+      summary: "Handler result was rejected: waiting requires at least one exact Condition",
       actions: [],
     });
   });
@@ -208,7 +208,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Workflow returned an invalid task handler result envelope",
+      summary: "Handler result was rejected: state must be converged, waiting, or needs-owner",
       actions: [],
     });
   });
@@ -225,7 +225,7 @@ describe("project app loader handler result normalization", () => {
               kind: "create-task",
               id: "must-not-apply",
               parentId: "operations",
-              goal: "This action is not authoritative",
+              outcome: "This action is not authoritative",
               mode: "achieve",
               outputs: ["proof.md"],
               acceptance: ["Never applied"],
@@ -236,7 +236,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Workflow returned an invalid task handler result envelope",
+      summary: "Handler result was rejected: state must be converged, waiting, or needs-owner",
       actions: [],
     });
   });
@@ -254,7 +254,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Workflow returned an invalid task handler result envelope",
+      summary: "Handler result was rejected: state must be converged, waiting, or needs-owner",
       actions: [],
     });
   });
@@ -279,7 +279,7 @@ describe("project app loader handler result normalization", () => {
     ).toMatchObject({
       state: "error",
       summary:
-        "Workflow returned an invalid task action: actions[0].kind must be one of create-task, update-task, close-task, unblock-task",
+        "Handler result was rejected: actions[0].kind must be one of create-task, update-task, close-task, unblock-task",
       actions: [],
     });
   });
@@ -296,7 +296,7 @@ describe("project app loader handler result normalization", () => {
               kind: "create-task",
               id: "domain/fix-one-spec",
               parentId: "domain/root",
-              goal: "Fix one spec",
+              outcome: "Fix one spec",
               mode: "achieve",
               outputs: ["evidence/archive/fix-one-spec.json"],
               acceptance: ["The exact spec has a live pass or exact blocker."],
@@ -310,7 +310,7 @@ describe("project app loader handler result normalization", () => {
     ).toMatchObject({
       state: "error",
       summary:
-        "Workflow returned an invalid task action: actions[0].workflow must name a real workflow; omit workflow for owner-handled project work",
+        "Handler result was rejected: actions[0].workflow must name a real workflow; omit workflow for owner-handled project work",
       actions: [],
     });
   });
@@ -327,7 +327,7 @@ describe("project app loader handler result normalization", () => {
               kind: "create-task",
               id: "domain/fix-one-spec",
               parentId: "domain/root",
-              goal: "Fix one spec",
+              outcome: "Fix one spec",
               mode: "achieve",
               outputs: ["evidence/archive/fix-one-spec.json"],
               acceptance: ["The exact spec has a live pass or exact blocker."],
@@ -639,9 +639,9 @@ describe("project app loader", () => {
       } as any);
       await waitUntil(
         () =>
-          events.filter(
-            (event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/target",
-          ).length === completedPasses + 1,
+          events.filter((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/target")
+            .length ===
+          completedPasses + 1,
       );
 
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
@@ -650,8 +650,7 @@ describe("project app loader", () => {
       expect(tree.tasks["work/must-not-resolve"]).toBeUndefined();
       expect(
         events.filter(
-          (event) =>
-            event.type === "project.task.reconcile.started" && event.data?.taskId === "work/must-not-resolve",
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/must-not-resolve",
         ),
       ).toHaveLength(0);
     } finally {
@@ -692,7 +691,7 @@ describe("project app loader", () => {
                     kind: "create-task",
                     id: "work/followup",
                     parentId: "operations",
-                    goal: "Run the bounded follow-up",
+                    outcome: "Run the bounded follow-up",
                     mode: "achieve",
                     outputs: ["proof.md"],
                     acceptance: ["The follow-up is represented as durable work"],
@@ -810,7 +809,6 @@ describe("project app loader", () => {
              state: "needs-owner",
              summary: "workflow needs owner judgment",
              evidence: ["workflow classified the exception"],
-             actions: []
            });
          }`,
       );
@@ -1016,6 +1014,63 @@ describe("project app loader", () => {
         trigger: { type: "project.task.tick", reason: "test-direct-wake-override" },
       });
       expect(tree.resources["work/maintain-wake"].status.phase).toBe("converged");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes exact targeted task wakes through the app resolver and claims delivery", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      const deliveries: Array<{ event: any; result: any }> = [];
+      bus.subscribe((event) => events.push(event));
+      bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "targeted-new",
+        mode: "maintain",
+        target: { project: "sample", taskId: "work/targeted-new" },
+      } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/targeted-new" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const originalDelivery = deliveries.find(
+        ({ event }) => event.type === "sample.work" && event.itemId === "targeted-new",
+      );
+      expect(originalDelivery?.result).toMatchObject({
+        accepted: true,
+        by: "project-app:sample:task-reconciler",
+        route: "direct",
+      });
+
+      const tree = JSON.parse(readFileSync(projectRuntimePaths(f.appDir).taskStatePath, "utf8"));
+      expect(tree.resources["work/targeted-new"]).toMatchObject({
+        spec: { mode: "maintain", workflow: "worker" },
+        status: { phase: "converged", observedGeneration: 1 },
+      });
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

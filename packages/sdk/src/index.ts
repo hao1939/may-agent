@@ -944,6 +944,19 @@ export type {
   ProjectAppTasks,
 } from "./project-app.js";
 
+export {
+  admitProjectAppTaskHandlerResult,
+  isTypedProjectAppConditionSubject,
+  projectAppConditionSchema,
+  projectAppTaskActionSchema,
+  projectAppTaskHandlerResultSchema,
+  projectAppTaskOwnerResultSchema,
+} from "./project-task-handler-contract.js";
+export type {
+  ProjectAppTaskHandlerAdmission,
+  ProjectAppTaskHandlerAdmissionOptions,
+} from "./project-task-handler-contract.js";
+
 // ── JSON task-tree helpers for project apps ──────────────────────────
 export {
   isLeaf,

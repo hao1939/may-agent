@@ -357,6 +357,55 @@ describe("project app task reconciler state", () => {
     expect(completeProjectAppTask(config, first, { summary: "late generation one result" }).status).toBe("stale");
   });
 
+  it("keeps an active generation when only containment, category, or priority changes", () => {
+    const { config } = fixture();
+    const original = { ...intent("maintain"), category: "monitor", priority: "P2" as const };
+    const claim = claimProjectAppTask(config, {
+      intent: original,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const observed = observeProjectAppTaskIntent(config, {
+      intent: { ...original, parentId: "root", category: "operations", priority: "P0" },
+      appOwner: "app-owner",
+    });
+    expect(observed).toEqual({ kind: "observed", taskId: claim.taskId, generation: 1, changed: true });
+
+    const tree = readTaskTree(config);
+    expect(tree.resources?.[claim.taskId]).toMatchObject({
+      metadata: { generation: 1, resourceVersion: claim.resourceVersion + 1 },
+      spec: { parentId: "root", category: "operations", priority: "P0" },
+      status: { phase: "running", currentAttemptId: claim.attemptId },
+    });
+    expect(tree.tasks.root.children).toContain(claim.taskId);
+    expect(tree.tasks.operations.children).not.toContain(claim.taskId);
+    expect(completeProjectAppTask(config, claim, { summary: "same execution completed" }).status).toBe("applied");
+  });
+
+  it("advances generation when a parent move changes effective ownership", () => {
+    const { config } = fixture();
+    const tree = readTaskTree(config);
+    tree.groups!.operations.owner = "operations-owner";
+    saveTaskTree(config, tree);
+    const original = { ...intent("maintain"), parentId: "operations" };
+    const claim = claimProjectAppTask(config, {
+      intent: original,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(claim.owner).toBe("operations-owner");
+
+    const observed = observeProjectAppTaskIntent(config, {
+      intent: { ...original, parentId: "root" },
+      appOwner: "app-owner",
+    });
+    expect(observed).toMatchObject({ kind: "observed", generation: 2, changed: true });
+    expect(readTaskTree(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
+  });
+
   it("inherits ownership, claims one attempt, and deduplicates concurrent wakes", () => {
     const { config } = fixture();
     const first = claimProjectAppTask(config, {
@@ -914,7 +963,7 @@ describe("project app task reconciler state", () => {
             kind: "create-task",
             id: "stale-action-must-not-apply",
             parentId: "operations",
-            goal: "This task must not exist",
+            outcome: "This task must not exist",
             mode: "achieve",
             outputs: ["proof.md"],
             acceptance: ["Never applied"],
@@ -998,7 +1047,7 @@ describe("project app task reconciler state", () => {
     });
   });
 
-  it("rejects a result when the task resource version changed after claim", () => {
+  it("accepts the current attempt after a status-only resource version change", () => {
     const { config } = fixture();
     const claim = claimProjectAppTask(config, {
       intent: intent("maintain"),
@@ -1012,13 +1061,13 @@ describe("project app task reconciler state", () => {
     concurrent.resources![claim.taskId].status.summary = "concurrent observation";
     saveTaskTree(config, concurrent);
 
-    expect(completeProjectAppTask(config, claim, { summary: "stale handler result" })).toMatchObject({
-      status: "stale",
+    expect(completeProjectAppTask(config, claim, { summary: "current handler result" })).toMatchObject({
+      status: "applied",
       actionsApplied: [],
     });
     expect(readTaskTree(config).resources?.[claim.taskId]).toMatchObject({
-      metadata: { resourceVersion: claim.resourceVersion + 1 },
-      status: { phase: "running", summary: "concurrent observation" },
+      metadata: { resourceVersion: claim.resourceVersion + 2 },
+      status: { phase: "converged", summary: "current handler result" },
     });
   });
 
@@ -1032,8 +1081,8 @@ describe("project app task reconciler state", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
     const concurrent = readTaskTree(config);
-    concurrent.resources![claim.taskId].metadata.resourceVersion += 1;
-    concurrent.resources![claim.taskId].status.summary = "concurrent observation";
+    concurrent.attempts![claim.attemptId].metadata.resourceVersion += 1;
+    concurrent.attempts![claim.attemptId].specHash = "superseded-attempt-contract";
     saveTaskTree(config, concurrent);
 
     expect(
@@ -1045,7 +1094,7 @@ describe("project app task reconciler state", () => {
             kind: "create-task",
             id: "stale-action-must-not-apply",
             parentId: "operations",
-            goal: "This task must not exist",
+            outcome: "This task must not exist",
             mode: "achieve",
             outputs: ["proof.md"],
             acceptance: ["Never applied"],
@@ -1090,7 +1139,7 @@ describe("project app task reconciler state", () => {
           kind: "create-task",
           id: "owner-created-task",
           parentId: "operations",
-          goal: "Verify the owner action boundary",
+          outcome: "Verify the owner action boundary",
           mode: "achieve",
           outputs: ["proof.md"],
           acceptance: ["The reconciler creates this task"],
@@ -1156,7 +1205,7 @@ describe("project app task reconciler state", () => {
             kind: "create-task",
             id: "owner-created-task",
             parentId: "operations",
-            goal: "Verify the owner action boundary",
+            outcome: "Verify the owner action boundary",
             mode: "achieve",
             outputs: ["proof.md"],
             acceptance: ["The reconciler creates this task"],
@@ -1198,6 +1247,54 @@ describe("project app task reconciler state", () => {
     expect(task.kind).toBe("domain");
   });
 
+  it("repairs explicit owner and workflow bindings through an update action", () => {
+    const { config } = fixture();
+    const observed = observeProjectAppTaskIntent(config, {
+      intent: {
+        id: "categorized-task",
+        parentId: "operations",
+        outcome: "Categorized bounded work",
+        acceptance: ["The categorized work converges"],
+        mode: "achieve",
+        owner: "human",
+        workflow: "removed-workflow",
+        category: "domain",
+      },
+      appOwner: "app-owner",
+    });
+    if (observed.kind !== "observed") throw new Error("expected observation");
+
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      completeProjectAppTask(config, claim, {
+        summary: "repaired stale binding",
+        evidence: ["removed workflow is not registered"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: "categorized-task",
+            expectedGeneration: observed.generation,
+            owner: "scout",
+            workflow: null,
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied" });
+
+    expect(readProjectAppTaskIntent(config, "categorized-task")).toMatchObject({
+      owner: "scout",
+      category: "domain",
+    });
+    expect(readProjectAppTaskIntent(config, "categorized-task")?.workflow).toBeUndefined();
+    expect(readTaskTree(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
+  });
+
   it("rejects an invalid action batch without partially applying earlier actions", () => {
     const { config } = fixture();
     const claim = claimProjectAppTask(config, {
@@ -1216,7 +1313,7 @@ describe("project app task reconciler state", () => {
             kind: "create-task",
             id: "must-roll-back",
             parentId: "operations",
-            goal: "Must not be persisted",
+            outcome: "Must not be persisted",
             mode: "achieve",
             outputs: ["proof.md"],
             acceptance: ["No partial apply"],
@@ -1315,7 +1412,7 @@ describe("project app task reconciler state", () => {
             kind: "create-task",
             id: "must-not-apply",
             parentId: "operations",
-            goal: "Must not be persisted",
+            outcome: "Must not be persisted",
             mode: "achieve",
             outputs: ["proof.md"],
             acceptance: ["No partial apply"],
