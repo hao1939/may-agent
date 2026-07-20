@@ -1,39 +1,111 @@
 {
-  "version": 2,
+  "version": 3,
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": null,
-  "active_task_ids": [],
-  "tasks": {
+  "groups": {
     "project": {
       "id": "project",
       "parent_id": null,
-      "kind": "project",
-      "priority": "P1",
-      "owner": "aks-explorer",
-      "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
-      "inputs": [
-        "project.json",
-        "../aks-rp-e2e/model/knowledge-map/model.json",
-        "../aks-rp-e2e/specs/index.json"
-      ],
-      "outputs": [
-        "../aks-rp-e2e/features/",
-        "../aks-rp-e2e/specs/",
-        "../aks-rp-e2e/replays/",
-        "../aks-rp-e2e/evidence/"
-      ],
-      "acceptance": [
-        "Every live task has one accountable owner or explicitly bound workflow.",
-        "Every non-runnable wait is represented by an exact observable Condition.",
-        "Reusable AKS processes are preserved as workflows while one-off work remains ordinary task state."
-      ],
-      "children": [],
-      "state": "active",
-      "reconcile_mode": "maintain"
+      "owner": "aks-explorer"
     }
   },
-  "resources": {},
+  "resources": {
+    "aks-spec-verification-loop": {
+      "metadata": {
+        "id": "aks-spec-verification-loop",
+        "generation": 1,
+        "resourceVersion": 1
+      },
+      "spec": {
+        "parentId": "project",
+        "outcome": "Keep every executable AKS E2E spec verified through the Azure DevOps staging pipeline, with each non-pass represented by bounded repair, rerun, or an exact external wait.",
+        "acceptance": [
+          "Every executable spec is passing or has a reviewed terminal escalation explaining why bounded repository-local work cannot make it pass.",
+          "Every fail or error has an exact classification and either a repair-and-rerun successor or an escalation with a precise resume Condition.",
+          "The workflow keeps at most five useful non-conflicting verifier leaves moving while pending or retryable specs remain."
+        ],
+        "mode": "maintain",
+        "owner": "app-ops",
+        "workflow": "spec-loop-controller",
+        "input": {
+          "maxConcurrent": 5
+        },
+        "outputs": [
+          ".state/spec-loop/state.json",
+          "../aks-rp-e2e/.state/spec-loop/state.json"
+        ],
+        "priority": "P1"
+      },
+      "status": {
+        "observedGeneration": 0,
+        "phase": "pending",
+        "updatedAt": "2026-07-20T00:00:00.000Z"
+      }
+    },
+    "aks-feature-compact-loop": {
+      "metadata": {
+        "id": "aks-feature-compact-loop",
+        "generation": 1,
+        "resourceVersion": 1
+      },
+      "spec": {
+        "parentId": "project",
+        "outcome": "Keep feature-owned compact plans complete for their feature spec sets and verified by passing live Azure DevOps staging runs.",
+        "acceptance": [
+          "A compact item is done only when its feature plan covers the feature-owned specs and its live staging run passed.",
+          "Every non-pass feature has a bounded repair-and-rerun path or an exact escalation after repository-local fixes are exhausted.",
+          "The workflow keeps at most three useful non-conflicting compact leaves moving while pending or retryable features remain."
+        ],
+        "mode": "maintain",
+        "owner": "app-ops",
+        "workflow": "feature-compact-loop-controller",
+        "input": {
+          "maxConcurrent": 3
+        },
+        "outputs": [
+          ".state/feature-compact-loop/state.json",
+          "../aks-rp-e2e/features/"
+        ],
+        "priority": "P1"
+      },
+      "status": {
+        "observedGeneration": 0,
+        "phase": "pending",
+        "updatedAt": "2026-07-20T00:00:00.000Z"
+      }
+    },
+    "domain/normalize-scenario-tests-repo-frontier-20260715": {
+      "metadata": {
+        "id": "domain/normalize-scenario-tests-repo-frontier-20260715",
+        "generation": 1,
+        "resourceVersion": 1
+      },
+      "spec": {
+        "parentId": "project",
+        "outcome": "Keep the strict scenario-test inventory clean by normalizing each active spec into one direct feature-owned test with exact live verification and serialized publication.",
+        "acceptance": [
+          "A clean origin/dev passes bun scripts/check-scenario-tests.ts --strict with no referenced or repository plain scenario carriers.",
+          "Each normalized spec has one source-grounded direct test, truthful mutation and cleanup behavior, an exact live pass for its tested commit, and publication evidence.",
+          "Each current missing adapter has concrete moving work, an exact Condition or escalation, or a reviewed terminal disposition.",
+          "The owner keeps three to five useful non-conflicting one-spec leaves moving while the strict inventory remains red."
+        ],
+        "mode": "maintain",
+        "owner": "aks-explorer",
+        "outputs": [
+          "/app/projects/aks-rp-e2e/evidence/archive/",
+          "/app/projects/aks-rp-e2e/features/"
+        ],
+        "priority": "P1"
+      },
+      "status": {
+        "observedGeneration": 0,
+        "phase": "pending",
+        "updatedAt": "2026-07-20T00:00:00.000Z"
+      }
+    }
+  },
   "conditions": {},
+  "attempts": {},
+  "taskTriggers": {},
   "receipts": {}
 }

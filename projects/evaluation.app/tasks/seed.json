@@ -1,139 +1,57 @@
 {
-  "version": 1,
+  "version": 3,
   "project_lifecycle": "active",
   "root_task_id": "evaluation-system",
-  "active_task_id": null,
-  "active_task_ids": [],
-  "tasks": {
+  "groups": {
     "evaluation-system": {
       "id": "evaluation-system",
       "parent_id": null,
-      "owner": "evaluator",
-      "goal": "Keep independent session and project-app evaluation current, evidence-backed, and useful to responsible owners and humans.",
-      "acceptance": [
-        "Eligible completed sessions receive a durable evaluation or an explicit structured skip.",
-        "Watched project apps receive current independent reviews when their meaningful state changes or the baseline review is due.",
-        "Findings reach the responsible owner, and human notification is limited to a concrete useful action or decision.",
-        "Evaluation pipeline defects are represented by bounded repair work or exact Conditions rather than monitoring prose."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": [
-        "session-audit",
-        "project-app-audit",
-        "finding-delivery",
-        "evaluator-reliability"
-      ]
+      "owner": "evaluator"
     },
     "session-audit": {
       "id": "session-audit",
       "parent_id": "evaluation-system",
-      "goal": "Keep eligible completed May-agent sessions evaluated with trustworthy criteria and traceable evidence.",
-      "acceptance": [
-        "Every eligible terminal session is covered by direct aftermath or the bounded backfill reconciler.",
-        "Each evaluation is linked to its source session and records a verdict, structured skip, or visible review-process failure.",
-        "Criteria and drift work use concrete samples and produce bounded calibration or criteria changes."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": [
-        "criteria-and-calibration",
-        "drift-detection"
-      ]
+      "owner": "evaluator"
     },
     "project-app-audit": {
       "id": "project-app-audit",
       "parent_id": "evaluation-system",
-      "goal": "Keep an independent, evidence-backed health assessment for every watched project app.",
-      "acceptance": [
-        "Each watched target has one standing audit task with a current meaningful-state fingerprint.",
-        "Material changes produce a durable report containing raw facts, evaluator judgment, and concrete verification.",
-        "Target findings are routed to the target owner without transferring target remediation into evaluation.app."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     },
     "finding-delivery": {
       "id": "finding-delivery",
       "parent_id": "evaluation-system",
-      "goal": "Keep owner feedback and human notification accurate, deduplicated, and tied to observable findings.",
-      "acceptance": [
-        "A new or materially changed actionable finding is delivered to the responsible project owner with artifact and verification context.",
-        "Unchanged findings do not create duplicate owner work or human messages.",
-        "Human messages describe the situation and exact decision needed; delivery alone is never recorded as issue resolution."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     },
     "evaluator-reliability": {
       "id": "evaluator-reliability",
       "parent_id": "evaluation-system",
-      "goal": "Keep evaluation.app's own reconciliation, workflows, evidence, and reporting reliable and bounded.",
-      "acceptance": [
-        "Known recurring responsibilities reconcile through explicit workflows and unfamiliar exceptions reach the evaluator owner.",
-        "Workflow and review failures stay visible and become bounded evaluator-local repair work when action is required.",
-        "External waits use exact Conditions, and repeated observations do not create duplicate repair tasks."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": [
-        "pipeline-health",
-        "system-integrity"
-      ]
+      "owner": "evaluator"
     },
     "pipeline-health": {
       "id": "pipeline-health",
       "parent_id": "evaluator-reliability",
-      "goal": "Keep evaluation pipeline coverage, throughput, review delivery, and anomaly state observable and within policy.",
-      "acceptance": [
-        "The standing pipeline monitor records a current snapshot and wakes the owner only when anomaly state changes.",
-        "Missed eligible sessions are recovered by the standing bounded backfill task.",
-        "A persistent pipeline anomaly becomes one bounded repair task or exact Condition with an observable recovery check."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     },
     "criteria-and-calibration": {
       "id": "criteria-and-calibration",
       "parent_id": "session-audit",
-      "goal": "Keep session-evaluation criteria versioned and calibrated against concrete human or independent review samples.",
-      "acceptance": [
-        "Calibration work names a concrete sample cohort and disagreement being tested.",
-        "Accepted changes update criteria, scoring guidance, and regression evidence together.",
-        "A completed calibration batch is absorbed into criteria state and leaves the live task graph."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     },
     "drift-detection": {
       "id": "drift-detection",
       "parent_id": "session-audit",
-      "goal": "Detect meaningful session-quality drift only when comparable agent cohorts and evaluation evidence exist.",
-      "acceptance": [
-        "A drift judgment identifies the compared cohorts, time windows, criteria version, and supporting samples.",
-        "Aggregate movement without a comparable cohort remains an observation and does not create speculative repair work.",
-        "Confirmed drift creates one bounded calibration, criteria, workflow, or owner-feedback task with a verification condition."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     },
     "system-integrity": {
       "id": "system-integrity",
       "parent_id": "evaluator-reliability",
-      "goal": "Keep evaluation.app's task ownership, event routing, reports, and runtime state internally consistent.",
-      "acceptance": [
-        "Each concrete evaluator-local integrity defect is represented by one bounded repair task with an observable postcondition.",
-        "External prerequisites are represented by exact Conditions with an owner, observer, next check, and fallback.",
-        "Resolved repairs leave no duplicate writer, stale compatibility path, or permanent incident task in the seed tree."
-      ],
-      "reconcile_mode": "maintain",
-      "state": "backlog",
-      "children": []
+      "owner": "evaluator"
     }
-  }
+  },
+  "resources": {},
+  "conditions": {},
+  "attempts": {},
+  "taskTriggers": {},
+  "receipts": {}
 }

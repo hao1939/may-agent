@@ -1,36 +1,32 @@
 {
+  "version": 3,
+  "project_lifecycle": "active",
   "root_task_id": "gym-system",
-  "tasks": {
+  "groups": {
     "gym-system": {
       "id": "gym-system",
-      "state": "backlog",
-      "owner": "gym",
-      "children": [
-        "incident-learning",
-        "regression-assurance",
-        "review-proposals"
-      ]
+      "parent_id": null,
+      "owner": "gym"
     },
     "incident-learning": {
       "id": "incident-learning",
       "parent_id": "gym-system",
-      "state": "backlog",
-      "owner": "gym",
-      "children": []
+      "owner": "gym"
     },
     "regression-assurance": {
       "id": "regression-assurance",
       "parent_id": "gym-system",
-      "state": "backlog",
-      "owner": "gym",
-      "children": []
+      "owner": "gym"
     },
     "review-proposals": {
       "id": "review-proposals",
       "parent_id": "gym-system",
-      "state": "backlog",
-      "owner": "gym",
-      "children": []
+      "owner": "gym"
     }
-  }
+  },
+  "resources": {},
+  "conditions": {},
+  "attempts": {},
+  "taskTriggers": {},
+  "receipts": {}
 }
