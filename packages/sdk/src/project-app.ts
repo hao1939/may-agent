@@ -111,7 +111,7 @@ export type ProjectAppAction = {
 
 export type ProjectAppTaskMode = "achieve" | "maintain";
 
-export type ProjectAppTaskHandlerState = "converged" | "waiting" | "needs-owner" | "failed";
+export type ProjectAppTaskHandlerState = "converged" | "waiting" | "needs-owner";
 
 export type ProjectAppConditionSpec = {
   id: string;
