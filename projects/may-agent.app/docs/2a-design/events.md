@@ -229,6 +229,13 @@ Exactly one semantic child intent follows each free-form human input root.
   `project.problem.escalated`;
 - `project.comment.created` and project-specific typed actions.
 
+`project.comment.created` is the default app-intent receipt. Every persisted
+comment produces exactly one correlated `project.owner.reviewed` with a bounded
+summary and task references. Durable work or waiting lives in the referenced
+task and its Conditions. A declared typed action is an optional discoverable
+input schema that emits its semantic event directly; action wrapper events are
+not part of the contract.
+
 Historical assignment, completion, review, planning, execution, dispatch, and
 finish task events are not live ingress aliases.
 

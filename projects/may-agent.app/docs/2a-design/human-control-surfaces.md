@@ -12,8 +12,9 @@ agent system. They should differ in presentation, not in routing semantics.
 
 The common rule is:
 
-> Human input must target a known session, or explicitly request creation of a
-> chat session. There is no free-floating input.
+> Conversational input must target a known session or explicitly request a chat
+> session. Project-directed input targets the project app. There is no
+> free-floating input.
 
 The second rule is:
 
@@ -35,18 +36,20 @@ control the autonomous daemon and therefore do not require its event bus.
 | Channel input | CLI argv, Telegram update, browser click, terminal line | No | Human-interface detail |
 | Intent event | `session.steer.requested`, `chat.start.requested` | Yes | State-changing request entering the system |
 | Domain event | `session.start`, `session.end`, `project.comment.created` | Yes | Fact that happened |
-| Read/control frame | `subscribe`, `status` | No | Stream selection and read-only status |
+| Read/control frame | `subscribe`, `status`, generic app-action discovery/invocation | No | Stream/read control or translation through the daemon-owned action registry |
 
 Channel adapters should be boring: parse the human action, resolve local UI
-state if needed, and emit the canonical intent event. The daemon owns session
-state, chat creation, cold resume, cancellation, persistence, and follow-up
-domain events.
+state if needed, and emit the canonical intent event. Typed app actions use one
+generic daemon RPC so the loaded app registry validates input and emits that
+event; the RPC is not another durable intent. The daemon owns session state,
+chat creation, cold resume, cancellation, persistence, and follow-up domain
+events.
 
 ## Human Turn Trace
 
-Free-form human text enters as `human.input.received`. It is the boundary/root
-event for one turn, not a request database object. The input router emits one
-semantic child intent:
+Free-form conversational text enters as `human.input.received`. It is the
+boundary/root event for one turn, not a request database object. The input
+router emits one semantic child intent:
 
 ```text
 human.input.received
@@ -56,6 +59,13 @@ human.input.received
   -> project.approval.submitted apply structured approval context
   -> runtime.*.requested        explicit runtime control
 ```
+
+An explicit project-comment surface, such as `POST /api/projects/comment`, may
+emit `project.comment.created` directly. In that path the comment event is the
+persisted receipt and trace root. A conversational surface such as Telegram may
+first record `human.input.received` and then emit the project comment as its
+semantic child. Both paths converge on the same app-owner contract; neither
+adds a request record.
 
 A persistent chat session is a conversation container, not a trace. Each
 standalone human turn receives a new trace even when it reuses the same session.
@@ -354,6 +364,8 @@ adapter over event emission. For example:
 | `POST /api/sessions/:id/cancel` | `session.cancel.requested` |
 | `POST /api/agents/:name/message` with no chat session | `chat.start.requested` |
 | `POST /api/projects/comment` | `project.comment.created` |
+| `GET /api/projects/:id/actions` | Discover optional typed action schemas |
+| `POST /api/projects/:id/actions/:actionId` | Validate and emit the action's semantic event |
 
 ## Compatibility Path
 
@@ -381,10 +393,15 @@ Each human surface should have tests for the same behavior:
 - Cancel session sends `session.cancel.requested`.
 - Cancel-all sends `session.cancel_all.requested`.
 - Project comment sends `project.comment.created`.
+- Project comment returns its persisted event ID and receives exactly one
+  correlated `project.owner.reviewed` result.
+- Typed project actions remain discoverable, reject invalid input before
+  emission, and return the direct semantic event ID without wrapper events.
 - Unknown or ambiguous target fails locally.
 - Opening/attaching to the surface does not emit a state-changing event.
-- `human.input.received` is the trace root and the normalized intent is its
-  child.
+- Conversational free-form input uses `human.input.received` as the trace root
+  and one normalized intent as its child; explicit project-comment ingress may
+  use `project.comment.created` directly as its receipt and root.
 - Existing-chat input uses `session.steer.requested`; only an unbound or
   explicitly fresh chat uses `chat.start.requested`.
 - The turn's `session.idle` / `session.end` stays in the same trace and closes

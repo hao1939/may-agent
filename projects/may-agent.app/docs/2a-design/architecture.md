@@ -127,17 +127,23 @@ See [events.md](events.md), [event-graph.md](event-graph.md),
 ## Human interaction
 
 ```text
-human input
-  -> one transport-neutral input event
-  -> one semantic intent
-  -> chat steering, control action, project comment, or bounded work
-  -> typed result/evidence
-  -> channel delivery
+conversation directed to an agent
+  -> human.input.received
+  -> chat.start.requested or session.steer.requested
+  -> bounded agent turn and delivery
+
+outcome directed to an app
+  -> project.comment.created receipt or typed app event
+  -> app owner result
+  -> optional durable task
 ```
 
-Persistent chat is a conversation container; each human turn has its own
-trace. Chat and bounded jobs use different lifecycle policies but share agent
-preparation, session persistence, event tracing, and interface boundaries.
+Both use the same event-native ingress, receipts, traces, and agent runtime. An
+app request lets the app choose its handler; an agent message fixes the agent or
+conversation. Persistent chat is a conversation container; each human turn has
+its own trace. Chat and bounded jobs use different lifecycle policies but share
+agent preparation, session persistence, event tracing, and interface
+boundaries.
 
 See [human-control-surfaces.md](human-control-surfaces.md),
 [sessions.md](sessions.md), [webui.md](webui.md), and

@@ -33,13 +33,16 @@ There are only two practical modes:
 | Monitoring | The goal is currently satisfied and no urgent gap is known. | Keep metrics/signals watched; resume intensive work when new evidence appears. |
 
 These are reasoning postures, not persisted project or task states. Preserve
-the canonical vocabularies in `project.json` and `tasks/tree.json`.
+project posture in `project.json` and task desired/observed state in
+`.state/tasks/state.json`. Use `.state/tasks/tree.json` only as a generated read
+projection.
 
 ## Protocol
 
 ### 1. Read the Goal Before Acting
 
-Read `project.json`, `app.ts`, `tasks/tree.json`, and the relevant domain
+Read `project.json`, `app.ts`, canonical `.state/tasks/state.json`, the generated
+`.state/tasks/tree.json` projection when useful, and the relevant domain
 artifacts first. Extract:
 
 - goal,
@@ -72,8 +75,8 @@ Every project-driving session should leave at least one useful artifact:
 
 - a code/doc change,
 - a metric/event/session id proving a behavior,
-- a task-tree update through the task tools, project state update, or compact
-  journal/discussion record when the app actually uses one,
+- a task-resource change returned through typed reconciler actions, project
+  state update, or compact domain record when the app actually uses one,
 - a clear escalation with the blocker and what was tried.
 
 If none of those happened, say why.
@@ -84,6 +87,19 @@ Project comments, alerts, guard events, evaluator findings, and metric changes
 are wake signals. They cause owner judgment; they are not parallel request
 objects or commands to execute blindly.
 
+For project-directed intent, preserve this contract:
+
+```text
+project.comment.created receipt
+  -> app owner reviews current state
+  -> infrastructure emits one correlated project.owner.reviewed result
+  -> optional durable task and exact Conditions
+```
+
+Several comments may wake one stable owner-review task. Judge the latest level,
+but preserve every unresolved input event reference so infrastructure can emit
+one result per persisted comment.
+
 When a comment arrives:
 
 1. Read the comment and current project context.
@@ -91,19 +107,21 @@ When a comment arrives:
 3. Resume intensive work if it creates a meaningful gap.
 4. Otherwise record why monitoring remains appropriate.
 
-### 5. Finish the Owner Turn Cleanly
+### 5. Return One Applicable Decision
 
-At session end, state:
+At session end, return or state:
 
 1. Current project mode: intensive work or monitoring.
 2. What changed.
 3. What evidence proves it.
 4. Next action or monitored signal.
+5. One valid reconciler disposition: `converged`, `waiting` with exact
+   Conditions, `needs-owner` when a workflow cannot decide, or typed task
+   actions for the reconciler to validate and apply.
 
-Close `project.owner.requested` with `project.owner.reviewed` or the explicit
-terminal result defined by the owning app. Assign workers only through
-`project.task.assigned`; workers return through `project.task.completed` for
-owner review.
+Do not edit task storage or emit assignment, completion, or owner-result events.
+The generic reconciler applies task actions and emits the correlated
+`project.owner.reviewed` closure after admitting the result.
 
 Do not say the project is `done` if it is meant to keep maintaining a metric or
 system quality. Record an exact wait or monitoring signal without inventing a
@@ -117,3 +135,5 @@ new task state.
   to monitoring.
 - Asking the reviewer to decide facts that the session can verify directly.
 - Creating a new project because an existing project needs a journal update.
+- Dropping earlier comment receipts when several intents coalesce on one stable
+  task.

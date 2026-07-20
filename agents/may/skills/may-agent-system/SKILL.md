@@ -17,7 +17,11 @@ model:
 
 For human interaction, preserve the more specific shape:
 
-`human.input.received -> semantic intent -> bounded work -> terminal evidence -> channel delivery`
+`conversation input -> human.input.received -> semantic intent -> bounded work -> terminal evidence -> channel delivery`
+
+For project-directed interaction, preserve:
+
+`project.comment.created receipt -> app owner judgment -> project.owner.reviewed -> optional durable task`
 
 The root event and trace represent the commitment. Do not add a parallel
 request lifecycle object.
@@ -30,6 +34,15 @@ Core primitives:
 - Task resources: desired and observed project work, not a scheduler queue.
 - Metric: signal for investigation, not a target.
 - Escalation: structured handoff across an ownership boundary.
+
+Keep the agent core portable:
+
+`model + prompt + context + supplied tools -> agent run -> result + neutral notifications`
+
+The agent core does not import EventBus, SQLite, metrics, tasks, scheduling, or
+recovery. Autonomous infrastructure may wrap the same run, and explicitly
+supplied tools may access databases or remote services behind their capability
+interfaces.
 
 ## Discovery Boundary
 
@@ -119,11 +132,15 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   names, not accepted ingress aliases or examples for new code.
 - Remember retention: `events` are currently short-window operational evidence,
   not permanent history.
+- Treat a declared typed app action as a discoverable schema-backed constructor
+  for one semantic event. Validate before emission and return that semantic
+  event ID directly; do not add `project.action.invoked`, accepted/completed
+  wrappers, or an action-status record.
 
 ### Human-rooted traces
 
 - Treat `human.input.received` as the transport-neutral boundary/root event for
-  free-form human input, not as a request entity.
+  free-form conversational input, not as a request entity.
 - Emit exactly one semantic child intent from the input router. Use
   `chat.start.requested` only to create/bind a chat; use
   `session.steer.requested` for an existing target.
@@ -135,6 +152,25 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Keep replies to notifications/results in the referenced trace. A standalone
   follow-up starts a new trace. Never mutate or reopen an old closure; represent
   rework as a new linked branch.
+
+### Project-intent traces
+
+- Explicit project HTTP/UI intent may persist `project.comment.created`
+  directly as its receipt and trace root. A conversational adapter may emit the
+  same event as the semantic child of `human.input.received`.
+- External actors state intent; they do not choose task IDs, owners, workflows,
+  or sessions. The app owner reads current project and task context and decides
+  answer, reject, no-op, task change, exact wait, or workflow reuse.
+- The owner or workflow returns a structured decision and typed task actions.
+  It does not edit task storage or emit `project.owner.reviewed`.
+- The generic reconciler validates and applies task actions, then infrastructure
+  emits exactly one correlated `project.owner.reviewed` per persisted comment,
+  with a bounded summary, task references, and closure link.
+- Level-based coalescing may combine several wakes on one stable task, but the
+  pending trigger must retain every unresolved input event reference until each
+  has its owner result.
+- Work or waiting that must survive the turn belongs in a durable task. Express
+  exact waits as task Conditions, not ephemeral response state.
 
 ### Delivery and closure integrity
 
@@ -168,7 +204,8 @@ Keep domain projects portable and May-agent control planes separate.
 - Put May-agent app logic in `projects/<id>.app/`; domain tools and artifacts
   stay in the domain workspace.
 - Keep `app.ts` small: one owner, `tasks.accepts`, one `tasks.resolve`, event-only
-  schedules, declared actions, and optional deterministic `onEvent` projection.
+  schedules, optional schema-backed actions, and optional deterministic
+  `onEvent` projection.
 - A targeted event, resolved app event, Condition change, and periodic resync
   all enqueue the same per-app controller. Do not recreate task Cron handlers.
 - Resolve a declared task workflow from the accountable agent's local
@@ -183,6 +220,9 @@ Keep domain projects portable and May-agent control planes separate.
 - Workflows and agents read task state but never edit the store directly. They
   return `converged`, `waiting` with exact Conditions, or `needs-owner`, plus
   typed actions for the app to validate and apply.
+- Project comments normally resolve to one stable owner-review task. Preserve
+  unresolved comment event references when repeated wakes coalesce so response
+  correlation is not lost.
 - Resource `spec` is desired state and resource `status.phase` is observed
   reconciliation state. The old task-state vocabulary may appear only in a
   derived human projection, never as a second execution authority.
@@ -298,13 +338,22 @@ Before finishing:
 - Confirm the relevant design doc still supports the behavior.
 - Confirm every new event has a responsible consumer or explicit owner path.
 - Confirm project-app changes preserve app/domain boundaries.
-- Confirm task-tree changes use valid states and owner/worker roles.
+- Confirm task-resource changes preserve `spec`/`status`, valid phases,
+  resolved ownership, and reconciler-only mutation.
+- Confirm `.state/tasks/state.json` remains the sole mutable task authority and
+  the tree remains a generated projection.
 - Confirm metrics and alerts remain signals requiring owner judgment.
 - Confirm blockers either return to the owner loop or become structured
   escalations with resume evidence.
 - Confirm every human-rooted turn has one semantic intent, explicit per-turn
   trace propagation, terminal evidence, and channel-delivery evidence when a
   response is claimed.
+- Confirm every persisted project comment has exactly one correlated
+  infrastructure-emitted owner result with a summary, task references, and
+  closure link; durable waits use task Conditions.
+- Confirm typed actions expose descriptions and input schemas, reject invalid
+  input before emission, and return one semantic event receipt without wrapper
+  lifecycle events.
 - Confirm every newly closed lifecycle pair writes a persisted closure link in
   the normal path rather than depending on backfill.
 - Confirm unclaimed owned events create queryable owner-inbox work and do not

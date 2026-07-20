@@ -167,9 +167,10 @@ owned by [Task Resource Engine](task-resource-engine.md), not repeated here.
 may update a read model or translate a signal; it does not execute project work
 or bypass task admission.
 
-The host handles `project.action.invoked` once by resolving the named action,
-validating parameters, calling its event factory, and emitting the returned
-semantic event. Apps do not redispatch that envelope in `onEvent`.
+The host exposes declared action names, descriptions, and input schemas for
+discovery. Invocation resolves the action, validates its input, calls its event
+factory, persists the returned semantic event directly, and returns that event
+ID. There is no `project.action.invoked` / accepted wrapper lifecycle.
 
 Schedules emit semantic events. Cron owns time; it does not own task
 reconciliation.

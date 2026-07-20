@@ -83,9 +83,10 @@ for its own task. Its admitted `converged` or `waiting` result owns that
 transition. Broad reprioritization, duplicate cleanup, and unrelated-branch
 changes belong to a bounded owner-review pass.
 
-App UI actions declare a semantic event factory in `app.actions`. Infrastructure
-translates `project.action.invoked` exactly once. Do not add an app-local action
-adapter.
+App UI actions declare an input schema and semantic event factory in
+`app.actions`. Infrastructure discovers and validates the action, then persists
+its semantic event directly. Do not add an app-local adapter or wrapper action
+lifecycle.
 
 Validate with the app's `bun run check` and runtime reconciliation tests.
 

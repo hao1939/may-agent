@@ -267,12 +267,17 @@ Telegram update -> socket event
 Timer tick      -> event
 ```
 
-Socket-local commands should stay minimal:
+Socket-local controls should stay minimal:
 
 - `subscribe`
 - `status`
+- one generic app-action discovery operation
+- one generic app-action invocation operation that returns the emitted semantic
+  event ID
 
-Everything else should be an event frame:
+The action operations are bounded RPCs over the daemon's live app registry, not
+durable commands or lifecycle events. Everything else state-changing should be
+an event frame:
 
 ```json
 { "type": "project.comment.created", "source": "web-ui", "owner": "agent:may", "data": { "projectPath": "projects/x", "comment": "..." } }
@@ -280,8 +285,11 @@ Everything else should be an event frame:
 { "type": "metric.threshold_changed", "source": "metrics", "owner": "agent:may", "data": { "metricId": "m", "to": 0.8 } }
 ```
 
-Socket `ok` means the event was accepted into the transport. It does not mean
-all subscribers finished.
+Socket `ok {eventId}` for an event means the semantic event was durably
+persisted. It does not mean a consumer accepted delivery or that work finished.
+Socket success for `status`, `subscribe`, or action discovery is only a bounded
+control/read response. Successful action invocation returns the ID of the one
+semantic event it emitted.
 
 Read path should stay pragmatic:
 
@@ -298,6 +306,9 @@ Current state:
 - The daemon socket is shared by the running instance. It is not one socket per
   agent, even though the legacy filename still includes the interface agent.
 - Web UI steering and CLI send already use the control client package.
+- Project action discovery and invocation use generic control RPCs because the
+  loaded action registry and schema validators are daemon-owned. Invocation
+  still produces one semantic event receipt and no command lifecycle.
 - The server removes stale socket files when it can prove no process owns them.
 - Clients should use the convention daemon socket path:
   `<persistDir>/instances/<instance>/<interfaceAgent>.sock`.

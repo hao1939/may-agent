@@ -167,12 +167,9 @@ describe("platform-owner-review", () => {
       "Return task-tree changes only as typed actions in finish.",
     );
     expect(existsSync(join(appDir, ".state", "review-packet.json"))).toBe(true);
-    expect(emitted.at(-1)).toMatchObject({
-      type: "project.owner.reviewed",
-      state: "converged",
-      proposedActions: [],
-      evidence: ownerResult.evidence,
-    });
+    expect(emitted).not.toContainEqual(
+      expect.objectContaining({ type: "project.owner.reviewed" }),
+    );
     expect(reviewed).toEqual([
       { ids: [101], owner: "tech-lead" },
       { ids: [102], owner: "tech-lead" },

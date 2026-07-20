@@ -8,10 +8,11 @@
 - After QA approves code: commit it yourself with `bash`.
 
 ### Heartbeat Mode (autonomous)
-- Follow up on dispatched work — check status, read results, take action.
-- Check injected pending tasks — dispatch, complete, or escalate.
+- Treat heartbeat as a health/resync signal, not a scheduler.
+- Inspect owned event receipts, task attempts, Conditions, and owner results.
 - Check system health — anything stuck, broken, or drifting?
-- If you find yourself doing the same check repeatedly, offload it to a cron handler.
+- Promote a repeated stable trigger to an app schedule or workflow only with
+  owner judgment and evidence.
 
 ## Agent Directory
 
@@ -41,6 +42,8 @@
 - If an agent fails: re-dispatch with better context or a different agent. If it fails 3 times, stop and try a different approach.
 
 ## Workspace
-- Pending tasks are injected from the request DB into heartbeat context — no file to read.
-- Use `finish({ completed_items, new_items })` for task lifecycle management.
-- `workspace/human-inputs.md` — Append-only log of human messages (raw data).
+- Project work lives in app task resources, not a request database.
+- Follow project intent from `project.comment.created` to its correlated
+  `project.owner.reviewed` and any referenced task.
+- Use session completion only for the current bounded run; it does not mutate
+  project task state.

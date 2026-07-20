@@ -1,12 +1,12 @@
 ---
 name: dispatch-hygiene
-description: Prevent duplicate, completed, blocked, or already-running recurring work before agent call/fork or project-task assignment by checking current task state, active sessions, recent attempts, and owner disposition.
+description: Prevent duplicate, completed, blocked, or already-running work before direct agent call/fork or proposed task actions by checking canonical task resources, receipts, attempts, Conditions, active sessions, and owner disposition.
 ---
 
 # Dispatch Hygiene — Pre-Dispatch Completion Check
 
-**Author**: Bob | **Date**: 2028-01-06
-**Trigger**: Before any `agents` tool call/fork or `project.task.assigned` emission in recurring work
+**Trigger**: Before a direct `agents` call/fork or before proposing task actions
+for recurring or previously attempted work
 **Evidence**: KE-432 (dispatch loop antipattern), KE-435 (documentation-gen live loop), KE-436 (safety cap termination)
 
 ## Problem
@@ -20,19 +20,24 @@ Before dispatching ANY recurring or previously-attempted task:
 ```
 1. CHECK COMPLETION: Does the expected output already exist?
    - Experiment: Does results.md contain CONCLUDED/CLOSED/COMPLETED?
-   - Project: Is `project.json` terminal, or is the relevant task-tree node done?
+   - Project: Is `project.json` terminal, is the maintain task converged, or
+     does a completion receipt already cover the finite work?
    - One-off task: Does the deliverable file exist?
    → If YES: Skip dispatch. Log "already complete."
 
-2. CHECK IN-FLIGHT: Is an identical task already running?
+2. CHECK IN-FLIGHT: Is an identical task already running or waiting?
    - Use the `agents` tool with `action: "list"` to see active sessions.
-   - Query the project task tree, event trace, or queryable owner inbox for
-     already-accepted work; do not invent a parallel request queue.
+   - Read canonical task status, current attempt, exact Conditions, completion
+     receipts, event trace, and queryable owner inbox.
+   - Use the generated tree only as a projection; do not invent a parallel
+     request queue.
    → If YES: Skip dispatch. Log "already in-flight."
 
 3. CHECK CIRCUIT BREAKER: Has this task failed 3+ times recently?
-   - Check your journal/log for repeated failures on same task
-   → If YES: Skip dispatch. Escalate or kill the task instead.
+   - Check durable attempts and Conditions for repeated failures on the same
+     task generation.
+   → If YES: Do not dispatch around the controller. Return owner judgment,
+     revise desired state, or escalate across an ownership boundary.
 ```
 
 ## Anti-Patterns to Avoid
@@ -49,6 +54,9 @@ Before dispatching ANY recurring or previously-attempted task:
 - First-time task dispatch (no history to check)
 - Tasks with explicit "retry" semantics (e.g., flaky test reruns)
 - Tasks where the output is time-sensitive and must refresh (e.g., metrics snapshots)
+
+This exemption permits a fresh observation; it does not permit duplicate task
+assignment or a second scheduling queue.
 
 ## Verification
 

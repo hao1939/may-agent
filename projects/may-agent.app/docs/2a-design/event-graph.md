@@ -65,9 +65,9 @@ must show the session as disconnected; the UI must not repair it heuristically.
 ## Human-Rooted Trace Contract
 
 `human.input.received` is the transport-neutral boundary fact for free-form
-human input. It is the trace root for a new human turn, not a separate request
-entity or work queue record. The input router emits exactly one semantic child
-intent from it:
+conversational input. It is the trace root for a new conversation turn, not a
+separate request entity or work queue record. The input router emits exactly
+one semantic child intent from it:
 
 ```text
 human.input.received
@@ -77,6 +77,11 @@ human.input.received
   -> project.approval.submitted structured approval context is present
   -> runtime.*.requested        explicit runtime control
 ```
+
+An explicit project-comment API or UI may instead persist
+`project.comment.created` directly as its receipt and trace root. A
+conversation adapter may produce the same event as a child of
+`human.input.received`. Downstream app-owner handling is identical.
 
 A persistent chat session is a conversation container, not a trace. Each new
 standalone human turn starts a new trace even when it reuses the same chat

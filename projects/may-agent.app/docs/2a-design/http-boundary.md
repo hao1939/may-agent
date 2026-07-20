@@ -92,7 +92,7 @@ Examples:
 | Start or steer chat/session | `chat.start.requested` or `session.steer.requested` |
 | Cancel a session | `session.cancel.requested` |
 | Comment on a project | `project.comment.created` |
-| Invoke an app action | `project.action.invoked` through generic event ingress |
+| Invoke an app action | Declared action endpoint emits its semantic event directly |
 | Reload/restart runtime | `runtime.*.requested` |
 | Resolve an alert | Metric service/command with alert and owner evidence |
 
@@ -100,9 +100,10 @@ Examples:
 envelope and hands it to the daemon path; it is not permission to invent domain
 events or bypass an app's declared actions.
 
-HTTP acceptance means the intent was accepted or queued. It never means the
-session, task, project action, escalation, or repair completed. Later typed
-state/evidence provides that answer.
+Project comment ingress returns the persisted `project.comment.created` event
+ID. Exactly one correlated `project.owner.reviewed` summarizes the owner's
+decision and references any durable tasks. The HTTP event receipt never means
+those tasks or downstream work completed.
 
 The adapter must not:
 
@@ -124,9 +125,11 @@ Domain-specific browser panels may present deeper AKS, Evaluation, Scout, or
 other facts. They call stable artifact/event/action APIs and do not query
 private SQLite tables or derive task meaning independently.
 
-Project actions are declared by the app. The browser emits
-`project.action.invoked` with the project/action/parameters; the app/runtime
-validates and translates it exactly once.
+Project actions are declared by the app. The browser discovers their schemas
+from the loaded runtime and invokes a selected action through its dedicated
+project endpoint. The runtime validates the input, emits the action's semantic
+event, and returns that event ID. It does not parse source code or create an
+action wrapper event.
 
 ## Event and websocket boundary
 
@@ -164,7 +167,7 @@ owner.
 - Default UI source and generated served assets have distinct ownership.
 - Reads are bounded projections with freshness and explicit unknown/error state.
 - Writes use canonical daemon events or a dedicated infrastructure service.
-- HTTP acceptance is never presented as completion.
+- An HTTP event receipt is never presented as delivery or completion.
 - Project/task meaning remains in app-owned canonical state.
 - Browser logic does not implement readiness, reconciliation, or repair policy.
 - Event streaming does not count as owner delivery.

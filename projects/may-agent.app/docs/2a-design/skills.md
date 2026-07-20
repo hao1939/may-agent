@@ -301,7 +301,9 @@ stronger execution is justified:
 | Situational method or domain procedure | Skill |
 | Deterministic multi-step sequencing | Workflow |
 | Mechanical observation or intervention | Guard |
-| New external action | Tool |
+| Capability an agent calls against an external system | Tool |
+| Repeated typed automation entering an existing app | Discoverable app action that emits one semantic event |
+| Ordinary project-directed request | Project comment/intent handled by the app owner |
 | Recurring/event-driven wake-up | Schedule or handler |
 | Cross-owner decision or action | Escalation |
 

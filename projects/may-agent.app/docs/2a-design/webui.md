@@ -145,8 +145,8 @@ operation. Examples:
 | --- | --- |
 | Start/bind chat | `human.input.received -> chat.start.requested` |
 | Steer session | `human.input.received -> session.steer.requested` |
-| Comment/steer project | `project.comment.created` or `project.owner.requested` |
-| Invoke declared app action | The action's typed event |
+| Comment/steer project | `project.comment.created` receipt -> one correlated `project.owner.reviewed` |
+| Invoke declared app action | Discover schema, validate input, emit the action's typed event directly |
 | Cancel session | `session.cancel.requested` |
 | Submit approval | `project.approval.submitted` or owning typed approval event |
 | Runtime restart/reload | `runtime.*.requested` |
@@ -165,7 +165,7 @@ meaning directly.
 | --- | --- |
 | Live socket/read model | Current activity and incremental updates |
 | Historical read APIs | Bounded queries over persisted events, sessions, metrics, and project state |
-| Steering POST/control | Typed intent accepted into the same runtime/event path |
+| Steering POST/control | Typed intent persisted into the same runtime/event path |
 
 The UI should prefer event-driven updates. Polling is an explicit fallback for
 a surface that lacks a live feed, not a hidden second source of state.

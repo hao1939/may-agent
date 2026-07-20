@@ -75,7 +75,9 @@ function parseJsonFile(path: string): Record<string, unknown> {
 function taskTreePacket(appDir: string): Record<string, unknown> {
   const treePath = resolveTaskTreePath(appDir);
   if (!existsSync(treePath)) return { available: false, path: treePath };
-  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as ProjectTaskTreeProjection;
+  const tree = JSON.parse(
+    readFileSync(treePath, "utf-8"),
+  ) as ProjectTaskTreeProjection;
   const tasks = tree.tasks;
   const counts: Record<string, number> = {};
   for (const task of Object.values(tasks)) {
@@ -83,7 +85,9 @@ function taskTreePacket(appDir: string): Record<string, unknown> {
     const phase = observedTaskPhase(task);
     counts[phase] = (counts[phase] ?? 0) + 1;
   }
-  const resources = Object.entries(tasks).filter(([, task]) => isResource(task));
+  const resources = Object.entries(tasks).filter(([, task]) =>
+    isResource(task),
+  );
   const runnable = resources
     .filter(
       ([, task]) =>
@@ -527,15 +531,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     messageIds: consumedMessageIds,
     escalationIds: consumedEscalationIds,
     signalEventIds: consumedSignalEventIds,
-  });
-  ctx.emit({
-    type: "project.owner.reviewed",
-    project: "may-agent",
-    owner: ownerAgent,
-    summary: ownerResult.summary,
-    state: ownerResult.state,
-    proposedActions: ownerResult.actions ?? [],
-    evidence: ownerResult.evidence,
   });
   return ctx.done(ownerResult.summary, ownerResult);
 }

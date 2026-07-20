@@ -58,6 +58,7 @@ describe("may-agent task reconciliation manifest", () => {
       { type: "project.ops_digest.tick", project: "may-agent" },
       { type: "project.ops_health.tick", project: "may-agent" },
       { type: "project.owner.requested", project: "may-agent" },
+      { type: "project.comment.created", project: "may-agent" },
     ]);
     expect(app.tasks?.resolve).toBe(resolveMayAgentTask);
     expect(app).not.toHaveProperty("ownerEntry");
@@ -67,6 +68,6 @@ describe("may-agent task reconciliation manifest", () => {
   });
 
   it("does not manufacture tasks for unrelated events", () => {
-    expect(resolveMayAgentTask({ type: "project.comment.created" })).toBeNull();
+    expect(resolveMayAgentTask({ type: "unrelated.event" })).toBeNull();
   });
 });

@@ -1,16 +1,22 @@
 # Agent Skills
 
-This directory contains reusable skills (markdown guides) that agents can read to learn specific capabilities.
+This directory contains canonical reusable skill packages that agents can read
+to learn specific capabilities.
 
-## Philosophy (P52, P81)
-- **Skill Over Agent**: If an agent can read a doc and do the job, don't delegate.
-- **Skill Hardening**: Repeated actions should become scripts or formal skills.
-- **ZeroToken Goal**: Execute complex tasks with minimal token overhead by following proven paths.
+## Philosophy
+
+- A skill gives an existing agent a reusable judgment method; it is not a new
+  worker, work record, or lifecycle.
+- Promote repeated deterministic sequencing to a workflow and mechanical
+  checks to scripts or guards. Frequency alone does not justify promotion.
+- Keep guidance compact and evidence-backed. Retire it when the runtime or app
+  structurally owns the behavior.
 
 ## Structure
-- Each skill is a markdown file or directory.
+- Each canonical skill is a `<name>/SKILL.md` package, with optional
+  `references/`, `scripts/`, and `assets/` beside it.
 - Agents read the skill, follow the instructions, and execute.
-- Prefer `shared/skills/<name>/SKILL.md` for new shared skills.
+- Loose Markdown files are legacy documentation, not discovered skills.
 - Keep skills narrow. If a behavior needs deterministic execution, use a
   workflow or handler instead of adding a longer skill.
 
@@ -18,21 +24,22 @@ This directory contains reusable skills (markdown guides) that agents can read t
 
 - `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,
   handlers, workflows, guards, sessions, socket, and Telegram failures.
-- `reading-metrics/skill.md` — react to metric signals without treating them as
+- `reading-metrics/SKILL.md` — react to metric signals without treating them as
   automatic judgments.
 - `project-loop-driver/SKILL.md` — drive durable projects through intensive
   work and monitoring.
 - `control-plane-operation/SKILL.md` — use events, workflows, SDK helpers, and
   socket control without bypassing the daemon.
 
-Skills are most effective when a workflow/task injects the relevant skill
-content. Do not assume agents will discover this directory by themselves.
+The runtime supplies a bounded metadata catalog. The agent reads a complete
+skill when its trigger matches, or a caller names one explicitly. New sessions
+receive catalog changes; existing persistent chats retain their prompt snapshot.
 
 ## Verification
 
 Use the smallest check that proves the risk you are working on:
 
-1. **Skill contract:** `bun test test/shared-skills.test.ts`
+1. **Skill contract:** `bun test test/integration/shared-skills.test.ts`
    - verifies frontmatter, key operating rules, README references, and obvious
      misleading wording.
 2. **Skill delivery path:** `bun test test/agents-tool.test.ts`

@@ -69,7 +69,8 @@ Choose the smallest controller that matches the work:
 | Repeatable ordered branching/retry/verification                   | Synchronous TypeScript workflow                                      |
 | Wait for a human, timer, callback, restart, or external condition | Persist domain state and continue from a later event-linked workflow |
 | Mechanically detectable risk around tool/workflow execution       | Guard                                                                |
-| New external or deterministic action capability                   | Tool                                                                 |
+| Capability an agent calls against an external system              | Tool                                                                 |
+| Repeated typed automation entering an existing app                | Discoverable app action that emits one semantic event                |
 | Timer/event-to-workflow bridge or mechanical projection           | Handler/app schedule                                                 |
 
 Workflows are ordered synchronous blocks even though their TypeScript uses
@@ -112,19 +113,33 @@ workflow statuses describe execution attempts only.
 
 ## Human Loop
 
-Free-form human input starts with one transport-neutral event:
+Human interaction shares event-native ingress but has two explicit semantic
+addresses:
 
 ```text
-human.input.received
-  -> exactly one semantic child intent
-  -> bounded work
-  -> terminal session/workflow/domain evidence
-  -> channel delivery
+conversation directed to an agent
+  -> human.input.received
+  -> chat.start.requested or session.steer.requested
+  -> bounded agent turn
+  -> session.idle/session.end and channel delivery
+
+outcome directed to an app
+  -> project.comment.created receipt or typed app event
+  -> app owner judgment
+  -> project.owner.reviewed
+  -> optional durable task and Conditions
 ```
+
+An app request lets the app choose the handler. An agent message fixes the
+agent or conversation. They share envelopes, receipts, traces, and execution
+infrastructure without sharing one ambiguous public `send(target, message)`
+contract.
 
 A persistent chat is a conversation container, not a permanent trace. Each
 human turn receives its own trace. Replies to a notification continue the
-referenced trace; unrelated follow-ups start a new trace.
+referenced trace; unrelated follow-ups start a new trace. If conversation
+judgment creates durable project work, it emits a linked app-intent event rather
+than treating the chat session as task state.
 
 ## Event Durability And Reliability
 

@@ -1,4 +1,9 @@
-# Skill: Reading and Reacting to Metrics
+---
+name: reading-metrics
+description: Interpret May-agent metrics as investigation signals, validate their source and trend, act on evidence, and re-measure. Use when a task, project, heartbeat, or alert includes a metric or claims a health change.
+---
+
+# Reading And Reacting To Metrics
 
 ## When to Use
 Use this when metrics are present in your task, heartbeat, workflow context, or

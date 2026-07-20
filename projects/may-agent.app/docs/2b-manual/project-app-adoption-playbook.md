@@ -159,8 +159,9 @@ onEvent(ctx, event) {
 },
 ```
 
-Use `app.actions` to translate a named UI/control action into one semantic
-event. Apps do not redispatch the `project.action.invoked` envelope themselves.
+Use `app.actions` for optional, discoverable typed shortcuts. Declare an input
+schema and translate valid input into one semantic event. The runtime persists
+that event directly and returns its ID; there is no action wrapper envelope.
 
 ## 7. Seed once; observe live state elsewhere
 

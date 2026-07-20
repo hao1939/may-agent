@@ -44,8 +44,9 @@ truth.
 - DB tables: use `query_db("pragma table_info(<table>)")` when available.
 - Handler/workflow contracts: read the handler or workflow source first.
 - Agent/project conventions: read the relevant V3 `project.json`, `app.ts`,
-  `tasks/tree.json`, `AGENTS.md`, or manual page. Treat `project.md` as legacy
-  compatibility material only.
+  canonical `.state/tasks/state.json`, generated `.state/tasks/tree.json`
+  projection when useful, `AGENTS.md`, or manual page. Treat `project.md` as
+  legacy compatibility material only.
 
 If `query_db` is unavailable, use a bounded readonly runtime query, not
 `sqlite3` and not guessed DB paths.
@@ -100,6 +101,18 @@ After a fix, force a validation signal instead of waiting:
    channel-delivery evidence. `metric.alert_judged` proves owner judgment, not
    recovery or project success.
 5. If the value is still bad, continue the investigation; do not declare done.
+
+For project-intent failures, check the contract in order:
+
+1. Was `project.comment.created` persisted and was its event ID returned?
+2. Did retrying the same idempotency key return the original receipt without a
+   second delivery?
+3. Did the stable owner-review task retain every unresolved intent reference
+   when wakes coalesced?
+4. Did infrastructure emit exactly one correlated `project.owner.reviewed` per
+   accepted intent?
+5. Does that result contain a bounded summary, task references, and closure
+   link, with any durable wait represented by task Conditions?
 
 ## Repetition Rule
 
