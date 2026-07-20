@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 export type ProjectRuntimePaths = {
   appDir: string;
   stateDir: string;
+  taskStatePath: string;
+  /** Generated human/agent read projection. Never a mutation authority. */
   taskTreePath: string;
   projectStatePath: string;
   journalPath: string;
@@ -54,6 +56,7 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
   return {
     appDir,
     stateDir,
+    taskStatePath: join(taskStateDir, "state.json"),
     taskTreePath: join(taskStateDir, "tree.json"),
     projectStatePath: join(stateDir, "project-state.json"),
     journalPath: join(stateDir, "journal.jsonl"),
@@ -63,38 +66,57 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
 
 export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
   const paths = projectRuntimePaths(appDir);
+  if (existsSync(paths.taskStatePath)) {
+    if (!existsSync(paths.taskTreePath)) {
+      writeFileSync(paths.taskTreePath, readFileSync(paths.taskStatePath));
+    }
+    return { path: paths.taskStatePath, migrated: false, source: "runtime" };
+  }
+
+  ensureDir(dirname(paths.taskStatePath));
   if (existsSync(paths.taskTreePath)) {
-    return { path: paths.taskTreePath, migrated: false, source: "runtime" };
+    writeFileSync(paths.taskStatePath, readFileSync(paths.taskTreePath));
+    appendMigrationLog(appDir, {
+      kind: "task_resource_authority_moved",
+      source: "runtime-tree-projection",
+      from: ".state/tasks/tree.json",
+      to: ".state/tasks/state.json",
+    });
+    return { path: paths.taskStatePath, migrated: true, source: "runtime" };
   }
 
   const seedPath = join(appDir, "tasks", "seed.json");
-  ensureDir(dirname(paths.taskTreePath));
 
   if (existsSync(seedPath)) {
-    writeFileSync(paths.taskTreePath, readFileSync(seedPath));
+    const seed = readFileSync(seedPath);
+    writeFileSync(paths.taskStatePath, seed);
+    writeFileSync(paths.taskTreePath, seed);
     appendMigrationLog(appDir, {
       kind: "task_tree_runtime_state_bootstrap",
       source: "seed",
       from: "tasks/seed.json",
-      to: ".state/tasks/tree.json",
+      to: ".state/tasks/state.json",
     });
-    return { path: paths.taskTreePath, migrated: true, source: "seed" };
+    return { path: paths.taskStatePath, migrated: true, source: "seed" };
   }
 
-  writeJson(paths.taskTreePath, {
+  const empty = {
     updated_at: new Date().toISOString(),
     tasks: {},
-  });
+  };
+  writeJson(paths.taskStatePath, empty);
+  writeJson(paths.taskTreePath, empty);
   appendMigrationLog(appDir, {
     kind: "task_tree_runtime_state_bootstrap",
     source: "empty",
-    to: ".state/tasks/tree.json",
+    to: ".state/tasks/state.json",
   });
-  return { path: paths.taskTreePath, migrated: true, source: "empty" };
+  return { path: paths.taskStatePath, migrated: true, source: "empty" };
 }
 
 export function resolveTaskTreePath(appDir: string): string {
-  return ensureTaskTreeState(appDir).path;
+  ensureTaskTreeState(appDir);
+  return projectRuntimePaths(appDir).taskTreePath;
 }
 
 export function loadProjectReadModel(appDir: string): Record<string, unknown> {

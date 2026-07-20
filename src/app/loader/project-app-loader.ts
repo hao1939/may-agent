@@ -1702,7 +1702,9 @@ function hashFile(path: string): string {
 
 function projectAppLifecycle(appDir: string): string {
   try {
-    const tree = JSON.parse(readFileSync(projectRuntimePaths(appDir).taskTreePath, "utf8")) as {
+    const paths = projectRuntimePaths(appDir);
+    const statePath = existsSync(paths.taskStatePath) ? paths.taskStatePath : paths.taskTreePath;
+    const tree = JSON.parse(readFileSync(statePath, "utf8")) as {
       project_lifecycle?: unknown;
     };
     return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : "";
