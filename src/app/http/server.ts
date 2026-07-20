@@ -199,6 +199,7 @@ type ProjectTaskRecord = {
   owner?: string;
   goal?: string;
   children?: string[];
+  depends_on?: string[] | string;
   outputs?: string[];
   gates?: string[];
   gate_status?: string;
@@ -216,6 +217,7 @@ type ProjectTaskTreeRecord = {
   max_concurrent?: number;
   root_task_id?: string;
   tasks?: Record<string, ProjectTaskRecord>;
+  receipts?: Record<string, unknown>;
 };
 
 const CANONICAL_TASK_STATES = new Set(["backlog", "active", "review", "done", "blocked"]);
@@ -309,6 +311,31 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     kindCounts[kind] = (kindCounts[kind] ?? 0) + 1;
   }
 
+  const receiptIds = new Set(Object.keys(isRecord(tree.receipts) ? tree.receipts : {}));
+  const executableLeaves = Object.values(tasks).filter(
+    (task) => (task.children?.length ?? 0) === 0 && typeof task.goal === "string" && task.goal.trim(),
+  );
+  const idsInState = (states: string[]) =>
+    executableLeaves
+      .filter((task) => states.includes(task.state))
+      .map((task) => task.id)
+      .sort();
+  const active = idsInState(["active"]);
+  const review = idsInState(["review"]);
+  const waiting = idsInState(["blocked"]);
+  const runnable = executableLeaves
+    .filter((task) => task.state === "backlog")
+    .filter((task) => {
+      const dependencies = Array.isArray(task.depends_on)
+        ? task.depends_on
+        : typeof task.depends_on === "string" && task.depends_on
+          ? [task.depends_on]
+          : [];
+      return dependencies.every((dependencyId) => receiptIds.has(dependencyId) || tasks[dependencyId]?.state === "done");
+    })
+    .map((task) => task.id)
+    .sort();
+
   return {
     available: true,
     path: opts.path,
@@ -320,6 +347,18 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     max_concurrent: tree.max_concurrent ?? null,
     statusCounts,
     kindCounts,
+    frontier: {
+      active,
+      review,
+      waiting,
+      runnable,
+      counts: {
+        active: active.length,
+        review: review.length,
+        waiting: waiting.length,
+        runnable: runnable.length,
+      },
+    },
     tasks,
   };
 }
