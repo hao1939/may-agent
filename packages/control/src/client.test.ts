@@ -1,6 +1,15 @@
 import { Duplex } from "node:stream";
 import { describe, expect, it } from "bun:test";
-import { daemonSocketPath, emitDaemonEvent, sendAgentMessage, sendDaemonEvent, sendDaemonInput, type SocketEndpoint } from "./client.js";
+import {
+  daemonSocketPath,
+  emitDaemonEvent,
+  sendAgentMessage,
+  sendDaemonEvent,
+  sendDaemonInput,
+  sendSocketCommand,
+  waitForSocketEvent,
+  type SocketEndpoint,
+} from "./client.js";
 
 function okEndpoint(): SocketEndpoint {
   return () => {
@@ -49,6 +58,27 @@ function captureEndpoint(writes: string[]): SocketEndpoint {
   };
 }
 
+function echoThenAckEndpoint(): SocketEndpoint {
+  return () => {
+    const stream = new Duplex({
+      read() {},
+      write(chunk, _encoding, callback) {
+        const frame = JSON.parse(String(chunk));
+        queueMicrotask(() => {
+          stream.emit("data", Buffer.from(`${JSON.stringify(frame)}\n${JSON.stringify({
+            type: "ok",
+            command: frame.type,
+            eventId: 91,
+          })}\n`));
+        });
+        callback();
+      },
+    });
+    queueMicrotask(() => stream.emit("connect"));
+    return stream;
+  };
+}
+
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
     expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" }))
@@ -66,9 +96,87 @@ describe("sendDaemonEvent", () => {
       .resolves.toMatchObject({ type: "ok", command: "trigger.metrics-snapshot" });
   });
 
+  it("waits for the acknowledgement when the event broadcast arrives first", async () => {
+    await expect(
+      sendDaemonEvent(echoThenAckEndpoint(), {
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:may",
+        data: { project: "sample", comment: "advance" },
+      }),
+    ).resolves.toEqual({ type: "ok", command: "project.comment.created", eventId: 91 });
+  });
+
   it("fails clearly when the socket cannot be connected", async () => {
     await expect(sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" }))
       .rejects.toThrow("connection refused");
+  });
+
+  it("rejects an unknown outcome when the socket closes after the write", async () => {
+    const endpoint: SocketEndpoint = () => {
+      const stream = new Duplex({
+        read() {},
+        write(_chunk, _encoding, callback) {
+          callback();
+          queueMicrotask(() => stream.destroy());
+        },
+      });
+      queueMicrotask(() => stream.emit("connect"));
+      return stream;
+    };
+
+    await expect(sendSocketCommand(endpoint, { type: "status" })).rejects.toThrow("outcome unknown");
+  });
+
+  it("ignores an acknowledgement for a different command", async () => {
+    const endpoint: SocketEndpoint = () => {
+      const stream = new Duplex({
+        read() {},
+        write(_chunk, _encoding, callback) {
+          queueMicrotask(() => {
+            stream.emit("data", Buffer.from(
+              `${JSON.stringify({ type: "ok", command: "reload" })}\n${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`,
+            ));
+          });
+          callback();
+        },
+      });
+      queueMicrotask(() => stream.emit("connect"));
+      return stream;
+    };
+
+    await expect(sendSocketCommand(endpoint, { type: "status" })).resolves.toMatchObject({
+      type: "status",
+      command: "status",
+    });
+  });
+});
+
+describe("waitForSocketEvent", () => {
+  it("subscribes before accepting a matching event", async () => {
+    const writes: Array<Record<string, unknown>> = [];
+    const endpoint: SocketEndpoint = () => {
+      const stream = new Duplex({
+        read() {},
+        write(chunk, _encoding, callback) {
+          const frame = JSON.parse(String(chunk)) as Record<string, unknown>;
+          writes.push(frame);
+          queueMicrotask(() => {
+            stream.emit("data", Buffer.from(
+              `${JSON.stringify({ type: "ok", command: "subscribe" })}\n${JSON.stringify({ type: "session.end", data: { sessionId: "s_1" } })}\n`,
+            ));
+          });
+          callback();
+        },
+      });
+      queueMicrotask(() => stream.emit("connect"));
+      return stream;
+    };
+
+    await expect(waitForSocketEvent(endpoint, "session.end", { sessionId: "s_1" })).resolves.toMatchObject({
+      type: "session.end",
+    });
+    expect(writes).toEqual([{ type: "subscribe", sessions: ["s_1"] }]);
   });
 });
 

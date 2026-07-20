@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { sendSocketCommand, type SocketEndpoint } from "../../packages/control/src/client.js";
 import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../../packages/control/src/server.js";
 import { attachCommandRouter } from "../../src/app/command-router.js";
-import { EventBus } from "../../src/app/event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../../src/app/event-bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 
@@ -95,7 +95,8 @@ describe("control routing e2e", () => {
       getStatus: () => [],
       emitEvent: (event: ControlEvent) => {
         emitted.push(event);
-        bus.emit(event as never);
+        const persisted = bus.emit(event as never);
+        return { eventId: Number(persisted[EVENT_ROW_ID]) };
       },
       subscribeEvents: (handler) => bus.subscribe(handler as never),
       agentName: "may",
@@ -122,7 +123,7 @@ describe("control routing e2e", () => {
     });
     await waitForSocketDispatch();
 
-    expect(ack).toEqual({ type: "ok", command: "message.created" });
+    expect(ack).toMatchObject({ type: "ok", command: "message.created", eventId: expect.any(Number) });
     expect(emitted).toContainEqual({
       type: "message.created",
       source: "agent:may",
@@ -177,7 +178,8 @@ describe("control routing e2e", () => {
       getStatus: () => [],
       emitEvent: (event: ControlEvent) => {
         emitted.push(event);
-        bus.emit(event as never);
+        const persisted = bus.emit(event as never);
+        return { eventId: Number(persisted[EVENT_ROW_ID]) };
       },
       subscribeEvents: (handler) => bus.subscribe(handler as never),
       agentName: "may",
@@ -235,7 +237,10 @@ describe("control routing e2e", () => {
     const core = createControlSocketCore({
       getSessionId: () => "",
       getStatus: () => [],
-      emitEvent: (event: ControlEvent) => bus.emit(event as never),
+      emitEvent: (event: ControlEvent) => {
+        const persisted = bus.emit(event as never);
+        return { eventId: Number(persisted[EVENT_ROW_ID]) };
+      },
       subscribeEvents: (handler) => bus.subscribe(handler as never),
       agentName: "may",
       instance: "test",
@@ -251,7 +256,7 @@ describe("control routing e2e", () => {
       });
       await waitForSocketDispatch();
 
-      expect(ack).toEqual({ type: "ok", command: "fork" });
+      expect(ack).toMatchObject({ type: "ok", command: "fork", eventId: expect.any(Number) });
       expect(runCalls).toEqual([
         {
           agent: "dev",

@@ -1,11 +1,12 @@
 import { Duplex } from "node:stream";
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
   attachControlSocket,
+  CONTROL_SOCKET_LIMITS,
   createControlSocketCore,
   type ControlEvent,
   type ControlSocket,
@@ -115,8 +116,13 @@ function createCore(overrides: Partial<Parameters<typeof createControlSocketCore
 }
 
 describe("control socket protocol", () => {
-  it("acks daemon events before async dispatch", async () => {
-    const core = createCore();
+  it("returns the persisted semantic event receipt", async () => {
+    const core = createCore({
+      emitEvent: (event) => {
+        core.emitted.push(event);
+        return { eventId: 42 };
+      },
+    });
 
     const ack = await sendSocketCommand(core.endpoint, {
       type: "project.nudge",
@@ -125,14 +131,88 @@ describe("control socket protocol", () => {
       data: { projectPath: "agents/shared/projects/x" },
     });
 
-    expect(ack).toEqual({ type: "ok", command: "project.nudge" });
-    await new Promise((resolve) => setImmediate(resolve));
+    expect(ack).toEqual({ type: "ok", command: "project.nudge", eventId: 42 });
     expect(core.emitted).toMatchObject([{
       type: "project.nudge",
       source: "test",
       owner: "agent:may",
       data: { projectPath: "agents/shared/projects/x" },
     }]);
+  });
+
+  it("returns persistence errors instead of acknowledging an unpersisted event", async () => {
+    const core = createCore({
+      emitEvent: () => {
+        throw new Error("persistence unavailable");
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "project.nudge",
+        source: "test",
+        owner: "agent:may",
+        data: {},
+      }),
+    ).rejects.toThrow("persistence unavailable");
+  });
+
+  it("does not acknowledge an event when persistence returns no event id", async () => {
+    const core = createCore({ emitEvent: () => {} });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "project.nudge",
+        source: "test",
+        owner: "agent:may",
+        data: {},
+      }),
+    ).rejects.toThrow("was not durably persisted");
+  });
+
+  it("discovers and invokes project action shortcuts", async () => {
+    const core = createCore({
+      describeProjectActions: (projectId) => [
+        {
+          id: "advance-project",
+          description: `Advance ${projectId}`,
+          inputSchema: { type: "object" },
+        },
+      ],
+      invokeProjectAction: ({ projectId, actionId, params, idempotencyKey }) => {
+        expect({ projectId, actionId, params, idempotencyKey }).toEqual({
+          projectId: "sample",
+          actionId: "advance-project",
+          params: { reason: "manual" },
+          idempotencyKey: "request-1",
+        });
+        return { eventId: 73, eventType: "project.owner.requested" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "project.actions.describe",
+        projectId: "sample",
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      projectId: "sample",
+      actions: [{ id: "advance-project", inputSchema: { type: "object" } }],
+    });
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "project.action.invoke",
+        projectId: "sample",
+        actionId: "advance-project",
+        params: { reason: "manual" },
+        idempotencyKey: "request-1",
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      eventId: 73,
+      eventType: "project.owner.requested",
+    });
   });
 
   it("serves status locally without emitting a daemon event", async () => {
@@ -148,6 +228,7 @@ describe("control socket protocol", () => {
 
     expect(status).toEqual({
       type: "status",
+      command: "status",
       activeAgents: [{ agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" }],
     });
     expect(core.emitted).toEqual([]);
@@ -165,6 +246,7 @@ describe("control socket protocol", () => {
 
     expect(status).toEqual({
       type: "status",
+      command: "status",
       activeAgents: [
         { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
         { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "May chat" },
@@ -192,6 +274,19 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("does not broadcast events before a client subscribes", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+
+    core.getBroadcast()?.({ type: "text", sessionId: "chat-session", text: "before" });
+    stream.write(JSON.stringify({ type: "subscribe", sessions: ["chat-session"] }) + "\n");
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+    core.getBroadcast()?.({ type: "text", sessionId: "chat-session", text: "after" });
+    await expect(nextFrame(stream)).resolves.toMatchObject({ type: "text", text: "after" });
+    stream.destroy();
+  });
+
   it("rejects invalid event frames", async () => {
     const core = createCore();
 
@@ -200,11 +295,29 @@ describe("control socket protocol", () => {
     );
   });
 
+  it("rejects oversized frames before parsing them", async () => {
+    const core = createCore();
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+    const response = nextFrame(stream);
+
+    stream.write("x".repeat(CONTROL_SOCKET_LIMITS.maxFrameBytes + 1) + "\n");
+
+    await expect(response).resolves.toEqual({
+      type: "error",
+      command: null,
+      message: "Control socket frame is too large",
+    });
+    expect(core.emitted).toEqual([]);
+    stream.destroy();
+  });
+
   it("creates the socket parent directory before listening", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-control-socket-"));
     try {
+      const socketPath = join(root, "missing", "nested", "may.sock");
       const socket = await attachControlSocket({
-        socketPath: join(root, "missing", "nested", "may.sock"),
+        socketPath,
         getSessionId: () => "",
         getStatus: () => [],
         emitEvent: () => {},
@@ -214,6 +327,7 @@ describe("control socket protocol", () => {
       });
       sockets.push(socket);
       expect(socket.clientCount()).toBe(0);
+      expect(statSync(socketPath).mode & 0o777).toBe(0o600);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -390,7 +390,16 @@ async function renderProjectFunctions(el) {
   const projectId = projectIdFromPath(_projectDetailPath);
   const domainUiHref = `/projects/${projectId.split('/').map(encodeURIComponent).join('/')}/ui/`;
   const hasDomainUi = detail.app?.hasUi !== false;
-  const actions = Array.isArray(detail.app?.actions) ? detail.app.actions : [];
+  let actions = [];
+  try {
+    const response = await fetch(`/api/projects/${encodeURIComponent(projectId.replace(/\.app$/, ''))}/actions`);
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || response.statusText);
+    actions = Array.isArray(body.actions) ? body.actions : [];
+  } catch (error) {
+    el.innerHTML = `<div style="color:var(--red)">Failed to discover project actions: ${esc(error.message)}</div>`;
+    return;
+  }
   let html = `<div class="project-functions">
     <div class="function-surface-grid">
       <a class="function-card" href="${attrEsc(domainUiHref)}">
@@ -406,8 +415,8 @@ async function renderProjectFunctions(el) {
     </div>`;
 
   html += `<div class="function-panel">
-    <h3>Action Bridge</h3>
-    <p>Project actions enter through <code>POST /api/events</code>. The project app owns validation, handlers, and side effects.</p>`;
+    <h3>Automation shortcuts</h3>
+    <p>These optional shortcuts are declared by the project app. Each validates its input and emits the named domain event directly.</p>`;
   if (actions.length) {
     html += `<div class="action-list">`;
     for (const action of actions) {
@@ -418,24 +427,50 @@ async function renderProjectFunctions(el) {
     }
     html += `</div>`;
   } else {
-    html += `<div class="empty-state">No declared actions were detected in this project app. You can still emit a named action below.</div>`;
+    html += `<div class="empty-state">This project app declares no automation shortcuts. Send normal intent through the project comment box.</div>`;
   }
-  html += `<div class="action-form">
-    <label>Action id<input id="project-action-id" value="${actions[0] ? esc(actions[0].id) : ''}" placeholder="review-library"></label>
-    <label>Params JSON<textarea id="project-action-params" placeholder='{"reason":"manual review"}'>{}</textarea></label>
-    <button onclick="emitProjectAction()">Emit Action Event</button>
+  html += `<div class="action-form" ${actions.length ? '' : 'style="display:none"'}>
+    <label>Shortcut<select id="project-action-id" onchange="selectProjectAction(this.value)">${actions.map(action => `<option value="${attrEsc(action.id)}">${esc(action.id)}</option>`).join('')}</select></label>
+    <label>Input JSON <span style="color:var(--fg2)">(advanced)</span><textarea id="project-action-params" placeholder='{"reason":"manual review"}'>{}</textarea></label>
+    <div id="project-action-schema" style="font-size:11px;color:var(--fg2)"></div>
+    <button onclick="emitProjectAction()">Run shortcut</button>
     <span id="project-action-status"></span>
   </div></div></div>`;
   el.innerHTML = html;
+  window._projectActions = actions;
+  selectProjectAction(actions[0]?.id || '');
 }
 
 function selectProjectAction(actionId) {
   const input = document.getElementById('project-action-id');
   if (input) input.value = actionId || '';
+  window._projectActionRequestKey = '';
+  const action = (window._projectActions || []).find(candidate => candidate.id === actionId);
+  const schema = document.getElementById('project-action-schema');
+  if (schema) schema.innerHTML = action
+    ? `${esc(action.description || '')}<br><code>${esc(JSON.stringify(action.inputSchema || {}))}</code>`
+    : '';
 }
 
 async function emitProjectPlanningRequest() {
-  await emitProjectActionEvent('project.owner.requested', 'manual-functions-page', {});
+  const project = projectIdFromPath(_projectDetailPath).replace(/\.app$/, '');
+  try {
+    const res = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'project.owner.requested',
+        source: 'web-ui',
+        owner: _currentProjectDetail?.owner || 'may',
+        data: { project, projectId: project, reason: 'manual-functions-page' },
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || res.statusText);
+    toast(`Planning requested${body.eventId ? ` · event ${body.eventId}` : ''}`, 'ok');
+  } catch (error) {
+    toast(`Planning request failed: ${error.message}`, 'error');
+  }
 }
 
 async function emitProjectAction() {
@@ -453,37 +488,25 @@ async function emitProjectAction() {
     if (status) status.textContent = `Invalid JSON: ${e.message}`;
     return;
   }
-  await emitProjectActionEvent('project.action.invoked', action, params);
-}
-
-async function emitProjectActionEvent(type, action, params) {
-  const status = document.getElementById('project-action-status');
   if (status) status.textContent = 'Sending...';
   try {
     const project = projectIdFromPath(_projectDetailPath).replace(/\.app$/, '');
-    const res = await fetch('/api/events', {
+    const idempotencyKey = window._projectActionRequestKey ||
+      (globalThis.crypto?.randomUUID?.() || `action-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    window._projectActionRequestKey = idempotencyKey;
+    const res = await fetch(`/api/projects/${encodeURIComponent(project)}/actions/${encodeURIComponent(action)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type,
-        source: 'web-ui',
-        data: {
-          projectPath: _projectDetailPath,
-          project,
-          projectId: project,
-          action,
-          params,
-          reason: action,
-        },
-      }),
+      body: JSON.stringify({ input: params, idempotencyKey }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || res.statusText);
-    if (status) status.innerHTML = `Accepted${body.workflowRunId ? ` · workflow <code>${esc(body.workflowRunId)}</code>` : ''}`;
-    toast('Project event accepted', 'ok');
+    window._projectActionRequestKey = '';
+    if (status) status.innerHTML = `Emitted <code>${esc(body.eventType || '')}</code>${body.eventId ? ` · <a href="/events/${encodeURIComponent(body.eventId)}">event ${esc(body.eventId)}</a>` : ''}`;
+    toast('Project shortcut accepted', 'ok');
   } catch (e) {
     if (status) status.textContent = `Failed: ${e.message}`;
-    toast(`Project event failed: ${e.message}`, 'error');
+    toast(`Project shortcut failed: ${e.message}`, 'error');
   }
 }
 
@@ -626,17 +649,21 @@ async function addProjectComment() {
   if (!comment) return;
   input.disabled = true;
   statusEl.style.display = 'none';
+  const idempotencyKey = input.dataset.idempotencyKey ||
+    (globalThis.crypto?.randomUUID?.() || `comment-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  input.dataset.idempotencyKey = idempotencyKey;
   try {
     const res = await fetch('/api/projects/comment', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ path: _projectDetailPath, comment })
+      body: JSON.stringify({ path: _projectDetailPath, comment, idempotencyKey })
     });
     const data = await res.json();
     if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
     input.value = '';
+    delete input.dataset.idempotencyKey;
     if (data.accepted) {
-      statusEl.textContent = '✅ Comment accepted — project owner will process the event';
+      statusEl.innerHTML = `✅ Comment accepted — project owner will process the event${data.eventId ? ` · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a>` : ''}`;
       statusEl.style.color = 'var(--green)';
     } else if (data.triggered) {
       statusEl.textContent = '⚠️ Comment event sent, acceptance not confirmed';
@@ -646,8 +673,6 @@ async function addProjectComment() {
       statusEl.style.color = 'var(--fg2)';
     }
     statusEl.style.display = 'block';
-    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
-    loadProjectTab('project');
   } catch(e) {
     statusEl.textContent = '❌ Failed: ' + e.message;
     statusEl.style.color = 'var(--red)';
