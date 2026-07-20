@@ -1650,6 +1650,12 @@ export const create: HandlerModule["create"] = (
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
+           -- Task-bound project session recovery interruptions are already
+           -- owned by the app task reconciler and evaluator-aftermath records
+           -- them as structured skips when appropriate. Counting those rows as
+           -- missing evaluator triage turns a recovery handoff into false
+           -- failed-triage debt.
+           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND NOT (s.status = 'interrupted' AND s.error IS NULL)
          GROUP BY s.sessionId`,

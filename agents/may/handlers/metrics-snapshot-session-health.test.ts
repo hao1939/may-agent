@@ -96,6 +96,18 @@ describe("metrics-snapshot session health metrics", () => {
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
+        "s_task_bound_reconciler_handoff",
+        "app-ops",
+        "task",
+        "interrupted",
+        ended - 45_000,
+        ended,
+        "Task-bound project session recovery is owned by the app task reconciler",
+      ],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
         "s_self",
         "evaluator",
         "task",
