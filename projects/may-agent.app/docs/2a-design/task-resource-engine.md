@@ -183,6 +183,11 @@ defaults in model output, authored workflows, tests, and production admission:
 `converged` or `waiting`. Waiting requires at least one exact typed Condition;
 Conditions are invalid on other results.
 
+When a completed carrier creates a successor wait task, the carrier still
+returns `converged` without top-level Conditions. The external wake belongs to
+the successor task's desired work and will become that task's Condition when the
+successor reconciles.
+
 A thrown exception, timeout, unavailable runtime, invalid envelope, rejected
 action batch, or verifier rejection fails the attempt. `failed` is an attempt
 state, not a handler decision.
