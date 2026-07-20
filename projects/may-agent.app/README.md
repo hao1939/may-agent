@@ -11,7 +11,8 @@ domain workspace.
   actions. Reusable workflows are discovered by filename.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
-- `.state/tasks/tree.json` is the sole mutable task-resource authority.
+- `.state/tasks/state.json` is the sole mutable task-resource authority;
+  `.state/tasks/tree.json` is a generated read-only projection.
 - `tasks/seed.json` is used only to initialize an empty runtime state.
 - `docs/` contains May-agent design, principles, manual, and proposal docs.
 - `.state/` contains local runtime state. Durable understanding belongs in

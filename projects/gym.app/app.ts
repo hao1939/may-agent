@@ -74,6 +74,17 @@ function taskIdentity(prefix: string, value: unknown): string {
   return `runtime/${prefix}/${readable || prefix}-${digest}`;
 }
 
+function selected(
+  source: Record<string, unknown>,
+  keys: string[],
+): Record<string, unknown> {
+  return Object.fromEntries(
+    keys.flatMap((key) =>
+      source[key] === undefined ? [] : [[key, source[key]]],
+    ),
+  );
+}
+
 export function resolveGymTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
@@ -99,6 +110,20 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "incident-intake",
+        input: {
+          kind: "incident",
+          ...selected(details, ["incidentId", "sessionId", "reason"]),
+          ...selected(evaluation, [
+            "agent",
+            "artifactFound",
+            "artifactPath",
+            "lane",
+            "reviewedVerdict",
+            "reviewSessionId",
+            "sessionId",
+            "verdict",
+          ]),
+        },
         outputs: [".state/incidents"],
         priority: "P1",
       };
@@ -114,6 +139,13 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "regression-run",
+        input: selected(details, [
+          "agent",
+          "benchmark",
+          "reason",
+          "scenario",
+          "trials",
+        ]),
         outputs: [".state/runs", ".state/failures"],
         priority: "P1",
       };
@@ -129,6 +161,18 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "review-and-propose",
+        input: {
+          kind: String(details.kind ?? "unknown"),
+          ...selected(details, [
+            "failurePath",
+            "incidentId",
+            "incidentPath",
+            "outcomePath",
+            "requestKey",
+            "runDir",
+            "runId",
+          ]),
+        },
         outputs: [".state/reviews"],
         priority: "P1",
       };

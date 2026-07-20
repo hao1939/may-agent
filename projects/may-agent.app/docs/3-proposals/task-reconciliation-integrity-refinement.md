@@ -1,10 +1,12 @@
 # Proposal: Task Reconciliation Integrity Refinement
 
 **Design status:** Revised after review; recommended for acceptance.
-**Implementation status:** In progress. Pure read-model projection, targeted
-routing, parent non-scheduling, the three public handler states, and canonical
-seed shapes are implemented. Shared admission, acceptance provenance, runnable
-owner admission, path boundaries, and final live-state cutover remain.
+**Implementation status:** Runtime complete; paused-state cutover in progress.
+Shared admission, acceptance provenance for new receipts, runnable-owner
+admission, execution-only generations, path boundaries, strict live-parent
+admission, Condition-trigger preservation, and projection non-authority are
+implemented. Existing receipts, dangling legacy parents, app-owned waits, and
+final deploy/restart/resume verification still require the reviewed cutover.
 
 ## Requested Decision
 
@@ -231,10 +233,11 @@ transaction. Its context exposes resolved paths and read-only observations,
 not task mutation commands. `accepted: false` fails the attempt with its
 summary and evidence.
 
-Completion receipts should record the acceptance method and evidence:
+Completion receipts record the acceptance method and evidence as an acceptance
+basis, not as generic "verification":
 
 ```ts
-verification: {
+acceptanceBasis: {
   method: "deterministic" | "workflow-contract" | "owner-judgment";
   verifier?: string;
   evidence: string[];
@@ -276,6 +279,10 @@ Example:
 The task remains owned by its accountable agent. Notification delivery may
 target a human, but notification ownership and task ownership are not the same
 concept.
+
+The event that satisfies a Condition is also persisted as the task's next
+trigger observation before the task key is enqueued. The handler therefore
+sees why it woke. A queue hint alone must not erase the observation.
 
 ## Decision 5: Separate Execution Generation From Organization
 
@@ -321,6 +328,10 @@ external root was explicitly supplied as a capability.
 This is primarily an execution-context rule. It does not require the task
 engine to understand domain filenames or inspect prose.
 
+Output-path admission validates the declared contract; it is not a filesystem
+sandbox. Tool policy and process isolation remain responsible for constraining
+undeclared writes.
+
 ## Decision 7: Finish Compatibility Migration
 
 Once every deployed app has canonical `.state/tasks/state.json`:
@@ -332,6 +343,11 @@ Once every deployed app has canonical `.state/tasks/state.json`:
   operation; and
 - compatibility readers and legacy authoring shapes are deleted rather than
   retained indefinitely.
+
+Every live `parentId` must resolve to a live resource or structural group.
+Receipts preserve lineage but are not live containment nodes. Admission rejects
+missing parents, self-parenting, and containment cycles; cutover reparents
+legacy children through the closest still-live ancestor before resume.
 
 Live-state cleanup is app-owned migration work. The generic reconciler must not
 guess that an unfamiliar task is obsolete merely because its workflow is
@@ -358,16 +374,17 @@ does not authorize deleting live project data.
 
 1. **Done:** keep app policy out of the reconciler and derive focus/frontier
    readouts without writes.
-2. Introduce the SDK contract schema, normalizer, and authoring helpers; make
+2. **Done:** Introduce the SDK contract schema, normalizer, and authoring helpers; make
    runtime, owner output, workflows, and app tests consume them.
-3. Apply convention defaults, replace action `goal` with `outcome`, and support
+3. **Done:** Apply convention defaults, replace action `goal` with `outcome`, and support
    explicit owner/workflow binding repair.
-4. Implement optional verifier invocation and receipt acceptance provenance.
-5. Validate runnable ownership before claiming an attempt and migrate the Scout
-   credential wait to an exact Condition.
-6. Fingerprint only normalized execution intent, including the effective
+4. **Done for new results:** Implement optional verifier invocation and receipt acceptance provenance.
+5. **Runtime done:** Validate runnable ownership before claiming an attempt;
+   migrate the paused Scout credential wait during cutover.
+6. **Done:** Fingerprint only normalized execution intent, including the effective
    owner, while keeping organization changes on `resourceVersion`.
-7. Provide resolved absolute paths and generic output-boundary admission.
+7. **Runtime done:** Provide resolved absolute paths and generic output-boundary admission;
+   finish app workflow adoption during cutover.
 8. Migrate all paused app live state through reviewed one-off operations,
    using Scout as the focused validation case.
 9. Remove `tree.json` bootstrap, legacy action shapes, and stale documentation;
@@ -400,6 +417,10 @@ The proposal is complete only when tests prove:
     into a nested project tree; and
 12. missing canonical state does not restore authority from `tree.json` after
     compatibility removal.
+13. a missing, receipted, self, or cyclic parent is rejected before canonical
+    mutation; and
+14. an exact Condition wake reaches the next handler attempt as its trigger
+    observation.
 
 ## Non-Goals
 

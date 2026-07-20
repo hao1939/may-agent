@@ -55,8 +55,11 @@ describe("gym task reconciliation", () => {
       params: { evaluation: { sessionId: "s_failed" } },
     });
     expect(firstIncident?.id).toBe(duplicateIncident?.id);
-    expect(firstIncident?.input).toBeUndefined();
-    expect(duplicateIncident?.input).toBeUndefined();
+    expect(firstIncident?.input).toEqual({
+      kind: "incident",
+      sessionId: "s_failed",
+    });
+    expect(duplicateIncident?.input).toEqual(firstIncident?.input);
     expect(firstIncident).toMatchObject({
       parentId: "incident-learning",
       mode: "achieve",
@@ -74,8 +77,11 @@ describe("gym task reconciliation", () => {
       requestKey: "incident-s_failed",
     });
     expect(firstReview?.id).toBe(duplicateReview?.id);
-    expect(firstReview?.input).toBeUndefined();
-    expect(duplicateReview?.input).toBeUndefined();
+    expect(firstReview?.input).toEqual({
+      kind: "unknown",
+      requestKey: "incident-s_failed",
+    });
+    expect(duplicateReview?.input).toEqual(firstReview?.input);
   });
 
   test("treats each regression request as a distinct bounded run", () => {

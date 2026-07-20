@@ -64,18 +64,18 @@ not become a second planner merely because it applies those decisions.
 The normal app declares less than the runtime derives. Required semantics do
 not imply repeated configuration.
 
-| Concern | Convention | Explicit configuration is needed only when |
-| --- | --- | --- |
-| App owner | Declare one `app.owner`; `agents/owner/` is the conventional local implementation directory. | Never; ambiguous ownership is a manifest error. |
-| Task owner | Inherit from the nearest explicit ancestor, then the app owner. | A task has a different accountable owner. |
-| Handler | Use `task.workflow` when present; otherwise invoke the resolved owner through the standard agent runner. | Never. There is no separately configured owner handler. |
-| Workflow | Resolve `workflow: "name"` from the resolved agent's local `workflows/name` module. | A deliberately external workflow needs a qualified name. |
-| Task mode | `achieve`. | The desired state is standing, so use `maintain`. |
-| Parent | The app's root containment. | The task belongs under a more specific decomposition. |
-| Priority | `P2`. | The owner intentionally raises or lowers it. |
-| Event routing | A targeted task event reconciles only `target.taskId`; a Condition event updates the Condition and reconciles its explicitly linked dependents. | An untargeted external event must be correlated into one new or standing task identity. |
-| Concurrency and timeout | Use runtime and workflow defaults. | A proven domain constraint requires a narrower bound. |
-| Context | Supply the task, linked Conditions, app context, and trigger observation automatically. | A workflow declares additional domain inputs in its own module. |
+| Concern                 | Convention                                                                                                                                      | Explicit configuration is needed only when                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| App owner               | Declare one `app.owner`; `agents/owner/` is the conventional local implementation directory.                                                    | Never; ambiguous ownership is a manifest error.                                         |
+| Task owner              | Inherit from the nearest explicit ancestor, then the app owner.                                                                                 | A task has a different accountable owner.                                               |
+| Handler                 | Use `task.workflow` when present; otherwise invoke the resolved owner through the standard agent runner.                                        | Never. There is no separately configured owner handler.                                 |
+| Workflow                | Resolve `workflow: "name"` from the resolved agent's local `workflows/name` module.                                                             | A deliberately external workflow needs a qualified name.                                |
+| Task mode               | `achieve`.                                                                                                                                      | The desired state is standing, so use `maintain`.                                       |
+| Parent                  | The app's root containment.                                                                                                                     | The task belongs under a more specific decomposition.                                   |
+| Priority                | `P2`.                                                                                                                                           | The owner intentionally raises or lowers it.                                            |
+| Event routing           | A targeted task event reconciles only `target.taskId`; a Condition event updates the Condition and reconciles its explicitly linked dependents. | An untargeted external event must be correlated into one new or standing task identity. |
+| Concurrency and timeout | Use runtime and workflow defaults.                                                                                                              | A proven domain constraint requires a narrower bound.                                   |
+| Context                 | Supply the task, linked Conditions, app context, and trigger observation automatically.                                                         | A workflow declares additional domain inputs in its own module.                         |
 
 An app is invalid only when these rules cannot produce one owner or resolve an
 explicit workflow under that agent. It should not repeat derived owner, handler, context,
@@ -236,9 +236,9 @@ tasks, but must not define incompatible app-specific task shapes.
 | `parentId`   | Durable decomposition or containment only; it is not a scheduling edge.                                                                |
 | `outcome`    | One desired end state, written as an outcome rather than an activity such as "investigate" or "monitor".                               |
 | `acceptance` | One or more observable postconditions that can prove convergence from artifacts, records, events, or external state.                   |
-| `mode`       | Omit for the conventional `achieve` mode; write `maintain` only for standing desired state. No other task kind is needed.               |
+| `mode`       | Omit for the conventional `achieve` mode; write `maintain` only for standing desired state. No other task kind is needed.              |
 | `owner`      | Optional explicit accountability override. Otherwise ownership resolves from the nearest ancestor and then the app.                    |
-| `workflow`   | Optional local workflow name. Absence means owner handling; an invalid binding is visible failure.                                      |
+| `workflow`   | Optional local workflow name. Absence means owner handling; an invalid binding is visible failure.                                     |
 | `input`      | Stable desired configuration needed by the handler. It participates in the spec hash and therefore must not contain wake observations. |
 | `outputs`    | Durable artifacts or records into which the outcome is absorbed. Do not list transient logs as project output.                         |
 | `dependsOn`  | True ordering constraints only. External facts and waits are Conditions, not dependency prose.                                         |
@@ -379,17 +379,19 @@ target model they are ordinary domain workflows such as `spec-verification`.
 Owner agents and workflows return one app-level result envelope:
 
 ```ts
-type HandlerResult = {
-  state: "converged" | "waiting";
-  summary: string;
-  evidence: string[];
-  actions?: AppAction[];
-  conditions?: ConditionSpec[];
-} | {
-  state: "needs-owner";
-  reason: string;
-  evidence?: string[];
-};
+type HandlerResult =
+  | {
+      state: "converged" | "waiting";
+      summary: string;
+      evidence: string[];
+      actions?: AppAction[];
+      conditions?: ConditionSpec[];
+    }
+  | {
+      state: "needs-owner";
+      reason: string;
+      evidence?: string[];
+    };
 ```
 
 Handlers do not write the task graph directly. The app validates action scope,
@@ -504,6 +506,11 @@ Condition becomes ambiguous       -> owner
 strategy or acceptance must change -> owner
 ```
 
+The owner receives the exact unavailable-handler reason and evidence. It may
+repair or remove the binding, or deliberately complete the work directly; the
+runtime never hides the binding failure by treating the task as originally
+unbound.
+
 Repeated delivery of the same fallback packet is deduplicated by task,
 generation, handler revision, and failure identity.
 
@@ -549,6 +556,7 @@ handler run
 
 external event
   -> resolves or changes the Condition
+  -> persists that semantic event as the task trigger observation
   -> affected task is reconciled again
 ```
 
@@ -561,7 +569,7 @@ type Condition = {
     type: string;
     subject: string;
     expected: unknown;
-    owner?: string;       // default: referencing task owner
+    owner?: string; // default: referencing task owner
   };
   status: {
     observedGeneration: number;
@@ -614,6 +622,11 @@ Resource `spec.parentId`, explicit `spec.owner`, and status always win when a
 stale projected node disagrees. Structural groups may provide containment and
 inherited ownership, but they are not executable tasks and never enter the
 work queue.
+
+A live task's `parentId` must resolve to a live resource or structural group.
+A completion receipt is lineage evidence, not a live parent. Missing parents,
+self-parenting, and containment cycles are rejected before mutation. Legacy
+children of absorbed parents are reparented once during paused migration.
 
 A parent task has status only for its own desired state and attempt. Branch
 health such as "three children waiting" is a projection and never overwrites
@@ -746,13 +759,13 @@ task owner.
 
 The convention-first contract is implemented across the active Agent Apps:
 
-| App | Current state |
-| --- | --- |
-| `evaluation.app` | One resolver/controller, workflow discovery, and owner fallback. |
-| `may-agent.app` | Standing platform responsibilities use scoped semantic events and the same controller. |
-| `scout-knowledge-lib.app` | Research, digest, health, and owner work use maintain tasks and learned workflows. |
-| `gym.app` | Incident, regression, and proposal work use the shared app contract. |
-| `aks-rp-e2e.app` | Graph migrated to resources, attempts, Conditions, and receipts; active on the convention controller. |
+| App                       | Current state                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `evaluation.app`          | One resolver/controller, workflow discovery, and owner fallback.                                           |
+| `may-agent.app`           | Standing platform responsibilities use scoped semantic events and the same controller.                     |
+| `scout-knowledge-lib.app` | Research, digest, health, and owner work use maintain tasks and learned workflows.                         |
+| `gym.app`                 | Incident, regression, and proposal work use the shared app contract.                                       |
+| `aks-rp-e2e.app`          | Graph migrated to resources, attempts, Conditions, and receipts; paused for final canonical-state cutover. |
 
 Steady state has no task routes, owner-entry wrapper, workflow registry,
 manual event graph, assignment/review pipeline, task archive, mirrored
@@ -768,12 +781,12 @@ reconciliation. Other work resolves directly to its accountable owner. Exact
 external waits are Conditions; completed achieve tasks are receipts; parent
 and Kanban views are projections.
 
-AKS was reactivated after the paused transform. Live owner-fallback and active
-restart probes on 2026-07-20 showed one controller runtime generation, one
-session per claimed task, no duplicate attempts, and no generic resumption of
-task-bound sessions. Task session recovery is explicitly owned by the app task
-reconciler; the generic session runtime interrupts prior task sessions while
-the controller re-enqueues their persisted resource keys.
+Earlier live owner-fallback and restart probes on 2026-07-20 showed one
+controller runtime generation, one session per claimed task, no duplicate
+attempts, and no generic resumption of task-bound sessions. All five apps are
+currently paused while retained receipts, legacy parent links, and app-owned
+waits are migrated to the final canonical contract. Task session recovery is
+explicitly owned by the app task reconciler.
 
 The neutral agent core is also implemented. Direct/hosted agent-definition and
 tool-construction parity remains a separate simplification proposal, not an
