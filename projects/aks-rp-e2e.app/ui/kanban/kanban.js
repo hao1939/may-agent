@@ -205,13 +205,15 @@ function formatCount(value) {
 }
 
 function taskState(task) {
-  return ({
-    pending: "backlog",
-    running: "active",
-    attention: "review",
-    waiting: "blocked",
-    converged: "done",
-  })[task?.phase] || "unknown";
+  return (
+    {
+      pending: "backlog",
+      running: "active",
+      attention: "review",
+      waiting: "blocked",
+      converged: "done",
+    }[task?.phase] || "unknown"
+  );
 }
 
 function normalizedStatus(task) {
@@ -219,7 +221,11 @@ function normalizedStatus(task) {
 }
 
 function statusLabel(task) {
-  const status = taskState(task);
+  const status = ["backlog", "active", "review", "blocked", "done"].includes(
+    task?.status,
+  )
+    ? task.status
+    : taskState(task);
   return (
     {
       backlog: "Backlog",
@@ -655,24 +661,26 @@ async function loadData() {
     ),
     fetchJson(
       `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent(".state/tasks/kanban.json")}`,
-    ),
+    ).catch(() => null),
   ]);
   state.tree = JSON.parse(taskData.content || "{}");
-  const kanbanSnapshot = JSON.parse(kanbanData.content || "{}");
-  if (!kanbanSnapshot?.kanban?.card_ids_by_column)
-    throw new Error(
-      "runtime task board snapshot is missing the task-tool projection",
-    );
-  state.kanban = kanbanSnapshot.kanban;
+  const kanbanSnapshot = kanbanData
+    ? JSON.parse(kanbanData.content || "{}")
+    : null;
   await loadMetrics();
-  state.kanbanSource = "task-tree-tools snapshot";
-  state.kanbanWarning =
-    kanbanSnapshot.tree_updated_at !== state.tree.updated_at
-      ? `Task-tool Kanban projection is stale. Tree ${state.tree.updated_at || "unknown"}; projection ${kanbanSnapshot.tree_updated_at || "unknown"}.`
-      : "";
-  if (state.kanbanWarning) {
+  const hasCurrentKanbanSnapshot =
+    kanbanSnapshot?.kanban?.card_ids_by_column &&
+    kanbanSnapshot.tree_updated_at === state.tree.updated_at;
+  if (hasCurrentKanbanSnapshot) {
+    state.kanban = kanbanSnapshot.kanban;
+    state.kanbanSource = "task-tree-tools snapshot";
+    state.kanbanWarning = "";
+  } else {
     state.kanban = buildBrowserKanbanProjection(state.tree);
     state.kanbanSource = "current task tree";
+    state.kanbanWarning = kanbanSnapshot
+      ? `Task-tool Kanban projection is stale. Tree ${state.tree.updated_at || "unknown"}; projection ${kanbanSnapshot.tree_updated_at || "unknown"}.`
+      : "Derived directly from the current task projection; no separate Kanban snapshot is available.";
   }
   state.collapsedTaskIds = new Set(
     [...state.collapsedTaskIds].filter((id) => state.tree?.tasks?.[id]),
@@ -1832,7 +1840,7 @@ function renderSummary(tree) {
           .slice(0, 4)
           .map((task) => `${task.id}: ${task.outcome || ""}`)
           .join(" | ")
-      : active?.goal ||
+      : active?.outcome ||
         "The task tree has no active pointer. Review backlog, review, and blocked work below.";
   const activeWorkHtml =
     activeTasks.length > 1
@@ -2093,6 +2101,19 @@ function detailList(title, items) {
   }</div></div>`;
 }
 
+function conditionDetails(tree, task) {
+  return (task?.condition_ids || []).map((id) => {
+    const condition = tree?.conditions?.[id];
+    if (!condition) return `${id}: missing Condition`;
+    const spec = condition.spec || {};
+    const status = condition.status || {};
+    const expected = spec.expected
+      ? `; expected=${JSON.stringify(spec.expected)}`
+      : "";
+    return `${id}: ${spec.type || "unknown"} on ${spec.subject || "unknown"}${expected}; state=${status.state || "unknown"}`;
+  });
+}
+
 function selectedTask() {
   return state.selectedTaskId
     ? state.tree?.tasks?.[state.selectedTaskId]
@@ -2105,7 +2126,7 @@ function renderDetail() {
     return `<aside class="detail panel" data-testid="task-detail"><div class="empty">Select a task to discuss or steer it.</div></aside>`;
   }
   const parent = task.parent_id ? state.tree.tasks?.[task.parent_id] : null;
-  const latestAttempt = (task.attempts || []).at(-1);
+  const activeAttempt = task.active_attempt;
   const escalation = taskEscalation(task);
   const readiness = readinessInfo(state.tree, task);
   const blocker = taskBlocker(task);
@@ -2147,12 +2168,13 @@ function renderDetail() {
       <div class="detail-list">
         <div>Parent: ${parent ? esc(parent.id) : "none"}</div>
         <div>Children: ${(task.children || []).length}</div>
+        ${task.summary ? `<div>Current summary: ${esc(task.summary)}</div>` : ""}
         ${readiness ? `<div>Readiness: ${esc(readiness.detail)}</div>` : ""}
         <div>Outputs: ${outputLinks(task)}</div>
         <div>Evidence: ${evidenceLinks(task)}</div>
         ${blocker ? `<div>Blocker: ${esc(blocker)}</div>` : ""}
         ${task.verification ? `<div>Verification: ${esc(task.verification.verdict)} - ${esc(task.verification.reason || "")}</div>` : ""}
-        ${latestAttempt ? `<div>Latest attempt: ${esc(latestAttempt.claim)} - ${esc(String(latestAttempt.summary || "").slice(0, 260))}</div>` : ""}
+        ${activeAttempt ? `<div>Active attempt: ${esc(activeAttempt.handler || activeAttempt.id)} since ${esc(formatTime(activeAttempt.started_at))}</div>` : ""}
       </div>
     </div>
     ${
@@ -2177,15 +2199,16 @@ function renderDetail() {
         : ""
     }
     ${detailList("Acceptance", task.acceptance)}
-    ${detailList("Gates", task.gates)}
-    ${detailList("Forbidden", task.forbidden)}
+    ${detailList("Conditions", conditionDetails(state.tree, task))}
+    ${detailList("Dependencies", task.depends_on)}
     <div class="detail-section">
       <div class="kicker">Technical Metadata</div>
       <div class="detail-list">
-        ${task.claimed_by ? `<div>Claimed by: ${esc(task.claimed_by)}</div>` : ""}
-        ${task.lease_expires_at ? `<div>Lease expires: ${esc(task.lease_expires_at)}</div>` : ""}
-        ${task.session_id ? `<div>Session: ${esc(task.session_id)}</div>` : ""}
-        ${task.conflict_scope?.length ? `<div>Conflict scope: ${esc(Array.isArray(task.conflict_scope) ? task.conflict_scope.join(", ") : String(task.conflict_scope))}</div>` : ""}
+        ${task.owner ? `<div>Owner: ${esc(task.owner)}</div>` : ""}
+        ${task.workflow ? `<div>Workflow: ${esc(task.workflow)}</div>` : ""}
+        ${task.mode ? `<div>Mode: ${esc(task.mode)}</div>` : ""}
+        ${task.generation != null ? `<div>Generation: desired ${esc(task.generation)}, observed ${esc(task.observed_generation ?? "unknown")} (${task.synchronized ? "current" : "drifted"})</div>` : ""}
+        ${task.attempt_count != null ? `<div>Attempt count: ${esc(task.attempt_count)}</div>` : ""}
       </div>
     </div>
     <div class="detail-section steer-box">

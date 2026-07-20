@@ -90,10 +90,7 @@ export function planningObservation(
       .sort()
       .slice(0, limit);
   const active = [
-    ...new Set([
-      ...(tree.active_task_ids ?? []),
-      ...ids("running"),
-    ]),
+    ...new Set([...(tree.active_task_ids ?? []), ...ids("running")]),
   ];
   const runnable = leaves
     .filter((task) => task.readiness?.state === "ready")

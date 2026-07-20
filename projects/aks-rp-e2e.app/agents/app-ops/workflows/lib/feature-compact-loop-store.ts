@@ -243,14 +243,21 @@ function normalizeExistingItem(
   };
 }
 
-function hasDurableLiveProof(
+export function hasDurableLiveProof(
   item: FeatureCompactItemState | undefined,
 ): boolean {
-  return Boolean(
-    item?.status === "done" &&
-    item.lastWorkflowRunId &&
-    item.lastLiveProofVersion,
-  );
+  return missingDurableLiveProofFields(item).length === 0;
+}
+
+export function missingDurableLiveProofFields(
+  item: FeatureCompactItemState | undefined,
+): string[] {
+  if (!item || item.status !== "done") return ["status"];
+  return [
+    !item.lastWorkflowRunId ? "lastWorkflowRunId" : "",
+    !item.lastLiveProofVersion ? "lastLiveProofVersion" : "",
+    !item.lastResultPath ? "lastResultPath" : "",
+  ].filter(Boolean);
 }
 
 export function defaultFeatureCompactLoopStatePath(appDir: string): string {

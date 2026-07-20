@@ -59,9 +59,16 @@ domain watchers.
 - `approval-dispatch` — idempotent human approval packet delivery.
 - `problem-solver` — bounded evidence-backed problem investigation.
 - `spec-loop-controller` — observes spec-loop state and declares bounded
-  actions or Conditions.
+  sibling actions, then converges once current work is represented.
 - `feature-compact-loop-controller` — observes compact-loop state and declares
-  bounded actions or Conditions.
+  bounded sibling actions, then converges once current work is represented.
+- `normalize-scenario-frontier` — observes strict scenario-test inventory on
+  clean `origin/dev` and declares bounded one-spec normalization work.
+- `scenario-test-inventory` watcher — also observes the strict inventory from a
+  detached clean `origin/dev` worktree, so dirty local repair files cannot add
+  or hide frontier rows.
+- `wait-for-repo-ref-advance` — preserves a same-spec publication wait on a
+  machine-observable repo-ref Condition such as `aks.repo-ref.changed`.
 
 The two loop workflows support multiple independent loop task IDs. Focus
 events may likewise target independent focus task IDs.
@@ -73,7 +80,7 @@ events may likewise target independent focus task IDs.
 - `.state/spec-loop/state.json` — spec verification domain ledger.
 - `.state/feature-compact-loop/state.json` — compact-package domain ledger.
 - `.state/*-runs.jsonl` — workflow evidence ledgers.
-- `project.json` — static project metadata and compact read model.
+- `project.json` — durable project intent, policy, and accepted planning direction; it never mirrors live task state.
 
 Finished `achieve` tasks leave the live graph after their outcome is absorbed
 into a bounded completion receipt. Reusable experience belongs in workflows,

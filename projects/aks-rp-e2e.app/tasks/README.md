@@ -1,15 +1,13 @@
 # AKS task state
 
-The live task graph is stored only at `.state/tasks/tree.json`.
+The sole mutable task authority is `.state/tasks/state.json`. It contains task
+resources, structural groups, Conditions, attempts, triggers, and compact
+completion receipts.
 
-It contains:
-
-- `resources`: desired task specs and observed reconciliation status;
-- `conditions`: typed external facts that waiting tasks need;
-- `attempts`: durable runtime execution records;
-- `taskTriggers`: the latest correlated event for each task;
-- `receipts`: bounded completion memory for absorbed achieve tasks; and
-- `tasks`: a derived human/UI projection of the live relationships.
+`.state/tasks/tree.json` is a generated, disposable schema-v2 projection for
+people, agents, queries, and UI. It contains current groups and tasks, exact
+Conditions, readiness, compact dependency-satisfaction facts, and bounded
+current-attempt information. It does not contain full attempt or receipt maps.
 
 The graph tracks and explains work. It does not assign sessions, maintain an
 outbox, select a reviewer, or schedule workers. The app controller owns those
@@ -21,8 +19,9 @@ repeatable process with `workflow: "name"`; the runtime discovers
 the app owner as the final fallback.
 
 Handlers return structured state, evidence, actions, and typed Conditions.
-They never edit the graph directly. Completed achieve tasks are removed from
-the live graph after an atomic receipt is written. Reusable experience belongs
+They never edit task storage or its projection directly. Completed achieve
+tasks are removed from the live graph after an atomic receipt is written.
+Reusable experience belongs
 in workflows, skills, design, domain models, and evidence—not in a mutable task
 archive.
 

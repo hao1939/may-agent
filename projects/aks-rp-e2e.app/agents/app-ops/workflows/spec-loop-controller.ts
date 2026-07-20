@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import {
   resolveTaskTreePath,
   workflowResultVersion,
-  type ProjectAppConditionSpec,
   type ProjectAppTaskAction,
   type WorkflowContext,
   type WorkflowIoContract,
@@ -37,15 +36,17 @@ export const workflowContract: WorkflowIoContract = {
   },
   output: {
     version: workflowResultVersion,
-    fields: ["state", "summary", "evidence", "actions", "conditions"],
+    fields: ["state", "summary", "evidence", "actions"],
     description:
-      "Returns desired task actions or exact Conditions; it never assigns work or writes the task graph.",
+      "Returns bounded desired task actions and then converges; it never assigns work or writes the task graph.",
   },
 };
 
 type GraphTask = {
   id?: string;
+  state?: string;
   phase?: string;
+  goal?: string;
   outcome?: string;
   summary?: string;
   result?: string;
@@ -77,14 +78,16 @@ function escapeRegExp(value: string): string {
 }
 
 function openTask(task: GraphTask | null | undefined): boolean {
-  const state = String(task?.phase ?? "")
+  const state = String(task?.phase ?? task?.state ?? "")
     .trim()
     .toLowerCase();
   return !["done", "closed", "converged"].includes(state);
 }
 
 function representedTaskState(graph: Graph, taskId: string): string {
-  return String(graph.tasks?.[taskId]?.phase ?? "unknown")
+  return String(
+    graph.tasks?.[taskId]?.phase ?? graph.tasks?.[taskId]?.state ?? "unknown",
+  )
     .trim()
     .toLowerCase();
 }
@@ -154,6 +157,7 @@ function taskRepresentsSpec(
     `(^|[^A-Za-z0-9_.-])${escapeRegExp(specId)}([^A-Za-z0-9_.-]|$)`,
   );
   const evidenceFields = [
+    task.goal,
     task.outcome,
     task.summary,
     task.result,
@@ -195,6 +199,9 @@ function representedTaskIdsForSpec(
   featureKeys: string[],
 ): string[] {
   const representedTaskIds = new Set<string>();
+  const deterministicTaskId = workId(specId);
+  if (represented(graph, deterministicTaskId))
+    representedTaskIds.add(deterministicTaskId);
   for (const taskId of collectReferencedTaskIds(spec)) {
     if (represented(graph, taskId)) representedTaskIds.add(taskId);
   }
@@ -215,6 +222,10 @@ function workId(specId: string): string {
   return `spec/${safeTaskIdForSpec(specId)}`;
 }
 
+function dispositionRepairId(specId: string): string {
+  return `spec/repair-${safeTaskIdForSpec(specId)}-disposition-representation`;
+}
+
 function isSatisfied(spec: SpecLoopSpecState): boolean {
   return (
     spec.status === "pass" ||
@@ -223,13 +234,13 @@ function isSatisfied(spec: SpecLoopSpecState): boolean {
   );
 }
 
-function childCondition(taskId: string): ProjectAppConditionSpec {
-  return {
-    id: `task-converged:${digest(taskId)}`,
-    type: "project.task.reconciled",
-    subject: `task:${taskId}`,
-    expected: { field: "disposition", equals: "converged" },
-  };
+function hasStructuredDisposition(spec: SpecLoopSpecState): boolean {
+  return Boolean(
+    spec.review &&
+    (spec.successorDisposition ||
+      spec.resumeCondition ||
+      spec.successorEvidencePath),
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -291,51 +302,71 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const representedTaskIds = [
     ...new Set([...representedBySpec.values()].flatMap((taskIds) => taskIds)),
   ];
-  const waitableRepresentedTaskIds = representedTaskIds.filter((taskId) =>
-    canWaitForRepresentedTask(graph, taskId),
-  );
   const attentionRepresentedTaskIds = representedTaskIds.filter(
     (taskId) => !canWaitForRepresentedTask(graph, taskId),
   );
-  const actionBudget = Math.min(12, Math.max(1, state.windowSize || 5));
+  const configuredCapacity = Math.min(12, Math.max(1, state.windowSize || 5));
+  const actionBudget = Math.max(
+    0,
+    configuredCapacity - representedTaskIds.length,
+  );
   const actions: ProjectAppTaskAction[] = remaining
     .filter(([specId]) => (representedBySpec.get(specId) ?? []).length === 0)
     .slice(0, actionBudget)
-    .map(([specId, spec]) => ({
-      kind: "create-task",
-      id: workId(specId),
-      parentId: loopTaskId,
-      outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
-      mode: "achieve",
-      owner: "aks-explorer",
-      input: {
-        specId,
-        loopTaskId,
-        statePath,
-      },
-      outputs: [statePath, "../aks-rp-e2e/runs/test-results/"],
-      acceptance: [
-        "Current source, model, runner, and prior evidence are inspected before any rerun.",
-        "A live pass is recorded, or one exact typed wait or reviewed terminal disposition preserves the next wake condition.",
-        "The loop state is updated with evidence before this task converges.",
-      ],
-      priority: "P1",
-    }));
-  const conditions =
-    actions.length === 0 && attentionRepresentedTaskIds.length === 0
-      ? waitableRepresentedTaskIds.slice(0, 64).map(childCondition)
-      : [];
+    .map(([specId, spec]) => {
+      if (hasStructuredDisposition(spec)) {
+        return {
+          kind: "create-task",
+          id: dispositionRepairId(specId),
+          parentId: "group/spec-verification",
+          outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
+          mode: "achieve",
+          owner: "aks-explorer",
+          input: {
+            specId,
+            loopTaskId,
+            statePath,
+          },
+          outputs: [statePath, "../aks-rp-e2e/evidence/archive/"],
+          acceptance: [
+            "Inspect the current spec-loop row, source, model, runner, and cited evidence before changing anything.",
+            "If the reviewed disposition is still valid and no further run is truthful, make it controller-visible by setting terminalDisposition=true or by creating/repointing one exact live holder task and updating taskId/review pointers.",
+            "If the reviewed disposition is stale or actually runnable, clear or replace the stale disposition and leave the exact next verification task or rerun path represented.",
+            "Do not launch an unchanged rerun merely because the row is pending; first repair the missing representation.",
+          ],
+          priority: "P1",
+        };
+      }
+      return {
+        kind: "create-task",
+        id: workId(specId),
+        parentId: "group/spec-verification",
+        outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
+        mode: "achieve",
+        owner: "aks-explorer",
+        input: {
+          specId,
+          loopTaskId,
+          statePath,
+        },
+        outputs: [statePath, "../aks-rp-e2e/runs/test-results/"],
+        acceptance: [
+          "Current source, model, runner, and prior evidence are inspected before any rerun.",
+          "A live pass is recorded, or one exact typed wait or reviewed terminal disposition preserves the next wake condition.",
+          "The loop state is updated with evidence before this task converges.",
+        ],
+        priority: "P1",
+      };
+    });
   const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): declared ${actions.length} bounded task action(s), observed ${representedTaskIds.length} represented task(s), and found ${attentionRepresentedTaskIds.length} represented review/attention task(s) that require owner repair rather than passive waiting.`;
+  const resultState =
+    actions.length > 0 || representedTaskIds.length > 0
+      ? "converged"
+      : "needs-owner";
   return ctx.done(summary, {
-    state:
-      actions.length > 0
-        ? "converged"
-        : conditions.length > 0
-          ? "waiting"
-          : "needs-owner",
+    state: resultState,
     summary,
     evidence: [`spec-loop-state:${statePath}`],
-    actions,
-    ...(conditions.length > 0 ? { conditions } : {}),
+    ...(resultState !== "needs-owner" ? { actions } : {}),
   });
 }

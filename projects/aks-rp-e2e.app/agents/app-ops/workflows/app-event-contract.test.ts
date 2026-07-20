@@ -228,6 +228,7 @@ describe("app event contract", () => {
       }),
     ).toMatchObject({
       id: "aks-spec-verification-loop",
+      parentId: "group/spec-verification",
       owner: "app-ops",
       workflow: "spec-loop-controller",
     });
@@ -239,6 +240,7 @@ describe("app event contract", () => {
       }),
     ).toMatchObject({
       id: "aks-feature-compact-loop",
+      parentId: "group/feature-compact",
       owner: "app-ops",
       workflow: "feature-compact-loop-controller",
     });
@@ -247,11 +249,12 @@ describe("app event contract", () => {
         type: "project.task.tick",
         target: {
           project: projectId,
-          taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          taskId: "scenario-normalization",
         },
       }),
     ).toMatchObject({
-      id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      id: "scenario-normalization",
+      parentId: "group/scenario-normalization",
       owner: "aks-explorer",
       workflow: "normalize-scenario-frontier",
       mode: "maintain",
@@ -366,7 +369,7 @@ describe("app event contract", () => {
       type: "project.task.tick",
       target: {
         project: projectId,
-        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        taskId: "scenario-normalization",
       },
       data: {
         project: projectId,
@@ -445,6 +448,7 @@ describe("app event contract", () => {
 
     for (const event of cases) {
       expect(resolveAksTask(event)).toMatchObject({
+        parentId: "group/app-operations",
         owner: "app-ops",
         workflow: event.expectedWorkflow,
       });
@@ -457,7 +461,7 @@ describe("app event contract", () => {
         type: "project.task.tick",
         target: {
           project: projectId,
-          taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+          taskId: "scenario-normalization",
         },
       }),
     ).toMatchObject({
@@ -519,12 +523,13 @@ describe("app event contract", () => {
       type: "project.task.tick",
       target: {
         project: projectId,
-        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        taskId: "scenario-normalization",
       },
       data: {
         observation: { state: "red", strictPassed: false },
-        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
-        task_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        taskId: "scenario-normalization",
+        task_id: "scenario-normalization",
+        overrideWait: true,
         desiredRunnableLeaves: { min: 3, max: 5 },
         capacityRule: expect.stringContaining("Review/attention residue"),
         instructions: expect.stringContaining("missingAdapterFiles"),

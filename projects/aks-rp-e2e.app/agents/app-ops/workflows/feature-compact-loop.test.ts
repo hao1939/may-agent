@@ -32,11 +32,12 @@ async function workspace(item: Record<string, unknown>, represented = false) {
   await writeFile(
     join(appDir, ".state", "tasks", "tree.json"),
     JSON.stringify({
+      schema_version: 2,
       tasks: represented
         ? { "existing-compact-task": { id: "existing-compact-task" } }
         : {},
-      resources: {},
-      receipts: {},
+      conditions: {},
+      satisfied_dependency_ids: [],
     }),
   );
   return { appDir, projectDir };
@@ -55,8 +56,8 @@ function item(status: string, taskId?: string) {
     lastPlanPath: null,
     lastSummaryPath: null,
     lastDiagnosticsPath: null,
-    lastResultPath: null,
-    lastWorkflowRunId: null,
+    lastResultPath: status === "done" ? "runs/result.json" : null,
+    lastWorkflowRunId: status === "done" ? "run-1" : null,
     lastWorkflowRunUrl: null,
     lastWorkflowLoopKey: null,
     lastDispatchMetadataPath: null,
@@ -86,6 +87,30 @@ describe("feature compact reconciliation workflow", () => {
     });
   });
 
+  test("does not accept a done label without durable live proof", async () => {
+    const ws = await workspace({
+      ...item("done"),
+      lastLiveProofVersion: null,
+    });
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            id: "compact/repair-compact-feature-networking-proof",
+            outcome: expect.stringContaining("without launching"),
+            input: {
+              featureKey: "networking",
+              repair: "legacy-proof",
+              missingProofFields: ["lastLiveProofVersion"],
+            },
+          },
+        ],
+      },
+    });
+  });
+
   test("declares bounded owner work without assigning it", async () => {
     const ws = await workspace(item("pending"));
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
@@ -95,7 +120,7 @@ describe("feature compact reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            parentId: "aks-feature-compact-loop",
+            parentId: "group/feature-compact",
             owner: "aks-explorer",
             input: { featureKey: "networking" },
           },
@@ -110,8 +135,54 @@ describe("feature compact reconciliation workflow", () => {
       "loopTaskId",
       "packetPath",
       "statePath",
+      "workRevision",
     ]);
     expect(action.outcome).not.toContain("pending");
+  });
+
+  test("keeps task identity stable while changing the desired work revision", async () => {
+    const first = await workspace(item("pending"));
+    const second = await workspace({
+      ...item("pending"),
+      inputFingerprint: "new-spec-catalog",
+      updatedAt: "2026-07-20T00:00:00Z",
+    });
+
+    const firstResult = (await execute(
+      context(first.appDir, first.projectDir),
+    )) as any;
+    const secondResult = (await execute(
+      context(second.appDir, second.projectDir),
+    )) as any;
+    const firstAction = firstResult.output.actions[0];
+    const secondAction = secondResult.output.actions[0];
+
+    expect(firstAction.id).toBe("compact/compact-feature-networking");
+    expect(secondAction.id).toBe(firstAction.id);
+    expect(secondAction.input.workRevision).not.toBe(
+      firstAction.input.workRevision,
+    );
+  });
+
+  test("treats the deterministic compact leaf as represented before ledger writeback", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "compact/compact-feature-networking": {
+            id: "compact/compact-feature-networking",
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
   });
 
   test("does not return wait Conditions with converged action results", async () => {
@@ -127,7 +198,7 @@ describe("feature compact reconciliation workflow", () => {
       join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
       JSON.stringify({
         loopTaskId: "aks-feature-compact-loop",
-        windowSize: 1,
+        windowSize: 2,
         cursor: 0,
         features: {
           networking: item("running", "existing-compact-task"),
@@ -149,7 +220,7 @@ describe("feature compact reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            parentId: "aks-feature-compact-loop",
+            parentId: "group/feature-compact",
             input: { featureKey: "storage" },
           },
         ],
@@ -190,19 +261,35 @@ describe("feature compact reconciliation workflow", () => {
     expect(Object.keys(state.features).sort()).toEqual(["networking"]);
   });
 
-  test("waits on an exact Condition when a compact task is represented", async () => {
+  test("converges when a compact task is represented", async () => {
     const ws = await workspace(item("running", "existing-compact-task"), true);
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
-        state: "waiting",
+        state: "converged",
         actions: [],
-        conditions: [
-          {
-            type: "project.task.reconciled",
-            subject: "task:existing-compact-task",
-          },
-        ],
       },
+    });
+  });
+
+  test("converges when the only represented compact task needs attention", async () => {
+    const ws = await workspace(item("running", "existing-compact-task"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "existing-compact-task": {
+            id: "existing-compact-task",
+            phase: "attention",
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
     });
   });
 });

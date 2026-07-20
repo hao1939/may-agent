@@ -29,8 +29,9 @@ decisions.
    Reusable workflows live only under the accountable agent's `workflows/`
    directory. The retired app-root `/app/projects/aks-rp-e2e.app/workflows/`
    tree must not be restored or used as a source of runtime behavior.
-2. Keep one task tree with visible `domain/` and `ops/` roots when creating new
-   structured work.
+2. Keep one task tree organized by the stable groups in `tasks/seed.json`.
+   Put domain leaves under the matching domain group and app repair/review work
+   under `group/app-operations`.
 3. A task describes desired and observed state, not an assignment. Let the
    controller resolve its owner or owner-owned workflow and apply the result.
 4. `blocked` is not done. A valid blocked item names the exact wait, owner,
@@ -40,11 +41,37 @@ decisions.
 6. Code collects facts. Agent judgment decides the next process move.
 7. Leave AKS domain fixes to `aks-explorer` unless the failure is clearly in
    app orchestration, workflow routing, UI, metrics, or task-tree mechanics.
-8. Preserve the project root goal from `project.json`. Temporary recovery,
-   focus, and blocked-frontier work belongs below the root.
-9. Feedback succeeds only when it restores affected work after a material
-   change, or explicitly pauses the project after every remaining external
-   handoff was sent and tracked. Refreshing a wait is not restoration.
+8. Treat strict scenario-test inventory as its own domain signal, but use clean
+   current `origin/dev` for the normalization frontier. Do not use the dirty
+   sibling workspace as frontier truth. If a detached `origin/dev` inventory
+   reports `missingAdapterFiles`, those paths need visible `domain/*` work even
+   when a related spec-verification task is already completed, skipped,
+   blocked, or represented by a terminal live-test disposition.
+9. For `scenario-normalization`, capacity means
+   concrete one-spec domain leaves that are active/running, runnable/backlog, or
+   exact accepted dispositions for current `missingAdapterFiles`. Do not count
+   review/attention residue, runtime/ops/focus work, spec-loop status, or
+   compact-loop status as moving normalization capacity. If strict inventory is
+   red and fewer than three useful one-spec leaves are active or runnable, ask
+   for bounded `domain/*` work instead of returning a broad no-op.
+10. Do not return or encourage `close-task` actions for a task that still has
+    live children. The valid process is to resolve the child path first, create
+    an exact wait/successor/escalation, or create one bounded `ops/*` repair for
+    the broken live-child shape. Repeating the same rejected ancestor close is a
+    process bug, not progress.
+    Standing controllers are siblings of the leaves they declare, so ordinary
+    loop work must not be attached as controller children.
+11. If a domain task is only waiting for `origin/dev` or another repo ref to
+    advance and already carries `input.baseRef` plus
+    `input.resumeBaselineCommit`, repair it by setting
+    `workflow: "wait-for-repo-ref-advance"` instead of asking the owner to
+    refresh another successor. This is process routing, not AKS product
+    judgment.
+12. Preserve the project root goal from `project.json`. Temporary recovery,
+    focus, and blocked-frontier work belongs below the root.
+13. Feedback succeeds only when it restores affected work after a material
+    change, or explicitly pauses the project after every remaining external
+    handoff was sent and tracked. Refreshing a wait is not restoration.
 
 ## Finish Criteria
 

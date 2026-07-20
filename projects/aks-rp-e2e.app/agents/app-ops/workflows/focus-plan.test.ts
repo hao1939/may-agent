@@ -8,9 +8,16 @@ import { execute } from "./focus-plan.ts";
 async function makeWorkspace(options?: { leafState?: string }) {
   const leafState = options?.leafState ?? "backlog";
   const leafPhase =
-    ({ backlog: "pending", active: "running", review: "attention", blocked: "waiting", done: "converged" } as const)[
-      leafState as "backlog" | "active" | "review" | "blocked" | "done"
-    ] ?? leafState;
+    (
+      {
+        backlog: "pending",
+        active: "running",
+        review: "attention",
+        blocked: "waiting",
+        done: "converged",
+      } as const
+    )[leafState as "backlog" | "active" | "review" | "blocked" | "done"] ??
+    leafState;
   const root = await mkdtemp(join(tmpdir(), "aks-focus-plan-"));
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
@@ -111,7 +118,8 @@ async function makeOwnerReturnAlignedWorkspace() {
               priority: "P1",
               children: [],
               owner: "aks-explorer",
-              outcome: "Keep the focus branch normalized behind the governing owner-return wait.",
+              outcome:
+                "Keep the focus branch normalized behind the governing owner-return wait.",
               condition_ids: ["condition-focus-governing-wait"],
               outputs: ["evidence/archive/focus.md"],
               acceptance: ["focus stays aligned"],
@@ -132,7 +140,13 @@ async function makeOwnerReturnAlignedWorkspace() {
                 type: "project.approval.submitted",
                 taskId:
                   "ops/wait-project-approval-owner-return-primary-blocker-20260713",
-                acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+                acceptedDecisions: [
+                  "approve",
+                  "adjust",
+                  "hold",
+                  "decline",
+                  "reroute",
+                ],
                 lineages: [
                   {
                     taskId:
@@ -153,81 +167,6 @@ async function makeOwnerReturnAlignedWorkspace() {
             },
             outputs: ["evidence/archive/wait.md"],
             acceptance: ["wait stays exact"],
-          },
-        },
-        resources: {
-          "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711":
-            {
-              metadata: {
-                id: "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
-                generation: 1,
-                resourceVersion: 1,
-              },
-              spec: {
-                parentId: "project",
-                outcome:
-                  "Keep the focus branch normalized behind the governing owner-return wait.",
-                acceptance: ["focus stays aligned"],
-                mode: "maintain",
-                owner: "aks-explorer",
-              },
-              status: {
-                observedGeneration: 0,
-                phase: "waiting",
-                conditionIds: ["condition-focus-governing-wait"],
-                updatedAt: "2026-07-14T00:00:00Z",
-              },
-            },
-          "ops/wait-project-approval-owner-return-primary-blocker-20260713": {
-            metadata: {
-              id: "ops/wait-project-approval-owner-return-primary-blocker-20260713",
-              generation: 1,
-              resourceVersion: 1,
-            },
-            spec: {
-              parentId: "project",
-              outcome: "Carry the governing project-level owner-return wait.",
-              acceptance: ["wait stays exact"],
-              mode: "achieve",
-              owner: "app-ops",
-              input: {
-                approval: {
-                  type: "project.approval.submitted",
-                  taskId:
-                    "ops/wait-project-approval-owner-return-primary-blocker-20260713",
-                  acceptedDecisions: [
-                    "approve",
-                    "adjust",
-                    "hold",
-                    "decline",
-                    "reroute",
-                  ],
-                  lineages: [
-                    {
-                      taskId:
-                        "focus-rp-lifecycle-no-live-authoring-and-exact-wait-stewardship-20260711",
-                      planId: "focus-review-off_track",
-                      pathId:
-                        "focus-review-off_track-approval-refresh-20260712",
-                      approvalId:
-                        "aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
-                      waitId:
-                        "wait:aks-rp-e2e:approval:focus-review-off_track-approval-refresh-20260712:evidence-archive-ops-repair-focus-review-off-track-approval-refresh-20260712.md",
-                      packetPath:
-                        "evidence/archive/ops-repair-focus-review-off-track-approval-refresh-20260712.md",
-                      requestEventId: 3069971,
-                      messageId: 3069974,
-                    },
-                  ],
-                },
-              },
-            },
-            status: {
-              observedGeneration: 0,
-              phase: "waiting",
-              conditionIds: ["condition-project-approval"],
-              updatedAt: "2026-07-14T00:00:00Z",
-            },
           },
         },
         conditions: {

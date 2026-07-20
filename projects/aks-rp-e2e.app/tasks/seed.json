@@ -6,7 +6,32 @@
     "project": {
       "id": "project",
       "parent_id": null,
+      "owner": "app-ops"
+    },
+    "group/spec-verification": {
+      "id": "group/spec-verification",
+      "parent_id": "project",
+      "owner": "app-ops"
+    },
+    "group/feature-compact": {
+      "id": "group/feature-compact",
+      "parent_id": "project",
+      "owner": "app-ops"
+    },
+    "group/scenario-normalization": {
+      "id": "group/scenario-normalization",
+      "parent_id": "project",
       "owner": "aks-explorer"
+    },
+    "group/domain-work": {
+      "id": "group/domain-work",
+      "parent_id": "project",
+      "owner": "aks-explorer"
+    },
+    "group/app-operations": {
+      "id": "group/app-operations",
+      "parent_id": "project",
+      "owner": "app-ops"
     }
   },
   "resources": {
@@ -17,7 +42,7 @@
         "resourceVersion": 1
       },
       "spec": {
-        "parentId": "project",
+        "parentId": "group/spec-verification",
         "outcome": "Keep every executable AKS E2E spec verified through the Azure DevOps staging pipeline, with each non-pass represented by bounded repair, rerun, or an exact external wait.",
         "acceptance": [
           "Every executable spec is passing or has a reviewed terminal escalation explaining why bounded repository-local work cannot make it pass.",
@@ -49,7 +74,7 @@
         "resourceVersion": 1
       },
       "spec": {
-        "parentId": "project",
+        "parentId": "group/feature-compact",
         "outcome": "Keep feature-owned compact plans complete for their feature spec sets and verified by passing live Azure DevOps staging runs.",
         "acceptance": [
           "A compact item is done only when its feature plan covers the feature-owned specs and its live staging run passed.",
@@ -74,14 +99,14 @@
         "updatedAt": "2026-07-20T00:00:00.000Z"
       }
     },
-    "domain/normalize-scenario-tests-repo-frontier-20260715": {
+    "scenario-normalization": {
       "metadata": {
-        "id": "domain/normalize-scenario-tests-repo-frontier-20260715",
+        "id": "scenario-normalization",
         "generation": 1,
         "resourceVersion": 1
       },
       "spec": {
-        "parentId": "project",
+        "parentId": "group/scenario-normalization",
         "outcome": "Keep the strict scenario-test inventory clean by normalizing each active spec into one direct feature-owned test with exact live verification and serialized publication.",
         "acceptance": [
           "A clean origin/dev passes bun scripts/check-scenario-tests.ts --strict with no referenced or repository plain scenario carriers.",
@@ -91,6 +116,7 @@
         ],
         "mode": "maintain",
         "owner": "aks-explorer",
+        "workflow": "normalize-scenario-frontier",
         "outputs": [
           "/app/projects/aks-rp-e2e/evidence/archive/",
           "/app/projects/aks-rp-e2e/features/"

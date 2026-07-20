@@ -85,6 +85,13 @@ describe("AKS pipeline watcher", () => {
 
     expect(events).toContainEqual(
       expect.objectContaining({
+        type: "terminal-state",
+        pipelineRunId: "172897811",
+        status: "completed",
+      }),
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
         type: "status-equals",
         pipelineRunId: "172897811",
         status: "completed",

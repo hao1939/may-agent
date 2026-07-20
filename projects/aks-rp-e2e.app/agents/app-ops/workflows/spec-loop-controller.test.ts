@@ -93,7 +93,7 @@ describe("spec loop reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            parentId: "aks-spec-verification-loop",
+            parentId: "group/spec-verification",
             owner: "aks-explorer",
             input: { specId: "spec.example" },
           },
@@ -110,7 +110,7 @@ describe("spec loop reconciliation workflow", () => {
     expect(action.outcome).not.toContain("pending");
   });
 
-  test("waits on an exact Condition when work is already represented", async () => {
+  test("converges when work is already represented", async () => {
     const ws = await workspace({
       specs: {
         "spec.example": {
@@ -133,19 +133,43 @@ describe("spec loop reconciliation workflow", () => {
     });
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
-        state: "waiting",
+        state: "converged",
         actions: [],
-        conditions: [
-          {
-            type: "project.task.reconciled",
-            subject: "task:existing-spec-task",
-          },
-        ],
       },
     });
   });
 
-  test("asks owner to repair represented review or attention residue instead of waiting passively", async () => {
+  test("declares only free capacity after represented work", async () => {
+    const specs = Object.fromEntries(
+      ["one", "two", "three", "four", "five", "six"].map((name) => [
+        `spec.${name}`,
+        {
+          status: "pending",
+          attempts: 0,
+          lastRunId: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      ]),
+    );
+    const ws = await workspace({
+      specs,
+      tasks: {
+        "spec/verify-spec-one": {
+          id: "spec/verify-spec-one",
+          item_type: "task",
+          phase: "running",
+        },
+      },
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("converged");
+    expect(result.output.actions).toHaveLength(4);
+  });
+
+  test("converges while represented review or attention work remains visible", async () => {
     const ws = await workspace({
       specs: {
         "spec.example": {
@@ -170,7 +194,7 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(result).toMatchObject({
       output: {
-        state: "needs-owner",
+        state: "converged",
         actions: [],
       },
     });
@@ -178,6 +202,40 @@ describe("spec loop reconciliation workflow", () => {
       "represented review/attention task(s)",
     );
     expect(result.output.conditions).toBeUndefined();
+  });
+
+  test("treats an existing deterministic spec task as represented even when only tree state and goal are populated", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      },
+      tasks: {
+        "spec/verify-spec-kms-v2plus-pmk-migrate-cmk-private-kv-lifecycle": {
+          id: "spec/verify-spec-kms-v2plus-pmk-migrate-cmk-private-kv-lifecycle",
+          item_type: "task",
+          state: "review",
+          goal: "Reconcile spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle to a passing live result, an exact wait, or a reviewed terminal disposition.",
+        },
+      },
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [],
+      },
+    });
+    expect(result.output.summary).toContain(
+      "represented review/attention task(s)",
+    );
   });
 
   test("treats holder-backed live tasks as representation when ledger taskId is stale or null", async () => {
@@ -198,21 +256,16 @@ describe("spec loop reconciliation workflow", () => {
           id: "wait-spec-example-holder",
           item_type: "task",
           phase: "waiting",
-          outcome: "Preserve the exact wait for spec.example until the external signal changes.",
+          outcome:
+            "Preserve the exact wait for spec.example until the external signal changes.",
           conflict_scope: ["spec:spec.example"],
         },
       },
     });
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
-        state: "waiting",
+        state: "converged",
         actions: [],
-        conditions: [
-          {
-            type: "project.task.reconciled",
-            subject: "task:wait-spec-example-holder",
-          },
-        ],
       },
     });
   });
@@ -248,14 +301,8 @@ describe("spec loop reconciliation workflow", () => {
     });
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
-        state: "waiting",
+        state: "converged",
         actions: [],
-        conditions: [
-          {
-            type: "project.task.reconciled",
-            subject: "task:hold-compact-kms-holder",
-          },
-        ],
       },
     });
   });
@@ -278,21 +325,16 @@ describe("spec loop reconciliation workflow", () => {
           id: "wait-ccp-family-holder",
           item_type: "task",
           phase: "waiting",
-          outcome: "Preserve the shared ccp security patch owner-response frontier.",
+          outcome:
+            "Preserve the shared ccp security patch owner-response frontier.",
           conflict_scope: ["spec-loop-followup:pending:ccp-security-patch"],
         },
       },
     });
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
-        state: "waiting",
+        state: "converged",
         actions: [],
-        conditions: [
-          {
-            type: "project.task.reconciled",
-            subject: "task:wait-ccp-family-holder",
-          },
-        ],
       },
     });
   });
@@ -341,5 +383,51 @@ describe("spec loop reconciliation workflow", () => {
       },
     });
     expect(result).not.toHaveProperty("output.conditions");
+  });
+
+  test("routes unrepresented reviewed dispositions to representation repair instead of generic rerun work", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.reviewed": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: "result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-19T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/spec-reviewed.md",
+          resumeCondition:
+            "Resume only after the reviewed execution posture changes.",
+          terminalDisposition: false,
+        },
+      },
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            kind: "create-task",
+            id: "spec/repair-verify-spec-reviewed-disposition-representation",
+            parentId: "group/spec-verification",
+            owner: "aks-explorer",
+            input: { specId: "spec.reviewed" },
+          },
+        ],
+      },
+    });
+    expect(result.output.actions[0].outcome).toContain(
+      "structured reviewed disposition",
+    );
+    expect(result.output.actions[0].acceptance.join("\n")).toContain(
+      "Do not launch an unchanged rerun",
+    );
   });
 });

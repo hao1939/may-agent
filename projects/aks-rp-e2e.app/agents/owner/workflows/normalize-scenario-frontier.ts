@@ -10,7 +10,6 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import type {
-  ProjectAppConditionSpec,
   ProjectAppTaskAction,
   WorkflowContext,
   WorkflowIoContract,
@@ -25,18 +24,16 @@ export const workflowContract: WorkflowIoContract = {
   workflow: name,
   version: "normalize-scenario-frontier-v1",
   input: {
-    required: [
-      "project.task.tick target.taskId=domain/normalize-scenario-tests-repo-frontier-20260715",
-    ],
+    required: ["project.task.tick target.taskId=scenario-normalization"],
     optional: ["desiredRunnableLeaves", "project", "app"],
     description:
       "Reconcile the strict scenario-test missing-adapter frontier from current clean origin/dev evidence.",
   },
   output: {
     version: workflowResultVersion,
-    fields: ["state", "summary", "evidence", "actions", "conditions"],
+    fields: ["state", "summary", "evidence", "actions"],
     description:
-      "Returns bounded domain task actions or exact wait Conditions; it never writes the task graph.",
+      "Returns bounded domain task actions and then converges; it never writes the task graph.",
   },
 };
 
@@ -73,7 +70,7 @@ type GraphNode = {
   text: string;
 };
 
-const frontierTaskId = "domain/normalize-scenario-tests-repo-frontier-20260715";
+const frontierTaskId = "scenario-normalization";
 const usefulStates = new Set([
   "active",
   "running",
@@ -312,7 +309,7 @@ function graphNodes(appDir: string): GraphNode[] {
     nodes.push({
       id,
       state,
-      text: JSON.stringify({ id, spec, status }),
+      text: JSON.stringify({ id, spec }),
     });
   }
 
@@ -338,25 +335,54 @@ function graphNodes(appDir: string): GraphNode[] {
   return nodes;
 }
 
-function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
-  return [
-    row.adapterPath,
-    row.legacyPath,
-    row.specId,
-    row.probeRef,
-    row.implementationPath,
-  ]
-    .filter(Boolean)
-    .some((needle) => node.text.includes(needle));
+function canRepresentFrontierRow(node: GraphNode): boolean {
+  if (node.id === frontierTaskId) return false;
+  if (node.id === "project") return false;
+  if (node.id.startsWith("runtime/")) return false;
+  if (node.id.startsWith("ops/")) return false;
+  if (node.id.startsWith("aks-")) return false;
+  if (node.id.includes("focus-review")) return false;
+  return true;
 }
 
-function conditionForTask(taskId: string): ProjectAppConditionSpec {
-  return {
-    id: `task-reconciled:${digest(taskId, 16)}`,
-    type: "project.task.reconciled",
-    subject: `task:${taskId}`,
-    expected: { field: "disposition", equals: "converged" },
-  };
+function basenameStem(path: string): string {
+  const name = path.split("/").pop() ?? path;
+  return name.replace(/\.test\.ts$/, "").replace(/\.ts$/, "");
+}
+
+function taskIdToken(value: string): string {
+  return value
+    .replace(/^spec\./, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
+function nodeLooksExactForRow(row: FrontierRow, node: GraphNode): boolean {
+  const id = node.id.toLowerCase();
+  return [
+    basenameStem(row.adapterPath),
+    basenameStem(row.legacyPath),
+    row.specId,
+  ]
+    .map(taskIdToken)
+    .filter(Boolean)
+    .some((token) => token.length >= 8 && id.includes(token));
+}
+
+function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
+  if (!canRepresentFrontierRow(node)) return false;
+  if (
+    [row.adapterPath, row.legacyPath]
+      .filter(Boolean)
+      .some((needle) => node.text.includes(needle))
+  ) {
+    return true;
+  }
+  if (!nodeLooksExactForRow(row, node)) return false;
+  return [row.specId, row.probeRef, row.implementationPath]
+    .filter(Boolean)
+    .some((needle) => node.text.includes(needle));
 }
 
 function actionForRow(
@@ -368,7 +394,7 @@ function actionForRow(
   return {
     kind: "create-task",
     id,
-    parentId: frontierTaskId,
+    parentId: "group/scenario-normalization",
     outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: absorbed, publish/rebase/recheck, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
@@ -401,6 +427,7 @@ function actionForRow(
       "Read the owning spec JSON and prove the exact probeRef/implementation path for this adapter row.",
       "Inspect same-spec branch, ADO run, artifact, and task evidence before deciding the next move.",
       "Choose exactly one next state: origin/dev absorbed/equivalent, publish/rebase/recheck, smallest same-spec repair, exact external wait with observer/resume condition, terminal disposition, or escalation.",
+      "If the exact external wait is repo-ref movement such as origin/dev publication, create or update that wait with workflow wait-for-repo-ref-advance and structured input.baseRef plus input.resumeBaselineCommit instead of making prose successor waits.",
       "Do not close from filename similarity, stale task summaries, broad plain-TS counters, or review/attention residue alone.",
     ],
     priority: "P1",
@@ -505,16 +532,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const rowsNeedingWork = rows.filter(
       (row) => row.usefulTaskIds.length === 0,
     );
-    const actions = rowsNeedingWork
-      .slice(0, maxLeaves)
-      .map((row) => actionForRow(row, originDevCommit, report));
     const usefulTaskIds = [
       ...new Set(rows.flatMap((row) => row.usefulTaskIds)),
     ].slice(0, 64);
-    const conditions =
-      actions.length === 0
-        ? usefulTaskIds.map((taskId) => conditionForTask(taskId))
-        : [];
+    const actionBudget = Math.max(0, maxLeaves - usefulTaskIds.length);
+    const actions = rowsNeedingWork
+      .slice(0, actionBudget)
+      .map((row) => actionForRow(row, originDevCommit, report));
     const residueCount = rows.filter(
       (row) => row.usefulTaskIds.length === 0 && row.residueTaskIds.length > 0,
     ).length;
@@ -522,11 +546,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     return ctx.done(summary, {
       state:
-        actions.length > 0
+        actions.length > 0 || usefulTaskIds.length > 0
           ? "converged"
-          : conditions.length > 0
-            ? "waiting"
-            : "needs-owner",
+          : "needs-owner",
       summary,
       evidence: [
         ...evidence,
@@ -536,7 +558,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ),
       ],
       actions,
-      ...(conditions.length > 0 ? { conditions } : {}),
     });
   });
 }

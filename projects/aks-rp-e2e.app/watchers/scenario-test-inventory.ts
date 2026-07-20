@@ -1,8 +1,15 @@
 import { spawnSync } from "node:child_process";
+import type { SpawnSyncReturns } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
 
 export type ScenarioTestInventoryObservation = {
   observedAt: string;
+  sourceRef: string;
+  sourceCommit: string | null;
+  sourceKind: "clean-ref-worktree" | "error";
   state: "clean" | "red" | "error";
   strictPassed: boolean | null;
   activeSpecCount: number;
@@ -19,10 +26,34 @@ function numberField(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function baseObservation(error: string): ScenarioTestInventoryObservation {
+  return {
+    observedAt: new Date().toISOString(),
+    sourceRef: "origin/dev",
+    sourceCommit: null,
+    sourceKind: "error",
+    state: "error",
+    strictPassed: null,
+    activeSpecCount: 0,
+    referencedPlainActiveSpecCount: 0,
+    referencedScenarioWithAdapterCount: 0,
+    directVitestImplementationCount: 0,
+    remainingSpecReferencedPlainScenarioCount: 0,
+    remainingRepoPlainScenarioFileCount: 0,
+    missingAdapterFiles: [],
+    error,
+  };
+}
+
 export function parseScenarioTestInventory(
   stdout: string,
   commandStatus: number | null,
   stderr = "",
+  source: {
+    ref?: string;
+    commit?: string | null;
+    kind?: ScenarioTestInventoryObservation["sourceKind"];
+  } = {},
 ): ScenarioTestInventoryObservation {
   try {
     const parsed = JSON.parse(stdout) as {
@@ -55,6 +86,9 @@ export function parseScenarioTestInventory(
         typeof report.generatedAt === "string"
           ? report.generatedAt
           : new Date().toISOString(),
+      sourceRef: source.ref ?? "origin/dev",
+      sourceCommit: source.commit ?? null,
+      sourceKind: source.kind ?? "clean-ref-worktree",
       state: guard.passed ? "clean" : "red",
       strictPassed: guard.passed,
       activeSpecCount: numberField(report.activeSpecCount),
@@ -82,21 +116,9 @@ export function parseScenarioTestInventory(
         : {}),
     };
   } catch (error) {
-    return {
-      observedAt: new Date().toISOString(),
-      state: "error",
-      strictPassed: null,
-      activeSpecCount: 0,
-      referencedPlainActiveSpecCount: 0,
-      referencedScenarioWithAdapterCount: 0,
-      directVitestImplementationCount: 0,
-      remainingSpecReferencedPlainScenarioCount: 0,
-      remainingRepoPlainScenarioFileCount: 0,
-      missingAdapterFiles: [],
-      error:
-        stderr.trim() ||
-        (error instanceof Error ? error.message : String(error)),
-    };
+    return baseObservation(
+      stderr.trim() || (error instanceof Error ? error.message : String(error)),
+    );
   }
 }
 
@@ -114,28 +136,95 @@ export function scenarioTestInventoryObservationEvent(
   };
 }
 
+function run(
+  command: string,
+  args: string[],
+  cwd: string,
+): SpawnSyncReturns<string> {
+  return spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    timeout: 120_000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
+}
+
 /** Observe strict inventory and emit a semantic fact; never reads or mutates task state. */
 export async function observeScenarioTestInventory(
   ctx: ProjectAppContext,
 ): Promise<unknown> {
-  const result = spawnSync(
-    "bun",
-    ["scripts/check-scenario-tests.ts", "--strict", "--json"],
-    {
-      cwd: ctx.appPath("../aks-rp-e2e"),
-      encoding: "utf8",
-      timeout: 120_000,
-      maxBuffer: 8 * 1024 * 1024,
-    },
-  );
-  const observation = parseScenarioTestInventory(
-    result.stdout ?? "",
-    result.status,
-    result.stderr || result.error?.message || "",
-  );
+  const projectDir = ctx.appPath("../aks-rp-e2e");
+  const sourceRef = "origin/dev";
+  let worktreeDir: string | null = null;
+  let observation: ScenarioTestInventoryObservation;
+
+  try {
+    const fetch = run("git", ["fetch", "origin", "dev", "--quiet"], projectDir);
+    if (fetch.status !== 0) {
+      observation = baseObservation(
+        fetch.stderr?.trim() ||
+          fetch.error?.message ||
+          `git fetch origin dev exited ${String(fetch.status)}`,
+      );
+    } else {
+      const rev = run("git", ["rev-parse", "--verify", sourceRef], projectDir);
+      const sourceCommit = rev.stdout?.trim() || null;
+      if (rev.status !== 0 || !sourceCommit) {
+        observation = baseObservation(
+          rev.stderr?.trim() ||
+            rev.error?.message ||
+            `git rev-parse --verify ${sourceRef} exited ${String(rev.status)}`,
+        );
+      } else {
+        worktreeDir = mkdtempSync(join(tmpdir(), "aks-scenario-inventory-"));
+        const add = run(
+          "git",
+          ["worktree", "add", "--detach", worktreeDir, sourceRef],
+          projectDir,
+        );
+        if (add.status !== 0) {
+          observation = baseObservation(
+            add.stderr?.trim() ||
+              add.error?.message ||
+              `git worktree add ${sourceRef} exited ${String(add.status)}`,
+          );
+        } else {
+          const result = run(
+            "bun",
+            ["scripts/check-scenario-tests.ts", "--strict", "--json"],
+            worktreeDir,
+          );
+          observation = parseScenarioTestInventory(
+            result.stdout ?? "",
+            result.status,
+            result.stderr || result.error?.message || "",
+            {
+              ref: sourceRef,
+              commit: sourceCommit,
+              kind: "clean-ref-worktree",
+            },
+          );
+        }
+      }
+    }
+  } finally {
+    if (worktreeDir) {
+      const removed = run(
+        "git",
+        ["worktree", "remove", "--force", worktreeDir],
+        projectDir,
+      );
+      if (removed.status !== 0) {
+        rmSync(worktreeDir, { recursive: true, force: true });
+      }
+    }
+  }
+
   ctx.emit(scenarioTestInventoryObservationEvent(observation));
   return {
     observed: observation.state,
+    sourceRef: observation.sourceRef,
+    sourceCommit: observation.sourceCommit,
     missingAdapterCount: observation.missingAdapterFiles.length,
   };
 }

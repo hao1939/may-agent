@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
 
 type PipelineWatcherState = {
+  schemaVersion?: string;
   fingerprints?: Record<string, string>;
   adoFingerprints?: Record<string, string>;
   checkedAt?: string;
@@ -60,6 +61,7 @@ const MAX_ADO_RUNS_PER_SCAN = 25;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
+const WATCHER_SCHEMA_VERSION = "2";
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -247,6 +249,14 @@ export function pipelineObservationEvents(
   if (observed.status === "completed") {
     events.push(
       {
+        type: "terminal-state",
+        source: "aks-pipeline-watcher",
+        target: { project: "aks-rp-e2e" },
+        ...base,
+        status: "completed",
+        data: { ...base, status: "completed" },
+      },
+      {
         type: "status-equals",
         source: "aks-pipeline-watcher",
         target: { project: "aks-rp-e2e" },
@@ -307,6 +317,13 @@ export async function observeAksPipelines(
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
   const prior = readState(statePath);
+  const hasPriorState = Boolean(
+    prior.schemaVersion || prior.fingerprints || prior.adoFingerprints,
+  );
+  const priorFingerprints =
+    prior.schemaVersion === WATCHER_SCHEMA_VERSION ? prior.fingerprints : {};
+  const priorAdoFingerprints =
+    prior.schemaVersion === WATCHER_SCHEMA_VERSION ? prior.adoFingerprints : {};
   const results = scanPipelineResults(
     ctx.appPath("../aks-rp-e2e/runs/test-results"),
   );
@@ -318,12 +335,13 @@ export async function observeAksPipelines(
     adoRuns.map((run) => [run.runId, run.fingerprint]),
   );
   saveState(statePath, {
+    schemaVersion: WATCHER_SCHEMA_VERSION,
     fingerprints,
     adoFingerprints,
     checkedAt: new Date().toISOString(),
   });
 
-  if (!prior.fingerprints && !prior.adoFingerprints) {
+  if (!hasPriorState) {
     return ctx.noop(
       `Pipeline watcher initialized from ${results.length} local result(s) and ${adoRuns.length} ADO run(s).`,
     );
@@ -331,7 +349,7 @@ export async function observeAksPipelines(
 
   const changed = results
     .filter(
-      (result) => prior.fingerprints?.[result.runId] !== result.fingerprint,
+      (result) => priorFingerprints?.[result.runId] !== result.fingerprint,
     )
     .slice(0, MAX_EVENTS_PER_SCAN);
   for (const observed of changed) {
@@ -358,7 +376,7 @@ export async function observeAksPipelines(
   }
 
   const changedAdo = adoRuns
-    .filter((run) => prior.adoFingerprints?.[run.runId] !== run.fingerprint)
+    .filter((run) => priorAdoFingerprints?.[run.runId] !== run.fingerprint)
     .slice(0, MAX_EVENTS_PER_SCAN);
   for (const observed of changedAdo) {
     for (const event of pipelineObservationEvents(observed)) ctx.emit(event);

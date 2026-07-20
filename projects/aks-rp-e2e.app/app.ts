@@ -9,6 +9,7 @@ import {
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
+import { observeRepoRefChanges } from "./watchers/repo-ref.js";
 import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory.js";
 
 const projectId = "aks-rp-e2e";
@@ -18,8 +19,7 @@ const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
-const scenarioTestFrontierTaskId =
-  "domain/normalize-scenario-tests-repo-frontier-20260715";
+const scenarioTestFrontierTaskId = "scenario-normalization";
 const scenarioTestFrontierMinLeaves = 3;
 
 type AppTaskEvent = Record<string, unknown>;
@@ -119,7 +119,7 @@ export function resolveAksTask(
   if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
     return {
       id: "runtime/owner-review",
-      parentId: "project",
+      parentId: "group/app-operations",
       outcome:
         "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
       acceptance: [
@@ -137,7 +137,7 @@ export function resolveAksTask(
       if (action === "spec-loop" || taskId === specLoopTaskId) {
         return {
           id: taskId || specLoopTaskId,
-          parentId: "project",
+          parentId: "group/spec-verification",
           outcome:
             "Keep the durable single-spec verification loop advancing from current spec-loop state.",
           acceptance: [
@@ -155,7 +155,7 @@ export function resolveAksTask(
       ) {
         return {
           id: taskId || featureCompactLoopTaskId,
-          parentId: "project",
+          parentId: "group/feature-compact",
           outcome:
             "Keep the durable feature compact loop advancing from current compact-loop state.",
           acceptance: [
@@ -170,7 +170,7 @@ export function resolveAksTask(
       if (taskId === scenarioTestFrontierTaskId) {
         return {
           id: scenarioTestFrontierTaskId,
-          parentId: "project",
+          parentId: "group/scenario-normalization",
           outcome:
             "Normalize direct scenario-test carrier gaps until strict inventory is clean or every remaining item has an exact accepted disposition.",
           acceptance: [
@@ -195,7 +195,7 @@ export function resolveAksTask(
       );
       return {
         id: `runtime/problem-solver/${safeTaskIdPart(problemKey, "project")}`,
-        parentId: taskId || "project",
+        parentId: "group/app-operations",
         outcome:
           "Investigate one bounded AKS project blocker and return a verified resolution, exact escalation, or explicit inconclusive result.",
         acceptance: [
@@ -211,7 +211,7 @@ export function resolveAksTask(
     case "project.stall.review.requested":
       return {
         id: "runtime/project-stall-review",
-        parentId: "project",
+        parentId: "group/app-operations",
         outcome:
           "Keep suspicious stalled AKS work reviewed against current task, loop, and external-state evidence.",
         acceptance: [
@@ -235,7 +235,7 @@ export function resolveAksTask(
       );
       return {
         id: `runtime/focus-review/${safeTaskIdPart(focusKey, "current")}`,
-        parentId: taskId || "project",
+        parentId: "group/app-operations",
         outcome:
           "Keep one named AKS focus plan or progress review aligned with the current live frontier.",
         acceptance: [
@@ -262,7 +262,7 @@ export function resolveAksTask(
       );
       return {
         id: `runtime/approval-dispatch/${safeTaskIdPart(approvalKey, "pending")}`,
-        parentId: taskId || "project",
+        parentId: "group/app-operations",
         outcome:
           "Deliver one exact AKS approval packet through the human-facing approval path.",
         acceptance: [
@@ -285,6 +285,7 @@ export async function routeAksEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
+  if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
   if (event.type === "aks.scenario-test-inventory.check")
     return observeScenarioTestInventory(ctx);
   if (event.type === "aks.scenario-test-inventory.observed") {
@@ -309,6 +310,7 @@ export function scenarioTestFrontierWakeEvent(
       taskId: scenarioTestFrontierTaskId,
       task_id: scenarioTestFrontierTaskId,
       reason: "strict-scenario-test-inventory-observed",
+      overrideWait: true,
       desiredRunnableLeaves: {
         min: scenarioTestFrontierMinLeaves,
         max: domainPolicyMaxConcurrent,
@@ -438,6 +440,17 @@ export default defineProjectApp({
       ],
     },
     {
+      id: "repo-ref-observer",
+      enabled: true,
+      intervalMs: 600_000,
+      emits: [
+        {
+          type: "aks.repo-ref.check",
+          target: { project: projectId },
+        },
+      ],
+    },
+    {
       id: "blocked-frontier-app-ops-review",
       enabled: true,
       intervalMs: 7_200_000,
@@ -506,6 +519,7 @@ export default defineProjectApp({
 
   events: [
     { type: "aks.pipeline.check", target: projectTarget },
+    { type: "aks.repo-ref.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.observed", target: projectTarget },
   ],
