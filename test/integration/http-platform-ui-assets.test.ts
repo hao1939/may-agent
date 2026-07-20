@@ -12,7 +12,7 @@
  * PROJECTS_ROOT containing a minimal platform/ui/ tree. No socket or browser is
  * required — keeps the regression check fast, stable, and chromeless.
  *
- * See projects/platform/proposals/2026-05-19-e2e-harness-findings.md § F8.
+ * See projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md § F8.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
