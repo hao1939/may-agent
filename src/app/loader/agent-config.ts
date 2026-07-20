@@ -60,15 +60,20 @@ export function validateAgentConfig(
   return errors;
 }
 
-export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
+/** Read an agent definition without reporting through hosted infrastructure. */
+export function readAgentConfigFile(agentDir: string): AgentConfig | null {
   const configPath = resolve(agentDir, "agent.json");
   if (!existsSync(configPath)) return null;
+  const raw = readFileSync(configPath, "utf-8");
+  const config = JSON.parse(raw) as AgentConfig & { disabled?: boolean };
+  return config.disabled ? null : config;
+}
+
+export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
+  const configPath = resolve(agentDir, "agent.json");
 
   try {
-    const raw = readFileSync(configPath, "utf-8");
-    const config = JSON.parse(raw) as AgentConfig & { disabled?: boolean };
-    if (config.disabled) return null;
-    return config;
+    return readAgentConfigFile(agentDir);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });

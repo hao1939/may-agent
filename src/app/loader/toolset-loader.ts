@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import {
@@ -17,11 +17,11 @@ import {
 } from "../../lib/index.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { importRuntimeModule } from "../../lib/runtime-import.js";
 import type { EventBus } from "../event-bus.js";
 import { Cron } from "../cron.js";
 import type { AgentConfig } from "./agent-config.js";
 import { listConfiguredAgentNames } from "./agent-discovery.js";
+import { loadAgentLocalTools } from "./agent-local-tools.js";
 
 export interface ToolsetLoaderOptions {
   agentsRoot: string;
@@ -50,7 +50,7 @@ export interface ToolsetLoaderOptions {
 export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions): Promise<AgentTool[]> {
   const { projectRoot, persistDir, manager, bus } = opts;
   const agentDir = opts.agentDir ?? resolve(opts.agentsRoot, config.name);
-  const tools: AgentTool[] = [createQueryDbTool(persistDir)];
+  const tools: AgentTool[] = [];
 
   const triggerHeartbeat = (agentName: string): boolean => {
     for (const cron of opts.getAgentCrons().values()) {
@@ -64,6 +64,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     switch (preset) {
       case "query_db":
       case "query-db":
+        tools.push(createQueryDbTool(persistDir));
         break;
 
       case "coding":
@@ -283,44 +284,11 @@ export async function loadLocalTools(
   agentDir: string,
   opts: Pick<ToolsetLoaderOptions, "projectRoot" | "persistDir" | "bus">,
 ): Promise<AgentTool[]> {
-  const toolsDir = resolve(agentDir, "tools");
-  if (!existsSync(toolsDir)) return [];
-
-  const tools: AgentTool[] = [];
-  const entries = readdirSync(toolsDir).filter((f) => f.endsWith(".ts") || f.endsWith(".js"));
-
-  for (const file of entries) {
-    const filePath = resolve(toolsDir, file);
-    try {
-      const mod = await importRuntimeModule<{ default?: unknown }>(filePath);
-      const factory = mod.default;
-      if (typeof factory !== "function") {
-        opts.bus.emit({
-          type: "info",
-          message: `[loader] Skipping ${agentName}/tools/${file} — no default export function`,
-        });
-        continue;
-      }
-      const tool = await factory({
-        projectRoot: opts.projectRoot,
-        agentRoot: agentDir,
-        persistDir: opts.persistDir,
-      });
-      if (tool && typeof tool.name === "string") {
-        tools.push(tool);
-        opts.bus.emit({
-          type: "info",
-          message: `[loader] Loaded local tool "${tool.name}" for ${agentName}`,
-        });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      opts.bus.emit({
-        type: "info",
-        message: `[loader] ⚠️ Failed to load ${agentName}/tools/${file}: ${msg}`,
-      });
-    }
-  }
-
-  return tools;
+  return loadAgentLocalTools(agentName, agentDir, {
+    projectRoot: opts.projectRoot,
+    persistDir: opts.persistDir,
+    onNotice: (message) => opts.bus.emit({ type: "info", message: `[loader] ${message}` }),
+    onLoaded: (toolName) =>
+      opts.bus.emit({ type: "info", message: `[loader] Loaded local tool "${toolName}" for ${agentName}` }),
+  });
 }
