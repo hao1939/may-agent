@@ -1,7 +1,6 @@
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import {
   executePreparedAgent,
   prepareAgentExecution,
@@ -16,9 +15,20 @@ import { createBackgroundExecTool } from "../lib/background-exec.js";
 import { createScrapeTool } from "../lib/scrape.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../lib/types.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
-import type { AgentConfig } from "./loader/agent-config.js";
+import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
+import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
 
-const DIRECT_CAPABILITIES = new Set(["coding", "read-only", "scrape", "finish", "background-exec"]);
+export type ToolDenial = {
+  name: string;
+  reason: string;
+};
+
+export type AgentExecutionManifest = {
+  agent: string;
+  configuredTools: string[];
+  deniedTools: ToolDenial[];
+  effectiveTools: string[];
+};
 
 export type DirectAgentRunOptions = {
   agentName: string;
@@ -31,6 +41,7 @@ export type DirectAgentRunOptions = {
   globalAgentsRoot?: string;
   outputRoot: string;
   models: Record<string, ModelWithApiKey>;
+  toolDenials?: ToolDenial[];
   timeoutMs?: number;
   onNotice?: (message: string) => void;
 };
@@ -40,7 +51,7 @@ export type DirectAgentRunResult = DirectAgentExecutionResult & {
   sessionPath: string;
   systemPrompt: string;
   model: string;
-  unavailableCapabilities: string[];
+  executionManifest: AgentExecutionManifest;
 };
 
 function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
@@ -52,49 +63,43 @@ function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
   return source;
 }
 
-function readAgentConfig(source: AgentDirectory): AgentConfig {
-  const path = join(source.dir, "agent.json");
-  const config = JSON.parse(readFileSync(path, "utf8")) as AgentConfig & {
-    disabled?: boolean;
-  };
-  if (config.disabled) throw new Error(`Agent "${config.name || source.name}" is disabled`);
-  for (const field of ["name", "description", "domain", "model", "tools"] as const) {
-    if (!config[field]) throw new Error(`Agent config ${path} is missing ${field}`);
-  }
-  return config;
-}
-
-async function loadDirectLocalTools(source: AgentDirectory, options: DirectAgentRunOptions): Promise<AgentTool[]> {
-  const toolsDir = join(source.dir, "tools");
-  if (!existsSync(toolsDir)) return [];
-  const tools: AgentTool[] = [];
-  for (const entry of readdirSync(toolsDir).sort()) {
-    if (!entry.endsWith(".ts") && !entry.endsWith(".js")) continue;
-    const path = join(toolsDir, entry);
-    const module = await import(pathToFileURL(path).href);
-    if (typeof module.default !== "function") {
-      options.onNotice?.(`Skipping ${path}: expected a default tool factory`);
-      continue;
+export function resolveDirectToolPolicy(
+  agent: string,
+  configuredTools: string[],
+  denials: ToolDenial[] = [],
+): AgentExecutionManifest {
+  const configured = new Set(configuredTools);
+  const seen = new Set<string>();
+  const normalizedDenials = denials.map((denial) => ({
+    name: denial.name.trim(),
+    reason: denial.reason.trim(),
+  }));
+  for (const denial of normalizedDenials) {
+    if (!denial.name) throw new Error(`Direct run for ${agent} has a tool denial with no name`);
+    if (!denial.reason) throw new Error(`Direct run denial for tool "${denial.name}" requires a reason`);
+    if (!configured.has(denial.name)) {
+      throw new Error(`Direct run denial names unconfigured tool "${denial.name}" for agent ${agent}`);
     }
-    const tool = await module.default({
-      projectRoot: options.workRoot,
-      agentRoot: source.dir,
-      persistDir: options.outputRoot,
-    });
-    if (tool && typeof tool.name === "string") tools.push(tool);
+    if (seen.has(denial.name)) throw new Error(`Direct run denies tool "${denial.name}" more than once`);
+    seen.add(denial.name);
   }
-  return tools;
+  return {
+    agent,
+    configuredTools: [...configuredTools],
+    deniedTools: normalizedDenials,
+    effectiveTools: configuredTools.filter((name) => !seen.has(name)),
+  };
 }
 
 async function buildDirectTools(
   config: AgentConfig,
   source: AgentDirectory,
   options: DirectAgentRunOptions,
-): Promise<{ tools: AgentTool[]; cleanup: Array<() => void>; unavailable: string[] }> {
+  effectiveTools: string[],
+): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
   const tools: AgentTool[] = [];
   const cleanup: Array<() => void> = [];
-  const unavailable: string[] = [];
-  for (const capability of config.tools) {
+  for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
         tools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
@@ -124,17 +129,21 @@ async function buildDirectTools(
         cleanup.push(background.cleanup);
         break;
       }
-      case "query_db":
-      case "query-db":
-        unavailable.push(capability);
-        break;
       default:
-        if (!DIRECT_CAPABILITIES.has(capability)) unavailable.push(capability);
-        break;
+        throw new Error(
+          `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
+            `the caller must provide an explicit denial or a direct tool implementation`,
+        );
     }
   }
-  tools.push(...(await loadDirectLocalTools(source, options)));
-  return { tools, cleanup, unavailable: [...new Set(unavailable)].sort() };
+  tools.push(
+    ...(await loadAgentLocalTools(config.name, source.dir, {
+      projectRoot: options.workRoot,
+      persistDir: options.outputRoot,
+      onNotice: options.onNotice,
+    })),
+  );
+  return { tools, cleanup };
 }
 
 /**
@@ -143,16 +152,21 @@ async function buildDirectTools(
  */
 export async function runDirectAgent(options: DirectAgentRunOptions): Promise<DirectAgentRunResult> {
   const source = resolveAgentSource(options);
-  const config = readAgentConfig(source);
+  const config = readAgentConfigFile(source.dir);
+  if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
+  const configErrors = validateAgentConfig(config, options.models, options.agentsRoot);
+  if (configErrors.length > 0) {
+    throw new Error(
+      `Invalid agent ${options.agentName}: ${configErrors.map((error) => `${error.field}: ${error.message}`).join("; ")}`,
+    );
+  }
   if (config.name !== options.agentName) {
     throw new Error(`Agent directory ${source.dir} declares ${config.name}, not ${options.agentName}`);
   }
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
-  const { tools, cleanup, unavailable } = await buildDirectTools(config, source, options);
-  for (const capability of unavailable) {
-    options.onNotice?.(`Direct run omits hosted capability "${capability}" for agent ${config.name}`);
-  }
+  const executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
+  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
 
   const knowledgeDir = join(source.dir, "knowledge");
   const workspace = join(source.dir, "workspace");
@@ -207,7 +221,7 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
         agent: config.name,
         model: config.model,
         kind: "direct",
-        unavailableCapabilities: unavailable,
+        executionManifest,
       },
       null,
       2,
@@ -229,7 +243,7 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       sessionPath,
       systemPrompt: prepared.systemPrompt,
       model: config.model,
-      unavailableCapabilities: unavailable,
+      executionManifest,
     };
   } finally {
     for (const close of cleanup) close();
