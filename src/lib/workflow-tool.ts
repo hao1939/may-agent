@@ -571,6 +571,8 @@ export interface RunWorkflowDirectOpts {
   sharedGuardsDir?: string;
   parentSessionId?: string;
   projectId?: string;
+  /** Explicit task resource whose controller owns this workflow result. */
+  taskBinding?: { taskId: string; generation: number };
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   onEvent?: (event: WorkflowEvent) => void;
@@ -598,6 +600,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     agentName: opts.agentName,
     parentSessionId: opts.parentSessionId,
     projectId: opts.projectId,
+    taskBinding: opts.taskBinding,
     recoveryOwner: opts.recoveryOwner,
     onEvent: opts.onEvent,
     trace: opts.trace,
@@ -663,6 +666,8 @@ export interface WorkflowToolOptions {
   parentSessionId?: string;
   /** Canonical project id for sessions spawned by this workflow. */
   projectId?: string;
+  /** Explicit task resource whose controller owns this workflow result. */
+  taskBinding?: { taskId: string; generation: number };
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
@@ -1521,7 +1526,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           result_summary: run.result.summary,
           result_reason: run.result.reason,
         });
-      if (result.type !== "done" && depth === 1) {
+      if (result.type !== "done" && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
           workflowRunId: runId,
           workflow: workflow.name,
@@ -1566,7 +1571,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           endedAt: run.endedAt,
           result_reason: run.result?.reason,
         });
-      if (err instanceof WorkflowBlocked && depth === 1) {
+      if (err instanceof WorkflowBlocked && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
           workflowRunId: runId,
           workflow: workflow.name,
