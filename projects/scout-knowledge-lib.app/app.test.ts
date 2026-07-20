@@ -16,6 +16,10 @@ describe("Scout task reconciliation", () => {
         mode: "maintain",
         workflow: "scout-explore",
         input: { source },
+        outputs: [
+          "/app/projects/scout-knowledge-lib/knowledge",
+          "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
+        ],
       });
     }
   });
@@ -41,6 +45,7 @@ describe("Scout task reconciliation", () => {
       resolveScoutTask({ type: "project.library_health.tick" }),
     ).toMatchObject({
       id: "runtime/library-health-observer",
+      parentId: "library-operations",
       mode: "maintain",
       workflow: "library-health",
     });
@@ -60,6 +65,7 @@ describe("Scout task reconciliation", () => {
       }),
     ).toMatchObject({
       id: "library-maintenance",
+      parentId: "library-operations",
       mode: "maintain",
     });
     expect(
@@ -86,6 +92,13 @@ describe("Scout task reconciliation", () => {
     ]);
     expect(app.tasks?.resolve).toBe(resolveScoutTask);
     expect(app.owner).toBe("scout");
+    expect(app.events).toContainEqual({
+      type: "project.xhs_credential.check",
+      project: "scout-knowledge-lib",
+    });
+    expect(app.schedules).toContainEqual(
+      expect.objectContaining({ id: "xhs-credential-watcher", enabled: true }),
+    );
     expect(app).not.toHaveProperty("ownerEntry");
     expect(app).not.toHaveProperty("taskWorkflows");
     expect(app).not.toHaveProperty("taskRoutes");

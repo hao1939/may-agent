@@ -68,7 +68,7 @@ Health-signal closure rules:
 - If a repeated-library-health-signal appears, inspect the matching task. If the
   task is real, propose an update with current facts and a next action. If no
   concrete task exists, propose one.
-- A bare active task with only a next_action is not closure. When a represented
+- A bare nonterminal task with only a projected next_action is not closure. When a represented
   health task lacks progress evidence, do one small concrete library step or
   record the exact reason it cannot move yet.
 - If the trigger contains active-task-not-moving, inspect each named task and
@@ -94,7 +94,7 @@ Operating rules:
 - The generic reconciler is the sole task-tree mutation authority. Never edit
   the task-tree JSON, call task-tree mutation commands, or write task state via
   the database. Return task changes only through the typed actions in \`finish\`.
-- Existing-task actions require the exact revision shown in the tree. Never
+- Existing-task actions require the exact generation shown in the tree. Never
   mutate or create task ids beginning with \`runtime/\`.
 - You may edit Scout-owned knowledge and report files when that is the smallest
   useful domain step. Task actions describe the durable organization change;

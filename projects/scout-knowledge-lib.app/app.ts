@@ -5,8 +5,11 @@ import {
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
+import { observeXhsCredential } from "./watchers/xhs-credential.js";
 
 const projectId = "scout-knowledge-lib";
+const appDir = "/app/projects/scout-knowledge-lib.app";
+const projectDir = "/app/projects/scout-knowledge-lib";
 
 function eventParams(params: unknown): Record<string, unknown> {
   return params && typeof params === "object" && !Array.isArray(params)
@@ -45,6 +48,10 @@ export function resolveScoutTask(
         mode: "maintain",
         workflow: "scout-explore",
         input: { source },
+        outputs: [
+          `${projectDir}/knowledge`,
+          `${appDir}/agents/scout/workspace/digest/today.md`,
+        ],
         priority: source === "xhs" ? "P2" : "P1",
       };
     }
@@ -59,6 +66,7 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "scout-daily-digest",
+        outputs: [`${appDir}/agents/scout/workspace/digest`],
         priority: "P1",
       };
     case "scout.heartbeat":
@@ -72,12 +80,16 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "scout-heartbeat",
+        outputs: [
+          `${projectDir}/knowledge`,
+          `${appDir}/agents/scout/workspace/digest/today.md`,
+        ],
         priority: "P2",
       };
     case "project.library_health.tick":
       return {
         id: "runtime/library-health-observer",
-        parentId: "library-maintenance",
+        parentId: "library-operations",
         outcome:
           "Keep a deterministic observation of the Scout library shape and wake its owner only for meaningful maintenance signals.",
         acceptance: [
@@ -85,12 +97,13 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "library-health",
+        outputs: [`${appDir}/.state/library-health-packets.jsonl`],
         priority: "P1",
       };
     case "project.owner.requested":
       return {
         id: "library-maintenance",
-        parentId: "project",
+        parentId: "library-operations",
         outcome:
           "Keep the Scout knowledge library coherent, source-grounded, navigable, and organized around its most useful next maintenance step.",
         acceptance: [
@@ -98,6 +111,7 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "knowledge-planner",
+        outputs: [`${projectDir}/knowledge`, `${projectDir}/reports`],
         priority: "P1",
       };
     default:
@@ -121,6 +135,10 @@ async function routeScoutEvent(
 
   if (event.type === "metric.breach") {
     return ctx.emit(ownerRequested("metric-breach", eventDetails(event)));
+  }
+
+  if (event.type === "project.xhs_credential.check") {
+    return observeXhsCredential(ctx);
   }
 
   return undefined;
@@ -171,6 +189,17 @@ export default defineProjectApp({
             "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
           ],
         }),
+      ],
+    },
+    {
+      id: "xhs-credential-watcher",
+      enabled: true,
+      intervalMs: 300_000,
+      emits: [
+        {
+          type: "project.xhs_credential.check",
+          project: projectId,
+        },
       ],
     },
     {
@@ -257,6 +286,7 @@ export default defineProjectApp({
   },
 
   events: [
+    { type: "project.xhs_credential.check", project: projectId },
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },

@@ -11,6 +11,12 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts", "agents/scout/workflows/**/*.ts", "types/**/*.ts"],
+  "include": [
+    "app.ts",
+    "agents/scout/workflows/**/*.ts",
+    "agents/scout/tools/**/*.ts",
+    "watchers/**/*.ts",
+    "types/**/*.ts"
+  ],
   "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
 }

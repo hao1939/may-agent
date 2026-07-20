@@ -8,10 +8,12 @@ describe("scout-explore workflow prompt", () => {
     );
 
     expect(task).toContain("Explore Hacker News for AI agent discussions.");
-    expect(task).toContain("projects/scout-knowledge-lib/knowledge/");
-    expect(task).toContain("projects/scout-knowledge-lib/knowledge/findings/");
+    expect(task).toContain("/app/projects/scout-knowledge-lib/knowledge/");
     expect(task).toContain(
-      "projects/scout-knowledge-lib.app/agents/scout/workspace/findings/",
+      "/app/projects/scout-knowledge-lib/knowledge/findings/",
+    );
+    expect(task).toContain(
+      "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/findings/",
     );
     expect(task).toContain(
       "Never create new top-level folders under `projects/`",
@@ -19,12 +21,13 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("do not write paths like `projects/explore/...`");
   });
 
-  it("returns an exact wait before dispatch while XHS cookie refresh is blocked", () => {
+  it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
     const task = `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source: "xhs" } })}\n\`\`\``;
     const result = xhsWaitResult(task, {
-      tasks: {
-        "xhs-cookie-refresh-blocked": { state: "blocked" },
-      },
+      credential: "xhs",
+      state: "unavailable",
+      reason: "XHS login is required",
+      evidence: ["login-wall:true"],
     });
 
     expect(result).toMatchObject({
@@ -32,22 +35,23 @@ describe("scout-explore workflow prompt", () => {
       actions: [],
       conditions: [
         {
-          id: "task-done:xhs-cookie-refresh-blocked",
-          type: "project.task.reconciled",
-          subject: "task:xhs-cookie-refresh-blocked",
-          expected: "done",
+          id: "credential-ready:xhs",
+          type: "credential.ready",
+          subject: "credential:xhs",
+          expected: { field: "state", equals: "ready" },
         },
       ],
     });
   });
 
-  it("allows XHS exploration after the exact blocker task is done", () => {
+  it("allows XHS exploration after the credential is observed ready", () => {
     const task = `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source: "xhs" } })}\n\`\`\``;
     expect(
       xhsWaitResult(task, {
-        tasks: {
-          "xhs-cookie-refresh-blocked": { state: "done" },
-        },
+        credential: "xhs",
+        state: "ready",
+        reason: "source content is readable",
+        evidence: ["note-count:12"],
       }),
     ).toBeNull();
   });

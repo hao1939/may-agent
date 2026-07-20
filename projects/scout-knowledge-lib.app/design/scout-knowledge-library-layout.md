@@ -2,6 +2,11 @@
 
 Status: working target layout
 
+Paths in this document are interpreted from the canonical domain workspace
+`/app/projects/scout-knowledge-lib`; the target tree includes the workspace
+name only for orientation. Workflow prompts use the resolved absolute root and
+do not prepend these paths to their current directory.
+
 ## Plain Model
 
 The library should be organized by why someone opens a document.
@@ -170,6 +175,12 @@ has:
 3. reference migration;
 4. verification that old paths are gone or intentionally archived;
 5. a report when the batch changes library structure.
+
+The app must never create a second project tree below
+`/app/projects/scout-knowledge-lib/projects/`. Output paths are resolved and
+checked against the domain `knowledge/` and `reports/` roots before a result is
+accepted. Existing nested files are reviewed and compared before removal; path
+cleanup is not permission to discard unique findings.
 
 ## Migration Order
 

@@ -4,12 +4,12 @@
   "type": "module",
   "description": "May-agent project app that drives the Scout knowledge library domain workspace.",
   "scripts": {
-    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
+    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts ./agents/scout/workflows/scout-daily-digest.ts ./agents/scout/workflows/scout-explore.ts ./agents/scout/workflows/scout-heartbeat.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check",
-    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/scout/workflows/knowledge-planner.ts ./agents/scout/workflows/library-health.ts ./agents/scout/workflows/scout-daily-digest.ts ./agents/scout/workflows/scout-explore.ts ./agents/scout/workflows/scout-heartbeat.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "bun x prettier --write app.ts types/**/*.ts package.json project.json tsconfig.json agents/scout/workflows/**/*.ts",
-    "format:check": "bun x prettier --check app.ts types/**/*.ts package.json project.json tsconfig.json agents/scout/workflows/**/*.ts"
+    "format": "bun x prettier --write app.ts types/**/*.ts package.json project.json tsconfig.json agents/scout/workflows/**/*.ts agents/scout/tools/*.ts watchers/**/*.ts",
+    "format:check": "bun x prettier --check app.ts types/**/*.ts package.json project.json tsconfig.json agents/scout/workflows/**/*.ts agents/scout/tools/*.ts watchers/**/*.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

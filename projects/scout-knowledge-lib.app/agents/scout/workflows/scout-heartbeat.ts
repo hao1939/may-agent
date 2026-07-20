@@ -20,6 +20,8 @@ export const description =
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
+  const appDir = ctx.appDir ?? "/app/projects/scout-knowledge-lib.app";
+  const projectDir = ctx.projectDir ?? "/app/projects/scout-knowledge-lib";
 
   // Load context
   const metricsBlock = formatMetricsBlock(ctx, agent);
@@ -38,8 +40,9 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Find non-obvious implications for our agent system
 - Make connections between disparate research areas
 - Identify emerging trends before they're obvious
-- Update Scout-owned knowledge notes/findings under projects/scout-knowledge-lib/knowledge/
-- Append any notable insights to projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md
+- Update Scout-owned knowledge notes/findings under ${projectDir}/knowledge/
+- Append any notable insights to ${appDir}/agents/scout/workspace/digest/today.md
+- Use these absolute roots directly; never prepend them to the current working directory
 
 ${metricsBlock}
 

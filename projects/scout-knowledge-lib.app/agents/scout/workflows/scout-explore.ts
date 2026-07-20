@@ -4,13 +4,15 @@
  * Called by cron with a source-specific task (arXiv, HN, XHS, GitHub).
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
-import { existsSync, readFileSync } from "node:fs";
 import {
-  resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
+import {
+  inspectXhsCredential,
+  type XhsCredentialStatus,
+} from "../tools/xhs-credential.js";
 
 type TaskHandlerResult = Exclude<
   ProjectAppTaskHandlerResult,
@@ -21,15 +23,25 @@ export const name = "scout-explore";
 export const description =
   "Routine discovery — fetch and process a specific source.";
 
-export function buildExploreTask(task: string): string {
+const defaultAppDir = "/app/projects/scout-knowledge-lib.app";
+const defaultProjectDir = "/app/projects/scout-knowledge-lib";
+
+export function buildExploreTask(
+  task: string,
+  paths: { appDir: string; projectDir: string } = {
+    appDir: defaultAppDir,
+    projectDir: defaultProjectDir,
+  },
+): string {
   return `${task}
 
 Output contract:
-- Durable Scout notes and findings belong under \`projects/scout-knowledge-lib/knowledge/\`.
-- Source-level findings belong under \`projects/scout-knowledge-lib/knowledge/findings/\`.
-- Run-level drafts may go under \`projects/scout-knowledge-lib.app/agents/scout/workspace/findings/\`.
-- Append short user-facing highlights to \`projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md\` when useful.
+- Durable Scout notes and findings belong under \`${paths.projectDir}/knowledge/\`.
+- Source-level findings belong under \`${paths.projectDir}/knowledge/findings/\`.
+- Run-level drafts may go under \`${paths.appDir}/agents/scout/workspace/findings/\`.
+- Append short user-facing highlights to \`${paths.appDir}/agents/scout/workspace/digest/today.md\` when useful.
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
+- Treat these absolute roots as authoritative. Never prepend \`projects/scout-knowledge-lib\` to the current working directory.
 - Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
 - If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.
 - DATE RULE: Filename dates and internal Date/last_updated fields MUST NOT be later than today. Run \`date -u +%Y-%m-%d\` to get the current date. Never derive dates from scan numbers or arithmetic.
@@ -56,10 +68,7 @@ function reconciliationPacket(task: string): Record<string, unknown> {
   }
 }
 
-export function xhsWaitResult(
-  task: string,
-  tree: Record<string, unknown>,
-): TaskHandlerResult | null {
+function reconciliationSource(task: string): string {
   const packet = reconciliationPacket(task);
   const input =
     packet.input &&
@@ -67,62 +76,52 @@ export function xhsWaitResult(
     !Array.isArray(packet.input)
       ? (packet.input as Record<string, unknown>)
       : {};
-  if (String(input.source ?? "").toLowerCase() !== "xhs") return null;
+  return String(input.source ?? "").toLowerCase();
+}
 
-  const tasks =
-    tree.tasks && typeof tree.tasks === "object" && !Array.isArray(tree.tasks)
-      ? (tree.tasks as Record<string, Record<string, unknown>>)
-      : {};
-  const blocker = tasks["xhs-cookie-refresh-blocked"];
-  const blockerState = String(blocker?.state ?? blocker?.status ?? "missing");
-  if (["done", "accepted", "superseded", "cancelled"].includes(blockerState)) {
-    return null;
-  }
+export function xhsWaitResult(
+  task: string,
+  credential: XhsCredentialStatus,
+): TaskHandlerResult | null {
+  if (reconciliationSource(task) !== "xhs") return null;
+  if (credential.state === "ready") return null;
 
   const summary =
-    "XHS exploration is waiting for the existing cookie-refresh task; no source agent was started.";
+    "XHS exploration is waiting for the browser credential to become ready; no source agent was started.";
   return {
     state: "waiting",
     summary,
     evidence: [
-      `xhs-cookie-refresh-blocked is ${blockerState}`,
+      credential.reason,
+      ...credential.evidence,
       "The source lane remains gated before agent dispatch.",
     ],
     actions: [],
     conditions: [
       {
-        id: "task-done:xhs-cookie-refresh-blocked",
-        type: "project.task.reconciled",
-        subject: "task:xhs-cookie-refresh-blocked",
-        expected: "done",
+        id: "credential-ready:xhs",
+        type: "credential.ready",
+        subject: "credential:xhs",
+        expected: { field: "state", equals: "ready" },
       },
     ],
   };
 }
 
-function currentXhsWait(task: string): TaskHandlerResult | null {
-  const treePath = resolveTaskTreePath("/app/projects/scout-knowledge-lib.app");
-  if (!existsSync(treePath)) return null;
-  try {
-    return xhsWaitResult(
-      task,
-      JSON.parse(readFileSync(treePath, "utf-8")) as Record<string, unknown>,
-    );
-  } catch {
-    return null;
-  }
-}
-
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
+  const appDir = ctx.appDir ?? defaultAppDir;
+  const projectDir = ctx.projectDir ?? defaultProjectDir;
 
-  const waiting = currentXhsWait(ctx.task);
-  if (waiting) return ctx.done(waiting.summary, waiting);
+  if (reconciliationSource(ctx.task) === "xhs") {
+    const waiting = xhsWaitResult(ctx.task, inspectXhsCredential(appDir));
+    if (waiting) return ctx.done(waiting.summary, waiting);
+  }
 
   // The task comes from the workflow-backed handler config — source-specific instructions
   const task =
     ctx.task || "Explore sources and update the Scout knowledge library.";
-  const agentTask = buildExploreTask(task);
+  const agentTask = buildExploreTask(task, { appDir, projectDir });
 
   const result = await ctx.runAgent(agent, agentTask);
 

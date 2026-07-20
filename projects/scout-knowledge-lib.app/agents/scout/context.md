@@ -2,7 +2,7 @@
 
 ## Resources
 
-- Knowledge base: `projects/scout-knowledge-lib/knowledge/`
+- Knowledge base: `/app/projects/scout-knowledge-lib/knowledge/`
 - **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
   - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'`
     - ⚠️ MUST use `https://export.arxiv.org` — `http://` returns empty responses or 403. Never use `http://export.arxiv.org`.
@@ -11,10 +11,10 @@
   - Hacker News API: `curl -s 'https://hn.algolia.com/api/v1/search?query=...'`
   - GitHub API: `curl -s 'https://api.github.com/search/repositories?q=...'`
   - Reddit JSON: `curl -s 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
-- **XHS (xiaohongshu)**: Use `node projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs <command>`:
+- **XHS (xiaohongshu)**: Use `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs <command>`:
   - Before first use, ensure an XHS tab exists: `curl -s -X PUT 'http://localhost:9222/json/new?https://www.xiaohongshu.com/explore'` then wait 3s
   - Commands: `feed` (explore feed), `search <keyword>` (search notes), `read <url>` (read a note), `scroll` (load more)
-  - Example: `node projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
+  - Example: `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
 - ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
 - ✅ **ALWAYS include a `Source:` line** with the URL in every knowledge file you create or update. Example: `Source: https://arxiv.org/abs/2405.12345`. This is required for the sourced-artifacts metric.
 
@@ -57,6 +57,7 @@ BAD (will be flagged):
 ## Date Sanity Rule (CRITICAL)
 
 When creating findings files or setting `last_updated`/`Date` fields:
+
 - The filename date and internal dates MUST NOT be later than today's actual date.
 - Use `date -u +%Y-%m-%d` to get today's date if unsure. Never compute a date from arithmetic on paper IDs, scan numbers, or offsets.
 - If a source has a future publication date, use today's date as the filename date and note the source's claimed date inside the file.
@@ -64,7 +65,7 @@ When creating findings files or setting `last_updated`/`Date` fields:
 
 ## Knowledge File Safety
 
-- Durable Scout knowledge belongs in `projects/scout-knowledge-lib/knowledge/` or `projects/scout-knowledge-lib/reports/`.
+- Durable Scout knowledge belongs in `/app/projects/scout-knowledge-lib/knowledge/` or `/app/projects/scout-knowledge-lib/reports/`.
 - Before creating a new file, search the Scout library by topic, title, source URL, arXiv id, repo name, or post id so existing notes are updated instead of duplicated.
 - To correct an existing note, **read() first**, then use **edit()** with a narrow diff. Never replace a whole note with unrelated new material.
 - Legacy KE files under `shared/knowledge/entries/` are being merged into Scout-owned reports and notes. Do not create new legacy KE files.
@@ -78,12 +79,13 @@ When creating findings files or setting `last_updated`/`Date` fields:
 
 ## Output Locations
 
-- Findings: `projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
-- Posts: `projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
-- Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
-- Scout reports: `projects/scout-knowledge-lib/reports/`
+- Findings: `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
+- Posts: `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
+- Scout knowledge library: `/app/projects/scout-knowledge-lib/knowledge/`
+- Scout reports: `/app/projects/scout-knowledge-lib/reports/`
 - Use these project paths for durable work; do not rely on legacy agent paths.
-- Before appending to `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
+- Before appending to `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
+- Treat these absolute roots as authoritative. Never prepend them to the current working directory or create another `projects/scout-knowledge-lib/` subtree.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
 
 ## Scout Second Brain Practices (adopted from scout-second-brain-learning)

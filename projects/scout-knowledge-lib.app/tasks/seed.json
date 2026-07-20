@@ -12,33 +12,14 @@
       "id": "ongoing-research",
       "parent_id": "project",
       "owner": "scout"
+    },
+    "library-operations": {
+      "id": "library-operations",
+      "parent_id": "project",
+      "owner": "scout"
     }
   },
-  "resources": {
-    "library-maintenance": {
-      "metadata": {
-        "id": "library-maintenance",
-        "generation": 1,
-        "resourceVersion": 1
-      },
-      "spec": {
-        "parentId": "project",
-        "outcome": "Keep the Scout knowledge library coherent, source-grounded, navigable, and organized around its most useful next maintenance step.",
-        "acceptance": [
-          "Scout performs one useful maintenance step or records an evidence-backed no-op without creating duplicate project work."
-        ],
-        "mode": "maintain",
-        "owner": "scout",
-        "workflow": "knowledge-planner",
-        "priority": "P1"
-      },
-      "status": {
-        "observedGeneration": 0,
-        "phase": "pending",
-        "updatedAt": "2026-07-20T00:00:00.000Z"
-      }
-    }
-  },
+  "resources": {},
   "conditions": {},
   "attempts": {},
   "taskTriggers": {},

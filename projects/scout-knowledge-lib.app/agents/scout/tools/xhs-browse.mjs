@@ -3,54 +3,71 @@
  * XHS (小红书) Browser Tool
  * Uses Chrome DevTools Protocol to browse xiaohongshu.com
  * Chrome must be running visible (non-headless) on DISPLAY=:99 with --remote-debugging-port=9222
- * 
+ *
  * Commands:
+ *   status                - Check whether the browser session can read XHS
  *   feed                  - Get explore feed items
  *   search <keyword>      - Search for notes
  *   read <url>            - Read a specific note (must include xsec_token)
  *   scroll                - Scroll feed and get more items
  */
 
-import http from 'node:http';
+import http from "node:http";
 
 const CDP_PORT = 9222;
-const CDP_HOST = 'localhost';
+const CDP_HOST = "localhost";
 
 // --- CDP helpers ---
 
 function cdpGet(path) {
   return new Promise((resolve, reject) => {
-    http.get(`http://${CDP_HOST}:${CDP_PORT}${path}`, (res) => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(d)); }
-        catch (e) { reject(new Error(`Bad JSON from ${path}: ${d.slice(0, 200)}`)); }
-      });
-    }).on('error', reject);
+    http
+      .get(`http://${CDP_HOST}:${CDP_PORT}${path}`, (res) => {
+        let d = "";
+        res.on("data", (c) => (d += c));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(d));
+          } catch (e) {
+            reject(new Error(`Bad JSON from ${path}: ${d.slice(0, 200)}`));
+          }
+        });
+      })
+      .on("error", reject);
   });
 }
 
 function cdpPut(path) {
   return new Promise((resolve, reject) => {
-    const req = http.request(`http://${CDP_HOST}:${CDP_PORT}${path}`, { method: 'PUT' }, (res) => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(d)); }
-        catch (e) { reject(new Error(`Bad JSON from PUT ${path}: ${d.slice(0, 200)}`)); }
-      });
-    });
-    req.on('error', reject);
+    const req = http.request(
+      `http://${CDP_HOST}:${CDP_PORT}${path}`,
+      { method: "PUT" },
+      (res) => {
+        let d = "";
+        res.on("data", (c) => (d += c));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(d));
+          } catch (e) {
+            reject(new Error(`Bad JSON from PUT ${path}: ${d.slice(0, 200)}`));
+          }
+        });
+      },
+    );
+    req.on("error", reject);
     req.end();
   });
 }
 
 async function getXHSTab() {
-  const tabs = await cdpGet('/json/list');
-  const xhsTab = tabs.find(t => t.url.includes('xiaohongshu.com') && t.type === 'page');
+  const tabs = await cdpGet("/json/list");
+  const xhsTab = tabs.find(
+    (t) => t.url.includes("xiaohongshu.com") && t.type === "page",
+  );
   if (xhsTab) return xhsTab;
-  throw new Error('No XHS tab found. Chrome must be running with xiaohongshu.com open.');
+  throw new Error(
+    "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
+  );
 }
 
 // Simple CDP client using pending callbacks map
@@ -67,9 +84,14 @@ class CDPClient {
       this.ws = new WebSocket(this.wsUrl);
       this.ws.onopen = () => {
         this.ws.onmessage = (evt) => {
-          const raw = typeof evt.data === 'string' ? evt.data : evt.data.toString();
+          const raw =
+            typeof evt.data === "string" ? evt.data : evt.data.toString();
           let msg;
-          try { msg = JSON.parse(raw); } catch { return; }
+          try {
+            msg = JSON.parse(raw);
+          } catch {
+            return;
+          }
           if (msg.id != null && this.pending.has(msg.id)) {
             const cb = this.pending.get(msg.id);
             this.pending.delete(msg.id);
@@ -79,8 +101,8 @@ class CDPClient {
         };
         resolve();
       };
-      this.ws.onerror = (e) => reject(new Error('WebSocket failed'));
-      setTimeout(() => reject(new Error('WebSocket connect timeout')), 5000);
+      this.ws.onerror = (e) => reject(new Error("WebSocket failed"));
+      setTimeout(() => reject(new Error("WebSocket connect timeout")), 5000);
     });
   }
 
@@ -99,21 +121,23 @@ class CDPClient {
   }
 
   async evaluate(expression) {
-    const res = await this.send('Runtime.evaluate', {
+    const res = await this.send("Runtime.evaluate", {
       expression,
       returnByValue: true,
       awaitPromise: true,
     });
     if (res.exceptionDetails) {
-      throw new Error(`JS: ${res.exceptionDetails.text || JSON.stringify(res.exceptionDetails)}`);
+      throw new Error(
+        `JS: ${res.exceptionDetails.text || JSON.stringify(res.exceptionDetails)}`,
+      );
     }
     return res.result.value;
   }
 
   async navigate(url) {
-    await this.send('Page.enable');
-    await this.send('Page.navigate', { url });
-    await new Promise(r => setTimeout(r, 4000));
+    await this.send("Page.enable");
+    await this.send("Page.navigate", { url });
+    await new Promise((r) => setTimeout(r, 4000));
   }
 
   close() {
@@ -153,45 +177,74 @@ const EXTRACT_ITEMS_JS = `
 `;
 
 async function handleFeed(cdp) {
-  const currentUrl = await cdp.evaluate('window.location.href');
-  if (!currentUrl.includes('/explore')) {
-    await cdp.navigate('https://www.xiaohongshu.com/explore');
+  const currentUrl = await cdp.evaluate("window.location.href");
+  if (!currentUrl.includes("/explore")) {
+    await cdp.navigate("https://www.xiaohongshu.com/explore");
   }
   return await cdp.evaluate(EXTRACT_ITEMS_JS);
 }
 
+async function handleStatus(cdp) {
+  const result = await cdp.evaluate(`
+    (function() {
+      const body = document.body?.innerText || '';
+      const noteCount = document.querySelectorAll(
+        'section.note-item, a[href*="xsec_token"], a[href*="/explore/"]'
+      ).length;
+      const loginWall = /扫码登录|手机号登录|登录后查看更多|请先登录/.test(body);
+      const ready = noteCount > 0 && !loginWall;
+      return {
+        ready,
+        url: window.location.href,
+        noteCount,
+        loginWall,
+        reason: ready
+          ? 'source content is readable'
+          : (loginWall ? 'XHS browser login is required' : 'no readable XHS source content found')
+      };
+    })()
+  `);
+  return result;
+}
+
 async function handleScroll(cdp) {
-  await cdp.evaluate('window.scrollBy(0, 800)');
-  await new Promise(r => setTimeout(r, 2000));
+  await cdp.evaluate("window.scrollBy(0, 800)");
+  await new Promise((r) => setTimeout(r, 2000));
   return await handleFeed(cdp);
 }
 
 async function handleSearch(cdp, keyword) {
-  if (!keyword) throw new Error('Search keyword required');
+  if (!keyword) throw new Error("Search keyword required");
   const encoded = encodeURIComponent(keyword);
-  const url = 'https://www.xiaohongshu.com/search_result?keyword=' + encoded + '&source=web_search_result_notes';
+  const url =
+    "https://www.xiaohongshu.com/search_result?keyword=" +
+    encoded +
+    "&source=web_search_result_notes";
   await cdp.navigate(url);
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
   return await cdp.evaluate(EXTRACT_ITEMS_JS);
 }
 
 async function handleRead(cdp, urlOrId) {
-  if (!urlOrId) throw new Error('URL required. Use the full link from feed/search (includes xsec_token).');
+  if (!urlOrId)
+    throw new Error(
+      "URL required. Use the full link from feed/search (includes xsec_token).",
+    );
 
   let url = urlOrId;
   // If just an ID without token, warn but try anyway
-  if (!url.startsWith('http')) {
-    url = 'https://www.xiaohongshu.com/explore/' + url;
+  if (!url.startsWith("http")) {
+    url = "https://www.xiaohongshu.com/explore/" + url;
   }
 
   // Open a new tab for the note — XHS renders note detail only on direct page load with xsec_token
-  const newTab = await cdpPut('/json/new?' + url);
+  const newTab = await cdpPut("/json/new?" + url);
   const tabCdp = new CDPClient(newTab.webSocketDebuggerUrl);
   await tabCdp.connect();
-  await tabCdp.send('Runtime.enable');
+  await tabCdp.send("Runtime.enable");
 
   // Wait for page to fully load
-  await new Promise(r => setTimeout(r, 6000));
+  await new Promise((r) => setTimeout(r, 6000));
 
   const result = await tabCdp.evaluate(`
     (function() {
@@ -304,26 +357,35 @@ async function handleRead(cdp, urlOrId) {
 
   // Close the tab
   try {
-    await tabCdp.send('Page.close');
-  } catch (e) { /* ignore */ }
+    await tabCdp.send("Page.close");
+  } catch (e) {
+    /* ignore */
+  }
   tabCdp.close();
 
   return result;
 }
-
 
 // --- Main ---
 
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
-  const param = args.slice(1).join(' ');
+  const param = args.slice(1).join(" ");
 
   if (!command) {
-    console.log(JSON.stringify({
-      status: 'help',
-      commands: ['feed', 'search <keyword>', 'read <full_url_from_feed>', 'scroll']
-    }));
+    console.log(
+      JSON.stringify({
+        status: "help",
+        commands: [
+          "status",
+          "feed",
+          "search <keyword>",
+          "read <full_url_from_feed>",
+          "scroll",
+        ],
+      }),
+    );
     process.exit(0);
   }
 
@@ -332,31 +394,38 @@ async function main() {
     const tab = await getXHSTab();
     cdp = new CDPClient(tab.webSocketDebuggerUrl);
     await cdp.connect();
-    await cdp.send('Runtime.enable');
+    await cdp.send("Runtime.enable");
 
     let result;
     switch (command) {
-      case 'feed':
+      case "status":
+        result = await handleStatus(cdp);
+        break;
+      case "feed":
         result = await handleFeed(cdp);
         break;
-      case 'search':
+      case "search":
         result = await handleSearch(cdp, param);
         break;
-      case 'read':
+      case "read":
         result = await handleRead(cdp, param);
         break;
-      case 'scroll':
+      case "scroll":
         result = await handleScroll(cdp);
         break;
       default:
-        throw new Error('Unknown command: ' + command + '. Use: feed, search, read, scroll');
+        throw new Error(
+          "Unknown command: " +
+            command +
+            ". Use: status, feed, search, read, scroll",
+        );
     }
 
-    console.log(JSON.stringify({ status: 'success', data: result }, null, 2));
+    console.log(JSON.stringify({ status: "success", data: result }, null, 2));
     cdp.close();
     process.exit(0);
   } catch (err) {
-    console.error(JSON.stringify({ status: 'error', error: err.message }));
+    console.error(JSON.stringify({ status: "error", error: err.message }));
     if (cdp) cdp.close();
     process.exit(1);
   }
