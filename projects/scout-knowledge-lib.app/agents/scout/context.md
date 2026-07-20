@@ -1,97 +1,47 @@
 # Scout Context
 
-## Resources
+## Source Access
 
-- Knowledge base: `/app/projects/scout-knowledge-lib/knowledge/`
-- **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
-  - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'`
-    - ⚠️ MUST use `https://export.arxiv.org` — `http://` returns empty responses or 403. Never use `http://export.arxiv.org`.
-    - Use `-L` flag (follows redirects). `sortOrder=descending` works, `sortOrder=desc` returns HTTP 400.
-  - For arXiv-derived findings, capture and inspect the API `summary`/abstract text before writing `Summary` or `Implication`; title-only inference is not sufficient.
-  - Hacker News API: `curl -s 'https://hn.algolia.com/api/v1/search?query=...'`
-  - GitHub API: `curl -s 'https://api.github.com/search/repositories?q=...'`
-  - Reddit JSON: `curl -s 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
-- **XHS (xiaohongshu)**: Use `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs <command>`:
-  - Before first use, ensure an XHS tab exists: `curl -s -X PUT 'http://localhost:9222/json/new?https://www.xiaohongshu.com/explore'` then wait 3s
-  - Commands: `feed` (explore feed), `search <keyword>` (search notes), `read <url>` (read a note), `scroll` (load more)
-  - Example: `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
-- ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
-- ✅ **ALWAYS include a `Source:` line** with the URL in every knowledge file you create or update. Example: `Source: https://arxiv.org/abs/2405.12345`. This is required for the sourced-artifacts metric.
+- arXiv: use `https://export.arxiv.org/api/query` with redirects enabled. Read
+  the abstract before writing a summary or implication.
+- Hacker News: use `https://hn.algolia.com/api/v1/search`.
+- GitHub: use `https://api.github.com/search/repositories`.
+- XHS: use
+  `node /app/projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs`
+  with `feed`, `search <keyword>`, `read <url>`, or `scroll`.
 
-## REQUIRED: Check Shared Manifest
+Use real current source data. Never simulate or mock a source. Preserve a URL,
+repository, paper ID, post ID, or other stable source reference for claims. If
+the assigned source cannot be checked, report that exact fact rather than using
+a different source.
 
-At the START of every session, run:
+## Output
 
-```bash
-bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
-```
+- Durable knowledge: `/app/projects/scout-knowledge-lib/knowledge/`
+- Flat dated findings:
+  `/app/projects/scout-knowledge-lib/knowledge/findings/YYYY-MM-DD-<topic>.md`
+- Durable maintenance reports: `/app/projects/scout-knowledge-lib/reports/`
+- Working files:
+  `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/`
+- Daily accumulator:
+  `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`
 
-This finds prior work related to your current project. Read any matches before starting.
+Search by topic, title, source URL, paper ID, repository, or post ID before
+creating a file. Update an existing note when it already covers the topic. Use
+the absolute roots above and never create another `projects/scout-knowledge-lib`
+tree beneath the domain workspace.
 
-- Design docs: `projects/may-agent.app/docs/2a-design/`
-- System metrics: use `query_db` tool to query metrics table
-- Common sense: `shared/common-sense.md`
+## Safety And Verification
 
-## Verification Evidence Format (EXP-267)
+- Filename dates and explicit `date` or `last_updated` values cannot be later
+  than the actual current date. Use `date -u +%Y-%m-%d` when unsure.
+- Read a file before changing it; make a narrow edit; read it again afterward.
+- Keep `<ai_context>` preambles where the library already uses them.
+- Do not create legacy KE files under `/app/shared/knowledge/entries/`.
+- Before appending to the digest, check it for the same title or source URL.
+- Verification evidence must name the action and concrete result, for example:
+  `Step 3: read(path) showed the new source reference`.
 
-When calling finish(success), each verification_evidence item MUST follow this format:
-"Step N: <tool>(<key_arg>) showed <specific_result>"
-
-## Finishing exploratory research sessions
-
-- For research/exploration tasks, avoid repeated `finish(success)` retries after a guard rejection. If the guard expects a deliverable, write a small findings/report file promptly, then `read()` it back before the final finish.
-- If no file is warranted, keep the finish summary narrowly analytical and ensure verification evidence is specific and formatted exactly.
-
-Examples:
-
-- "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
-- "Step 8: bash(bun test) exit code 0, 14 tests passed"
-- "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
-
-BAD (will be flagged):
-
-- "Tests pass" (no step number, no tool reference)
-- "File was updated successfully" (no specifics)
-- "Verified the changes work" (unfalsifiable)
-
-## Date Sanity Rule (CRITICAL)
-
-When creating findings files or setting `last_updated`/`Date` fields:
-
-- The filename date and internal dates MUST NOT be later than today's actual date.
-- Use `date -u +%Y-%m-%d` to get today's date if unsure. Never compute a date from arithmetic on paper IDs, scan numbers, or offsets.
-- If a source has a future publication date, use today's date as the filename date and note the source's claimed date inside the file.
-- Violation of this rule creates impossible-future files that require manual repair.
-
-## Knowledge File Safety
-
-- Durable Scout knowledge belongs in `/app/projects/scout-knowledge-lib/knowledge/` or `/app/projects/scout-knowledge-lib/reports/`.
-- Before creating a new file, search the Scout library by topic, title, source URL, arXiv id, repo name, or post id so existing notes are updated instead of duplicated.
-- To correct an existing note, **read() first**, then use **edit()** with a narrow diff. Never replace a whole note with unrelated new material.
-- Legacy KE files under `shared/knowledge/entries/` are being merged into Scout-owned reports and notes. Do not create new legacy KE files.
-
-## How to Discover Work
-
-1. Read `projects/scout-knowledge-lib.app/agents/scout/heartbeat.md` for current priorities
-2. Check if any of your findings are stale (>7 days)
-3. Look at system problems (metrics, events) for research topics
-4. Browse XHS for trending AI agent discussions
-
-## Output Locations
-
-- Findings: `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
-- Posts: `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
-- Scout knowledge library: `/app/projects/scout-knowledge-lib/knowledge/`
-- Scout reports: `/app/projects/scout-knowledge-lib/reports/`
-- Use these project paths for durable work; do not rely on legacy agent paths.
-- Before appending to `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
-- Treat these absolute roots as authoritative. Never prepend them to the current working directory or create another `projects/scout-knowledge-lib/` subtree.
-- XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
-
-## Scout Second Brain Practices (adopted from scout-second-brain-learning)
-
-- **AI-First Preambles**: Every knowledge artifact must start with an `<ai_context>` block containing a 1-2 sentence summary and triggers for when other agents should reference it. This enables fast relevance scanning without full-file reads.
-- **In-place Updates**: When new information arrives on an existing topic, append/modify the existing note via edit() rather than creating `_v2` or date-stamped duplicates. One file per topic = single source of truth.
-- **Source-Grounded Claims**: Major claims, trends, or patterns must include a source reference (URL, repo link, or post ID) so insights remain traceable and don't compound hallucinations.
-
-- Convention: All fork/call delegations must follow contracts/delegation-memo-convention.md (goal, context_files, success_criteria, scope_boundary required).
+Hosted workflows may include bounded task, metric, alert, or experience context
+in the request. Treat it as evidence for the current run. Direct Scout use does
+not require task, event, metric, or database infrastructure.

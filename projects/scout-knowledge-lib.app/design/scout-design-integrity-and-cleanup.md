@@ -1,6 +1,7 @@
 # Scout Design Integrity and Cleanup
 
-**Status:** Draft for review
+**Status:** Approved and implemented in source; live runtime verification is
+recorded separately
 
 **Reviewed:** 2026-07-20
 
@@ -30,11 +31,12 @@ authority drift and stale surfaces around the correct architecture:
 
 1. the documented target layout contradicts both Scout's current instructions
    and the real library shape;
-2. automatic `workflow-blocked` owner events are turned into a second
-   maintenance task, creating a failed recovery loop beside May's existing task
-   attention state;
-3. Scout's direct context still requires missing legacy resources and direct
-   database context despite the intended agent/infra boundary;
+2. task-bound workflow failures are both recorded on the failed task and emitted
+   as generic `workflow-blocked` owner requests, creating two recovery paths for
+   one failure;
+3. Scout's default context still requires missing legacy resources and
+   infrastructure context that its current research responsibilities do not
+   use;
 4. the daily digest can treat a header-only file as content and can overwrite a
    same-day archive on retry;
 5. implemented proposals still read as active implementation plans and contain
@@ -189,16 +191,23 @@ Retire `discussion.md` as a current surface. It is a dated operational log with
 obsolete project status, old digest paths, and already-resolved audit findings.
 Preserve any unique evidence in a dated report before removal.
 
-Use explicit status fields:
+Keep only durable status in the normative design:
 
 ```text
 design status:       accepted / draft
 source status:       implemented and tested
-runtime status:      loaded / not verified
-live health:         healthy / attention with named tasks
 ```
 
-Do not use “implemented” as a synonym for all four.
+Record deployment and operation separately in the UI or a dated verification
+report:
+
+```text
+runtime status:      loaded / not verified, with revision and observed time
+live health:         healthy / attention, with named tasks and observed time
+```
+
+Do not use “implemented” as a synonym for deployed or currently healthy, and do
+not make a normative design page carry mutable live status.
 
 ### 2. Adopt the current minimal library layout
 
@@ -239,20 +248,35 @@ document to this one shape.
 
 ### 3. Keep runtime failures in their original task
 
-Do not turn infrastructure-generated `workflow-blocked` or task-recovery owner
-events into `library-maintenance` work.
+When a workflow runs as a task handler, the generic task controller already owns
+its failure, attention state, retry, and repaired-binding recovery. In that
+case the workflow runner must not also emit a generic
+`project.owner.requested(reason=workflow-blocked)` event. Keep that event only
+for standalone project workflows that have no task resource carrying their
+failure. The task controller must pass explicit task-binding metadata into the
+workflow runner; the runner must not infer this boundary by parsing workflow
+task text. This is a May runtime convention, not a Scout-specific exception.
 
-Allow `library-maintenance` only for intentional domain review reasons, such as:
+As a defensive app boundary, map only intentional Scout owner-review reasons to
+`library-maintenance`:
 
-- daily `experience-review`;
+- `experience-review`;
 - `library-health-signal`;
-- manual library review and repair-index actions;
-- translated project comments; and
-- an explicit human owner request.
+- `project-comment`;
+- `manual-library-review`;
+- `repair-index`.
 
-Remove the generic `project.tick` translation unless a known Scout producer and
-non-duplicated purpose are documented. The daily owner-review schedule already
-owns periodic review.
+Human entry points must translate their intent to one of these named reasons,
+normally `manual-library-review`. Do not infer human origin from `owner` or
+`source` fields on the canonical event envelope; those fields do not by
+themselves prove who initiated the request.
+
+Do not turn infrastructure-generated `workflow-blocked`, handler-unavailable,
+or task-recovery owner events into `library-maintenance` work.
+
+Remove the generic `project.tick` translation. No current Scout producer needs
+it, and the daily owner-review schedule already owns periodic review. Add a
+specific semantic event later if another recurring responsibility is proven.
 
 Workflow failure remains visible on the source task. A later source event,
 targeted wake after a fix, or repaired workflow reload retries that task through
@@ -262,14 +286,21 @@ recovery with `unblock-task`.
 This preserves May's simple rule: the failed resource tells the truth about its
 own execution.
 
-### 4. Restore the intended agent/infra boundary
+### 4. Keep the agent core independent and its default capability minimal
 
-Keep Scout independently useful with source tools and filesystem context. The
-agent itself should not require task, event, metric, or database context APIs.
+The agent/runtime boundary does not forbid database, metric, task, or event
+access through a tool. It forbids the neutral agent execution core from
+importing or requiring EventBus, SQLite, scheduling, or task infrastructure.
+
+Keep Scout independently useful with source tools and filesystem context. Its
+default capability should not require infrastructure context that ordinary
+research does not use.
 
 For Scout:
 
-- remove `query_db` from the default agent tool list;
+- remove `query_db` from the default Scout tool list after verifying no current
+  direct Scout responsibility requires it; this is least-privilege cleanup, not
+  an architectural prohibition;
 - remove direct metric/database instructions from `AGENTS.md` and `context.md`;
 - let app workflows prepare bounded task, metric, alert, or reconciliation
   context before `runAgent` when a hosted workflow needs it;
@@ -277,6 +308,10 @@ For Scout:
 - keep source-access instructions, source-grounding rules, verification
   evidence, date sanity, and read-after-write rules; and
 - define the model only in `agent.json`, not duplicated in Markdown.
+
+If a future independently useful Scout capability genuinely needs database
+observation, expose it deliberately through a tool or workflow packet without
+changing the neutral agent core.
 
 For a source-specific run, failure to access that source must not be replaced by
 research from another source. Record the exact failure or supported no-op for
@@ -290,10 +325,16 @@ form a dormant second operating model. There is no current action that wakes
 it, and the runtime refinement names seven standing responsibilities without
 it.
 
-Remove this surface for now. Cross-source synthesis remains Scout judgment and
-can happen through an intentional owner review or a finite task. Add a reusable
-synthesis workflow again only after a real repeated trigger and result contract
-are demonstrated.
+Remove this surface for now, but preserve the learned synthesis process. Move
+its useful checklist—read recent findings, connect sources, identify one
+non-obvious implication, update canonical knowledge, and verify output—into the
+daily owner review. Cross-source synthesis can then happen through that review
+or a finite task without a standing heartbeat identity. The checklist is an
+available judgment aid, not mandatory synthesis work on every daily review.
+
+If repeated finite synthesis tasks later demonstrate a stable process and
+result contract, extract that process into a small Scout-owned synthesis
+workflow. Do not restore the metrics/projects/inbox-loading heartbeat wrapper.
 
 This is simpler than keeping a disabled 30-minute legacy schedule as
 documentation of a possibility.
@@ -326,19 +367,34 @@ Remove the unenforced “wait seven clean days” gate and the stale
 deterministic safety boundary: incomplete history is not learning evidence.
 
 Keep schedule tuning and workflow changes as Scout judgment. Enforce only the
-mechanical part that code can know: an experience review may create at most one
-new finite task. Do not add semantic clustering or a learning registry.
+mechanical part that code can know: when the trigger is `experience-review`, the
+planner result may contain at most one `create-task` action, and that task must
+be finite `achieve` work. Reject a result with multiple new tasks or a new
+`maintain` task before returning it to the generic reconciler. Other valid
+update/close actions remain subject to the normal task contract. Apply this
+policy to the shared admission contract's normalized action: an omitted mode is
+the normal `achieve` default and must not be rejected or separately required in
+the model response.
+
+Do not add semantic clustering or a learning registry.
 
 ### 8. Make daily digest retry-safe enough
 
-Add focused digest tests and fix two deterministic errors:
+Add focused digest tests and use one deterministic file rule:
 
-- a file containing only the generated heading is an empty accumulator; and
-- a retry on the same date must never overwrite an existing archive.
+- a file containing only the generated heading is an empty accumulator and
+  produces no message;
+- before delivery, compare the normalized finding body after removing the
+  generated heading; if it already matches the existing same-day archive,
+  treat the run as an idempotent no-op and reset the accumulator safely;
+- if the same-day archive exists with different content, write the next
+  immutable numbered archive such as `YYYY-MM-DD-2.md`; and
+- never overwrite an existing archive.
 
 Document delivery as at-least-once unless the event system supplies an explicit
-idempotency key. Do not invent a second delivery database. A unique archive
-name or explicit same-day no-overwrite rule is sufficient for file integrity.
+idempotency key. A crash after emitting the message but before archiving may
+still duplicate delivery; that is an explicit transport property, not a reason
+to invent a second delivery database.
 
 ### 9. Keep durable pages free of volatile runtime status
 
@@ -370,28 +426,35 @@ ground.
 
 ### Phase 1 — Restore truthful execution
 
-1. Filter infrastructure-generated workflow failure/recovery owner requests out
-   of `library-maintenance`.
-2. Add field-specific source-result rejection evidence and verify the GitHub
+1. Pass explicit task-binding metadata from the task controller and make
+   task-bound workflow failure use only that controller's attention and recovery
+   path; keep standalone workflow owner wakes unchanged.
+2. Admit only intentional Scout owner-review reasons and remove the generic
+   `project.tick` translation.
+3. Add field-specific source-result rejection evidence and verify the GitHub
    lane can converge or fail clearly.
-3. Fix and test header-only and same-day digest behavior.
-4. Reload the app, wake the affected tasks once, and confirm neither failure
+4. Fix and test header-only, identical-retry, and distinct same-day digest
+   behavior.
+5. Enforce at most one finite task from an experience review.
+6. Reload the app, wake the affected tasks once, and confirm neither failure
    creates a second maintenance failure.
 
 ### Phase 2 — Establish one clear contract
 
-1. Fix the main design's May links and status vocabulary.
+1. Fix the main design's May links and keep volatile runtime/live health in a
+   dated verification report or UI.
 2. Replace the aspirational taxonomy with the current minimal layout.
 3. Align `AGENTS.md`, `context.md`, the planner prompt, task README, and durable
    library landing pages.
 4. Mark implemented proposals as historical rationale instead of active plans.
-5. retire `discussion.md` after preserving any unique evidence.
+5. Retire `discussion.md` after preserving any unique evidence.
 
 ### Phase 3 — Remove dormant complexity
 
-1. Remove the disabled heartbeat schedule, resolver branch, workflow, and
-   heartbeat instructions.
-2. Remove the redundant direct database-context dependency from Scout.
+1. Preserve the synthesis checklist in owner review, then remove the disabled
+   heartbeat schedule, resolver branch, workflow, and heartbeat instructions.
+2. Remove the redundant default database-context dependency from Scout while
+   keeping tool-mediated database access an allowed future capability.
 3. Retire or rename `scout.knowledge-practice-loaded`; it currently checks for
    strings in an instruction file, not whether Scout actually loaded or ran.
    Existing agent-config health already detects invalid agent configuration.
@@ -405,19 +468,23 @@ prerequisite for fixing Scout runtime integrity.
 
 The cleanup is complete when:
 
-1. the main Scout design links current May authorities and has separate source,
-   runtime, and live-health status;
+1. the main Scout design links current May authorities, states durable design
+   and source status, and points to dated runtime/live-health evidence;
 2. one layout convention is shared by the design, agent instructions, current
    library, planner, and observer;
-3. a source workflow failure leaves only the source task in `attention` and
-   does not automatically fail `library-maintenance`;
-4. direct Scout research does not require DB, metrics, task, or event APIs;
+3. a task-bound source workflow failure leaves only the source task in
+   `attention`; standalone workflows may still request owner review;
+4. direct Scout research does not require DB, metrics, task, or event APIs by
+   default, while deliberate tool-mediated access remains allowed;
 5. source-specific work cannot substitute a different source;
-6. the dormant heartbeat task surface is absent;
+6. the dormant heartbeat task surface is absent and its useful synthesis
+   checklist remains in the owner-review process;
 7. source evidence claims match what code actually proves;
-8. incomplete experience packets remain advisory-free and a review creates at
-   most one new finite task;
-9. digest no-op and same-day retry tests pass without archive overwrite;
+8. incomplete experience packets remain advisory-free and code rejects an
+   experience review that creates more than one finite task or any new maintain
+   task;
+9. digest header-only, identical-retry, and distinct same-day tests pass without
+   archive overwrite;
 10. durable navigation pages contain no live credential/task status; and
 11. the live task projection is healthy after one representative wake per
     standing responsibility.
@@ -438,7 +505,9 @@ This cleanup does not:
 ## Recommendation
 
 Approve Phases 1 and 2 as the closeout. They fix actual integrity failures and
-make the mental model smaller. Review Phase 3 immediately afterward; the
-dormant heartbeat and direct database context are legacy capabilities, not
-requirements of the current Scout app. Keep the supporting-agent disposition
-separate so cleanup does not become an unsafe content migration.
+make the mental model smaller. Approve Phase 3 after preserving the synthesis
+checklist: the dormant heartbeat wrapper and default database context are
+legacy surfaces, while reusable synthesis experience and deliberate
+tool-mediated database access remain valid capabilities. Keep the
+supporting-agent disposition separate so cleanup does not become an unsafe
+content migration.

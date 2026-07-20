@@ -28,3 +28,8 @@ fake `human` agent. Workflows belong to Scout under
 
 See `design/scout-knowledge-library-process.md` for the complete Scout-specific
 task, Condition, path, and cutover model.
+
+Task-bound workflow failures remain on the failed task. They are not translated
+into owner maintenance work. The owner planner admits only the named reasons
+`experience-review`, `library-health-signal`, `project-comment`,
+`manual-library-review`, and `repair-index`.

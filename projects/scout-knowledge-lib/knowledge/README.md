@@ -31,11 +31,5 @@ Prefer updating an existing durable note over creating a new top-level file.
 When a raw finding is useful, either mark it covered by an existing note or
 absorb the durable part into the right note.
 
-## Current Cleanup Focus
-
-- Reduce `Not yet sourced` entries in `INDEX.md`.
-- Fix or explain future-dated library references.
-- Continue merging useful `/app/shared/knowledge` material into this library and
-  removing replaced source files.
-- Move reports into `reports/health`, `reports/merge`, `reports/triage`,
-  `reports/migration`, or `reports/operations` in small verified batches.
+Current task, credential, backlog, and cleanup status belongs in the project UI
+or a dated report, not on this durable landing page.

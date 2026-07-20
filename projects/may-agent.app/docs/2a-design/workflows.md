@@ -269,9 +269,10 @@ sessions, status, and terminal summary or reason. Terminal outcomes are:
 A local blocked result is not automatically a cross-owner escalation. The
 top-level caller or runtime boundary decides whether to record attention or
 create an explicit escalation. For a task-bound workflow, `blocked` records a
-failed attempt and task attention; only an admitted `needs-owner` task result
-causes sequential owner handoff. Nested workflows return their result to their
-parent synchronously.
+failed attempt and task attention; the task controller passes explicit binding
+metadata and the workflow runner does not infer binding from prompt text. Only
+an admitted `needs-owner` task result causes sequential owner handoff. Nested
+workflows return their result to their parent synchronously.
 
 Resume creates a new run linked to the prior run. It must resolve the same
 workflow identity deliberately. If the original content hash is unavailable,

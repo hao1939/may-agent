@@ -27,6 +27,13 @@ function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
 }
 
 const scoutSources = new Set(["arxiv", "hn", "xhs", "github"]);
+const ownerReviewReasons = new Set([
+  "experience-review",
+  "library-health-signal",
+  "project-comment",
+  "manual-library-review",
+  "repair-index",
+]);
 
 export function resolveScoutTask(
   event: Record<string, unknown>,
@@ -69,23 +76,6 @@ export function resolveScoutTask(
         outputs: [`${appDir}/agents/scout/workspace/digest`],
         priority: "P1",
       };
-    case "scout.heartbeat":
-      return {
-        id: "cross-source-synthesis",
-        parentId: "ongoing-research",
-        outcome:
-          "Continuously connect source-grounded patterns across arXiv, HN, XHS, and GitHub into reusable knowledge.",
-        acceptance: [
-          "The workflow records a useful synthesis or a justified no-op without duplicating routine source exploration.",
-        ],
-        mode: "maintain",
-        workflow: "scout-heartbeat",
-        outputs: [
-          `${projectDir}/knowledge`,
-          `${appDir}/agents/scout/workspace/digest/today.md`,
-        ],
-        priority: "P2",
-      };
     case "project.library_health.tick":
       return {
         id: "runtime/library-health-observer",
@@ -100,7 +90,9 @@ export function resolveScoutTask(
         outputs: [`${appDir}/.state/library-health-packets.jsonl`],
         priority: "P1",
       };
-    case "project.owner.requested":
+    case "project.owner.requested": {
+      const reason = String(details.reason ?? "");
+      if (!ownerReviewReasons.has(reason)) return null;
       return {
         id: "library-maintenance",
         parentId: "library-operations",
@@ -114,6 +106,7 @@ export function resolveScoutTask(
         outputs: [`${projectDir}/knowledge`, `${projectDir}/reports`],
         priority: "P1",
       };
+    }
     default:
       return null;
   }
@@ -125,12 +118,6 @@ async function routeScoutEvent(
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
     return ctx.emit(ownerRequested("project-comment", eventDetails(event)));
-  }
-
-  if (event.type === "project.tick") {
-    return ctx.emit(
-      ownerRequested("scheduled-library-maintenance", eventDetails(event)),
-    );
   }
 
   if (event.type === "project.xhs_credential.check") {
@@ -159,17 +146,6 @@ export default defineProjectApp({
 
   schedules: [
     {
-      id: "scout-heartbeat",
-      enabled: false, // disabled 2026-06-14: app-driven model replaces blind heartbeat. Cross-source synthesis becomes a task, not a timer.
-      intervalMs: 1_800_000, // 30min
-      emits: [
-        {
-          type: "scout.heartbeat",
-          project: projectId,
-        },
-      ],
-    },
-    {
       id: "owner-review",
       enabled: true,
       intervalMs: 86_400_000,
@@ -178,7 +154,7 @@ export default defineProjectApp({
           instruction:
             "Daily knowledge-library owner review: inspect current library needs and the bounded reconciliation-history packet. Choose ordinary maintenance, at most one finite process improvement or investigation task, or an evidence-backed no-op. Do not create standalone projects.",
           reviewChecklist: [
-            "Look for cross-source connections that should become library tasks, not ad hoc notes.",
+            "When useful, read recent findings, connect sources, identify one non-obvious implication, update canonical knowledge, and verify the output. Synthesis is optional; do not manufacture it.",
             "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
             "Look for exact repeated failures, owner handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
             "Check the current tree before proposing work and do not duplicate a live task.",
@@ -272,7 +248,6 @@ export default defineProjectApp({
 
   tasks: {
     accepts: [
-      { type: "scout.heartbeat", project: projectId },
       { type: "scout.explore", project: projectId },
       { type: "scout.digest", project: projectId },
       { type: "project.library_health.tick", project: projectId },
@@ -284,7 +259,6 @@ export default defineProjectApp({
   events: [
     { type: "project.xhs_credential.check", project: projectId },
     { type: "project.comment.created", project: projectId },
-    { type: "project.tick", project: projectId },
   ],
 
   actions: {

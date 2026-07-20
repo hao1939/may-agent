@@ -270,8 +270,9 @@ A workflow ends with local `done` or `blocked`. Nested blockers return to the
 parent synchronously. At a top-level project boundary:
 
 - task workflows return blocked evidence to the app controller, which records
-  attention; only an admitted `needs-owner` task result causes sequential owner
-  handoff through the same task key;
+  attention; the controller passes explicit task-binding metadata and only an
+  admitted `needs-owner` task result causes sequential owner handoff through the
+  same task key;
 - project workflows without task context wake `project.owner.requested`;
 - non-project workflows wake `workflow.owner.requested`.
 

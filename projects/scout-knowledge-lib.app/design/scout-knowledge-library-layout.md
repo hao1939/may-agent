@@ -1,209 +1,70 @@
 # Scout Knowledge Library Layout
 
-Status: working target layout
+Design status: accepted
 
-Paths in this document are interpreted from the canonical domain workspace
-`/app/projects/scout-knowledge-lib`; the target tree includes the workspace
-name only for orientation. Workflow prompts use the resolved absolute root and
-do not prepend these paths to their current directory.
+Source status: implemented and tested
+
+Paths are relative to `/app/projects/scout-knowledge-lib` unless shown as
+absolute paths.
 
 ## Plain Model
 
-The library should be organized by why someone opens a document.
+Use the existing readable layout:
 
 ```text
-I need the current reusable answer        -> topic note
-I need the raw source/event observation   -> finding
-I need to understand maintenance work     -> report
-I need old provenance, not daily reading  -> archive
+knowledge/
+  README.md
+  INDEX.md
+  <canonical-or-companion-topic>.md
+  findings/
+    YYYY-MM-DD-<topic>.md
+  inbox/                       # existing imported material
+  insights/                    # existing specialized companions
+
+reports/
+  health/
+  migration/
+  merge/
+  triage/
+  operations/
 ```
 
-The current library still mixes these shapes in some folders. That makes the
-library hard to scan and makes agents create new files because they cannot see
-where an existing idea belongs.
+This is the current contract, not a migration target. Do not create a
+`knowledge/topics/` taxonomy or move findings into year/month/source folders.
+Those moves would change many references without improving grounding or
+retrieval.
 
-The app should keep the library readable by enforcing simple placement rules,
-not by creating a heavy taxonomy.
+## Placement Rules
 
-## Target Layout
+- Search the library before creating a file.
+- Update a canonical or companion topic note when one already fits.
+- Otherwise write one flat dated file under `knowledge/findings/`.
+- Use a report category for maintenance evidence and decisions.
+- Keep `knowledge/README.md` short and human-facing.
+- Keep `knowledge/INDEX.md` as the exhaustive map.
+- Do not create reports at the `reports/` root.
+- Do not create another project tree below
+  `/app/projects/scout-knowledge-lib/projects/`.
 
-```text
-projects/scout-knowledge-lib/
-  knowledge/
-    README.md
-    INDEX.md
-    topics/
-      architecture/
-      evaluation/
-      runtime-hardening/
-      security-governance/
-      protocols/
-      coordination/
-      memory-context/
-      xhs/
-      system-synthesis/
-    findings/
-      2026/
-        06/
-          arxiv/
-          hn/
-          xhs/
-          github/
-          cross-source/
-        07/
-          arxiv/
-          hn/
-          xhs/
-          github/
-          cross-source/
-    archive/
-      superseded/
-      imported/
-  reports/
-    health/
-    migration/
-    merge/
-    triage/
-    operations/
-```
+Finding dates must reflect the real observation date and must not be later than
+the current date. Source identity belongs in the finding content and evidence;
+it does not require a source-specific directory.
 
-This is a target, not a command to move everything at once.
+## Document Roles
 
-## Document Types
+Canonical and companion topic notes hold reusable current knowledge. Findings
+hold bounded source observations that may later be absorbed into those notes.
+Reports explain maintenance work, migrations, merges, triage, or operational
+decisions. Existing imported material remains under `knowledge/inbox/`; existing
+specialized syntheses may remain under `knowledge/insights/`.
 
-### Topic Notes
+Historical material is not moved or deleted merely to make the tree smaller.
+Any later preservation decision must show the replacement and verify references
+before removing unique content.
 
-Topic notes are durable reusable knowledge. They answer: "What do we currently
-believe?"
+## App Boundary
 
-Examples:
-
-- agent architecture;
-- evaluation;
-- runtime hardening;
-- security and governance;
-- protocols;
-- coordination;
-- memory and context;
-- XHS trends;
-- system-level syntheses.
-
-Rules:
-
-- Each topic folder has a `README.md`.
-- The folder `README.md` tells humans which file is canonical and which files
-  are companion material.
-- New durable claims should update an existing topic note before creating a new
-  topic file.
-- Oversized topic files should split into canonical plus companion notes inside
-  the same topic folder.
-
-### Findings
-
-Findings are source/event observations. They answer: "What did we see?"
-
-Rules:
-
-- Findings go under `knowledge/findings/YYYY/MM/source/`.
-- The source folder is one of `arxiv`, `hn`, `xhs`, `github`, or
-  `cross-source`.
-- Findings must keep source evidence and date context.
-- Findings can stay raw until absorbed, but `INDEX.md` or a topic note should
-  eventually say whether they are covered, partially covered, or still pending.
-
-### Reports
-
-Reports explain library maintenance work. They answer: "What did we change or
-decide about the library?"
-
-Rules:
-
-- Health packets and health writeups go under `reports/health/`.
-- Migration and import work goes under `reports/migration/`.
-- Shared-knowledge merge batches go under `reports/merge/`.
-- Inbox/source triage goes under `reports/triage/`.
-- Process and operations notes go under `reports/operations/`.
-- Reports may summarize many old files, but should not become the main place
-  for durable topic knowledge.
-
-### Archive
-
-Archive is provenance that should not be a normal reading path.
-
-Rules:
-
-- Superseded Scout-local docs go under `knowledge/archive/superseded/`.
-- Imported or preserved raw material goes under `knowledge/archive/imported/`.
-- Archive files should have a short pointer to the replacement if one exists.
-
-## Human Navigation
-
-`knowledge/README.md` should be the human landing page.
-
-It should be short:
-
-- what this library is for;
-- the topic map;
-- how to add new knowledge;
-- where findings and reports live;
-- current cleanup/migration status.
-
-`knowledge/README.md` is for humans. `knowledge/INDEX.md` is the exhaustive
-machine-friendly map. Both are useful, but they should not do the same job.
-
-`knowledge/INDEX.md` can remain machine-friendly and exhaustive. It should not
-be the only way a human or agent finds the right file.
-
-## App Responsibilities
-
-`scout-knowledge-lib.app` should organize the library by creating small,
-repeatable maintenance work:
-
-- detect files in the wrong place;
-- detect top-level topic files that should move under `topics/`;
-- detect findings that are not under `findings/YYYY/MM/source/`;
-- detect reports that are still in the root `reports/` folder;
-- detect missing topic `README.md` files;
-- detect references that still point to moved paths;
-- update the task tree with a bounded move batch when the same issue repeats.
-
-The app should not bulk-move hundreds of files in one step. A good move batch
-has:
-
-1. a clear source scope;
-2. a replacement path;
-3. reference migration;
-4. verification that old paths are gone or intentionally archived;
-5. a report when the batch changes library structure.
-
-The app must never create a second project tree below
-`/app/projects/scout-knowledge-lib/projects/`. Output paths are resolved and
-checked against the domain `knowledge/` and `reports/` roots before a result is
-accepted. Existing nested files are reviewed and compared before removal; path
-cleanup is not permission to discard unique findings.
-
-## Migration Order
-
-Use low-risk moves first:
-
-1. Create `knowledge/README.md` and the empty target folders.
-2. Move `reports/shared-*-merge-*.md` to `reports/merge/` and health reports to
-   `reports/health/`.
-3. Move inbox/source triage reports to `reports/triage/`.
-4. Move findings by month and source.
-5. Move topic notes into `knowledge/topics/*/` one topic at a time.
-6. Archive superseded top-level notes after each topic folder has a readable
-   `README.md`.
-
-This order makes the layout clearer immediately without risking the core topic
-links first.
-
-## Acceptance For A Layout Batch
-
-A layout batch is done only when:
-
-- files moved into the target folder;
-- active references updated;
-- `knowledge/README.md` or the relevant topic `README.md` reflects the move;
-- `knowledge/INDEX.md` still points to the right files;
-- checks or targeted greps show the old active paths are not used.
+The app may observe layout facts and ask Scout for one bounded maintenance
+judgment. It does not invent move batches, encode a taxonomy, or mutate task
+state from filesystem counts. Source workflow output is accepted only when its
+real path exists inside the resolved Scout knowledge or workspace roots.

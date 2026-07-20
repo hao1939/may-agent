@@ -1,8 +1,67 @@
 import { describe, expect, it } from "bun:test";
 import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk";
-import { execute } from "./knowledge-planner";
+import { admitExperienceReviewResult, execute } from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
+  it("normalizes an omitted experience-task mode to finite achieve work", () => {
+    const admitted = admitExperienceReviewResult({
+      state: "converged",
+      summary: "Proposed one bounded improvement.",
+      evidence: ["Three reconciliations showed the same mechanical failure."],
+      actions: [
+        {
+          kind: "create-task",
+          id: "improve-source-diagnostic",
+          outcome: "Make source rejection diagnostic",
+          acceptance: ["The rejected field is named"],
+        },
+      ],
+    });
+
+    expect(admitted).toMatchObject({
+      ok: true,
+      result: {
+        actions: [
+          {
+            kind: "create-task",
+            id: "improve-source-diagnostic",
+            mode: "achieve",
+          },
+        ],
+      },
+    });
+  });
+
+  it("rejects multiple tasks or maintain work from an experience review", () => {
+    const task = (id: string, mode: "achieve" | "maintain" = "achieve") => ({
+      kind: "create-task" as const,
+      id,
+      outcome: `Complete ${id}`,
+      acceptance: [`${id} is complete`],
+      mode,
+    });
+
+    expect(
+      admitExperienceReviewResult({
+        state: "converged",
+        summary: "Too much work.",
+        evidence: ["packet"],
+        actions: [task("one"), task("two")],
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("at most one"),
+    });
+    expect(
+      admitExperienceReviewResult({
+        state: "converged",
+        summary: "Standing work.",
+        evidence: ["packet"],
+        actions: [task("standing", "maintain")],
+      }),
+    ).toMatchObject({ ok: false, error: expect.stringContaining("maintain") });
+  });
+
   it("returns typed task proposals for the generic reconciler", async () => {
     const emitted: Array<Record<string, unknown>> = [];
     let prompt = "";

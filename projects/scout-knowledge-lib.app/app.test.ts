@@ -36,11 +36,6 @@ describe("Scout task reconciliation", () => {
       mode: "maintain",
       workflow: "scout-daily-digest",
     });
-    expect(resolveScoutTask({ type: "scout.heartbeat" })).toMatchObject({
-      id: "cross-source-synthesis",
-      mode: "maintain",
-      workflow: "scout-heartbeat",
-    });
     expect(
       resolveScoutTask({ type: "project.library_health.tick" }),
     ).toMatchObject({
@@ -61,7 +56,7 @@ describe("Scout task reconciliation", () => {
     expect(
       resolveScoutTask({
         type: "project.owner.requested",
-        reason: "manual-review",
+        reason: "manual-library-review",
       }),
     ).toMatchObject({
       id: "library-maintenance",
@@ -71,14 +66,30 @@ describe("Scout task reconciliation", () => {
     expect(
       resolveScoutTask({
         type: "project.owner.requested",
-        reason: "manual-review",
+        reason: "manual-library-review",
       })?.workflow,
     ).toBe("knowledge-planner");
   });
 
+  it("rejects infrastructure and unknown owner wakes", () => {
+    for (const reason of [
+      "workflow-blocked",
+      "handler-unavailable",
+      "task-recovery",
+      "unknown-owner-reason",
+    ]) {
+      expect(
+        resolveScoutTask({
+          type: "project.owner.requested",
+          project: "scout-knowledge-lib",
+          reason,
+        }),
+      ).toBeNull();
+    }
+  });
+
   it("declares one scoped resolver and relies on workflow discovery", () => {
     expect(app.tasks?.accepts).toEqual([
-      { type: "scout.heartbeat", project: "scout-knowledge-lib" },
       { type: "scout.explore", project: "scout-knowledge-lib" },
       { type: "scout.digest", project: "scout-knowledge-lib" },
       {
@@ -97,6 +108,9 @@ describe("Scout task reconciliation", () => {
       project: "scout-knowledge-lib",
     });
     expect(app.events.some((event) => event.type === "metric.breach")).toBe(
+      false,
+    );
+    expect(app.events.some((event) => event.type === "project.tick")).toBe(
       false,
     );
     expect(app.schedules).toContainEqual(

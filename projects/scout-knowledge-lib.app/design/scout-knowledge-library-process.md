@@ -1,11 +1,14 @@
 # Scout Knowledge Library Process
 
-Status: implemented baseline; observation and tuning continue
+Design status: accepted
 
-This document defines Scout-specific behavior. The generic task/result,
-generation, Condition, attempt, and receipt contracts come from May-agent's
-[task reconciliation integrity refinement](../../may-agent.app/docs/3-proposals/task-reconciliation-integrity-refinement.md)
-and SDK. Scout does not redefine or copy them.
+Source status: implemented and tested
+
+This document defines Scout-specific behavior. The generic contracts come from
+May-agent's current [Agent App](../../may-agent.app/docs/2a-design/agent-app.md),
+[Task Resource Engine](../../may-agent.app/docs/2a-design/task-resource-engine.md),
+[workflow](../../may-agent.app/docs/2a-design/workflows.md), and SDK designs.
+Scout does not redefine or copy them.
 
 ## Plain Model
 
@@ -35,10 +38,10 @@ durable reports:    /app/projects/scout-knowledge-lib/reports
 runtime state:      /app/projects/scout-knowledge-lib.app/.state
 ```
 
-The layout target is described in
-`design/scout-knowledge-library-layout.md`. The short version: durable reusable
-knowledge belongs in topic notes, raw observations belong in findings,
-maintenance decisions belong in reports, and old provenance belongs in archive.
+The current layout is described in `design/scout-knowledge-library-layout.md`.
+The short version: durable reusable knowledge stays in readable top-level topic
+notes, raw observations use flat dated files under `findings/`, and maintenance
+decisions belong in categorized reports.
 
 The app should not let Scout only collect more and more notes. Its main value is
 closing the loop: raw findings become trusted knowledge, stale cleanup gets
@@ -109,7 +112,6 @@ explore-hn                       maintain -> scout-explore
 explore-xhs                      maintain -> scout-explore
 explore-github                   maintain -> scout-explore
 daily-digest                     maintain -> scout-daily-digest
-cross-source-synthesis           maintain -> scout-heartbeat, when enabled/woken
 runtime/library-health-observer  maintain -> library-health
 library-maintenance              maintain -> knowledge-planner
 ```
@@ -148,7 +150,12 @@ The main routes are:
 - `scout.explore` -> source discovery workflow;
 - `scout.digest` -> daily digest workflow;
 - `project.library_health.tick` -> deterministic health observer;
-- `project.owner.requested` -> Scout owner/planner review;
+- an allowlisted `project.owner.requested` reason -> Scout owner/planner review.
+
+The allowlist is `experience-review`, `library-health-signal`,
+`project-comment`, `manual-library-review`, and `repair-index`. Human entry
+points translate to a named reason. Infrastructure recovery events such as
+`workflow-blocked` remain on their source task and do not become library work.
 
 Targeted task wakes and Condition observations enter the generic controller
 directly. Scout does not declare duplicate app-specific routes for them.
@@ -352,14 +359,18 @@ One daily owner review may receive a bounded, redacted 36-hour reconciliation
 packet prepared before `runAgent`. Only complete, correctly scoped history is
 learning evidence. Unavailable, truncated, or scope-mismatched history is
 withheld and the planner continues as an ordinary current-state owner review.
-No task archive, learning agent, or experience database is needed.
+An experience review may create at most one finite `achieve` task; omitted mode
+uses May's normal `achieve` default. It cannot create standing maintain work.
+The optional synthesis checklist helps Scout connect recent findings when that
+is useful; it does not require a synthesis on every review. No task archive,
+learning agent, or experience database is needed.
 
 ## Current Observation Priorities
 
 Keep the next steps empirical and small:
 
-1. observe seven clean days of source results, no-ops, failures, health facts,
-   owner wakes, and session use;
+1. observe source results, no-ops, failures, health facts, owner wakes, and
+   session use;
 2. add deterministic source acquisition only where a source exposes a small,
    reliable interface and the stronger provenance is useful;
 3. tune one source schedule only when accepted results and no-op cost justify

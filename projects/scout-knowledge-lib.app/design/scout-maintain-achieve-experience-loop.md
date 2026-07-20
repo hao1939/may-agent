@@ -1,6 +1,7 @@
 # Scout Periodic Experience Review
 
-**Status:** Accepted direction; implementation in progress
+**Status:** Implemented historical rationale; the normative runtime contract is
+`scout-knowledge-library-process.md`
 
 **Scope:** Scout-specific review of existing reconciliation metadata
 

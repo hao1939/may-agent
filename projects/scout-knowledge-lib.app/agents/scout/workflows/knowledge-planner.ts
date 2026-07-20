@@ -1,4 +1,5 @@
 import {
+  admitProjectAppTaskHandlerResult,
   projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
@@ -15,6 +16,35 @@ type OwnerResult = Exclude<
   ProjectAppTaskHandlerResult,
   { state: "needs-owner" }
 >;
+
+export function admitExperienceReviewResult(
+  value: unknown,
+): { ok: true; result: OwnerResult } | { ok: false; error: string } {
+  const admitted = admitProjectAppTaskHandlerResult(value, {
+    allowNeedsOwner: false,
+    defaultParentId: "project",
+  });
+  if (!admitted.ok) return admitted;
+  if (admitted.result.state === "needs-owner") {
+    return { ok: false, error: "experience review cannot return needs-owner" };
+  }
+  const created = (admitted.result.actions ?? []).filter(
+    (action) => action.kind === "create-task",
+  );
+  if (created.length > 1) {
+    return {
+      ok: false,
+      error: "experience review may create at most one finite task",
+    };
+  }
+  if (created.some((action) => action.mode !== "achieve")) {
+    return {
+      ok: false,
+      error: "experience review may not create a maintain task",
+    };
+  }
+  return { ok: true, result: admitted.result };
+}
 
 function field(task: string, name: string): string | undefined {
   const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
@@ -41,7 +71,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const prompt =
     `You are Scout maintaining the Scout Knowledge Library as a project.
 
-The old heartbeat-owned library has been extracted into a V3 project:
+Scout maintains this knowledge-library project:
 - Domain workspace: ${projectDir}
 - App/control plane: ${appDir}
 - Durable library: ${projectDir}/knowledge
@@ -120,7 +150,19 @@ ${triggerBlock(ctx.task)}`.trim();
     });
   }
 
-  const ownerResult = result.structuredResult as unknown as OwnerResult;
+  let ownerResult = result.structuredResult as unknown as OwnerResult;
+  if (isExperienceReviewTask(ctx.task)) {
+    const admitted = admitExperienceReviewResult(ownerResult);
+    if (!admitted.ok) {
+      return ctx.blocked(
+        `Scout experience review result was rejected: ${admitted.error}`,
+        {
+          sessionId: result.sessionId,
+        },
+      );
+    }
+    ownerResult = admitted.result;
+  }
   ctx.emit({
     type: "project.knowledge.maintained",
     project: "scout-knowledge-lib",

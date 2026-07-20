@@ -1,5 +1,11 @@
 # Discussion
 
+> Historical operational log. This file is not a current design or runtime
+> status authority. Durable Scout behavior is defined in
+> `design/scout-knowledge-library-process.md`; current operation belongs in the
+> task UI or a dated verification report. Preserve this log until any unique
+> evidence has a reviewed disposition.
+
 ---read @iter0---
 
 ### project-creative-audit - 2026-06-14

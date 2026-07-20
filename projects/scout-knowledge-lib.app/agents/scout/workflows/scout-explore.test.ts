@@ -463,6 +463,43 @@ describe("scout-explore workflow prompt", () => {
     expect(result).toMatchObject({
       type: "blocked",
       reason: "Scout exploration returned invalid current-source evidence",
+      context: {
+        source: "hn",
+        invalidField: "name",
+        reason: "expected hn",
+      },
+    });
+  });
+
+  it("names the invalid current-source field", async () => {
+    const result = await executeScoutExplore(
+      workflowContext(
+        async () => ({
+          status: "done",
+          sessionId: "s_github",
+          structuredResult: {
+            summary: "Checked GitHub.",
+            source: {
+              name: "github",
+              queryOrFeed: "agents",
+              checkedAt: "not-a-time",
+              itemIdsOrUrls: [],
+            },
+            outputs: [],
+          },
+        }),
+        "github",
+      ),
+    );
+
+    expect(result).toMatchObject({
+      type: "blocked",
+      context: {
+        source: "github",
+        invalidField: "checkedAt",
+        reason: "timestamp is invalid",
+        sessionId: "s_github",
+      },
     });
   });
 });

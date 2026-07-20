@@ -247,13 +247,35 @@ function sanitizeSourceItem(value: string): string {
   }
 }
 
+type SourceObservationAdmission =
+  | { ok: true; observation: SourceObservation }
+  | {
+      ok: false;
+      invalidField:
+        "source" | "name" | "queryOrFeed" | "checkedAt" | "itemIdsOrUrls";
+      reason: string;
+    };
+
 function admitSourceObservation(
   value: unknown,
   expectedSource: SourceName,
   now: number,
-): SourceObservation | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+): SourceObservationAdmission {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {
+      ok: false,
+      invalidField: "source",
+      reason: "source must be an object",
+    };
+  }
   const source = value as Record<string, unknown>;
+  if (source.name !== expectedSource) {
+    return {
+      ok: false,
+      invalidField: "name",
+      reason: `expected ${expectedSource}`,
+    };
+  }
   const checkedAt = String(source.checkedAt ?? "").trim();
   const checkedTime = Date.parse(checkedAt);
   const queryOrFeed = sanitizeSourceItem(
@@ -261,15 +283,43 @@ function admitSourceObservation(
       .trim()
       .slice(0, 300),
   );
+  if (!queryOrFeed) {
+    return {
+      ok: false,
+      invalidField: "queryOrFeed",
+      reason: "query or feed is empty",
+    };
+  }
+  if (!Number.isFinite(checkedTime)) {
+    return {
+      ok: false,
+      invalidField: "checkedAt",
+      reason: "timestamp is invalid",
+    };
+  }
+  if (checkedTime > now + 5 * 60_000) {
+    return {
+      ok: false,
+      invalidField: "checkedAt",
+      reason: "timestamp is in the future",
+    };
+  }
+  if (now - checkedTime > 24 * 60 * 60_000) {
+    return {
+      ok: false,
+      invalidField: "checkedAt",
+      reason: "timestamp is older than 24 hours",
+    };
+  }
   if (
-    source.name !== expectedSource ||
-    !queryOrFeed ||
-    !Number.isFinite(checkedTime) ||
-    checkedTime > now + 5 * 60_000 ||
-    now - checkedTime > 24 * 60 * 60_000 ||
-    !Array.isArray(source.itemIdsOrUrls)
+    !Array.isArray(source.itemIdsOrUrls) ||
+    !source.itemIdsOrUrls.every((item) => typeof item === "string")
   ) {
-    return null;
+    return {
+      ok: false,
+      invalidField: "itemIdsOrUrls",
+      reason: "item list must contain only strings",
+    };
   }
   const itemIdsOrUrls = [
     ...new Set(
@@ -280,13 +330,16 @@ function admitSourceObservation(
     ),
   ].slice(0, 20);
   return {
-    name: expectedSource,
-    queryOrFeed,
-    checkedAt: new Date(checkedTime).toISOString(),
-    ...(typeof source.fingerprint === "string" && source.fingerprint.trim()
-      ? { fingerprint: source.fingerprint.trim().slice(0, 200) }
-      : {}),
-    itemIdsOrUrls,
+    ok: true,
+    observation: {
+      name: expectedSource,
+      queryOrFeed,
+      checkedAt: new Date(checkedTime).toISOString(),
+      ...(typeof source.fingerprint === "string" && source.fingerprint.trim()
+        ? { fingerprint: source.fingerprint.trim().slice(0, 200) }
+        : {}),
+      itemIdsOrUrls,
+    },
   };
 }
 
@@ -390,19 +443,25 @@ export async function executeScoutExplore(
       },
     );
   }
-  const observation =
+  const observationAdmission =
     source === "xhs" && xhsPacket
-      ? xhsObservation(xhsPacket, now)
+      ? ({
+          ok: true,
+          observation: xhsObservation(xhsPacket, now),
+        } satisfies SourceObservationAdmission)
       : admitSourceObservation(structured.source, source, Date.now());
-  if (!observation) {
+  if (!observationAdmission.ok) {
     return ctx.blocked(
       "Scout exploration returned invalid current-source evidence",
       {
         source,
+        invalidField: observationAdmission.invalidField,
+        reason: observationAdmission.reason,
         sessionId: result.sessionId,
       },
     );
   }
+  const observation = observationAdmission.observation;
   const outputs = admittedOutputPaths(structured.outputs, {
     appDir,
     projectDir,

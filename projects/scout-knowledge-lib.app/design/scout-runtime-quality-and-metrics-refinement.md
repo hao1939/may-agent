@@ -1,6 +1,7 @@
 # Scout Runtime Quality and Metrics Refinement
 
-**Status:** Accepted; baseline implemented 2026-07-20
+**Status:** Implemented historical rationale; the normative runtime contract is
+`scout-knowledge-library-process.md`
 
 **Scope:** Scout knowledge-library observation, source reconciliation, schedules,
 and metrics
