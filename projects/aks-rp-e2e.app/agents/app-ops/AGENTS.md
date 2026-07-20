@@ -26,6 +26,9 @@ decisions.
 
 1. Start from the design front door:
    `/app/projects/aks-rp-e2e.app/design/README.md`.
+   Reusable workflows live only under the accountable agent's `workflows/`
+   directory. The retired app-root `/app/projects/aks-rp-e2e.app/workflows/`
+   tree must not be restored or used as a source of runtime behavior.
 2. Keep one task tree with visible `domain/` and `ops/` roots when creating new
    structured work.
 3. A task describes desired and observed state, not an assignment. Let the

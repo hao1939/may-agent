@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   defineProjectApp,
+  eventDetails,
   matchesEventSelector,
   type EventSelector,
   type ProjectAppContext,
@@ -13,161 +14,211 @@ const projectPolicyMaxConcurrent = 80;
 const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
 
-type AppRouteEvent = Record<string, unknown>;
+type AppTaskEvent = Record<string, unknown>;
 
-function isRouteRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function stableRoutePart(value: string, fallback: string): string {
-  return (
-    value
-      .trim()
-      .replace(/[^A-Za-z0-9._/-]+/g, "-")
-      .replace(/^[-/]+|[-/]+$/g, "")
-      .slice(0, 96) || fallback
-  );
-}
-
-function routeDigest(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 16);
-}
-
-function routeEventType(event: AppRouteEvent): string {
-  return typeof event.type === "string" && event.type.trim()
-    ? event.type.trim()
-    : "event";
-}
-
-function routeEventId(event: AppRouteEvent): string {
-  for (const key of ["eventId", "event_id", "id"]) {
-    const value = event[key];
-    if (typeof value === "string" && value.trim())
-      return stableRoutePart(value, "event");
-    if (typeof value === "number" && Number.isInteger(value) && value > 0)
-      return String(value);
-  }
-  return routeDigest(JSON.stringify(event));
-}
-
-function routeTargetTaskId(event: AppRouteEvent): string {
-  const direct = event.taskId ?? event.task_id;
+function targetTaskId(event: AppTaskEvent): string {
+  const details = eventDetails(event);
+  const direct = details.taskId ?? details.task_id;
   if (typeof direct === "string" && direct.trim()) return direct.trim();
-  const target = isRouteRecord(event.target) ? event.target : {};
+  const target = isRecord(details.target) ? details.target : {};
   const targetTask = target.taskId ?? target.task_id;
   return typeof targetTask === "string" && targetTask.trim()
     ? targetTask.trim()
     : "";
 }
 
-function routeAction(event: AppRouteEvent): string {
-  return typeof event.action === "string" && event.action.trim()
-    ? event.action.trim()
-    : "";
+function stringDetail(
+  details: Record<string, unknown>,
+  ...keys: string[]
+): string {
+  for (const key of keys) {
+    const value = details[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
 }
 
-function routeTaskIntent(
-  routeName: string,
-  event: AppRouteEvent,
-  workflow?: string,
-): ProjectAppTaskIntent {
-  const eventType = routeEventType(event);
-  const eventId = routeEventId(event);
-  const targetTaskId = routeTargetTaskId(event);
-  const action = routeAction(event);
-  const routePart = stableRoutePart(routeName, "route");
-  const subjectPart = stableRoutePart(
-    targetTaskId || action || eventType,
-    "event",
-  );
-  return {
-    id: `route/${routePart}/${subjectPart}/${eventId}`,
-    parentId: targetTaskId || "project",
-    outcome: `Process ${eventType} through ${routeName}.`,
-    acceptance: [
-      "The matched event is handed to the declared project workflow exactly once for this event id.",
-      "The workflow returns structured state, evidence, follow-up actions, an exact wait, or owner attention.",
-    ],
-    mode: "achieve",
-    ...(workflow ? { workflow } : {}),
-    ...(workflow ? { owner: "app-ops" } : {}),
-    input: {
-      eventType,
-      eventId,
-      targetTaskId: targetTaskId || null,
-      action: action || null,
-    },
-    priority:
-      routeName.includes("watchdog") || routeName.includes("stall")
-        ? "P0"
-        : "P1",
-  };
+function safeTaskIdPart(value: string, fallback: string): string {
+  const raw = value.trim();
+  if (!raw) return fallback;
+  const normalized = raw
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (normalized === raw && normalized.length <= 96) return normalized;
+  const digest = createHash("sha256").update(raw).digest("hex").slice(0, 12);
+  return `${normalized.slice(0, 83) || fallback}-${digest}`;
 }
 
 const projectTarget = { project: projectId };
-const aksTaskRules: Array<{
-  name: string;
-  workflow?: string;
-  accepts: EventSelector[];
-}> = [
+const ownerReviewEventTypes = new Set([
+  "project.owner.requested",
+  "project.comment.created",
+  "project.approval.submitted",
+  "project.test_run.completed",
+  "project.stall.reviewed",
+  "project.problem.resolved",
+  "project.problem.escalated",
+  "project.problem.inconclusive",
+  "coverage.gap.detected",
+  "escalation.resolved",
+  "escalation.dismissed",
+  "metric.breach",
+  "metric.recovered",
+  "learning.feedback",
+]);
+
+const aksTaskSelectors: EventSelector[] = [
+  { type: "project.owner.requested", target: projectTarget },
+  { type: "project.comment.created", target: projectTarget },
+  { type: "project.approval.submitted", target: projectTarget },
+  { type: "project.test_run.completed", target: projectTarget },
+  { type: "project.stall.reviewed", target: projectTarget },
+  { type: "project.problem.resolved", target: projectTarget },
+  { type: "project.problem.escalated", target: projectTarget },
+  { type: "project.problem.inconclusive", target: projectTarget },
+  { type: "coverage.gap.detected", target: projectTarget },
+  { type: "escalation.resolved", owner: "agent:aks-explorer" },
+  { type: "escalation.dismissed", owner: "agent:aks-explorer" },
+  { type: "metric.breach", owner: "agent:app-ops" },
+  { type: "metric.recovered", owner: "agent:app-ops" },
+  { type: "learning.feedback", owner: "agent:aks-explorer" },
+  { type: "learning.feedback", owner: "agent:aks-reviewer" },
   {
-    name: "owner",
-    accepts: [
-      { type: "project.owner.requested", target: projectTarget },
-      { type: "project.comment.created", target: projectTarget },
-      { type: "project.approval.submitted", target: projectTarget },
-      { type: "project.test_run.completed", target: projectTarget },
-      { type: "project.stall.reviewed", target: projectTarget },
-      { type: "project.problem.resolved", target: projectTarget },
-      { type: "project.problem.escalated", target: projectTarget },
-      { type: "project.problem.inconclusive", target: projectTarget },
-      { type: "coverage.gap.detected", target: projectTarget },
-      { type: "escalation.resolved", owner: "agent:aks-explorer" },
-      { type: "escalation.dismissed", owner: "agent:aks-explorer" },
-      { type: "metric.breach", owner: "agent:app-ops" },
-      { type: "metric.recovered", owner: "agent:app-ops" },
-      { type: "learning.feedback", owner: "agent:aks-explorer" },
-      { type: "learning.feedback", owner: "agent:aks-reviewer" },
-    ],
+    type: "project.problem.investigation.requested",
+    target: projectTarget,
   },
-  {
-    name: "problem-solver",
-    workflow: "problem-solver",
-    accepts: [
-      {
-        type: "project.problem.investigation.requested",
-        target: projectTarget,
-      },
-    ],
-  },
-  {
-    name: "project-stall-review",
-    workflow: "project-stall-review",
-    accepts: [
-      { type: "project.stall.review.requested", target: projectTarget },
-    ],
-  },
-  {
-    name: "focus-plan",
-    workflow: "focus-plan",
-    accepts: [
-      { type: "project.focus.review.requested", target: projectTarget },
-    ],
-  },
-  {
-    name: "approval-dispatch",
-    workflow: "approval-dispatch",
-    accepts: [{ type: "project.approval.requested", target: projectTarget }],
-  },
+  { type: "project.stall.review.requested", target: projectTarget },
+  { type: "project.focus.review.requested", target: projectTarget },
+  { type: "project.approval.requested", target: projectTarget },
 ];
 
 export function resolveAksTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
-  const rule = aksTaskRules.find((candidate) =>
-    candidate.accepts.some((selector) => matchesEventSelector(selector, event)),
-  );
-  return rule ? routeTaskIntent(rule.name, event, rule.workflow) : null;
+  if (
+    !aksTaskSelectors.some((selector) => matchesEventSelector(selector, event))
+  )
+    return null;
+
+  const details = eventDetails(event);
+  const taskId = targetTaskId(event);
+  const input = { ...details, targetTaskId: taskId || null };
+
+  if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
+    return {
+      id: "runtime/owner-review",
+      parentId: "project",
+      outcome:
+        "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
+      acceptance: [
+        "The owner performs one useful project step or returns an evidence-backed no-op with typed follow-up actions.",
+      ],
+      mode: "maintain",
+      owner: "app-ops",
+      input,
+      priority: "P1",
+    };
+  }
+
+  switch (event.type) {
+    case "project.problem.investigation.requested": {
+      const problemKey = stringDetail(
+        details,
+        "problemKey",
+        "problem_key",
+        "taskId",
+        "task_id",
+      );
+      return {
+        id: `runtime/problem-solver/${safeTaskIdPart(problemKey, "project")}`,
+        parentId: taskId || "project",
+        outcome:
+          "Investigate one bounded AKS project blocker and return a verified resolution, exact escalation, or explicit inconclusive result.",
+        acceptance: [
+          "The investigation reports its root cause, action, verification, and the exact owner next step without taking task-tree scheduling authority.",
+        ],
+        mode: "achieve",
+        owner: "app-ops",
+        workflow: "problem-solver",
+        input,
+        priority: "P1",
+      };
+    }
+    case "project.stall.review.requested":
+      return {
+        id: "runtime/project-stall-review",
+        parentId: "project",
+        outcome:
+          "Keep suspicious stalled AKS work reviewed against current task, loop, and external-state evidence.",
+        acceptance: [
+          "The review applies only safe mechanical repair and returns a structured judgment, evidence, and exact follow-up.",
+        ],
+        mode: "maintain",
+        owner: "app-ops",
+        workflow: "project-stall-review",
+        input,
+        priority: "P0",
+      };
+    case "project.focus.review.requested": {
+      const focusKey = stringDetail(
+        details,
+        "focusId",
+        "focus_id",
+        "planId",
+        "plan_id",
+        "taskId",
+        "task_id",
+        "mode",
+      );
+      return {
+        id: `runtime/focus-review/${safeTaskIdPart(focusKey, "current")}`,
+        parentId: taskId || "project",
+        outcome:
+          "Keep one named AKS focus plan or progress review aligned with the current live frontier.",
+        acceptance: [
+          "The review proposes or assesses a focus plan from current task and execution evidence without using the task graph as a scheduler.",
+        ],
+        mode: "maintain",
+        owner: "app-ops",
+        workflow: "focus-plan",
+        input,
+        priority: "P1",
+      };
+    }
+    case "project.approval.requested": {
+      const approvalKey = stringDetail(
+        details,
+        "approvalId",
+        "approval_id",
+        "pathId",
+        "path_id",
+        "packetPath",
+        "packet_path",
+        "taskId",
+        "task_id",
+      );
+      return {
+        id: `runtime/approval-dispatch/${safeTaskIdPart(approvalKey, "pending")}`,
+        parentId: taskId || "project",
+        outcome:
+          "Deliver one exact AKS approval packet through the human-facing approval path.",
+        acceptance: [
+          "A valid packet is delivered once for its semantic correlation key, or missing/invalid input is reported with evidence.",
+        ],
+        mode: "achieve",
+        owner: "app-ops",
+        workflow: "approval-dispatch",
+        input,
+        priority: "P1",
+      };
+    }
+    default:
+      return null;
+  }
 }
 
 export async function routeAksEvent(
@@ -344,7 +395,7 @@ export default defineProjectApp({
   ],
 
   tasks: {
-    accepts: aksTaskRules.flatMap((rule) => rule.accepts),
+    accepts: aksTaskSelectors,
     resolve: resolveAksTask,
   },
 

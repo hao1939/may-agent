@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import app, { resolveAksTask } from "../../../app.ts";
 
 type EventSelector =
@@ -129,6 +131,10 @@ function selectorTypes(): string[] {
 }
 
 describe("app event contract", () => {
+  test("keeps reusable workflows under their accountable agent", () => {
+    expect(existsSync(resolve(import.meta.dir, "../../../workflows"))).toBe(false);
+  });
+
   test("uses the current task resolver contract", () => {
     expect(appManifest.tasks?.accepts).toBeArray();
     expect(appManifest.tasks?.resolve).toBeFunction();
@@ -197,17 +203,29 @@ describe("app event contract", () => {
     expect(eventIsHandled(event)).toBe(true);
   });
 
-  test("resolver maps semantic events to bounded workflows", () => {
-    expect(
-      resolveAksTask({
-        type: "project.owner.requested",
-        target: { project: projectId },
-      })?.workflow,
-    ).toBeUndefined();
+  test("resolver maps semantic events to stable domain tasks", () => {
+    const ownerA = resolveAksTask({
+      type: "project.owner.requested",
+      target: { project: projectId },
+      eventId: 101,
+    });
+    const ownerB = resolveAksTask({
+      type: "project.owner.requested",
+      target: { project: projectId },
+      eventId: 102,
+    });
+    expect(ownerA).toMatchObject({
+      id: "runtime/owner-review",
+      mode: "maintain",
+      owner: "app-ops",
+    });
+    expect(ownerB?.id).toBe(ownerA?.id);
+    expect(ownerA?.workflow).toBeUndefined();
     expect(
       resolveAksTask({
         type: "project.problem.investigation.requested",
         target: { project: projectId },
+        problemKey: "staging-auth",
       })?.workflow,
     ).toBe("problem-solver");
     expect(
@@ -220,6 +238,7 @@ describe("app event contract", () => {
       resolveAksTask({
         type: "project.approval.requested",
         target: { project: projectId },
+        pathId: "network/cilium",
       })?.workflow,
     ).toBe("approval-dispatch");
   });
@@ -300,23 +319,74 @@ describe("app event contract", () => {
     const focusA = resolveAksTask({
       type: "project.focus.review.requested",
       target: { project: projectId },
+      focusId: "network",
       eventId: 101,
     });
     const focusB = resolveAksTask({
       type: "project.focus.review.requested",
       target: { project: projectId },
+      focusId: "compute",
       eventId: 102,
     });
+    const focusAAgain = resolveAksTask({
+      type: "project.focus.review.requested",
+      target: { project: projectId },
+      focusId: "network",
+      eventId: 103,
+    });
     expect(focusA?.workflow).toBe("focus-plan");
+    expect(focusA?.owner).toBe("app-ops");
     expect(focusB?.workflow).toBe("focus-plan");
+    expect(focusB?.owner).toBe("app-ops");
     expect(focusA?.id).not.toBe(focusB?.id);
+    expect(focusAAgain?.id).toBe(focusA?.id);
+    expect(focusA?.id.startsWith("route/")).toBe(false);
 
-    expect(actionEvent("pulse-spec-loop", { taskId: "spec-loop-a" })).toMatchObject({
+    expect(
+      actionEvent("pulse-spec-loop", { taskId: "spec-loop-a" }),
+    ).toMatchObject({
       target: { taskId: "spec-loop-a" },
     });
-    expect(actionEvent("pulse-spec-loop", { taskId: "spec-loop-b" })).toMatchObject({
+    expect(
+      actionEvent("pulse-spec-loop", { taskId: "spec-loop-b" }),
+    ).toMatchObject({
       target: { taskId: "spec-loop-b" },
     });
+  });
+
+  test("routes app-ops workflows to the app-ops workflow directory", () => {
+    const cases = [
+      {
+        type: "project.focus.review.requested",
+        target: { project: projectId },
+        focusId: "current",
+        expectedWorkflow: "focus-plan",
+      },
+      {
+        type: "project.problem.investigation.requested",
+        target: { project: projectId },
+        problemKey: "quota",
+        expectedWorkflow: "problem-solver",
+      },
+      {
+        type: "project.stall.review.requested",
+        target: { project: projectId },
+        expectedWorkflow: "project-stall-review",
+      },
+      {
+        type: "project.approval.requested",
+        target: { project: projectId },
+        approvalId: "approval-1",
+        expectedWorkflow: "approval-dispatch",
+      },
+    ];
+
+    for (const event of cases) {
+      expect(resolveAksTask(event)).toMatchObject({
+        owner: "app-ops",
+        workflow: event.expectedWorkflow,
+      });
+    }
   });
 
   test("blocked-frontier review remains scheduled", () => {
