@@ -6,7 +6,7 @@ import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
-import { runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
+import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
 import { getDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
 import {
@@ -40,6 +40,7 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
+  listHandlerUnavailableProjectAppTasks,
   markProjectAppTaskAttention,
   listProjectAppTaskIntents,
   listRunnableProjectAppTaskIds,
@@ -47,6 +48,7 @@ import {
   pendingProjectAppTaskRecoveryAttention,
   readProjectAppTaskIntent,
   recordProjectAppTaskTrigger,
+  releaseHandlerUnavailableProjectAppTask,
   repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
@@ -742,7 +744,7 @@ async function runTaskCapability(input: {
     } as unknown as AgentEvent);
     return {
       handlerResult: {
-        state: unavailable ? "needs-owner" : "error",
+        state: "error",
         summary,
         evidence: [],
         actions: [],
@@ -779,6 +781,9 @@ async function runTaskOwner(input: {
     "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
     "If no exact machine-observable Condition exists, do not return waiting. Return converged with exact evidence and supported successor/escalation actions when this carrier is finished; execution errors are reported by the runtime, not as a fourth task state.",
     "Use actions only for supported task-tree mutations.",
+    "Parent relationships express containment and decomposition only. They do not schedule children, establish ordering, or make child completion satisfy parent acceptance.",
+    "Use dependsOn for execution ordering. Use a structural group when a node has no independently reconcilable outcome.",
+    "Do not close an achieve task while it still contains live child tasks; finish or relocate the represented children first.",
     "",
     "Allowed actions:",
     '- create a task: { kind: "create-task", id, outcome, acceptance, parentId?, mode?, outputs?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
@@ -1215,6 +1220,7 @@ function isTaskWakeEvent(event: Record<string, unknown>): boolean {
   const type = typeof event.type === "string" ? event.type : "";
   return ![
     "handler.workflow_dispatched",
+    "project.task.handler.recovered",
     "project.task.handler.unavailable",
     "project.task.reconcile.started",
     "project.task.reconcile.skipped",
@@ -1361,6 +1367,48 @@ function recoverInterruptedProjectAppTasks(
         },
       } as unknown as AgentEvent);
       for (const attention of attentions) acknowledgeProjectAppTaskRecoveryAttention(config, attention.taskId);
+    }
+  }
+}
+
+async function requeueRepairedProjectAppTaskHandlers(
+  opts: ProjectAppLoaderOptions,
+  descriptors: ProjectAppDescriptor[],
+  controllers: Map<string, ProjectAppTaskController>,
+): Promise<void> {
+  const availability = new Map<string, boolean>();
+  for (const descriptor of descriptors) {
+    const controller = controllers.get(descriptor.id);
+    if (!controller || !descriptor.app.tasks || descriptor.reconciliationPaused) continue;
+    const config = taskReconciliationConfig({
+      appDir: descriptor.appDir,
+      projectDir: descriptor.projectDir,
+      owner: descriptor.owner,
+      maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+    });
+    for (const candidate of listHandlerUnavailableProjectAppTasks(config, descriptor.owner)) {
+      const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
+      const key = `${paths.workflowDir}\0${candidate.workflow}`;
+      let available = availability.get(key);
+      if (available === undefined) {
+        available = (await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow)).available;
+        availability.set(key, available);
+      }
+      if (!available) continue;
+      if (!releaseHandlerUnavailableProjectAppTask(config, candidate.taskId)) continue;
+      controller.enqueue(candidate.taskId);
+      opts.bus.emit({
+        type: "project.task.handler.recovered",
+        source: `project-app:${descriptor.id}:task-recovery`,
+        owner: `agent:${candidate.owner}`,
+        target: { project: descriptor.id, taskId: candidate.taskId },
+        data: {
+          project: descriptor.id,
+          taskId: candidate.taskId,
+          handler: `workflow:${candidate.workflow}`,
+          reason: "workflow-binding-resolved-after-app-reload",
+        },
+      } as unknown as AgentEvent);
     }
   }
 }
@@ -1672,6 +1720,7 @@ async function commitProjectAppDescriptors(
     attachAppEventRouter(opts, installed);
   }
   recoverInterruptedProjectAppTasks(opts, installed, controllers);
+  await requeueRepairedProjectAppTaskHandlers(opts, installed, controllers);
 
   return { installed, entries };
 }
@@ -1706,6 +1755,28 @@ function hashFile(path: string): string {
   }
 }
 
+function hashWorkflowFiles(workflowDir: string): string[] {
+  const files: string[] = [];
+  const pending = [workflowDir];
+  while (pending.length > 0) {
+    const dir = pending.pop()!;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+      const entryPath = join(dir, entry.name);
+      if (entry.isDirectory()) pending.push(entryPath);
+      else if (entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts")) {
+        files.push(`${entryPath}\t${hashFile(entryPath)}`);
+      }
+    }
+  }
+  return files.sort();
+}
+
 function projectAppLifecycle(appDir: string): string {
   try {
     const paths = projectRuntimePaths(appDir);
@@ -1730,6 +1801,7 @@ export function projectAppHostFingerprint(projectsRoot: string): string {
       const agentDir = join(appDir, "agents", agent.dirName);
       const configPath = join(agentDir, "agent.json");
       parts.push(`${appDir}\t${configPath}\t${hashFile(configPath)}`);
+      parts.push(...hashWorkflowFiles(join(agentDir, "workflows")));
     }
   }
   return createHash("sha256").update(parts.join("\n")).digest("hex");

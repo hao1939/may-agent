@@ -294,6 +294,15 @@ function findWorkflow(
   return { workflow: null, error: `Workflow "${name}" not found.${diagnostics}` };
 }
 
+/** Inspect an agent-owned workflow binding without executing the workflow. */
+export async function inspectWorkflowDefinition(
+  workflowDir: string,
+  name: string,
+): Promise<{ available: boolean; error: string | null }> {
+  const resolved = findWorkflow(await buildWorkflowCatalog(workflowDir), name);
+  return { available: resolved.workflow !== null, error: resolved.error };
+}
+
 // ── Guard Discovery ────────────────────────────────────────────────────
 
 const MAX_INJECTION_DEPTH = 3;

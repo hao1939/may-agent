@@ -82,7 +82,7 @@ function writeApp(appDir: string, extra = "") {
     `export const name = "worker";
      export const description = "sample worker";
      export async function execute(ctx) {
-       if (!ctx.task.includes("persistent-task: skip") || !ctx.task.includes("app: ${appDir}") || !ctx.task.includes("project: ${appDir}")) {
+       if (!ctx.task.includes("app: ${appDir}") || !ctx.task.includes("project: ${appDir}")) {
          return ctx.blocked("canonical app/workspace paths are missing");
        }
        if (ctx.appDir !== "${appDir}" || ctx.projectDir !== "${appDir}" || ctx.workspaceDir !== "${appDir}") {
@@ -440,7 +440,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("reloads for lifecycle changes but not ordinary task-state writes", () => {
+  it("reloads for lifecycle and workflow changes but not ordinary task-state writes", () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -454,7 +454,14 @@ describe("project app loader", () => {
       expect(projectAppHostFingerprint(f.projectsRoot)).toBe(paused);
 
       writeFileSync(treePath, JSON.stringify({ project_lifecycle: "active", tasks: { changed: {} } }));
-      expect(projectAppHostFingerprint(f.projectsRoot)).not.toBe(paused);
+      const active = projectAppHostFingerprint(f.projectsRoot);
+      expect(active).not.toBe(paused);
+
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
+        `export const name = "worker"; export const description = "changed"; export async function execute(ctx) { return ctx.blocked("changed"); }`,
+      );
+      expect(projectAppHostFingerprint(f.projectsRoot)).not.toBe(active);
     } finally {
       rmSync(f.root, { recursive: true, force: true });
     }
@@ -534,7 +541,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("reconciles workflows and owner fallback through one app controller", async () => {
+  it("reconciles workflows and direct owner tasks through one app controller", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
     const ownerOptions: Array<Record<string, unknown>> = [];
@@ -574,13 +581,20 @@ describe("project app loader", () => {
             event.data?.taskId === "work/owner" &&
             event.data?.disposition === "converged",
         ),
-      );
+      ).catch((error) => {
+        throw new Error(
+          `${String(error)} events=${JSON.stringify(events.map((event) => ({ type: event.type, data: event.data })))}`,
+        );
+      });
       expect(ownerCalls).toHaveLength(1);
-      expect(ownerCalls[0]).toContain("persistent-task: skip");
+      expect(ownerCalls[0]).not.toContain("persistent-task: skip");
       expect(ownerCalls[0]).toContain("Allowed actions:");
       expect(ownerCalls[0]).toContain('kind: "create-task"');
       expect(ownerCalls[0]).toContain("Do not invent action names");
       expect(ownerCalls[0]).toContain("missing evidence is work to do");
+      expect(ownerCalls[0]).toContain("Parent relationships express containment and decomposition only");
+      expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
+      expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
       expect(ownerCalls[0]).toContain("Do not include an action for the current Reconciliation Task taskId");
       expect(ownerOptions[0]).toMatchObject({
         projectId: "sample",
@@ -903,7 +917,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("records HandlerUnavailable and invokes the resolved owner once for a missing workflow", async () => {
+  it("keeps a missing workflow in attention and retries it only after app reload can resolve the binding", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
     try {
@@ -911,7 +925,7 @@ describe("project app loader", () => {
       const bus = new EventBus();
       const events: any[] = [];
       bus.subscribe((event) => events.push(event));
-      await installProjectApps({
+      const installOptions = {
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
         persistDir: f.persistDir,
@@ -920,7 +934,8 @@ describe("project app loader", () => {
         manager: manager(ownerCalls),
         bus,
         agentCrons: new Map(),
-      });
+      };
+      await installProjectApps(installOptions);
 
       bus.emit({
         type: "sample.work",
@@ -933,13 +948,11 @@ describe("project app loader", () => {
           (event) =>
             event.type === "project.task.reconciled" &&
             event.data?.taskId === "work/missing" &&
-            event.data?.disposition === "converged",
+            event.data?.disposition === "attention",
         ),
       );
 
-      expect(ownerCalls).toHaveLength(1);
-      expect(ownerCalls[0]).toContain("HandlerUnavailable:");
-      expect(ownerCalls[0]).toContain("not-installed");
+      expect(ownerCalls).toHaveLength(0);
       expect(events).toContainEqual(
         expect.objectContaining({
           type: "project.task.handler.unavailable",
@@ -950,9 +963,55 @@ describe("project app loader", () => {
           }),
         }),
       );
-      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/missing"]).toMatchObject({
-        handler: "owner:sample-owner",
+      const attention = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(attention.resources["work/missing"].status.phase).toBe("attention");
+      expect(attention.receipts?.["work/missing"]).toBeUndefined();
+      expect(Object.values(attention.attempts)).toContainEqual(
+        expect.objectContaining({
+          taskId: "work/missing",
+          handler: "workflow:not-installed",
+          state: "failed",
+          failureReason: "HandlerUnavailable",
+        }),
+      );
+
+      const attemptCount = Object.keys(attention.attempts).length;
+      await installProjectApps(installOptions);
+      const stillAttention = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(stillAttention.resources["work/missing"].status.phase).toBe("attention");
+      expect(Object.keys(stillAttention.attempts)).toHaveLength(attemptCount);
+
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "not-installed.ts"),
+        `export const name = "not-installed";
+         export const description = "repaired workflow";
+         export async function execute(ctx) {
+           return ctx.done("repaired", { state: "converged", summary: "repaired workflow ran", evidence: ["binding repaired"], actions: [] });
+         }`,
+      );
+      await installProjectApps(installOptions);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/missing" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(0);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "project.task.handler.recovered",
+          data: expect.objectContaining({
+            taskId: "work/missing",
+            handler: "workflow:not-installed",
+          }),
+        }),
+      );
+      const converged = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(converged.receipts["work/missing"]).toMatchObject({
+        handler: "workflow:not-installed",
         workflow: "not-installed",
         failureFingerprints: ["HandlerUnavailable"],
       });
