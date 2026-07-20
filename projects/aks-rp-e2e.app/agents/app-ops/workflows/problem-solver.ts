@@ -207,8 +207,10 @@ function finishProblemSolver(
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const projectDir =
+    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
+  const appDir =
+    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
   const sourceRoot = sourceDir(ctx.task);
   const trigger = parseTriggerEvent(ctx.task);
   const agent =

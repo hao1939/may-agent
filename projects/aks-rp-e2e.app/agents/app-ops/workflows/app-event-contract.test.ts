@@ -90,18 +90,8 @@ function selectorMatchesEvent(
   return true;
 }
 
-function isDirectRuntimeTaskEvent(event: Record<string, unknown>): boolean {
-  return Boolean(
-    typeof event.type === "string" &&
-    event.type.startsWith("project.task.") &&
-    typeof eventTarget(event).taskId === "string" &&
-    eventTarget(event).taskId,
-  );
-}
-
 function eventIsHandled(event: Record<string, unknown>): boolean {
   return (
-    isDirectRuntimeTaskEvent(event) ||
     taskSelectors().some((selector) => selectorMatchesEvent(selector, event)) ||
     (appManifest.events ?? []).some((selector) =>
       selectorMatchesEvent(selector, event),
@@ -178,6 +168,7 @@ describe("app event contract", () => {
     expect(selectorTypes()).toEqual(
       expect.arrayContaining([
         "project.owner.requested",
+        "project.task.tick",
         "project.comment.created",
         "project.approval.submitted",
         "project.test_run.completed",
@@ -228,6 +219,43 @@ describe("app event contract", () => {
     expect(ownerA?.workflow).toBeUndefined();
     expect(ownerA?.input).toBeUndefined();
     expect(ownerB?.input).toBeUndefined();
+
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        action: "spec-loop",
+        target: { project: projectId, taskId: "aks-spec-verification-loop" },
+      }),
+    ).toMatchObject({
+      id: "aks-spec-verification-loop",
+      owner: "app-ops",
+      workflow: "spec-loop-controller",
+    });
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        action: "feature-compact-loop",
+        target: { project: projectId, taskId: "aks-feature-compact-loop" },
+      }),
+    ).toMatchObject({
+      id: "aks-feature-compact-loop",
+      owner: "app-ops",
+      workflow: "feature-compact-loop-controller",
+    });
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        target: {
+          project: projectId,
+          taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        },
+      }),
+    ).toMatchObject({
+      id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      owner: "aks-explorer",
+      workflow: "normalize-scenario-frontier",
+      mode: "maintain",
+    });
     expect(
       resolveAksTask({
         type: "project.problem.investigation.requested",
@@ -333,6 +361,19 @@ describe("app event contract", () => {
       action: "feature-compact-loop",
       target: { project: projectId, taskId: "loop-c" },
     });
+
+    expect(actionEvent("pulse-scenario-frontier")).toMatchObject({
+      type: "project.task.tick",
+      target: {
+        project: projectId,
+        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      },
+      data: {
+        project: projectId,
+        reason: "manual-scenario-frontier-pulse",
+        desiredRunnableLeaves: { min: 3, max: 5 },
+      },
+    });
   });
 
   test("supports multiple focus plans and multiple loop task instances", () => {
@@ -410,6 +451,21 @@ describe("app event contract", () => {
     }
   });
 
+  test("routes scenario frontier workflow to the domain owner", () => {
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        target: {
+          project: projectId,
+          taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        },
+      }),
+    ).toMatchObject({
+      owner: "aks-explorer",
+      workflow: "normalize-scenario-frontier",
+    });
+  });
+
   test("blocked-frontier review remains scheduled", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "blocked-frontier-app-ops-review",
@@ -467,6 +523,11 @@ describe("app event contract", () => {
       },
       data: {
         observation: { state: "red", strictPassed: false },
+        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        task_id: "domain/normalize-scenario-tests-repo-frontier-20260715",
+        desiredRunnableLeaves: { min: 3, max: 5 },
+        capacityRule: expect.stringContaining("Review/attention residue"),
+        instructions: expect.stringContaining("missingAdapterFiles"),
       },
     });
   });

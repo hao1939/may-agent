@@ -3,16 +3,22 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ProjectAppContext } from "@may-agent/sdk";
-import { observeAksPipelines, scanPipelineResults } from "./aks-pipeline.js";
+import {
+  observeAksPipelines,
+  pipelineObservationEvents,
+  scanPipelineResults,
+} from "./aks-pipeline.js";
 
 const roots: string[] = [];
 
 afterEach(() => {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true });
+  delete process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO;
 });
 
 function fixture() {
+  process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO = "0";
   const root = mkdtempSync(join(tmpdir(), "aks-pipeline-watcher-"));
   roots.push(root);
   const appDir = join(root, "aks-rp-e2e.app");
@@ -55,10 +61,47 @@ describe("AKS pipeline watcher", () => {
       expect.objectContaining({
         type: "project.test_run.completed",
         source: "aks-pipeline-watcher",
+        pipelineRunId: "run-1",
+        status: "failed",
         data: expect.objectContaining({
           pipelineRunId: "run-1",
           status: "failed",
         }),
+      }),
+    );
+  });
+
+  test("emits ADO facts with top-level fields for Condition matching", () => {
+    const events = pipelineObservationEvents({
+      runId: "172897811",
+      fingerprint: "fp",
+      status: "completed",
+      result: "succeeded",
+      sourceBranch: "refs/heads/dev",
+      sourceVersion: "abc123",
+      finishTime: "2026-07-20T03:28:29Z",
+      artifacts: ["plan-inputs", "slice-01-test-results"],
+    });
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "status-equals",
+        pipelineRunId: "172897811",
+        status: "completed",
+      }),
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "artifact-present",
+        pipelineRunId: "172897811",
+        artifactName: "slice-01-test-results",
+      }),
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "pipeline-run",
+        pipelineRunId: "172897811",
+        artifactsInclude: ["plan-inputs", "slice-01-test-results"],
       }),
     );
   });

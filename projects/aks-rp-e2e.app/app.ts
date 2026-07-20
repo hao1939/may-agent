@@ -20,6 +20,7 @@ const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
 const scenarioTestFrontierTaskId =
   "domain/normalize-scenario-tests-repo-frontier-20260715";
+const scenarioTestFrontierMinLeaves = 3;
 
 type AppTaskEvent = Record<string, unknown>;
 
@@ -79,6 +80,7 @@ const ownerReviewEventTypes = new Set([
 ]);
 
 const aksTaskSelectors: EventSelector[] = [
+  { type: "project.task.tick", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
   { type: "project.comment.created", target: projectTarget },
   { type: "project.approval.submitted", target: projectTarget },
@@ -130,6 +132,59 @@ export function resolveAksTask(
   }
 
   switch (event.type) {
+    case "project.task.tick": {
+      const action = stringDetail(details, "action");
+      if (action === "spec-loop" || taskId === specLoopTaskId) {
+        return {
+          id: taskId || specLoopTaskId,
+          parentId: "project",
+          outcome:
+            "Keep the durable single-spec verification loop advancing from current spec-loop state.",
+          acceptance: [
+            "The loop declares bounded same-spec work, exact waits, or an evidence-backed no-op from current state.",
+          ],
+          mode: "maintain",
+          owner: "app-ops",
+          workflow: "spec-loop-controller",
+          priority: "P1",
+        };
+      }
+      if (
+        action === "feature-compact-loop" ||
+        taskId === featureCompactLoopTaskId
+      ) {
+        return {
+          id: taskId || featureCompactLoopTaskId,
+          parentId: "project",
+          outcome:
+            "Keep the durable feature compact loop advancing from current compact-loop state.",
+          acceptance: [
+            "The loop declares bounded feature compact work, exact waits, or an evidence-backed no-op from current state.",
+          ],
+          mode: "maintain",
+          owner: "app-ops",
+          workflow: "feature-compact-loop-controller",
+          priority: "P1",
+        };
+      }
+      if (taskId === scenarioTestFrontierTaskId) {
+        return {
+          id: scenarioTestFrontierTaskId,
+          parentId: "project",
+          outcome:
+            "Normalize direct scenario-test carrier gaps until strict inventory is clean or every remaining item has an exact accepted disposition.",
+          acceptance: [
+            "Strict scenario-test inventory reaches zero missing adapters, or every remaining missing adapter has exact active work, wait, escalation, or terminal disposition.",
+            "The frontier keeps 3-5 concrete one-spec normalization leaves moving when safe work remains.",
+          ],
+          mode: "maintain",
+          owner: "aks-explorer",
+          workflow: "normalize-scenario-frontier",
+          priority: "P0",
+        };
+      }
+      return null;
+    }
     case "project.problem.investigation.requested": {
       const problemKey = stringDetail(
         details,
@@ -251,7 +306,17 @@ export function scenarioTestFrontierWakeEvent(
     reason: "strict-scenario-test-inventory-observed",
     data: {
       project: projectId,
+      taskId: scenarioTestFrontierTaskId,
+      task_id: scenarioTestFrontierTaskId,
       reason: "strict-scenario-test-inventory-observed",
+      desiredRunnableLeaves: {
+        min: scenarioTestFrontierMinLeaves,
+        max: domainPolicyMaxConcurrent,
+      },
+      capacityRule:
+        "For this normalization frontier, count only concrete one-spec domain leaves that are active/running, runnable/backlog, or exact accepted dispositions for current missingAdapterFiles. Review/attention residue, runtime/ops/focus work, spec-loop status, and compact-loop status do not satisfy moving normalization capacity.",
+      instructions:
+        "If strict inventory is red, account for each current missingAdapterFiles path. Create or advance enough concrete one-spec domain leaves to keep 3-5 useful leaves moving, or return an evidence-backed no-op only when each missing adapter already has exact active work, exact wait/escalation, or terminal disposition.",
       ...(isRecord(details.observation)
         ? { observation: details.observation }
         : {}),
@@ -662,6 +727,32 @@ export default defineProjectApp({
             taskId,
             task_id: taskId,
             reason: "manual-feature-compact-loop-pulse",
+            params: input,
+          },
+        };
+      },
+    },
+    "pulse-scenario-frontier": {
+      type: "async",
+      description:
+        "Pulse the targeted scenario-test missing-adapter normalization frontier.",
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.task.tick",
+          target: { project: projectId, taskId: scenarioTestFrontierTaskId },
+          data: {
+            project: projectId,
+            taskId: scenarioTestFrontierTaskId,
+            task_id: scenarioTestFrontierTaskId,
+            reason: "manual-scenario-frontier-pulse",
+            desiredRunnableLeaves: {
+              min: scenarioTestFrontierMinLeaves,
+              max: domainPolicyMaxConcurrent,
+            },
             params: input,
           },
         };

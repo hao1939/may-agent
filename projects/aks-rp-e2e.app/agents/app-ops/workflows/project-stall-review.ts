@@ -126,9 +126,14 @@ type ProjectSnapshot = {
   planningPacketError?: string;
 };
 
-function parseInput(raw: string, defaultAgent: string): StallReviewConfig {
-  const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = resolveAppDir(projectDir, field(raw, "app"));
+function parseInput(
+  raw: string,
+  defaultAgent: string,
+  paths: { appDir?: string; projectDir?: string },
+): StallReviewConfig {
+  const projectDir =
+    paths.projectDir ?? field(raw, "project") ?? "/app/projects/aks-rp-e2e";
+  const appDir = paths.appDir ?? resolveAppDir(projectDir, field(raw, "app"));
   return {
     appDir,
     projectDir,
@@ -775,7 +780,7 @@ function appendRun(appDir: string, entry: Record<string, unknown>): void {
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const config = parseInput(ctx.task, ctx.agent);
+  const config = parseInput(ctx.task, ctx.agent, ctx);
   const trigger = parseTriggerEvent(ctx.task);
   if (trigger && trigger.type !== "project.stall.review.requested") {
     return finishStallReview(ctx, {

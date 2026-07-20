@@ -414,6 +414,7 @@ export function loadFeatureCompactLoopState(input: {
 export function saveFeatureCompactLoopState(
   path: string,
   state: FeatureCompactLoopState,
+  options: { pruneAbsentFeatureKeys?: boolean } = {},
 ): void {
   const latest = existsSync(path)
     ? readJson<FeatureCompactLoopState | null>(path, null)
@@ -429,7 +430,7 @@ export function saveFeatureCompactLoopState(
     loopTaskId: state.loopTaskId || latest.loopTaskId,
     windowSize: state.windowSize || latest.windowSize,
     cursor: state.cursor ?? latest.cursor,
-    features: { ...latest.features },
+    features: options.pruneAbsentFeatureKeys ? {} : { ...latest.features },
   };
 
   for (const [featureKey, item] of Object.entries(state.features ?? {})) {

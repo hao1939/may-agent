@@ -24,6 +24,7 @@
     "agents/app-ops/workflows/problem-solver.ts",
     "agents/app-ops/workflows/spec-loop-controller.ts",
     "agents/app-ops/workflows/feature-compact-loop-controller.ts",
+    "agents/owner/workflows/normalize-scenario-frontier.ts",
     "watchers/**/*.ts",
     "types/**/*.d.ts"
   ],

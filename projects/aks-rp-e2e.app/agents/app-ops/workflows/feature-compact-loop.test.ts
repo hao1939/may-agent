@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute } from "./feature-compact-loop-controller";
@@ -13,6 +13,13 @@ async function workspace(item: Record<string, unknown>, represented = false) {
   });
   await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
+  await mkdir(join(projectDir, "features", "networking", "specs"), {
+    recursive: true,
+  });
+  await writeFile(
+    join(projectDir, "features", "networking", "specs", "case.json"),
+    JSON.stringify({ id: "spec.networking.case" }),
+  );
   await writeFile(
     join(appDir, ".state", "feature-compact-loop", "state.json"),
     JSON.stringify({
@@ -81,7 +88,8 @@ describe("feature compact reconciliation workflow", () => {
 
   test("declares bounded owner work without assigning it", async () => {
     const ws = await workspace(item("pending"));
-    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
       output: {
         state: "converged",
         actions: [
@@ -94,6 +102,92 @@ describe("feature compact reconciliation workflow", () => {
         ],
       },
     });
+    const [action] = result.output.actions;
+    expect(action.id).toBe("compact/compact-feature-networking");
+    expect(Object.keys(action.input).sort()).toEqual([
+      "capabilityId",
+      "featureKey",
+      "loopTaskId",
+      "packetPath",
+      "statePath",
+    ]);
+    expect(action.outcome).not.toContain("pending");
+  });
+
+  test("does not return wait Conditions with converged action results", async () => {
+    const ws = await workspace(item("pending", "existing-compact-task"), true);
+    await mkdir(join(ws.projectDir, "features", "storage", "specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, "features", "storage", "specs", "case.json"),
+      JSON.stringify({ id: "spec.storage.case" }),
+    );
+    await writeFile(
+      join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+      JSON.stringify({
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 1,
+        cursor: 0,
+        features: {
+          networking: item("running", "existing-compact-task"),
+          storage: {
+            ...item("pending"),
+            featureKey: "storage",
+            capabilityId: "storage",
+            packetPath: "features/storage.yaml",
+            specsDir: "features/storage/specs",
+          },
+        },
+      }),
+    );
+
+    const result = await execute(context(ws.appDir, ws.projectDir));
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            kind: "create-task",
+            parentId: "aks-feature-compact-loop",
+            input: { featureKey: "storage" },
+          },
+        ],
+      },
+    });
+    expect((result as any).output.conditions).toBeUndefined();
+  });
+
+  test("prunes stale compact rows for features absent from the current project layout", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+      JSON.stringify({
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 1,
+        cursor: 0,
+        features: {
+          networking: item("pending"),
+          "service-platform": {
+            ...item("pending"),
+            featureKey: "service-platform",
+            capabilityId: "service-platform",
+            packetPath: "features/service-platform.yaml",
+            specsDir: "features/service-platform/specs",
+          },
+        },
+      }),
+    );
+
+    await execute(context(ws.appDir, ws.projectDir));
+
+    const state = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(Object.keys(state.features).sort()).toEqual(["networking"]);
   });
 
   test("waits on an exact Condition when a compact task is represented", async () => {

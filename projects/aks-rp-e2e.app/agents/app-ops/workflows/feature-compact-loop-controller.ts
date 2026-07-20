@@ -12,8 +12,8 @@ import {
 import {
   defaultFeatureCompactLoopStatePath,
   loadFeatureCompactLoopState,
+  saveFeatureCompactLoopState,
   safeFeatureCompactTaskId,
-  type FeatureCompactItemState,
 } from "./lib/feature-compact-loop-store.ts";
 import {
   field,
@@ -74,9 +74,8 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 10);
 }
 
-function workId(featureKey: string, item: FeatureCompactItemState): string {
-  const revision = `${item.status}:${item.updatedAt}:${item.lastWorkflowRunId ?? ""}`;
-  return `compact/${safeFeatureCompactTaskId(featureKey)}-${digest(revision)}`;
+function workId(featureKey: string): string {
+  return `compact/${safeFeatureCompactTaskId(featureKey)}`;
 }
 
 function childCondition(taskId: string): ProjectAppConditionSpec {
@@ -89,8 +88,10 @@ function childCondition(taskId: string): ProjectAppConditionSpec {
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const projectDir =
+    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
+  const appDir =
+    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
   const loopTaskId =
     triggerString(trigger, "taskId") ||
@@ -103,7 +104,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     loopTaskId,
     windowSize: 1,
     statePath,
-    refreshFromProject: false,
+    refreshFromProject: true,
+  });
+  saveFeatureCompactLoopState(statePath, state, {
+    pruneAbsentFeatureKeys: true,
   });
   const graph = readGraph(appDir);
   const remaining = Object.entries(state.features)
@@ -139,9 +143,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     .slice(0, actionBudget)
     .map(([featureKey, item]) => ({
       kind: "create-task",
-      id: workId(featureKey, item),
+      id: workId(featureKey),
       parentId: loopTaskId,
-      outcome: `Reconcile feature compact package ${featureKey} from ${item.status} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
+      outcome: `Reconcile feature compact package ${featureKey} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
       mode: "achieve",
       owner: "aks-explorer",
       input: {
@@ -149,13 +153,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         capabilityId: item.capabilityId,
         loopTaskId,
         statePath,
-        status: item.status,
         packetPath: item.packetPath,
-        lastPlanPath: item.lastPlanPath,
-        lastResultPath: item.lastResultPath,
-        retryable: item.retryable,
-        retryReason: item.retryReason,
-        resumeCondition: item.resumeCondition,
       },
       outputs: [statePath, `../aks-rp-e2e/features/${featureKey}/compact/`],
       acceptance: [
@@ -167,16 +165,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }));
   const conditions = representedTaskIds.slice(0, 64).map(childCondition);
   const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): declared ${actions.length} bounded task action(s) and observed ${representedTaskIds.length} represented task(s).`;
+  if (actions.length > 0) {
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [`feature-compact-state:${statePath}`],
+      actions,
+    });
+  }
+  if (conditions.length > 0) {
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence: [`feature-compact-state:${statePath}`],
+      actions: [],
+      conditions,
+    });
+  }
   return ctx.done(summary, {
-    state:
-      actions.length > 0
-        ? "converged"
-        : conditions.length > 0
-          ? "waiting"
-          : "needs-owner",
+    state: "needs-owner",
     summary,
     evidence: [`feature-compact-state:${statePath}`],
-    actions,
-    ...(conditions.length > 0 ? { conditions } : {}),
+    actions: [],
   });
 }
