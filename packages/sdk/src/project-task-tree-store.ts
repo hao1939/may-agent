@@ -91,10 +91,10 @@ export type TaskTree = {
   tasks: Record<string, TaskNode>;
 };
 
-export type TaskTreeConfig = {
+export type TaskStateConfig = {
   appDir: string;
   projectDir: string;
-  treePath: string;
+  statePath: string;
   journalPath: string;
   worker: string;
   maxConcurrent: number;
@@ -139,8 +139,8 @@ function isRetryableTaskTreeReadError(error: unknown): boolean {
   return error.message.includes("ENOENT") || error.message.includes("EAGAIN");
 }
 
-export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
-  const lockPath = `${config.treePath}.lock`;
+export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T): T {
+  const lockPath = `${config.statePath}.lock`;
   const waitMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_WAIT_MS", "AKS_RP_E2E_TREE_LOCK_WAIT_MS"], 30_000);
   const staleMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_STALE_MS", "AKS_RP_E2E_TREE_LOCK_STALE_MS"], 2 * 60_000);
   const deadline = Date.now() + waitMs;
@@ -157,7 +157,7 @@ export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
       } catch {
         // Retry until the deadline.
       }
-      if (Date.now() > deadline) throw new Error(`Timed out waiting for task tree lock: ${lockPath}`);
+      if (Date.now() > deadline) throw new Error(`Timed out waiting for task state lock: ${lockPath}`);
       sleepSync(50);
     }
   }
@@ -168,9 +168,9 @@ export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
   }
 }
 
-export function readTaskTree(config: TaskTreeConfig): TaskTree {
+export function readTaskState(config: TaskStateConfig): TaskTree {
   const canonicalPath = projectRuntimePaths(config.appDir).taskStatePath;
-  if (config.treePath !== canonicalPath) {
+  if (config.statePath !== canonicalPath) {
     throw new Error(`Task state must be read from canonical state.json: ${canonicalPath}`);
   }
   const retryMs = timeoutFromAnyEnv(["PROJECT_TREE_READ_RETRY_MS", "AKS_RP_E2E_TREE_READ_RETRY_MS"], 250);
@@ -178,8 +178,8 @@ export function readTaskTree(config: TaskTreeConfig): TaskTree {
 
   while (true) {
     try {
-      const tree = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
-      normalizeTaskTreeInPlace(tree);
+      const tree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+      normalizeTaskStateInPlace(tree);
       return tree;
     } catch (error) {
       if (!isRetryableTaskTreeReadError(error) || Date.now() >= deadline) {
@@ -190,7 +190,7 @@ export function readTaskTree(config: TaskTreeConfig): TaskTree {
   }
 }
 
-export type SaveTaskTreeOptions = {
+export type SaveTaskStateOptions = {
   /** Set to true to bypass the shrinkage guard (e.g. intentional tree reset). */
   allowShrinkage?: boolean;
   /**
@@ -204,7 +204,7 @@ function normalizedLifecycle(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function appendTaskTreeJournal(config: TaskTreeConfig, entry: Record<string, unknown>): void {
+function appendTaskTreeJournal(config: TaskStateConfig, entry: Record<string, unknown>): void {
   ensureDir(dirname(config.journalPath));
   appendFileSync(
     config.journalPath,
@@ -218,33 +218,33 @@ function appendTaskTreeJournal(config: TaskTreeConfig, entry: Record<string, unk
 }
 
 function validateLifecycleTransition(
-  config: TaskTreeConfig,
+  config: TaskStateConfig,
   current: TaskTree,
   next: TaskTree,
-  options?: SaveTaskTreeOptions,
+  options?: SaveTaskStateOptions,
 ): void {
   const currentLifecycle = normalizedLifecycle(current.project_lifecycle);
   const nextLifecycle = normalizedLifecycle(next.project_lifecycle);
   if (currentLifecycle !== nextLifecycle && !options?.projectLifecycleReason?.trim()) {
     throw new Error(
-      `saveTaskTree lifecycle guard: refusing to change project ${config.projectDir} ` +
+      `saveTaskState lifecycle guard: refusing to change project ${config.projectDir} ` +
         `from ${currentLifecycle || "unset"} to ${nextLifecycle || "unset"} without an explicit reason.`,
     );
   }
 }
 
-export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: SaveTaskTreeOptions): void {
+export function saveTaskState(config: TaskStateConfig, tree: TaskTree, options?: SaveTaskStateOptions): void {
   const runtimePaths = projectRuntimePaths(config.appDir);
-  if (config.treePath !== runtimePaths.taskStatePath) {
+  if (config.statePath !== runtimePaths.taskStatePath) {
     throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
   }
-  normalizeTaskTreeInPlace(tree);
+  normalizeTaskStateInPlace(tree);
 
   let existingTree: TaskTree | null = null;
-  if (existsSync(config.treePath)) {
+  if (existsSync(config.statePath)) {
     try {
-      existingTree = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
-      normalizeTaskTreeInPlace(existingTree);
+      existingTree = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+      normalizeTaskStateInPlace(existingTree);
     } catch {
       existingTree = null;
     }
@@ -264,7 +264,7 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
 
   // Shrinkage guard: reject writes that reduce task count by >80%.
   // This prevents agent-caused data loss from whole-file overwrites.
-  if (!options?.allowShrinkage && existsSync(config.treePath)) {
+  if (!options?.allowShrinkage && existsSync(config.statePath)) {
     try {
       const existing = existingTree;
       if (!existing) throw new Error("existing task tree is unavailable");
@@ -274,23 +274,23 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
       // and the new tree drops by more than 80%.
       if (existingCount >= 5 && newCount < existingCount * 0.2) {
         throw new Error(
-          `saveTaskTree shrinkage guard: refusing to overwrite ${existingCount} tasks with ${newCount} tasks ` +
+          `saveTaskState shrinkage guard: refusing to overwrite ${existingCount} tasks with ${newCount} tasks ` +
             `(${Math.round((1 - newCount / existingCount) * 100)}% reduction). ` +
             `Pass { allowShrinkage: true } to override if this is intentional.`,
         );
       }
     } catch (e) {
       // Re-throw shrinkage guard errors; swallow file read/parse errors
-      if (e instanceof Error && e.message.startsWith("saveTaskTree shrinkage guard")) throw e;
+      if (e instanceof Error && e.message.startsWith("saveTaskState shrinkage guard")) throw e;
     }
   }
 
   tree.updated_at = new Date().toISOString();
   const serialized = `${JSON.stringify(canonicalTaskStateForWrite(tree), null, 2)}\n`;
-  ensureDir(dirname(config.treePath));
-  const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
+  ensureDir(dirname(config.statePath));
+  const tempPath = `${config.statePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
-  renameSync(tempPath, config.treePath);
+  renameSync(tempPath, config.statePath);
 
   const projectionPath = runtimePaths.taskTreePath;
   const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
@@ -318,21 +318,21 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   }
 }
 
-export function setProjectLifecycle(config: TaskTreeConfig, lifecycle: string, reason: string): void {
+export function setProjectLifecycle(config: TaskStateConfig, lifecycle: string, reason: string): void {
   const nextLifecycle = normalizedLifecycle(lifecycle);
   const transitionReason = reason.trim();
   if (!nextLifecycle) throw new Error("Project lifecycle must not be empty");
   if (!transitionReason) throw new Error("Project lifecycle change requires a reason");
 
-  withTreeLock(config, () => {
-    const tree = readTaskTree(config);
+  withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
     if (normalizedLifecycle(tree.project_lifecycle) === nextLifecycle) return;
     tree.project_lifecycle = nextLifecycle;
-    saveTaskTree(config, tree, { projectLifecycleReason: transitionReason });
+    saveTaskState(config, tree, { projectLifecycleReason: transitionReason });
   });
 }
 
-export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
+export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {
   const resources = tree.resources ?? {};
   const groups: Record<string, TaskNode> = Object.fromEntries(
     Object.entries(tree.groups ?? {}).map(([id, group]) => {

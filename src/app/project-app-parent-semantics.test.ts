@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  claimProjectAppTask,
+  claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
   readProjectAppTaskIntent,
@@ -69,10 +69,8 @@ function fixture() {
 }
 
 function claimChild(config: ReturnType<typeof taskReconciliationConfig>) {
-  const intent = readProjectAppTaskIntent(config, "child");
-  if (!intent) throw new Error("fixture child intent is missing");
-  const claim = claimProjectAppTask(config, {
-    intent,
+  const claim = claimObservedProjectAppTask(config, {
+    taskId: "child",
     appOwner: "app-owner",
     handler: "owner",
     reason: "test",

@@ -17,8 +17,7 @@ import {
   projectAppExecutionPaths,
   projectAppTaskOwnerResultSchema,
   projectRuntimePaths,
-  resolveProjectAppOutputPaths,
-  readTaskTree,
+  readTaskState,
   type ProjectApp,
   type ProjectAppContext,
   type ProjectAppConditionSpec,
@@ -37,7 +36,7 @@ import { trackProjectAppConditionEvent } from "../project-app-condition-tracker.
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
 import {
   acknowledgeProjectAppTaskRecoveryAttention,
-  claimProjectAppTask,
+  claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
   markProjectAppTaskAttention,
@@ -46,7 +45,7 @@ import {
   observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
   readProjectAppTaskIntent,
-  readProjectAppTaskTrigger,
+  recordProjectAppTaskTrigger,
   repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
@@ -944,15 +943,13 @@ async function establishTaskAcceptance(input: {
   }
 }
 
-async function reconcileTaskIntent(input: {
+async function reconcileTask(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
-  intent: ProjectAppTaskIntent;
-  event?: EventEnvelope;
+  taskId: string;
   reason?: string;
 }): Promise<string[]> {
-  const { opts, descriptor, intent, event } = input;
-  const flattened = event ? flattenEvent(event as unknown as AgentEvent) : {};
+  const { opts, descriptor } = input;
 
   const config = taskReconciliationConfig({
     appDir: descriptor.appDir,
@@ -960,26 +957,16 @@ async function reconcileTaskIntent(input: {
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
-  const defaultParentId = readTaskTree(config).root_task_id;
+  const defaultParentId = readTaskState(config).root_task_id;
   if (!defaultParentId) {
     throw new Error(`Project app ${descriptor.id} has no root task group for convention defaults`);
   }
-  const executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
-  let declaredOutputPaths: string[] = [];
-  let preclaimError: string | undefined;
-  try {
-    declaredOutputPaths = resolveProjectAppOutputPaths(intent.outputs ?? [], executionPaths);
-  } catch (error) {
-    preclaimError = `Task output admission failed: ${error instanceof Error ? error.message : String(error)}`;
-  }
-  const primary = claimProjectAppTask(config, {
-    intent,
+  const primary = claimObservedProjectAppTask(config, {
+    taskId: input.taskId,
     appOwner: descriptor.owner,
     handler: "auto",
-    reason: input.reason ?? event?.type ?? "task-controller",
-    trigger: event ? flattened : undefined,
+    reason: input.reason ?? "task-controller",
     isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
-    preclaimError,
   });
   if (primary.kind !== "claimed") {
     const skip =
@@ -992,12 +979,16 @@ async function reconcileTaskIntent(input: {
           : primary.kind === "attention"
             ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
             : { reason: "already-completed", generation: primary.generation };
-    emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.skipped", intent.id, {
+    emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconcile.skipped", input.taskId, {
       route: "task-controller",
       ...skip,
     });
     return [];
   }
+  const intent = primary.intent;
+  const event = primary.trigger as EventEnvelope | undefined;
+  const executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
+  const declaredOutputPaths = primary.declaredOutputPaths;
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
     route: "task-controller",
     generation: primary.generation,
@@ -1247,14 +1238,10 @@ function installConventionTaskControllers(
         taskIds: () => listRunnableProjectAppTaskIds(config),
       },
       reconcile: async (taskId) => {
-        const intent = readProjectAppTaskIntent(config, taskId);
-        if (!intent) return;
-        const trigger = readProjectAppTaskTrigger(config, taskId);
-        const dependentTaskIds = await reconcileTaskIntent({
+        const dependentTaskIds = await reconcileTask({
           opts,
           descriptor,
-          intent,
-          event: trigger as EventEnvelope | undefined,
+          taskId,
           reason: "task-controller",
         });
         for (const dependentTaskId of dependentTaskIds) {
@@ -1437,11 +1424,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         });
         const conditionWakes = trackProjectAppConditionEvent(config, event);
         for (const wake of conditionWakes) {
-          observeProjectAppTaskIntent(config, {
-            intent: wake.intent,
-            appOwner: descriptor.owner,
-            trigger: event,
-          });
           taskController?.enqueue(wake.taskId);
         }
       }
@@ -1455,15 +1437,24 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             owner: descriptor.owner,
             maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
           });
-          const intent = readProjectAppTaskIntent(config, targetedTaskId);
-          if (intent) {
-            observeProjectAppTaskIntent(config, {
-              intent,
-              appOwner: descriptor.owner,
-              trigger: event,
-            });
+          const triggerResult = recordProjectAppTaskTrigger(config, targetedTaskId, event);
+          if (triggerResult.kind === "recorded") {
             taskController.enqueue(targetedTaskId);
             return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
+          }
+          if (triggerResult.kind === "waiting") {
+            return projectAppTaskDelivery(
+              descriptor,
+              targetedTaskId,
+              "existing targeted task remains asleep on open Conditions",
+            );
+          }
+          if (readProjectAppTaskIntent(config, targetedTaskId)) {
+            return projectAppTaskDelivery(
+              descriptor,
+              targetedTaskId,
+              "existing targeted task remains asleep on open Conditions",
+            );
           }
           if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
             const resolved = descriptor.app.tasks.resolve(event);
