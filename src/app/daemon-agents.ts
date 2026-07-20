@@ -4,6 +4,7 @@ import { importRuntimeModule } from "../lib/runtime-import.js";
 import { listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
 import { buildTools } from "./loader/toolset-loader.js";
+import { buildAgentDefinition } from "./loader/agent-definition.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -88,13 +89,13 @@ export async function prepareDaemonAgents(opts: {
     }
 
     const model = opts.models[config.model];
-    const knowledgeDir = resolve(agentDir, "knowledge");
-    const workspace = resolve(agentDir, "workspace");
-
-    opts.manager.register({
-      name: config.name,
-      description: config.description,
-      domain: config.domain,
+    const definition = await buildAgentDefinition({
+      config,
+      source: {
+        name: config.name,
+        dir: agentDir,
+        agentsRoot: resolve(appDir, "agents"),
+      },
       model,
       tools: await buildTools(config, {
         ...loaderOpts,
@@ -106,15 +107,15 @@ export async function prepareDaemonAgents(opts: {
         setAgentCron: (name, cron) => getAgentCrons().set(name, cron),
         addCleanup: () => {},
       }),
-      agentDir,
-      knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-      workspace: existsSync(workspace) ? workspace : undefined,
       projectRoot: opts.projectRoot,
-      apiKey: model.apiKey,
-      memoryLimit: config.memoryLimit,
-      compaction: config.compaction,
-      contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
+      sharedRoot: opts.sharedRoot,
+      globalAgentsRoot: opts.agentsRoot,
+      appLocal: true,
     });
+    for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) {
+      opts.bus.emit({ type: "info", message: `[project-app] ${config.name} skill diagnostic: ${diagnostic}` });
+    }
+    opts.manager.register(definition);
 
     opts.bus.emit({
       type: "info",

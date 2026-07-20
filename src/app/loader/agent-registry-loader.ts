@@ -12,7 +12,7 @@ import {
   listRuntimeAgentDirectories,
 } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
-import { discoverAgentSkills } from "../../lib/skills.js";
+import { buildAgentDefinition } from "./agent-definition.js";
 
 export interface AgentLoaderOptions {
   agentsRoot: string;
@@ -95,17 +95,28 @@ export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistr
 
     const isUpdate = manager.hasAgent(config.name);
     const model = models[config.model];
-    const knowledgeDir = resolve(agentDir, "knowledge");
-    const workspace = resolve(agentDir, "workspace");
     const effectiveProjectRoot = agentProjectRoot(agentSource, projectRoot);
-    const skillCatalog = await discoverAgentSkills({
-      agentDir,
-      appLocal: !!agentSource.projectId,
-      globalAgentDir: resolve(agentsRoot, config.name),
+    const definition = await buildAgentDefinition({
+      config,
+      source: agentSource,
+      model,
+      tools: await buildTools(config, {
+        ...opts,
+        projectRoot: effectiveProjectRoot,
+        agentsRoot: agentsRootForAgentDir(agentSource),
+        globalAgentsRoot: agentsRoot,
+        agentDir,
+        getAgentSessionId: runtime.getAgentSessionId,
+        getAgentCrons: runtime.getAgentCrons,
+        setAgentCron: runtime.setAgentCron,
+        addCleanup: runtime.addCleanup,
+      }),
+      projectRoot: effectiveProjectRoot,
       sharedRoot: opts.sharedRoot,
+      globalAgentsRoot: agentsRoot,
     });
-    if (skillCatalog.diagnostics.length > 0) {
-      const skillErrors: ValidationError[] = skillCatalog.diagnostics.map((message) => ({
+    if (definition.skillCatalog?.diagnostics.length) {
+      const skillErrors: ValidationError[] = definition.skillCatalog.diagnostics.map((message) => ({
         agent: config.name,
         field: "skills",
         message,
@@ -126,32 +137,7 @@ export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistr
       });
     }
 
-    manager.register({
-      name: config.name,
-      description: config.description,
-      domain: config.domain,
-      model,
-      tools: await buildTools(config, {
-        ...opts,
-        projectRoot: effectiveProjectRoot,
-        agentsRoot: agentsRootForAgentDir(agentSource),
-        globalAgentsRoot: agentsRoot,
-        agentDir,
-        getAgentSessionId: runtime.getAgentSessionId,
-        getAgentCrons: runtime.getAgentCrons,
-        setAgentCron: runtime.setAgentCron,
-        addCleanup: runtime.addCleanup,
-      }),
-      agentDir,
-      knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-      workspace: existsSync(workspace) ? workspace : undefined,
-      projectRoot: effectiveProjectRoot,
-      apiKey: model.apiKey,
-      memoryLimit: config.memoryLimit,
-      compaction: config.compaction,
-      contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
-      skillCatalog,
-    });
+    manager.register(definition);
 
     if (isUpdate) {
       updated.push(config.name);

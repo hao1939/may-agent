@@ -1,19 +1,20 @@
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
   executePreparedAgent,
   prepareAgentExecution,
   type DirectAgentExecutionResult,
+  type PreparedAgentExecution,
 } from "../lib/agent-execution.js";
 import { generateId } from "../lib/manager-utils.js";
-import { discoverAgentSkills } from "../lib/skills.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { createReadTool } from "../lib/tools/read.js";
 import { createBackgroundExecTool } from "../lib/background-exec.js";
 import { createScrapeTool } from "../lib/scrape.js";
-import type { ModelWithApiKey, SubagentDefinition } from "../lib/types.js";
+import type { ModelWithApiKey } from "../lib/types.js";
+import { buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
 import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
@@ -43,6 +44,10 @@ export type DirectAgentRunOptions = {
   models: Record<string, ModelWithApiKey>;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
+  /** Fixed only when deterministic preparation/evaluation evidence is required. */
+  promptTimestamp?: string;
+  /** Fixed only when deterministic preparation/evaluation evidence is required. */
+  sessionId?: string;
   onNotice?: (message: string) => void;
 };
 
@@ -52,6 +57,15 @@ export type DirectAgentRunResult = DirectAgentExecutionResult & {
   systemPrompt: string;
   model: string;
   executionManifest: AgentExecutionManifest;
+};
+
+export type DirectAgentPreparation = {
+  prepared: PreparedAgentExecution;
+  sessionId: string;
+  sessionPath: string;
+  model: string;
+  executionManifest: AgentExecutionManifest;
+  cleanup(): void;
 };
 
 function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
@@ -146,11 +160,8 @@ async function buildDirectTools(
   return { tools, cleanup };
 }
 
-/**
- * Load and run one agent directly. This adapter intentionally does not create
- * EventBus, SQLite, SubagentManager, schedules, task state, or recovery.
- */
-export async function runDirectAgent(options: DirectAgentRunOptions): Promise<DirectAgentRunResult> {
+/** Prepare one direct run without constructing autonomous infrastructure. */
+export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
   const source = resolveAgentSource(options);
   const config = readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
@@ -167,44 +178,25 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
   const executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
   const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
-
-  const knowledgeDir = join(source.dir, "knowledge");
-  const workspace = join(source.dir, "workspace");
-  const skillCatalog = await discoverAgentSkills({
-    agentDir: source.dir,
-    appLocal:
-      source.projectId !== undefined ||
-      resolve(options.agentsRoot) !== resolve(options.globalAgentsRoot ?? join(options.projectRoot, "agents")),
-    globalAgentDir: resolve(options.globalAgentsRoot ?? join(options.projectRoot, "agents"), config.name),
-    sharedRoot: options.sharedRoot,
-  });
-  for (const diagnostic of skillCatalog.diagnostics) options.onNotice?.(diagnostic);
-
-  const definition: SubagentDefinition = {
-    name: config.name,
-    description: config.description,
-    domain: config.domain,
+  const definition = await buildAgentDefinition({
+    config,
+    source,
     model,
     tools,
-    agentDir: source.dir,
-    knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
-    workspace: existsSync(workspace) ? workspace : undefined,
     projectRoot: options.workRoot,
-    apiKey: model.apiKey,
-    memoryLimit: config.memoryLimit,
-    compaction: config.compaction,
-    skillCatalog,
-  };
+    sharedRoot: options.sharedRoot,
+    globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+  });
+  for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
 
-  const sessionId = generateId("direct");
+  const sessionId = options.sessionId ?? generateId("direct");
   const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
-  mkdirSync(sessionPath, { recursive: true });
-  const transcriptPath = join(sessionPath, "session.jsonl");
   const prepared = prepareAgentExecution({
     definition,
     projectRoot: options.projectRoot,
     sessionId,
     task: options.task,
+    promptTimestamp: options.promptTimestamp,
     createFinish: () =>
       createFinishTool({
         agentName: config.name,
@@ -213,13 +205,35 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       }),
     onNotice: options.onNotice,
   });
+
+  return {
+    prepared,
+    sessionId,
+    sessionPath,
+    model: config.model,
+    executionManifest,
+    cleanup: () => {
+      for (const close of cleanup) close();
+    },
+  };
+}
+
+/**
+ * Load and run one agent directly. This adapter intentionally does not create
+ * EventBus, SQLite, SubagentManager, schedules, task state, or recovery.
+ */
+export async function runDirectAgent(options: DirectAgentRunOptions): Promise<DirectAgentRunResult> {
+  const direct = await prepareDirectAgentExecution(options);
+  const { prepared, sessionId, sessionPath, executionManifest } = direct;
+  mkdirSync(sessionPath, { recursive: true });
+  const transcriptPath = join(sessionPath, "session.jsonl");
   writeFileSync(
     join(sessionPath, "meta.json"),
     `${JSON.stringify(
       {
         sessionId,
-        agent: config.name,
-        model: config.model,
+        agent: prepared.definition.name,
+        model: direct.model,
         kind: "direct",
         executionManifest,
       },
@@ -242,10 +256,10 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       sessionId,
       sessionPath,
       systemPrompt: prepared.systemPrompt,
-      model: config.model,
+      model: direct.model,
       executionManifest,
     };
   } finally {
-    for (const close of cleanup) close();
+    direct.cleanup();
   }
 }
