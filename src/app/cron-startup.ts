@@ -23,10 +23,9 @@ function fieldFromPrompt(prompt: string, name: string): string | null {
 
 function currentProjectLifecycle(appDir: string): string | null {
   const paths = projectRuntimePaths(appDir);
-  const statePath = existsSync(paths.taskStatePath) ? paths.taskStatePath : paths.taskTreePath;
-  if (!existsSync(statePath)) return null;
+  if (!existsSync(paths.taskStatePath)) return null;
   try {
-    const tree = JSON.parse(readFileSync(statePath, "utf8")) as {
+    const tree = JSON.parse(readFileSync(paths.taskStatePath, "utf8")) as {
       project_lifecycle?: unknown;
     };
     return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : null;

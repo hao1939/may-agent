@@ -190,7 +190,7 @@ export type ProjectAppTaskHandlerResult = {
   conditions?: ProjectAppConditionSpec[];
 };
 
-export type ProjectAppTaskAcceptance = {
+export type ProjectAppTaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "owner-judgment";
   verifier?: string;
   evidence: string[];

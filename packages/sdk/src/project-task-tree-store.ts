@@ -11,7 +11,7 @@ import {
 import { dirname, join } from "node:path";
 import type {
   ProjectAppCondition,
-  ProjectAppTaskAcceptance,
+  ProjectAppTaskAcceptanceBasis,
   ProjectAppTaskAttempt,
   ProjectAppTaskResource,
   ProjectAppTaskTrigger,
@@ -70,7 +70,7 @@ export type TaskCompletionReceipt = {
   handler: string;
   summary: string;
   evidence: string[];
-  verification: ProjectAppTaskAcceptance;
+  acceptanceBasis: ProjectAppTaskAcceptanceBasis;
   failureFingerprints: string[];
   completedAt: string;
 };
@@ -169,6 +169,10 @@ export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
 }
 
 export function readTaskTree(config: TaskTreeConfig): TaskTree {
+  const canonicalPath = projectRuntimePaths(config.appDir).taskStatePath;
+  if (config.treePath !== canonicalPath) {
+    throw new Error(`Task state must be read from canonical state.json: ${canonicalPath}`);
+  }
   const retryMs = timeoutFromAnyEnv(["PROJECT_TREE_READ_RETRY_MS", "AKS_RP_E2E_TREE_READ_RETRY_MS"], 250);
   const deadline = Date.now() + retryMs;
 
@@ -230,6 +234,10 @@ function validateLifecycleTransition(
 }
 
 export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: SaveTaskTreeOptions): void {
+  const runtimePaths = projectRuntimePaths(config.appDir);
+  if (config.treePath !== runtimePaths.taskStatePath) {
+    throw new Error(`Task state must be written to canonical state.json: ${runtimePaths.taskStatePath}`);
+  }
   normalizeTaskTreeInPlace(tree);
 
   let existingTree: TaskTree | null = null;
@@ -258,16 +266,10 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   // This prevents agent-caused data loss from whole-file overwrites.
   if (!options?.allowShrinkage && existsSync(config.treePath)) {
     try {
-      const existing = existingTree as {
-        tasks?: Record<string, unknown> | unknown[];
-      } | null;
+      const existing = existingTree;
       if (!existing) throw new Error("existing task tree is unavailable");
-      const existingCount = Array.isArray(existing.tasks)
-        ? existing.tasks.length
-        : typeof existing.tasks === "object" && existing.tasks !== null
-          ? Object.keys(existing.tasks).length
-          : 0;
-      const newCount = Object.keys(tree.tasks ?? {}).length;
+      const existingCount = Object.keys(existing.groups ?? {}).length + Object.keys(existing.resources ?? {}).length;
+      const newCount = Object.keys(tree.groups ?? {}).length + Object.keys(tree.resources ?? {}).length;
       // Only guard when existing tree has enough tasks to be meaningful (>=5)
       // and the new tree drops by more than 80%.
       if (existingCount >= 5 && newCount < existingCount * 0.2) {
@@ -284,25 +286,17 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   }
 
   tree.updated_at = new Date().toISOString();
-  const runtimePaths = projectRuntimePaths(config.appDir);
-  const writesCanonicalState = config.treePath === runtimePaths.taskStatePath;
-  const serialized = `${JSON.stringify(
-    writesCanonicalState ? canonicalTaskStateForWrite(tree) : taskTreeProjectionForWrite(tree),
-    null,
-    2,
-  )}\n`;
+  const serialized = `${JSON.stringify(canonicalTaskStateForWrite(tree), null, 2)}\n`;
   ensureDir(dirname(config.treePath));
   const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.treePath);
 
-  if (writesCanonicalState) {
-    const projectionPath = runtimePaths.taskTreePath;
-    const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
-    ensureDir(dirname(projectionPath));
-    writeFileSync(projectionTempPath, `${JSON.stringify(taskTreeProjectionForWrite(tree), null, 2)}\n`, "utf-8");
-    renameSync(projectionTempPath, projectionPath);
-  }
+  const projectionPath = runtimePaths.taskTreePath;
+  const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
+  ensureDir(dirname(projectionPath));
+  writeFileSync(projectionTempPath, `${JSON.stringify(taskTreeProjectionForWrite(tree), null, 2)}\n`, "utf-8");
+  renameSync(projectionTempPath, projectionPath);
 
   if (
     existingTree &&
@@ -340,12 +334,12 @@ export function setProjectLifecycle(config: TaskTreeConfig, lifecycle: string, r
 
 export function normalizeTaskTreeInPlace(tree: TaskTree): TaskTree {
   const resources = tree.resources ?? {};
-  const groups: Record<string, TaskNode> = { ...(tree.groups ?? {}) };
-  for (const [id, task] of Object.entries(tree.tasks ?? {})) {
-    const resource = resources[id];
-    if (resource && task.kind?.trim() && !resource.spec.category) resource.spec.category = task.kind.trim();
-    if (!resources[id] && !groups[id]) groups[id] = { ...task, id };
-  }
+  const groups: Record<string, TaskNode> = Object.fromEntries(
+    Object.entries(tree.groups ?? {}).map(([id, group]) => {
+      const { children: _derivedChildren, ...structural } = group;
+      return [id, { ...structural, id }];
+    }),
+  );
   tree.groups = groups;
   tree.tasks = buildTaskTreeProjection(groups, resources);
   tree.active_task_ids = Object.values(resources)

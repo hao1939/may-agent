@@ -29,8 +29,8 @@ function fixture() {
     join(appDir, "tasks", "seed.json"),
     JSON.stringify({
       root_task_id: "root",
-      tasks: {
-        root: { id: "root", state: "backlog", owner: "sample-owner", children: ["operations"] },
+      groups: {
+        root: { id: "root", parent_id: null, state: "backlog", owner: "sample-owner", children: ["operations"] },
         operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
       },
     }),
@@ -446,7 +446,7 @@ describe("project app loader", () => {
     try {
       writeApp(f.appDir);
       const treeDir = join(f.appDir, ".state", "tasks");
-      const treePath = join(treeDir, "tree.json");
+      const treePath = join(treeDir, "state.json");
       mkdirSync(treeDir, { recursive: true });
       writeFileSync(treePath, JSON.stringify({ project_lifecycle: "paused", tasks: {} }));
       const paused = projectAppHostFingerprint(f.projectsRoot);
@@ -467,23 +467,13 @@ describe("project app loader", () => {
       writeApp(f.appDir);
       mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
       writeFileSync(
-        join(f.appDir, ".state", "tasks", "tree.json"),
+        join(f.appDir, ".state", "tasks", "state.json"),
         JSON.stringify({
           project_lifecycle: "paused",
           root_task_id: "root",
-          tasks: {
-            root: { id: "root", state: "backlog", children: ["operations"] },
-            operations: { id: "operations", parent_id: "root", state: "backlog", children: ["work/orphan"] },
-            "work/orphan": {
-              id: "work/orphan",
-              parent_id: "operations",
-              state: "active",
-              owner: "sample-owner",
-              revision: 1,
-              goal: "Process orphan",
-              acceptance: ["Work converges"],
-              children: [],
-            },
+          groups: {
+            root: { id: "root", parent_id: null, state: "backlog", children: ["operations"] },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
           },
           active_task_ids: ["work/orphan"],
           active_task_id: "work/orphan",
@@ -598,10 +588,10 @@ describe("project app loader", () => {
         timeout: 15 * 60_000,
       });
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/workflow"].verification.method).toBe("workflow-contract");
-      expect(tree.receipts["work/workflow"].verification.evidence).toContain("proof");
+      expect(tree.receipts["work/workflow"].acceptanceBasis.method).toBe("workflow-contract");
+      expect(tree.receipts["work/workflow"].acceptanceBasis.evidence).toContain("proof");
       expect(tree.receipts["work/owner"]).toMatchObject({
-        verification: { method: "owner-judgment", evidence: ["owner proof"] },
+        acceptanceBasis: { method: "owner-judgment", evidence: ["owner proof"] },
       });
     } finally {
       closeDb(f.persistDir);
@@ -657,7 +647,7 @@ describe("project app loader", () => {
       });
 
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
-      expect(tree.receipts["work/verified"].verification).toEqual({
+      expect(tree.receipts["work/verified"].acceptanceBasis).toEqual({
         method: "deterministic",
         verifier: "worker",
         evidence: ["deterministic:sample-postcondition"],
@@ -945,6 +935,8 @@ describe("project app loader", () => {
       );
 
       expect(ownerCalls).toHaveLength(1);
+      expect(ownerCalls[0]).toContain("HandlerUnavailable:");
+      expect(ownerCalls[0]).toContain("not-installed");
       expect(events).toContainEqual(
         expect.objectContaining({
           type: "project.task.handler.unavailable",
@@ -1014,6 +1006,8 @@ describe("project app loader", () => {
       );
 
       expect(ownerCalls).toHaveLength(1);
+      expect(ownerCalls[0]).toContain("needs-owner: workflow needs owner judgment");
+      expect(ownerCalls[0]).toContain("workflow classified the exception");
       expect(
         events.filter(
           (event) =>
@@ -1278,22 +1272,18 @@ describe("project app loader", () => {
       writeApp(f.appDir);
       mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
       writeFileSync(
-        join(f.appDir, ".state", "tasks", "tree.json"),
+        join(f.appDir, ".state", "tasks", "state.json"),
         JSON.stringify({
           root_task_id: "root",
-          tasks: {
-            root: { id: "root", state: "backlog", owner: "sample-owner", children: ["operations"] },
-            operations: { id: "operations", parent_id: "root", state: "backlog", children: ["work/orphan"] },
-            "work/orphan": {
-              id: "work/orphan",
-              parent_id: "operations",
-              state: "active",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
               owner: "sample-owner",
-              revision: 1,
-              goal: "Process orphan",
-              acceptance: ["Work converges"],
-              children: [],
+              children: ["operations"],
             },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
           },
           active_task_ids: ["work/orphan"],
           active_task_id: "work/orphan",
