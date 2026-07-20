@@ -194,6 +194,25 @@ describe("project app loader handler result normalization", () => {
     });
   });
 
+  it("accepts failed owner results as attention-worthy evidence", () => {
+    expect(
+      normalizeTaskHandlerResult(
+        {
+          state: "failed",
+          summary: "no exact machine-observable wait exists",
+          evidence: ["owner inspected current facts and found no event source"],
+          actions: [],
+        },
+        { type: "done", summary: "fallback", runId: "s_owner" },
+      ),
+    ).toMatchObject({
+      state: "failed",
+      summary: "no exact machine-observable wait exists",
+      evidence: ["owner inspected current facts and found no event source"],
+      actions: [],
+    });
+  });
+
   it("rejects the removed progressing result state", () => {
     expect(
       normalizeTaskHandlerResult(
@@ -303,6 +322,7 @@ describe("project app loader handler result normalization", () => {
       ],
     });
   });
+
 });
 
 describe("project app loader", () => {
@@ -535,6 +555,7 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain("Allowed actions:");
       expect(ownerCalls[0]).toContain('kind: "create-task"');
       expect(ownerCalls[0]).toContain("Do not invent action names");
+      expect(ownerCalls[0]).toContain("missing evidence is work to do");
       expect(ownerCalls[0]).toContain("Do not include an action for the current Reconciliation Task taskId");
       expect(ownerOptions[0]).toMatchObject({
         projectId: "sample",
@@ -544,6 +565,85 @@ describe("project app loader", () => {
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(tree.receipts["work/workflow"]).toBeTruthy();
       expect(tree.receipts["work/owner"]).toBeTruthy();
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("applies structured successor actions from failed owner results", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    const ownerOptions: Array<Record<string, unknown>> = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent(_agent: string, task: string, options: Record<string, unknown>) {
+            ownerCalls.push(task);
+            ownerOptions.push(options);
+            return {
+              sessionId: "owner-failed-with-action",
+              status: "done",
+              structuredResult: {
+                state: "failed",
+                summary: "current carrier failed but has an exact successor",
+                evidence: ["owner inspected current facts"],
+                actions: [
+                  {
+                    kind: "create-task",
+                    id: "work/followup",
+                    parentId: "operations",
+                    goal: "Run the bounded follow-up",
+                    mode: "achieve",
+                    outputs: ["proof.md"],
+                    acceptance: ["The follow-up is represented as durable work"],
+                    owner: "sample-owner",
+                    dependsOn: ["external-ready"],
+                  },
+                ],
+              },
+              lastAssistantText: "owner failed with action",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "owner-failed-action", ownerOnly: true } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-failed-action" &&
+            event.data?.disposition === "failed-followup",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(1);
+      expect(ownerOptions[0]).toMatchObject({ projectId: "sample" });
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(tree.receipts["work/owner-failed-action"]).toBeTruthy();
+      expect(tree.tasks["work/followup"]).toMatchObject({
+        state: "backlog",
+        owner: "sample-owner",
+        parent_id: "operations",
+        depends_on: ["external-ready"],
+      });
+      expect(tree.tasks.operations.children).toContain("work/followup");
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
@@ -719,6 +819,115 @@ describe("project app loader", () => {
       expect(attempts).toHaveLength(2);
       expect(attempts.every((attempt) => attempt.state === "completed")).toBe(true);
       expect(new Set(attempts.map((attempt) => attempt.id ?? attempt.metadata?.id)).size).toBe(2);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps direct task wake events from bypassing open waits unless overrideWait is explicit", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "maintain-wake", mode: "maintain" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/maintain-wake" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const treePath = join(f.appDir, ".state", "tasks", "tree.json");
+      const waiting = JSON.parse(readFileSync(treePath, "utf8"));
+      waiting.conditions = {
+        ...(waiting.conditions ?? {}),
+        "external-wait": {
+          metadata: { id: "external-wait", generation: 1, resourceVersion: 1 },
+          spec: {
+            type: "external.never",
+            subject: "project:sample",
+            expected: "done",
+          },
+          status: { observedGeneration: 1, state: "false" },
+        },
+      };
+      waiting.tasks["work/maintain-wake"].state = "blocked";
+      waiting.resources["work/maintain-wake"].status = {
+        ...waiting.resources["work/maintain-wake"].status,
+        phase: "waiting",
+        conditionIds: ["external-wait"],
+        currentAttemptId: undefined,
+      };
+      writeFileSync(treePath, `${JSON.stringify(waiting, null, 2)}\n`);
+      events.length = 0;
+
+      bus.emit({
+        type: "project.task.tick",
+        project: "sample",
+        target: { project: "sample", taskId: "work/maintain-wake" },
+        reason: "test-direct-wake",
+      } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconcile.skipped" &&
+            event.data?.taskId === "work/maintain-wake" &&
+            event.data?.reason === "conditions-open",
+        ),
+      );
+
+      const stillWaiting = JSON.parse(readFileSync(treePath, "utf8"));
+      const waitingAttempts = Object.values(stillWaiting.attempts).filter(
+        (attempt: any) => attempt.taskId === "work/maintain-wake",
+      ) as any[];
+      expect(waitingAttempts).toHaveLength(1);
+      expect(stillWaiting.resources["work/maintain-wake"].status.phase).toBe("waiting");
+      expect(stillWaiting.taskTriggers?.["work/maintain-wake"]).toBeUndefined();
+
+      events.length = 0;
+      bus.emit({
+        type: "project.task.tick",
+        project: "sample",
+        target: { project: "sample", taskId: "work/maintain-wake" },
+        reason: "test-direct-wake-override",
+        data: { overrideWait: true },
+      } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/maintain-wake" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const tree = JSON.parse(readFileSync(treePath, "utf8"));
+      const attempts = Object.values(tree.attempts).filter(
+        (attempt: any) => attempt.taskId === "work/maintain-wake",
+      ) as any[];
+      expect(attempts.at(-1)).toMatchObject({
+        state: "completed",
+        trigger: { type: "project.task.tick", reason: "test-direct-wake-override" },
+      });
+      expect(tree.resources["work/maintain-wake"].status.phase).toBe("converged");
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
@@ -905,7 +1114,9 @@ describe("project app loader", () => {
       const handled = bus.emit({ type: "sample.note", project: "sample" } as any);
       await waitUntil(
         () =>
-          events.some((event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router") &&
+          events.some(
+            (event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router",
+          ) &&
           events.some(
             (event) =>
               event.type === "owner.inbox.reviewed" && event.data?.openEventId === (handled as any)[EVENT_ROW_ID],

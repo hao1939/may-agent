@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { saveTaskTree, setProjectLifecycle, type TaskTreeConfig, type TaskTree } from "./project-task-tree-store.js";
+import { readTaskTree, saveTaskTree, setProjectLifecycle, type TaskTreeConfig, type TaskTree } from "./project-task-tree-store.js";
 
 const TEST_DIR = join(import.meta.dir, "__test_shrinkage__");
 
@@ -217,6 +217,53 @@ describe("saveTaskTree shrinkage guard", () => {
     // 20 tasks = exactly 20% of 100 — should pass (guard triggers at <20%)
     const newTree: TaskTree = { tasks: makeTasks(20) };
     expect(() => saveTaskTree(config, newTree)).not.toThrow();
+  });
+
+  it("prunes receipt-only child references during normalization", () => {
+    const config = makeConfig();
+    const existingTree: TaskTree = {
+      root_task_id: "root",
+      tasks: {
+        root: {
+          id: "root",
+          state: "backlog",
+          children: ["live-child", "receipt-only-child", "missing-child"],
+        },
+        "live-child": {
+          id: "live-child",
+          parent_id: "root",
+          state: "backlog",
+          children: [],
+        },
+      },
+      receipts: {
+        "receipt-only-child": {
+          metadata: {
+            id: "receipt-only-child",
+            generation: 1,
+            resourceVersion: 1,
+          },
+          specHash: "spec-hash",
+          parentId: "root",
+          outcome: "Completed work",
+          acceptance: ["done"],
+          owner: "app-owner",
+          handler: "owner:app-owner",
+          summary: "completed earlier",
+          evidence: ["artifact:receipt.md"],
+          failureFingerprints: [],
+          completedAt: "2026-07-19T00:00:00.000Z",
+        },
+      },
+    };
+    writeFileSync(config.treePath, JSON.stringify(existingTree));
+
+    const normalized = readTaskTree(config);
+    expect(normalized.tasks.root.children).toEqual(["live-child"]);
+
+    saveTaskTree(config, normalized);
+    const saved = JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+    expect(saved.tasks.root.children).toEqual(["live-child"]);
   });
 
   it("rejects 19% of original (just below boundary)", () => {
