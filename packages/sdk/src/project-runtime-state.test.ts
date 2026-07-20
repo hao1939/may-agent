@@ -76,7 +76,17 @@ describe("project runtime state paths", () => {
     expect(state.source).toBe("state");
   });
 
-  test("writes the canonical state and generated tree projection together", async () => {
+  test("does not copy canonical state into a missing generated projection", async () => {
+    const appDir = await makeApp();
+    const paths = projectRuntimePaths(appDir);
+    await writeJson(paths.taskStatePath, { groups: {}, resources: {}, tasks: undefined });
+
+    ensureTaskTreeState(appDir);
+
+    expect(existsSync(paths.taskTreePath)).toBe(false);
+  });
+
+  test("writes structural groups to canonical state and full nodes to the generated tree", async () => {
     const appDir = await makeApp();
     const state = ensureTaskTreeState(appDir);
     const paths = projectRuntimePaths(appDir);
@@ -98,9 +108,12 @@ describe("project runtime state paths", () => {
       { projectLifecycleReason: "activate test project" },
     );
 
-    expect(JSON.parse(await readFile(paths.taskStatePath, "utf8"))).toEqual(
-      JSON.parse(await readFile(paths.taskTreePath, "utf8")),
-    );
+    const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
+    const projection = JSON.parse(await readFile(paths.taskTreePath, "utf8"));
+    expect(canonical.tasks).toBeUndefined();
+    expect(canonical.groups.root).toMatchObject({ id: "root" });
+    expect(projection.groups).toBeUndefined();
+    expect(projection.tasks.root).toMatchObject({ id: "root", children: [] });
   });
 
   test("treats edits to the generated tree projection as non-authoritative", async () => {
@@ -126,7 +139,55 @@ describe("project runtime state paths", () => {
     expect(readTaskTree(config).tasks).toEqual({
       canonical: { id: "canonical", state: "backlog", children: [] },
     });
-    expect(JSON.parse(await readFile(paths.taskStatePath, "utf8")).tasks.projectionEdit).toBeUndefined();
+    const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
+    expect(canonical.tasks).toBeUndefined();
+    expect(canonical.groups.projectionEdit).toBeUndefined();
+  });
+
+  test("projects parent and owner from the task resource instead of a stale node", async () => {
+    const appDir = await makeApp();
+    const state = ensureTaskTreeState(appDir);
+    const paths = projectRuntimePaths(appDir);
+    const config: TaskTreeConfig = {
+      appDir,
+      projectDir: appDir,
+      treePath: state.path,
+      journalPath: paths.journalPath,
+      worker: "app-owner",
+      maxConcurrent: 1,
+    };
+    saveTaskTree(config, {
+      tasks: {
+        root: { id: "root", parent_id: null, owner: "app-owner", children: ["work"] },
+        stale: { id: "stale", parent_id: "root", children: ["work"] },
+        work: { id: "work", parent_id: "stale", owner: "stale-owner", children: [] },
+      },
+      resources: {
+        work: {
+          metadata: { id: "work", generation: 1, resourceVersion: 1 },
+          spec: {
+            parentId: "root",
+            outcome: "Converge work",
+            acceptance: ["Work converges"],
+            mode: "achieve",
+            owner: "resource-owner",
+          },
+          status: {
+            observedGeneration: 0,
+            phase: "pending",
+            updatedAt: "2026-07-20T00:00:00.000Z",
+          },
+        },
+      },
+    });
+
+    const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
+    const projection = JSON.parse(await readFile(paths.taskTreePath, "utf8"));
+    expect(canonical.tasks).toBeUndefined();
+    expect(canonical.groups.work).toBeUndefined();
+    expect(projection.tasks.work).toMatchObject({ parent_id: "root", owner: "resource-owner" });
+    expect(projection.tasks.root.children).toContain("work");
+    expect(projection.tasks.stale.children).not.toContain("work");
   });
 
   test("merges static project json with runtime project state", async () => {

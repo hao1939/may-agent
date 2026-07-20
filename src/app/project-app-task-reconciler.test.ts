@@ -187,8 +187,8 @@ describe("project app task reconciler state", () => {
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
       "categorized-task",
       "work/attention",
-      "work/waiting",
       "work/pending",
+      "work/waiting",
     ]);
   });
 

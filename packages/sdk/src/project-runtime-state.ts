@@ -67,9 +67,6 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
 export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
   const paths = projectRuntimePaths(appDir);
   if (existsSync(paths.taskStatePath)) {
-    if (!existsSync(paths.taskTreePath)) {
-      writeFileSync(paths.taskTreePath, readFileSync(paths.taskStatePath));
-    }
     return { path: paths.taskStatePath, migrated: false, source: "runtime" };
   }
 
@@ -115,7 +112,6 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
 }
 
 export function resolveTaskTreePath(appDir: string): string {
-  ensureTaskTreeState(appDir);
   return projectRuntimePaths(appDir).taskTreePath;
 }
 
