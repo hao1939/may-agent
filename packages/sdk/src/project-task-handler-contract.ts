@@ -131,6 +131,7 @@ export type ProjectAppTaskHandlerAdmission =
 export type ProjectAppTaskHandlerAdmissionOptions = {
   allowNeedsOwner: boolean;
   defaultParentId: string;
+  rootParentAliases?: string[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -177,7 +178,14 @@ function normalizeCreateTaskAction(
 ): ProjectAppTaskAction | string {
   const id = normalizedString(value.id);
   if (!id) return `actions[${index}].id must be a non-empty string`;
-  const parentId = normalizedString(value.parentId) ?? normalizedString(options.defaultParentId);
+  const defaultParentId = normalizedString(options.defaultParentId);
+  const rawParentId = normalizedString(value.parentId);
+  const rootAliases = new Set(
+    (options.rootParentAliases ?? [])
+      .map((entry) => normalizedString(entry))
+      .filter((entry): entry is string => Boolean(entry)),
+  );
+  const parentId = rawParentId && rootAliases.has(rawParentId) ? defaultParentId : (rawParentId ?? defaultParentId);
   if (!parentId) return `actions[${index}].parentId has no app-root default`;
   const outcome = normalizedString(value.outcome);
   if (!outcome) return `actions[${index}].outcome must be a non-empty string`;
