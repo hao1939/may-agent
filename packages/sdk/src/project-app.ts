@@ -190,6 +190,33 @@ export type ProjectAppTaskHandlerResult = {
   conditions?: ProjectAppConditionSpec[];
 };
 
+export type ProjectAppTaskAcceptance = {
+  method: "deterministic" | "workflow-contract" | "owner-judgment";
+  verifier?: string;
+  evidence: string[];
+};
+
+export type ProjectAppTaskVerificationResult = {
+  accepted: boolean;
+  summary: string;
+  evidence: string[];
+};
+
+export type ProjectAppTaskVerificationContext = {
+  appId: string;
+  taskId: string;
+  generation: number;
+  appDir: string;
+  projectDir: string;
+  workspaceDir: string;
+  intent: Readonly<ProjectAppTaskIntent>;
+};
+
+export type ProjectAppTaskVerifier = (
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+) => Promise<ProjectAppTaskVerificationResult>;
+
 /** Model/authoring input before task-action convention defaults are applied. */
 export type ProjectAppTaskHandlerInput = {
   state: ProjectAppTaskHandlerState;

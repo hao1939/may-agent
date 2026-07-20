@@ -11,6 +11,7 @@ import {
   withTreeLock,
   type ProjectAppTaskIntent,
   type ProjectAppTaskAction,
+  type ProjectAppTaskAcceptance,
   type ProjectAppCondition,
   type ProjectAppConditionSpec,
   type ProjectAppTaskAttempt,
@@ -159,7 +160,10 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
 function needsOwnerHandoff(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
   if (resource.status.phase !== "attention") return false;
   const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  return Boolean(attempt?.handler.startsWith("workflow:") && attempt.failureReason);
+  return Boolean(
+    attempt?.handler.startsWith("workflow:") &&
+    (attempt.failureReason === "needs-owner" || attempt.failureReason === "HandlerUnavailable"),
+  );
 }
 
 function touchResource(resource: ProjectAppTaskResource, status: Partial<ProjectAppTaskResource["status"]>): void {
@@ -1207,12 +1211,20 @@ function validateActionEvidence(taskId: string, evidence: string[] | undefined, 
   }
 }
 
+function defaultTaskAcceptance(claim: ProjectAppTaskClaim, evidence: string[]): ProjectAppTaskAcceptance {
+  return {
+    method: claim.handler.startsWith("workflow:") ? "workflow-contract" : "owner-judgment",
+    evidence: [...evidence],
+  };
+}
+
 function applyTaskActions(
   tree: TaskTree,
   claim: ProjectAppTaskClaim,
   actions: ProjectAppTaskAction[],
   evidence: string[],
   appOwner: string,
+  verification: ProjectAppTaskAcceptance,
 ): string[] {
   validateTaskActions(tree, actions);
   const now = new Date().toISOString();
@@ -1362,6 +1374,7 @@ function applyTaskActions(
             handler: claim.handler,
             summary: action.summary.trim(),
             evidence: [...evidence],
+            verification: structuredClone(verification),
             failureFingerprints,
             completedAt: now,
           },
@@ -1400,7 +1413,12 @@ function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
 export function completeProjectAppTask(
   config: TaskTreeConfig,
   claim: ProjectAppTaskClaim,
-  input: { summary: string; evidence?: string[]; actions?: ProjectAppTaskAction[] },
+  input: {
+    summary: string;
+    evidence?: string[];
+    actions?: ProjectAppTaskAction[];
+    verification?: ProjectAppTaskAcceptance;
+  },
 ): { status: "applied" | "stale"; actionsApplied: string[]; dependentTaskIds: string[] } {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
@@ -1409,7 +1427,8 @@ export function completeProjectAppTask(
     const { task, resource } = match;
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker);
+    const verification = input.verification ?? defaultTaskAcceptance(claim, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker, verification);
     const liveChildren = liveChildTaskIds(tree, task);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
@@ -1476,6 +1495,7 @@ export function completeProjectAppTask(
           handler: claim.handler,
           summary: input.summary,
           evidence: [...(input.evidence ?? [])],
+          verification: structuredClone(verification),
           failureFingerprints,
           completedAt: now,
         },
@@ -1512,7 +1532,8 @@ export function deferProjectAppTask(
     validateConditions(input.conditions, { required: input.disposition === "waiting", taskId: claim.taskId });
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker);
+    const verification = defaultTaskAcceptance(claim, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker, verification);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (input.conditions?.length) {

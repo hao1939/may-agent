@@ -11,6 +11,7 @@ import {
 import { dirname, join } from "node:path";
 import type {
   ProjectAppCondition,
+  ProjectAppTaskAcceptance,
   ProjectAppTaskAttempt,
   ProjectAppTaskResource,
   ProjectAppTaskTrigger,
@@ -69,6 +70,7 @@ export type TaskCompletionReceipt = {
   handler: string;
   summary: string;
   evidence: string[];
+  verification: ProjectAppTaskAcceptance;
   failureFingerprints: string[];
   completedAt: string;
 };
@@ -298,11 +300,7 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
     const projectionPath = runtimePaths.taskTreePath;
     const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
     ensureDir(dirname(projectionPath));
-    writeFileSync(
-      projectionTempPath,
-      `${JSON.stringify(taskTreeProjectionForWrite(tree), null, 2)}\n`,
-      "utf-8",
-    );
+    writeFileSync(projectionTempPath, `${JSON.stringify(taskTreeProjectionForWrite(tree), null, 2)}\n`, "utf-8");
     renameSync(projectionTempPath, projectionPath);
   }
 

@@ -872,6 +872,7 @@ export interface WorkflowModule {
   name: string;
   description: string;
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
+  verify?: (context: unknown, result: unknown) => Promise<unknown>;
 }
 
 // ── Resilience primitives ──────────────────────────────────────
@@ -936,21 +937,27 @@ export type {
   ProjectAppTaskAction,
   ProjectAppTaskHandlerState,
   ProjectAppTaskHandlerResult,
+  ProjectAppTaskAcceptance,
   ProjectAppTaskAttempt,
   ProjectAppTaskIntent,
   ProjectAppTaskMode,
   ProjectAppTaskResource,
   ProjectAppTaskTrigger,
+  ProjectAppTaskVerificationContext,
+  ProjectAppTaskVerificationResult,
+  ProjectAppTaskVerifier,
   ProjectAppTasks,
 } from "./project-app.js";
 
 export {
   admitProjectAppTaskHandlerResult,
+  admitProjectAppTaskVerificationResult,
   isTypedProjectAppConditionSubject,
   projectAppConditionSchema,
   projectAppTaskActionSchema,
   projectAppTaskHandlerResultSchema,
   projectAppTaskOwnerResultSchema,
+  projectAppTaskVerificationResultSchema,
 } from "./project-task-handler-contract.js";
 export type {
   ProjectAppTaskHandlerAdmission,

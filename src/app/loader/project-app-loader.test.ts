@@ -520,6 +520,8 @@ describe("project app loader", () => {
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
         persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
         manager: manager([]),
         bus: new EventBus(),
         agentCrons: crons,
@@ -591,8 +593,121 @@ describe("project app loader", () => {
         timeout: 15 * 60_000,
       });
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/workflow"]).toBeTruthy();
-      expect(tree.receipts["work/owner"]).toBeTruthy();
+      expect(tree.receipts["work/workflow"].verification.method).toBe("workflow-contract");
+      expect(tree.receipts["work/workflow"].verification.evidence).toContain("proof");
+      expect(tree.receipts["work/owner"]).toMatchObject({
+        verification: { method: "owner-judgment", evidence: ["owner proof"] },
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("records deterministic workflow verification in the completion receipt", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
+        `export const name = "worker";
+         export const description = "verified sample worker";
+         export async function execute(ctx) {
+           return ctx.done("done", { state: "converged", summary: "workflow done", evidence: ["proof"], actions: [] });
+         }
+         export async function verify(context, result) {
+           return {
+             accepted: context.taskId === "work/verified" && result.summary === "workflow done",
+             summary: "Verified the workflow postcondition.",
+             evidence: ["deterministic:sample-postcondition"]
+           };
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "verified" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/verified" &&
+            event.data?.disposition === "converged",
+        ),
+      ).catch((error) => {
+        throw new Error(
+          `${String(error)} events=${JSON.stringify(events.map((event) => ({ type: event.type, data: event.data })))}`,
+        );
+      });
+
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(tree.receipts["work/verified"].verification).toEqual({
+        method: "deterministic",
+        verifier: "worker",
+        evidence: ["deterministic:sample-postcondition"],
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a verifier-rejected task live without creating a receipt", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
+        `export const name = "worker";
+         export const description = "rejecting sample worker";
+         export async function execute(ctx) {
+           return ctx.done("done", { state: "converged", summary: "unverified claim", evidence: ["claim"], actions: [] });
+         }
+         export async function verify() {
+           return { accepted: false, summary: "Required artifact is absent.", evidence: ["artifact:missing"] };
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "rejected" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.verification.failed" && event.data?.taskId === "work/rejected",
+        ),
+      ).catch((error) => {
+        throw new Error(
+          `${String(error)} events=${JSON.stringify(events.map((event) => ({ type: event.type, data: event.data })))}`,
+        );
+      });
+
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(tree.receipts?.["work/rejected"]).toBeUndefined();
+      expect(tree.resources["work/rejected"]).toMatchObject({
+        status: { phase: "attention", summary: "Required artifact is absent." },
+      });
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
