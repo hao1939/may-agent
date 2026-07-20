@@ -10,7 +10,10 @@ import {
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
 
 const projectId = "aks-rp-e2e";
-const projectPolicyMaxConcurrent = 80;
+const domainPolicyMaxConcurrent = 5;
+const appOpsSupportConcurrent = 3;
+const appControllerMaxConcurrent =
+  domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
 
@@ -246,7 +249,7 @@ export default defineProjectApp({
   budget: {
     sessionsPerDay: 200,
     tokensPerDay: 5_000_000,
-    maxConcurrent: projectPolicyMaxConcurrent,
+    maxConcurrent: appControllerMaxConcurrent,
   },
 
   schedules: [
@@ -274,7 +277,7 @@ export default defineProjectApp({
             reason: "scheduled-learning",
             params: {
               lane: "learning",
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
             },
           },
         },
@@ -317,7 +320,7 @@ export default defineProjectApp({
             project: projectId,
             reason: "app-ops-heartbeat",
             params: {
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
               instruction:
                 "Low-frequency app-ops heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the app-ops session.",
               reviewChecklist: [
@@ -345,7 +348,7 @@ export default defineProjectApp({
             project: projectId,
             reason: "scheduled-blocked-frontier-review",
             params: {
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
               instruction:
                 "Periodic blocked-frontier app-ops review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and dispatch unrelated runnable work so the project keeps moving.",
               reviewChecklist: [
@@ -414,7 +417,7 @@ export default defineProjectApp({
             project: projectId,
             reason: "execute-run-action",
             params: {
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
               action: "execute-run",
               params,
             },
@@ -438,7 +441,7 @@ export default defineProjectApp({
             project: projectId,
             reason: "manual-action",
             params: {
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
               ...input,
             },
           },
@@ -460,7 +463,7 @@ export default defineProjectApp({
             project: projectId,
             reason: "watch-request",
             params: {
-              maxConcurrent: projectPolicyMaxConcurrent,
+              maxConcurrent: domainPolicyMaxConcurrent,
               ...input,
             },
           },
