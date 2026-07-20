@@ -9,6 +9,7 @@ import {
   completeProjectAppTask,
   deferProjectAppTask,
   acknowledgeProjectAppTaskRecoveryAttention,
+  listHandlerUnavailableProjectAppTasks,
   markProjectAppTaskAttention,
   observeProjectAppTaskIntent,
   listRunnableProjectAppTaskIds,
@@ -18,6 +19,7 @@ import {
   pendingProjectAppTaskRecoveryAttention,
   repairPreviousRuntimeRecoveryAttention,
   recoverableProjectAppTaskAttempts,
+  releaseHandlerUnavailableProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
   taskReconciliationConfig,
@@ -145,7 +147,7 @@ describe("project app task reconciler state", () => {
     expect(readProjectAppTaskIntent(config, "work/orphan")).toBeNull();
   });
 
-  it("lists pending and workflow-to-owner handoff task ids for passive resync", () => {
+  it("lists pending and explicit owner handoff tasks but keeps unavailable workflows asleep", () => {
     const { config } = fixture();
     const attentionIntent = {
       ...intent(),
@@ -162,6 +164,12 @@ describe("project app task reconciler state", () => {
       id: "work/pending",
       outcome: "Ready work",
     };
+    const unavailableIntent = {
+      ...intent(),
+      id: "work/unavailable",
+      outcome: "Run only after the workflow binding is repaired",
+      workflow: "missing-workflow",
+    };
 
     observeProjectAppTaskIntent(config, { intent: attentionIntent, appOwner: "app-owner" });
     const attentionClaim = claimObservedProjectAppTask(config, {
@@ -174,6 +182,19 @@ describe("project app task reconciler state", () => {
     markProjectAppTaskAttention(config, attentionClaim, {
       summary: "owner must decide",
       reason: "needs-owner",
+    });
+
+    observeProjectAppTaskIntent(config, { intent: unavailableIntent, appOwner: "app-owner" });
+    const unavailableClaim = claimObservedProjectAppTask(config, {
+      taskId: unavailableIntent.id,
+      appOwner: "app-owner",
+      handler: "workflow:missing-workflow",
+      reason: "task-controller",
+    });
+    if (unavailableClaim.kind !== "claimed") throw new Error("expected unavailable claim");
+    markProjectAppTaskAttention(config, unavailableClaim, {
+      summary: "workflow is not installed",
+      reason: "HandlerUnavailable",
     });
 
     observeProjectAppTaskIntent(config, { intent: waitingIntent, appOwner: "app-owner" });
@@ -207,6 +228,9 @@ describe("project app task reconciler state", () => {
     completeProjectAppTask(config, maintainClaim, { summary: "monitor converged" });
 
     expect(listRunnableProjectAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
+    expect(listHandlerUnavailableProjectAppTasks(config, "app-owner")).toEqual([
+      { taskId: "work/unavailable", owner: "branch-owner", workflow: "missing-workflow" },
+    ]);
 
     observeProjectAppTaskIntent(config, {
       intent: attentionIntent,
@@ -224,6 +248,15 @@ describe("project app task reconciler state", () => {
       "categorized-task",
       "work/attention",
       "work/pending",
+      "work/waiting",
+    ]);
+
+    expect(releaseHandlerUnavailableProjectAppTask(config, "work/unavailable")).toBe(true);
+    expect(listRunnableProjectAppTaskIds(config)).toEqual([
+      "categorized-task",
+      "work/attention",
+      "work/pending",
+      "work/unavailable",
       "work/waiting",
     ]);
   });
@@ -1072,6 +1105,60 @@ describe("project app task reconciler state", () => {
     expect(tree.resources?.[parentIntent.id]).toBeTruthy();
     expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
     expect(tree.tasks[childIntent.id]).toBeTruthy();
+  });
+
+  it("allows a batch to reparent a live child before closing its old parent", () => {
+    const { config } = fixture();
+    const parentIntent = {
+      id: "stale-parent",
+      parentId: "operations",
+      outcome: "Retire stale parent after preserving the useful child",
+      acceptance: ["The useful child remains live"],
+      mode: "achieve",
+    } as const;
+    const childIntent = {
+      id: "useful-wait",
+      parentId: parentIntent.id,
+      outcome: "Wait on the exact external signal",
+      acceptance: ["The wait has a typed condition"],
+      mode: "achieve",
+    } as const;
+    observeProjectAppTaskIntent(config, { intent: parentIntent, appOwner: "app-owner" });
+    observeProjectAppTaskIntent(config, { intent: childIntent, appOwner: "app-owner" });
+
+    const carrier = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
+
+    expect(
+      completeProjectAppTask(config, carrier, {
+        summary: "Collapsed stale parent",
+        evidence: ["reparented useful wait before closing stale parent"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: childIntent.id,
+            expectedGeneration: 1,
+            parentId: "operations",
+          },
+          {
+            kind: "close-task",
+            taskId: parentIntent.id,
+            expectedGeneration: 1,
+            summary: "Parent was stale after child was preserved elsewhere",
+          },
+        ],
+      }),
+    ).toMatchObject({ status: "applied", actionsApplied: ["updated useful-wait", "closed stale-parent"] });
+
+    const tree = readTaskState(config);
+    expect(tree.tasks[parentIntent.id]).toBeUndefined();
+    expect(tree.receipts?.[parentIntent.id]).toBeDefined();
+    expect(tree.tasks[childIntent.id]?.parent_id).toBe("operations");
+    expect(tree.tasks.operations.children).toContain(childIntent.id);
   });
 
   it("rejects stale results after a fallback attempt takes ownership", () => {
@@ -2064,15 +2151,15 @@ describe("project app task reconciler state", () => {
       summary: "waiting for external evidence",
       conditions: [
         {
-          id: "evidence-window",
-          type: "evidence.available",
-          subject: "taskId:pipeline-monitor",
-          expected: { field: "available", equals: true },
+          id: "pipeline-result",
+          type: "pipeline.result.available",
+          subject: "pipeline-run:run-42",
+          expected: { field: "status", equals: "succeeded" },
         },
       ],
     });
     const stale = readTaskState(config);
-    stale.conditions!["evidence-window"].status.observedAt = "2026-01-01T00:00:00.000Z";
+    stale.conditions!["pipeline-result"].status.observedAt = "2026-01-01T00:00:00.000Z";
     saveTaskState(config, stale);
 
     expect(
@@ -2082,7 +2169,7 @@ describe("project app task reconciler state", () => {
         handler: "workflow:known-workflow",
         reason: "periodic-resync",
       }),
-    ).toMatchObject({ kind: "waiting", taskId: "pipeline-monitor", conditionIds: ["evidence-window"] });
+    ).toMatchObject({ kind: "waiting", taskId: "pipeline-monitor", conditionIds: ["pipeline-result"] });
   });
 
   it("links a watcher event Condition without monitoring the pipeline itself", () => {

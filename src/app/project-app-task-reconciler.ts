@@ -38,7 +38,7 @@ export type ProjectAppTaskClaim = {
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
   handoff?: {
-    reason: "needs-owner" | "HandlerUnavailable";
+    reason: "needs-owner";
     summary: string;
     evidence: string[];
   };
@@ -169,10 +169,7 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
 function needsOwnerHandoff(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
   if (resource.status.phase !== "attention") return false;
   const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  return Boolean(
-    attempt?.handler.startsWith("workflow:") &&
-    (attempt.failureReason === "needs-owner" || attempt.failureReason === "HandlerUnavailable"),
-  );
+  return Boolean(attempt?.handler.startsWith("workflow:") && attempt.failureReason === "needs-owner");
 }
 
 function touchResource(resource: ProjectAppTaskResource, status: Partial<ProjectAppTaskResource["status"]>): void {
@@ -813,6 +810,61 @@ export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[]
   });
 }
 
+export type ProjectAppTaskHandlerRepairCandidate = {
+  taskId: string;
+  owner: string;
+  workflow: string;
+};
+
+/** Bindings to retry once their owning app reload proves the workflow now resolves. */
+export function listHandlerUnavailableProjectAppTasks(
+  config: TaskStateConfig,
+  appOwner: string,
+): ProjectAppTaskHandlerRepairCandidate[] {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    return Object.values(tree.resources ?? {})
+      .filter((resource) => {
+        if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return false;
+        const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+        return attempt?.handler.startsWith("workflow:") && attempt.failureReason === "HandlerUnavailable";
+      })
+      .map((resource) => {
+        const intent = resourceIntent(resource);
+        return {
+          taskId: resource.metadata.id,
+          owner: resolvedOwner(tree, intent, appOwner),
+          workflow: intent.workflow!.trim(),
+        };
+      })
+      .sort((left, right) => left.taskId.localeCompare(right.taskId));
+  });
+}
+
+/** Release attention only after the host has proved the named workflow resolves again. */
+export function releaseHandlerUnavailableProjectAppTask(config: TaskStateConfig, taskId: string): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    const task = tree.tasks[taskId];
+    if (!resource || !task || resource.status.phase !== "attention") return false;
+    const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
+    if (!attempt?.handler.startsWith("workflow:") || attempt.failureReason !== "HandlerUnavailable") return false;
+    const summary = `Workflow binding ${attempt.handler} resolved after app reload; retrying current task generation`;
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    saveTaskState(config, tree);
+    return true;
+  });
+}
+
 export function claimObservedProjectAppTask(
   config: TaskStateConfig,
   input: {
@@ -992,11 +1044,10 @@ export function claimObservedProjectAppTask(
       intent: structuredClone(intent),
       ...(trigger ? { trigger: structuredClone(trigger) } : {}),
       declaredOutputPaths,
-      ...(handoffAttempt &&
-      (handoffAttempt.failureReason === "needs-owner" || handoffAttempt.failureReason === "HandlerUnavailable")
+      ...(handoffAttempt && handoffAttempt.failureReason === "needs-owner"
         ? {
             handoff: {
-              reason: handoffAttempt.failureReason,
+              reason: "needs-owner",
               summary: resource.status.summary ?? handoffAttempt.summary ?? handoffAttempt.failureReason,
               evidence: [...(resource.status.evidence ?? [])],
             },
@@ -1127,6 +1178,7 @@ function validateTaskActions(
 ): void {
   if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
   const identities = new Set<string>();
+  const validationTree = structuredClone(tree);
   for (const rawAction of actions as unknown[]) {
     if (!isRecord(rawAction)) throw new Error("Handler result contains a non-object action");
     const kind = rawAction.kind;
@@ -1174,14 +1226,43 @@ function validateTaskActions(
       if (tree.tasks[action.id] || tree.resources?.[action.id]) {
         throw new Error(`Handler action task already exists: ${action.id}`);
       }
-      validateParentReference(tree, action.id, action.parentId);
+      validateParentReference(validationTree, action.id, action.parentId);
+      const parent = validationTree.tasks[action.parentId];
+      validationTree.tasks[action.id] = {
+        id: action.id,
+        parent_id: action.parentId,
+        children: [],
+        state: "backlog",
+      };
+      validationTree.resources = {
+        ...(validationTree.resources ?? {}),
+        [action.id]: {
+          metadata: { id: action.id, generation: 1, resourceVersion: 1 },
+          spec: resourceSpec({
+            id: action.id,
+            parentId: action.parentId,
+            outcome: action.outcome.trim(),
+            acceptance: [...action.acceptance],
+            mode: action.mode,
+            outputs: [...action.outputs],
+            priority: action.priority,
+            ...(action.owner ? { owner: action.owner } : {}),
+            ...(action.workflow ? { workflow: action.workflow } : {}),
+            ...(action.input ? { input: structuredClone(action.input) } : {}),
+            ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
+            ...(action.category ? { category: action.category } : {}),
+          }),
+          status: { observedGeneration: 0, phase: "pending", updatedAt: "" },
+        },
+      };
+      parent.children = [...new Set([...(parent.children ?? []), action.id])];
       continue;
     }
 
     requireExpectedGeneration(action.expectedGeneration, `Handler ${action.kind} action ${action.taskId}`);
     if (action.kind === "update-task" && action.parentId !== undefined) {
       requireNonEmptyString(action.parentId, `Handler update for ${action.taskId} parentId`);
-      validateParentReference(tree, action.taskId, action.parentId);
+      validateParentReference(validationTree, action.taskId, action.parentId);
     }
     if (action.kind === "update-task" && action.outcome !== undefined) {
       requireNonEmptyString(action.outcome, `Handler update for ${action.taskId} outcome`);
@@ -1224,10 +1305,10 @@ function validateTaskActions(
     if (action.kind === "unblock-task") {
       requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
     }
-    if (actionTargetAlreadyReceipted(tree, action)) continue;
-    const { task, resource } = mutableActionResource(tree, action);
+    if (actionTargetAlreadyReceipted(validationTree, action)) continue;
+    const { task, resource } = mutableActionResource(validationTree, action);
     if (action.kind === "close-task") {
-      const liveChildren = liveChildTaskIds(tree, task);
+      const liveChildren = liveChildTaskIds(validationTree, task);
       if (liveChildren.length > 0) {
         throw new Error(
           `Handler close action cannot absorb ${task.id} while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
@@ -1256,6 +1337,20 @@ function validateTaskActions(
       if (resource.status.phase !== "waiting") {
         throw new Error(`Handler action task ${action.taskId} is not blocked`);
       }
+    }
+    if (action.kind === "update-task" && action.parentId !== undefined && action.parentId !== task.parent_id) {
+      const previousParent = task.parent_id ? validationTree.tasks[task.parent_id] : undefined;
+      if (previousParent) previousParent.children = (previousParent.children ?? []).filter((id) => id !== task.id);
+      const nextParent = validationTree.tasks[action.parentId];
+      nextParent.children = [...new Set([...(nextParent.children ?? []), task.id])];
+      task.parent_id = action.parentId;
+      if (resource.spec) resource.spec.parentId = action.parentId;
+    }
+    if (action.kind === "close-task") {
+      const parent = task.parent_id ? validationTree.tasks[task.parent_id] : undefined;
+      if (parent) parent.children = (parent.children ?? []).filter((id) => id !== task.id);
+      delete validationTree.tasks[task.id];
+      delete validationTree.resources?.[task.id];
     }
   }
 }
