@@ -566,6 +566,7 @@ export interface RunWorkflowDirectOpts {
   recoveryOwner?: string;
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
+  executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
 }
 
 /**
@@ -592,6 +593,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
+    executionPaths: opts.executionPaths,
   });
 
   const workflow = await runner.resolve(opts.workflowName);
@@ -656,6 +658,8 @@ export interface WorkflowToolOptions {
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
   runtimeCtx?: RuntimeCtx;
+  /** Resolved app/domain paths supplied by Agent App infrastructure. */
+  executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** Trace inherited from the event that started this workflow. */
   trace?: EventTrace;
   /** Resolve the active caller turn trace for long-lived chat sessions. */
@@ -1203,6 +1207,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         sharedRoot: "",
         projectsRoot: "",
       }),
+      ...(opts.executionPaths ?? {}),
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
         emitRuntimeEvent(event);

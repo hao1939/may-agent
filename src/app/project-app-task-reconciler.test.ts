@@ -432,6 +432,30 @@ describe("project app task reconciler state", () => {
     expect(tree.active_task_ids).toContain("evaluate:session-1");
   });
 
+  it("moves an unresolved owner to attention before claiming an attempt", () => {
+    const { config } = fixture();
+    const result = claimProjectAppTask(config, {
+      intent: { ...intent(), owner: "human" },
+      appOwner: "app-owner",
+      handler: "auto",
+      isOwnerRunnable: (owner) => owner !== "human",
+    });
+
+    expect(result).toMatchObject({
+      kind: "attention",
+      summary: "Resolved owner human is not a runnable agent",
+    });
+    const tree = readTaskTree(config);
+    expect(tree.resources?.["evaluate:session-1"]).toMatchObject({
+      status: {
+        phase: "attention",
+        summary: "Resolved owner human is not a runnable agent",
+      },
+    });
+    expect(tree.resources?.["evaluate:session-1"].status.currentAttemptId).toBeUndefined();
+    expect(Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "evaluate:session-1")).toEqual([]);
+  });
+
   it("clears legacy assignment authority when reconciliation claims a task", () => {
     const { config } = fixture();
     const tree = readTaskTree(config);
@@ -1332,6 +1356,36 @@ describe("project app task reconciler state", () => {
     const tree = readTaskTree(config);
     expect(tree.tasks["must-roll-back"]).toBeUndefined();
     expect(tree.tasks[claim.taskId].state).toBe("active");
+  });
+
+  it("rejects task actions that declare outputs outside app and domain roots", () => {
+    const { config } = fixture();
+    const claim = claimProjectAppTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "invalid output root",
+        evidence: ["path boundary test"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "must-not-escape",
+            parentId: "operations",
+            outcome: "Write outside the project",
+            mode: "achieve",
+            outputs: ["../../outside/result.txt"],
+            acceptance: ["Never accepted"],
+            priority: "P2",
+          },
+        ],
+      }),
+    ).toThrow("escapes the app/domain roots");
+    expect(readTaskTree(config).tasks["must-not-escape"]).toBeUndefined();
   });
 
   it("treats actions against already receipted tasks as stale no-ops", () => {
