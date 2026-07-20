@@ -34,9 +34,7 @@ export type EventSelector =
     };
 
 function selectorRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function selectorValue(event: Record<string, unknown>, ...keys: string[]): unknown {
@@ -113,10 +111,7 @@ export type ProjectAppAction = {
 
 export type ProjectAppTaskMode = "achieve" | "maintain";
 
-export type ProjectAppTaskHandlerState =
-  | "converged"
-  | "waiting"
-  | "needs-owner";
+export type ProjectAppTaskHandlerState = "converged" | "waiting" | "needs-owner" | "failed";
 
 export type ProjectAppConditionSpec = {
   id: string;
