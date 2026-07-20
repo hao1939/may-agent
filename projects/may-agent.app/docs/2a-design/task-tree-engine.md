@@ -1,7 +1,8 @@
 # Task Resource Engine
 
 **Design status:** Accepted.
-**Implementation status:** Implemented by the per-app task reconciler and resource store.
+**Implementation status:** Core engine implemented; canonical seed/live-state
+migration and compatibility removal remain.
 
 The task engine implements the state side of the
 [App Task Reconciliation Model](../3-proposals/app-task-reconciliation-model.md).
@@ -96,6 +97,11 @@ pipeline, or task-tree dispatch queue.
 Parents organize containment and communicate decomposition. Dependencies
 express desired ordering. Neither one creates a second scheduler.
 
+The controller never enqueues a parent merely because a child changed. A
+parent that must resume after a child uses `dependsOn` or a typed Condition. An
+`achieve` parent is not absorbed while it still has live children; its handler
+must keep the reconciliation open through those explicit relationships.
+
 Parent counts, progress, and health are derived projections. A parent that has
 children is not automatically an executable resource unless it also declares
 its own maintain responsibility.
@@ -117,7 +123,8 @@ execution.
 resources, Conditions, attempts, receipts, and structural groups.
 `.state/tasks/tree.json` is a generated read projection and is never read back
 as mutation input once canonical state exists. `tasks/seed.json` may initialize
-a new app once; the retired `tasks/tree.json` path is not a runtime source.
+a new app once and must use the same canonical `resources`/`groups` shape; the
+retired `tasks/tree.json` path is not a runtime source.
 
 All writes are locked, validated, normalized, and atomically renamed. An app
 with `project_lifecycle: "paused"` has no installed controller, schedules,

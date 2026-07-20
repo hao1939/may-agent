@@ -1,13 +1,12 @@
 # Proposal: App Task Reconciliation Model
 
 **Design status:** Canonical convergence target.
-**Implementation status:** Convention-first app/task reconciliation is the
-production contract as of 2026-07-19. Every active app has one resolver, one
-deduplicating controller queue, convention workflow discovery, and owner
-fallback. AKS live state has been transformed to resources, attempts,
-Conditions, and completion receipts. Legacy task routes, capability maps,
-owner-entry wrappers, synthetic task Cron handlers, tree mirroring, and the
-AKS assignment/review/planner scheduler have been removed.
+**Implementation status:** Core reconciliation is implemented: active apps use
+one resolver, one deduplicating controller queue, convention workflow
+discovery, and owner fallback. Canonical state/seed migration, handler-contract
+cleanup, direct/hosted preparation parity, and deployed-binary parity remain
+convergence work; the migration is not complete while legacy task nodes or
+compatibility readers remain.
 
 Imperative `onEvent` remains only for deterministic filtering or translation;
 it does not execute project work. The infrastructure-independent agent runner
@@ -74,7 +73,7 @@ not imply repeated configuration.
 | Task mode | `achieve`. | The desired state is standing, so use `maintain`. |
 | Parent | The app's root containment. | The task belongs under a more specific decomposition. |
 | Priority | `P2`. | The owner intentionally raises or lowers it. |
-| Event routing | A targeted task event reconciles `target.taskId`; a Condition event updates the Condition and reconciles its dependents. | An external event must be correlated into a new or standing task identity. |
+| Event routing | A targeted task event reconciles only `target.taskId`; a Condition event updates the Condition and reconciles its explicitly linked dependents. | An untargeted external event must be correlated into one new or standing task identity. |
 | Concurrency and timeout | Use runtime and workflow defaults. | A proven domain constraint requires a narrower bound. |
 | Context | Supply the task, linked Conditions, app context, and trigger observation automatically. | A workflow declares additional domain inputs in its own module. |
 
@@ -102,7 +101,8 @@ defineProjectApp({
 });
 ```
 
-`tasks.resolve` correlates non-targeted events with task identities. It does
+`tasks.resolve` correlates non-targeted events with task identities. It is not
+called after a valid `target.taskId` has already selected a task, and it does
 not execute work. Multiple named task routes, route-local handler timeouts,
 capability maps, and manually duplicated event graphs are migration surfaces,
 not parts of the target contract.
@@ -261,8 +261,10 @@ the reconciler from distinguishing a changed goal from a changed observation.
 3. Give every task acceptance criteria that can be checked without trusting the
    worker's prose. "Reviewed," "investigated," and "monitoring" are activities,
    not sufficient postconditions.
-4. Keep event data in the trigger packet. Put only stable handler configuration
-   in task input.
+4. Keep observation data in the trigger packet. Put only stable handler
+   configuration in task input. A trigger must be discardable: if losing or
+   coalescing it would change what must be achieved, that information belongs
+   in task spec or another durable domain resource instead.
 5. Represent a durable external wait with a Condition. A task may reference the
    Condition but must not copy its changing observation into a blocker story.
 6. Keep completed migrations, incidents, and retired ideas out of seed trees.
@@ -359,11 +361,13 @@ It must not:
 - encode AKS-, Scout-, or other app-specific strategy;
 - scan the task graph as a scheduling queue.
 
-Events are hints that enqueue resource keys. Persisted task and Condition
-resources are truth. Duplicate or lost events therefore do not change the
-answer: reconciliation is level-based and idempotent. A bounded periodic
-resync enqueues live tasks to recover missed delivery and configuration drift;
-it feeds the same path and does not make scheduling decisions from the tree.
+Events are hints that enqueue resource keys. Persisted task, Condition, and
+domain-observation resources are truth. Duplicate or coalesced wake hints do
+not change the answer because reconciliation is level-based and idempotent.
+A bounded task resync recovers delivery for already-persisted runnable state;
+it cannot recover an external fact that was never observed. Domain watchers
+separately replay current external levels and emit fresh semantic observations.
+Neither resync path makes scheduling decisions from the tree.
 
 Cron owns time only. It may emit a wake event or request a resync, but task
 selectors must not be installed as synthetic Cron handlers. Workflow names
@@ -591,6 +595,13 @@ Tree, graph, frontier, Kanban, rollups, and health are derived views over the
 same resources. They do not own scheduling or duplicate parent/child state.
 Attempts, sessions, workflow runs, reviews, and delivery traces remain runtime
 facts linked by task ID and generation.
+
+Changing a child never schedules its parent merely because of `parentId`. A
+parent whose outcome truly waits for a child expresses that relationship with
+`dependsOn` or an exact Condition. An `achieve` task with live children cannot
+be absorbed; it must keep its own reconciliation open until those explicit
+relationships are satisfied. This is a lineage-integrity rule, not a parent
+rollup or a second scheduler.
 
 The storage convention makes that authority visible:
 
@@ -827,8 +838,9 @@ The design is proven when:
     capabilities.
 15. One app task controller handles targeted events, correlations, Condition
     changes, and resync without installing task routes as Cron handlers.
-16. Removing one wake event does not change eventual convergence because a
-    resync reaches the same result from persisted resources.
+16. Removing one queue wake does not change eventual convergence when the
+    desired/observed level is already persisted; removing an external
+    observation is recovered by the owning watcher's bounded replay.
 17. An app action is translated through its declared action exactly once; apps
     do not reimplement action-name dispatch in `onEvent`.
 18. The normal app needs no owner-entry wrapper, workflow capability map,

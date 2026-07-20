@@ -1,8 +1,9 @@
 # Proposal: Agent App and Optional Autonomy Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Implemented, deployed, and restart-validated with
-the convention-first task reconciler active in production.
+**Implementation status:** Core boundary implemented. Canonical task-state
+migration, compatibility removal, direct/hosted preparation parity, and
+deployed-binary parity remain before full convergence can be claimed.
 **Identity migration status:** Deferred. This proposal does not rename any app
 or agent and does not require app IDs to equal owner-agent IDs.
 
