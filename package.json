@@ -41,7 +41,8 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "better-sqlite3": "^12.11.1",
-    "diff": "^9.0.0"
+    "diff": "^9.0.0",
+    "typebox": "1.1.38"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
