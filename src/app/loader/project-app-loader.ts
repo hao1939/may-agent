@@ -549,7 +549,11 @@ type NormalizedTaskHandlerResult = {
 export function normalizeTaskHandlerResult(
   output: unknown,
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
-  options: { allowNeedsOwner?: boolean; defaultParentId?: string } = {},
+  options: {
+    allowNeedsOwner?: boolean;
+    defaultParentId?: string;
+    rootParentAliases?: string[];
+  } = {},
 ): NormalizedTaskHandlerResult {
   if (output === undefined && fallback.type === "blocked") {
     return {
@@ -562,6 +566,7 @@ export function normalizeTaskHandlerResult(
   const admission = admitProjectAppTaskHandlerResult(output, {
     allowNeedsOwner: options.allowNeedsOwner ?? true,
     defaultParentId: options.defaultParentId ?? "project",
+    rootParentAliases: options.rootParentAliases,
   });
   if (!admission.ok) {
     return {
@@ -676,7 +681,11 @@ async function runTaskCapability(input: {
         summary,
         runId,
       },
-      { allowNeedsOwner: true, defaultParentId: input.defaultParentId },
+      {
+        allowNeedsOwner: true,
+        defaultParentId: input.defaultParentId,
+        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+      },
     );
     opts.bus.emit({
       type: "handler.workflow_dispatched",
@@ -827,7 +836,11 @@ async function runTaskOwner(input: {
         `Owner session ${result.sessionId || "unknown"} returned no result`,
       runId: result.sessionId || null,
     },
-    { allowNeedsOwner: false, defaultParentId: input.defaultParentId },
+    {
+      allowNeedsOwner: false,
+      defaultParentId: input.defaultParentId,
+      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+    },
   );
   return { handlerResult, runId: result.sessionId || null };
 }
