@@ -59,7 +59,9 @@ function writeApp(appDir: string, extra = "") {
             acceptance: ["Work converges"],
             mode: event.mode || "achieve",
             ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
-            input: { itemId: event.itemId }
+            ...(event.taskOwner ? { owner: event.taskOwner } : {}),
+            input: { itemId: event.itemId },
+            outputs: event.outputs || []
           };
         }
       },
@@ -82,6 +84,9 @@ function writeApp(appDir: string, extra = "") {
      export async function execute(ctx) {
        if (!ctx.task.includes("app: ${appDir}") || !ctx.task.includes("project: ${appDir}")) {
          return ctx.blocked("canonical app/workspace paths are missing");
+       }
+       if (ctx.appDir !== "${appDir}" || ctx.projectDir !== "${appDir}" || ctx.workspaceDir !== "${appDir}") {
+         return ctx.blocked("resolved workflow context paths are missing");
        }
        return ctx.done("done", { state: "converged", summary: "workflow done", evidence: ["proof"], actions: [] });
      }`,
@@ -708,6 +713,58 @@ describe("project app loader", () => {
       expect(tree.resources["work/rejected"]).toMatchObject({
         status: { phase: "attention", summary: "Required artifact is absent." },
       });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unresolved owners and escaping outputs before an attempt is claimed", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager(ownerCalls),
+          hasAgent: (owner: string) => owner !== "human",
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "human", taskOwner: "human" } as any);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "escape", outputs: ["../../outside"] } as any);
+      await waitUntil(
+        () =>
+          events.filter(
+            (event) => event.type === "project.task.reconcile.skipped" && event.data?.reason === "attention-required",
+          ).length >= 2,
+      );
+
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(tree.resources["work/human"].status).toMatchObject({
+        phase: "attention",
+        summary: "Resolved owner human is not a runnable agent",
+      });
+      expect(tree.resources["work/escape"].status).toMatchObject({
+        phase: "attention",
+        summary: "Task output admission failed: outputs[0] escapes the app/domain roots: ../../outside",
+      });
+      expect(
+        Object.values(tree.attempts ?? {}).filter((attempt: any) =>
+          ["work/human", "work/escape"].includes(attempt.taskId),
+        ),
+      ).toEqual([]);
+      expect(ownerCalls).toEqual([]);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

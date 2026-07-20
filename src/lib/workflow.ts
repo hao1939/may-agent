@@ -158,6 +158,10 @@ export interface WorkflowContext {
 
   /** Persistent state directory. */
   persistDir: string;
+  /** App-scoped absolute paths, present when infrastructure runs an Agent App workflow. */
+  appDir?: string;
+  projectDir?: string;
+  workspaceDir?: string;
 
   /** Project root directory. */
   projectRoot: string;
