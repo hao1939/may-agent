@@ -58,6 +58,8 @@ type ProjectReadModel = {
   priority: string | null;
 };
 
+const PROJECT_APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
+
 export interface ProjectAppDescriptor {
   id: string;
   appDir: string;
@@ -997,6 +999,7 @@ async function runTaskOwner(input: {
     requireFinish: true,
     outputSchema: ownerTaskResultSchema,
     toolPolicy: "full",
+    timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
   });
   const handlerResult = normalizeTaskHandlerResult(result.structuredResult, {
     type: result.status === "done" ? "done" : "blocked",

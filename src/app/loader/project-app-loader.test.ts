@@ -590,6 +590,7 @@ describe("project app loader", () => {
         projectId: "sample",
         recoveryOwner: "project-app-task-reconciler",
         source: "project-app-task-owner",
+        timeout: 15 * 60_000,
       });
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(tree.receipts["work/workflow"]).toBeTruthy();
