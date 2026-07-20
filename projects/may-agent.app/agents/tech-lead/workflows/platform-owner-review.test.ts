@@ -158,7 +158,7 @@ describe("platform-owner-review", () => {
     });
     expect(observed.schema).toMatchObject({
       type: "object",
-      required: ["state", "summary", "evidence", "actions"],
+      required: ["state", "summary", "evidence"],
     });
     expect(observed.prompt).toContain(
       "The generic reconciler is the sole task-tree mutation authority.",

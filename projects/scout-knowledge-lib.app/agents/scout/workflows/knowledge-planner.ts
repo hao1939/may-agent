@@ -1,117 +1,10 @@
 import {
+  projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
-
-const nonEmptyString = { type: "string", minLength: 1 } as const;
-const stringList = {
-  type: "array",
-  minItems: 1,
-  items: nonEmptyString,
-} as const;
-const expectedGeneration = { type: "integer", minimum: 1 } as const;
-
-const ownerResultSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["state", "summary", "evidence", "actions"],
-  properties: {
-    state: {
-      type: "string",
-      enum: ["converged", "waiting"],
-    },
-    summary: nonEmptyString,
-    evidence: {
-      type: "array",
-      maxItems: 12,
-      items: nonEmptyString,
-    },
-    actions: {
-      type: "array",
-      maxItems: 3,
-      items: {
-        oneOf: [
-          {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "kind",
-              "id",
-              "parentId",
-              "goal",
-              "outputs",
-              "acceptance",
-            ],
-            properties: {
-              kind: { const: "create-task" },
-              id: nonEmptyString,
-              parentId: nonEmptyString,
-              goal: nonEmptyString,
-              outputs: stringList,
-              acceptance: stringList,
-              priority: { type: "string", enum: ["P0", "P1", "P2", "P3"] },
-              owner: nonEmptyString,
-              workflow: nonEmptyString,
-            },
-          },
-          {
-            type: "object",
-            additionalProperties: false,
-            required: ["kind", "taskId", "expectedGeneration"],
-            properties: {
-              kind: { const: "update-task" },
-              taskId: nonEmptyString,
-              expectedGeneration,
-              goal: nonEmptyString,
-              outputs: stringList,
-              acceptance: stringList,
-            },
-          },
-          {
-            type: "object",
-            additionalProperties: false,
-            required: ["kind", "taskId", "expectedGeneration", "summary"],
-            properties: {
-              kind: { const: "close-task" },
-              taskId: nonEmptyString,
-              expectedGeneration,
-              summary: nonEmptyString,
-            },
-          },
-          {
-            type: "object",
-            additionalProperties: false,
-            required: ["kind", "taskId", "expectedGeneration", "reason"],
-            properties: {
-              kind: { const: "unblock-task" },
-              taskId: nonEmptyString,
-              expectedGeneration,
-              reason: nonEmptyString,
-            },
-          },
-        ],
-      },
-    },
-    conditions: {
-      type: "array",
-      maxItems: 3,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "type", "subject", "expected"],
-        properties: {
-          id: nonEmptyString,
-          type: nonEmptyString,
-          subject: nonEmptyString,
-          expected: {},
-          owner: nonEmptyString,
-        },
-      },
-    },
-  },
-} as const;
 
 type OwnerResult = Exclude<
   ProjectAppTaskHandlerResult,
@@ -216,7 +109,7 @@ ${triggerBlock(ctx.task)}`.trim();
 
   const result = await ctx.runAgent("scout", prompt, {
     timeoutMs: 1_800_000,
-    schema: ownerResultSchema as never,
+    schema: projectAppTaskOwnerResultSchema,
   });
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Scout owner maintenance session failed", {

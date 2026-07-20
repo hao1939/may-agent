@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk";
 import { execute } from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
@@ -28,7 +29,7 @@ describe("Scout owner reconciliation boundary", () => {
                 kind: "create-task",
                 id: "repair-navigation",
                 parentId: "library-maintenance",
-                goal: "Repair library navigation",
+                outcome: "Repair library navigation",
                 outputs: ["knowledge/README.md"],
                 acceptance: ["The landing page links canonical notes"],
               },
@@ -59,6 +60,16 @@ describe("Scout owner reconciliation boundary", () => {
         state: "converged",
         actions: [{ kind: "create-task", id: "repair-navigation" }],
       },
+    });
+    const admitted = admitProjectAppTaskHandlerResult(
+      result.type === "done" ? result.output : undefined,
+      { allowNeedsOwner: true, defaultParentId: "project" },
+    );
+    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
+      kind: "create-task",
+      id: "repair-navigation",
+      mode: "achieve",
+      priority: "P2",
     });
   });
 });
