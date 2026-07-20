@@ -530,14 +530,15 @@ type WorkflowCapability = {
 };
 
 type NormalizedTaskHandlerResult = {
-  state: "converged" | "waiting" | "needs-owner" | "failed";
+  /** `error` is an attempt/runtime outcome, never a valid handler decision. */
+  state: "converged" | "waiting" | "needs-owner" | "error";
   summary: string;
   evidence: string[];
   actions: ProjectAppTaskAction[];
   conditions?: ProjectAppConditionSpec[];
 };
 
-const taskStates = new Set(["converged", "waiting", "needs-owner", "failed"]);
+const taskStates = new Set(["converged", "waiting", "needs-owner"]);
 const taskModes = new Set(["achieve", "maintain"]);
 const taskPriorities = new Set(["P0", "P1", "P2", "P3"]);
 const ownerTaskActionSchema = Type.Union([
@@ -587,7 +588,7 @@ const ownerTaskConditionSchema = Type.Object({
   owner: Type.Optional(Type.String()),
 });
 const ownerTaskResultSchema = Type.Object({
-  state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("failed")]),
+  state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
   summary: Type.String(),
   evidence: Type.Array(Type.String()),
   actions: Type.Optional(Type.Array(ownerTaskActionSchema)),
@@ -696,7 +697,7 @@ export function normalizeTaskHandlerResult(
 ): NormalizedTaskHandlerResult {
   if (!isRecord(output)) {
     return {
-      state: "failed",
+      state: "error",
       summary:
         fallback.type === "blocked"
           ? fallback.summary
@@ -721,7 +722,7 @@ export function normalizeTaskHandlerResult(
     (conditions !== undefined && !Array.isArray(conditions))
   ) {
     return {
-      state: "failed",
+      state: "error",
       summary: "Workflow returned an invalid task handler result envelope",
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -732,7 +733,7 @@ export function normalizeTaskHandlerResult(
   const invalidConditionIndex = conditionList.findIndex((condition) => !validProjectAppConditionSpec(condition));
   if (invalidConditionIndex >= 0) {
     return {
-      state: "failed",
+      state: "error",
       summary: `Workflow returned an invalid Condition at conditions[${invalidConditionIndex}]`,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -746,7 +747,7 @@ export function normalizeTaskHandlerResult(
     const reason = invalidProjectAppTaskActionReason(actionList[index], index);
     if (reason) {
       return {
-        state: "failed",
+        state: "error",
         summary: `Workflow returned an invalid task action: ${reason}`,
         evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
         actions: [],
@@ -755,18 +756,9 @@ export function normalizeTaskHandlerResult(
   }
   const normalizedActions = actionList as ProjectAppTaskAction[];
 
-  if (normalizedState === "failed" && normalizedActions.length > 0) {
-    return {
-      state: "failed",
-      summary: `${normalizedSummary}; failed results cannot apply task actions`,
-      evidence: [...evidence],
-      actions: [],
-    };
-  }
-
   if (normalizedState === "waiting" && exactConditions.length === 0) {
     return {
-      state: "failed",
+      state: "error",
       summary: "Workflow returned waiting without an exact Condition",
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -774,7 +766,7 @@ export function normalizeTaskHandlerResult(
   }
   if (normalizedState !== "waiting" && exactConditions.length > 0) {
     return {
-      state: "failed",
+      state: "error",
       summary: `Workflow returned Conditions with non-waiting state ${normalizedState}`,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
@@ -924,7 +916,7 @@ async function runTaskCapability(input: {
     } as unknown as AgentEvent);
     return {
       handlerResult: {
-        state: unavailable ? "needs-owner" : "failed",
+        state: unavailable ? "needs-owner" : "error",
         summary,
         evidence: [],
         actions: [],
@@ -949,14 +941,14 @@ async function runTaskOwner(input: {
     `You are the accountable owner for Agent App ${descriptor.id}.`,
     "Resolve the task from current evidence and, for achieve tasks, perform the bounded work required by the outcome and acceptance when your tools can do it. Do not edit task-tree storage directly.",
     "Return your decision through finish().result using state, summary, evidence, actions, and conditions.",
-    'You are already the resolved owner; do not return state "needs-owner". Decide converged, waiting with exact Conditions, or failed with evidence.',
-    "Valid states for this owner result are exactly: converged, waiting, failed.",
-    'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, either do that concrete work now and report the evidence, or return failed with the exact command/error/blocker that prevented it.',
+    'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting with exact Conditions.',
+    "Valid states for this owner result are exactly: converged or waiting.",
+    'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, either do that concrete work now and report the evidence, or absorb the failed carrier through a converged result with exact failure evidence and a bounded successor/escalation action.',
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up.",
     "Use waiting only when there is a real machine-observable wake event. Every Condition must be an object with id, type, subject, and expected.",
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
     "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
-    "If no exact machine-observable Condition exists, do not return waiting. Return failed with evidence and supported task actions when this carrier failed but a bounded successor should be created; return converged when the carrier itself is done.",
+    "If no exact machine-observable Condition exists, do not return waiting. Return converged with exact evidence and supported successor/escalation actions when this carrier is finished; execution errors are reported by the runtime, not as a fourth task state.",
     "Use actions only for supported task-tree mutations.",
     "",
     "Allowed actions:",
@@ -1151,7 +1143,7 @@ async function reconcileTaskIntent(input: {
       });
       return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
     } catch (error) {
-      primaryHandlerResult.state = "failed";
+      primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
@@ -1179,7 +1171,7 @@ async function reconcileTaskIntent(input: {
       });
       return stale?.reconcileTaskIds ?? apply.reconcileTaskIds;
     } catch (error) {
-      primaryHandlerResult.state = "failed";
+      primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
