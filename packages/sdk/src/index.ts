@@ -62,6 +62,7 @@ export interface EventQuery extends TimeFilter {
   type?: string;
   owner?: string;
   source?: string;
+  projectId?: string;
 }
 
 export interface MetricQuery extends QueryOptions {
