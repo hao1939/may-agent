@@ -586,7 +586,7 @@ describe("workflow tool: run", () => {
     );
   });
 
-  it("wakes the project owner without interpreting legacy task packets", async () => {
+  it("leaves task-bound workflow failure on its explicit task controller", async () => {
     writeWorkflow(
       "task-blocked.ts",
       `
@@ -605,6 +605,10 @@ describe("workflow tool: run", () => {
       workflowDir,
       agentName: "aks-explorer",
       projectId: "alpha-project",
+      taskBinding: {
+        taskId: "vm-pipeline-rest-plan",
+        generation: 1,
+      },
       runtimeCtx: {
         emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
         dispatchEvent: () => {},
@@ -647,18 +651,16 @@ describe("workflow tool: run", () => {
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
-    expect(runtimeEvents.some((event) => event.type === "project.owner.requested")).toBe(true);
+    expect(runtimeEvents.some((event) => event.type === "project.owner.requested")).toBe(false);
     expect(runtimeEvents.some((event) => event.type === "workflow.owner.requested")).toBe(false);
     expect(runtimeEvents.some((event) => event.type.startsWith("project.task."))).toBe(false);
     expect(runtimeEvents).toContainEqual(
       expect.objectContaining({
-        type: "project.owner.requested",
-        project: "alpha-project",
-        params: expect.objectContaining({
+        type: "workflow.blocked",
+        data: expect.objectContaining({
+          projectId: "alpha-project",
           reason: "worker preflight failed",
           context: { detail: "missing token" },
-          workflow: "task-blocked",
-          workflowOwner: "agent:aks-explorer",
         }),
       }),
     );

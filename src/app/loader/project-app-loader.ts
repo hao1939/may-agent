@@ -672,6 +672,10 @@ async function runTaskCapability(input: {
       guardsDir: paths.guardsDir,
       sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
+      taskBinding: {
+        taskId: claim.taskId,
+        generation: claim.generation,
+      },
       trace,
       executionPaths: input.executionPaths,
     });
