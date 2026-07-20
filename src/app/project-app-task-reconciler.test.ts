@@ -505,6 +505,101 @@ describe("project app task reconciler state", () => {
     expect(completeProjectAppTask(config, first, { summary: "late generation one result" }).status).toBe("stale");
   });
 
+  it("detaches prior-generation Conditions and triggers when desired state changes", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+    const first = declareAndClaimTask(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+
+    deferProjectAppTask(config, first, {
+      disposition: "waiting",
+      summary: "waiting for the prior generation",
+      conditions: [
+        {
+          id: "prior-generation-run",
+          type: "ado.pipeline.completed",
+          subject: "ado:run:123",
+          expected: "completed",
+        },
+      ],
+    });
+    const waitingTree = readTaskState(config);
+    waitingTree.taskTriggers = {
+      ...(waitingTree.taskTriggers ?? {}),
+      [monitor.id]: {
+        taskId: monitor.id,
+        taskGeneration: 1,
+        resourceVersion: 1,
+        event: { type: "prior-generation.trigger" },
+        observedAt: "2026-07-20T00:00:00.000Z",
+      },
+    };
+    saveTaskState(config, waitingTree);
+
+    expect(
+      observeProjectAppTaskIntent(config, {
+        intent: { ...monitor, input: { sessionId: "session-2" } },
+        appOwner: "app-owner",
+      }),
+    ).toMatchObject({ kind: "observed", generation: 2, changed: true });
+
+    const changedTree = readTaskState(config);
+    expect(changedTree.resources?.[monitor.id]).toMatchObject({
+      metadata: { generation: 2 },
+      status: { phase: "pending" },
+    });
+    expect(changedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
+    expect(changedTree.conditions?.["prior-generation-run"]).toBeUndefined();
+    expect(changedTree.taskTriggers?.[monitor.id]).toBeUndefined();
+    expect(listRunnableProjectAppTaskIds(config)).toContain(monitor.id);
+  });
+
+  it("claims generation drift before honoring a stale waiting Condition", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+    const first = declareAndClaimTask(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+
+    deferProjectAppTask(config, first, {
+      disposition: "waiting",
+      summary: "waiting for a stale observation",
+      conditions: [
+        {
+          id: "stale-run",
+          type: "ado.pipeline.completed",
+          subject: "ado:run:123",
+          expected: "completed",
+        },
+      ],
+    });
+    const driftedTree = readTaskState(config);
+    const resource = driftedTree.resources?.[monitor.id];
+    if (!resource) throw new Error("expected task resource");
+    resource.metadata.generation = 2;
+    resource.metadata.resourceVersion += 1;
+    saveTaskState(config, driftedTree);
+
+    expect(listRunnableProjectAppTaskIds(config)).toContain(monitor.id);
+    const claim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "passive-resync",
+    });
+    expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, generation: 2 });
+    const claimedTree = readTaskState(config);
+    expect(claimedTree.conditions?.["stale-run"]).toBeUndefined();
+    expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
+  });
+
   it("keeps an active generation when only containment, category, or priority changes", () => {
     const { config } = fixture();
     const original = { ...intent("maintain"), category: "monitor", priority: "P2" as const };
