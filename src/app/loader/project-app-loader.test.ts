@@ -60,7 +60,7 @@ function writeApp(appDir: string, extra = "") {
             mode: event.mode || "achieve",
             ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
             ...(event.taskOwner ? { owner: event.taskOwner } : {}),
-            input: { itemId: event.itemId },
+            input: { itemId: event.itemId, ...(event.revision ? { revision: event.revision } : {}) },
             outputs: event.outputs || []
           };
         }
@@ -573,6 +573,14 @@ describe("project app loader", () => {
           `${String(error)} events=${JSON.stringify(events.map((event) => ({ type: event.type, data: event.data })))}`,
         );
       });
+      expect(
+        events.find(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/workflow" &&
+            event.data?.disposition === "converged",
+        )?.data?.input,
+      ).toEqual({ itemId: "workflow" });
       bus.emit({ type: "sample.work", project: "sample", itemId: "owner", ownerOnly: true } as any);
       await waitUntil(() =>
         events.some(
@@ -820,10 +828,29 @@ describe("project app loader", () => {
             .length ===
           completedPasses + 1,
       );
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "target",
+        revision: "v2",
+        mode: "maintain",
+        target: { project: "sample", taskId: "work/target" },
+      } as any);
+      await waitUntil(
+        () =>
+          events.filter((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/target")
+            .length ===
+          completedPasses + 2,
+      );
 
       const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(state.resources["work/target"]).toBeTruthy();
+      expect(state.resources["work/target"]).toMatchObject({
+        metadata: { generation: 2 },
+        spec: { input: { itemId: "target", revision: "v2" } },
+        status: { observedGeneration: 2 },
+      });
       expect(state.resources["work/must-not-resolve"]).toBeUndefined();
       expect(tree.tasks["work/must-not-resolve"]).toBeUndefined();
       expect(
