@@ -1767,8 +1767,16 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         }
       }
       if (taskController && descriptor.app.tasks) {
+        const appAcceptsTaskEvent = descriptor.app.tasks.accepts.some((selector) =>
+          matchesEventSelector(selector, event),
+        );
+        const isRuntimeTaskWake = event.type === "project.task.tick";
         const targetedTaskId =
-          isProjectScopedForApp(event, descriptor.id) && isTaskWakeEvent(event) ? taskIdFromEvent(event) : "";
+          (appAcceptsTaskEvent || isRuntimeTaskWake) &&
+          isProjectScopedForApp(event, descriptor.id) &&
+          isTaskWakeEvent(event)
+            ? taskIdFromEvent(event)
+            : "";
         if (targetedTaskId) {
           const config = taskReconciliationConfig({
             appDir: descriptor.appDir,
@@ -1777,10 +1785,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
           });
           const existingIntent = readProjectAppTaskIntent(config, targetedTaskId);
-          if (
-            existingIntent &&
-            descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))
-          ) {
+          if (existingIntent && appAcceptsTaskEvent) {
             const resolved = descriptor.app.tasks.resolve(event);
             if (resolved?.id === targetedTaskId) {
               const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
@@ -1814,7 +1819,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               "existing targeted task remains asleep on open Conditions",
             );
           }
-          if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
+          if (appAcceptsTaskEvent) {
             const resolved = descriptor.app.tasks.resolve(event);
             if (resolved?.id === targetedTaskId) {
               const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
@@ -1832,7 +1837,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           // targeted wake into unrelated broad work.
           continue;
         }
-        if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
+        if (appAcceptsTaskEvent) {
           const intent = descriptor.app.tasks.resolve(event);
           if (intent) {
             const config = taskReconciliationConfig({

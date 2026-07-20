@@ -1556,6 +1556,71 @@ describe("project app loader", () => {
     }
   });
 
+  it("ignores targeted task events that the app task surface does not accept", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "project.owner.requested", project: "sample", mode: "maintain" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-review" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const statePath = projectRuntimePaths(f.appDir).taskStatePath;
+      const before = JSON.parse(readFileSync(statePath, "utf8"));
+      const attemptsBefore = Object.values(before.attempts ?? {}).filter(
+        (attempt: any) => attempt.taskId === "work/owner-review",
+      ).length;
+      events.length = 0;
+
+      bus.emit({
+        type: "project.owner.reviewed",
+        project: "sample",
+        target: { project: "sample", taskId: "work/owner-review" },
+        data: {
+          taskId: "work/owner-review",
+          disposition: "noop",
+          summary: "owner review fact should not re-wake the task",
+        },
+      } as any);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const after = JSON.parse(readFileSync(statePath, "utf8"));
+      const attemptsAfter = Object.values(after.attempts ?? {}).filter(
+        (attempt: any) => attempt.taskId === "work/owner-review",
+      ).length;
+      expect(attemptsAfter).toBe(attemptsBefore);
+      expect(
+        events.filter(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/owner-review",
+        ),
+      ).toHaveLength(0);
+      expect(after.resources["work/owner-review"].status.phase).toBe("converged");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("installs conventional periodic resync when the app omits an interval", async () => {
     const f = fixture();
     const intervalSpy = spyOn(globalThis, "setInterval");
