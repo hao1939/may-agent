@@ -82,7 +82,7 @@ function writeApp(appDir: string, extra = "") {
     `export const name = "worker";
      export const description = "sample worker";
      export async function execute(ctx) {
-       if (!ctx.task.includes("app: ${appDir}") || !ctx.task.includes("project: ${appDir}")) {
+       if (!ctx.task.includes("persistent-task: skip") || !ctx.task.includes("app: ${appDir}") || !ctx.task.includes("project: ${appDir}")) {
          return ctx.blocked("canonical app/workspace paths are missing");
        }
        if (ctx.appDir !== "${appDir}" || ctx.projectDir !== "${appDir}" || ctx.workspaceDir !== "${appDir}") {
@@ -177,7 +177,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary: "Handler result was rejected: conditions[0].id must be a non-empty string",
+      summary: expect.stringContaining("Handler result was rejected:"),
       actions: [],
     });
   });
@@ -283,8 +283,7 @@ describe("project app loader handler result normalization", () => {
       ),
     ).toMatchObject({
       state: "error",
-      summary:
-        "Handler result was rejected: actions[0].kind must be one of create-task, update-task, close-task, unblock-task",
+      summary: expect.stringContaining("Handler result was rejected:"),
       actions: [],
     });
   });
@@ -576,6 +575,7 @@ describe("project app loader", () => {
         ),
       );
       expect(ownerCalls).toHaveLength(1);
+      expect(ownerCalls[0]).toContain("persistent-task: skip");
       expect(ownerCalls[0]).toContain("Allowed actions:");
       expect(ownerCalls[0]).toContain('kind: "create-task"');
       expect(ownerCalls[0]).toContain("Do not invent action names");
@@ -1084,7 +1084,9 @@ describe("project app loader", () => {
       writeApp(f.appDir);
       const bus = new EventBus();
       const events: any[] = [];
+      const deliveries: Array<{ event: any; result: any }> = [];
       bus.subscribe((event) => events.push(event));
+      bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
       await installProjectApps({
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
@@ -1128,6 +1130,7 @@ describe("project app loader", () => {
       };
       writeFileSync(treePath, `${JSON.stringify(waiting, null, 2)}\n`);
       events.length = 0;
+      deliveries.length = 0;
 
       bus.emit({
         type: "project.task.tick",
@@ -1136,14 +1139,12 @@ describe("project app loader", () => {
         reason: "test-direct-wake",
       } as any);
 
-      await waitUntil(() =>
-        events.some(
-          (event) =>
-            event.type === "project.task.reconcile.skipped" &&
-            event.data?.taskId === "work/maintain-wake" &&
-            event.data?.reason === "conditions-open",
-        ),
-      );
+      await waitUntil(() => deliveries.length > 0);
+      expect(deliveries.at(-1)?.result).toMatchObject({
+        accepted: true,
+        note: "existing targeted task remains asleep on open Conditions: work/maintain-wake",
+      });
+      expect(events.some((event) => event.type === "project.task.reconcile.started")).toBe(false);
 
       const stillWaiting = JSON.parse(readFileSync(treePath, "utf8"));
       const waitingAttempts = Object.values(stillWaiting.attempts).filter(

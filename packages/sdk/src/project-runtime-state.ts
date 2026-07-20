@@ -12,7 +12,7 @@ export type ProjectRuntimePaths = {
   migrationLogPath: string;
 };
 
-export type EnsureTaskTreeStateResult = {
+export type EnsureTaskStateResult = {
   path: string;
   migrated: boolean;
   source: "runtime" | "seed" | "empty";
@@ -64,7 +64,7 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
   };
 }
 
-export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
+export function ensureTaskState(appDir: string): EnsureTaskStateResult {
   const paths = projectRuntimePaths(appDir);
   if (existsSync(paths.taskStatePath)) {
     return { path: paths.taskStatePath, migrated: false, source: "runtime" };
@@ -77,7 +77,7 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
     const seed = readFileSync(seedPath);
     writeFileSync(paths.taskStatePath, seed);
     appendMigrationLog(appDir, {
-      kind: "task_tree_runtime_state_bootstrap",
+      kind: "task_state_runtime_bootstrap",
       source: "seed",
       from: "tasks/seed.json",
       to: ".state/tasks/state.json",
@@ -92,7 +92,7 @@ export function ensureTaskTreeState(appDir: string): EnsureTaskTreeStateResult {
   };
   writeJson(paths.taskStatePath, empty);
   appendMigrationLog(appDir, {
-    kind: "task_tree_runtime_state_bootstrap",
+    kind: "task_state_runtime_bootstrap",
     source: "empty",
     to: ".state/tasks/state.json",
   });
