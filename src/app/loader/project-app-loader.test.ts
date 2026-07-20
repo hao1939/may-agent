@@ -601,6 +601,67 @@ describe("project app loader", () => {
     }
   });
 
+  it("routes an explicitly targeted event only to that task", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "target", mode: "maintain" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/target" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const completedPasses = events.filter(
+        (event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/target",
+      ).length;
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "must-not-resolve",
+        mode: "maintain",
+        target: { project: "sample", taskId: "work/target" },
+      } as any);
+      await waitUntil(
+        () =>
+          events.filter(
+            (event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/target",
+          ).length === completedPasses + 1,
+      );
+
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(tree.resources["work/target"]).toBeTruthy();
+      expect(tree.resources["work/must-not-resolve"]).toBeUndefined();
+      expect(tree.tasks["work/must-not-resolve"]).toBeUndefined();
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "project.task.reconcile.started" && event.data?.taskId === "work/must-not-resolve",
+        ),
+      ).toHaveLength(0);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("applies structured successor actions only from converged owner results", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
