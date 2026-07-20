@@ -1497,6 +1497,12 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             });
             taskController.enqueue(targetedTaskId);
           }
+          // An explicit task target is the complete routing decision. Running
+          // the app resolver as well can turn one event into unrelated work
+          // (for example, a targeted domain wake plus a broad owner-review
+          // task). Condition correlation above remains independent because it
+          // is an explicit durable relationship rather than implicit routing.
+          continue;
         }
         if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
           const intent = descriptor.app.tasks.resolve(event);
