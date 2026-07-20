@@ -26,7 +26,6 @@ function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
 export function resolveMayAgentTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
-  const details = eventDetails(event);
   switch (event.type) {
     case "project.ops_digest.tick":
       return {
@@ -39,7 +38,6 @@ export function resolveMayAgentTask(
         ],
         mode: "maintain",
         workflow: "daily-ops-digest",
-        input: details,
         priority: "P1",
       };
     case "project.ops_health.tick":
@@ -53,7 +51,6 @@ export function resolveMayAgentTask(
         ],
         mode: "maintain",
         workflow: "ops-health-review",
-        input: details,
         priority: "P1",
       };
     case "project.owner.requested":
@@ -67,7 +64,6 @@ export function resolveMayAgentTask(
         ],
         mode: "maintain",
         workflow: "platform-owner-review",
-        input: details,
         priority: "P1",
       };
     default:

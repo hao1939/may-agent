@@ -44,6 +44,12 @@ describe("Scout task reconciliation", () => {
       mode: "maintain",
       workflow: "library-health",
     });
+    expect(
+      resolveScoutTask({ type: "scout.digest", eventId: 1 })?.input,
+    ).toBeUndefined();
+    expect(
+      resolveScoutTask({ type: "scout.digest", eventId: 2 })?.input,
+    ).toBeUndefined();
   });
 
   it("reuses learned maintenance and keeps the accountable owner fallback", () => {

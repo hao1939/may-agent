@@ -44,7 +44,7 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "scout-explore",
-        input: { ...details, source },
+        input: { source },
         priority: source === "xhs" ? "P2" : "P1",
       };
     }
@@ -59,7 +59,6 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "scout-daily-digest",
-        input: details,
         priority: "P1",
       };
     case "scout.heartbeat":
@@ -73,7 +72,6 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "scout-heartbeat",
-        input: details,
         priority: "P2",
       };
     case "project.library_health.tick":
@@ -87,7 +85,6 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "library-health",
-        input: details,
         priority: "P1",
       };
     case "project.owner.requested":
@@ -101,7 +98,6 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "knowledge-planner",
-        input: details,
         priority: "P1",
       };
     default:

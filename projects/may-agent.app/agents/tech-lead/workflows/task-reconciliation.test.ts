@@ -14,7 +14,6 @@ describe("may-agent task reconciliation manifest", () => {
       parentId: "ops-health",
       mode: "maintain",
       workflow: "daily-ops-digest",
-      input: { lane: "daily" },
     });
 
     expect(
@@ -28,8 +27,15 @@ describe("may-agent task reconciliation manifest", () => {
       parentId: "ops-health",
       mode: "maintain",
       workflow: "ops-health-review",
-      input: { lane: "hourly" },
     });
+    expect(
+      resolveMayAgentTask({ type: "project.ops_digest.tick", eventId: 1 })
+        ?.input,
+    ).toBeUndefined();
+    expect(
+      resolveMayAgentTask({ type: "project.ops_digest.tick", eventId: 2 })
+        ?.input,
+    ).toBeUndefined();
   });
 
   it("reuses the learned owner-review workflow with automatic owner fallback", () => {
@@ -44,11 +50,8 @@ describe("may-agent task reconciliation manifest", () => {
       id: "runtime/platform-owner-review",
       parentId: "platform-system-review-feedback-loop",
       mode: "maintain",
-      input: {
-        reason: "manual-review",
-        source: "human",
-      },
     });
+    expect(intent?.input).toBeUndefined();
     expect(intent?.workflow).toBe("platform-owner-review");
     expect(app.owner).toBe("tech-lead");
     expect(app.tasks?.accepts).toEqual([

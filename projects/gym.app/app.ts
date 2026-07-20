@@ -99,7 +99,6 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "incident-intake",
-        input: { ...details, eventId },
         outputs: [".state/incidents"],
         priority: "P1",
       };
@@ -115,7 +114,6 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "regression-run",
-        input: { ...details, eventId },
         outputs: [".state/runs", ".state/failures"],
         priority: "P1",
       };
@@ -131,7 +129,6 @@ export function resolveGymTask(
         ],
         mode: "achieve",
         workflow: "review-and-propose",
-        input: { ...details, eventId },
         outputs: [".state/reviews"],
         priority: "P1",
       };
