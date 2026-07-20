@@ -11,16 +11,21 @@ import {
 import {
   defaultSpecLoopStatePath,
   loadSpecLoopState,
-  loadSpecs,
   safeTaskIdForSpec,
   type SpecLoopSpecState,
 } from "./lib/spec-loop-store.ts";
 import {
   field,
+  frontierLimit,
   parseTriggerEvent,
   resolveAppDir,
   triggerString,
 } from "./lib/workflow-input.ts";
+import {
+  learnedSpecVerificationAcceptance,
+  loopFrontierAccounting,
+  specLoopTaskId,
+} from "../../../task-loops.ts";
 
 export const name = "spec-loop-controller";
 export const description =
@@ -30,7 +35,7 @@ export const workflowContract: WorkflowIoContract = {
   version: "spec-loop-controller-v2",
   input: {
     required: ["project.task.tick action=spec-loop", "target.taskId"],
-    optional: ["maxConcurrent"],
+    optional: ["frontierLimit"],
     description:
       "Reconcile one durable spec-loop responsibility from current state.",
   },
@@ -52,6 +57,7 @@ type GraphTask = {
   result?: string;
   acceptance?: unknown;
   conflict_scope?: unknown;
+  input?: Record<string, unknown>;
 };
 
 type Graph = {
@@ -73,101 +79,12 @@ function represented(graph: Graph, taskId: string | null | undefined): boolean {
   return Boolean(taskId && graph.tasks?.[taskId]);
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function openTask(task: GraphTask | null | undefined): boolean {
-  const state = String(task?.phase ?? task?.state ?? "")
-    .trim()
-    .toLowerCase();
-  return !["done", "closed", "converged"].includes(state);
-}
-
 function representedTaskState(graph: Graph, taskId: string): string {
   return String(
     graph.tasks?.[taskId]?.phase ?? graph.tasks?.[taskId]?.state ?? "unknown",
   )
     .trim()
     .toLowerCase();
-}
-
-function canWaitForRepresentedTask(graph: Graph, taskId: string): boolean {
-  const state = representedTaskState(graph, taskId);
-  return !["attention", "review", "failed", "error"].includes(state);
-}
-
-function familyPrefixesForSpec(specId: string): string[] {
-  const body = specId.replace(/^spec\./, "");
-  const segments = body.split(".").filter(Boolean);
-  const prefixes = new Set<string>();
-  if (segments.length >= 1) prefixes.add(segments[0]!);
-  if (segments.length >= 2) prefixes.add(`${segments[0]}.${segments[1]}`);
-  if (segments.length >= 2) prefixes.add(`${segments[0]}-${segments[1]}`);
-  return [...prefixes].map((value) => value.toLowerCase());
-}
-
-function featureKeysBySpecId(projectDir: string): Map<string, string[]> {
-  const map = new Map<string, string[]>();
-  for (const spec of loadSpecs(projectDir)) {
-    const match = spec.file.match(/^features\/([^/]+)\/specs\//);
-    const featureKey = match?.[1]?.trim();
-    if (!featureKey) continue;
-    const existing = map.get(spec.id) ?? [];
-    if (!existing.includes(featureKey)) existing.push(featureKey);
-    map.set(spec.id, existing);
-  }
-  return map;
-}
-
-function taskRepresentsSpec(
-  task: GraphTask,
-  specId: string,
-  featureKeys: string[],
-): boolean {
-  const scopes = Array.isArray(task.conflict_scope)
-    ? task.conflict_scope.filter(
-        (value): value is string => typeof value === "string",
-      )
-    : [];
-  if (scopes.includes(`spec:${specId}`)) return true;
-
-  const loweredScopes = scopes.map((value) => value.toLowerCase());
-  if (
-    featureKeys.some(
-      (featureKey) =>
-        loweredScopes.includes(`feature:${featureKey.toLowerCase()}`) ||
-        loweredScopes.includes(`feature-compact:${featureKey.toLowerCase()}`),
-    )
-  ) {
-    return true;
-  }
-
-  const familyPrefixes = familyPrefixesForSpec(specId);
-  if (
-    loweredScopes.some((scope) => {
-      const token = scope.split(":").pop()?.trim().toLowerCase();
-      return Boolean(token && familyPrefixes.includes(token));
-    })
-  ) {
-    return true;
-  }
-
-  const matcher = new RegExp(
-    `(^|[^A-Za-z0-9_.-])${escapeRegExp(specId)}([^A-Za-z0-9_.-]|$)`,
-  );
-  const evidenceFields = [
-    task.goal,
-    task.outcome,
-    task.summary,
-    task.result,
-    ...(Array.isArray(task.acceptance)
-      ? task.acceptance.filter(
-          (value): value is string => typeof value === "string",
-        )
-      : []),
-  ].filter((value): value is string => typeof value === "string");
-  return evidenceFields.some((value) => matcher.test(value));
 }
 
 function collectReferencedTaskIds(
@@ -196,26 +113,38 @@ function representedTaskIdsForSpec(
   graph: Graph,
   specId: string,
   spec: SpecLoopSpecState,
-  featureKeys: string[],
 ): string[] {
   const representedTaskIds = new Set<string>();
   const deterministicTaskId = workId(specId);
   if (represented(graph, deterministicTaskId))
     representedTaskIds.add(deterministicTaskId);
+  const deterministicDispositionRepairTaskId = dispositionRepairId(specId);
+  if (represented(graph, deterministicDispositionRepairTaskId)) {
+    representedTaskIds.add(deterministicDispositionRepairTaskId);
+  }
   for (const taskId of collectReferencedTaskIds(spec)) {
     if (represented(graph, taskId)) representedTaskIds.add(taskId);
   }
   for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
-    if (!openTask(task)) continue;
-    if (taskRepresentsSpec(task, specId, featureKeys)) {
+    if (
+      (task.input?.loopId === specLoopTaskId &&
+        task.input?.workKey === specId) ||
+      (task.input?.loopTaskId === specLoopTaskId &&
+        task.input?.specId === specId)
+    ) {
       representedTaskIds.add(taskId);
     }
   }
   return [...representedTaskIds];
 }
 
-function digest(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 10);
+function workRevision(spec: SpecLoopSpecState): string {
+  const source =
+    spec.inputFingerprint ??
+    spec.errorFingerprint ??
+    spec.lastRunId ??
+    spec.updatedAt;
+  return createHash("sha256").update(source).digest("hex").slice(0, 10);
 }
 
 function workId(specId: string): string {
@@ -263,7 +192,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     refreshFromProject: false,
   });
   const graph = readGraph(appDir);
-  const specFeatureKeys = featureKeysBySpecId(projectDir);
   const remaining = Object.entries(state.specs)
     .filter(([, spec]) => !isSatisfied(spec))
     .sort(([left], [right]) => {
@@ -275,7 +203,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           (rightPriority < 0 ? Number.MAX_SAFE_INTEGER : rightPriority)
         );
       }
-      return left.localeCompare(right);
+      const dateOrder = String(
+        state.specs[left]?.updatedAt ?? "",
+      ).localeCompare(String(state.specs[right]?.updatedAt ?? ""));
+      return dateOrder || left.localeCompare(right);
     });
 
   if (remaining.length === 0) {
@@ -291,25 +222,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const representedBySpec = new Map(
     remaining.map(([specId, spec]) => [
       specId,
-      representedTaskIdsForSpec(
-        graph,
-        specId,
-        spec,
-        specFeatureKeys.get(specId) ?? [],
-      ),
+      representedTaskIdsForSpec(graph, specId, spec),
     ]),
   );
   const representedTaskIds = [
     ...new Set([...representedBySpec.values()].flatMap((taskIds) => taskIds)),
   ];
-  const attentionRepresentedTaskIds = representedTaskIds.filter(
-    (taskId) => !canWaitForRepresentedTask(graph, taskId),
+  const accounting = loopFrontierAccounting(
+    representedTaskIds.map((taskId) => ({
+      taskId,
+      phase: representedTaskState(graph, taskId),
+    })),
+    Math.min(12, frontierLimit(ctx.task, 5)),
   );
-  const configuredCapacity = Math.min(12, Math.max(1, state.windowSize || 5));
-  const actionBudget = Math.max(
-    0,
-    configuredCapacity - representedTaskIds.length,
-  );
+  const actionBudget = accounting.available;
   const actions: ProjectAppTaskAction[] = remaining
     .filter(([specId]) => (representedBySpec.get(specId) ?? []).length === 0)
     .slice(0, actionBudget)
@@ -324,12 +250,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           owner: "aks-explorer",
           input: {
             specId,
-            loopTaskId,
+            loopId: specLoopTaskId,
+            workKey: specId,
+            workRevision: workRevision(spec),
             statePath,
           },
           outputs: [statePath, "../aks-rp-e2e/evidence/archive/"],
           acceptance: [
-            "Inspect the current spec-loop row, source, model, runner, and cited evidence before changing anything.",
+            "Inspect the current spec-loop row, source, model, runner, cited evidence, and current .state/tasks/tree.json before changing anything.",
+            "Treat any taskId, successorTaskId, or review.frontierTaskId that is absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
             "If the reviewed disposition is still valid and no further run is truthful, make it controller-visible by setting terminalDisposition=true or by creating/repointing one exact live holder task and updating taskId/review pointers.",
             "If the reviewed disposition is stale or actually runnable, clear or replace the stale disposition and leave the exact next verification task or rerun path represented.",
             "Do not launch an unchanged rerun merely because the row is pending; first repair the missing representation.",
@@ -346,11 +275,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         owner: "aks-explorer",
         input: {
           specId,
-          loopTaskId,
+          loopId: specLoopTaskId,
+          workKey: specId,
+          workRevision: workRevision(spec),
           statePath,
         },
         outputs: [statePath, "../aks-rp-e2e/runs/test-results/"],
         acceptance: [
+          ...learnedSpecVerificationAcceptance,
           "Current source, model, runner, and prior evidence are inspected before any rerun.",
           "A live pass is recorded, or one exact typed wait or reviewed terminal disposition preserves the next wake condition.",
           "The loop state is updated with evidence before this task converges.",
@@ -358,15 +290,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         priority: "P1",
       };
     });
-  const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): declared ${actions.length} bounded task action(s), observed ${representedTaskIds.length} represented task(s), and found ${attentionRepresentedTaskIds.length} represented review/attention task(s) that require owner repair rather than passive waiting.`;
+  const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
   const resultState =
-    actions.length > 0 || representedTaskIds.length > 0
+    actions.length > 0 ||
+    accounting.actionableTaskIds.length > 0 ||
+    accounting.waitingTaskIds.length > 0
       ? "converged"
       : "needs-owner";
+  if (resultState === "needs-owner") {
+    return ctx.done(summary, {
+      state: resultState,
+      summary,
+      evidence: [`spec-loop-state:${statePath}`],
+    });
+  }
   return ctx.done(summary, {
     state: resultState,
     summary,
     evidence: [`spec-loop-state:${statePath}`],
-    ...(resultState !== "needs-owner" ? { actions } : {}),
+    actions,
   });
 }

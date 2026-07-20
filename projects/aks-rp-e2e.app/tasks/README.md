@@ -25,5 +25,6 @@ Reusable experience belongs
 in workflows, skills, design, domain models, and evidence—not in a mutable task
 archive.
 
-`tasks/seed.json` is initialization input only. There is no checked-in
-`tasks/tree.json` mirror.
+`tasks/seed.json` is initialization input for structural groups only. Standing
+task intent is defined once in `task-loops.ts` and materialized by semantic
+ticks. There is no checked-in `tasks/tree.json` mirror.

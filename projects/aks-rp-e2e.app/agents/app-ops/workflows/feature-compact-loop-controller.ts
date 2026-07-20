@@ -19,11 +19,16 @@ import {
 } from "./lib/feature-compact-loop-store.ts";
 import {
   field,
-  maxConcurrent,
+  frontierLimit,
   parseTriggerEvent,
   resolveAppDir,
   triggerString,
 } from "./lib/workflow-input.ts";
+import {
+  featureCompactLoopTaskId,
+  learnedCompactVerificationAcceptance,
+  loopFrontierAccounting,
+} from "../../../task-loops.ts";
 
 export const name = "feature-compact-loop-controller";
 export const description =
@@ -36,7 +41,7 @@ export const workflowContract: WorkflowIoContract = {
       "project.task.tick action=feature-compact-loop",
       "target.taskId",
     ],
-    optional: ["maxConcurrent"],
+    optional: ["frontierLimit"],
     description:
       "Reconcile one durable feature-compact responsibility from current state.",
   },
@@ -49,9 +54,10 @@ export const workflowContract: WorkflowIoContract = {
 };
 
 type Graph = {
-  tasks?: Record<string, { phase?: string }>;
-  resources?: Record<string, unknown>;
-  receipts?: Record<string, unknown>;
+  tasks?: Record<
+    string,
+    { phase?: string; state?: string; input?: Record<string, unknown> }
+  >;
 };
 
 function readGraph(appDir: string): Graph {
@@ -65,16 +71,13 @@ function readGraph(appDir: string): Graph {
 }
 
 function represented(graph: Graph, taskId: string | null | undefined): boolean {
-  return Boolean(
-    taskId &&
-    (graph.tasks?.[taskId] ||
-      graph.resources?.[taskId] ||
-      graph.receipts?.[taskId]),
-  );
+  return Boolean(taskId && graph.tasks?.[taskId]);
 }
 
-function representedTaskNeedsOwner(graph: Graph, taskId: string): boolean {
-  return graph.tasks?.[taskId]?.phase === "attention";
+function representedTaskState(graph: Graph, taskId: string): string {
+  return String(
+    graph.tasks?.[taskId]?.phase ?? graph.tasks?.[taskId]?.state ?? "unknown",
+  );
 }
 
 function digest(value: string): string {
@@ -124,7 +127,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     "aks-feature-compact-loop";
-  const frontierTarget = Math.min(12, maxConcurrent(ctx.task, trigger, 3));
+  const frontierTarget = Math.min(12, frontierLimit(ctx.task, 3));
   const statePath = defaultFeatureCompactLoopStatePath(appDir);
   const { state } = loadFeatureCompactLoopState({
     appDir,
@@ -141,7 +144,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const graph = readGraph(appDir);
   const remaining = Object.entries(state.features)
     .filter(([, item]) => !hasDurableLiveProof(item))
-    .sort(([left], [right]) => left.localeCompare(right));
+    .sort(([left, leftItem], [right, rightItem]) => {
+      const leftRepair = leftItem.status === "done" ? 0 : 1;
+      const rightRepair = rightItem.status === "done" ? 0 : 1;
+      return (
+        leftRepair - rightRepair ||
+        leftItem.updatedAt.localeCompare(rightItem.updatedAt) ||
+        left.localeCompare(right)
+      );
+    });
 
   if (remaining.length === 0) {
     const summary = `Feature compact loop ${loopTaskId} converged: all ${Object.keys(state.features).length} feature packages have live proof.`;
@@ -153,36 +164,45 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const representedTaskIds = [
-    ...new Set(
-      remaining
-        .flatMap(([featureKey, item]) => [
+  const representedByFeature = new Map(
+    remaining.map(([featureKey, item]) => {
+      const ids = new Set(
+        [
           desiredTaskId(featureKey, item),
           item.taskId,
           ...(item.frontierTaskIds ?? []),
-        ])
-        .filter((taskId): taskId is string => represented(graph, taskId)),
+        ].filter((taskId): taskId is string => represented(graph, taskId)),
+      );
+      for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
+        if (
+          (task.input?.loopId === featureCompactLoopTaskId &&
+            task.input?.workKey === featureKey) ||
+          (task.input?.loopTaskId === featureCompactLoopTaskId &&
+            task.input?.featureKey === featureKey)
+        ) {
+          ids.add(taskId);
+        }
+      }
+      return [featureKey, [...ids]] as const;
+    }),
+  );
+  const representedTaskIds = [
+    ...new Set(
+      [...representedByFeature.values()].flatMap((taskIds) => taskIds),
     ),
   ];
-  const attentionTaskIds = representedTaskIds.filter((taskId) =>
-    representedTaskNeedsOwner(graph, taskId),
+  const accounting = loopFrontierAccounting(
+    representedTaskIds.map((taskId) => ({
+      taskId,
+      phase: representedTaskState(graph, taskId),
+    })),
+    frontierTarget,
   );
-  const progressingTaskIds = representedTaskIds.filter(
-    (taskId) => !representedTaskNeedsOwner(graph, taskId),
-  );
-  const configuredCapacity = Math.min(12, Math.max(1, state.windowSize || 1));
-  const actionBudget = Math.max(
-    0,
-    configuredCapacity - representedTaskIds.length,
-  );
+  const actionBudget = accounting.available;
   const actions: ProjectAppTaskAction[] = remaining
     .filter(
-      ([featureKey, item]) =>
-        !represented(graph, desiredTaskId(featureKey, item)) &&
-        !represented(graph, item.taskId) &&
-        !(item.frontierTaskIds ?? []).some((taskId) =>
-          represented(graph, taskId),
-        ),
+      ([featureKey]) =>
+        (representedByFeature.get(featureKey) ?? []).length === 0,
     )
     .slice(0, actionBudget)
     .map(([featureKey, item]) => {
@@ -201,7 +221,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         input: {
           featureKey,
           capabilityId: item.capabilityId,
-          loopTaskId,
+          loopId: featureCompactLoopTaskId,
+          workKey: featureKey,
           statePath,
           packetPath: item.packetPath,
           workRevision: workRevision(item),
@@ -212,11 +233,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         outputs: [statePath, `../aks-rp-e2e/features/${featureKey}/compact/`],
         acceptance: repairsLegacyProof
           ? [
-              "Inspect the existing compact result and cited evidence before changing the ledger.",
+              "Inspect the existing compact result, cited evidence, and current .state/tasks/tree.json before changing the ledger.",
+              "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
               "If current evidence proves the accepted live result, fill the missing structured proof fields and preserve done.",
               "Otherwise move the item to the exact truthful pending, blocked, or reviewed terminal state without launching an unchanged rerun.",
             ]
           : [
+              ...learnedCompactVerificationAcceptance,
+              "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
               "The feature-owned package covers its complete declared spec set.",
               "A live staging pass is recorded, or one exact typed wait or reviewed terminal disposition preserves the next wake condition.",
               "The compact loop state is updated with evidence before this task converges.",
@@ -224,8 +248,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         priority: "P1",
       } satisfies ProjectAppTaskAction;
     });
-  const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): declared ${actions.length} bounded task action(s), observed ${progressingTaskIds.length} progressing represented task(s), and found ${attentionTaskIds.length} represented attention task(s).`;
-  if (actions.length > 0 || representedTaskIds.length > 0) {
+  const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
+  if (
+    actions.length > 0 ||
+    accounting.actionableTaskIds.length > 0 ||
+    accounting.waitingTaskIds.length > 0
+  ) {
     return ctx.done(summary, {
       state: "converged",
       summary,
@@ -237,6 +265,5 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     state: "needs-owner",
     summary,
     evidence: [`feature-compact-state:${statePath}`],
-    actions: [],
   });
 }

@@ -34,7 +34,12 @@ async function workspace(item: Record<string, unknown>, represented = false) {
     JSON.stringify({
       schema_version: 2,
       tasks: represented
-        ? { "existing-compact-task": { id: "existing-compact-task" } }
+        ? {
+            "existing-compact-task": {
+              id: "existing-compact-task",
+              phase: "running",
+            },
+          }
         : {},
       conditions: {},
       satisfied_dependency_ids: [],
@@ -93,7 +98,8 @@ describe("feature compact reconciliation workflow", () => {
       lastLiveProofVersion: null,
     });
 
-    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
       output: {
         state: "converged",
         actions: [
@@ -109,6 +115,9 @@ describe("feature compact reconciliation workflow", () => {
         ],
       },
     });
+    expect(result.output.actions[0].acceptance.join("\n")).toContain(
+      "do not return an action that references a missing task id",
+    );
   });
 
   test("declares bounded owner work without assigning it", async () => {
@@ -132,12 +141,29 @@ describe("feature compact reconciliation workflow", () => {
     expect(Object.keys(action.input).sort()).toEqual([
       "capabilityId",
       "featureKey",
-      "loopTaskId",
+      "loopId",
       "packetPath",
       "statePath",
+      "workKey",
       "workRevision",
     ]);
     expect(action.outcome).not.toContain("pending");
+    const acceptance = action.acceptance.join("\n");
+    expect(acceptance).toContain("feature packet");
+    expect(acceptance).toContain("reuse known-good carriers");
+    expect(acceptance).toContain("Every feature-owned spec");
+    expect(acceptance).toContain("compatible route shape");
+    expect(acceptance).toContain("prefer one or two real clusters");
+    expect(acceptance).toContain("not really compacted");
+    expect(acceptance).toContain("required clusters, saved clusters");
+    expect(acceptance).toContain("branch/commit ADO will run");
+    expect(acceptance).toContain("No no-op, dry-run, or metadata-only pass");
+    expect(acceptance).toContain("ingested per spec branch");
+    expect(acceptance).toContain("terminal with no artifacts");
+    expect(acceptance).toContain("smallest failing branch");
+    expect(acceptance).toContain(
+      "do not return an action that references a missing task id",
+    );
   });
 
   test("keeps task identity stable while changing the desired work revision", async () => {
@@ -173,6 +199,7 @@ describe("feature compact reconciliation workflow", () => {
         tasks: {
           "compact/compact-feature-networking": {
             id: "compact/compact-feature-networking",
+            phase: "running",
           },
         },
         conditions: {},
@@ -229,6 +256,59 @@ describe("feature compact reconciliation workflow", () => {
     expect((result as any).output.conditions).toBeUndefined();
   });
 
+  test("does not let an exact wait consume compact actionable capacity", async () => {
+    const ws = await workspace(item("pending", "wait-networking"));
+    const features: Record<string, Record<string, unknown>> = {
+      networking: item("pending", "wait-networking"),
+    };
+    for (const featureKey of ["compute", "dns", "storage"]) {
+      await mkdir(join(ws.projectDir, "features", featureKey, "specs"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(ws.projectDir, "features", featureKey, "specs", "case.json"),
+        JSON.stringify({ id: `spec.${featureKey}.case` }),
+      );
+      features[featureKey] = {
+        ...item("pending"),
+        featureKey,
+        capabilityId: featureKey,
+        packetPath: `features/${featureKey}.yaml`,
+        specsDir: `features/${featureKey}/specs`,
+      };
+    }
+    await writeFile(
+      join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+      JSON.stringify({
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 3,
+        cursor: 0,
+        features,
+      }),
+    );
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "wait-networking": {
+            id: "wait-networking",
+            phase: "waiting",
+            input: {
+              loopId: "aks-feature-compact-loop",
+              workKey: "networking",
+            },
+          },
+        },
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(3);
+    expect(result.output.summary).toContain("1 waiting");
+  });
+
   test("prunes stale compact rows for features absent from the current project layout", async () => {
     const ws = await workspace(item("pending"));
     await writeFile(
@@ -271,7 +351,36 @@ describe("feature compact reconciliation workflow", () => {
     });
   });
 
-  test("converges when the only represented compact task needs attention", async () => {
+  test("treats old-shape compact task input as represented", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "legacy-compact-networking": {
+            id: "legacy-compact-networking",
+            phase: "running",
+            input: {
+              loopTaskId: "aks-feature-compact-loop",
+              featureKey: "networking",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [],
+      },
+    });
+  });
+
+  test("surfaces an attention-only compact frontier to the owner", async () => {
     const ws = await workspace(item("running", "existing-compact-task"));
     await writeFile(
       join(ws.appDir, ".state", "tasks", "tree.json"),
@@ -288,8 +397,10 @@ describe("feature compact reconciliation workflow", () => {
       }),
     );
 
-    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
-      output: { state: "converged", actions: [] },
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: { state: "needs-owner" },
     });
+    expect(result.output).not.toHaveProperty("actions");
   });
 });

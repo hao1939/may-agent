@@ -16,6 +16,16 @@ import type {
   WorkflowResult,
 } from "@may-agent/sdk";
 import { workflowResultVersion } from "@may-agent/sdk";
+import {
+  learnedScenarioNormalizationAcceptance,
+  loopFrontierAccounting,
+  scenarioNormalizationTaskId,
+  standingLoopDefinitions,
+} from "../../../task-loops.ts";
+import {
+  parseTriggerEvent,
+  triggerValue,
+} from "../../app-ops/workflows/lib/workflow-input.ts";
 
 export const name = "normalize-scenario-frontier";
 export const description =
@@ -60,25 +70,19 @@ type FrontierRow = {
   implementationPath: string;
   branchCandidates: string[];
   representedTaskIds: string[];
-  usefulTaskIds: string[];
+  actionableTaskIds: string[];
+  waitingTaskIds: string[];
   residueTaskIds: string[];
 };
 
 type GraphNode = {
   id: string;
   state: string;
-  text: string;
+  parentId: string;
+  input: Record<string, unknown>;
 };
 
-const frontierTaskId = "scenario-normalization";
-const usefulStates = new Set([
-  "active",
-  "running",
-  "backlog",
-  "waiting",
-  "blocked",
-]);
-const residueStates = new Set(["attention", "review", "failed", "error"]);
+const frontierTaskId = scenarioNormalizationTaskId;
 
 function digest(value: string, length = 10): string {
   return createHash("sha256").update(value).digest("hex").slice(0, length);
@@ -116,47 +120,6 @@ function parseTaskField(raw: string, name: string): string {
   return raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim() ?? "";
 }
 
-function triggerObject(raw: string): Record<string, unknown> {
-  const marker = raw.indexOf("## Trigger Event");
-  if (marker < 0) return {};
-  const scoped = raw.slice(marker);
-  const first = scoped.indexOf("{");
-  const last = scoped.lastIndexOf("}");
-  if (first < 0 || last <= first) return {};
-  try {
-    const parsed = JSON.parse(scoped.slice(first, last + 1));
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function triggerData(
-  trigger: Record<string, unknown>,
-): Record<string, unknown> {
-  return trigger.data &&
-    typeof trigger.data === "object" &&
-    !Array.isArray(trigger.data)
-    ? (trigger.data as Record<string, unknown>)
-    : {};
-}
-
-function triggerNumber(
-  trigger: Record<string, unknown>,
-  key: string,
-): number | undefined {
-  const data = triggerData(trigger);
-  const value = data[key] ?? trigger[key];
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return undefined;
-}
-
 function resolveProjectDir(ctx: WorkflowContext): string {
   return (
     ctx.projectDir ||
@@ -171,6 +134,17 @@ function resolveAppDir(ctx: WorkflowContext, projectDir: string): string {
     parseTaskField(ctx.task, "app") ||
     (projectDir.endsWith(".app") ? projectDir : `${projectDir}.app`)
   );
+}
+
+function desiredRunnableMin(ctx: WorkflowContext): number {
+  const fallback = 3;
+  const event = parseTriggerEvent(ctx.task);
+  const raw = triggerValue(event, "desiredRunnableLeaves");
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const min = Number((raw as { min?: unknown }).min);
+    if (Number.isFinite(min) && min >= 1) return Math.floor(min);
+  }
+  return fallback;
 }
 
 function canUseOriginDev(projectDir: string): boolean {
@@ -309,7 +283,13 @@ function graphNodes(appDir: string): GraphNode[] {
     nodes.push({
       id,
       state,
-      text: JSON.stringify({ id, spec }),
+      parentId: String(spec.parentId ?? ""),
+      input:
+        spec.input &&
+        typeof spec.input === "object" &&
+        !Array.isArray(spec.input)
+          ? (spec.input as Record<string, unknown>)
+          : {},
     });
   }
 
@@ -329,7 +309,13 @@ function graphNodes(appDir: string): GraphNode[] {
     nodes.push({
       id,
       state,
-      text: JSON.stringify({ id, task }),
+      parentId: String(task.parent_id ?? task.parentId ?? ""),
+      input:
+        task.input &&
+        typeof task.input === "object" &&
+        !Array.isArray(task.input)
+          ? (task.input as Record<string, unknown>)
+          : {},
     });
   }
   return nodes;
@@ -345,44 +331,17 @@ function canRepresentFrontierRow(node: GraphNode): boolean {
   return true;
 }
 
-function basenameStem(path: string): string {
-  const name = path.split("/").pop() ?? path;
-  return name.replace(/\.test\.ts$/, "").replace(/\.ts$/, "");
-}
-
-function taskIdToken(value: string): string {
-  return value
-    .replace(/^spec\./, "")
-    .replace(/[^A-Za-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-}
-
-function nodeLooksExactForRow(row: FrontierRow, node: GraphNode): boolean {
-  const id = node.id.toLowerCase();
-  return [
-    basenameStem(row.adapterPath),
-    basenameStem(row.legacyPath),
-    row.specId,
-  ]
-    .map(taskIdToken)
-    .filter(Boolean)
-    .some((token) => token.length >= 8 && id.includes(token));
-}
-
 function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
   if (!canRepresentFrontierRow(node)) return false;
-  if (
-    [row.adapterPath, row.legacyPath]
-      .filter(Boolean)
-      .some((needle) => node.text.includes(needle))
-  ) {
-    return true;
+  if (node.input.loopId === scenarioNormalizationTaskId) {
+    return node.input.workKey === row.adapterPath;
   }
-  if (!nodeLooksExactForRow(row, node)) return false;
-  return [row.specId, row.probeRef, row.implementationPath]
-    .filter(Boolean)
-    .some((needle) => node.text.includes(needle));
+  if (node.input.loopId) return false;
+  return (
+    node.parentId === "group/scenario-normalization" &&
+    (node.input.adapterPath === row.adapterPath ||
+      (Boolean(row.specId) && node.input.specId === row.specId))
+  );
 }
 
 function actionForRow(
@@ -390,7 +349,7 @@ function actionForRow(
   originDevCommit: string,
   report: InventoryReport,
 ): ProjectAppTaskAction {
-  const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}-${digest(`${originDevCommit}:${row.adapterPath}:${row.representedTaskIds.join(",")}`)}`;
+  const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}`;
   return {
     kind: "create-task",
     id,
@@ -401,6 +360,9 @@ function actionForRow(
     input: {
       workflow: name,
       frontierTaskId,
+      loopId: scenarioNormalizationTaskId,
+      workKey: row.adapterPath,
+      workRevision: digest(`${originDevCommit}:${row.adapterPath}`),
       originDevCommit,
       adapterPath: row.adapterPath,
       legacyPath: row.legacyPath,
@@ -423,12 +385,8 @@ function actionForRow(
     },
     outputs: ["evidence/archive/", row.adapterPath, row.legacyPath],
     acceptance: [
-      "Start from clean current origin/dev, not the dirty local repair branch.",
-      "Read the owning spec JSON and prove the exact probeRef/implementation path for this adapter row.",
-      "Inspect same-spec branch, ADO run, artifact, and task evidence before deciding the next move.",
-      "Choose exactly one next state: origin/dev absorbed/equivalent, publish/rebase/recheck, smallest same-spec repair, exact external wait with observer/resume condition, terminal disposition, or escalation.",
+      ...learnedScenarioNormalizationAcceptance,
       "If the exact external wait is repo-ref movement such as origin/dev publication, create or update that wait with workflow wait-for-repo-ref-advance and structured input.baseRef plus input.resumeBaselineCommit instead of making prose successor waits.",
-      "Do not close from filename similarity, stale task summaries, broad plain-TS counters, or review/attention residue alone.",
     ],
     priority: "P1",
     category: "domain_leaf",
@@ -457,24 +415,21 @@ function buildRows(
       implementationPath: String(spec.implementation?.path ?? ""),
       branchCandidates: branchCandidates(projectDir, adapterPath),
       representedTaskIds: [],
-      usefulTaskIds: [],
+      actionableTaskIds: [],
+      waitingTaskIds: [],
       residueTaskIds: [],
     };
     const matches = nodes.filter((node) => rowMatchesNode(row, node));
     row.representedTaskIds = [...new Set(matches.map((node) => node.id))];
-    row.usefulTaskIds = [
-      ...new Set(
-        matches
-          .filter((node) => usefulStates.has(node.state))
-          .map((node) => node.id),
-      ),
-    ];
+    const accounting = loopFrontierAccounting(
+      matches.map((node) => ({ taskId: node.id, phase: node.state })),
+      0,
+    );
+    row.actionableTaskIds = accounting.actionableTaskIds;
+    row.waitingTaskIds = accounting.waitingTaskIds;
     row.residueTaskIds = [
-      ...new Set(
-        matches
-          .filter((node) => residueStates.has(node.state))
-          .map((node) => node.id),
-      ),
+      ...accounting.attentionTaskIds,
+      ...accounting.terminalTaskIds,
     ];
     return row;
   });
@@ -483,16 +438,9 @@ function buildRows(
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = resolveProjectDir(ctx);
   const appDir = resolveAppDir(ctx, projectDir);
-  const trigger = triggerObject(ctx.task);
-  const maxLeaves = Math.max(
-    1,
-    Math.min(
-      5,
-      triggerNumber(trigger, "max") ??
-        triggerNumber(trigger, "maxConcurrent") ??
-        5,
-    ),
-  );
+  const maxLeaves =
+    standingLoopDefinitions[scenarioNormalizationTaskId].frontierLimit;
+  const minRunnableLeaves = desiredRunnableMin(ctx);
   const nodes = graphNodes(appDir);
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
@@ -504,6 +452,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `inventory-root:${relative(projectDir, worktreeDir) || "."}`,
       `origin-dev-commit:${originDevCommit}`,
       `missing-adapters:${missingAdapterFiles.length}`,
+      `desired-runnable-min:${minRunnableLeaves}`,
       ...(error ? [`inventory-error:${error}`] : []),
     ];
 
@@ -513,7 +462,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         state: "needs-owner",
         summary,
         evidence,
-        actions: [],
       });
     }
 
@@ -530,33 +478,54 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     const rows = buildRows(worktreeDir, projectDir, missingAdapterFiles, nodes);
     const rowsNeedingWork = rows.filter(
-      (row) => row.usefulTaskIds.length === 0,
+      (row) => row.representedTaskIds.length === 0,
     );
-    const usefulTaskIds = [
-      ...new Set(rows.flatMap((row) => row.usefulTaskIds)),
-    ].slice(0, 64);
-    const actionBudget = Math.max(0, maxLeaves - usefulTaskIds.length);
+    const accounting = loopFrontierAccounting(
+      rows.flatMap((row) =>
+        row.representedTaskIds.map((taskId) => ({
+          taskId,
+          phase: nodes.find((node) => node.id === taskId)?.state,
+        })),
+      ),
+      maxLeaves,
+    );
+    const actionBudget = accounting.available;
     const actions = rowsNeedingWork
       .slice(0, actionBudget)
       .map((row) => actionForRow(row, originDevCommit, report));
     const residueCount = rows.filter(
-      (row) => row.usefulTaskIds.length === 0 && row.residueTaskIds.length > 0,
+      (row) =>
+        row.actionableTaskIds.length === 0 &&
+        row.waitingTaskIds.length === 0 &&
+        row.residueTaskIds.length > 0,
     ).length;
-    const summary = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), found ${usefulTaskIds.length} useful represented task(s), and found ${residueCount} row(s) represented only by review/attention residue.`;
+    const summaryBase = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting task(s), and found ${residueCount} row(s) represented only by attention or stale terminal residue.`;
+    const summary = summaryBase;
 
+    const resultState =
+      actions.length > 0 ||
+      accounting.actionableTaskIds.length > 0 ||
+      accounting.waitingTaskIds.length > 0
+        ? "converged"
+        : "needs-owner";
+    const resultEvidence = [
+      ...evidence,
+      ...rows.map(
+        (row) =>
+          `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
+      ),
+    ];
+    if (resultState === "needs-owner") {
+      return ctx.done(summary, {
+        state: resultState,
+        summary,
+        evidence: resultEvidence,
+      });
+    }
     return ctx.done(summary, {
-      state:
-        actions.length > 0 || usefulTaskIds.length > 0
-          ? "converged"
-          : "needs-owner",
+      state: resultState,
       summary,
-      evidence: [
-        ...evidence,
-        ...rows.map(
-          (row) =>
-            `row:${row.adapterPath};spec=${row.specId || "unknown"};useful=${row.usefulTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
-        ),
-      ],
+      evidence: resultEvidence,
       actions,
     });
   });

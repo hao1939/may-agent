@@ -11,15 +11,20 @@ import {
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
 import { observeRepoRefChanges } from "./watchers/repo-ref.js";
 import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory.js";
+import {
+  featureCompactLoopTaskId,
+  loopRefillWakeForTaskEvent,
+  scenarioNormalizationTaskId,
+  specLoopTaskId,
+  standingLoopIntent,
+} from "./task-loops.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
 const appOpsSupportConcurrent = 3;
 const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
-const specLoopTaskId = "aks-spec-verification-loop";
-const featureCompactLoopTaskId = "aks-feature-compact-loop";
-const scenarioTestFrontierTaskId = "scenario-normalization";
+const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
 const scenarioTestFrontierMinLeaves = 3;
 
 type AppTaskEvent = Record<string, unknown>;
@@ -48,6 +53,17 @@ function stringDetail(
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return "";
+}
+
+function recordDetail(
+  details: Record<string, unknown>,
+  ...keys: string[]
+): Record<string, unknown> | null {
+  for (const key of keys) {
+    const value = details[key];
+    if (isRecord(value)) return value;
+  }
+  return null;
 }
 
 function safeTaskIdPart(value: string, fallback: string): string {
@@ -116,6 +132,38 @@ export function resolveAksTask(
   const details = eventDetails(event);
   const taskId = targetTaskId(event);
 
+  if (event.type === "project.stall.reviewed") {
+    const stallReview = recordDetail(details, "stallReview", "stall_review");
+    const judgment =
+      (stallReview ? stringDetail(stallReview, "judgment") : "") ||
+      stringDetail(details, "judgment");
+    if (judgment === "needs-work" || judgment === "escalate") {
+      const reason =
+        stringDetail(details, "reason", "triggerReason", "trigger_reason") ||
+        judgment;
+      return {
+        id: `runtime/stall-review-followup/${safeTaskIdPart(`${judgment}-${reason}`, "review")}`,
+        parentId: "group/app-operations",
+        outcome: `Act on the reviewed AKS project stall finding (${judgment}) and move the project back toward useful work.`,
+        acceptance: [
+          "Read the structured stallReview input and current task tree before changing anything.",
+          "Take one concrete app-owned next step: repair stale task representation, create exact follow-up work, escalate across an owner boundary, or record why no action is currently supported.",
+          "Do not treat receipts, archived done leaves, or completed repair evidence as live coverage; any claimed covering task must exist in the live resource graph with a current nonterminal phase and must match the current affected task ids.",
+          "Do not redo the stall diagnosis as the main work; use it as evidence and preserve agent judgment in the resulting task action or summary.",
+        ],
+        mode: "achieve",
+        owner: "app-ops",
+        input: {
+          reason,
+          judgment,
+          ...(stallReview ? { stallReview } : {}),
+          summary: stringDetail(details, "summary") || null,
+        },
+        priority: "P0",
+      };
+    }
+  }
+
   if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
     return {
       id: "runtime/owner-review",
@@ -135,53 +183,16 @@ export function resolveAksTask(
     case "project.task.tick": {
       const action = stringDetail(details, "action");
       if (action === "spec-loop" || taskId === specLoopTaskId) {
-        return {
-          id: taskId || specLoopTaskId,
-          parentId: "group/spec-verification",
-          outcome:
-            "Keep the durable single-spec verification loop advancing from current spec-loop state.",
-          acceptance: [
-            "The loop declares bounded same-spec work, exact waits, or an evidence-backed no-op from current state.",
-          ],
-          mode: "maintain",
-          owner: "app-ops",
-          workflow: "spec-loop-controller",
-          priority: "P1",
-        };
+        return standingLoopIntent(specLoopTaskId);
       }
       if (
         action === "feature-compact-loop" ||
         taskId === featureCompactLoopTaskId
       ) {
-        return {
-          id: taskId || featureCompactLoopTaskId,
-          parentId: "group/feature-compact",
-          outcome:
-            "Keep the durable feature compact loop advancing from current compact-loop state.",
-          acceptance: [
-            "The loop declares bounded feature compact work, exact waits, or an evidence-backed no-op from current state.",
-          ],
-          mode: "maintain",
-          owner: "app-ops",
-          workflow: "feature-compact-loop-controller",
-          priority: "P1",
-        };
+        return standingLoopIntent(featureCompactLoopTaskId);
       }
       if (taskId === scenarioTestFrontierTaskId) {
-        return {
-          id: scenarioTestFrontierTaskId,
-          parentId: "group/scenario-normalization",
-          outcome:
-            "Normalize direct scenario-test carrier gaps until strict inventory is clean or every remaining item has an exact accepted disposition.",
-          acceptance: [
-            "Strict scenario-test inventory reaches zero missing adapters, or every remaining missing adapter has exact active work, wait, escalation, or terminal disposition.",
-            "The frontier keeps 3-5 concrete one-spec normalization leaves moving when safe work remains.",
-          ],
-          mode: "maintain",
-          owner: "aks-explorer",
-          workflow: "normalize-scenario-frontier",
-          priority: "P0",
-        };
+        return standingLoopIntent(scenarioNormalizationTaskId);
       }
       return null;
     }
@@ -284,6 +295,11 @@ export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  if (event.type === "project.task.reconciled") {
+    const wake = loopRefillWakeForTaskEvent(ctx.appPath("."), event);
+    if (wake) ctx.emit(wake);
+    return { refillWake: Boolean(wake) };
+  }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
   if (event.type === "aks.scenario-test-inventory.check")
@@ -518,6 +534,7 @@ export default defineProjectApp({
   },
 
   events: [
+    { type: "project.task.reconciled", target: projectTarget },
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.check", target: projectTarget },

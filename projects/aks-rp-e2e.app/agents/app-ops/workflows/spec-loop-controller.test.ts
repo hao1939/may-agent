@@ -44,7 +44,7 @@ async function workspace(input: {
 
 function context(appDir: string, projectDir: string) {
   return {
-    task: `app: ${appDir}\nproject: ${projectDir}\n## Trigger Event\n\`\`\`json\n${JSON.stringify({ type: "project.task.tick", action: "spec-loop", taskId: "aks-spec-verification-loop" })}\n\`\`\``,
+    task: `app: ${appDir}\nproject: ${projectDir}\nfrontierLimit: 5\nmaxConcurrent: 80\n## Trigger Event\n\`\`\`json\n${JSON.stringify({ type: "project.task.tick", action: "spec-loop", taskId: "aks-spec-verification-loop", maxConcurrent: 80 })}\n\`\`\``,
     agent: "aks-explorer",
     done: (message: string, output?: unknown) => ({
       status: "done",
@@ -103,11 +103,30 @@ describe("spec loop reconciliation workflow", () => {
     const [action] = result.output.actions;
     expect(action.id).toBe("spec/verify-spec-example");
     expect(Object.keys(action.input).sort()).toEqual([
-      "loopTaskId",
+      "loopId",
       "specId",
       "statePath",
+      "workKey",
+      "workRevision",
     ]);
     expect(action.outcome).not.toContain("pending");
+    const acceptance = action.acceptance.join("\n");
+    expect(acceptance).toContain("self-contained for staging");
+    expect(acceptance).toContain("nearby good and bad same-family examples");
+    expect(acceptance).toContain("shared runner helpers");
+    expect(acceptance).toContain("target-environment wiring");
+    expect(acceptance).toContain("REST/API helpers");
+    expect(acceptance).toContain("mounted private AKS RP source");
+    expect(acceptance).toContain("branch/commit ADO will run");
+    expect(acceptance).toContain("A fast no-cluster pass is inconclusive");
+    expect(acceptance).toContain("queue a fresh ADO live run");
+    expect(acceptance).toContain("structured backend, run id");
+    expect(acceptance).toContain("terminal with no artifacts");
+    expect(acceptance).toContain("same-spec child assertions");
+    expect(acceptance).toContain(
+      "Reviewer acceptance of an artifact review is not the same as a passing spec",
+    );
+    expect(acceptance).toContain("structured state");
   });
 
   test("converges when work is already represented", async () => {
@@ -169,7 +188,75 @@ describe("spec loop reconciliation workflow", () => {
     expect(result.output.actions).toHaveLength(4);
   });
 
-  test("converges while represented review or attention work remains visible", async () => {
+  test("keeps refilling when an exact wait covers another spec", async () => {
+    const specs = Object.fromEntries(
+      ["one", "two", "three", "four", "five", "six"].map((name) => [
+        `spec.${name}`,
+        {
+          status: "pending",
+          attempts: 0,
+          lastRunId: null,
+          lastResultPath: null,
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      ]),
+    );
+    const ws = await workspace({
+      specs,
+      tasks: {
+        "wait/spec-one": {
+          id: "wait/spec-one",
+          phase: "waiting",
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: "spec.one",
+          },
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(5);
+    expect(result.output.summary).toContain("1 waiting");
+  });
+
+  test("uses frontierLimit instead of stale maxConcurrent values", async () => {
+    const specs = Object.fromEntries(
+      Array.from({ length: 10 }, (_, index) => {
+        const name = `case-${index + 1}`;
+        return [
+          `spec.${name}`,
+          {
+            status: "pending",
+            attempts: 0,
+            lastRunId: null,
+            lastResultPath: null,
+            lastPrUrl: null,
+            updatedAt: "2026-07-19T00:00:00Z",
+          },
+        ];
+      }),
+    );
+    const ws = await workspace({
+      specs,
+      tasks: {
+        "spec/verify-spec-case-1": {
+          id: "spec/verify-spec-case-1",
+          item_type: "task",
+          phase: "running",
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("converged");
+    expect(result.output.actions).toHaveLength(4);
+  });
+
+  test("surfaces an attention-only frontier to the owner", async () => {
     const ws = await workspace({
       specs: {
         "spec.example": {
@@ -194,17 +281,15 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(result).toMatchObject({
       output: {
-        state: "converged",
-        actions: [],
+        state: "needs-owner",
       },
     });
-    expect(result.output.summary).toContain(
-      "represented review/attention task(s)",
-    );
+    expect(result.output).not.toHaveProperty("actions");
+    expect(result.output.summary).toContain("1 attention");
     expect(result.output.conditions).toBeUndefined();
   });
 
-  test("treats an existing deterministic spec task as represented even when only tree state and goal are populated", async () => {
+  test("surfaces an unknown deterministic representation to the owner", async () => {
     const ws = await workspace({
       specs: {
         "spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle": {
@@ -229,13 +314,11 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(result).toMatchObject({
       output: {
-        state: "converged",
-        actions: [],
+        state: "needs-owner",
       },
     });
-    expect(result.output.summary).toContain(
-      "represented review/attention task(s)",
-    );
+    expect(result.output).not.toHaveProperty("actions");
+    expect(result.output.summary).toContain("1 attention");
   });
 
   test("treats holder-backed live tasks as representation when ledger taskId is stale or null", async () => {
@@ -259,6 +342,10 @@ describe("spec loop reconciliation workflow", () => {
           outcome:
             "Preserve the exact wait for spec.example until the external signal changes.",
           conflict_scope: ["spec:spec.example"],
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: "spec.example",
+          },
         },
       },
     });
@@ -270,7 +357,7 @@ describe("spec loop reconciliation workflow", () => {
     });
   });
 
-  test("treats feature-holder waits as representation when the spec catalog maps the row to that feature", async () => {
+  test("does not let a feature holder represent spec-loop work", async () => {
     const ws = await workspace({
       specs: {
         "spec.kms.v2-custom-vnet-public-kv-lifecycle": {
@@ -302,12 +389,14 @@ describe("spec loop reconciliation workflow", () => {
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
         state: "converged",
-        actions: [],
+        actions: [
+          { input: { specId: "spec.kms.v2-custom-vnet-public-kv-lifecycle" } },
+        ],
       },
     });
   });
 
-  test("treats family-scoped waits as representation when the wait token matches the spec family", async () => {
+  test("does not infer representation from family-scoped prose", async () => {
     const ws = await workspace({
       specs: {
         "spec.ccp-security-patch.windows2022-prod-mtc": {
@@ -334,7 +423,9 @@ describe("spec loop reconciliation workflow", () => {
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: {
         state: "converged",
-        actions: [],
+        actions: [
+          { input: { specId: "spec.ccp-security-patch.windows2022-prod-mtc" } },
+        ],
       },
     });
   });
@@ -367,6 +458,10 @@ describe("spec loop reconciliation workflow", () => {
           item_type: "task",
           phase: "waiting",
           outcome: "Hold spec.represented until reviewed evidence changes.",
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: "spec.represented",
+          },
         },
       },
     });
@@ -426,8 +521,53 @@ describe("spec loop reconciliation workflow", () => {
     expect(result.output.actions[0].outcome).toContain(
       "structured reviewed disposition",
     );
-    expect(result.output.actions[0].acceptance.join("\n")).toContain(
-      "Do not launch an unchanged rerun",
+    const acceptance = result.output.actions[0].acceptance.join("\n");
+    expect(acceptance).toContain("Do not launch an unchanged rerun");
+    expect(acceptance).toContain(
+      "do not return an action that references a missing task id",
     );
+  });
+
+  test("treats existing old-shape disposition repair tasks as represented", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.network-acns.retina-enterprise-k8s-upgrade": {
+          status: "pending",
+          taskId: null,
+          attempts: 3,
+          lastRunId: "ado-1",
+          lastResultPath: "runs/result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-19T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/retina.md",
+          resumeCondition:
+            "Resume only after the staging execution posture changes.",
+          terminalDisposition: false,
+        },
+      },
+      tasks: {
+        "spec/repair-verify-spec-network-acns-retina-enterprise-k8s-upgrade-disposition-representation":
+          {
+            id: "spec/repair-verify-spec-network-acns-retina-enterprise-k8s-upgrade-disposition-representation",
+            phase: "attention",
+            input: {
+              loopTaskId: "aks-spec-verification-loop",
+              specId: "spec.network-acns.retina-enterprise-k8s-upgrade",
+              statePath: "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json",
+            },
+          },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("needs-owner");
+    expect(result.output).not.toHaveProperty("actions");
+    expect(result.output.summary).toContain("1 attention");
   });
 });

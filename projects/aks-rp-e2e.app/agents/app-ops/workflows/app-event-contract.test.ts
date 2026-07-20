@@ -190,6 +190,39 @@ describe("app event contract", () => {
     );
   });
 
+  test("routes actionable stall reviews to a visible app-ops follow-up", () => {
+    const task = resolveAksTask({
+      type: "project.stall.reviewed",
+      target: { project: projectId },
+      data: {
+        project: projectId,
+        reason: "manual-stall-risk-review-after-loop-summary-fix",
+        judgment: "needs-work",
+        stallReview: {
+          judgment: "needs-work",
+          rootCause: "stale holder representation",
+          nextProjectMove: "open an app-owned repair",
+        },
+      },
+    });
+
+    expect(task).toMatchObject({
+      id: "runtime/stall-review-followup/needs-work-manual-stall-risk-review-after-loop-summary-fix",
+      parentId: "group/app-operations",
+      mode: "achieve",
+      owner: "app-ops",
+      priority: "P0",
+      input: {
+        judgment: "needs-work",
+        reason: "manual-stall-risk-review-after-loop-summary-fix",
+      },
+    });
+    expect(task?.id).not.toBe("runtime/owner-review");
+    expect(task?.acceptance?.join("\n")).toContain(
+      "Do not treat receipts, archived done leaves, or completed repair evidence as live coverage",
+    );
+  });
+
   test("keeps deterministic pipeline observation outside the task graph", () => {
     const event = {
       type: "aks.pipeline.check",

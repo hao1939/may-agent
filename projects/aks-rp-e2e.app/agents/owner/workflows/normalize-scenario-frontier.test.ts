@@ -122,6 +122,14 @@ describe("normalize scenario frontier workflow", () => {
       ],
     });
     expect(result.output.summary).toContain("2 current missing adapter");
+    expect(result.output.actions[0].id).toBe(
+      "domain/reconcile-scenario-adapter-feature-a-tests-case-a",
+    );
+    expect(result.output.actions[0].input).toMatchObject({
+      loopId: "scenario-normalization",
+      workKey: "features/feature-a/tests/case-a.test.ts",
+      workRevision: expect.any(String),
+    });
   });
 
   test("declares at most five exact leaves when the red frontier has free capacity", async () => {
@@ -159,12 +167,18 @@ describe("normalize scenario frontier workflow", () => {
         "domain/case-a": {
           id: "domain/case-a",
           phase: "running",
-          outcome: `Reconcile ${missingAdapterFiles[0]}`,
+          input: {
+            loopId: "scenario-normalization",
+            workKey: missingAdapterFiles[0],
+          },
         },
         "domain/case-b": {
           id: "domain/case-b",
           phase: "running",
-          outcome: `Reconcile ${missingAdapterFiles[1]}`,
+          input: {
+            loopId: "scenario-normalization",
+            workKey: missingAdapterFiles[1],
+          },
         },
       },
     });
@@ -172,6 +186,30 @@ describe("normalize scenario frontier workflow", () => {
 
     expect(result.output.state).toBe("converged");
     expect(result.output.actions).toHaveLength(3);
+  });
+
+  test("does not let an exact wait consume actionable scenario capacity", async () => {
+    const missingAdapterFiles = ["a", "b", "c", "d", "e", "f"].map(
+      (name) => `features/feature-a/tests/case-${name}.test.ts`,
+    );
+    const ws = await workspace({
+      missingAdapterFiles,
+      tasks: {
+        "domain/wait-case-a": {
+          id: "domain/wait-case-a",
+          phase: "waiting",
+          input: {
+            loopId: "scenario-normalization",
+            workKey: missingAdapterFiles[0],
+          },
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(5);
+    expect(result.output.summary).toContain("1 waiting");
   });
 
   test("converges when every missing adapter has useful represented work", async () => {
@@ -182,8 +220,10 @@ describe("normalize scenario frontier workflow", () => {
           id: "domain/existing-case-a",
           item_type: "task",
           phase: "running",
-          outcome:
-            "Reconcile spec.feature-a.case-a from features/feature-a/tests/case-a.test.ts",
+          input: {
+            loopId: "scenario-normalization",
+            workKey: "features/feature-a/tests/case-a.test.ts",
+          },
         },
       },
     });
@@ -235,8 +275,10 @@ describe("normalize scenario frontier workflow", () => {
             id: "domain/wait-feature-a-case-a-origin-dev-publication-after-next-dev-advance",
             item_type: "task",
             phase: "waiting",
-            outcome:
-              "Wait for origin/dev to absorb spec.feature-a.case-a publication.",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: "features/feature-a/tests/case-a.test.ts",
+            },
           },
       },
     });
@@ -245,6 +287,38 @@ describe("normalize scenario frontier workflow", () => {
       state: "converged",
       actions: [],
     });
+  });
+
+  test("converges when every red row is covered by exact waits", async () => {
+    const missingAdapterFiles = ["a", "b", "c", "d", "e"].map(
+      (name) => `features/feature-a/tests/case-${name}.test.ts`,
+    );
+    const tasks = Object.fromEntries(
+      missingAdapterFiles.map((adapterPath, index) => [
+        `domain/wait-case-${index}`,
+        {
+          id: `domain/wait-case-${index}`,
+          item_type: "task",
+          phase: "waiting",
+          input: {
+            loopId: "scenario-normalization",
+            workKey: adapterPath,
+          },
+        },
+      ]),
+    );
+    const ws = await workspace({ missingAdapterFiles, tasks });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain(
+      "observed 0 actionable and 5 waiting",
+    );
+    expect(result.output.evidence).not.toContain(
+      "frontier-underfilled:actionable=0;desiredMin=3;waitOnlyRows=5",
+    );
   });
 
   test("does not treat parent or runtime summaries as represented work", async () => {
