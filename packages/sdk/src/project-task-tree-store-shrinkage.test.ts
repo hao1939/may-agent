@@ -5,6 +5,7 @@ import {
   readTaskState,
   saveTaskState,
   setProjectLifecycle,
+  type ProjectTaskTreeProjection,
   type TaskStateConfig,
   type TaskTree,
 } from "./project-task-tree-store.js";
@@ -257,7 +258,9 @@ describe("saveTaskState shrinkage guard", () => {
     saveTaskState(config, normalized);
     const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
     expect(saved.groups?.root.children).toBeUndefined();
-    const projection = JSON.parse(readFileSync(projectRuntimePaths(TEST_DIR).taskTreePath, "utf-8")) as TaskTree;
+    const projection = JSON.parse(
+      readFileSync(projectRuntimePaths(TEST_DIR).taskTreePath, "utf-8"),
+    ) as ProjectTaskTreeProjection;
     expect(projection.tasks.root.children).toEqual(["live-child"]);
   });
 

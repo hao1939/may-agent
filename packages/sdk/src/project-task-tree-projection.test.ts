@@ -1,0 +1,133 @@
+import { describe, expect, it } from "bun:test";
+import type { ProjectAppTaskResource } from "./project-app.js";
+import { buildProjectTaskTreeProjection, normalizeTaskStateInPlace, type TaskTree } from "./project-task-tree-store.js";
+
+function resource(
+  id: string,
+  phase: ProjectAppTaskResource["status"]["phase"],
+  options: {
+    mode?: "achieve" | "maintain";
+    dependsOn?: string[];
+    conditionIds?: string[];
+    currentAttemptId?: string;
+    input?: Record<string, unknown>;
+  } = {},
+): ProjectAppTaskResource {
+  return {
+    metadata: { id, generation: 2, resourceVersion: 3 },
+    spec: {
+      parentId: "root",
+      outcome: `Outcome ${id}`,
+      acceptance: [`Accept ${id}`],
+      mode: options.mode ?? "achieve",
+      dependsOn: options.dependsOn,
+      input: options.input,
+    },
+    status: {
+      observedGeneration: phase === "converged" ? 2 : 1,
+      phase,
+      conditionIds: options.conditionIds,
+      currentAttemptId: options.currentAttemptId,
+      updatedAt: "2026-07-20T00:00:00.000Z",
+    },
+  };
+}
+
+function projection(
+  resources: Record<string, ProjectAppTaskResource>,
+  extra: Partial<TaskTree> = {},
+  maxConcurrent = 2,
+) {
+  const tree: TaskTree = {
+    project: "sample",
+    project_lifecycle: "active",
+    root_task_id: "root",
+    groups: { root: { id: "root", parent_id: null, owner: "owner" } },
+    resources,
+    tasks: {},
+    ...extra,
+  };
+  normalizeTaskStateInPlace(tree);
+  return buildProjectTaskTreeProjection(tree, maxConcurrent);
+}
+
+describe("canonical project task projection", () => {
+  it("classifies ready, dependency-bound, waiting, and healthy standing work", () => {
+    const result = projection(
+      {
+        ready: resource("ready", "pending"),
+        held: resource("held", "pending", { dependsOn: ["missing"] }),
+        waiting: resource("waiting", "waiting", { conditionIds: ["credential-ready:xhs"] }),
+        standing: resource("standing", "converged", { mode: "maintain" }),
+      },
+      {
+        conditions: {
+          "credential-ready:xhs": {
+            metadata: { id: "credential-ready:xhs", generation: 1, resourceVersion: 1 },
+            spec: { type: "credential.ready", subject: "credential:xhs", expected: { state: "ready" } },
+            status: { observedGeneration: 0, state: "unknown" },
+          },
+        },
+      },
+    );
+
+    expect(result.tasks.ready.readiness).toMatchObject({ state: "ready" });
+    expect(result.tasks.held.readiness).toEqual({
+      state: "dependency-blocked",
+      reason: "Waiting for missing",
+      related_ids: ["missing"],
+    });
+    expect(result.tasks.waiting.readiness).toEqual({
+      state: "condition-blocked",
+      reason: "Waiting for credential-ready:xhs",
+      related_ids: ["credential-ready:xhs"],
+    });
+    expect(result.tasks.standing).toMatchObject({
+      mode: "maintain",
+      phase: "converged",
+      synchronized: true,
+      readiness: { state: "not-applicable" },
+    });
+  });
+
+  it("reports capacity and structural integrity without scheduling work", () => {
+    const result = projection(
+      {
+        running: resource("running", "running", { currentAttemptId: "missing-attempt" }),
+        pending: resource("pending", "pending"),
+        malformedWait: resource("malformedWait", "waiting"),
+      },
+      {},
+      1,
+    );
+
+    expect(result.tasks.pending.readiness).toMatchObject({ state: "capacity-blocked" });
+    expect(result.integrity.map((finding) => finding.code)).toEqual(
+      expect.arrayContaining(["running-without-attempt", "waiting-without-condition"]),
+    );
+  });
+
+  it("preserves bounded desired input and the current wake trigger", () => {
+    const result = projection(
+      {
+        waiting: resource("waiting", "waiting", {
+          input: { approval: { id: "approval-1" } },
+          conditionIds: ["approval-ready"],
+        }),
+      },
+      {
+        taskTriggers: {
+          waiting: {
+            taskId: "waiting",
+            event: { type: "project.approval.submitted", approvalId: "approval-1" },
+          },
+        },
+      },
+    );
+
+    expect(result.tasks.waiting).toMatchObject({
+      input: { approval: { id: "approval-1" } },
+      trigger: { type: "project.approval.submitted", approvalId: "approval-1" },
+    });
+  });
+});

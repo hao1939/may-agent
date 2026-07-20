@@ -969,10 +969,12 @@ export type {
 
 // ── Canonical task-state helpers and generated tree projection ──────
 export {
+  buildProjectTaskTreeProjection,
   isLeaf,
   normalizeTaskStateInPlace,
   normalizeStringArray,
   readTaskState,
+  refreshProjectTaskTreeProjection,
   saveTaskState,
   setProjectLifecycle,
   taskRevision,
@@ -980,7 +982,17 @@ export {
   withTaskStateLock,
 } from "./project-task-tree-store.js";
 export type { SaveTaskStateOptions } from "./project-task-tree-store.js";
-export type { TaskCompletionReceipt, TaskNode, TaskTree, TaskStateConfig } from "./project-task-tree-store.js";
+export type {
+  ProjectTaskIntegrityFinding,
+  ProjectTaskPhase,
+  ProjectTaskProjectionItem,
+  ProjectTaskReadiness,
+  ProjectTaskTreeProjection,
+  TaskCompletionReceipt,
+  TaskNode,
+  TaskStateConfig,
+  TaskTree,
+} from "./project-task-tree-store.js";
 
 export {
   ensureTaskState,

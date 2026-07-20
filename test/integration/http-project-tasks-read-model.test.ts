@@ -1,127 +1,135 @@
 import { describe, expect, it } from "bun:test";
-import {
-  buildProjectTasksReadModel,
-  normalizeProjectTaskState,
-} from "../../src/app/http/server.js";
+import { buildProjectTasksReadModel, normalizeProjectTaskPhase } from "../../src/app/http/server.js";
+
+function group(children: string[]) {
+  return { item_type: "group", id: "project", parent_id: null, children };
+}
+
+function task(
+  id: string,
+  phase: "pending" | "running" | "waiting" | "attention" | "converged",
+  options: Record<string, unknown> = {},
+) {
+  return {
+    item_type: "task",
+    id,
+    parent_id: "project",
+    children: [],
+    outcome: `Outcome ${id}`,
+    mode: "achieve",
+    generation: 1,
+    resource_version: 1,
+    phase,
+    observed_generation: phase === "converged" ? 1 : 0,
+    synchronized: phase === "converged",
+    readiness: {
+      state: phase === "pending" ? "ready" : "not-applicable",
+      reason: phase === "pending" ? "Ready" : `Task phase is ${phase}`,
+      related_ids: [],
+    },
+    acceptance: ["Accepted"],
+    depends_on: [],
+    outputs: [],
+    condition_ids: [],
+    status_updated_at: "2026-07-20T00:00:00.000Z",
+    ...options,
+  };
+}
+
+function projection(items: Record<string, unknown>, extra: Record<string, unknown> = {}) {
+  return {
+    schema_version: 2,
+    project: "example",
+    project_lifecycle: "active",
+    root_task_id: "project",
+    updated_at: "2026-07-20T00:00:00.000Z",
+    max_concurrent: 2,
+    active_task_ids: [],
+    conditions: {},
+    satisfied_dependency_ids: [],
+    integrity: [],
+    tasks: items,
+    ...extra,
+  };
+}
 
 describe("project task read model", () => {
-  it("accepts only canonical task state values", () => {
-    expect(normalizeProjectTaskState({ state: "backlog" })).toBe("backlog");
-    expect(normalizeProjectTaskState({ state: "review" })).toBe("review");
-    expect(normalizeProjectTaskState({ state: "done" })).toBe("done");
-    expect(normalizeProjectTaskState({ state: "something-new" })).toBe("unknown");
+  it("accepts only canonical task phases", () => {
+    expect(normalizeProjectTaskPhase({ phase: "pending" })).toBe("pending");
+    expect(normalizeProjectTaskPhase({ phase: "attention" })).toBe("attention");
+    expect(normalizeProjectTaskPhase({ phase: "converged" })).toBe("converged");
+    expect(normalizeProjectTaskPhase({ phase: "backlog" })).toBe("unknown");
   });
 
-  it("uses canonical state for counts and output", () => {
+  it("preserves canonical classification and app metadata", () => {
     const model = buildProjectTasksReadModel(
+      projection({
+        project: group(["running", "ready", "pending", "waiting", "attention", "standing"]),
+        running: task("running", "running", { active_attempt: { id: "a1" } }),
+        ready: task("ready", "pending"),
+        pending: task("pending", "pending", {
+          readiness: { state: "dependency-blocked", reason: "Waiting for dep", related_ids: ["dep"] },
+        }),
+        waiting: task("waiting", "waiting", {
+          condition_ids: ["credential:xhs"],
+          readiness: {
+            state: "condition-blocked",
+            reason: "Waiting for credential:xhs",
+            related_ids: ["credential:xhs"],
+          },
+        }),
+        attention: task("attention", "attention"),
+        standing: task("standing", "converged", { mode: "maintain" }),
+      }),
       {
-        root_task_id: "project",
-        updated_at: "2026-06-17T00:00:00.000Z",
-        tasks: {
-          project: {
-            id: "project",
-            state: "backlog",
-            children: ["leaf-a", "leaf-b", "leaf-c"],
-          },
-          "leaf-a": {
-            id: "leaf-a",
-            parent_id: "project",
-            state: "done",
-            kind: "test",
-            children: [],
-          },
-          "leaf-b": {
-            id: "leaf-b",
-            parent_id: "project",
-            state: "blocked",
-            children: [],
-          },
-          "leaf-c": {
-            id: "leaf-c",
-            parent_id: "project",
-            state: "review",
-            children: [],
-          },
-        },
+        path: "projects/example",
+        treePath: ".state/tasks/tree.json",
+        measuredAt: "2026-07-20T01:00:00.000Z",
+        project: { id: "example", owner: "owner", posture: "active" },
       },
-      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
     );
 
     expect(model).toMatchObject({
       available: true,
-      statusCounts: {
-        backlog: 1,
-        done: 1,
-        blocked: 1,
-        review: 1,
+      schemaVersion: 2,
+      measuredAt: "2026-07-20T01:00:00.000Z",
+      project: { id: "example", owner: "owner", maxConcurrent: 2 },
+      stats: {
+        groups: 1,
+        resources: 6,
+        attention: 1,
+        running: 1,
+        ready: 1,
+        pending: 1,
+        waiting: 1,
+        healthyStanding: 1,
       },
-      kindCounts: {
-        work: 3,
-        test: 1,
+      items: {
+        attention: { phase: "attention" },
+        standing: { phase: "converged", mode: "maintain" },
       },
     });
-    expect(model.tasks["leaf-a"]).toMatchObject({
-      state: "done",
-    });
-    expect(model.tasks["leaf-c"]).toMatchObject({
-      state: "review",
-    });
+    expect(model).not.toHaveProperty("frontier");
+    expect(model).not.toHaveProperty("statusCounts");
   });
 
-  it("derives the live frontier without writing another project state", () => {
+  it("returns actionable errors for malformed or legacy projections", () => {
     const model = buildProjectTasksReadModel(
       {
-        root_task_id: "project",
-        receipts: { completed: { summary: "done" } },
-        tasks: {
-          project: { id: "project", state: "backlog", children: ["active", "review", "waiting", "ready", "held"] },
-          active: { id: "active", parent_id: "project", state: "active", goal: "Active work", children: [] },
-          review: { id: "review", parent_id: "project", state: "review", goal: "Review work", children: [] },
-          waiting: { id: "waiting", parent_id: "project", state: "blocked", goal: "Waiting work", children: [] },
-          ready: {
-            id: "ready",
-            parent_id: "project",
-            state: "backlog",
-            goal: "Ready work",
-            depends_on: ["completed"],
-            children: [],
-          },
-          held: {
-            id: "held",
-            parent_id: "project",
-            state: "backlog",
-            goal: "Held work",
-            depends_on: ["missing"],
-            children: [],
-          },
-        },
+        schema_version: 1,
+        root_task_id: "missing",
+        tasks: { project: { id: "project", state: "backlog", children: [7] } },
       },
-      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
+      { path: "projects/example", treePath: ".state/tasks/tree.json" },
     );
 
-    expect(model.frontier).toEqual({
-      active: ["active"],
-      review: ["review"],
-      waiting: ["waiting"],
-      runnable: ["ready"],
-      counts: { active: 1, review: 1, waiting: 1, runnable: 1 },
-    });
-  });
-
-  it("returns actionable errors for malformed task trees", () => {
-    const model = buildProjectTasksReadModel(
-      { root_task_id: "missing", tasks: { project: { children: [7] } } },
-      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
-    );
-
-    expect(model).toMatchObject({
-      available: false,
-      reason: "Task tree is malformed.",
-    });
+    expect(model).toMatchObject({ available: false, reason: "Task tree is malformed." });
     expect(model.errors).toEqual(
       expect.arrayContaining([
+        "schema_version: expected 2",
         'root_task_id: "missing" is not present in tasks',
         "tasks.project.children: expected string[]",
+        "tasks.project.item_type: expected group or task",
       ]),
     );
   });
@@ -129,8 +137,8 @@ describe("project task read model", () => {
   it("treats a missing task map as malformed but does not throw", () => {
     expect(
       buildProjectTasksReadModel(
-        { root_task_id: "project" },
-        { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
+        { schema_version: 2, root_task_id: "project" },
+        { path: "projects/example", treePath: ".state/tasks/tree.json" },
       ),
     ).toMatchObject({
       available: false,

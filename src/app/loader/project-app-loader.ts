@@ -18,6 +18,7 @@ import {
   projectAppTaskOwnerResultSchema,
   projectRuntimePaths,
   readTaskState,
+  refreshProjectTaskTreeProjection,
   type ProjectApp,
   type ProjectAppContext,
   type ProjectAppConditionSpec,
@@ -1092,6 +1093,11 @@ async function reconcileTask(input: {
           attemptId: primary.attemptId,
           handler: primary.handler,
           disposition: apply.status === "applied" ? "converged" : "stale",
+          outcome: intent.outcome,
+          mode: intent.mode,
+          owner: intent.owner ?? descriptor.owner,
+          ...(intent.workflow ? { workflow: intent.workflow } : {}),
+          acceptance: intent.acceptance,
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           acceptanceBasis: accepted.acceptanceBasis,
@@ -1242,6 +1248,14 @@ function installConventionTaskControllers(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
+    try {
+      refreshProjectTaskTreeProjection(config);
+    } catch (error) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
     let controller: ProjectAppTaskController;
     controller = new ProjectAppTaskController({
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
