@@ -103,6 +103,36 @@ When reviewing or calibrating `success_candidate` routes, distinguish **fresh su
 - For routine/heartbeat summaries, a `repairDecision.action` of `repair_execution` or owner findings that say execution/result quality "needs owner review" are themselves negative evidence. Do **not** leave the top-level verdict at `good`/`quality≈0.85` in that shape; prefer `acceptable` (or lower) unless the transcript also shows clear, successful recovery that resolves the cited execution fault.
 - Likewise, malformed tool invocations, validation errors, or finish-time verification mismatches in otherwise low-signal heartbeats should count against top-level quality/efficiency rather than being hidden only inside `repairDecision` metadata.
 
+#### 2026-07-19 false-good cohort calibration
+
+Regression cohort boundary: current-day calibration slice `2026-07-19T00:00:00Z` through the current evidence cutoff `2026-07-19T12:11:23Z` contained **16** `evaluation.false_good` events. A rolling-24h cross-check ending at the same cutoff contained 37 false-good events; the live metric `evaluator.false-good-rate-sample` was 0.0554 (target 0.05, alert threshold 0.6). The comparison tested original heuristic routing of `good` / `success_candidate` sessions against independent aftermath review verdicts (`acceptable` or `needs_improvement`). The existing false-good guard caught these as review overrides, but the original success-candidate route was still too permissive for several repeat patterns.
+
+Sampled comparison IDs used for this calibration (event id → evaluated session / review session / reviewed verdict):
+- `3530368` → `s_task_ops_apply-overdue-spec-owner-return-followups-20260719-send-and-refresh_-owner-return-followups-20260719-send-and-refresh_20260719004208` / `s_1784421864990_147` / `acceptable`
+- `3533341` → `s_task_ops-apply-fix-forward-windows-mixed-os-combination-virtualmachines-linux-node-json-parse-1728295_x-node-json-parse-172829554-20260719-state-repair_20260719011137` / `s_1784423986035_193` / `acceptable`
+- `3533381` → `s_1784423737216_183` / `s_1784424047231_196` / `acceptable`
+- `3535476` → `s_1784425685273_222` / `s_1784425870081_227` / `needs_improvement`
+- `3538110` → `s_task_domain_publish-verified-app-monitoring-addonv2-azure-monitor-metrics-normalization-20260719_onv2-azure-monitor-metrics-normalization-20260719_20260719022756` / `s_1784428334108_261` / `acceptable`
+- `3539517` → `s_1784429567320_274` / `s_1784429758613_280` / `acceptable`
+- `3547742` → `s_1784436812133_62` / `s_1784437021132_71` / `needs_improvement`
+- `3547847` → `s_1784436836668_65` / `s_1784437156038_72` / `needs_improvement`
+- `3549311` → `s_task_wait-private-cluster-privatelink-create-k8s-validation-ado-run-172841594-result_nk-create-k8s-validation-ado-run-172841594-result_20260719050853` / `s_1784438195552_95` / `acceptable`
+- `3551901` → `s_1784440413898_135` / `s_1784440535102_136` / `needs_improvement`
+- `3556827` → `s_1784444153439_205` / `s_1784444435577_210` / `needs_improvement`
+- `3557764` → `s_task_domain_normalize-direct-network-cni-vm-prerelease-azure-overlay-multi-subnet-matrix-20260719_elease-azure-overlay-multi-subnet-matrix-20260719_20260719070318` / `s_1784445037813_223` / `acceptable`
+- `3559644` → `s_task_domain_fix-forward-network-cni-none-byo-cni-vm-prerelease-lifecycle-underlay-input-20260719-run-_e-lifecycle-underlay-input-20260719-run-172845682_20260719071128` / `s_1784446813829_256` / `acceptable`
+- `3561968` → `s_task_ops_investigate-normalization-frontier-concrete-count-underfill-20260719_zation-frontier-concrete-count-underfill-20260719_20260719075429` / `s_1784448546604_285` / `needs_improvement`
+- `3566453` → `s_focus_plan_review_20260719085546_lfpb32` / `s_1784451969162_16` / `needs_improvement`
+- `3569872` → `s_focus_plan_strategy_20260719094043_hm6rpv` / `s_1784454941486_25` / `acceptable`
+
+Accepted scoring guidance from this cohort:
+1. **Finish-status gate for success candidates:** if a session finishes `blocked` or `partial`, material artifacts can still be valuable, but do not keep the top-level route/verdict at clean `good` solely because there was a file write, commit, or project artifact. Score against the assigned acceptance outcome: high-quality blocked/partial work is usually `acceptable`; only keep `good` when the task itself explicitly defines the blocked/partial disposition as the completed outcome and evidence fully supports it.
+2. **Canonical-output gate:** source-grounded content in the wrong durable root is not a successful deliverable. If claimed outputs land under nested paths such as `/app/projects/<project>/projects/...` while the canonical `/app/projects/...` target is absent, cap quality at `needs_improvement` unless the agent catches and repairs the placement before finish.
+3. **Final-validation-wins gate:** when the last test, packet, readback, metric recompute, or code inspection contradicts the memo/final summary, trust the final validation evidence and downgrade. Claimed tests or repair behavior absent from disk are high-severity verification failures.
+   - 2026-07-20 follow-up: duplicated nested project roots such as `projects/<project>/projects/<project>/...` are canonical-output failures, not harmless path style. If tool-call paths or readback evidence show this shape and the canonical `/app/projects/...` output is absent, pre-review routing should treat it as `needs_improvement` rather than a clean success candidate.
+4. **Metric/code repair safety gate:** do not score a metric repair as `good` when it suppresses the signal by deleting intended lifecycle instrumentation, or when existing tests encode the behavior the patch breaks. A metric decrease is insufficient without semantic/test support.
+5. **Blocked publication/result-review distinction:** terminal-wait reviews and publication attempts can be useful when they recover primary evidence and produce exact next steps, but non-terminal, failed, blocked, or one-rerun-exhausted outcomes should be routed/scored as blocked-value/partial unless the acceptance criteria only asked for that review classification.
+
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
 

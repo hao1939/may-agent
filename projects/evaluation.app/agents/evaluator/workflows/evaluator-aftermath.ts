@@ -6,7 +6,7 @@ import { appendLearningCandidate } from "./lib/learning-candidates.js";
 export const name = "evaluator-aftermath";
 export const description =
   "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 11;
+export const HEURISTIC_VERSION = 13;
 
 export type EvaluationLane =
   "needs_triage" | "success_candidate" | "routine_ok";
@@ -153,6 +153,15 @@ export function transcriptIssues(transcript: string): string[] {
     }
   }
 
+  const nestedProjectPaths = assistantToolCallRecords(transcript)
+    .flatMap((call) => call.paths)
+    .filter(isNestedProjectOutputPath);
+  if (nestedProjectPaths.length > 0) {
+    issues.push(
+      `nested project output path(s): ${[...new Set(nestedProjectPaths)].join(", ")}`,
+    );
+  }
+
   const shellWrittenToolPaths =
     shellWrittenPaths(transcript).filter(isAgentToolPath);
   if (
@@ -193,7 +202,7 @@ function extractBashWritePaths(command: string): string[] {
     if (normalized) paths.push(normalized);
   };
 
-  const redirectPattern = /(?:^|[\s;&|])(?:\d?>|>>)\s*(['"]?)([^'"\s;&|]+)\1/g;
+  const redirectPattern = /(?:^|[\s;&|])(?:>>|\d?>)\s*(['"]?)([^'"\s;&|]+)\1/g;
   for (const match of command.matchAll(redirectPattern)) add(match[2]);
 
   const teePattern =
@@ -478,6 +487,11 @@ function normalizedToolPath(rawPath: unknown): string | null {
   return normalized || null;
 }
 
+function isNestedProjectOutputPath(path: string): boolean {
+  const normalized = path.replace(/^\/app\//, "").replace(/^\.\//, "");
+  return /^projects\/[^/]+\/projects\/[^/]+\//.test(normalized);
+}
+
 function toolCallPaths(call: any): string[] {
   const argumentsObject = call?.arguments ?? {};
   const directPaths = [argumentsObject?.path, argumentsObject?.filePath]
@@ -695,6 +709,7 @@ export function transcriptOutputSignals(
   const materialPaths = materialWriteCalls.flatMap((call) => call.paths);
 
   if (materialWriteCalls.length > 0) signals.add("file write/edit");
+  if (shellWrittenPaths(transcript).length > 0) signals.add("shell file write");
   if (/\bgit\s+commit\b/.test(ownText)) signals.add("git commit");
   if (
     materialPaths.some((path) =>
@@ -742,6 +757,7 @@ export function classifyEvaluationLane(
   const materialSignals = signals.filter((signal) =>
     [
       "file write/edit",
+      "shell file write",
       "git commit",
       "project artifact",
       "knowledge update",
@@ -2265,7 +2281,7 @@ export function buildReviewTask(params: {
     `6. Owner-feedback delivery must be deduped by finding family, not by session. Before calling message(), compare target owner/project + root cause + remediation ask against already-delivered cohort feedback. Regression family: events 3582689, 3583286, 3583498, and 3583812 show Scout nested-output-path aftermath findings after a cohort-level delivery; use family key agent:scout|scout-knowledge-lib.app|root:nested-/app/projects/scout-knowledge-lib/projects-output-path|ask:reconcile-canonical-artifacts-and-use-absolute-/app/projects-output-verification. If a Scout review is unchanged in that family, do not send another owner message; preserve this session's artifact/session link in the artifact and eval trail instead. Only send a new owner message for this family when the root cause/remediation ask materially changes, severity increases, or Scout explicitly asks for per-session follow-up. This rule is narrow: unrelated Scout findings with a different root cause or ask still use normal high-severity owner notification.`,
     `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest.`,
     `8. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
-    `8. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
+    `9. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,
     `Keep the artifact short with sections: Verdict, Evidence, Output Quality, Root Cause, Owner Findings, Learning, Learning Created: yes|no.`,
   ].join("\n");

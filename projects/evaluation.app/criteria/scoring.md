@@ -67,6 +67,17 @@ Before scoring, separate *structural evidence* from *agent narrative*:
 ### Step 4: Quality Score (1-5)
 If no fatal failures, how well did it do the job?
 
+#### Success-candidate scoring gates
+
+When a session was routed as a `success_candidate` or marketed as `good` because it produced a file write, commit, project artifact, or similar material-output signal, apply these gates before awarding score 4-5 / `good`:
+
+1. **Finish-status gate:** `blocked` or `partial` finish states are usually score 3 / `acceptable` even when useful artifacts exist. Keep score 4-5 only when the assigned task explicitly defines that blocked/partial classification as the completed outcome and the evidence fully supports it.
+2. **Canonical-output gate:** claimed durable outputs must land in the canonical requested location. Wrong-root or nested project paths (for example `/app/projects/<project>/projects/...` when `/app/projects/...` was required) cap quality at score 2 / `needs_improvement` unless caught and repaired before finish.
+   - Pre-review heuristic note: if assistant tool-call paths themselves contain duplicated project roots (`projects/<project>/projects/<project>/...`), treat that as an immediate issue signal. Do not route as `success_candidate` merely because there was a file write plus a verification command.
+3. **Final-validation-wins gate:** when final readback, tests, packet review, metric recompute, or code inspection contradicts the summary, trust the validation evidence and downgrade. Claimed tests or repairs absent from disk are high-severity verification failures.
+4. **Metric/code repair safety gate:** do not score a metric repair as score 4-5 / `good` when it suppresses the signal by deleting intended instrumentation or breaks behavior encoded by existing tests. Metric movement alone is insufficient without semantic and test support.
+5. **Blocked publication/result-review distinction:** terminal-wait reviews and publication attempts can be valuable, but non-terminal, failed, blocked, or one-rerun-exhausted outcomes should be scored as blocked-value/partial unless the acceptance criteria only requested that classification.
+
 | Score | Criteria |
 |-------|----------|
 | **5 (Perfect)** | Task completed fully. Edge cases handled. No hallucinations. Output is verifiable and correct. |

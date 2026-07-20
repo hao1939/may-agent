@@ -7,6 +7,8 @@ export const description =
   "Run a deterministic evaluation-pipeline health check and wake the owner only on a changed anomaly state.";
 
 const CHECK_WINDOW_MS = 15 * 60_000;
+const AFTERMATH_COVERAGE_WINDOW_MS = 3 * 60 * 60_000;
+const AFTERMATH_GRACE_MS = 7 * 60_000;
 
 type PipelineMonitorState = {
   checkedAt?: number;
@@ -154,10 +156,10 @@ function missingAftermathCount(
          LEFT JOIN evaluations e ON e.sessionId = s.sessionId
         WHERE s.agent NOT IN ('evaluator', 'judge')
           AND s.status IN ('done', 'error', 'interrupted')
-          AND COALESCE(s.endedAt, 0) > 0
-          AND s.endedAt <= ?
+          AND COALESCE(s.endedAt, s.startedAt) > ?
+          AND COALESCE(s.endedAt, s.startedAt) <= ?
           AND e.sessionId IS NULL`,
-      [now - 7 * 60_000],
+      [now - AFTERMATH_COVERAGE_WINDOW_MS, now - AFTERMATH_GRACE_MS],
       { limit: 1 },
     ) as { rows?: Array<{ count?: number }> };
     return Number(result?.rows?.[0]?.count ?? 0);
@@ -166,7 +168,7 @@ function missingAftermathCount(
   }
 }
 
-function collectSnapshot(
+export function collectSnapshot(
   ctx: PipelineWatcherContext,
   now: number,
 ): PipelineSnapshot {

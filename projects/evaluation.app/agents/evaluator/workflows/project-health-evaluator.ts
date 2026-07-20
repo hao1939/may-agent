@@ -15,6 +15,8 @@ import { type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
 export const name = "project-health-evaluator";
 export const description =
   "Independent project/app audit that reports evidence-backed findings to the target owner.";
+export const PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE =
+  "persistent-task: skip";
 
 const EVALUATION_APP_DIR = "/app/projects/evaluation.app";
 const WATCHED_TARGETS = [
@@ -42,6 +44,12 @@ const WATCHED_TARGETS = [
 const DEFAULT_TARGET = WATCHED_TARGETS[0];
 const NOTIFY_VERDICTS = new Set(["concern", "urgent", "blocked-on-human"]);
 const OWNER_FEEDBACK_RETRY_MS = 60 * 60_000;
+const ACTIONABLE_HUMAN_REQUESTS = new Set([
+  "approve",
+  "decide",
+  "assign-owner",
+  "provide-input",
+]);
 const VERDICTS = new Set([
   "ok",
   "watch",
@@ -1947,12 +1955,33 @@ function stableDedupeKey(
 function dedupeFamily(key: string | undefined): string {
   if (!key) return "";
   const project = key.split(":")[0] || "";
-  if (key.includes("focus-approval")) return "focus-approval";
+  if (key.includes("focus-approval")) return `${project}:focus-approval`;
   if (
     key.includes("no-active-frontier") ||
-    key.includes("no-executable-frontier")
+    key.includes("no-executable-frontier") ||
+    key.includes("state-metric-lifecycle-disagreement") ||
+    key.includes("lifecycle-assignment-readout-disagreement") ||
+    key.includes("lifecycle-frontier-controller-disagreement") ||
+    key.includes("paused-tree-zero-active") ||
+    key.includes("paused-zero-active")
   ) {
-    return "no-executable-frontier";
+    return `${project}:lifecycle-frontier-disagreement`;
+  }
+  if (
+    key.includes("task-reconciliation") ||
+    key.includes("invalid-conditions") ||
+    key.includes("invalid-condition-results") ||
+    key.includes("owner-results-rejected")
+  ) {
+    return `${project}:task-reconciliation-results-contract`;
+  }
+  if (
+    key.includes("result-contract-runtime-leaves") ||
+    key.includes("result-action-condition-contract") ||
+    key.includes("condition-action-contract") ||
+    key.includes("runtime-leaves-backlog-persists")
+  ) {
+    return `${project}:result-action-condition-contract`;
   }
   if (
     key.includes("reviewer-runtime-owner-linkage") ||
@@ -1968,24 +1997,24 @@ function dedupeFamily(key: string | undefined): string {
     return `${project}:review-failed-family`;
   }
   if (key.includes("compact-loop") && key.includes("liveness")) {
-    return "compact-loop-liveness";
+    return `${project}:compact-loop-liveness`;
   }
   return key;
+}
+
+function isActionableHumanRequest(request: string | undefined): boolean {
+  return ACTIONABLE_HUMAN_REQUESTS.has(String(request ?? "").toLowerCase());
 }
 
 function shouldNotify(
   judgment: Judgment,
   previous: ProjectHealthState,
 ): boolean {
-  const actionableHumanRequest = [
-    "approve",
-    "decide",
-    "assign-owner",
-    "provide-input",
-  ].includes(judgment.requestedHumanAction.toLowerCase());
-  if (!NOTIFY_VERDICTS.has(judgment.verdict) && !actionableHumanRequest) {
-    return false;
-  }
+  const actionableHumanRequest = isActionableHumanRequest(
+    judgment.requestedHumanAction,
+  );
+  if (!actionableHumanRequest) return false;
+  if (!NOTIFY_VERDICTS.has(judgment.verdict)) return false;
   if (!judgment.notify) return false;
   if (
     dedupeFamily(previous.lastDedupeKey) !== dedupeFamily(judgment.dedupeKey)
@@ -2003,14 +2032,14 @@ function notificationReason(
   if (!judgment.notify) {
     return "Evaluator did not request human notification for this sample.";
   }
-  const actionableHumanRequest = [
-    "approve",
-    "decide",
-    "assign-owner",
-    "provide-input",
-  ].includes(judgment.requestedHumanAction.toLowerCase());
-  if (!NOTIFY_VERDICTS.has(judgment.verdict) && !actionableHumanRequest) {
-    return `Notification suppressed because verdict ${judgment.verdict} with action ${judgment.requestedHumanAction} is report-only. The next scheduled report is the watch mechanism.`;
+  const actionableHumanRequest = isActionableHumanRequest(
+    judgment.requestedHumanAction,
+  );
+  if (!actionableHumanRequest) {
+    return `Human notification suppressed because action ${judgment.requestedHumanAction} is report/watch-only. The report and owner feedback remain the delivery mechanism.`;
+  }
+  if (!NOTIFY_VERDICTS.has(judgment.verdict)) {
+    return `Human notification suppressed because verdict ${judgment.verdict} is below the concern threshold. The report and owner feedback remain the delivery mechanism.`;
   }
   const previousFamily = dedupeFamily(previous.lastDedupeKey);
   const currentFamily = dedupeFamily(judgment.dedupeKey);
@@ -2243,12 +2272,7 @@ export function shouldFeedbackTargetOwner(
   if (Number.isFinite(lastFeedbackAt) && now - lastFeedbackAt >= retryAfterMs) {
     return true;
   }
-  const actionable = [
-    "approve",
-    "decide",
-    "assign-owner",
-    "provide-input",
-  ].includes(judgment.requestedHumanAction.toLowerCase());
+  const actionable = isActionableHumanRequest(judgment.requestedHumanAction);
   return (
     actionable &&
     judgment.requestedHumanAction !== previous.lastRequestedHumanAction
@@ -2268,27 +2292,13 @@ export function projectHealthConvergedResult(
   });
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const trigger = parseTrigger(String(ctx.task ?? ""));
-  const target = targetConfig(trigger);
-  const packet = targetFactPacket(ctx, target);
-  const fallback = fallbackJudgment(packet, target);
-  const previous = readState(target);
-  const inputFingerprint = projectHealthInputFingerprint(packet);
-  const reviewDecision = scheduledProjectReviewDecision(
-    target.reason,
-    previous,
-    inputFingerprint,
-  );
-  if (!reviewDecision.run) {
-    writeCheckState(target, previous, inputFingerprint);
-    return projectHealthConvergedResult(
-      ctx,
-      `${target.targetProject} project/app review skipped: ${reviewDecision.reason}.`,
-    );
-  }
+export function projectHealthEvaluatorAgentPrompt(
+  target: Pick<TargetConfig, "targetProject" | "reason">,
+  packet: Record<string, unknown>,
+): string {
+  return `${PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE}
 
-  const prompt = `You are independently auditing whether a project app is moving correctly.
+You are independently auditing whether a project app is moving correctly.
 
 Target: ${target.targetProject}
 Reason: ${target.reason}
@@ -2318,6 +2328,29 @@ Raw facts:
 \`\`\`json
 ${JSON.stringify(packet, null, 2)}
 \`\`\``;
+}
+
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+  const trigger = parseTrigger(String(ctx.task ?? ""));
+  const target = targetConfig(trigger);
+  const packet = targetFactPacket(ctx, target);
+  const fallback = fallbackJudgment(packet, target);
+  const previous = readState(target);
+  const inputFingerprint = projectHealthInputFingerprint(packet);
+  const reviewDecision = scheduledProjectReviewDecision(
+    target.reason,
+    previous,
+    inputFingerprint,
+  );
+  if (!reviewDecision.run) {
+    writeCheckState(target, previous, inputFingerprint);
+    return projectHealthConvergedResult(
+      ctx,
+      `${target.targetProject} project/app review skipped: ${reviewDecision.reason}.`,
+    );
+  }
+
+  const prompt = projectHealthEvaluatorAgentPrompt(target, packet);
 
   ctx.emit({
     type: "evaluation.project.review_started",

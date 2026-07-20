@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  collectSnapshot,
   decidePipelineWake,
   metricAnomalyFamily,
   metricIsBreached,
@@ -51,6 +52,27 @@ describe("evaluation pipeline monitor", () => {
         anomalyFingerprint: "metric:eval.llm-coverage-lag-h",
       }),
     ).toMatchObject({ changed: true, recovered: true, fingerprint: "healthy" });
+  });
+
+  test("counts only the live aftermath coverage window as missing backlog", () => {
+    const now = 10 * 60 * 60_000;
+    const snapshot = collectSnapshot(
+      {
+        query: {
+          sql: (_statement: string, params?: unknown[]) => {
+            expect(params).toEqual([now - 3 * 60 * 60_000, now - 7 * 60_000]);
+            return { rows: [{ count: 0 }] };
+          },
+          metrics: () => [],
+          workflowRuns: () => [],
+          events: () => [],
+        },
+      } as never,
+      now,
+    );
+
+    expect(snapshot.missingAftermathCount).toBe(0);
+    expect(decidePipelineWake(snapshot).fingerprint).toBe("healthy");
   });
 
   test("evaluates metric thresholds without waking on retired metrics", () => {

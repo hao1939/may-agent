@@ -2,6 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import app, { resolveEvaluationTask, routeEvaluationEvent } from "./app.ts";
+import {
+  PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
+  projectHealthEvaluatorAgentPrompt,
+} from "./agents/evaluator/workflows/project-health-evaluator.ts";
 
 function context(emitted: Array<Record<string, unknown>>): ProjectAppContext {
   return {
@@ -125,6 +129,18 @@ describe("evaluation app task reconciliation", () => {
     expect(firstAudit?.input).toEqual(secondAudit?.input);
   });
 
+  test("marks project-health inner evaluator calls as persistent-task guard exempt", () => {
+    expect(PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE).toBe(
+      "persistent-task: skip",
+    );
+    expect(
+      projectHealthEvaluatorAgentPrompt(
+        { targetProject: "scout-knowledge-lib.app", reason: "scheduled" },
+        {},
+      ),
+    ).toStartWith("persistent-task: skip\n\n");
+  });
+
   test("reuses the learned evaluation owner-review workflow", () => {
     const task = resolveEvaluationTask({
       type: "evaluation.tick",
@@ -171,9 +187,9 @@ describe("evaluation app task reconciliation", () => {
   test("seeds only durable maintenance responsibilities", () => {
     const seed = JSON.parse(
       readFileSync(new URL("./tasks/seed.json", import.meta.url), "utf8"),
-    ) as { tasks: Record<string, Record<string, unknown>> };
+    ) as { groups: Record<string, Record<string, unknown>> };
 
-    expect(Object.keys(seed.tasks)).toEqual([
+    expect(Object.keys(seed.groups)).toEqual([
       "evaluation-system",
       "session-audit",
       "project-app-audit",
@@ -184,10 +200,10 @@ describe("evaluation app task reconciliation", () => {
       "drift-detection",
       "system-integrity",
     ]);
-    for (const task of Object.values(seed.tasks)) {
-      expect(task.reconcile_mode).toBe("maintain");
-      expect(task.acceptance).toBeArray();
-      expect((task.acceptance as unknown[]).length).toBeGreaterThan(0);
+    for (const group of Object.values(seed.groups)) {
+      expect(group.owner).toBe("evaluator");
+      expect(group).not.toHaveProperty("reconcile_mode");
+      expect(group).not.toHaveProperty("acceptance");
     }
   });
 });
