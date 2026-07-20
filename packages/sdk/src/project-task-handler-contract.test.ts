@@ -132,6 +132,30 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("rejects the removed expectedRevision action field", () => {
+    expect(
+      admitProjectAppTaskHandlerResult(
+        {
+          state: "converged",
+          summary: "Attempted a legacy update",
+          evidence: ["task:work/stale"],
+          actions: [
+            {
+              kind: "update-task",
+              taskId: "work/stale",
+              expectedRevision: 3,
+              outcome: "This legacy action must not be admitted.",
+            },
+          ],
+        },
+        workflowOptions,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "actions[0].expectedGeneration must be a positive integer",
+    });
+  });
+
   it("keeps failure outside the public handler states", () => {
     expect(
       admitProjectAppTaskHandlerResult({ state: "failed", summary: "attempt failed", evidence: [] }, workflowOptions),
