@@ -9,6 +9,8 @@ let terminalReplayWrites = 0;
 let terminalClientGeneration = 0;
 let terminalFitFrame = 0;
 let terminalHasFocus = false;
+let terminalScrollDelta = 0;
+let terminalScrollFrame = 0;
 
 function initTerminalPage(requestedProfileId) {
   const host = document.getElementById('terminal-content');
@@ -26,6 +28,7 @@ function initTerminalPage(requestedProfileId) {
             <span id="terminal-status" class="terminal-status">Loading</span>
             <button class="ask-btn" onclick="copyTerminalSelection()">Copy</button>
             <button class="ask-btn" onclick="pasteIntoTerminal()">Paste</button>
+            <button class="ask-btn" onclick="returnToLiveTerminal()" title="Leave history view and return to the live terminal">Live</button>
             <button class="ask-btn" onclick="fitActiveTerminal()">Fit</button>
             <button class="ask-btn" onclick="restartActiveTerminal()">Restart Terminal</button>
           </div>
@@ -113,6 +116,10 @@ function disposeTerminalClient() {
     cancelAnimationFrame(terminalFitFrame);
     terminalFitFrame = 0;
   }
+  if (terminalScrollFrame) {
+    cancelAnimationFrame(terminalScrollFrame);
+    terminalScrollFrame = 0;
+  }
   if (terminalResizeObserver) {
     terminalResizeObserver.disconnect();
     terminalResizeObserver = null;
@@ -129,6 +136,7 @@ function disposeTerminalClient() {
   fitAddon = null;
   terminalReplayWrites = 0;
   terminalHasFocus = false;
+  terminalScrollDelta = 0;
 }
 
 async function waitForTerminalLayout() {
@@ -200,6 +208,7 @@ async function connectTerminal(profileId) {
   terminal.element?.addEventListener('focusout', () => {
     terminalHasFocus = false;
   });
+  terminal.element?.addEventListener('wheel', queueTerminalScroll, { passive: false, capture: true });
   if (status) status.textContent = `Opening ${profileId}`;
 
   terminal.onData(data => {
@@ -311,6 +320,50 @@ function sendTerminalFocusFrame() {
 
 function terminalCanOwnSize() {
   return terminalHasFocus && document.visibilityState !== 'hidden' && document.hasFocus();
+}
+
+function queueTerminalScroll(event) {
+  if (!terminal || !terminalSocket || terminalSocket.readyState !== WebSocket.OPEN) return;
+  if (event.ctrlKey || event.metaKey || !event.deltaY) return;
+  event.preventDefault();
+  event.stopPropagation();
+  terminal.focus();
+  terminalHasFocus = true;
+
+  const unit = event.deltaMode === 1
+    ? 32
+    : event.deltaMode === 2
+      ? 32 * Math.max(1, terminal.rows || 1)
+      : 1;
+  terminalScrollDelta += event.deltaY * unit;
+  if (terminalScrollFrame) return;
+  terminalScrollFrame = requestAnimationFrame(flushTerminalScroll);
+}
+
+function flushTerminalScroll() {
+  terminalScrollFrame = 0;
+  if (!terminalSocket || terminalSocket.readyState !== WebSocket.OPEN) {
+    terminalScrollDelta = 0;
+    return;
+  }
+  const linePixels = 32;
+  const lines = Math.min(24, Math.floor(Math.abs(terminalScrollDelta) / linePixels));
+  if (lines < 1) return;
+  const direction = terminalScrollDelta < 0 ? 'up' : 'down';
+  terminalScrollDelta -= Math.sign(terminalScrollDelta) * lines * linePixels;
+  terminalSocket.send(JSON.stringify({ type: 'scroll', direction, lines }));
+  if (Math.abs(terminalScrollDelta) >= linePixels) {
+    terminalScrollFrame = requestAnimationFrame(flushTerminalScroll);
+  }
+}
+
+function returnToLiveTerminal() {
+  terminalScrollDelta = 0;
+  if (terminalSocket?.readyState === WebSocket.OPEN) {
+    terminalSocket.send(JSON.stringify({ type: 'history-exit' }));
+  }
+  terminal?.scrollToBottom();
+  terminal?.focus();
 }
 
 function sendTerminalCommand(command) {

@@ -28,6 +28,8 @@ function makeFakeBridge(root: string): string {
     "    const frame = JSON.parse(line);",
     "    if (frame.type === 'input') { const data = String(frame.data || ''); history += data; console.log(JSON.stringify({ type: 'data', data })); }",
     "    if (frame.type === 'resize') console.log(JSON.stringify({ type: 'data', data: `resize ${frame.cols}x${frame.rows}\\n` }));",
+    "    if (frame.type === 'scroll') console.log(JSON.stringify({ type: 'data', data: `scroll ${frame.direction} ${frame.lines}\\n` }));",
+    "    if (frame.type === 'history-exit') console.log(JSON.stringify({ type: 'data', data: 'history-exit\\n' }));",
     "    if (frame.type === 'replay') console.log(JSON.stringify({ type: 'replay', data: history }));",
     "  }",
     "});",
@@ -75,6 +77,14 @@ afterEach(() => {
 });
 
 describe("terminal manager", () => {
+  test("launches Codex inline so terminal history remains available", () => {
+    const manager = createTerminalManager({ projectRoot: "/app" });
+    const codex = manager.getStatus().profiles.find((profile) => profile.id === "codex");
+
+    expect(codex?.command).toContain("codex --no-alt-screen resume");
+    expect(codex?.command).toContain("exec codex --no-alt-screen");
+  });
+
   test("reattaches a detached terminal through a fresh bridge", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
@@ -248,6 +258,33 @@ describe("terminal manager", () => {
       const resized = dataFrames();
       expect(resized).toContain("resize 166x35\n");
       expect(resized).toContain("resize 90x18\n");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("forwards bounded history scrolling and an explicit return to live view", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const socket = makeSocket();
+      await manager.attach("codex", socket, 100, 24, "browser");
+      await delay(20);
+
+      manager.scroll("codex", "up", 500, "browser");
+      manager.historyExit("codex", "browser");
+      await delay(20);
+
+      const output = socket.frames
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+      expect(output).toContain("scroll up 100\n");
+      expect(output).toContain("history-exit\n");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -49,7 +49,12 @@ function existingTmuxSessionIsCurrent() {
 
 function configureTmux() {
   const options = [
-    ["set-option", "-t", tmuxName, "mouse", "on"],
+    // The browser owns mouse selection, copy, paste, and the context menu.
+    // Enabling tmux mouse handling makes a single right-click open both the
+    // tmux menu and the browser menu, and makes ordinary drag select inside
+    // tmux instead of xterm. Keep tmux as the persistent process/container
+    // boundary, not as a second mouse UI.
+    ["set-option", "-t", tmuxName, "mouse", "off"],
     ["set-option", "-t", tmuxName, "history-limit", "100000"],
     ["set-option", "-g", "focus-events", "on"],
     ["set-option", "-g", "escape-time", "10"],
@@ -122,6 +127,36 @@ term.onExit((event) => {
 
 let inputBuffer = "";
 const inputDecoder = new StringDecoder("utf8");
+let historyViewRequested = false;
+
+function exitHistoryView() {
+  if (!historyViewRequested) return;
+  // Harmless when the pane is not in copy mode. Keeping this out-of-band
+  // prevents the first typed or pasted character from being consumed by
+  // tmux's copy-mode key table.
+  tmux(["send-keys", "-t", tmuxName, "-X", "cancel"]);
+  historyViewRequested = false;
+}
+
+function scrollHistory(direction, lines) {
+  const safeLines = Math.max(1, Math.min(100, Math.floor(Number(lines) || 1)));
+  // -e returns to the live pane automatically after scrolling back to the
+  // bottom. Mouse handling stays off; only this explicit command enters
+  // copy mode.
+  // -H suppresses tmux's top-right position label (for example [35/1843]),
+  // which otherwise draws over terminal content in the web UI.
+  tmux(["copy-mode", "-eH", "-t", tmuxName]);
+  historyViewRequested = true;
+  tmux([
+    "send-keys",
+    "-t",
+    tmuxName,
+    "-X",
+    "-N",
+    String(safeLines),
+    direction === "down" ? "scroll-down" : "scroll-up",
+  ]);
+}
 
 function processInputText(text) {
   inputBuffer += text;
@@ -131,8 +166,13 @@ function processInputText(text) {
     if (!line.trim()) continue;
     try {
       const frame = JSON.parse(line);
-      if (frame.type === "input") term.write(String(frame.data || ""));
+      if (frame.type === "input") {
+        exitHistoryView();
+        term.write(String(frame.data || ""));
+      }
       if (frame.type === "resize") term.resize(Number(frame.cols) || cols, Number(frame.rows) || rows);
+      if (frame.type === "scroll") scrollHistory(frame.direction, frame.lines);
+      if (frame.type === "history-exit") exitHistoryView();
     } catch (err) {
       send({ type: "error", message: err && err.message ? err.message : String(err) });
     }

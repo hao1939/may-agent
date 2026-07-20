@@ -3804,9 +3804,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       message(ws: any, msg: any) {
         if (ws.data?.kind === "terminal") {
           try {
-            const frame = JSON.parse(String(msg)) as { type?: string; data?: string; cols?: number; rows?: number };
+            const frame = JSON.parse(String(msg)) as {
+              type?: string;
+              data?: string;
+              cols?: number;
+              rows?: number;
+              direction?: "up" | "down";
+              lines?: number;
+            };
             if (frame.type === "input")
               terminalManager.input(ws.data.terminalId, frame.data ?? "", ws.data.terminalClientId);
+            else if (frame.type === "scroll")
+              terminalManager.scroll(
+                ws.data.terminalId,
+                frame.direction === "down" ? "down" : "up",
+                Number(frame.lines) || 1,
+                ws.data.terminalClientId,
+              );
+            else if (frame.type === "history-exit")
+              terminalManager.historyExit(ws.data.terminalId, ws.data.terminalClientId);
             else if (frame.type === "focus")
               terminalManager.activate(
                 ws.data.terminalId,
