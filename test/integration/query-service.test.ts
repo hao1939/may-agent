@@ -27,18 +27,30 @@ describe("QueryService", () => {
     const { db, query } = harness();
     const now = 10_000;
 
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s1", "may", "older", "done", "p1", now - 100],
-    );
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s2", "may", "newer", "error", "p1", now],
-    );
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s3", "scout", "other", "done", "p2", now + 100],
-    );
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s1",
+      "may",
+      "older",
+      "done",
+      "p1",
+      now - 100,
+    ]);
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s2",
+      "may",
+      "newer",
+      "error",
+      "p1",
+      now,
+    ]);
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s3",
+      "scout",
+      "other",
+      "done",
+      "p2",
+      now + 100,
+    ]);
     db.run(
       "INSERT INTO workflow_runs (runId, workflow, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
       ["wr1", "project", "project: p1", "running", "p1", now + 200],
@@ -61,10 +73,13 @@ describe("QueryService", () => {
     const { db, query } = harness();
 
     for (let i = 0; i < 4; i++) {
-      db.run(
-        "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-        ["example", "test", "may", JSON.stringify({ i }), i],
-      );
+      db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+        "example",
+        "test",
+        "may",
+        JSON.stringify({ i }),
+        i,
+      ]);
     }
 
     const result = query.sql("SELECT id, event_type FROM events ORDER BY id ASC", [], { limit: 3 });
@@ -76,17 +91,56 @@ describe("QueryService", () => {
   it("matches event owners by exact owner value", () => {
     const { db, query } = harness();
 
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "agent:may", JSON.stringify({ canonical: true }), 2],
-    );
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "may", JSON.stringify({ legacy: true }), 1],
-    );
+    db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+      "project.nudge",
+      "test",
+      "agent:may",
+      JSON.stringify({ canonical: true }),
+      2,
+    ]);
+    db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+      "project.nudge",
+      "test",
+      "may",
+      JSON.stringify({ legacy: true }),
+      1,
+    ]);
 
     expect(query.events({ owner: "agent:may" }).rows.map((row) => row.owner)).toEqual(["agent:may"]);
     expect(query.events({ owner: "may" }).rows.map((row) => row.owner)).toEqual(["may"]);
+  });
+
+  it("scopes events to one project", () => {
+    const { db, query } = harness();
+
+    db.run("INSERT INTO events (event_type, source, owner, project_id, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)", [
+      "project.task.reconciled",
+      "test",
+      "agent:scout",
+      "scout-knowledge-lib",
+      JSON.stringify({ disposition: "converged" }),
+      2,
+    ]);
+    db.run("INSERT INTO events (event_type, source, owner, project_id, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)", [
+      "project.task.reconciled",
+      "test",
+      "agent:owner",
+      "another-project",
+      JSON.stringify({ disposition: "attention" }),
+      3,
+    ]);
+
+    expect(
+      query.events({
+        type: "project.task.reconciled",
+        projectId: "scout-knowledge-lib",
+      }).rows,
+    ).toMatchObject([
+      {
+        event_type: "project.task.reconciled",
+        project_id: "scout-knowledge-lib",
+      },
+    ]);
   });
 
   it("rejects writes and multi-statement SQL", () => {
@@ -107,28 +161,36 @@ describe("QueryService", () => {
     const { db, query } = harness();
     const now = 20_000;
 
-    db.run(
-      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
-      ["p1", "shared/projects/p1", "Project One", "arc", now],
-    );
+    db.run("INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)", [
+      "p1",
+      "shared/projects/p1",
+      "Project One",
+      "arc",
+      now,
+    ]);
     db.run(
       `INSERT INTO metrics
         (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ["session.failed-triage-rate-3h", "Failed triage rate", "may", 0.4, 0.8, 1, "P1", "p1", "active", now, "<"],
     );
-    db.run(
-      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-      ["session.failed-triage-rate-3h", "threshold", "below target", now - 100],
-    );
+    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      "session.failed-triage-rate-3h",
+      "threshold",
+      "below target",
+      now - 100,
+    ]);
     db.run(
       "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
       ["session.failed-triage-rate-3h", 0.4, 9, now, "may", "latest"],
     );
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["evaluation.reviewed", "evaluator", "may", JSON.stringify({ ok: true }), now],
-    );
+    db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
+      "evaluation.reviewed",
+      "evaluator",
+      "may",
+      JSON.stringify({ ok: true }),
+      now,
+    ]);
 
     const context = query.metricAlertContext({
       metricId: "session.failed-triage-rate-3h",
@@ -152,36 +214,58 @@ describe("QueryService", () => {
     const { db, query } = harness();
     const now = 50_000;
 
-    db.run(
-      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
-      ["p1", "shared/projects/p1", "Project One", "arc", now],
-    );
+    db.run("INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)", [
+      "p1",
+      "shared/projects/p1",
+      "Project One",
+      "arc",
+      now,
+    ]);
     db.run(
       `INSERT INTO metrics
         (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ["handler.failed-count", "Handler failures", "may", 5, 3, 0, "P1", "p1", "active", now, ">"],
     );
-    db.run(
-      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-      ["handler.failed-count", "threshold", "above threshold", now - 1_000],
-    );
-    const alert = db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("handler.failed-count") as { id: number };
+    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      "handler.failed-count",
+      "threshold",
+      "above threshold",
+      now - 1_000,
+    ]);
+    const alert = db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("handler.failed-count") as {
+      id: number;
+    };
     db.run(
       "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
       ["handler.failed-count", 5, 12, now, "may", "latest"],
     );
-    db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
-      ["wr_triage", "metric-alert-triage", `Run metric alert triage for handler.failed-count\n{"alertId": ${alert.id}}`, "done", now - 500],
-    );
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s_owner", "arc", "handle alert", "done", "metric-alert-reactor:handler.failed-count", now - 400],
-    );
+    db.run("INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
+      "wr_triage",
+      "metric-alert-triage",
+      `Run metric alert triage for handler.failed-count\n{"alertId": ${alert.id}}`,
+      "done",
+      now - 500,
+    ]);
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s_owner",
+      "arc",
+      "handle alert",
+      "done",
+      "metric-alert-reactor:handler.failed-count",
+      now - 400,
+    ]);
     db.run(
       "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["metric.alert_judged", "arc", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), "handler.failed-count", String(alert.id), now - 300],
+      [
+        "metric.alert_judged",
+        "arc",
+        "may",
+        JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }),
+        "handler.failed-count",
+        String(alert.id),
+        now - 300,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -231,26 +315,39 @@ describe("QueryService", () => {
       ["session.failed-triage-rate-3h", "threshold", "old alert", now - 10_000, now - 5_000],
     );
     const oldAlert = db.prepare("SELECT id FROM metric_alerts WHERE message = ?").get("old alert") as { id: number };
-    db.run(
-      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-      ["session.failed-triage-rate-3h", "threshold", "new alert", now - 1_000],
-    );
+    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      "session.failed-triage-rate-3h",
+      "threshold",
+      "new alert",
+      now - 1_000,
+    ]);
     const newAlert = db.prepare("SELECT id FROM metric_alerts WHERE message = ?").get("new alert") as { id: number };
-    db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
-      ["wr_old", "metric-alert-triage", `Run metric alert triage for session.failed-triage-rate-3h\n{\"alertId\": ${oldAlert.id}}`, "done", now - 4_500],
-    );
-    db.run(
-      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["s_old", "evaluator", "old triage", "done", "metric-alert-reactor:session.failed-triage-rate-3h", now - 4_400],
-    );
+    db.run("INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
+      "wr_old",
+      "metric-alert-triage",
+      `Run metric alert triage for session.failed-triage-rate-3h\n{\"alertId\": ${oldAlert.id}}`,
+      "done",
+      now - 4_500,
+    ]);
+    db.run("INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "s_old",
+      "evaluator",
+      "old triage",
+      "done",
+      "metric-alert-reactor:session.failed-triage-rate-3h",
+      now - 4_400,
+    ]);
     db.run(
       "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         "metric.alert_judged",
         "evaluator",
         "agent:evaluator",
-        JSON.stringify({ metricId: "session.failed-triage-rate-3h", alertId: oldAlert.id, operation: "waiting_with_evidence" }),
+        JSON.stringify({
+          metricId: "session.failed-triage-rate-3h",
+          alertId: oldAlert.id,
+          operation: "waiting_with_evidence",
+        }),
         "session.failed-triage-rate-3h",
         String(oldAlert.id),
         now - 4_000,
@@ -275,10 +372,13 @@ describe("QueryService", () => {
     const { db, query } = harness();
     const now = 90_000;
 
-    db.run(
-      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
-      ["p1", "shared/projects/p1", "Project One", "arc", now],
-    );
+    db.run("INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)", [
+      "p1",
+      "shared/projects/p1",
+      "Project One",
+      "arc",
+      now,
+    ]);
     db.run(
       `INSERT INTO metrics
         (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op, source_command)
@@ -295,13 +395,25 @@ describe("QueryService", () => {
       "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
       ["arc.quality", 0.5, 7, now - 10, "may", "latest"],
     );
-    db.run(
-      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
-      ["arc.quality", "threshold", "quality below target", now - 100],
-    );
+    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
+      "arc.quality",
+      "threshold",
+      "quality below target",
+      now - 100,
+    ]);
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms, delivery_status, delivery_route) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "agent:arc", JSON.stringify({ summary: "resume project" }), now - 100, "immediate", 10_000, "accepted", "owner_inbox"],
+      [
+        "project.nudge",
+        "test",
+        "agent:arc",
+        JSON.stringify({ summary: "resume project" }),
+        now - 100,
+        "immediate",
+        10_000,
+        "accepted",
+        "owner_inbox",
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -337,9 +449,7 @@ describe("QueryService", () => {
     expect(context.alerts).toMatchObject([
       { metricId: "arc.quality", message: "quality below target", explicitOwner: null, projectOwner: "arc" },
     ]);
-    expect(context.inbox).toMatchObject([
-      { eventType: "project.nudge", urgency: "immediate" },
-    ]);
+    expect(context.inbox).toMatchObject([{ eventType: "project.nudge", urgency: "immediate" }]);
     expect(context.inbox).toHaveLength(1);
   });
 
@@ -389,9 +499,77 @@ describe("QueryService", () => {
       opCount: 8,
     });
 
+    db.run("INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
+      "wr_owner_review_only",
+      "evaluator-deep-eval",
+      "owner review placeholder",
+      "running",
+      now - 1,
+    ]);
     db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
-      ["wr_deep", "evaluator-deep-eval", "deep eval", "running", now - 1],
+      "INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_owner_review",
+        "evaluator",
+        "owner review",
+        "done",
+        "workflow:evaluator-deep-eval",
+        "wr_owner_review_only",
+        now - 1,
+      ],
+    );
+
+    expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(false);
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_orphan_deep",
+        "evaluator",
+        "orphan deep eval",
+        "running",
+        "workflow:evaluator-deep-eval",
+        "wr_missing",
+        now - 1,
+      ],
+    );
+
+    expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(false);
+
+    db.run("INSERT INTO workflow_runs (runId, workflow, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)", [
+      "wr_terminal_deep",
+      "evaluator-deep-eval",
+      "terminal deep eval",
+      "done",
+      now - 2,
+      now - 1,
+    ]);
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_terminal_parent_deep",
+        "evaluator",
+        "terminal-parent deep eval",
+        "running",
+        "workflow:evaluator-deep-eval",
+        "wr_terminal_deep",
+        now - 1,
+      ],
+    );
+
+    expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(false);
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        "s_active_deep",
+        "evaluator",
+        "deep eval",
+        "running",
+        "workflow:evaluator-deep-eval",
+        "wr_owner_review_only",
+        now - 1,
+      ],
     );
 
     expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(true);

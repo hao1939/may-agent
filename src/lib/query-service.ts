@@ -33,6 +33,7 @@ export interface EventQuery extends TimeFilter {
   type?: string;
   owner?: string;
   source?: string;
+  projectId?: string;
 }
 
 export interface MetricQuery extends QueryOptions {
@@ -319,7 +320,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "parentSessionId", filter.parentSessionId);
       addEquals(where, params, "workflowRunId", filter.workflowRunId);
       addSinceUntil(where, params, "startedAt", filter);
-      return select(opts.getDb(), "sessions", where, params, "startedAt DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "sessions",
+        where,
+        params,
+        "startedAt DESC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     events(filter = {}) {
@@ -328,8 +336,16 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "event_type", filter.type);
       addEquals(where, params, "owner", filter.owner);
       addEquals(where, params, "source", filter.source);
+      addEquals(where, params, "project_id", filter.projectId);
       addSinceUntil(where, params, "timestamp", filter);
-      return select(opts.getDb(), "events", where, params, "timestamp DESC, id DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "events",
+        where,
+        params,
+        "timestamp DESC, id DESC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     metrics(filter = {}) {
@@ -340,7 +356,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "status", filter.status);
       addEquals(where, params, "project", filter.project);
       addEquals(where, params, "priority", filter.priority);
-      return select(opts.getDb(), "metrics", where, params, "updated_at DESC, id ASC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "metrics",
+        where,
+        params,
+        "updated_at DESC, id ASC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     alerts(filter = {}) {
@@ -350,7 +373,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       if (filter.resolved === true) where.push("resolved_at IS NOT NULL");
       if (filter.resolved === false) where.push("resolved_at IS NULL");
       addSinceUntil(where, params, "created_at", filter);
-      return select(opts.getDb(), "metric_alerts", where, params, "created_at DESC, id DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "metric_alerts",
+        where,
+        params,
+        "created_at DESC, id DESC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     projects(filter = {}) {
@@ -360,7 +390,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "owner", filter.owner);
       addEquals(where, params, "status", filter.status);
       addEquals(where, params, "workflow", filter.workflow);
-      return select(opts.getDb(), "projects", where, params, "updated_at DESC, id ASC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "projects",
+        where,
+        params,
+        "updated_at DESC, id ASC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     workflowRuns(filter = {}) {
@@ -372,7 +409,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "parentSessionId", filter.parentSessionId);
       addEquals(where, params, "parentWorkflowRunId", filter.parentWorkflowRunId);
       addSinceUntil(where, params, "startedAt", filter);
-      return select(opts.getDb(), "workflow_runs", where, params, "startedAt DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
+      return select(
+        opts.getDb(),
+        "workflow_runs",
+        where,
+        params,
+        "startedAt DESC",
+        clampLimit(filter.limit, defaultLimit, maxLimit),
+      );
     },
 
     heartbeatContext(filter) {
@@ -383,12 +427,15 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const snapshotLimit = clampLimit(filter.metricSnapshotLimit, HEARTBEAT_DEFAULT_METRIC_SNAPSHOT_LIMIT, maxLimit);
       const alertLimit = clampLimit(filter.alertLimit, HEARTBEAT_DEFAULT_ALERT_LIMIT, maxLimit);
       const inboxLimit = clampLimit(filter.inboxLimit, HEARTBEAT_DEFAULT_INBOX_LIMIT, maxLimit);
-      const inboxLookbackMs = typeof filter.inboxLookbackMs === "number"
-        ? Math.max(1, filter.inboxLookbackMs)
-        : HEARTBEAT_DEFAULT_INBOX_LOOKBACK_MS;
+      const inboxLookbackMs =
+        typeof filter.inboxLookbackMs === "number"
+          ? Math.max(1, filter.inboxLookbackMs)
+          : HEARTBEAT_DEFAULT_INBOX_LOOKBACK_MS;
 
-      const metricRows = normalizeRows(db.prepare(
-        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
+      const metricRows = normalizeRows(
+        db
+          .prepare(
+            `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
                 m.current, m.target, m.threshold, COALESCE(m.priority, 'P2') as priority,
                 m.project, m.status, m.updated_at as updatedAt,
                 m.alert_op as alertOp,
@@ -400,23 +447,31 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          WHERE m.status = 'active'
          ORDER BY m.id ASC
          LIMIT ?`,
-      ).all(metricLimit + 1) as Record<string, unknown>[]).slice(0, metricLimit);
+          )
+          .all(metricLimit + 1) as Record<string, unknown>[],
+      ).slice(0, metricLimit);
 
       const metrics = metricRows.map((metric) => {
         const metricId = String(metric.id ?? "");
-        const snapshots = normalizeRows(db.prepare(
-          `SELECT value, sample_size as sampleSize, measured_at as measuredAt,
+        const snapshots = normalizeRows(
+          db
+            .prepare(
+              `SELECT value, sample_size as sampleSize, measured_at as measuredAt,
                   measured_by as measuredBy, note
            FROM metric_snapshots
            WHERE metric_id = ?
            ORDER BY measured_at DESC
            LIMIT ?`,
-        ).all(metricId, snapshotLimit + 1) as Record<string, unknown>[]).slice(0, snapshotLimit);
+            )
+            .all(metricId, snapshotLimit + 1) as Record<string, unknown>[],
+        ).slice(0, snapshotLimit);
         return { ...metric, snapshots };
       });
 
-      const alerts = normalizeRows(db.prepare(
-        `SELECT a.id, a.metric_id as metricId, a.message, a.created_at as createdAt,
+      const alerts = normalizeRows(
+        db
+          .prepare(
+            `SELECT a.id, a.metric_id as metricId, a.message, a.created_at as createdAt,
                 m.owner as explicitOwner, p.owner as projectOwner
          FROM metric_alerts a
          JOIN metrics m ON m.id = a.metric_id
@@ -425,11 +480,15 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          WHERE a.resolved_at IS NULL
          ORDER BY a.created_at DESC, a.id DESC
          LIMIT ?`,
-      ).all(alertLimit + 1) as Record<string, unknown>[]).slice(0, alertLimit);
+          )
+          .all(alertLimit + 1) as Record<string, unknown>[],
+      ).slice(0, alertLimit);
 
       const inboxOwner = ownerForAgent(filter.agent);
-      const inbox = normalizeRows(db.prepare(
-        `SELECT e.id, e.event_type as eventType, e.data, e.urgency, e.timestamp
+      const inbox = normalizeRows(
+        db
+          .prepare(
+            `SELECT e.id, e.event_type as eventType, e.data, e.urgency, e.timestamp
          FROM events e
          WHERE e.owner = ?
            AND e.delivery_status = 'accepted'
@@ -446,7 +505,9 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          ORDER BY CASE WHEN e.urgency = 'immediate' THEN 0 ELSE 1 END,
            e.timestamp DESC, e.id DESC
          LIMIT ?`,
-      ).all(inboxOwner, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[]).slice(0, inboxLimit);
+          )
+          .all(inboxOwner, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[],
+      ).slice(0, inboxLimit);
 
       return { now, metrics, alerts, inbox };
     },
@@ -454,39 +515,40 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
     evaluatorDeepEvalScan(filter = {}) {
       const db = opts.getDb();
       const now = typeof filter.now === "number" ? filter.now : Date.now();
-      const backfillHours = typeof filter.backfillHours === "number"
-        ? Math.max(0, filter.backfillHours)
-        : EVALUATOR_DEEP_EVAL_DEFAULT_BACKFILL_HOURS;
-      const fallbackDelayMs = typeof filter.fallbackDelayMs === "number"
-        ? Math.max(0, filter.fallbackDelayMs)
-        : EVALUATOR_DEEP_EVAL_DEFAULT_FALLBACK_DELAY_MS;
-      const activeWindowMs = typeof filter.activeWindowMs === "number"
-        ? Math.max(0, filter.activeWindowMs)
-        : EVALUATOR_DEEP_EVAL_DEFAULT_ACTIVE_WINDOW_MS;
+      const backfillHours =
+        typeof filter.backfillHours === "number"
+          ? Math.max(0, filter.backfillHours)
+          : EVALUATOR_DEEP_EVAL_DEFAULT_BACKFILL_HOURS;
+      const fallbackDelayMs =
+        typeof filter.fallbackDelayMs === "number"
+          ? Math.max(0, filter.fallbackDelayMs)
+          : EVALUATOR_DEEP_EVAL_DEFAULT_FALLBACK_DELAY_MS;
+      const activeWindowMs =
+        typeof filter.activeWindowMs === "number"
+          ? Math.max(0, filter.activeWindowMs)
+          : EVALUATOR_DEEP_EVAL_DEFAULT_ACTIVE_WINDOW_MS;
 
-      const activeWorkflow = db.prepare(
-        `SELECT 1
-         FROM workflow_runs
-         WHERE workflow = ?
-           AND status = 'running'
-           AND startedAt > ?
+      const activeDeepEval = db
+        .prepare(
+          `SELECT 1
+         FROM sessions s
+         JOIN workflow_runs wr ON wr.runId = s.workflowRunId
+         WHERE s.agent = 'evaluator'
+           AND s.source = 'workflow:evaluator-deep-eval'
+           AND s.status IN ('running', 'idle')
+           AND s.startedAt > ?
+           AND wr.workflow = ?
+           AND wr.status = 'running'
+           AND wr.startedAt > ?
          LIMIT 1`,
-      ).get(EVALUATOR_DEEP_EVAL_WORKFLOW, now - activeWindowMs);
-
-      const activeSession = activeWorkflow ? null : db.prepare(
-        `SELECT 1
-         FROM sessions
-         WHERE agent = 'evaluator'
-           AND source = 'workflow:evaluator-deep-eval'
-           AND status IN ('running', 'idle')
-           AND startedAt > ?
-         LIMIT 1`,
-      ).get(now - activeWindowMs);
+        )
+        .get(now - activeWindowMs, EVALUATOR_DEEP_EVAL_WORKFLOW, now - activeWindowMs);
 
       const cutoff = now - backfillHours * 60 * 60_000;
       const fallbackCutoff = now - fallbackDelayMs;
-      const candidate = db.prepare(
-        `SELECT s.sessionId, s.agent, s.status, s.task, s.source, s.startedAt, s.endedAt, s.opCount,
+      const candidate = db
+        .prepare(
+          `SELECT s.sessionId, s.agent, s.status, s.task, s.source, s.startedAt, s.endedAt, s.opCount,
                 e.verdict as heuristicVerdict, e.issues as heuristicIssues
          FROM sessions s
          LEFT JOIN evaluations e ON e.sessionId = s.sessionId
@@ -505,11 +567,12 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
            COALESCE(s.opCount, 0) DESC,
            COALESCE(s.endedAt, s.startedAt) DESC
          LIMIT 1`,
-      ).get(cutoff, fallbackCutoff) as Record<string, unknown> | null;
+        )
+        .get(cutoff, fallbackCutoff) as Record<string, unknown> | null;
 
       return {
         now,
-        activeDeepEval: !!(activeWorkflow || activeSession),
+        activeDeepEval: Boolean(activeDeepEval),
         candidate: candidate ? normalizeRows([candidate])[0] : null,
       };
     },
@@ -517,10 +580,13 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
     evaluatorAftermathContext(filter) {
       if (!filter.sessionId) throw new Error("evaluatorAftermathContext requires sessionId");
       const db = opts.getDb();
-      const session = db.prepare("SELECT * FROM sessions WHERE sessionId = ?").get(filter.sessionId) as Record<string, unknown> | null;
-      const evaluation = db.prepare(
-        "SELECT sessionId, verdict, overall, createdAt FROM evaluations WHERE sessionId = ?",
-      ).get(filter.sessionId) as Record<string, unknown> | null;
+      const session = db.prepare("SELECT * FROM sessions WHERE sessionId = ?").get(filter.sessionId) as Record<
+        string,
+        unknown
+      > | null;
+      const evaluation = db
+        .prepare("SELECT sessionId, verdict, overall, createdAt FROM evaluations WHERE sessionId = ?")
+        .get(filter.sessionId) as Record<string, unknown> | null;
 
       return {
         sessionId: filter.sessionId,
@@ -535,47 +601,61 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const metricId = filter.metricId;
       const snapshotLimit = clampLimit(filter.snapshotLimit, 10, maxLimit);
       const eventLimit = clampLimit(filter.eventLimit, 20, maxLimit);
-      const metric = db.prepare(
-        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
+      const metric = db
+        .prepare(
+          `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
                 m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
                 m.project, m.status, m.updated_at, m.alert_op as alertOp
          FROM metrics m
          LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
            AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
          WHERE m.id = ?`,
-      ).get(metricId) as Record<string, unknown> | null;
+        )
+        .get(metricId) as Record<string, unknown> | null;
 
-      const alert = filter.alertId != null
-        ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
-        : db.prepare(
-          `SELECT * FROM metric_alerts
+      const alert =
+        filter.alertId != null
+          ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
+          : db
+              .prepare(
+                `SELECT * FROM metric_alerts
            WHERE metric_id = ? AND resolved_at IS NULL
            ORDER BY created_at DESC, id DESC
            LIMIT 1`,
-        ).get(metricId);
+              )
+              .get(metricId);
       const normalizedAlert = alert ? normalizeRows([alert as Record<string, unknown>])[0] : null;
       const createdAt = typeof normalizedAlert?.created_at === "number" ? normalizedAlert.created_at : null;
       const since = filter.since ?? createdAt ?? Date.now() - 24 * 60 * 60_000;
 
-      const snapshots = normalizeRows(db.prepare(
-        `SELECT value, sample_size, measured_at, measured_by, note
+      const snapshots = normalizeRows(
+        db
+          .prepare(
+            `SELECT value, sample_size, measured_at, measured_by, note
          FROM metric_snapshots
          WHERE metric_id = ?
          ORDER BY measured_at DESC
          LIMIT ?`,
-      ).all(metricId, snapshotLimit + 1) as Record<string, unknown>[]).slice(0, snapshotLimit);
+          )
+          .all(metricId, snapshotLimit + 1) as Record<string, unknown>[],
+      ).slice(0, snapshotLimit);
 
       const eventTypes = (filter.relatedEventTypes ?? []).filter((type) => type.trim() !== "");
-      const relatedEvents = eventTypes.length > 0
-        ? normalizeRows(db.prepare(
-          `SELECT id, event_type, source, owner, timestamp, data
+      const relatedEvents =
+        eventTypes.length > 0
+          ? normalizeRows(
+              db
+                .prepare(
+                  `SELECT id, event_type, source, owner, timestamp, data
            FROM events
            WHERE timestamp >= ?
              AND event_type IN (${eventTypes.map(() => "?").join(", ")})
            ORDER BY timestamp DESC, id DESC
            LIMIT ?`,
-        ).all(since, ...eventTypes, eventLimit + 1) as Record<string, unknown>[]).slice(0, eventLimit)
-        : [];
+                )
+                .all(since, ...eventTypes, eventLimit + 1) as Record<string, unknown>[],
+            ).slice(0, eventLimit)
+          : [];
 
       return {
         alert: normalizedAlert,
@@ -592,110 +672,125 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const db = opts.getDb();
       const metricId = filter.metricId;
 
-      const metric = db.prepare(
-        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
+      const metric = db
+        .prepare(
+          `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
                 m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
                 m.project, m.status, m.updated_at, m.alert_op as alertOp
          FROM metrics m
          LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
            AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
          WHERE m.id = ?`,
-      ).get(metricId) as Record<string, unknown> | null;
+        )
+        .get(metricId) as Record<string, unknown> | null;
 
-      const alert = filter.alertId != null
-        ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
-        : db.prepare(
-          `SELECT * FROM metric_alerts
+      const alert =
+        filter.alertId != null
+          ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
+          : db
+              .prepare(
+                `SELECT * FROM metric_alerts
            WHERE metric_id = ? AND resolved_at IS NULL
            ORDER BY created_at DESC, id DESC
            LIMIT 1`,
-        ).get(metricId);
+              )
+              .get(metricId);
       const normalizedAlert = alert ? normalizeRows([alert as Record<string, unknown>])[0] : null;
       const alertId = filter.alertId ?? (typeof normalizedAlert?.id === "number" ? normalizedAlert.id : null);
       const since = typeof filter.since === "number" ? filter.since : 0;
 
-      const judgmentWhere = alertId != null
-        ? "alert_id = CAST(? AS TEXT)"
-        : "metric_id = ?";
+      const judgmentWhere = alertId != null ? "alert_id = CAST(? AS TEXT)" : "metric_id = ?";
       const judgmentParam = alertId != null ? alertId : metricId;
 
-      const latestJudgment = db.prepare(
-        `SELECT id, data, timestamp
+      const latestJudgment = db
+        .prepare(
+          `SELECT id, data, timestamp
          FROM events
          WHERE event_type = 'metric.alert_judged'
            AND ${judgmentWhere}
          ORDER BY timestamp DESC, id DESC
          LIMIT 1`,
-      ).get(judgmentParam) as Record<string, unknown> | null;
+        )
+        .get(judgmentParam) as Record<string, unknown> | null;
 
-      const latestSnapshot = db.prepare(
-        `SELECT value, sample_size, measured_at, measured_by, note
+      const latestSnapshot = db
+        .prepare(
+          `SELECT value, sample_size, measured_at, measured_by, note
          FROM metric_snapshots
          WHERE metric_id = ?
          ORDER BY measured_at DESC
          LIMIT 1`,
-      ).get(metricId) as Record<string, unknown> | null;
+        )
+        .get(metricId) as Record<string, unknown> | null;
 
-      const routedWhere = alertId != null
-        ? "alert_id = CAST(? AS TEXT)"
-        : "metric_id = ?";
+      const routedWhere = alertId != null ? "alert_id = CAST(? AS TEXT)" : "metric_id = ?";
       const routedParam = alertId != null ? alertId : metricId;
 
-      const recentFeedbackRouted = db.prepare(
-        `SELECT id, source, owner, data, timestamp
+      const recentFeedbackRouted = db
+        .prepare(
+          `SELECT id, source, owner, data, timestamp
          FROM events
          WHERE event_type = 'metric.feedback.routed'
            AND timestamp >= ?
            AND ${routedWhere}
          ORDER BY timestamp DESC, id DESC
          LIMIT 1`,
-      ).get(since, routedParam) as Record<string, unknown> | null;
+        )
+        .get(since, routedParam) as Record<string, unknown> | null;
 
       const taskPattern = alertId != null ? `%"alertId": ${alertId}%` : `%${metricId}%`;
-      const recentTriageRun = db.prepare(
-        `SELECT runId, status, startedAt
+      const recentTriageRun = db
+        .prepare(
+          `SELECT runId, status, startedAt
          FROM workflow_runs
          WHERE workflow = 'metric-alert-triage'
            AND startedAt > ?
            AND task LIKE ?
          ORDER BY startedAt DESC
          LIMIT 1`,
-      ).get(since, taskPattern) as Record<string, unknown> | null;
+        )
+        .get(since, taskPattern) as Record<string, unknown> | null;
 
       const recentTriageJudgment = recentTriageRun
-        ? db.prepare(
-          `SELECT id
+        ? (db
+            .prepare(
+              `SELECT id
            FROM events
            WHERE event_type = 'metric.alert_judged'
              AND ${judgmentWhere}
              AND timestamp >= ?
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,
-        ).get(judgmentParam, recentTriageRun.startedAt) as Record<string, unknown> | null
+            )
+            .get(judgmentParam, recentTriageRun.startedAt) as Record<string, unknown> | null)
         : null;
 
       const recentOwnerSession = filter.owner
-        ? db.prepare(
-          `SELECT sessionId, status, startedAt
+        ? (db
+            .prepare(
+              `SELECT sessionId, status, startedAt
            FROM sessions
            WHERE agent = ?
              AND source = ?
              AND startedAt > ?
            ORDER BY startedAt DESC
            LIMIT 1`,
-        ).get(filter.owner, `metric-alert-reactor:${metricId}`, since) as Record<string, unknown> | null
+            )
+            .get(filter.owner, `metric-alert-reactor:${metricId}`, since) as Record<string, unknown> | null)
         : null;
 
       const recentOwnerSessionJudgment = recentOwnerSession
-        ? db.prepare(
-          `SELECT id
+        ? (db
+            .prepare(
+              `SELECT id
            FROM events
            WHERE event_type = 'metric.alert_judged'
              AND ${judgmentWhere}
              AND timestamp >= ?
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,
-        ).get(judgmentParam, recentOwnerSession.startedAt) as Record<string, unknown> | null
+            )
+            .get(judgmentParam, recentOwnerSession.startedAt) as Record<string, unknown> | null)
         : null;
 
       return {
@@ -716,57 +811,61 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
     eventDeliveryHealth(filter = {}) {
       const db = opts.getDb();
       const now = typeof filter.now === "number" ? filter.now : Date.now();
-      const lookbackMs = typeof filter.lookbackMs === "number"
-        ? Math.max(1, filter.lookbackMs)
-        : EVENT_DELIVERY_DEFAULT_LOOKBACK_MS;
+      const lookbackMs =
+        typeof filter.lookbackMs === "number" ? Math.max(1, filter.lookbackMs) : EVENT_DELIVERY_DEFAULT_LOOKBACK_MS;
       const since = now - lookbackMs;
       const limit = clampLimit(filter.limit, EVENT_DELIVERY_DEFAULT_LIMIT, maxLimit);
 
-      const eventColumns =
-        `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
+      const eventColumns = `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
          delivery_status as deliveryStatus, accepted_by as acceptedBy,
          accepted_at as acceptedAt, delivery_route as deliveryRoute,
          delivery_note as deliveryNote, data`;
 
-      const unhandledEvents = db.prepare(
-        `SELECT ${eventColumns}
+      const unhandledEvents = db
+        .prepare(
+          `SELECT ${eventColumns}
          FROM events
          WHERE delivery_status = 'unhandled'
            AND timestamp >= ?
          ORDER BY timestamp DESC, id DESC
          LIMIT ?`,
-      ).all(since, limit) as Record<string, unknown>[];
+        )
+        .all(since, limit) as Record<string, unknown>[];
 
-      const overduePendingEvents = db.prepare(
-        `SELECT ${eventColumns}
+      const overduePendingEvents = db
+        .prepare(
+          `SELECT ${eventColumns}
          FROM events
          WHERE delivery_status = 'pending'
            AND timestamp >= ?
            AND timestamp + COALESCE(ttl_ms, ?) < ?
          ORDER BY timestamp DESC, id DESC
          LIMIT ?`,
-      ).all(since, EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS, now, limit) as Record<string, unknown>[];
+        )
+        .all(since, EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS, now, limit) as Record<string, unknown>[];
 
-      const pairColumns =
-        `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
+      const pairColumns = `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
          p.open_event_id as openEventId, p.close_event_id as closeEventId,
          p.owner, p.status, p.opened_at as openedAt,
          p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
          p.note, e.event_type as openEventType, e.source as openEventSource,
          e.data as openEventData`;
 
-      const orphanPairs = db.prepare(
-        `SELECT ${pairColumns}
+      const orphanPairs = db
+        .prepare(
+          `SELECT ${pairColumns}
          FROM event_pair_runs p
          LEFT JOIN events e ON e.id = p.open_event_id
          WHERE p.status = 'orphan'
            AND p.opened_at >= ?
          ORDER BY p.expected_close_at ASC, p.id ASC
          LIMIT ?`,
-      ).all(since, limit) as Record<string, unknown>[];
+        )
+        .all(since, limit) as Record<string, unknown>[];
 
-      const overdueOpenPairs = db.prepare(
-        `SELECT ${pairColumns}
+      const overdueOpenPairs = db
+        .prepare(
+          `SELECT ${pairColumns}
          FROM event_pair_runs p
          LEFT JOIN events e ON e.id = p.open_event_id
          WHERE p.status = 'open'
@@ -774,14 +873,17 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
            AND p.expected_close_at < ?
          ORDER BY p.expected_close_at ASC, p.id ASC
          LIMIT ?`,
-      ).all(since, now, limit) as Record<string, unknown>[];
+        )
+        .all(since, now, limit) as Record<string, unknown>[];
 
-      const ownerInboxCount = db.prepare(
-        `SELECT COUNT(*) as count
+      const ownerInboxCount = db
+        .prepare(
+          `SELECT COUNT(*) as count
          FROM event_pair_runs
          WHERE pair_name = 'owner_inbox'
            AND status = 'open'`,
-      ).get() as Record<string, unknown> | null;
+        )
+        .get() as Record<string, unknown> | null;
 
       return {
         now,
@@ -804,7 +906,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const rows = statement.all(...(isPragma ? params : [...params, limit + 1]));
       return result(rows, limit);
     },
-
   };
 }
 
