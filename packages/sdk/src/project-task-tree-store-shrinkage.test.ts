@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  migrateTaskState,
   readTaskState,
   saveTaskState,
   setProjectLifecycle,
@@ -106,6 +107,71 @@ describe("saveTaskState shrinkage guard", () => {
     expect(saved.project_lifecycle).toBe("paused");
     expect(readFileSync(config.journalPath, "utf-8")).toContain("project_lifecycle_paused");
     expect(readFileSync(config.journalPath, "utf-8")).toContain("operator requested a bounded pause");
+  });
+
+  it("dry-runs and atomically applies a reviewed paused-state migration", () => {
+    const config = makeConfig();
+    writeFileSync(config.statePath, JSON.stringify(makeTree(5, "paused")));
+    const migrate = (tree: TaskTree) => {
+      tree.groups = {
+        ...(tree.groups ?? {}),
+        added: { id: "added", parent_id: "task-0", state: "backlog" },
+      };
+    };
+
+    const review = migrateTaskState(config, { dryRun: true, migrate });
+    expect(review).toMatchObject({ changed: true, written: false, taskCountBefore: 5, taskCountAfter: 6 });
+    expect(readTaskState(config).groups?.added).toBeUndefined();
+
+    const applied = migrateTaskState(config, {
+      expectedRevision: review.revision,
+      migrate,
+    });
+    expect(applied).toMatchObject({ changed: true, written: true, taskCountBefore: 5, taskCountAfter: 6 });
+    expect(readTaskState(config).groups?.added?.parent_id).toBe("task-0");
+  });
+
+  it("rejects migration when state changed after dry-run review", () => {
+    const config = makeConfig();
+    writeFileSync(config.statePath, JSON.stringify(makeTree(5, "paused")));
+    const review = migrateTaskState(config, { dryRun: true, migrate: () => undefined });
+    const changed = makeTree(6, "paused");
+    writeFileSync(config.statePath, JSON.stringify(changed));
+
+    expect(() =>
+      migrateTaskState(config, {
+        expectedRevision: review.revision,
+        migrate: () => undefined,
+      }),
+    ).toThrow("Task state changed after review");
+  });
+
+  it("requires paused state and drained attempts for migration", () => {
+    const config = makeConfig();
+    writeFileSync(config.statePath, JSON.stringify(makeTree(5, "active")));
+    expect(() => migrateTaskState(config, { migrate: () => undefined })).toThrow(
+      "project_lifecycle=paused",
+    );
+
+    const paused = makeTree(5, "paused");
+    paused.attempts = {
+      running: {
+        metadata: { id: "running", resourceVersion: 1 },
+        taskId: "task-0",
+        taskGeneration: 1,
+        specHash: "hash",
+        owner: "owner",
+        handler: "owner:owner",
+        runtimeId: "runtime",
+        state: "running",
+        reason: "test",
+        startedAt: "2026-07-20T00:00:00.000Z",
+      },
+    };
+    writeFileSync(config.statePath, JSON.stringify(paused));
+    expect(() => migrateTaskState(config, { migrate: () => undefined })).toThrow(
+      "requires drained attempts",
+    );
   });
 
   it("rejects silent paused-to-active lifecycle writes", () => {
