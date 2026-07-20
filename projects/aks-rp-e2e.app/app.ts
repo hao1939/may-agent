@@ -5,9 +5,11 @@ import {
   matchesEventSelector,
   type EventSelector,
   type ProjectAppContext,
+  type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
+import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -16,6 +18,8 @@ const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const specLoopTaskId = "aks-spec-verification-loop";
 const featureCompactLoopTaskId = "aks-feature-compact-loop";
+const scenarioTestFrontierTaskId =
+  "domain/normalize-scenario-tests-repo-frontier-20260715";
 
 type AppTaskEvent = Record<string, unknown>;
 
@@ -225,9 +229,34 @@ export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  return event.type === "aks.pipeline.check"
-    ? observeAksPipelines(ctx)
-    : undefined;
+  if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
+  if (event.type === "aks.scenario-test-inventory.check")
+    return observeScenarioTestInventory(ctx);
+  if (event.type === "aks.scenario-test-inventory.observed") {
+    const wake = scenarioTestFrontierWakeEvent(event);
+    ctx.emit(wake);
+    return { taskId: scenarioTestFrontierTaskId, observed: true };
+  }
+  return undefined;
+}
+
+export function scenarioTestFrontierWakeEvent(
+  event: Record<string, unknown>,
+): ProjectAppEvent {
+  const details = eventDetails(event);
+  return {
+    type: "project.task.tick",
+    source: "aks-rp-e2e-app",
+    target: { project: projectId, taskId: scenarioTestFrontierTaskId },
+    reason: "strict-scenario-test-inventory-observed",
+    data: {
+      project: projectId,
+      reason: "strict-scenario-test-inventory-observed",
+      ...(isRecord(details.observation)
+        ? { observation: details.observation }
+        : {}),
+    },
+  };
 }
 
 export default defineProjectApp({
@@ -333,6 +362,17 @@ export default defineProjectApp({
       ],
     },
     {
+      id: "scenario-test-frontier-observer",
+      enabled: true,
+      intervalMs: 1_800_000,
+      emits: [
+        {
+          type: "aks.scenario-test-inventory.check",
+          target: { project: projectId },
+        },
+      ],
+    },
+    {
       id: "blocked-frontier-app-ops-review",
       enabled: true,
       intervalMs: 7_200_000,
@@ -399,7 +439,11 @@ export default defineProjectApp({
     resolve: resolveAksTask,
   },
 
-  events: [{ type: "aks.pipeline.check", target: projectTarget }],
+  events: [
+    { type: "aks.pipeline.check", target: projectTarget },
+    { type: "aks.scenario-test-inventory.check", target: projectTarget },
+    { type: "aks.scenario-test-inventory.observed", target: projectTarget },
+  ],
   onEvent: routeAksEvent,
 
   actions: {

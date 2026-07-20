@@ -11,7 +11,7 @@ async function makeWorkspace(options?: { leafState?: string }) {
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
   await mkdir(join(appDir, "tasks"), { recursive: true });
-  await mkdir(join(appDir, ".state"), { recursive: true });
+  await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
   await writeFile(
     resolveTaskTreePath(appDir),
@@ -68,7 +68,7 @@ async function makeOwnerReturnAlignedWorkspace() {
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
   await mkdir(join(appDir, "tasks"), { recursive: true });
-  await mkdir(join(appDir, ".state"), { recursive: true });
+  await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
   await writeFile(
     resolveTaskTreePath(appDir),

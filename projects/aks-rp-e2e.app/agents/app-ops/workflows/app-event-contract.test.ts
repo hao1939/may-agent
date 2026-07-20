@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import app, { resolveAksTask } from "../../../app.ts";
+import app, {
+  resolveAksTask,
+  scenarioTestFrontierWakeEvent,
+} from "../../../app.ts";
 
 type EventSelector =
   | string
@@ -426,6 +429,45 @@ describe("app event contract", () => {
           urgency: "high",
         },
       ],
+    });
+  });
+
+  test("strict inventory wakes its domain frontier without owner-review indirection", () => {
+    const schedule = appManifest.schedules?.find(
+      (entry) => entry.id === "scenario-test-frontier-observer",
+    );
+
+    expect(schedule).toMatchObject({
+      enabled: true,
+      intervalMs: 1_800_000,
+      emits: [
+        {
+          type: "aks.scenario-test-inventory.check",
+          target: { project: projectId },
+        },
+      ],
+    });
+    expect(
+      appManifest.schedules?.some(
+        (entry) => entry.id === "active-frontier-refill-review",
+      ),
+    ).toBe(false);
+
+    expect(
+      scenarioTestFrontierWakeEvent({
+        type: "aks.scenario-test-inventory.observed",
+        target: { project: projectId },
+        data: { observation: { state: "red", strictPassed: false } },
+      }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      target: {
+        project: projectId,
+        taskId: "domain/normalize-scenario-tests-repo-frontier-20260715",
+      },
+      data: {
+        observation: { state: "red", strictPassed: false },
+      },
     });
   });
 });
