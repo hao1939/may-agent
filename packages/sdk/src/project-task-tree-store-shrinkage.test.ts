@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { readTaskTree, saveTaskTree, setProjectLifecycle, type TaskTreeConfig, type TaskTree } from "./project-task-tree-store.js";
+import {
+  readTaskTree,
+  saveTaskTree,
+  setProjectLifecycle,
+  type TaskTreeConfig,
+  type TaskTree,
+} from "./project-task-tree-store.js";
 
 const TEST_DIR = join(import.meta.dir, "__test_shrinkage__");
 
@@ -251,6 +257,7 @@ describe("saveTaskTree shrinkage guard", () => {
           handler: "owner:app-owner",
           summary: "completed earlier",
           evidence: ["artifact:receipt.md"],
+          verification: { method: "owner-judgment", evidence: ["artifact:receipt.md"] },
           failureFingerprints: [],
           completedAt: "2026-07-19T00:00:00.000Z",
         },

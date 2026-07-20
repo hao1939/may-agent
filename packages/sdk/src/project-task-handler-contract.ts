@@ -4,6 +4,7 @@ import type {
   ProjectAppTaskAction,
   ProjectAppTaskHandlerResult,
   ProjectAppTaskMode,
+  ProjectAppTaskVerificationResult,
 } from "./project-app.js";
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
@@ -113,6 +114,15 @@ export const projectAppTaskHandlerResultSchema = Type.Union([
     { additionalProperties: false },
   ),
 ]);
+
+export const projectAppTaskVerificationResultSchema = Type.Object(
+  {
+    accepted: Type.Boolean(),
+    summary: nonEmptyStringSchema,
+    evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
+  },
+  { additionalProperties: false },
+);
 
 export type ProjectAppTaskHandlerAdmission =
   { ok: true; result: ProjectAppTaskHandlerResult } | { ok: false; error: string };
@@ -407,4 +417,19 @@ export function admitProjectAppTaskHandlerResult(
       ...(conditions.length > 0 ? { conditions } : {}),
     },
   };
+}
+
+export function admitProjectAppTaskVerificationResult(
+  output: unknown,
+): { ok: true; result: ProjectAppTaskVerificationResult } | { ok: false; error: string } {
+  if (!isRecord(output)) return { ok: false, error: "verifier must return an object" };
+  if (typeof output.accepted !== "boolean") {
+    return { ok: false, error: "verifier accepted must be boolean" };
+  }
+  const summary = normalizedString(output.summary);
+  if (!summary) return { ok: false, error: "verifier summary must be a non-empty string" };
+  const evidence = normalizedStringArray(output.evidence, true);
+  if (!evidence) return { ok: false, error: "verifier evidence must be a string array" };
+  if (evidence.length > 32) return { ok: false, error: "verifier evidence exceeds the 32-entry limit" };
+  return { ok: true, result: { accepted: output.accepted, summary, evidence } };
 }

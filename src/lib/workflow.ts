@@ -271,6 +271,8 @@ export interface WorkflowModule {
   name: string;
   description: string;
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
+  /** Optional app-level deterministic verifier; interpreted by the embedding infrastructure. */
+  verify?: (context: unknown, result: unknown) => Promise<unknown>;
   /** Immutable provenance captured when the catalog snapshot was built. */
   sourcePath: string;
   sourceScope: "agent" | "project";
