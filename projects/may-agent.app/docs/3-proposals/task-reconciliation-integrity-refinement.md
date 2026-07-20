@@ -1,13 +1,16 @@
 # Proposal: Task Reconciliation Integrity Refinement
 
 **Design status:** Revised after review; recommended for acceptance.
-**Implementation status:** Source and paused-state migration complete; deployment pending.
+**Implementation status:** Implemented, migrated, deployed, and live-verified.
 Canonical state, acceptance provenance, runnable-owner admission,
 execution-only generations, path boundaries, strict live-parent admission, and
 projection non-authority are implemented. Key-only claim and atomic
 Condition-trigger persistence are committed, stale attempts from the older
-deployed binary were interrupted, and all five apps remain paused on migrated
-canonical state. Final deploy, restart, and cohort resume verification remain.
+deployed binary were interrupted, and all five apps were migrated and resumed
+in reviewed cohorts. The deployed binary matched the staged bundle; the first
+passive resync produced no duplicate claims or desired-spec rewrites. A real
+Scout credential Condition atomically persisted its observation and trigger,
+then the queued task claimed that exact trigger when capacity became available.
 
 ## Requested Decision
 
@@ -395,8 +398,8 @@ does not authorize deleting live project data.
    finish app workflow adoption during cutover.
 8. **Done:** Migrate all paused app live state through reviewed one-off operations,
    using Scout as the focused validation case.
-9. **Source done; deployment pending:** Remove `tree.json` bootstrap and legacy action shapes.
-10. Deploy, rerun the paused-state cleanup, restart-validate, and resume the
+9. **Done:** Remove `tree.json` bootstrap and legacy action shapes.
+10. **Done:** Deploy, rerun the paused-state cleanup, restart-validate, and resume the
     apps in reviewed cohorts.
 
 Each step remains independently testable and revertible. Live-state migration
