@@ -9,6 +9,7 @@ import { projectRuntimePaths } from "@may-agent/sdk";
 import {
   inferProjectAppOwner,
   installProjectApps,
+  invokeLoadedProjectAppAction,
   listProjectAppDirs,
   normalizeTaskHandlerResult,
   projectAppHostFingerprint,
@@ -50,24 +51,33 @@ function writeApp(appDir: string, extra = "") {
       budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 2 },
       schedules: [{ id: "pulse", enabled: true, intervalMs: 60000, emits: [{ type: "sample.work", project: "sample", itemId: "scheduled" }] }],
       tasks: {
-        accepts: [{ type: "sample.work", project: "sample" }],
+        accepts: [
+          { type: "sample.work", project: "sample" },
+          { type: "project.owner.requested", project: "sample" }
+        ],
         resolve(event) {
+          const itemId = event.itemId || (event.type === "project.owner.requested" ? "owner-review" : "unknown");
           return {
-            id: "work/" + event.itemId,
+            id: "work/" + itemId,
             parentId: "operations",
             outcome: "Process " + event.itemId,
             acceptance: ["Work converges"],
             mode: event.mode || "achieve",
             ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
             ...(event.taskOwner ? { owner: event.taskOwner } : {}),
-            input: { itemId: event.itemId, ...(event.revision ? { revision: event.revision } : {}) },
+            input: { itemId, ...(event.revision ? { revision: event.revision } : {}) },
             outputs: event.outputs || []
           };
         }
       },
       events: [{ type: "sample.note", project: "sample" }],
       actions: {
-        run: { type: "async", description: "run work", event(params) { return { type: "sample.work", project: "sample", ...params }; } }
+        run: {
+          type: "async",
+          description: "run work",
+          inputSchema: { type: "object", additionalProperties: true },
+          event(params) { return { type: "sample.work", project: "sample", ...params }; }
+        }
       },
       onEvent(ctx, event) {
         if (event.type === "sample.note" && event.fail) throw new Error("sample handler failed");
@@ -944,6 +954,122 @@ describe("project app loader", () => {
     }
   });
 
+  it("retries owner results whose dependent task actions are stale", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent(_agent: string, task: string) {
+            ownerCalls.push(task);
+            const firstAttempt = ownerCalls.length === 1;
+            return {
+              sessionId: `owner-stale-action-${ownerCalls.length}`,
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: firstAttempt ? "owner used stale target evidence" : "owner retried from fresh target evidence",
+                evidence: ["owner inspected task state"],
+                actions: firstAttempt
+                  ? [
+                      {
+                        kind: "update-task",
+                        taskId: "work/target",
+                        expectedGeneration: 1,
+                        priority: "P1",
+                      },
+                    ]
+                  : [],
+              },
+              lastAssistantText: "owner result",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "target", mode: "maintain" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/target" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "target",
+        revision: "v2",
+        mode: "maintain",
+      } as any);
+      await waitUntil(() => {
+        const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+        return state.resources["work/target"]?.metadata?.generation === 2;
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "owner-stale-action", ownerOnly: true } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-stale-action" &&
+            event.data?.disposition === "stale",
+        ),
+      );
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-stale-action" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(2);
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.resources["work/target"]).toMatchObject({
+        metadata: { generation: 2 },
+        status: { observedGeneration: 2 },
+      });
+      expect(state.receipts["work/owner-stale-action"]).toBeTruthy();
+      expect(Object.values(state.attempts)).toContainEqual(
+        expect.objectContaining({
+          taskId: "work/owner-stale-action",
+          state: "interrupted",
+          failureReason: "stale-reconciliation-result",
+        }),
+      );
+      expect(state.resources["work/owner-stale-action"]).toBeUndefined();
+      expect(
+        events.find(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-stale-action" &&
+            event.data?.disposition === "stale",
+        )?.data,
+      ).toMatchObject({ staleRecovery: "released" });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps a missing workflow in attention and retries it only after app reload can resolve the binding", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
@@ -1041,6 +1167,71 @@ describe("project app loader", () => {
         handler: "workflow:not-installed",
         workflow: "not-installed",
         failureFingerprints: ["HandlerUnavailable"],
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("records failed owner sessions as attention with the runtime error summary", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent(_agent: string, task: string) {
+            ownerCalls.push(task);
+            return {
+              sessionId: "owner-error-session",
+              status: "error",
+              structuredResult: { state: "converged", summary: "", evidence: [], actions: [] },
+              error: "provider returned 429",
+              lastAssistantText: "",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "owner-error", ownerOnly: true } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-error" &&
+            event.data?.disposition === "attention",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(1);
+      const attentionEvent = events.find(
+        (event) =>
+          event.type === "project.task.reconciled" &&
+          event.data?.taskId === "work/owner-error" &&
+          event.data?.disposition === "attention",
+      );
+      expect(attentionEvent.data.summary).toBe("provider returned 429");
+
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.resources["work/owner-error"].status).toMatchObject({
+        phase: "attention",
+        summary: "provider returned 429",
+        evidence: ["workflow-run:owner-error-session"],
       });
     } finally {
       closeDb(f.persistDir);
@@ -1453,6 +1644,10 @@ describe("project app loader", () => {
       writeApp(f.appDir);
       const bus = new EventBus();
       const events: any[] = [];
+      let nextEventId = 1;
+      bus.setPersistenceSubscriber((event) => {
+        (event as any)[EVENT_ROW_ID] = nextEventId++;
+      });
       bus.subscribe((event) => events.push(event));
       const crons = new Map<string, Cron>();
       const result = await installProjectApps({
@@ -1470,14 +1665,24 @@ describe("project app loader", () => {
           ?.getEntries()
           .map((entry) => entry.name),
       ).toEqual(["sample-schedule-pulse"]);
-      bus.emit({
-        type: "project.action.invoked",
-        project: "sample",
-        action: "run",
+      const receipt = invokeLoadedProjectAppAction({
+        bus,
+        projectId: "sample",
+        actionId: "run",
         params: { itemId: "action" },
-      } as any);
-      await waitUntil(() => events.some((event) => event.type === "project.action.accepted"));
+      });
+      expect(receipt).toEqual({ eventId: 1, eventType: "sample.work" });
       expect(events.some((event) => event.type === "sample.work" && event.data?.itemId === "action")).toBe(true);
+      expect(events.some((event) => event.type.startsWith("project.action."))).toBe(false);
+      expect(() =>
+        invokeLoadedProjectAppAction({
+          bus,
+          projectId: "sample",
+          actionId: "run",
+          params: "invalid",
+        }),
+      ).toThrow("Invalid input");
+      expect(events.filter((event) => event.type === "sample.work")).toHaveLength(1);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
@@ -1526,6 +1731,79 @@ describe("project app loader", () => {
       expect(reviewedIds).toContain((handled as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((wrongProject as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((failed as any)[EVENT_ROW_ID]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("answers each project comment with one result correlated to the comment receipt", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      let nextEventId = 1;
+      bus.setPersistenceSubscriber((event) => {
+        (event as any)[EVENT_ROW_ID] = nextEventId++;
+      });
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const comment = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "Please advance this project" },
+      } as any);
+      const commentEventId = (comment as any)[EVENT_ROW_ID];
+      const secondComment = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "And retain the evidence" },
+      } as any);
+      const secondCommentEventId = (secondComment as any)[EVENT_ROW_ID];
+      await waitUntil(
+        () =>
+          events.filter(
+            (event) =>
+              event.type === "project.owner.reviewed" &&
+              [commentEventId, secondCommentEventId].includes(event.data?.openEventId),
+          ).length === 2,
+      );
+
+      const results = events.filter(
+        (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === commentEventId,
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        data: {
+          openEventType: "project.comment.created",
+          summary: "workflow done",
+          taskRefs: [{ projectId: "sample", taskId: "work/owner-review" }],
+        },
+      });
+      expect(results[0].trace.links).toContainEqual({
+        eventId: commentEventId,
+        type: "closure",
+        label: "project.owner.reviewed",
+      });
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "project.owner.reviewed" && event.data?.openEventId === secondCommentEventId,
+        ),
+      ).toHaveLength(1);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

@@ -136,7 +136,7 @@ describe("V2 agents tool", () => {
       task: "Drive the project loop",
       context_files: [
         "shared/skills/project-loop-driver/SKILL.md",
-        "shared/skills/reading-metrics/skill.md",
+        "shared/skills/reading-metrics/SKILL.md",
       ],
     });
 
@@ -144,7 +144,7 @@ describe("V2 agents tool", () => {
     expect(dispatchedTask).toContain("Drive the project loop");
     expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
     expect(dispatchedTask).toContain("shared/skills/project-loop-driver/SKILL.md");
-    expect(dispatchedTask).toContain("shared/skills/reading-metrics/skill.md");
+    expect(dispatchedTask).toContain("shared/skills/reading-metrics/SKILL.md");
   });
 
   it("fork appends context_files to the session task", async () => {

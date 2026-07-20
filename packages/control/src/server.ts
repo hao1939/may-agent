@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
+export type ControlEmitResult = { eventId?: number };
 
 export interface ControlStatusItem {
   agent: string;
@@ -18,7 +19,14 @@ export interface AttachControlSocketOptions {
   socketPath: string;
   getSessionId: () => string;
   getStatus: () => ControlStatusItem[];
-  emitEvent: (event: ControlEvent) => void;
+  emitEvent: (event: ControlEvent) => ControlEmitResult | void;
+  describeProjectActions?: (projectId: string) => unknown[];
+  invokeProjectAction?: (input: {
+    projectId: string;
+    actionId: string;
+    params: unknown;
+    idempotencyKey?: string;
+  }) => { eventId: number; eventType: string };
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
   onInfo?: (message: string) => void;
@@ -37,7 +45,16 @@ interface ClientState {
   socket: Duplex;
   filter: Set<string> | null;
   chatMode: boolean;
+  subscribed: boolean;
 }
+
+export const CONTROL_SOCKET_LIMITS = {
+  maxFrameBytes: 1_048_576,
+  maxIncompleteBufferBytes: 1_048_576,
+  maxOutboundBufferBytes: 1_048_576,
+  maxConnections: 64,
+  maxErrorPreviewBytes: 160,
+} as const;
 
 export function isSocketAlive(socketPath: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -85,6 +102,7 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
 }
 
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
+  if (!client.subscribed) return false;
   if (!client.filter) return true;
   const data = eventPayload(event);
   if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
@@ -101,7 +119,9 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 export interface ControlSocketCoreOptions {
   getSessionId: () => string;
   getStatus: () => ControlStatusItem[];
-  emitEvent: (event: ControlEvent) => void;
+  emitEvent: (event: ControlEvent) => ControlEmitResult | void;
+  describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
+  invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
   agentName: string;
@@ -113,8 +133,33 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
   close: () => void;
   clientCount: () => number;
 } {
-  const { getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, agentName, instance } = opts;
+  const {
+    getSessionId,
+    getStatus,
+    emitEvent,
+    describeProjectActions,
+    invokeProjectAction,
+    subscribeEvents,
+    onDelivered,
+    agentName,
+    instance,
+  } = opts;
   const clients = new Map<Duplex, ClientState>();
+  function writeFrame(socket: Duplex, frame: Record<string, unknown>): boolean {
+    if (socket.writableLength > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
+      clients.delete(socket);
+      socket.destroy(new Error("Control socket outbound buffer limit exceeded"));
+      return false;
+    }
+    const writable = socket.write(JSON.stringify(frame) + "\n");
+    if (!writable && socket.writableLength > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
+      clients.delete(socket);
+      socket.destroy(new Error("Control socket client is too slow"));
+      return false;
+    }
+    return true;
+  }
+
   function broadcast(event: ControlEvent): void {
     if (clients.size === 0) return;
 
@@ -144,8 +189,13 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     for (const [sock, client] of clients) {
       if (!shouldForward(client, event)) continue;
       try {
-        sock.write(line);
-        delivered++;
+        if (sock.writableLength + Buffer.byteLength(line) > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
+          clients.delete(sock);
+          sock.destroy(new Error("Control socket client is too slow"));
+          continue;
+        }
+        if (sock.write(line)) delivered++;
+        else if (sock.writableLength <= CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) delivered++;
       } catch {
         clients.delete(sock);
       }
@@ -158,46 +208,66 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
   const unsubscribe = subscribeEvents(broadcast);
 
   function attachClient(socket: Duplex): void {
-    clients.set(socket, { socket, filter: null, chatMode: false });
+    if (clients.size >= CONTROL_SOCKET_LIMITS.maxConnections) {
+      writeFrame(socket, {
+        type: "error",
+        command: null,
+        message: "Control socket connection limit exceeded",
+      });
+      socket.end();
+      return;
+    }
+    clients.set(socket, { socket, filter: null, chatMode: false, subscribed: false });
+    socket.on("close", () => clients.delete(socket));
+    socket.on("error", () => clients.delete(socket));
 
-    socket.write(
-      JSON.stringify({
-        type: "connected",
-        pid: process.pid,
-        agent: agentName,
-        instance,
-        sessionId: getSessionId(),
-        activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
-      }) + "\n",
-    );
+    writeFrame(socket, {
+      type: "connected",
+      pid: process.pid,
+      agent: agentName,
+      instance,
+      sessionId: getSessionId(),
+      activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
+    });
 
     let buffer = "";
     socket.on("data", (data) => {
       buffer += data.toString();
       const lines = buffer.split("\n");
       buffer = lines.pop()!;
+      if (Buffer.byteLength(buffer) > CONTROL_SOCKET_LIMITS.maxIncompleteBufferBytes) {
+        writeFrame(socket, { type: "error", command: null, message: "Incomplete control socket frame is too large" });
+        socket.destroy();
+        return;
+      }
 
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
+        if (Buffer.byteLength(trimmed) > CONTROL_SOCKET_LIMITS.maxFrameBytes) {
+          writeFrame(socket, { type: "error", command: null, message: "Control socket frame is too large" });
+          continue;
+        }
 
         let frame: Record<string, unknown>;
         try {
           frame = JSON.parse(trimmed) as Record<string, unknown>;
         } catch {
-          socket.write(JSON.stringify({ type: "error", message: `Invalid JSON: ${trimmed.slice(0, 100)}` }) + "\n");
+          writeFrame(socket, {
+            type: "error",
+            command: null,
+            message: `Invalid JSON: ${trimmed.slice(0, CONTROL_SOCKET_LIMITS.maxErrorPreviewBytes)}`,
+          });
           continue;
         }
 
         const normalized = normalizeSocketFrame(frame);
         if (normalized.kind === "error") {
-          socket.write(
-            JSON.stringify({
-              type: "error",
-              command: normalized.command ?? null,
-              message: normalized.message,
-            }) + "\n",
-          );
+          writeFrame(socket, {
+            type: "error",
+            command: normalized.command ?? null,
+            message: normalized.message,
+          });
           continue;
         }
 
@@ -216,26 +286,102 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               client.filter = new Set(sessions);
               client.chatMode = false;
             }
-            socket.write(JSON.stringify({ type: "ok", command: "subscribe" }) + "\n");
+            client.subscribed = true;
+            writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
-            socket.write(JSON.stringify({ type: "error", command: "subscribe", message: "sessions must be an array" }) + "\n");
+            writeFrame(socket, { type: "error", command: "subscribe", message: "sessions must be an array" });
           }
           continue;
         }
 
         if (normalized.kind === "control" && normalized.command === "status") {
-          socket.write(JSON.stringify({ type: "status", activeAgents: socketStatus(getStatus(), getSessionId(), agentName) }) + "\n");
+          writeFrame(socket, {
+            type: "status",
+            command: "status",
+            activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
+          });
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "project.actions.describe") {
+          const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
+          if (!projectId || !describeProjectActions) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !projectId ? "projectId is required" : "project action discovery is unavailable",
+            });
+            continue;
+          }
+          try {
+            writeFrame(socket, {
+              type: "ok",
+              command: normalized.command,
+              projectId,
+              actions: describeProjectActions(projectId),
+            });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "project.action.invoke") {
+          const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
+          const actionId = typeof frame.actionId === "string" ? frame.actionId.trim() : "";
+          if (!projectId || !actionId || !invokeProjectAction) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !projectId
+                ? "projectId is required"
+                : !actionId
+                  ? "actionId is required"
+                  : "project action invocation is unavailable",
+            });
+            continue;
+          }
+          try {
+            const result = invokeProjectAction({
+              projectId,
+              actionId,
+              params: frame.params ?? {},
+              ...(typeof frame.idempotencyKey === "string" && frame.idempotencyKey.trim()
+                ? { idempotencyKey: frame.idempotencyKey.trim() }
+                : {}),
+            });
+            writeFrame(socket, { type: "ok", command: normalized.command, projectId, actionId, ...result });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
           continue;
         }
 
         if (normalized.kind !== "event") continue;
-        socket.write(JSON.stringify({ type: "ok", command: normalized.command }) + "\n");
-        setImmediate(() => emitEvent(normalized.event as ControlEvent));
+        try {
+          const result = emitEvent(normalized.event as ControlEvent);
+          const eventId = Number(result?.eventId);
+          if (!Number.isInteger(eventId) || eventId <= 0) {
+            throw new Error(`Event ${normalized.command} was not durably persisted`);
+          }
+          writeFrame(socket, { type: "ok", command: normalized.command, eventId });
+        } catch (error) {
+          writeFrame(socket, {
+            type: "error",
+            command: normalized.command,
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     });
-
-    socket.on("close", () => clients.delete(socket));
-    socket.on("error", () => clients.delete(socket));
   }
 
   return {
@@ -262,7 +408,17 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     unlinkSync(socketPath);
   }
 
-  const core = createControlSocketCore({ getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, agentName, instance });
+  const core = createControlSocketCore({
+    getSessionId,
+    getStatus,
+    emitEvent,
+    describeProjectActions: opts.describeProjectActions,
+    invokeProjectAction: opts.invokeProjectAction,
+    subscribeEvents,
+    onDelivered,
+    agentName,
+    instance,
+  });
   const server: Server = createServer((socket) => core.attachClient(socket));
 
   server.on("close", () => {
@@ -290,8 +446,13 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
       server.on("error", (err) => {
         onInfo?.(`[control] Socket error: ${err.message}`);
       });
-      onInfo?.(`[control] Listening on ${socketPath}`);
-      resolve();
+      try {
+        chmodSync(socketPath, 0o600);
+        onInfo?.(`[control] Listening on ${socketPath}`);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     });
   });
 

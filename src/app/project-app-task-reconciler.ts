@@ -61,6 +61,26 @@ export type ProjectAppTaskObservationResult =
   | { kind: "observed"; taskId: string; generation: number; changed: boolean }
   | { kind: "completed"; taskId: string; generation: number };
 
+export class ProjectAppTaskActionStaleError extends Error {
+  readonly taskId: string;
+  readonly expectedGeneration: number;
+  readonly currentGeneration: number;
+
+  constructor(input: { taskId: string; expectedGeneration: number; currentGeneration: number }) {
+    super(
+      `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
+    );
+    this.name = "ProjectAppTaskActionStaleError";
+    this.taskId = input.taskId;
+    this.expectedGeneration = input.expectedGeneration;
+    this.currentGeneration = input.currentGeneration;
+  }
+}
+
+export function isProjectAppTaskActionStaleError(error: unknown): error is ProjectAppTaskActionStaleError {
+  return error instanceof ProjectAppTaskActionStaleError;
+}
+
 export type ProjectAppTaskAttemptRecovery = {
   taskId: string;
   intent: ProjectAppTaskIntent;
@@ -1030,6 +1050,17 @@ export function claimObservedProjectAppTask(
       return { kind: "busy", taskId: task.id, attemptId: previousAttempt.metadata.id };
     }
     if (
+      resource.status.phase === "converged" &&
+      resource.status.observedGeneration >= resource.metadata.generation &&
+      !pendingTrigger
+    ) {
+      return {
+        kind: "completed",
+        taskId: task.id,
+        generation: resource.metadata.generation,
+      };
+    }
+    if (
       resource.status.phase === "attention" &&
       resource.status.observedGeneration >= resource.metadata.generation &&
       !pendingTrigger &&
@@ -1233,9 +1264,11 @@ function mutableActionResource(
   const resource = tree.resources?.[action.taskId];
   if (!resource) throw new Error(`Handler action resource not found: ${action.taskId}`);
   if (resource.metadata.generation !== action.expectedGeneration) {
-    throw new Error(
-      `Handler action for ${action.taskId} is stale: expected generation ${action.expectedGeneration}, current ${resource.metadata.generation}`,
-    );
+    throw new ProjectAppTaskActionStaleError({
+      taskId: action.taskId,
+      expectedGeneration: action.expectedGeneration,
+      currentGeneration: resource.metadata.generation,
+    });
   }
   return { task, resource };
 }

@@ -19,7 +19,12 @@ declare const Bun: {
 import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
-import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
+import {
+  connectSocketEndpoint,
+  daemonSocketPath,
+  sendDaemonEvent,
+  sendSocketCommand,
+} from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { createTerminalManager } from "@may-agent/terminal";
 import {
@@ -547,51 +552,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       };
     } catch {
       return fallback;
-    }
-  }
-
-  function extractProjectAppActions(appDir: string | null): Array<Record<string, unknown>> {
-    if (!appDir) return [];
-    const appPath = resolve(appDir, "app.ts");
-    if (!existsSync(appPath)) return [];
-    try {
-      const content = readFileSync(appPath, "utf-8");
-      const marker = content.indexOf("actions:");
-      if (marker === -1) return [];
-      const start = content.indexOf("{", marker);
-      if (start === -1) return [];
-      let depth = 0;
-      let end = -1;
-      for (let i = start; i < content.length; i++) {
-        const ch = content[i];
-        if (ch === "{") depth++;
-        if (ch === "}") {
-          depth--;
-          if (depth === 0) {
-            end = i;
-            break;
-          }
-        }
-      }
-      if (end === -1) return [];
-      const body = content.slice(start + 1, end);
-      const actions: Array<Record<string, unknown>> = [];
-      const re = /["']?([A-Za-z0-9_.-]+)["']?\s*:\s*\{([\s\S]*?)(?=\n\s*["']?[A-Za-z0-9_.-]+["']?\s*:\s*\{|$)/g;
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(body)) !== null) {
-        const id = m[1];
-        const block = m[2] || "";
-        const type = block.match(/type:\s*["']([^"']+)["']/)?.[1] ?? "async";
-        const description =
-          block
-            .match(/description:\s*["']([\s\S]*?)["']/)?.[1]
-            ?.replace(/\s+/g, " ")
-            .trim() ?? "";
-        actions.push({ id, type, description });
-      }
-      return actions;
-    } catch {
-      return [];
     }
   }
 
@@ -2740,7 +2700,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return {
           appDirName: appDir.split("/").pop(),
           hasUi: existsSync(resolve(appDir, "ui", "index.html")),
-          actions: extractProjectAppActions(appDir),
         };
       })(),
       updatedAt: stat ? Math.floor(stat.mtimeMs) : null,
@@ -2991,8 +2950,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleProjectComment(req: Request): Promise<Response> {
     try {
-      const body = (await req.json()) as { path?: string; comment?: string };
-      const { path, comment } = body;
+      const body = (await req.json()) as {
+        path?: string;
+        projectId?: string;
+        comment?: string;
+        idempotencyKey?: string;
+      };
+      const path = body.path ?? (body.projectId ? `projects/${body.projectId.replace(/\.app$/, "")}` : undefined);
+      const { comment } = body;
       if (!path || !comment) return json({ error: "path and comment required" }, 400);
       if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
@@ -3000,14 +2965,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
       const projectContent = readFileSync(projectFile, "utf-8");
       const { projectId, owner } = parseProjectIdentity(path, projectContent);
+      const idempotencyKey = body.idempotencyKey?.trim();
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",
         source: "web-ui",
         owner: normalizeEventOwner(owner),
         data: {
           projectPath: path,
+          project: projectId,
+          projectId,
           comment,
           author: "hao",
+          ...(idempotencyKey ? { idempotencyKey } : {}),
         },
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
@@ -3018,12 +2987,69 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           triggered: true,
           accepted: true,
           eventType: "project.comment.created",
+          eventId: trigger.eventId,
           projectId,
         },
         202,
       );
     } catch (e: any) {
       return json({ error: e.message }, 500);
+    }
+  }
+
+  async function handleProjectActions(projectIdText: string): Promise<Response> {
+    const projectId = decodeURIComponent(projectIdText).trim().replace(/\.app$/, "");
+    if (!projectId) return json({ error: "projectId required" }, 400);
+    try {
+      const response = await sendSocketCommand(
+        conventionSocketPath(),
+        { type: "project.actions.describe", projectId },
+        { timeoutMs: 2000 },
+      );
+      return json({ projectId, actions: Array.isArray(response.actions) ? response.actions : [] });
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+  }
+
+  async function handleProjectActionInvoke(
+    req: Request,
+    projectIdText: string,
+    actionIdText: string,
+  ): Promise<Response> {
+    const projectId = decodeURIComponent(projectIdText).trim().replace(/\.app$/, "");
+    const actionId = decodeURIComponent(actionIdText).trim();
+    if (!projectId || !actionId) return json({ error: "projectId and actionId required" }, 400);
+    try {
+      const body = (await req.json().catch(() => ({}))) as {
+        input?: unknown;
+        params?: unknown;
+        idempotencyKey?: string;
+      };
+      const response = await sendSocketCommand(
+        conventionSocketPath(),
+        {
+          type: "project.action.invoke",
+          projectId,
+          actionId,
+          params: body.input ?? body.params ?? {},
+          ...(body.idempotencyKey?.trim() ? { idempotencyKey: body.idempotencyKey.trim() } : {}),
+        },
+        { timeoutMs: 2000 },
+      );
+      return json(
+        {
+          projectId,
+          actionId,
+          eventId: response.eventId,
+          eventType: response.eventType,
+        },
+        202,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const status = message.startsWith("Invalid input") ? 400 : 503;
+      return json({ error: message }, status);
     }
   }
 
@@ -3217,6 +3243,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           triggered: true,
           accepted: true,
           eventType: type,
+          eventId: trigger.eventId,
           reason: typeof data.reason === "string" ? data.reason : null,
           projectId: projectId || null,
         },
@@ -3328,11 +3355,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   //
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
-  async function sendDaemonFrame(frame: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  async function sendDaemonFrame(
+    frame: Record<string, unknown>,
+  ): Promise<{ ok: boolean; error?: string; eventId?: number }> {
     const socketPath = conventionSocketPath();
     try {
-      await sendDaemonEvent(socketPath, frame, { timeoutMs: 2000 });
-      return { ok: true };
+      const response = await sendDaemonEvent(socketPath, frame, { timeoutMs: 2000 });
+      const eventId = Number(response.eventId);
+      return {
+        ok: true,
+        ...(Number.isInteger(eventId) && eventId > 0 ? { eventId } : {}),
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { ok: false, error: `daemon socket delivery failed at ${socketPath}: ${message}` };
@@ -3934,6 +3967,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
+      const projectActionInvokeMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions\/([^/]+)$/);
+      if (projectActionInvokeMatch && req.method === "POST") {
+        return handleProjectActionInvoke(req, projectActionInvokeMatch[1], projectActionInvokeMatch[2]);
+      }
+      const projectActionsMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions$/);
+      if (projectActionsMatch && req.method === "GET") return handleProjectActions(projectActionsMatch[1]);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventGraphMatch = url.pathname.match(/^\/api\/events\/(\d+)\/graph$/);
       if (eventGraphMatch) return handleEventGraph(url, eventGraphMatch[1]);
