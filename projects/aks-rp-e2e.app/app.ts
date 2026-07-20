@@ -109,7 +109,6 @@ export function resolveAksTask(
 
   const details = eventDetails(event);
   const taskId = targetTaskId(event);
-  const triggerInput = { ...details, targetTaskId: taskId || null };
 
   if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
     return {
@@ -146,7 +145,7 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "problem-solver",
-        input: triggerInput,
+        input: { problemKey, targetTaskId: taskId || null },
         priority: "P1",
       };
     }
@@ -213,7 +212,7 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "approval-dispatch",
-        input: triggerInput,
+        input: { approvalKey, targetTaskId: taskId || null },
         priority: "P1",
       };
     }

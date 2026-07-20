@@ -132,7 +132,9 @@ function selectorTypes(): string[] {
 
 describe("app event contract", () => {
   test("keeps reusable workflows under their accountable agent", () => {
-    expect(existsSync(resolve(import.meta.dir, "../../../workflows"))).toBe(false);
+    expect(existsSync(resolve(import.meta.dir, "../../../workflows"))).toBe(
+      false,
+    );
   });
 
   test("uses the current task resolver contract", () => {
@@ -230,6 +232,19 @@ describe("app event contract", () => {
         problemKey: "staging-auth",
       })?.workflow,
     ).toBe("problem-solver");
+    const problemA = resolveAksTask({
+      type: "project.problem.investigation.requested",
+      target: { project: projectId },
+      problemKey: "staging-auth",
+      eventId: 201,
+    });
+    const problemB = resolveAksTask({
+      type: "project.problem.investigation.requested",
+      target: { project: projectId },
+      problemKey: "staging-auth",
+      eventId: 202,
+    });
+    expect(problemA?.input).toEqual(problemB?.input);
     expect(
       resolveAksTask({
         type: "project.focus.review.requested",
