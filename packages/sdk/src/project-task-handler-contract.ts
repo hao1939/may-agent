@@ -1,4 +1,5 @@
 import { Type } from "@earendil-works/pi-ai";
+import { Check, Errors } from "typebox/value";
 import type {
   ProjectAppConditionSpec,
   ProjectAppTaskAction,
@@ -372,6 +373,13 @@ export function admitProjectAppTaskHandlerResult(
     if (output.actions !== undefined || output.conditions !== undefined) {
       return { ok: false, error: "needs-owner cannot include actions or Conditions" };
     }
+    if (!Check(projectAppTaskHandlerResultSchema, output)) {
+      const first = [...Errors(projectAppTaskHandlerResultSchema, output)][0];
+      return {
+        ok: false,
+        error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
+      };
+    }
     return {
       ok: true,
       result: { state: "needs-owner", summary: output.summary.trim(), evidence },
@@ -380,8 +388,9 @@ export function admitProjectAppTaskHandlerResult(
   if (output.state !== "converged" && output.state !== "waiting") {
     return { ok: false, error: "state must be converged, waiting, or needs-owner" };
   }
+  const admittedOutput = output as Record<string, unknown>;
 
-  const rawActions = output.actions ?? [];
+  const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
   if (rawActions.length > 16) return { ok: false, error: "actions exceed the 16-entry limit" };
   const actions: ProjectAppTaskAction[] = [];
@@ -391,7 +400,7 @@ export function admitProjectAppTaskHandlerResult(
     actions.push(normalized);
   }
 
-  const rawConditions = output.conditions ?? [];
+  const rawConditions = admittedOutput.conditions ?? [];
   if (!Array.isArray(rawConditions)) return { ok: false, error: "conditions must be an array" };
   if (rawConditions.length > 16) return { ok: false, error: "conditions exceed the 16-entry limit" };
   const conditions: ProjectAppConditionSpec[] = [];
@@ -405,6 +414,13 @@ export function admitProjectAppTaskHandlerResult(
   }
   if (output.state !== "waiting" && conditions.length > 0) {
     return { ok: false, error: "Conditions are valid only for waiting" };
+  }
+  if (!Check(projectAppTaskHandlerResultSchema, output)) {
+    const first = [...Errors(projectAppTaskHandlerResultSchema, output)][0];
+    return {
+      ok: false,
+      error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
+    };
   }
 
   return {
@@ -431,5 +447,12 @@ export function admitProjectAppTaskVerificationResult(
   const evidence = normalizedStringArray(output.evidence, true);
   if (!evidence) return { ok: false, error: "verifier evidence must be a string array" };
   if (evidence.length > 32) return { ok: false, error: "verifier evidence exceeds the 32-entry limit" };
+  if (!Check(projectAppTaskVerificationResultSchema, output)) {
+    const first = [...Errors(projectAppTaskVerificationResultSchema, output)][0];
+    return {
+      ok: false,
+      error: `verifier result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
+    };
+  }
   return { ok: true, result: { accepted: output.accepted, summary, evidence } };
 }

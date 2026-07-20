@@ -1,17 +1,14 @@
 import {
-  readTaskTree,
-  saveTaskTree,
-  withTreeLock,
+  readTaskState,
+  saveTaskState,
+  withTaskStateLock,
   type ProjectAppCondition,
-  type ProjectAppTaskIntent,
-  type ProjectAppTaskResource,
-  type TaskTreeConfig,
+  type TaskStateConfig,
 } from "@may-agent/sdk";
 
 export type ProjectAppConditionWake = {
   conditionId: string;
   taskId: string;
-  intent: ProjectAppTaskIntent;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -26,22 +23,6 @@ function stableValue(value: unknown): unknown {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, entry]) => [key, stableValue(entry)]),
   );
-}
-
-function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent {
-  return {
-    id: resource.metadata.id,
-    parentId: resource.spec.parentId,
-    outcome: resource.spec.outcome,
-    acceptance: [...resource.spec.acceptance],
-    mode: resource.spec.mode,
-    ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
-    ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
-    ...(resource.spec.input ? { input: { ...resource.spec.input } } : {}),
-    ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
-    ...(resource.spec.dependsOn ? { dependsOn: [...resource.spec.dependsOn] } : {}),
-    ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
-  };
 }
 
 function isCondition(value: unknown): value is ProjectAppCondition {
@@ -157,11 +138,11 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
 
 /** Correlate a semantic observation with durable Conditions; never observes the domain source itself. */
 export function trackProjectAppConditionEvent(
-  config: TaskTreeConfig,
+  config: TaskStateConfig,
   event: Record<string, unknown>,
 ): ProjectAppConditionWake[] {
-  return withTreeLock(config, () => {
-    const tree = readTaskTree(config);
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
     const now = new Date().toISOString();
     let changed = false;
     const wakes = new Map<string, ProjectAppConditionWake>();
@@ -187,12 +168,28 @@ export function trackProjectAppConditionEvent(
         wakes.set(taskId, {
           conditionId: id,
           taskId,
-          intent: resourceIntent(resource),
         });
       }
     }
 
-    if (changed) saveTaskTree(config, tree);
+    for (const wake of wakes.values()) {
+      const resource = tree.resources?.[wake.taskId];
+      if (!resource) continue;
+      const previous = tree.taskTriggers?.[wake.taskId];
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [wake.taskId]: {
+          taskId: wake.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+          event: structuredClone(event),
+          observedAt: now,
+        },
+      };
+      changed = true;
+    }
+
+    if (changed) saveTaskState(config, tree);
     return [...wakes.values()];
   });
 }

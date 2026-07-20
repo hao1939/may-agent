@@ -4,12 +4,12 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
-  ensureTaskTreeState,
+  ensureTaskState,
   loadProjectReadModel,
   projectRuntimePaths,
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
-import { readTaskTree, saveTaskTree, type TaskTreeConfig } from "./project-task-tree-store.js";
+import { readTaskState, saveTaskState, type TaskStateConfig } from "./project-task-tree-store.js";
 
 async function makeApp(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "may-sdk-runtime-state-"));
@@ -29,7 +29,7 @@ describe("project runtime state paths", () => {
     await writeFile(join(appDir, ".state", "tasks", "tree.json"), `{"source":"runtime","tasks":{}}\n`, "utf8");
     await writeFile(join(appDir, "tasks", "tree.json"), `{"source":"legacy","tasks":{}}\n`, "utf8");
 
-    const result = ensureTaskTreeState(appDir);
+    const result = ensureTaskState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
     expect(result).toMatchObject({ migrated: true, source: "empty" });
@@ -41,7 +41,7 @@ describe("project runtime state paths", () => {
     const appDir = await makeApp();
     await writeFile(join(appDir, "tasks", "tree.json"), `{"source":"legacy","tasks":{}}\n`, "utf8");
 
-    const result = ensureTaskTreeState(appDir);
+    const result = ensureTaskState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
     expect(result).toMatchObject({ migrated: true, source: "empty" });
@@ -56,7 +56,7 @@ describe("project runtime state paths", () => {
     const appDir = await makeApp();
     await writeFile(join(appDir, "tasks", "seed.json"), `{"source":"seed","groups":{},"resources":{}}\n`, "utf8");
 
-    const result = ensureTaskTreeState(appDir);
+    const result = ensureTaskState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
     expect(result).toMatchObject({ migrated: true, source: "seed" });
@@ -70,7 +70,7 @@ describe("project runtime state paths", () => {
     await writeJson(paths.taskStatePath, { source: "state", groups: {}, resources: {} });
     await writeJson(paths.taskTreePath, { source: "projection", tasks: {} });
 
-    const result = ensureTaskTreeState(appDir);
+    const result = ensureTaskState(appDir);
     const state = JSON.parse(await readFile(result.path, "utf8"));
 
     expect(result).toMatchObject({ migrated: false, source: "runtime" });
@@ -82,25 +82,25 @@ describe("project runtime state paths", () => {
     const paths = projectRuntimePaths(appDir);
     await writeJson(paths.taskStatePath, { groups: {}, resources: {}, tasks: undefined });
 
-    ensureTaskTreeState(appDir);
+    ensureTaskState(appDir);
 
     expect(existsSync(paths.taskTreePath)).toBe(false);
   });
 
   test("writes structural groups to canonical state and full nodes to the generated tree", async () => {
     const appDir = await makeApp();
-    const state = ensureTaskTreeState(appDir);
+    const state = ensureTaskState(appDir);
     const paths = projectRuntimePaths(appDir);
-    const config: TaskTreeConfig = {
+    const config: TaskStateConfig = {
       appDir,
       projectDir: appDir,
-      treePath: state.path,
+      statePath: state.path,
       journalPath: paths.journalPath,
       worker: "owner",
       maxConcurrent: 1,
     };
 
-    saveTaskTree(
+    saveTaskState(
       config,
       {
         project_lifecycle: "active",
@@ -120,17 +120,17 @@ describe("project runtime state paths", () => {
 
   test("treats edits to the generated tree projection as non-authoritative", async () => {
     const appDir = await makeApp();
-    const state = ensureTaskTreeState(appDir);
+    const state = ensureTaskState(appDir);
     const paths = projectRuntimePaths(appDir);
-    const config: TaskTreeConfig = {
+    const config: TaskStateConfig = {
       appDir,
       projectDir: appDir,
-      treePath: state.path,
+      statePath: state.path,
       journalPath: paths.journalPath,
       worker: "owner",
       maxConcurrent: 1,
     };
-    saveTaskTree(config, {
+    saveTaskState(config, {
       groups: { canonical: { id: "canonical", parent_id: null, state: "backlog", children: [] } },
       tasks: {},
     });
@@ -139,7 +139,7 @@ describe("project runtime state paths", () => {
       tasks: { projectionEdit: { id: "projectionEdit", state: "done", children: [] } },
     });
 
-    expect(readTaskTree(config).tasks).toEqual({
+    expect(readTaskState(config).tasks).toEqual({
       canonical: { id: "canonical", parent_id: null, state: "backlog", children: [] },
     });
     const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
@@ -149,17 +149,17 @@ describe("project runtime state paths", () => {
 
   test("projects parent and owner from the task resource instead of a stale node", async () => {
     const appDir = await makeApp();
-    const state = ensureTaskTreeState(appDir);
+    const state = ensureTaskState(appDir);
     const paths = projectRuntimePaths(appDir);
-    const config: TaskTreeConfig = {
+    const config: TaskStateConfig = {
       appDir,
       projectDir: appDir,
-      treePath: state.path,
+      statePath: state.path,
       journalPath: paths.journalPath,
       worker: "app-owner",
       maxConcurrent: 1,
     };
-    saveTaskTree(config, {
+    saveTaskState(config, {
       groups: {
         root: { id: "root", parent_id: null, owner: "app-owner", children: ["work"] },
         stale: { id: "stale", parent_id: "root", children: ["work"] },

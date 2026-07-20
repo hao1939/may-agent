@@ -967,29 +967,29 @@ export type {
   ProjectAppTaskHandlerAdmissionOptions,
 } from "./project-task-handler-contract.js";
 
-// ── JSON task-tree helpers for project apps ──────────────────────────
+// ── Canonical task-state helpers and generated tree projection ──────
 export {
   isLeaf,
-  normalizeTaskTreeInPlace,
+  normalizeTaskStateInPlace,
   normalizeStringArray,
-  readTaskTree,
-  saveTaskTree,
+  readTaskState,
+  saveTaskState,
   setProjectLifecycle,
   taskRevision,
   taskState,
-  withTreeLock,
+  withTaskStateLock,
 } from "./project-task-tree-store.js";
-export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
-export type { TaskCompletionReceipt, TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
+export type { SaveTaskStateOptions } from "./project-task-tree-store.js";
+export type { TaskCompletionReceipt, TaskNode, TaskTree, TaskStateConfig } from "./project-task-tree-store.js";
 
 export {
-  ensureTaskTreeState,
+  ensureTaskState,
   loadProjectReadModel,
   projectRuntimePaths,
   resolveTaskTreePath,
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
-export type { EnsureTaskTreeStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
+export type { EnsureTaskStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
 
 export { projectAppExecutionPaths, resolveProjectAppOutputPaths } from "./project-output-paths.js";
 export type { ProjectAppExecutionPaths } from "./project-output-paths.js";

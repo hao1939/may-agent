@@ -118,6 +118,42 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("uses the model schema as the exact runtime admission boundary", () => {
+    const withUnknownResultField = admitProjectAppTaskHandlerResult(
+      { state: "converged", summary: "done", evidence: [], unexpected: true },
+      workflowOptions,
+    );
+    expect(withUnknownResultField.ok).toBe(false);
+
+    const withUnknownActionField = admitProjectAppTaskHandlerResult(
+      {
+        state: "converged",
+        summary: "created",
+        evidence: ["proof"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "work/exact",
+            outcome: "Do exact work",
+            acceptance: ["Exact work is done"],
+            unexpected: true,
+          },
+        ],
+      },
+      workflowOptions,
+    );
+    expect(withUnknownActionField.ok).toBe(false);
+
+    expect(
+      admitProjectAppTaskVerificationResult({
+        accepted: true,
+        summary: "verified",
+        evidence: [],
+        unexpected: true,
+      }).ok,
+    ).toBe(false);
+  });
+
   it("requires an exact typed Condition for waiting", () => {
     expect(
       admitProjectAppTaskHandlerResult(
