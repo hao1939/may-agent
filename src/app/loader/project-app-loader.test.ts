@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb } from "../../lib/requests";
+import { projectRuntimePaths } from "@may-agent/sdk";
 import {
   inferProjectAppOwner,
   installProjectApps,
@@ -881,7 +882,7 @@ describe("project app loader", () => {
         ),
       );
 
-      const treePath = join(f.appDir, ".state", "tasks", "tree.json");
+      const treePath = projectRuntimePaths(f.appDir).taskStatePath;
       const waiting = JSON.parse(readFileSync(treePath, "utf8"));
       waiting.conditions = {
         ...(waiting.conditions ?? {}),
