@@ -68,6 +68,46 @@ describe("project task read model", () => {
     });
   });
 
+  it("derives the live frontier without writing another project state", () => {
+    const model = buildProjectTasksReadModel(
+      {
+        root_task_id: "project",
+        receipts: { completed: { summary: "done" } },
+        tasks: {
+          project: { id: "project", state: "backlog", children: ["active", "review", "waiting", "ready", "held"] },
+          active: { id: "active", parent_id: "project", state: "active", goal: "Active work", children: [] },
+          review: { id: "review", parent_id: "project", state: "review", goal: "Review work", children: [] },
+          waiting: { id: "waiting", parent_id: "project", state: "blocked", goal: "Waiting work", children: [] },
+          ready: {
+            id: "ready",
+            parent_id: "project",
+            state: "backlog",
+            goal: "Ready work",
+            depends_on: ["completed"],
+            children: [],
+          },
+          held: {
+            id: "held",
+            parent_id: "project",
+            state: "backlog",
+            goal: "Held work",
+            depends_on: ["missing"],
+            children: [],
+          },
+        },
+      },
+      { path: "projects/example.app", treePath: ".state/tasks/tree.json" },
+    );
+
+    expect(model.frontier).toEqual({
+      active: ["active"],
+      review: ["review"],
+      waiting: ["waiting"],
+      runnable: ["ready"],
+      counts: { active: 1, review: 1, waiting: 1, runnable: 1 },
+    });
+  });
+
   it("returns actionable errors for malformed task trees", () => {
     const model = buildProjectTasksReadModel(
       { root_task_id: "missing", tasks: { project: { children: [7] } } },
