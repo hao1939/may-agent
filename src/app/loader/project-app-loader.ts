@@ -1107,6 +1107,7 @@ async function reconcileTask(input: {
           owner: intent.owner ?? descriptor.owner,
           ...(intent.workflow ? { workflow: intent.workflow } : {}),
           acceptance: intent.acceptance,
+          input: intent.input ?? {},
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           acceptanceBasis: accepted.acceptanceBasis,
@@ -1137,6 +1138,7 @@ async function reconcileTask(input: {
         attemptId: primary.attemptId,
         handler: primary.handler,
         disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
+        input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,
         actionsApplied: apply.actionsApplied,
@@ -1166,6 +1168,7 @@ async function reconcileTask(input: {
       attemptId: primary.attemptId,
       handler: primary.handler,
       disposition: "attention",
+      input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
     return [];
@@ -1175,6 +1178,7 @@ async function reconcileTask(input: {
     attemptId: primary.attemptId,
     handler: primary.handler,
     disposition: "owner-handoff",
+    input: intent.input ?? {},
     summary: primaryHandlerResult.summary,
   });
   return [intent.id];
@@ -1516,6 +1520,20 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             owner: descriptor.owner,
             maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
           });
+          const existingIntent = readProjectAppTaskIntent(config, targetedTaskId);
+          if (
+            existingIntent &&
+            descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))
+          ) {
+            const resolved = descriptor.app.tasks.resolve(event);
+            if (resolved?.id === targetedTaskId) {
+              observeProjectAppTaskIntent(config, {
+                intent: resolved,
+                appOwner: descriptor.owner,
+                trigger: event,
+              });
+            }
+          }
           const triggerResult = recordProjectAppTaskTrigger(config, targetedTaskId, event);
           if (triggerResult.kind === "recorded") {
             taskController.enqueue(targetedTaskId);
