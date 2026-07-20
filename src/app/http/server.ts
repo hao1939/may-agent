@@ -22,7 +22,14 @@ import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { createTerminalManager } from "@may-agent/terminal";
-import { loadProjectReadModel, projectRuntimePaths } from "@may-agent/sdk";
+import {
+  loadProjectReadModel,
+  projectRuntimePaths,
+  type ProjectTaskIntegrityFinding,
+  type ProjectTaskPhase,
+  type ProjectTaskProjectionItem,
+  type ProjectTaskTreeProjection,
+} from "@may-agent/sdk";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -190,49 +197,29 @@ export function projectPathsMatch(left: string | null | undefined, right: string
   return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
 }
 
-type ProjectTaskRecord = {
-  id?: string;
-  parent_id?: string | null;
-  state?: string;
-  kind?: string;
-  priority?: string;
-  owner?: string;
-  goal?: string;
-  children?: string[];
-  depends_on?: string[] | string;
-  outputs?: string[];
-  gates?: string[];
-  gate_status?: string;
-  blocker?: unknown;
-  conflict_scope?: string[] | string;
-  verification?: { verdict?: string; ts?: string };
-  attempts?: unknown[];
-  [key: string]: unknown;
-};
-
-type ProjectTaskTreeRecord = {
-  updated_at?: string;
-  active_task_id?: string | null;
-  active_task_ids?: string[];
-  max_concurrent?: number;
-  root_task_id?: string;
-  tasks?: Record<string, ProjectTaskRecord>;
-  receipts?: Record<string, unknown>;
-};
-
-const CANONICAL_TASK_STATES = new Set(["backlog", "active", "review", "done", "blocked"]);
+const PROJECT_TASK_PHASES = new Set<ProjectTaskPhase>(["pending", "running", "waiting", "attention", "converged"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export function normalizeProjectTaskState(task: { state?: unknown }): string {
-  const raw = String(task.state ?? "backlog");
-  if (CANONICAL_TASK_STATES.has(raw)) return raw;
-  return "unknown";
+export function normalizeProjectTaskPhase(task: { phase?: unknown }): ProjectTaskPhase | "unknown" {
+  const phase = String(task.phase ?? "");
+  return PROJECT_TASK_PHASES.has(phase as ProjectTaskPhase) ? (phase as ProjectTaskPhase) : "unknown";
 }
 
-export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: string; treePath: string }) {
+export type ProjectTasksReadModelOptions = {
+  path: string;
+  treePath: string;
+  measuredAt?: string;
+  project?: {
+    id: string;
+    owner?: string;
+    posture?: string;
+  };
+};
+
+export function buildProjectTasksReadModel(rawTree: unknown, opts: ProjectTasksReadModelOptions) {
   const errors: string[] = [];
   if (!isRecord(rawTree)) {
     return {
@@ -244,20 +231,21 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     };
   }
 
-  const tree = rawTree as ProjectTaskTreeRecord;
+  const tree = rawTree as unknown as ProjectTaskTreeProjection;
+  if (tree.schema_version !== 2) errors.push("schema_version: expected 2");
   if (tree.tasks !== undefined && !isRecord(tree.tasks)) {
     errors.push("tasks: expected object keyed by task id");
   }
   const rawTasks = isRecord(tree.tasks) ? tree.tasks : {};
   if (tree.tasks === undefined) errors.push("tasks: missing task map");
 
-  const tasks: Record<string, ProjectTaskRecord & { id: string; state: string }> = {};
+  const tasks: Record<string, ProjectTaskProjectionItem> = {};
   for (const [taskId, value] of Object.entries(rawTasks)) {
     if (!isRecord(value)) {
       errors.push(`tasks.${taskId}: expected object`);
       continue;
     }
-    const task = value as ProjectTaskRecord;
+    const task = value as unknown as ProjectTaskProjectionItem;
     const id = typeof task.id === "string" && task.id ? task.id : taskId;
     if (task.id !== undefined && task.id !== taskId) {
       errors.push(`tasks.${taskId}.id: expected "${taskId}", got "${String(task.id)}"`);
@@ -271,13 +259,20 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     ) {
       errors.push(`tasks.${taskId}.children: expected string[]`);
     }
-    const state = normalizeProjectTaskState(task);
+    if (!["group", "task"].includes(String(task.item_type))) {
+      errors.push(`tasks.${taskId}.item_type: expected group or task`);
+    }
+    if (task.item_type === "task" && normalizeProjectTaskPhase(task) === "unknown") {
+      errors.push(`tasks.${taskId}.phase: expected canonical task phase`);
+    }
+    if (task.item_type === "task" && !["achieve", "maintain"].includes(String(task.mode))) {
+      errors.push(`tasks.${taskId}.mode: expected achieve or maintain`);
+    }
     const children =
       Array.isArray(task.children) && task.children.every((child) => typeof child === "string") ? task.children : [];
     tasks[taskId] = {
       ...task,
       id,
-      state,
       children,
     };
   }
@@ -302,64 +297,47 @@ export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: strin
     };
   }
 
-  const statusCounts: Record<string, number> = {};
-  const kindCounts: Record<string, number> = {};
-  for (const task of Object.values(tasks)) {
-    const state = task.state ?? "unknown";
-    const kind = task.kind ?? "work";
-    statusCounts[state] = (statusCounts[state] ?? 0) + 1;
-    kindCounts[kind] = (kindCounts[kind] ?? 0) + 1;
-  }
+  const resources = Object.values(tasks).filter((task) => task.item_type === "task");
+  const count = (predicate: (task: ProjectTaskProjectionItem) => boolean): number => resources.filter(predicate).length;
+  const stats = {
+    groups: Object.values(tasks).filter((task) => task.item_type === "group").length,
+    resources: resources.length,
+    attention: count((task) => task.phase === "attention"),
+    running: count((task) => task.phase === "running"),
+    ready: count((task) => task.readiness?.state === "ready"),
+    pending: count((task) => task.phase === "pending" && task.readiness?.state !== "ready"),
+    waiting: count((task) => task.phase === "waiting"),
+    healthyStanding: count(
+      (task) => task.mode === "maintain" && task.phase === "converged" && task.synchronized === true,
+    ),
+  };
 
-  const receiptIds = new Set(Object.keys(isRecord(tree.receipts) ? tree.receipts : {}));
-  const executableLeaves = Object.values(tasks).filter(
-    (task) => (task.children?.length ?? 0) === 0 && typeof task.goal === "string" && task.goal.trim(),
-  );
-  const idsInState = (states: string[]) =>
-    executableLeaves
-      .filter((task) => states.includes(task.state))
-      .map((task) => task.id)
-      .sort();
-  const active = idsInState(["active"]);
-  const review = idsInState(["review"]);
-  const waiting = idsInState(["blocked"]);
-  const runnable = executableLeaves
-    .filter((task) => task.state === "backlog")
-    .filter((task) => {
-      const dependencies = Array.isArray(task.depends_on)
-        ? task.depends_on
-        : typeof task.depends_on === "string" && task.depends_on
-          ? [task.depends_on]
-          : [];
-      return dependencies.every((dependencyId) => receiptIds.has(dependencyId) || tasks[dependencyId]?.state === "done");
-    })
-    .map((task) => task.id)
-    .sort();
+  const integrity = Array.isArray(tree.integrity)
+    ? tree.integrity.filter((finding): finding is ProjectTaskIntegrityFinding => isRecord(finding))
+    : [];
 
   return {
     available: true,
+    schemaVersion: 2,
     path: opts.path,
     treePath: opts.treePath,
-    updated_at: tree.updated_at ?? null,
-    root_task_id: rootTaskId,
-    active_task_id: tree.active_task_id ?? null,
-    active_task_ids: Array.isArray(tree.active_task_ids) ? tree.active_task_ids : [],
-    max_concurrent: tree.max_concurrent ?? null,
-    statusCounts,
-    kindCounts,
-    frontier: {
-      active,
-      review,
-      waiting,
-      runnable,
-      counts: {
-        active: active.length,
-        review: review.length,
-        waiting: waiting.length,
-        runnable: runnable.length,
-      },
+    measuredAt: opts.measuredAt ?? new Date().toISOString(),
+    taskStateUpdatedAt: tree.updated_at ?? null,
+    rootId: rootTaskId,
+    project: {
+      id: opts.project?.id ?? tree.project ?? "",
+      path: opts.path,
+      owner: opts.project?.owner ?? null,
+      posture: opts.project?.posture ?? tree.project_lifecycle ?? null,
+      maxConcurrent: tree.max_concurrent,
     },
-    tasks,
+    stats,
+    activeTaskIds: Array.isArray(tree.active_task_ids) ? tree.active_task_ids : [],
+    items: tasks,
+    conditions: isRecord(tree.conditions) ? tree.conditions : {},
+    completedDependencies: Array.isArray(tree.satisfied_dependency_ids) ? tree.satisfied_dependency_ids : [],
+    integrity,
+    recentCompletions: [],
   };
 }
 
@@ -554,6 +532,22 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function projectAppDirForPath(path: string): string | null {
     return projectAppDirForName(projectNameFromPath(path));
+  }
+
+  function projectTaskIdentity(path: string, appDir: string): { id: string; owner?: string; posture?: string } {
+    const fallback = { id: projectNameFromPath(path) };
+    const projectPath = resolve(appDir, "project.json");
+    if (!existsSync(projectPath)) return fallback;
+    try {
+      const project = JSON.parse(readFileSync(projectPath, "utf-8")) as Record<string, unknown>;
+      return {
+        id: typeof project.id === "string" && project.id.trim() ? project.id.trim().replace(/\.app$/, "") : fallback.id,
+        ...(typeof project.owner === "string" && project.owner.trim() ? { owner: project.owner.trim() } : {}),
+        ...(typeof project.status === "string" && project.status.trim() ? { posture: project.status.trim() } : {}),
+      };
+    } catch {
+      return fallback;
+    }
   }
 
   function extractProjectAppActions(appDir: string | null): Array<Record<string, unknown>> {
@@ -2374,7 +2368,28 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     try {
       const tree = JSON.parse(readFileSync(treePath, "utf-8"));
-      return json(buildProjectTasksReadModel(tree, { path, treePath: ".state/tasks/tree.json" }));
+      const model = buildProjectTasksReadModel(tree, {
+        path,
+        treePath: ".state/tasks/tree.json",
+        project: projectTaskIdentity(path, appDir),
+      });
+      if (!model.available) return json(model);
+      const liveIds = new Set(Object.keys(model.items ?? {}));
+      let recentCompletions: ReturnType<typeof projectTaskCompletionFromRecord>[] = [];
+      let completionTraceError: string | null = null;
+      try {
+        recentCompletions = projectTaskTimeline(model.project?.id ?? projectNameFromPath(path), undefined, 200)
+          .filter((record) => record.eventType === "project.task.reconciled" && record.disposition === "converged")
+          .filter((record) => !liveIds.has(record.taskId))
+          .filter(
+            (record, index, records) => records.findIndex((candidate) => candidate.taskId === record.taskId) === index,
+          )
+          .slice(0, 12)
+          .map(projectTaskCompletionFromRecord);
+      } catch (error) {
+        completionTraceError = error instanceof Error ? error.message : String(error);
+      }
+      return json({ ...model, recentCompletions, completionTraceError });
     } catch (e) {
       return json({
         available: false,
@@ -2384,6 +2399,167 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         errors: [e instanceof Error ? e.message : String(e)],
       });
     }
+  }
+
+  type ProjectTaskTimelineRecord = {
+    eventId: number;
+    eventType: string;
+    taskId: string;
+    timestamp: string;
+    disposition: string | null;
+    summary: string | null;
+    evidence: string[];
+    generation: number | null;
+    attemptId: string | null;
+    sessionId: string | null;
+    workflowRunId: string | null;
+    handler: string | null;
+    outcome: string | null;
+    mode: string | null;
+    owner: string | null;
+    acceptance: string[];
+    acceptanceBasis: unknown;
+  };
+
+  function projectTaskTimeline(projectId: string, taskId?: string, limit = 20): ProjectTaskTimelineRecord[] {
+    const boundedLimit = Math.max(1, Math.min(Math.trunc(limit), 200));
+    const sql = `SELECT id, event_type, data, timestamp, task_id, attempt_id, session_id,
+                        workflow_run_id, handler
+                   FROM events
+                  WHERE project_id = ?
+                    AND event_type LIKE 'project.task.%'
+                    ${taskId ? "AND task_id = ?" : ""}
+               ORDER BY timestamp DESC, id DESC
+                  LIMIT ?`;
+    const rows = (
+      taskId ? _db().prepare(sql).all(projectId, taskId, boundedLimit) : _db().prepare(sql).all(projectId, boundedLimit)
+    ) as Array<Record<string, unknown>>;
+    return rows.map((row) => {
+      const data = parseEventData(row.data);
+      const stringArray = (value: unknown): string[] =>
+        Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+      const stringValue = (primary: unknown, fallback?: unknown): string | null => {
+        const value = typeof primary === "string" && primary ? primary : fallback;
+        return typeof value === "string" && value ? value : null;
+      };
+      const generation = Number(data.generation);
+      const timestamp = Number(row.timestamp);
+      return {
+        eventId: Number(row.id),
+        eventType: String(row.event_type ?? ""),
+        taskId: stringValue(row.task_id, data.taskId) ?? "",
+        timestamp: Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : String(row.timestamp ?? ""),
+        disposition: stringValue(data.disposition),
+        summary: stringValue(data.summary),
+        evidence: stringArray(data.evidence),
+        generation: Number.isFinite(generation) ? generation : null,
+        attemptId: stringValue(row.attempt_id, data.attemptId),
+        sessionId: stringValue(row.session_id, data.sessionId),
+        workflowRunId: stringValue(row.workflow_run_id, data.workflowRunId),
+        handler: stringValue(row.handler, data.handler),
+        outcome: stringValue(data.outcome),
+        mode: stringValue(data.mode),
+        owner: stringValue(data.owner),
+        acceptance: stringArray(data.acceptance),
+        acceptanceBasis: data.acceptanceBasis ?? null,
+      };
+    });
+  }
+
+  function projectTaskCompletionFromRecord(record: ProjectTaskTimelineRecord) {
+    return {
+      taskId: record.taskId,
+      outcome: record.outcome,
+      summary: record.summary,
+      evidence: record.evidence,
+      generation: record.generation,
+      owner: record.owner,
+      mode: record.mode,
+      acceptance: record.acceptance,
+      acceptanceBasis: record.acceptanceBasis,
+      handler: record.handler,
+      attemptId: record.attemptId,
+      sessionId: record.sessionId,
+      workflowRunId: record.workflowRunId,
+      completedAt: record.timestamp,
+    };
+  }
+
+  function handleProjectTask(url: URL): Response {
+    const path = url.searchParams.get("path");
+    const taskId = url.searchParams.get("taskId")?.trim();
+    if (!path) return json({ error: "path required" }, 400);
+    if (!taskId) return json({ error: "taskId required" }, 400);
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
+
+    const appDir = projectAppDirForPath(path);
+    if (!appDir) return json({ error: "Project has no Agent App task attachment." }, 404);
+    const identity = projectTaskIdentity(path, appDir);
+    const treePath = projectRuntimePaths(appDir).taskTreePath;
+    let model: ReturnType<typeof buildProjectTasksReadModel> | null = null;
+    if (existsSync(treePath)) {
+      try {
+        model = buildProjectTasksReadModel(JSON.parse(readFileSync(treePath, "utf-8")), {
+          path,
+          treePath: ".state/tasks/tree.json",
+          project: identity,
+        });
+      } catch {
+        model = null;
+      }
+    }
+
+    let timeline: ProjectTaskTimelineRecord[] = [];
+    let traceError: string | null = null;
+    try {
+      timeline = projectTaskTimeline(identity.id, taskId, 20);
+    } catch (error) {
+      traceError = error instanceof Error ? error.message : String(error);
+    }
+
+    if (model?.available && model.items?.[taskId]) {
+      const items = model.items;
+      const integrity = model.integrity ?? [];
+      const conditions = model.conditions ?? {};
+      const item = items[taskId];
+      const missingDependencyIds = new Set(
+        integrity
+          .filter((finding) => finding.task_id === taskId && finding.code === "missing-dependency")
+          .flatMap((finding) => finding.related_ids),
+      );
+      const completedDependencies = new Set(model.completedDependencies ?? []);
+      const dependencies = (item.depends_on ?? []).map((id) => ({
+        id,
+        disposition: items[id]
+          ? "live"
+          : completedDependencies.has(id)
+            ? "satisfied"
+            : missingDependencyIds.has(id)
+              ? "structurally-invalid"
+              : "missing",
+      }));
+      return json({
+        kind: "live",
+        task: {
+          ...item,
+          conditions: (item.condition_ids ?? []).map((id) => ({ id, condition: conditions[id] ?? null })),
+          dependencies,
+          timeline,
+          traceError,
+        },
+      });
+    }
+
+    const completionRecord = timeline.find(
+      (record) => record.eventType === "project.task.reconciled" && record.disposition === "converged",
+    );
+    if (completionRecord) {
+      return json({
+        kind: "completed",
+        completion: { ...projectTaskCompletionFromRecord(completionRecord), timeline, traceError },
+      });
+    }
+    return json({ error: "Task is neither live nor present in bounded completion evidence." }, 404);
   }
 
   /**
@@ -3751,6 +3927,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
       if (url.pathname === "/api/projects/tasks") return handleProjectTasks(url);
+      if (url.pathname === "/api/projects/task") return handleProjectTask(url);
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/lineage") return handleProjectLineage(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);

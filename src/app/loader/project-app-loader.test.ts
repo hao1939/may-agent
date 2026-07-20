@@ -523,9 +523,10 @@ describe("project app loader", () => {
       expect(result.entries).toBe(0);
       expect(result.installed[0].reconciliationPaused).toBe(true);
       expect(crons.get("sample-owner")?.getEntries()).toEqual([]);
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.tasks["work/orphan"].state).toBe("backlog");
-      expect(tree.resources["work/orphan"].status.phase).toBe("pending");
+      expect(tree.tasks["work/orphan"].phase).toBe("pending");
+      expect(state.resources["work/orphan"].status.phase).toBe("pending");
       expect(tree.active_task_ids).not.toContain("work/orphan");
     } finally {
       closeDb(f.persistDir);
@@ -587,10 +588,10 @@ describe("project app loader", () => {
         source: "project-app-task-owner",
         timeout: 15 * 60_000,
       });
-      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/workflow"].acceptanceBasis.method).toBe("workflow-contract");
-      expect(tree.receipts["work/workflow"].acceptanceBasis.evidence).toContain("proof");
-      expect(tree.receipts["work/owner"]).toMatchObject({
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.receipts["work/workflow"].acceptanceBasis.method).toBe("workflow-contract");
+      expect(state.receipts["work/workflow"].acceptanceBasis.evidence).toContain("proof");
+      expect(state.receipts["work/owner"]).toMatchObject({
         acceptanceBasis: { method: "owner-judgment", evidence: ["owner proof"] },
       });
     } finally {
@@ -806,9 +807,10 @@ describe("project app loader", () => {
           completedPasses + 1,
       );
 
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.resources["work/target"]).toBeTruthy();
-      expect(tree.resources["work/must-not-resolve"]).toBeUndefined();
+      expect(state.resources["work/target"]).toBeTruthy();
+      expect(state.resources["work/must-not-resolve"]).toBeUndefined();
       expect(tree.tasks["work/must-not-resolve"]).toBeUndefined();
       expect(
         events.filter(
@@ -885,10 +887,11 @@ describe("project app loader", () => {
 
       expect(ownerCalls).toHaveLength(1);
       expect(ownerOptions[0]).toMatchObject({ projectId: "sample" });
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/owner-failed-action"]).toBeTruthy();
+      expect(state.receipts["work/owner-failed-action"]).toBeTruthy();
       expect(tree.tasks["work/followup"]).toMatchObject({
-        state: "backlog",
+        phase: "pending",
         owner: "sample-owner",
         parent_id: "operations",
         depends_on: ["external-ready"],
@@ -1016,8 +1019,8 @@ describe("project app loader", () => {
             event.data?.handler === "owner:sample-owner",
         ),
       ).toHaveLength(1);
-      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.receipts["work/owner-needed"]).toMatchObject({
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.receipts["work/owner-needed"]).toMatchObject({
         handler: "owner:sample-owner",
         workflow: "owner-needed",
         failureFingerprints: ["needs-owner"],
@@ -1058,15 +1061,16 @@ describe("project app loader", () => {
           ).length === 2,
       );
 
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       for (const taskId of ["work/maintain-a", "work/maintain-b"]) {
-        expect(tree.tasks[taskId]).toMatchObject({ state: "backlog", workflow: "worker" });
-        expect(tree.resources[taskId]).toMatchObject({
+        expect(tree.tasks[taskId]).toMatchObject({ phase: "converged", workflow: "worker" });
+        expect(state.resources[taskId]).toMatchObject({
           spec: { mode: "maintain", workflow: "worker" },
           status: { phase: "converged", observedGeneration: 1 },
         });
       }
-      const attempts = Object.values(tree.attempts).filter((attempt: any) =>
+      const attempts = Object.values(state.attempts).filter((attempt: any) =>
         ["work/maintain-a", "work/maintain-b"].includes(attempt.taskId),
       ) as any[];
       expect(attempts).toHaveLength(2);
@@ -1335,14 +1339,15 @@ describe("project app loader", () => {
         bus,
         agentCrons: new Map(),
       });
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(tree.tasks["work/orphan"]).toMatchObject({
-        state: "backlog",
+        phase: "pending",
         summary:
           "Interrupted reconciliation work/orphan cannot resume because its previous runtime did not persist the trigger packet; retrying from current task evidence",
       });
-      expect(tree.resources["work/orphan"].status.phase).toBe("pending");
-      expect(tree.resources["work/orphan"].status.currentAttemptId).toBeUndefined();
+      expect(state.resources["work/orphan"].status.phase).toBe("pending");
+      expect(state.resources["work/orphan"].status.currentAttemptId).toBeUndefined();
       expect(tree.active_task_ids).not.toContain("work/orphan");
       expect(events).not.toContainEqual(
         expect.objectContaining({

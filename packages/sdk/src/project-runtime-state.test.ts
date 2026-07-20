@@ -9,7 +9,12 @@ import {
   projectRuntimePaths,
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
-import { readTaskState, saveTaskState, type TaskStateConfig } from "./project-task-tree-store.js";
+import {
+  readTaskState,
+  refreshProjectTaskTreeProjection,
+  saveTaskState,
+  type TaskStateConfig,
+} from "./project-task-tree-store.js";
 
 async function makeApp(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "may-sdk-runtime-state-"));
@@ -87,6 +92,40 @@ describe("project runtime state paths", () => {
     expect(existsSync(paths.taskTreePath)).toBe(false);
   });
 
+  test("refreshes the disposable projection without rewriting canonical state", async () => {
+    const appDir = await makeApp();
+    const paths = projectRuntimePaths(appDir);
+    await writeJson(paths.taskStatePath, {
+      project: "sample",
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null, children: ["work"] } },
+      resources: {
+        work: {
+          metadata: { id: "work", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "root", outcome: "Do work", acceptance: ["done"], mode: "achieve" },
+          status: { observedGeneration: 0, phase: "pending", updatedAt: "2026-07-20T00:00:00.000Z" },
+        },
+      },
+    });
+    const before = await readFile(paths.taskStatePath, "utf8");
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: appDir,
+      statePath: paths.taskStatePath,
+      journalPath: paths.journalPath,
+      worker: "owner",
+      maxConcurrent: 1,
+    };
+
+    refreshProjectTaskTreeProjection(config);
+
+    expect(await readFile(paths.taskStatePath, "utf8")).toBe(before);
+    expect(JSON.parse(await readFile(paths.taskTreePath, "utf8"))).toMatchObject({
+      schema_version: 2,
+      tasks: { work: { phase: "pending", outcome: "Do work" } },
+    });
+  });
+
   test("writes structural groups to canonical state and full nodes to the generated tree", async () => {
     const appDir = await makeApp();
     const state = ensureTaskState(appDir);
@@ -116,6 +155,165 @@ describe("project runtime state paths", () => {
     expect(canonical.groups.root).toMatchObject({ id: "root" });
     expect(projection.groups).toBeUndefined();
     expect(projection.tasks.root).toMatchObject({ id: "root", children: [] });
+  });
+
+  test("writes an explicit current-focused projection without canonical history payloads", async () => {
+    const appDir = await makeApp();
+    const state = ensureTaskState(appDir);
+    const paths = projectRuntimePaths(appDir);
+    const config: TaskStateConfig = {
+      appDir,
+      projectDir: appDir,
+      statePath: state.path,
+      journalPath: paths.journalPath,
+      worker: "owner",
+      maxConcurrent: 1,
+    };
+
+    saveTaskState(
+      config,
+      {
+        version: 3,
+        project: "sample",
+        project_lifecycle: "active",
+        root_task_id: "root",
+        groups: { root: { id: "root", parent_id: null, owner: "owner" } },
+        resources: {
+          consumer: {
+            metadata: { id: "consumer", generation: 2, resourceVersion: 7 },
+            spec: {
+              parentId: "root",
+              outcome: "Consume the completed dependency",
+              acceptance: ["Dependency is consumed"],
+              mode: "maintain",
+              dependsOn: ["completed-dependency", "converged-dependency", "live-dependency"],
+            },
+            status: {
+              observedGeneration: 1,
+              phase: "running",
+              currentAttemptId: "attempt-active",
+              summary: "Working",
+              evidence: ["session:s_active"],
+              updatedAt: "2026-07-20T00:00:00.000Z",
+            },
+          },
+          "converged-dependency": {
+            metadata: { id: "converged-dependency", generation: 1, resourceVersion: 2 },
+            spec: {
+              parentId: "root",
+              outcome: "Maintain the live dependency",
+              acceptance: ["Dependency is healthy"],
+              mode: "maintain",
+            },
+            status: {
+              observedGeneration: 1,
+              phase: "converged",
+              updatedAt: "2026-07-20T00:00:00.000Z",
+            },
+          },
+        },
+        attempts: {
+          "attempt-old": {
+            metadata: { id: "attempt-old", resourceVersion: 2 },
+            taskId: "consumer",
+            taskGeneration: 1,
+            specHash: "old",
+            owner: "owner",
+            handler: "owner:owner",
+            runtimeId: "old-runtime",
+            state: "completed",
+            reason: "task-controller",
+            startedAt: "2026-07-19T00:00:00.000Z",
+            finishedAt: "2026-07-19T00:01:00.000Z",
+          },
+          "attempt-active": {
+            metadata: { id: "attempt-active", resourceVersion: 1 },
+            taskId: "consumer",
+            taskGeneration: 2,
+            specHash: "current",
+            owner: "owner",
+            handler: "workflow:consumer",
+            runtimeId: "current-runtime",
+            state: "running",
+            reason: "event",
+            startedAt: "2026-07-20T00:00:00.000Z",
+          },
+        },
+        taskTriggers: {
+          consumer: {
+            taskId: "consumer",
+            taskGeneration: 2,
+            resourceVersion: 7,
+            event: { type: "sample.ready", eventId: 42 },
+            observedAt: "2026-07-20T00:00:00.000Z",
+          },
+        },
+        receipts: {
+          "completed-dependency": {
+            metadata: { id: "completed-dependency", generation: 1, resourceVersion: 1 },
+            specHash: "completed",
+            parentId: "root",
+            outcome: "Complete dependency",
+            acceptance: ["Completed"],
+            owner: "owner",
+            handler: "owner:owner",
+            summary: "Completed",
+            evidence: ["proof"],
+            acceptanceBasis: { method: "owner-judgment", evidence: ["proof"] },
+            failureFingerprints: [],
+            completedAt: "2026-07-19T00:00:00.000Z",
+          },
+        },
+        conditions: {},
+        tasks: {},
+      },
+      { projectLifecycleReason: "activate projection test" },
+    );
+
+    const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
+    const projection = JSON.parse(await readFile(paths.taskTreePath, "utf8"));
+
+    expect(canonical.attempts).toHaveProperty("attempt-old");
+    expect(canonical.attempts).toHaveProperty("attempt-active");
+    expect(canonical.receipts).toHaveProperty("completed-dependency");
+    expect(canonical.taskTriggers).toHaveProperty("consumer");
+    expect(projection).not.toHaveProperty("resources");
+    expect(projection).not.toHaveProperty("attempts");
+    expect(projection).not.toHaveProperty("receipts");
+    expect(projection).not.toHaveProperty("taskTriggers");
+    expect(projection).toMatchObject({ schema_version: 2, max_concurrent: 1 });
+    expect(projection.satisfied_dependency_ids).toEqual(["completed-dependency", "converged-dependency"]);
+    expect(projection.tasks.consumer).toMatchObject({
+      item_type: "task",
+      outcome: "Consume the completed dependency",
+      mode: "maintain",
+      phase: "running",
+      generation: 2,
+      observed_generation: 1,
+      synchronized: false,
+      readiness: {
+        state: "not-applicable",
+        reason: "Task phase is running",
+      },
+      summary: "Working",
+      evidence: ["session:s_active"],
+      attempt_count: 2,
+      active_attempt: {
+        id: "attempt-active",
+        handler: "workflow:consumer",
+        state: "running",
+        reason: "event",
+        started_at: "2026-07-20T00:00:00.000Z",
+      },
+    });
+    expect(projection.tasks.consumer).not.toHaveProperty("state");
+    expect(projection.tasks.consumer).not.toHaveProperty("reconcile_mode");
+    expect(projection.integrity).toContainEqual({
+      code: "missing-dependency",
+      task_id: "consumer",
+      related_ids: ["live-dependency"],
+      message: "Dependencies are missing: live-dependency",
+    });
   });
 
   test("treats edits to the generated tree projection as non-authoritative", async () => {
@@ -188,7 +386,13 @@ describe("project runtime state paths", () => {
     const projection = JSON.parse(await readFile(paths.taskTreePath, "utf8"));
     expect(canonical.tasks).toBeUndefined();
     expect(canonical.groups.work).toBeUndefined();
-    expect(projection.tasks.work).toMatchObject({ parent_id: "root", owner: "resource-owner" });
+    expect(projection.tasks.work).toMatchObject({
+      item_type: "task",
+      parent_id: "root",
+      owner: "resource-owner",
+      phase: "pending",
+      readiness: { state: "ready" },
+    });
     expect(projection.tasks.root.children).toContain("work");
     expect(projection.tasks.stale.children).not.toContain("work");
   });
