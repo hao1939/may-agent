@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { basename } from "node:path";
 import {
   ensureTaskState,
   isTypedProjectAppConditionSubject,
@@ -97,6 +98,33 @@ function stableValue(value: unknown): unknown {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, entry]) => [key, stableValue(entry)]),
   );
+}
+
+function projectIdFromAppDir(appDir: string): string {
+  const name = basename(appDir.replace(/\\/g, "/"));
+  return name.endsWith(".app") ? name.slice(0, -4) : name;
+}
+
+function syntheticAttemptTrigger(
+  config: TaskStateConfig,
+  taskId: string,
+  reason: string | undefined,
+): Record<string, unknown> {
+  const project = projectIdFromAppDir(config.appDir) || "project-app";
+  const normalizedReason = typeof reason === "string" && reason.trim() ? reason.trim() : "task-controller";
+  return {
+    type: "project.task.tick",
+    source: `project-app:${project}:task-controller`,
+    target: { project, taskId },
+    reason: normalizedReason,
+    data: {
+      project,
+      taskId,
+      task_id: taskId,
+      reason: normalizedReason,
+      synthetic: "controller-recovery-trigger",
+    },
+  };
 }
 
 export function projectAppTaskSpecHash(intent: ProjectAppTaskIntent, effectiveOwner?: string): string {
@@ -1054,7 +1082,7 @@ export function claimObservedProjectAppTask(
     if (canRecoverPreviousRuntime && previousAttempt) {
       finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
     }
-    const trigger = pendingTrigger?.event ?? previousAttempt?.trigger;
+    const trigger = pendingTrigger?.event ?? previousAttempt?.trigger ?? syntheticAttemptTrigger(config, task.id, input.reason);
     const specHash = projectAppTaskSpecHash(intent, owner);
     const attempt: ProjectAppTaskAttempt = {
       metadata: { id: attemptId, resourceVersion: 1 },
