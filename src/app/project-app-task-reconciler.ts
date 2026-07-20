@@ -73,6 +73,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
+  if (!trigger) return false;
+  const data = isRecord(trigger.data) ? trigger.data : {};
+  return trigger.overrideWait === true || data.overrideWait === true;
+}
+
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue);
   if (!value || typeof value !== "object") return value;
@@ -674,7 +680,13 @@ export function observeProjectAppTaskIntent(
     }
     tree.resources = { ...(tree.resources ?? {}), [input.intent.id]: resource };
     const task = upsertTask(tree, resource, owner);
-    if (input.trigger) {
+    const suppressTrigger =
+      input.trigger &&
+      resource.status.phase === "waiting" &&
+      openTaskConditionIds(tree, task).length > 0 &&
+      !hasSatisfiedTaskCondition(tree, task.id) &&
+      !triggerOverridesWait(input.trigger);
+    if (input.trigger && !suppressTrigger) {
       const previousTrigger = tree.taskTriggers?.[task.id];
       tree.taskTriggers = {
         ...(tree.taskTriggers ?? {}),
@@ -834,6 +846,7 @@ export function claimObservedProjectAppTask(
     if (
       resource.status.phase === "waiting" &&
       openConditionIds.length > 0 &&
+      !pendingTrigger &&
       !hasSatisfiedTaskCondition(tree, task.id)
     ) {
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
@@ -928,6 +941,43 @@ function matchingTask(
   return { task, resource, attempt };
 }
 
+export function releaseStaleProjectAppTaskResult(
+  config: TaskTreeConfig,
+  claim: ProjectAppTaskClaim,
+  summary = "Stale reconciliation result was rejected; retrying from current task evidence",
+): { status: "released" | "superseded" | "missing"; taskId: string } {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[claim.taskId];
+    const resource = tree.resources?.[claim.taskId];
+    if (!task || !resource) return { status: "missing", taskId: claim.taskId };
+    if (resource.status.currentAttemptId !== claim.attemptId) {
+      return { status: "superseded", taskId: claim.taskId };
+    }
+    const attempt = tree.attempts?.[claim.attemptId];
+    if (!attempt || attempt.state !== "running") {
+      return { status: "superseded", taskId: claim.taskId };
+    }
+
+    const now = new Date().toISOString();
+    finishAttempt(tree, resource, "interrupted", summary, now);
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "stale-reconciliation-result";
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, claim.owner);
+    refreshActiveTaskProjection(tree);
+    pruneTaskAttempts(tree);
+    saveTaskTree(config, tree);
+    return { status: "released", taskId: claim.taskId };
+  });
+}
+
 function pruneCompletionReceipts(tree: TaskTree, limit = 1_000): void {
   const entries = Object.entries(tree.receipts ?? {});
   if (entries.length <= limit) return;
@@ -985,6 +1035,13 @@ function mutableActionResource(
   return { task, resource };
 }
 
+function actionTargetAlreadyReceipted(
+  tree: TaskTree,
+  action: Exclude<ProjectAppTaskAction, { kind: "create-task" }>,
+): boolean {
+  return Boolean(!tree.tasks[action.taskId] && !tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
+}
+
 function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): void {
   if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
   const identities = new Set<string>();
@@ -1039,16 +1096,6 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
     }
 
     requireExpectedGeneration(action.expectedGeneration, `Handler ${action.kind} action ${action.taskId}`);
-    mutableActionResource(tree, action);
-    if (
-      action.kind === "update-task" &&
-      action.goal === undefined &&
-      action.mode === undefined &&
-      action.outputs === undefined &&
-      action.acceptance === undefined
-    ) {
-      throw new Error(`Handler update for ${action.taskId} contains no change`);
-    }
     if (action.kind === "update-task" && action.goal !== undefined) {
       requireNonEmptyString(action.goal, `Handler update for ${action.taskId} goal`);
     }
@@ -1066,7 +1113,20 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
     }
     if (action.kind === "unblock-task") {
       requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
-      if (mutableActionResource(tree, action).resource.status.phase !== "waiting") {
+    }
+    if (actionTargetAlreadyReceipted(tree, action)) continue;
+    const { resource } = mutableActionResource(tree, action);
+    if (
+      action.kind === "update-task" &&
+      action.goal === undefined &&
+      action.mode === undefined &&
+      action.outputs === undefined &&
+      action.acceptance === undefined
+    ) {
+      throw new Error(`Handler update for ${action.taskId} contains no change`);
+    }
+    if (action.kind === "unblock-task") {
+      if (resource.status.phase !== "waiting") {
         throw new Error(`Handler action task ${action.taskId} is not blocked`);
       }
     }
@@ -1121,6 +1181,10 @@ function applyTaskActions(
   for (const action of actions) {
     if (action.kind !== "create-task" && action.taskId === claim.taskId) {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
+    }
+    if (action.kind !== "create-task" && actionTargetAlreadyReceipted(tree, action)) {
+      applied.push(`already completed ${action.taskId}`);
+      continue;
     }
 
     switch (action.kind) {
