@@ -370,7 +370,9 @@ async function sendProjectSteering() {
     const body = await res.json().catch(() => ({}));
     if (!res.ok || body.ok === false) throw new Error(body.error || `HTTP ${res.status}`);
     if (textarea) textarea.value = "";
-    if (status) status.textContent = body.accepted ? "Accepted for asynchronous handling. Await later reconciliation evidence." : "Queued for asynchronous handling. Await later reconciliation evidence.";
+    if (status) status.textContent = body.eventId
+      ? `Recorded as event ${body.eventId}. Await later delivery and reconciliation evidence.`
+      : "Request sent, but no durable event receipt was returned.";
   } catch (error) {
     if (status) status.textContent = `Failed: ${error?.message || String(error)}`;
   }

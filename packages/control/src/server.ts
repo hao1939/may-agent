@@ -272,9 +272,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }
 
         if (normalized.kind === "control" && normalized.command === "subscribe") {
-          const sessions = frame.sessions as string[] | undefined;
+          const sessions = frame.sessions;
           const client = clients.get(socket);
-          if (client && Array.isArray(sessions)) {
+          if (client && Array.isArray(sessions) && sessions.every((session) => typeof session === "string")) {
             if (sessions.includes("*")) {
               client.filter = null;
               client.chatMode = false;
@@ -289,7 +289,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             client.subscribed = true;
             writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
-            writeFrame(socket, { type: "error", command: "subscribe", message: "sessions must be an array" });
+            writeFrame(socket, {
+              type: "error",
+              command: "subscribe",
+              message: "sessions must be an array of strings",
+            });
           }
           continue;
         }
@@ -435,26 +439,33 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
   };
   process.on("exit", cleanup);
 
-  await new Promise<void>((resolve, reject) => {
-    const onListenError = (err: Error) => {
-      onInfo?.(`[control] Socket error: ${err.message}`);
-      reject(err);
-    };
-    server.once("error", onListenError);
-    server.listen(socketPath, () => {
-      server.off("error", onListenError);
-      server.on("error", (err) => {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const onListenError = (err: Error) => {
         onInfo?.(`[control] Socket error: ${err.message}`);
+        reject(err);
+      };
+      server.once("error", onListenError);
+      server.listen(socketPath, () => {
+        server.off("error", onListenError);
+        server.on("error", (err) => {
+          onInfo?.(`[control] Socket error: ${err.message}`);
+        });
+        try {
+          chmodSync(socketPath, 0o600);
+          onInfo?.(`[control] Listening on ${socketPath}`);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
       });
-      try {
-        chmodSync(socketPath, 0o600);
-        onInfo?.(`[control] Listening on ${socketPath}`);
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
     });
-  });
+  } catch (error) {
+    process.off("exit", cleanup);
+    core.close();
+    cleanup();
+    throw error;
+  }
 
   return {
     close: () => {

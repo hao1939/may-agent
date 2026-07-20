@@ -274,6 +274,14 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("rejects subscription filters containing non-string session ids", async () => {
+    const core = createCore();
+
+    await expect(
+      sendSocketCommand(core.endpoint, { type: "subscribe", sessions: ["s_1", 42] }),
+    ).rejects.toThrow("sessions must be an array of strings");
+  });
+
   it("does not broadcast events before a client subscribes", async () => {
     const core = createCore();
     const stream = (core.endpoint as () => Duplex)();
