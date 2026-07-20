@@ -1,18 +1,15 @@
 # Proposal: App Task Reconciliation Model
 
-**Design status:** Canonical convergence target.
-**Implementation status:** Core reconciliation is implemented: active apps use
-one resolver, one deduplicating controller queue, convention workflow
-discovery, and owner fallback. Canonical state/seed migration, handler-contract
-cleanup, direct/hosted preparation parity, and deployed-binary parity remain
-convergence work; the migration is not complete while legacy task nodes or
-compatibility readers remain.
+**Design status:** Historical accepted decision record; the durable contract is
+now [Task Resource Engine](../2a-design/task-tree-engine.md).
+**Implementation status:** Implemented, migrated, deployed, and live-verified
+across all five Agent Apps.
 
 Imperative `onEvent` remains only for deterministic filtering or translation;
 it does not execute project work. The infrastructure-independent agent runner
-is implemented. Converging direct and hosted definition/tool preparation is a
-separate follow-up in [implementation-simplification.md](implementation-simplification.md),
-not an app/task reconciliation compatibility requirement.
+and shared direct/hosted preparation are implemented. See
+[implementation-simplification.md](implementation-simplification.md) for that
+separate decision record.
 
 ## Executive Decision
 
@@ -164,9 +161,8 @@ that dependency direction.
 
 ## One Task Resource
 
-A task follows the Kubernetes `spec`/`status` shape. Compatibility aliases may
-exist only at a bounded migration reader; they are not valid authoring forms.
-New writes use this shape.
+A task follows the Kubernetes `spec`/`status` shape. Compatibility aliases are
+not valid authoring or runtime forms.
 
 ```ts
 type Task = {
@@ -389,8 +385,8 @@ type HandlerResult =
     }
   | {
       state: "needs-owner";
-      reason: string;
-      evidence?: string[];
+      summary: string;
+      evidence: string[];
     };
 ```
 
@@ -759,13 +755,13 @@ task owner.
 
 The convention-first contract is implemented across the active Agent Apps:
 
-| App                       | Current state                                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `evaluation.app`          | One resolver/controller, workflow discovery, and owner fallback.                                           |
-| `may-agent.app`           | Standing platform responsibilities use scoped semantic events and the same controller.                     |
-| `scout-knowledge-lib.app` | Research, digest, health, and owner work use maintain tasks and learned workflows.                         |
-| `gym.app`                 | Incident, regression, and proposal work use the shared app contract.                                       |
-| `aks-rp-e2e.app`          | Graph migrated to resources, attempts, Conditions, and receipts; paused for final canonical-state cutover. |
+| App                       | Current state                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `evaluation.app`          | One resolver/controller, workflow discovery, and owner fallback.                              |
+| `may-agent.app`           | Standing platform responsibilities use scoped semantic events and the same controller.        |
+| `scout-knowledge-lib.app` | Research, digest, health, and owner work use maintain tasks and learned workflows.            |
+| `gym.app`                 | Incident, regression, and proposal work use the shared app contract.                          |
+| `aks-rp-e2e.app`          | Graph uses resources, attempts, Conditions, receipts, reusable workflows, and owner fallback. |
 
 Steady state has no task routes, owner-entry wrapper, workflow registry,
 manual event graph, assignment/review pipeline, task archive, mirrored
@@ -781,20 +777,15 @@ reconciliation. Other work resolves directly to its accountable owner. Exact
 external waits are Conditions; completed achieve tasks are receipts; parent
 and Kanban views are projections.
 
-Earlier live owner-fallback and restart probes on 2026-07-20 showed one
-controller runtime generation, one session per claimed task, no duplicate
-attempts, and no generic resumption of task-bound sessions. All five apps are
-currently paused while retained receipts, legacy parent links, and app-owned
-waits are migrated to the final canonical contract. Task session recovery is
-explicitly owned by the app task reconciler.
+The 2026-07-20 cutover and live cohort verification showed one controller per
+app, one current attempt per task, no observation-driven spec rewrites, and no
+generic resumption of task-bound sessions. Task recovery is explicitly owned
+by the app task reconciler. The neutral agent core and direct/hosted
+preparation parity are also implemented.
 
-The neutral agent core is also implemented. Direct/hosted agent-definition and
-tool-construction parity remains a separate simplification proposal, not an
-alternate Agent App execution path or unfinished task-reconciliation cutover.
+## Completed migration
 
-## Migration
-
-Migration must replace paths rather than add a permanent V3 layer:
+Migration replaced paths rather than adding a permanent V3 layer:
 
 1. Fix single-authority defects first: scoped selectors, action translation,
    acknowledgement after successful handling, and atomic result application.

@@ -25,7 +25,8 @@ The explicit-message channel is barely used. Coordination clearly happens — it
 Three stigmergic substrates already exist:
 
 1. **Shared project files** (current V3: `projects/<id>.app/project.json`,
-   `tasks/tree.json`, app/domain artifacts, and optional `.state/*.jsonl`;
+   canonical `.state/tasks/state.json`, generated `.state/tasks/tree.json`,
+   app/domain artifacts, and optional `.state/*.jsonl`;
    legacy: `projects/<name>/project.md` + journal). Agents communicate durable
    progress by updating the shared project artifacts, not by sending a message
    about every change.

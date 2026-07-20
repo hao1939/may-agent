@@ -47,7 +47,7 @@ System architecture and subsystem designs.
 | [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
 | [app-project-integrity.md](2a-design/app-project-integrity.md) | Compact integrity contract tying project apps, events, task trees, metrics, and escalation together |
 | [app-root-layout.md](2a-design/app-root-layout.md) | Repository-root classification: durable source, runtime state, project workspaces, and scratch |
-| [task-tree-engine.md](2a-design/task-tree-engine.md) | Task tree data/tool model: owner review, worker completion, Kanban projection, human steering |
+| [task-tree-engine.md](2a-design/task-tree-engine.md) | Task resource engine: canonical state, key queue, claims, Conditions, results, recovery, and projections |
 | [default-project-ui.md](2a-design/default-project-ui.md) | Shared project operating readout and structured steering contract |
 
 ### Design Status And Convergence
@@ -90,14 +90,14 @@ Proposals under consideration and historical docs preserved for context.
 
 | Doc | Status | What |
 |-----|--------|------|
-| [task-reconciliation-integrity-refinement.md](3-proposals/task-reconciliation-integrity-refinement.md) | Revised / recommended | Tighten generic reconciler authority, executable shared admission, honest acceptance provenance, runnable ownership, workspace paths, and final compatibility removal using Scout as a validation case. |
-| [agent-app-boundary-refinement.md](3-proposals/agent-app-boundary-refinement.md) | Draft | Make agent execution independently runnable, move workflows under agents, and treat Kubernetes-style task reconciliation as optional autonomy; identity renaming is explicitly deferred. |
-| [implementation-simplification.md](3-proposals/implementation-simplification.md) | Accepted / preparation parity remaining | Explicit Gym tool denials, strict effective-tool construction, and execution manifests are implemented; direct/hosted preparation parity tests remain. |
+| [task-reconciliation-integrity-refinement.md](3-proposals/task-reconciliation-integrity-refinement.md) | Historical / implemented | Decision record for key-only claims, atomic Condition triggers, executable admission, acceptance provenance, and compatibility removal. |
+| [agent-app-boundary-refinement.md](3-proposals/agent-app-boundary-refinement.md) | Accepted / implemented | Agent execution is independently runnable; workflows belong to agents; task reconciliation is optional autonomy. Identity renaming remains deferred. |
+| [implementation-simplification.md](3-proposals/implementation-simplification.md) | Accepted / implemented | Explicit Gym tool denials, effective-tool construction, execution manifests, and direct/hosted preparation parity. |
 | [agent-app-scenario-audit-2026-07-16.md](3-proposals/agent-app-scenario-audit-2026-07-16.md) | Design review | Exercise the Agent App proposal against idle, production, Gym, live-diagnostic, parallel, multi-app, and recovery scenarios |
 | [agent-app-runtime-model.md](3-proposals/agent-app-runtime-model.md) | Draft / partial implementation | Unify app and owner agent as one public Agent App while keeping policy and durable task runtime as separate, evaluable layers |
 | [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted concepts / partial implementation | Ops health as may-agent.app responsibility; remaining migration is tracked in the document |
 | [chat-agent-separation.md](3-proposals/chat-agent-separation.md) | Draft / partial implementation | Separate persistent chat execution from bounded jobs while preserving the shared event and trace model |
-| [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Draft | Formalize stigmergic coordination as a first-class pattern |
+| [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Historical / partially superseded | Earlier rationale for artifact-based coordination; current project and event designs govern. |
 | [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
 
 Old V2 project-app proposals were moved to [`archive/v2/`](archive/v2/). They

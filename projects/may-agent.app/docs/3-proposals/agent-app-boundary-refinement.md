@@ -1,9 +1,9 @@
 # Proposal: Agent App and Optional Autonomy Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Core boundary implemented. Canonical task-state
-migration, compatibility removal, direct/hosted preparation parity, and
-deployed-binary parity remain before full convergence can be claimed.
+**Implementation status:** Implemented, including canonical task state,
+compatibility removal, shared direct/hosted preparation, Gym parity, and
+deployed-binary verification.
 **Identity migration status:** Deferred. This proposal does not rename any app
 or agent and does not require app IDs to equal owner-agent IDs.
 
@@ -20,9 +20,9 @@ or agent and does not require app IDs to equal owner-agent IDs.
 | What does Gym run? | The same prepared agent execution used by production, without attaching autonomous infrastructure. |
 | Are identities renamed now? | No. Existing `app.id -> owner` mappings remain valid during this work. |
 
-**Requested review decision:** approve, revise, or reject the boundary between
-independent agent execution, the Agent App package, and optional autonomous
-infrastructure. Identity naming is deliberately outside this decision.
+The accepted boundary separates independent agent execution, the Agent App
+package, and optional autonomous infrastructure. Identity naming remains
+outside this decision.
 
 ## Context
 
