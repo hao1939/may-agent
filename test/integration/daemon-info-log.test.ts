@@ -2,7 +2,7 @@
  * Unit tests for attachDaemonInfoLog — the bus->log forwarder used in daemon
  * mode to make `bus.emit({ type: "info" })` visible without --console.
  *
- * See F7 in projects/platform/proposals/2026-05-19-e2e-harness-findings.md.
+ * See F7 in projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { EventBus } from "../../src/app/event-bus.js";

@@ -58,7 +58,7 @@ ls /tmp/may-e2e-*/
 
 E8 currently covers project-comment UI; broader telegram UI flows and
 the full-LLM variant of E6 are still future work — see roadmap in
-`projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
+`projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.
 
 ## Library
 
@@ -80,4 +80,4 @@ the full-LLM variant of E6 are still future work — see roadmap in
 
 Building this harness surfaced implementation/documentation gaps that are not
 test-specific. They are recorded in
-`projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
+`projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.

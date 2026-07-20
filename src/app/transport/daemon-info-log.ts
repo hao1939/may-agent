@@ -7,7 +7,7 @@
  * dropped. With ~70 such call sites across the codebase (startup checks,
  * telegram routing diagnostics, reload summaries, etc.) this is a serious
  * operational visibility gap. See F7 in
- * `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
+ * `projects/may-agent.app/docs/archive/implementation/2026-05-19-e2e-harness-findings.md`.
  *
  * This module attaches a minimal subscriber that forwards `info` events
  * through `log("info", ...)` so they land in the daemon log. It is intended
