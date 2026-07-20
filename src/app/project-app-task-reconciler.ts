@@ -12,7 +12,7 @@ import {
   withTreeLock,
   type ProjectAppTaskIntent,
   type ProjectAppTaskAction,
-  type ProjectAppTaskAcceptance,
+  type ProjectAppTaskAcceptanceBasis,
   type ProjectAppCondition,
   type ProjectAppConditionSpec,
   type ProjectAppTaskAttempt,
@@ -34,6 +34,11 @@ export type ProjectAppTaskClaim = {
   owner: string;
   handler: string;
   mode: "achieve" | "maintain";
+  handoff?: {
+    reason: "needs-owner" | "HandlerUnavailable";
+    summary: string;
+    evidence: string[];
+  };
 };
 
 export type ProjectAppTaskClaimResult =
@@ -548,34 +553,27 @@ function validateIntent(intent: ProjectAppTaskIntent): void {
   }
 }
 
+function validateParentReference(tree: TaskTree, taskId: string, parentId: string): void {
+  if (!tree.tasks[parentId]) {
+    throw new Error(`Task ${taskId} parent does not exist in the live graph: ${parentId}`);
+  }
+  if (parentId === taskId) throw new Error(`Task ${taskId} cannot be its own parent`);
+
+  const seen = new Set<string>();
+  let cursor: string | undefined = parentId;
+  while (cursor && !seen.has(cursor)) {
+    if (cursor === taskId) throw new Error(`Task ${taskId} parent would create a containment cycle`);
+    seen.add(cursor);
+    cursor = tree.tasks[cursor]?.parent_id ?? undefined;
+  }
+  if (cursor) throw new Error(`Task ${taskId} parent chain already contains a containment cycle at ${cursor}`);
+}
+
 function upsertTask(tree: TaskTree, resource: ProjectAppTaskResource, owner: string): TaskNode {
   const intent = resourceIntent(resource);
   const parent = tree.tasks[intent.parentId];
   if (!parent) {
-    // If the task already exists (parent was pruned after task creation), return it as-is
-    const existing = tree.tasks[intent.id];
-    if (existing) return existing;
-    // Parent was pruned/removed — create an orphan node rather than throwing,
-    // which would cause infinite handler retries (handler.failed-count alert).
-    console.warn(
-      `[project-app-task-reconciler] Task ${intent.id} parent does not exist: ${intent.parentId}; creating as orphan under root`,
-    );
-    const rootId = Object.values(tree.tasks).find((t) => t.parent_id === null)?.id;
-    const fallbackParent = rootId ? tree.tasks[rootId] : undefined;
-    if (!fallbackParent) {
-      throw new Error(`Task ${intent.id} parent does not exist: ${intent.parentId}`);
-    }
-    const task: TaskNode = {
-      id: intent.id,
-      parent_id: fallbackParent.id,
-      children: [],
-      state: "backlog",
-    };
-    syncTaskProjection(task, resource, owner);
-    if (task.context) delete task.context.reconciliation;
-    tree.tasks[intent.id] = task;
-    fallbackParent.children = [...new Set([...(fallbackParent.children ?? []), intent.id])];
-    return task;
+    throw new Error(`Task ${intent.id} parent does not exist in the live graph: ${intent.parentId}`);
   }
 
   const task = tree.tasks[intent.id] ?? {
@@ -646,6 +644,7 @@ export function observeProjectAppTaskIntent(
   validateIntent(input.intent);
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
+    validateParentReference(tree, input.intent.id, input.intent.parentId);
     const owner = resolvedOwner(tree, input.intent, input.appOwner);
     const specHash = projectAppTaskSpecHash(input.intent, owner);
     const receipt = tree.receipts?.[input.intent.id];
@@ -858,6 +857,9 @@ export function claimObservedProjectAppTask(
           ? `owner:${owner}`
           : input.handler;
     const ownerHandoff = needsOwnerHandoff(tree, resource) && handler === `owner:${owner}`;
+    const handoffAttempt = ownerHandoff
+      ? latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation)
+      : undefined;
     const previousAttempt = currentResourceAttempt(tree, resource);
     const canRecoverPreviousRuntime = Boolean(previousAttempt && previousAttempt.runtimeId !== reconcilerRuntimeId);
     const pendingTrigger = tree.taskTriggers?.[task.id];
@@ -963,6 +965,16 @@ export function claimObservedProjectAppTask(
       owner,
       handler,
       mode: intent.mode,
+      ...(handoffAttempt &&
+      (handoffAttempt.failureReason === "needs-owner" || handoffAttempt.failureReason === "HandlerUnavailable")
+        ? {
+            handoff: {
+              reason: handoffAttempt.failureReason,
+              summary: resource.status.summary ?? handoffAttempt.summary ?? handoffAttempt.failureReason,
+              evidence: [...(resource.status.evidence ?? [])],
+            },
+          }
+        : {}),
     };
   });
 }
@@ -1135,15 +1147,14 @@ function validateTaskActions(
       if (tree.tasks[action.id] || tree.resources?.[action.id]) {
         throw new Error(`Handler action task already exists: ${action.id}`);
       }
-      if (!tree.tasks[action.parentId]) throw new Error(`Handler action parent not found: ${action.parentId}`);
+      validateParentReference(tree, action.id, action.parentId);
       continue;
     }
 
     requireExpectedGeneration(action.expectedGeneration, `Handler ${action.kind} action ${action.taskId}`);
     if (action.kind === "update-task" && action.parentId !== undefined) {
       requireNonEmptyString(action.parentId, `Handler update for ${action.taskId} parentId`);
-      if (!tree.tasks[action.parentId]) throw new Error(`Handler action parent not found: ${action.parentId}`);
-      if (action.parentId === action.taskId) throw new Error(`Handler update cannot parent ${action.taskId} to itself`);
+      validateParentReference(tree, action.taskId, action.parentId);
     }
     if (action.kind === "update-task" && action.outcome !== undefined) {
       requireNonEmptyString(action.outcome, `Handler update for ${action.taskId} outcome`);
@@ -1251,7 +1262,7 @@ function validateActionEvidence(taskId: string, evidence: string[] | undefined, 
   }
 }
 
-function defaultTaskAcceptance(claim: ProjectAppTaskClaim, evidence: string[]): ProjectAppTaskAcceptance {
+function defaultTaskAcceptance(claim: ProjectAppTaskClaim, evidence: string[]): ProjectAppTaskAcceptanceBasis {
   return {
     method: claim.handler.startsWith("workflow:") ? "workflow-contract" : "owner-judgment",
     evidence: [...evidence],
@@ -1264,7 +1275,7 @@ function applyTaskActions(
   actions: ProjectAppTaskAction[],
   evidence: string[],
   config: TaskTreeConfig,
-  verification: ProjectAppTaskAcceptance,
+  acceptanceBasis: ProjectAppTaskAcceptanceBasis,
 ): string[] {
   validateTaskActions(tree, actions, config);
   const now = new Date().toISOString();
@@ -1414,7 +1425,7 @@ function applyTaskActions(
             handler: claim.handler,
             summary: action.summary.trim(),
             evidence: [...evidence],
-            verification: structuredClone(verification),
+            acceptanceBasis: structuredClone(acceptanceBasis),
             failureFingerprints,
             completedAt: now,
           },
@@ -1457,7 +1468,7 @@ export function completeProjectAppTask(
     summary: string;
     evidence?: string[];
     actions?: ProjectAppTaskAction[];
-    verification?: ProjectAppTaskAcceptance;
+    acceptanceBasis?: ProjectAppTaskAcceptanceBasis;
   },
 ): { status: "applied" | "stale"; actionsApplied: string[]; dependentTaskIds: string[] } {
   return withTreeLock(config, () => {
@@ -1467,8 +1478,8 @@ export function completeProjectAppTask(
     const { task, resource } = match;
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const verification = input.verification ?? defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, verification);
+    const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, acceptanceBasis);
     const liveChildren = liveChildTaskIds(tree, task);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
@@ -1535,7 +1546,7 @@ export function completeProjectAppTask(
           handler: claim.handler,
           summary: input.summary,
           evidence: [...(input.evidence ?? [])],
-          verification: structuredClone(verification),
+          acceptanceBasis: structuredClone(acceptanceBasis),
           failureFingerprints,
           completedAt: now,
         },
@@ -1572,8 +1583,8 @@ export function deferProjectAppTask(
     validateConditions(input.conditions, { required: input.disposition === "waiting", taskId: claim.taskId });
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
-    const verification = defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, verification);
+    const acceptanceBasis = defaultTaskAcceptance(claim, input.evidence ?? []);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, acceptanceBasis);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (input.conditions?.length) {
@@ -1615,7 +1626,7 @@ export function deferProjectAppTask(
 export function markProjectAppTaskAttention(
   config: TaskTreeConfig,
   claim: ProjectAppTaskClaim,
-  input: { summary: string; reason: string },
+  input: { summary: string; reason: string; evidence?: string[] },
 ): "applied" | "stale" {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
@@ -1632,6 +1643,7 @@ export function markProjectAppTaskAttention(
       observedGeneration: claim.generation,
       currentAttemptId: undefined,
       summary: input.summary,
+      evidence: [...(input.evidence ?? [])],
       conditionIds: [],
     });
     syncTaskProjection(task, resource, claim.owner);

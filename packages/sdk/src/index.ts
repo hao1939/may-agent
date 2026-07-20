@@ -940,7 +940,7 @@ export type {
   ProjectAppTaskAction,
   ProjectAppTaskHandlerState,
   ProjectAppTaskHandlerResult,
-  ProjectAppTaskAcceptance,
+  ProjectAppTaskAcceptanceBasis,
   ProjectAppTaskAttempt,
   ProjectAppTaskIntent,
   ProjectAppTaskMode,

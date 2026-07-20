@@ -23,7 +23,7 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 describe("project runtime state paths", () => {
-  test("migrates an existing runtime tree into canonical resource state", async () => {
+  test("does not restore canonical resource state from the generated tree projection", async () => {
     const appDir = await makeApp();
     await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
     await writeFile(join(appDir, ".state", "tasks", "tree.json"), `{"source":"runtime","tasks":{}}\n`, "utf8");
@@ -32,9 +32,9 @@ describe("project runtime state paths", () => {
     const result = ensureTaskTreeState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
-    expect(result).toMatchObject({ migrated: true, source: "runtime" });
+    expect(result).toMatchObject({ migrated: true, source: "empty" });
     expect(result.path).toBe(projectRuntimePaths(appDir).taskStatePath);
-    expect(tree.source).toBe("runtime");
+    expect(tree.source).toBeUndefined();
   });
 
   test("does not bootstrap mutable runtime state from a legacy tree", async () => {
@@ -47,26 +47,27 @@ describe("project runtime state paths", () => {
     expect(result).toMatchObject({ migrated: true, source: "empty" });
     expect(result.path).toBe(projectRuntimePaths(appDir).taskStatePath);
     expect(tree.source).toBeUndefined();
-    expect(tree.tasks).toEqual({});
+    expect(tree.groups).toEqual({});
+    expect(tree.resources).toEqual({});
     expect(existsSync(projectRuntimePaths(appDir).migrationLogPath)).toBe(true);
   });
 
   test("boots from seed when no runtime or legacy tree exists", async () => {
     const appDir = await makeApp();
-    await writeFile(join(appDir, "tasks", "seed.json"), `{"source":"seed","tasks":{}}\n`, "utf8");
+    await writeFile(join(appDir, "tasks", "seed.json"), `{"source":"seed","groups":{},"resources":{}}\n`, "utf8");
 
     const result = ensureTaskTreeState(appDir);
     const tree = JSON.parse(await readFile(result.path, "utf8"));
 
     expect(result).toMatchObject({ migrated: true, source: "seed" });
     expect(tree.source).toBe("seed");
-    expect(existsSync(projectRuntimePaths(appDir).taskTreePath)).toBe(true);
+    expect(existsSync(projectRuntimePaths(appDir).taskTreePath)).toBe(false);
   });
 
   test("uses existing canonical resource state without consulting the projection", async () => {
     const appDir = await makeApp();
     const paths = projectRuntimePaths(appDir);
-    await writeJson(paths.taskStatePath, { source: "state", tasks: {} });
+    await writeJson(paths.taskStatePath, { source: "state", groups: {}, resources: {} });
     await writeJson(paths.taskTreePath, { source: "projection", tasks: {} });
 
     const result = ensureTaskTreeState(appDir);
@@ -103,7 +104,8 @@ describe("project runtime state paths", () => {
       config,
       {
         project_lifecycle: "active",
-        tasks: { root: { id: "root", state: "backlog", children: [] } },
+        groups: { root: { id: "root", parent_id: null, state: "backlog", children: [] } },
+        tasks: {},
       },
       { projectLifecycleReason: "activate test project" },
     );
@@ -129,7 +131,8 @@ describe("project runtime state paths", () => {
       maxConcurrent: 1,
     };
     saveTaskTree(config, {
-      tasks: { canonical: { id: "canonical", state: "backlog", children: [] } },
+      groups: { canonical: { id: "canonical", parent_id: null, state: "backlog", children: [] } },
+      tasks: {},
     });
 
     await writeJson(paths.taskTreePath, {
@@ -137,7 +140,7 @@ describe("project runtime state paths", () => {
     });
 
     expect(readTaskTree(config).tasks).toEqual({
-      canonical: { id: "canonical", state: "backlog", children: [] },
+      canonical: { id: "canonical", parent_id: null, state: "backlog", children: [] },
     });
     const canonical = JSON.parse(await readFile(paths.taskStatePath, "utf8"));
     expect(canonical.tasks).toBeUndefined();
@@ -157,11 +160,11 @@ describe("project runtime state paths", () => {
       maxConcurrent: 1,
     };
     saveTaskTree(config, {
-      tasks: {
+      groups: {
         root: { id: "root", parent_id: null, owner: "app-owner", children: ["work"] },
         stale: { id: "stale", parent_id: "root", children: ["work"] },
-        work: { id: "work", parent_id: "stale", owner: "stale-owner", children: [] },
       },
+      tasks: {},
       resources: {
         work: {
           metadata: { id: "work", generation: 1, resourceVersion: 1 },
