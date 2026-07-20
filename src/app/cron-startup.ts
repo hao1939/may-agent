@@ -22,10 +22,11 @@ function fieldFromPrompt(prompt: string, name: string): string | null {
 }
 
 function currentProjectLifecycle(appDir: string): string | null {
-  const treePath = projectRuntimePaths(appDir).taskTreePath;
-  if (!existsSync(treePath)) return null;
+  const paths = projectRuntimePaths(appDir);
+  const statePath = existsSync(paths.taskStatePath) ? paths.taskStatePath : paths.taskTreePath;
+  if (!existsSync(statePath)) return null;
   try {
-    const tree = JSON.parse(readFileSync(treePath, "utf8")) as {
+    const tree = JSON.parse(readFileSync(statePath, "utf8")) as {
       project_lifecycle?: unknown;
     };
     return typeof tree.project_lifecycle === "string" ? tree.project_lifecycle.trim() : null;
@@ -38,10 +39,7 @@ export function shouldResumeStartupSession(
   _sessionId: string,
   session: PersistedSession,
 ): { resume: true } | { resume: false; reason?: string } {
-  if (
-    session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER ||
-    session.source === "project-app-task-owner"
-  ) {
+  if (session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER || session.source === "project-app-task-owner") {
     return {
       resume: false,
       reason: "Task-bound project session recovery is owned by the app task reconciler",
@@ -53,7 +51,7 @@ export function shouldResumeStartupSession(
   if (currentProjectLifecycle(appDir) === "paused") {
     return {
       resume: false,
-      reason: `Project ${session.projectId} is paused in ${projectRuntimePaths(appDir).taskTreePath}`,
+      reason: `Project ${session.projectId} is paused in ${projectRuntimePaths(appDir).taskStatePath}`,
     };
   }
 

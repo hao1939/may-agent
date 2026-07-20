@@ -15,6 +15,7 @@ import type {
   ProjectAppTaskResource,
   ProjectAppTaskTrigger,
 } from "./project-app.js";
+import { projectRuntimePaths } from "./project-runtime-state.js";
 
 export type TaskNode = {
   id: string;
@@ -284,6 +285,15 @@ export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: S
   const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tempPath, serialized, "utf-8");
   renameSync(tempPath, config.treePath);
+
+  const runtimePaths = projectRuntimePaths(config.appDir);
+  if (config.treePath === runtimePaths.taskStatePath) {
+    const projectionPath = runtimePaths.taskTreePath;
+    const projectionTempPath = `${projectionPath}.${process.pid}.${Date.now()}.tmp`;
+    ensureDir(dirname(projectionPath));
+    writeFileSync(projectionTempPath, serialized, "utf-8");
+    renameSync(projectionTempPath, projectionPath);
+  }
 
   if (
     existingTree &&
