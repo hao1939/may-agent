@@ -543,6 +543,54 @@ export function repairPreviousRuntimeRecoveryAttention(config: TaskStateConfig):
   });
 }
 
+export function repairRunningProjectAppTasksWithoutAttempt(
+  config: TaskStateConfig,
+): ProjectAppTaskRecoveryRepair[] {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const repairs: ProjectAppTaskRecoveryRepair[] = [];
+    const now = new Date().toISOString();
+    for (const resource of Object.values(tree.resources ?? {})) {
+      if (resource.status.phase !== "running") continue;
+      const task = tree.tasks[resource.metadata.id];
+      if (!task) continue;
+      const attemptId = resource.status.currentAttemptId;
+      const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
+      if (attempt?.state === "running") continue;
+
+      const owner = resolvedOwner(tree, resourceIntent(resource), config.worker);
+      const summary = attemptId
+        ? `Running reconciliation ${resource.metadata.id} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
+        : `Running reconciliation ${resource.metadata.id} had no current attempt; retrying from current task evidence`;
+      if (attempt) {
+        attempt.metadata.resourceVersion += 1;
+        attempt.failureReason = "running-without-current-attempt-requeued";
+        attempt.summary = summary;
+        attempt.finishedAt ??= now;
+      }
+      touchResource(resource, {
+        phase: "pending",
+        observedGeneration: Math.max(0, resource.metadata.generation - 1),
+        currentAttemptId: undefined,
+        summary,
+        conditionIds: [],
+      });
+      syncTaskProjection(task, resource, owner);
+      repairs.push({
+        taskId: resource.metadata.id,
+        disposition: "requeued",
+        summary,
+      });
+    }
+    if (repairs.length > 0) {
+      refreshActiveTaskProjection(tree);
+      pruneTaskAttempts(tree);
+      saveTaskState(config, tree);
+    }
+    return repairs;
+  });
+}
+
 export function pendingProjectAppTaskRecoveryAttention(config: TaskStateConfig): ProjectAppTaskRecoveryAttention[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
@@ -885,7 +933,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") return hasSatisfiedTaskCondition(tree, task.id);
   if (resource.status.phase === "attention") return needsOwnerHandoff(tree, resource);
-  if (resource.status.phase === "running") return false;
+  if (resource.status.phase === "running") return !currentResourceAttempt(tree, resource);
   return false;
 }
 
@@ -1026,6 +1074,30 @@ export function claimObservedProjectAppTask(
       ? latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation)
       : undefined;
     const previousAttempt = currentResourceAttempt(tree, resource);
+    if (resource.status.phase === "running" && !previousAttempt) {
+      const now = new Date().toISOString();
+      const attemptId = resource.status.currentAttemptId;
+      const summary = attemptId
+        ? `Running reconciliation ${task.id} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
+        : `Running reconciliation ${task.id} had no current attempt; retrying from current task evidence`;
+      const staleAttempt = attemptId ? tree.attempts?.[attemptId] : undefined;
+      if (staleAttempt) {
+        staleAttempt.metadata.resourceVersion += 1;
+        staleAttempt.failureReason = "running-without-current-attempt-requeued";
+        staleAttempt.summary = summary;
+        staleAttempt.finishedAt ??= now;
+      }
+      touchResource(resource, {
+        phase: "pending",
+        observedGeneration: Math.max(0, resource.metadata.generation - 1),
+        currentAttemptId: undefined,
+        summary,
+        conditionIds: [],
+      });
+      syncTaskProjection(task, resource, owner);
+      refreshActiveTaskProjection(tree);
+      pruneTaskAttempts(tree);
+    }
     const canRecoverPreviousRuntime = Boolean(previousAttempt && previousAttempt.runtimeId !== reconcilerRuntimeId);
     const pendingTrigger = tree.taskTriggers?.[task.id];
     const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
