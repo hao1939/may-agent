@@ -205,7 +205,7 @@ describe("terminal bridge tmux profile validation", () => {
       expect(log).not.toContain("kill-session -t may-web-claude");
       expect(log).not.toContain("new-session -d -s may-web-claude");
       expect(log).toContain("attach-session -t may-web-claude");
-      expect(log).toContain("set-option -t may-web-claude mouse on");
+      expect(log).toContain("set-option -t may-web-claude mouse off");
       expect(log).toContain("set-option -t may-web-claude history-limit 100000");
       expect(log).toContain("set-option -t may-web-claude status off");
       expect(log).toContain("set-option -gu terminal-overrides");
@@ -242,9 +242,44 @@ describe("terminal bridge tmux profile validation", () => {
 
       const input = readFileSync(fake.inputPath, "utf8");
       const log = readFileSync(fake.logPath, "utf8");
-      expect(log).toContain("set-option -t may-web-shell mouse on");
+      expect(log).toContain("set-option -t may-web-shell mouse off");
       expect(input).toContain(data);
       expect(input).not.toContain("�");
+    } finally {
+      fake.cleanup();
+    }
+  });
+
+  test("scrolls tmux history without enabling mouse handling and returns live on input", async () => {
+    const command = "bash -lc claude";
+    const fake = makeFakeTmuxDir({ profileId: "claude", command });
+    try {
+      const child = await startBridge(fake, {
+        profileId: "claude",
+        tmuxName: "may-web-claude",
+        tmuxSocket: "may-web",
+        command,
+        cwd: repoRoot,
+      });
+
+      child.stdin.write(JSON.stringify({ type: "scroll", direction: "up", lines: 6 }) + "\n");
+      child.stdin.write(JSON.stringify({ type: "scroll", direction: "down", lines: 3 }) + "\n");
+      child.stdin.write(JSON.stringify({ type: "input", data: "continue\n" }) + "\n");
+      child.stdin.write(JSON.stringify({ type: "input", data: "without extra tmux work\n" }) + "\n");
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      child.kill("SIGTERM");
+      await new Promise<void>((resolveExit) => child.once("exit", () => resolveExit()));
+
+      const log = readFileSync(fake.logPath, "utf8");
+      const input = readFileSync(fake.inputPath, "utf8");
+      expect(log).toContain("set-option -t may-web-claude mouse off");
+      expect(log).toContain("copy-mode -eH -t may-web-claude");
+      expect(log).toContain("send-keys -t may-web-claude -X -N 6 scroll-up");
+      expect(log).toContain("send-keys -t may-web-claude -X -N 3 scroll-down");
+      expect(log.match(/send-keys -t may-web-claude -X cancel/g)).toHaveLength(1);
+      expect(input).toContain("continue\n");
+      expect(input).toContain("without extra tmux work\n");
     } finally {
       fake.cleanup();
     }

@@ -105,7 +105,7 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
       id: "codex",
       label: "Codex",
       description: "Interactive Codex CLI session with container-local approval/sandbox bypass and session resume enabled.",
-      command: "bash -lc 'source /usr/local/bin/setup-codex-config.sh; cd \"${PROJECT_ROOT:-/app}\"; codex resume --last --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app || exec codex --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app'",
+      command: "bash -lc 'source /usr/local/bin/setup-codex-config.sh; cd \"${PROJECT_ROOT:-/app}\"; codex --no-alt-screen resume --last --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app || exec codex --no-alt-screen --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app'",
       cwd: root,
     },
     {
@@ -340,6 +340,21 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     session.child.stdin.write(JSON.stringify({ type: "input", data }) + "\n");
   }
 
+  function scroll(profileId: string, direction: "up" | "down", lines: number, clientId?: string): void {
+    const session = sessions.get(profileId);
+    if (!session) throw new Error(`Terminal is not connected: ${profileId}`);
+    if (clientId) session.activeClientId = clientId;
+    const safeLines = Math.max(1, Math.min(100, Math.floor(lines || 1)));
+    session.child.stdin.write(JSON.stringify({ type: "scroll", direction, lines: safeLines }) + "\n");
+  }
+
+  function historyExit(profileId: string, clientId?: string): void {
+    const session = sessions.get(profileId);
+    if (!session) return;
+    if (clientId) session.activeClientId = clientId;
+    session.child.stdin.write(JSON.stringify({ type: "history-exit" }) + "\n");
+  }
+
   function writeResize(session: TerminalSession, cols: number, rows: number): void {
     const safeCols = Math.max(20, Math.min(400, Math.floor(cols || DEFAULT_COLS)));
     const safeRows = Math.max(8, Math.min(160, Math.floor(rows || DEFAULT_ROWS)));
@@ -390,6 +405,8 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     attach,
     detach,
     input,
+    scroll,
+    historyExit,
     activate,
     resize,
     restart,
