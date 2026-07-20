@@ -1,0 +1,10 @@
+{
+  "name": "scout-source-already-covered",
+  "description": "Scout must search existing knowledge and return an evidence-backed no-op when the current source packet is already covered.",
+  "categories": ["research", "convention-compliance", "efficiency"],
+  "tags": ["behavior", "scout", "deduplication", "idempotent", "no-op"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "scout",
+  "workflow": false
+}

@@ -28,7 +28,8 @@ type FactKind =
   | "digest-log-oversized"
   | "index-coverage-gap"
   | "reports-layout-backlog"
-  | "future-dated-library-truth";
+  | "future-dated-library-truth"
+  | "artifact-identity-collision";
 
 export type LibraryHealthFact = {
   key: string;
@@ -61,6 +62,14 @@ export type LibraryHealthPacket = {
 
 type FileStat = { path: string; lines: number };
 type FutureTruth = { path: string; field: string; date: string; line?: number };
+type ArtifactIdentityOccurrence = {
+  source: string;
+  date: string;
+  scanId: string;
+  title: string;
+  path: string;
+  kind: "finding" | "digest";
+};
 
 function field(task: string, name: string): string | undefined {
   return task.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim();
@@ -130,6 +139,174 @@ function listRootMarkdownFiles(root: string): string[] {
   } catch {
     return [];
   }
+}
+
+function unquote(value: string): string {
+  const trimmed = value.trim();
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+function normalizedSource(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function explicitScanTitle(
+  title: string,
+): { source: string; scanId: string; title: string } | undefined {
+  const match =
+    /^([a-z][a-z0-9.-]*)\s+scan\s+#([a-z0-9][a-z0-9._-]*)\s+[—–-]\s+(.+)$/i.exec(
+      title.trim(),
+    );
+  if (!match) return undefined;
+  return {
+    source: normalizedSource(match[1]),
+    scanId: match[2].toLowerCase(),
+    title: title.trim().replace(/\s+/g, " "),
+  };
+}
+
+function frontmatterField(content: string, name: string): string | undefined {
+  const end = content.startsWith("---\n") ? content.indexOf("\n---", 4) : -1;
+  const block = end >= 0 ? content.slice(4, end) : "";
+  if (!block) return undefined;
+  const value = block.match(new RegExp(`^${name}:\\s*(.+)$`, "im"))?.[1];
+  return value ? unquote(value) : undefined;
+}
+
+function findingArtifactIdentity(
+  projectDir: string,
+  path: string,
+): ArtifactIdentityOccurrence | undefined {
+  const content = safeRead(path);
+  const title = frontmatterField(content, "title");
+  const date = frontmatterField(content, "date");
+  const declaredSource = frontmatterField(content, "source");
+  if (!title || !date || !declaredSource || !validIsoDate(date)) return;
+  const explicit = explicitScanTitle(title);
+  if (!explicit) return;
+  const source = normalizedSource(declaredSource);
+  if (!source || source !== explicit.source) return;
+  return {
+    source,
+    date,
+    scanId: explicit.scanId,
+    title: explicit.title,
+    path: toPosix(relative(projectDir, path)),
+    kind: "finding",
+  };
+}
+
+function digestArtifactIdentities(
+  appDir: string,
+  path: string,
+): ArtifactIdentityOccurrence[] {
+  const result: ArtifactIdentityOccurrence[] = [];
+  for (const line of safeRead(path).split(/\r?\n/)) {
+    const heading = /^#{2,3}\s+(.+?)\s+\((20\d{2}-\d{2}-\d{2})\)\s*$/.exec(
+      line,
+    );
+    if (!heading || !validIsoDate(heading[2])) continue;
+    const explicit = explicitScanTitle(heading[1]);
+    if (!explicit) continue;
+    result.push({
+      source: explicit.source,
+      date: heading[2],
+      scanId: explicit.scanId,
+      title: explicit.title,
+      path: toPosix(relative(appDir, path)),
+      kind: "digest",
+    });
+  }
+  return result;
+}
+
+function latestArchivedDigest(digestDir: string): string | undefined {
+  try {
+    return readdirSync(digestDir)
+      .filter((entry) => /^20\d{2}-\d{2}-\d{2}\.md$/.test(entry))
+      .sort()
+      .map((entry) => join(digestDir, entry))
+      .at(-1);
+  } catch {
+    return undefined;
+  }
+}
+
+function artifactIdentityCollisionFacts(input: {
+  appDir: string;
+  projectDir: string;
+  knowledgeFiles: string[];
+  digestPath: string;
+}): LibraryHealthFact[] {
+  const digestDir = join(
+    input.appDir,
+    "agents",
+    "scout",
+    "workspace",
+    "digest",
+  );
+  const archive = latestArchivedDigest(digestDir);
+  const occurrences = [
+    ...input.knowledgeFiles
+      .filter((path) =>
+        toPosix(relative(input.projectDir, path)).startsWith(
+          "knowledge/findings/",
+        ),
+      )
+      .flatMap((path) => {
+        const identity = findingArtifactIdentity(input.projectDir, path);
+        return identity ? [identity] : [];
+      }),
+    ...[input.digestPath, ...(archive ? [archive] : [])].flatMap((path) =>
+      digestArtifactIdentities(input.appDir, path),
+    ),
+  ];
+  const byIdentity = new Map<string, ArtifactIdentityOccurrence[]>();
+  for (const occurrence of occurrences) {
+    const key = `${occurrence.source}:${occurrence.date}:${occurrence.scanId}`;
+    const current = byIdentity.get(key) ?? [];
+    current.push(occurrence);
+    byIdentity.set(key, current);
+  }
+  return [...byIdentity.entries()].flatMap(([subject, entries]) => {
+    const titles = new Map<string, string>();
+    for (const entry of entries) {
+      titles.set(entry.title.toLowerCase(), entry.title);
+    }
+    if (titles.size < 2) return [];
+    return [
+      fact({
+        kind: "artifact-identity-collision",
+        subject,
+        severity: "P1",
+        reason: `${subject} maps to ${titles.size} distinct explicit titles.`,
+        observedValue: titles.size,
+        evidence: {
+          findingPaths: [
+            ...new Set(
+              entries
+                .filter((entry) => entry.kind === "finding")
+                .map((entry) => entry.path),
+            ),
+          ],
+          digestHeadings: entries
+            .filter((entry) => entry.kind === "digest")
+            .map((entry) => ({ path: entry.path, heading: entry.title })),
+          titles: [...titles.values()].sort(),
+        },
+      }),
+    ];
+  });
 }
 
 function canonical(value: unknown): string {
@@ -414,6 +591,15 @@ export function buildLibraryHealthPacket(input: {
       }),
     );
   }
+
+  facts.push(
+    ...artifactIdentityCollisionFacts({
+      appDir: input.appDir,
+      projectDir: input.projectDir,
+      knowledgeFiles,
+      digestPath,
+    }),
+  );
 
   const structuralOrphans = knowledgeFiles
     .map((path) => toPosix(relative(knowledgeDir, path)))

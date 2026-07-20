@@ -1,0 +1,10 @@
+{
+  "name": "scout-artifact-path-collision",
+  "description": "Scout must preserve an occupied finding path and place a distinct source-grounded result under an unused descriptive identity.",
+  "categories": ["research", "convention-compliance"],
+  "tags": ["behavior", "scout", "artifact-integrity", "read-before-write"],
+  "tier": "standard",
+  "timeout": 10,
+  "agent_type": "scout",
+  "workflow": false
+}

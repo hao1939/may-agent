@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   defineProjectApp,
   eventDetails,
+  Type,
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
@@ -9,6 +10,7 @@ import {
 import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
 
 const projectId = "evaluation";
+const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
 const watchedProjectTargets = [
   {
@@ -266,6 +268,8 @@ export function resolveEvaluationTask(
         priority: "P1",
       };
     }
+    case "project.comment.created":
+    case "project.owner.requested":
     case "evaluation.tick":
       return {
         id: "runtime/owner-review",
@@ -315,14 +319,6 @@ export async function routeEvaluationEvent(
     return ctx.emit(
       evaluationReviewRequested("owner-message", {
         message: eventDetails(event),
-      }),
-    );
-  }
-
-  if (event.type === "project.owner.requested") {
-    return ctx.emit(
-      evaluationReviewRequested("owner-review", {
-        ownerRequest: eventDetails(event),
       }),
     );
   }
@@ -446,6 +442,8 @@ export default defineProjectApp({
       "evaluation.aftermath.scan",
       "evaluation.deep.scan",
       "evaluation.project.review.requested",
+      { type: "project.comment.created", project: projectId },
+      { type: "project.owner.requested", project: projectId },
     ],
     resolve: resolveEvaluationTask,
   },
@@ -457,13 +455,16 @@ export default defineProjectApp({
     "telegram.reply",
     "metric.breach",
     "metric.recovered",
-    { type: "project.owner.requested", project: projectId },
   ],
 
   actions: {
     "evaluate-session": {
       type: "async",
       description: "Evaluate a specific session by sessionId.",
+      inputSchema: Type.Object(
+        { sessionId: Type.String({ minLength: 1 }) },
+        { additionalProperties: true },
+      ),
       event(params) {
         return evaluationSessionRequested(params);
       },
@@ -471,6 +472,10 @@ export default defineProjectApp({
     "deep-eval": {
       type: "async",
       description: "Run one deep evaluator review for a specific session.",
+      inputSchema: Type.Object(
+        { sessionId: Type.String({ minLength: 1 }) },
+        { additionalProperties: true },
+      ),
       event(params) {
         return {
           type: "evaluation.deep.requested",
@@ -482,6 +487,7 @@ export default defineProjectApp({
     "review-evaluation-project": {
       type: "async",
       description: "Ask the evaluation app owner to review project state.",
+      inputSchema: actionInputSchema,
       event(params) {
         return evaluationReviewRequested("manual-review", params);
       },
@@ -490,6 +496,13 @@ export default defineProjectApp({
       type: "async",
       description:
         "Review a target project app from the outside and write owner-facing health feedback.",
+      inputSchema: Type.Object(
+        {
+          targetProject: Type.Optional(Type.String({ minLength: 1 })),
+          reason: Type.Optional(Type.String({ minLength: 1 })),
+        },
+        { additionalProperties: true },
+      ),
       event(params) {
         return projectHealthReviewRequested(params);
       },

@@ -75,6 +75,7 @@ Scout maintains this knowledge-library project:
 - Domain workspace: ${projectDir}
 - App/control plane: ${appDir}
 - Durable library: ${projectDir}/knowledge
+- Working digest: ${appDir}/agents/scout/workspace/digest/today.md
 - External shared corpus: /app/shared/knowledge
 
 Your job in this workflow is not a freeform heartbeat. Review the project task
@@ -112,6 +113,13 @@ Health-signal closure rules:
   short and human-facing; do not duplicate the full INDEX.
 - If reports-layout-backlog appears, move only one small report batch and update
   references. Do not reorganize the whole library in one pass.
+- If artifact-identity-collision appears, inspect only the findings and digest
+  headings named by its evidence. Preserve every recoverable source-grounded
+  finding, give distinct findings descriptive unused paths and headings, and
+  repair the working digest without inventing lost prose. Read all repaired
+  files back and verify that the exact (source, date, scan ID) collision is gone.
+  If evidence is insufficient, report the exact unresolved gap and leave the
+  health fact observable; do not claim that the collision was repaired.
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
@@ -125,9 +133,10 @@ Operating rules:
   the database. Return task changes only through the typed actions in \`finish\`.
 - Existing-task actions require the exact generation shown in the tree. Never
   mutate or create task ids beginning with \`runtime/\`.
-- You may edit Scout-owned knowledge and report files when that is the smallest
-  useful domain step. Task actions describe the durable organization change;
-  they are not a substitute for evidence that the domain change happened.
+- You may edit Scout-owned knowledge and report files, plus the working digest,
+  when that is the smallest useful domain step. Task actions describe the
+  durable organization change; they are not a substitute for evidence that the
+  domain change happened.
 - If no useful library or organization change is warranted, return an empty
   actions array with the exact reason.
 - Finish with state, summary, evidence, actions, and exact Conditions when

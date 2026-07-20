@@ -26,7 +26,7 @@ describe("gym app manifest", () => {
       ]),
     );
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(3);
+    expect(gymApp.tasks?.accepts).toHaveLength(5);
     expect(gymApp.taskRoutes).toBeUndefined();
     expect(gymApp.taskWorkflows).toBeUndefined();
     expect(gymApp.ownerEntry).toBeUndefined();

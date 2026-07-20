@@ -31,7 +31,12 @@ Use these absolute roots directly. Never create a nested project root.
 ## Knowledge Rules
 
 - Search before creating; prefer an in-place update over a duplicate.
-- New observations use flat `knowledge/findings/YYYY-MM-DD-<topic>.md` paths.
+- New observations use flat, descriptive
+  `knowledge/findings/YYYY-MM-DD-<topic>.md` paths. Never allocate a scan number
+  as a new filename or finding identity.
+- When a source run creates a useful new finding, append one short,
+  subject-based heading and highlight to the working daily digest. Do not reuse
+  a numbered identity from another finding.
 - Keep source links or stable source IDs with claims.
 - Keep an `<ai_context>` preamble where the current library uses one.
 - Never simulate or mock source data.

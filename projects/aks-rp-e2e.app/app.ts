@@ -3,6 +3,7 @@ import {
   defineProjectApp,
   eventDetails,
   matchesEventSelector,
+  Type,
   type EventSelector,
   type ProjectAppContext,
   type ProjectAppEvent,
@@ -26,6 +27,11 @@ const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
 const scenarioTestFrontierMinLeaves = 3;
+const actionInputSchema = Type.Object({}, { additionalProperties: true });
+const targetedTaskActionInputSchema = Type.Object(
+  { taskId: Type.Optional(Type.String({ minLength: 1 })) },
+  { additionalProperties: true },
+);
 
 type AppTaskEvent = Record<string, unknown>;
 
@@ -546,6 +552,7 @@ export default defineProjectApp({
     "execute-run": {
       type: "async",
       description: "Request live execution for selected replanned paths.",
+      inputSchema: actionInputSchema,
       event(params) {
         return {
           type: "project.owner.requested",
@@ -566,6 +573,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Advance the project task tree until genuinely blocked, complete, or interrupted by an infra guard.",
+      inputSchema: actionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -588,6 +596,7 @@ export default defineProjectApp({
     watch: {
       type: "async",
       description: "Start or resume app-ops review through the task tree.",
+      inputSchema: actionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -611,6 +620,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask the problem solver to investigate one bounded blocker or root cause.",
+      inputSchema: actionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -631,6 +641,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask the app-ops deep-dive fallback to collect and judge suspicious stalled work without pulsing controllers.",
+      inputSchema: actionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object" && !Array.isArray(params)
@@ -652,6 +663,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask app-ops to propose or refresh the next mid-term focus plan.",
+      inputSchema: actionInputSchema,
       event(params) {
         return {
           type: "project.focus.review.requested",
@@ -672,6 +684,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Create one packet-linked human-facing approval message record using the proven message.created path.",
+      inputSchema: actionInputSchema,
       event(params) {
         return {
           type: "project.approval.requested",
@@ -691,6 +704,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask app-ops to review whether the current focus plan is on track.",
+      inputSchema: actionInputSchema,
       event(params) {
         return {
           type: "project.focus.review.requested",
@@ -711,6 +725,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Pulse the targeted long-lived spec verification loop task controller.",
+      inputSchema: targetedTaskActionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object"
@@ -739,6 +754,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Pulse the targeted long-lived feature compact loop task controller.",
+      inputSchema: targetedTaskActionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object"
@@ -767,6 +783,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Pulse the targeted scenario-test missing-adapter normalization frontier.",
+      inputSchema: actionInputSchema,
       event(params) {
         const input =
           params && typeof params === "object"

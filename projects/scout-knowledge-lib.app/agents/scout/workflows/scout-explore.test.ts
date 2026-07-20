@@ -13,6 +13,7 @@ import {
   buildExploreTask,
   duplicateSourceReferences,
   executeScoutExplore,
+  replacedExistingOutputs,
   xhsWaitResult,
 } from "./scout-explore";
 
@@ -102,8 +103,10 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("The workflow supplies checkedAt");
     expect(task).toContain("open it before deciding");
     expect(task).toContain(
-      "Never create a new finding that repeats a source URL",
+      "Never create a new finding that repeats a primary source",
     );
+    expect(task).toContain("Choose an unused descriptive topic slug");
+    expect(task).toContain("Read every created or changed output back");
   });
 
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
@@ -521,11 +524,12 @@ describe("scout-explore workflow prompt", () => {
     const before = new Set([existing]);
     writeFileSync(
       duplicate,
-      "Same source: https://other:secret@example.com/research?token=other\n",
+      "Source: https://other:secret@example.com/research?token=other\n",
     );
 
     expect(duplicateSourceReferences([duplicate], before, projectDir)).toEqual([
       {
+        kind: "existing-file",
         output: duplicate,
         sourceUrl: "https://example.com/research",
         existingFiles: [existing],
@@ -534,6 +538,97 @@ describe("scout-explore workflow prompt", () => {
     expect(duplicateSourceReferences([existing], before, projectDir)).toEqual(
       [],
     );
+  });
+
+  it("rejects one primary source declared in two peer finding sections", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-same-file-admission-"));
+    temporaryRoots.push(root);
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    mkdirSync(findingsDir, { recursive: true });
+    const duplicate = join(findingsDir, "duplicate.md");
+    writeFileSync(
+      duplicate,
+      [
+        "## 1. First observation",
+        "**Source:** https://example.com/research",
+        "",
+        "## 2. Repeated observation",
+        "**Source:** https://example.com/research",
+      ].join("\n"),
+    );
+
+    expect(
+      duplicateSourceReferences([duplicate], new Set(), projectDir),
+    ).toEqual([
+      {
+        kind: "repeated-primary-source",
+        output: duplicate,
+        sourceUrl: "https://example.com/research",
+        sections: ["## 1. First observation", "## 2. Repeated observation"],
+      },
+    ]);
+  });
+
+  it("allows repeated links within one finding section", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-same-section-admission-"));
+    temporaryRoots.push(root);
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    mkdirSync(findingsDir, { recursive: true });
+    const finding = join(findingsDir, "finding.md");
+    writeFileSync(
+      finding,
+      [
+        "## 1. One observation",
+        "**Source:** https://example.com/research",
+        "The same [source](https://example.com/research) is discussed again.",
+      ].join("\n"),
+    );
+
+    expect(duplicateSourceReferences([finding], new Set(), projectDir)).toEqual(
+      [],
+    );
+  });
+
+  it("compares only primary declarations across files", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-reference-admission-"));
+    temporaryRoots.push(root);
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    mkdirSync(findingsDir, { recursive: true });
+    const existing = join(findingsDir, "existing.md");
+    const finding = join(findingsDir, "finding.md");
+    writeFileSync(existing, "Source: https://example.com/research\n");
+    writeFileSync(
+      finding,
+      [
+        "Source: https://example.com/new",
+        "See [prior work](https://example.com/research) for context.",
+      ].join("\n"),
+    );
+
+    expect(
+      duplicateSourceReferences([finding], new Set([existing]), projectDir),
+    ).toEqual([]);
+  });
+
+  it("detects removal of a primary source from an existing output", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-replacement-admission-"));
+    temporaryRoots.push(root);
+    const output = join(root, "finding.md");
+    writeFileSync(output, "Source: https://example.com/original\n");
+    const before = new Map([[output, ["https://example.com/original"]]]);
+    writeFileSync(output, "Source: https://example.com/replacement\n");
+
+    expect(replacedExistingOutputs([output], before)).toEqual([
+      {
+        kind: "existing-output-replaced",
+        output,
+        removedPrimarySources: ["https://example.com/original"],
+        currentPrimarySources: ["https://example.com/replacement"],
+      },
+    ]);
   });
 
   it("does not converge a run that creates an exact-source duplicate", async () => {
@@ -571,16 +666,65 @@ describe("scout-explore workflow prompt", () => {
     expect(await executeScoutExplore(ctx)).toMatchObject({
       type: "blocked",
       reason:
-        "Scout exploration created a new finding with source URLs already present in the knowledge library",
+        "Scout exploration created a finding with duplicate source references",
       context: {
         duplicates: [
           {
+            kind: "existing-file",
             output: duplicate,
             sourceUrl: "https://example.com/research",
             existingFiles: [existing],
           },
         ],
         sessionId: "s_duplicate",
+      },
+    });
+  });
+
+  it("does not converge a run that replaces an existing output", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-replacement-run-"));
+    temporaryRoots.push(root);
+    const appDir = join(root, "scout.app");
+    const projectDir = join(root, "scout");
+    const findingsDir = join(projectDir, "knowledge", "findings");
+    const workspaceDir = join(appDir, "agents", "scout", "workspace");
+    mkdirSync(findingsDir, { recursive: true });
+    mkdirSync(workspaceDir, { recursive: true });
+    const existing = join(findingsDir, "existing.md");
+    writeFileSync(existing, "Source: https://example.com/original\n");
+
+    const ctx = workflowContext(async () => {
+      writeFileSync(existing, "Source: https://example.com/replacement\n");
+      return {
+        status: "done",
+        sessionId: "s_replacement",
+        structuredResult: {
+          summary: "Updated a finding.",
+          source: {
+            name: "hn",
+            queryOrFeed: "topstories",
+            itemIdsOrUrls: ["https://example.com/replacement"],
+          },
+          outputs: [existing],
+        },
+      };
+    }, "hn");
+    ctx.appDir = appDir;
+    ctx.projectDir = projectDir;
+
+    expect(await executeScoutExplore(ctx)).toMatchObject({
+      type: "blocked",
+      reason:
+        "Scout exploration removed primary sources from an existing output",
+      context: {
+        replacements: [
+          {
+            kind: "existing-output-replaced",
+            output: existing,
+            removedPrimarySources: ["https://example.com/original"],
+          },
+        ],
+        sessionId: "s_replacement",
       },
     });
   });

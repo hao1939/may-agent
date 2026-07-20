@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   buildLibraryHealthPacket,
+  execute,
   type LibraryHealthPacket,
 } from "./library-health";
 
@@ -173,6 +174,149 @@ describe("Scout library-health observer", () => {
       wake: true,
       reason: "worse",
     });
+  });
+
+  it("reports one exact artifact identity mapped to distinct titles", () => {
+    const paths = fixture();
+    const findingsDir = join(paths.projectDir, "knowledge", "findings");
+    mkdirSync(findingsDir, { recursive: true });
+    writeFileSync(
+      join(findingsDir, "github-536.md"),
+      [
+        "---",
+        'title: "GitHub Scan #536 — Agent Memory Encryption"',
+        "source: github",
+        "date: 2026-07-20",
+        "---",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(paths.appDir, "agents", "scout", "workspace", "digest", "today.md"),
+      [
+        "# Today",
+        "## GitHub Scan #536 — Agent Memory Encryption (2026-07-20)",
+        "## GitHub Scan #536 — Exo-Agent Control (2026-07-20)",
+      ].join("\n"),
+    );
+
+    const packet = buildLibraryHealthPacket({
+      ...paths,
+      now: Date.parse("2026-07-20T00:00:00.000Z"),
+    });
+
+    expect(packet.facts).toContainEqual(
+      expect.objectContaining({
+        key: "artifact-identity-collision:github:2026-07-20:536",
+        observedValue: 2,
+        evidence: expect.objectContaining({
+          findingPaths: ["knowledge/findings/github-536.md"],
+          titles: [
+            "GitHub Scan #536 — Agent Memory Encryption",
+            "GitHub Scan #536 — Exo-Agent Control",
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("uses the existing owner wake for a new identity collision", async () => {
+    const paths = fixture();
+    writeFileSync(
+      join(paths.appDir, "agents", "scout", "workspace", "digest", "today.md"),
+      [
+        "## GitHub Scan #536 — First title (2026-07-20)",
+        "## GitHub Scan #536 — Second title (2026-07-20)",
+      ].join("\n"),
+    );
+    const emitted: Record<string, unknown>[] = [];
+
+    const result = await execute({
+      ...paths,
+      task: "library health",
+      query: "",
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      done(summary: string, output?: unknown) {
+        return { type: "done", summary, output } as const;
+      },
+    } as never);
+
+    expect(emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.owner.requested",
+        reason: "library-health-signal",
+        params: expect.objectContaining({
+          signals: expect.arrayContaining([
+            expect.objectContaining({
+              key: "artifact-identity-collision:github:2026-07-20:536",
+            }),
+          ]),
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      type: "done",
+      output: { state: "converged" },
+    });
+  });
+
+  it("checks the most recent archived digest across rollover", () => {
+    const paths = fixture();
+    const digestDir = join(
+      paths.appDir,
+      "agents",
+      "scout",
+      "workspace",
+      "digest",
+    );
+    writeFileSync(
+      join(digestDir, "today.md"),
+      "## HN Scan #3 — Current title (2026-07-20)\n",
+    );
+    writeFileSync(
+      join(digestDir, "2026-07-19.md"),
+      "## HN Scan #2 — Older archive (2026-07-19)\n",
+    );
+    writeFileSync(
+      join(digestDir, "2026-07-20.md"),
+      "## HN Scan #3 — Replaced title (2026-07-20)\n",
+    );
+
+    const packet = buildLibraryHealthPacket({
+      ...paths,
+      now: Date.parse("2026-07-21T00:00:00.000Z"),
+    });
+
+    expect(packet.facts).toContainEqual(
+      expect.objectContaining({
+        key: "artifact-identity-collision:hn:2026-07-20:3",
+        observedValue: 2,
+      }),
+    );
+  });
+
+  it("allows the same explicit identity and title to appear more than once", () => {
+    const paths = fixture();
+    const digestDir = join(
+      paths.appDir,
+      "agents",
+      "scout",
+      "workspace",
+      "digest",
+    );
+    const heading = "## GitHub Scan #536 — Same title (2026-07-20)\n";
+    writeFileSync(join(digestDir, "today.md"), heading);
+    writeFileSync(join(digestDir, "2026-07-20.md"), heading);
+
+    const packet = buildLibraryHealthPacket({
+      ...paths,
+      now: Date.parse("2026-07-21T00:00:00.000Z"),
+    });
+
+    expect(
+      packet.facts.some((fact) => fact.kind === "artifact-identity-collision"),
+    ).toBe(false);
   });
 
   it("bounds facts and owner wake signals", () => {

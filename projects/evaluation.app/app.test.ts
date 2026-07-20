@@ -177,7 +177,7 @@ describe("evaluation app task reconciliation", () => {
 
   test("declares one convention-first task resolver", () => {
     expect(app.tasks?.resolve).toBe(resolveEvaluationTask);
-    expect(app.tasks?.accepts).toHaveLength(7);
+    expect(app.tasks?.accepts).toHaveLength(9);
     expect(app.ownerEntry).toBeUndefined();
     expect(app.taskWorkflows).toBeUndefined();
     expect(app.taskRoutes).toBeUndefined();

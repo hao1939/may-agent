@@ -126,7 +126,10 @@ Output contract:
 - Run-level drafts may go under \`${paths.appDir}/agents/scout/workspace/findings/\`.
 - Append short user-facing highlights to \`${paths.appDir}/agents/scout/workspace/digest/today.md\` when useful.
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
-- Search source URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a source URL already present elsewhere; update the matched file or return an evidence-backed no-op.
+- Search primary Source:/Repo: URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a primary source already present elsewhere; update the matched file or return an evidence-backed no-op.
+- Before creating a finding, inspect the exact target path. Choose an unused descriptive topic slug; do not use a scan number as a shared filename allocator.
+- Update an existing finding only for the same subject, and preserve all of its existing primary Source:/Repo: declarations.
+- Read every created or changed output back before returning it.
 - Treat these absolute roots as authoritative. Never prepend \`projects/scout-knowledge-lib\` to the current working directory.
 - Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
 - If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.
@@ -368,11 +371,150 @@ function sourceUrls(content: string): string[] {
   ];
 }
 
-type DuplicateSourceReference = {
+function declaredPrimarySourceUrls(line: string): string[] {
+  const declaration =
+    /^\s*(?:[-*]\s+)?\*{0,2}(?:source|repo)\s*:\*{0,2}\s*(.+)$/i.exec(line);
+  return declaration ? sourceUrls(declaration[1]) : [];
+}
+
+export function primarySourceUrls(content: string): string[] {
+  return [
+    ...new Set(content.split(/\r?\n/).flatMap(declaredPrimarySourceUrls)),
+  ];
+}
+
+type ExistingOutputSnapshot = Map<string, string[]>;
+
+function snapshotExistingOutputPrimarySources(paths: {
+  appDir: string;
+  projectDir: string;
+}): ExistingOutputSnapshot {
+  const roots = [
+    resolve(paths.projectDir, "knowledge"),
+    resolve(paths.appDir, "agents", "scout", "workspace"),
+  ];
+  return new Map(
+    roots.flatMap(realMarkdownFiles).flatMap((path) => {
+      try {
+        return [[path, primarySourceUrls(readFileSync(path, "utf8"))] as const];
+      } catch {
+        return [];
+      }
+    }),
+  );
+}
+
+type ExistingOutputReplacement = {
+  kind: "existing-output-replaced";
   output: string;
-  sourceUrl: string;
-  existingFiles: string[];
+  removedPrimarySources: string[];
+  currentPrimarySources: string[];
 };
+
+export function replacedExistingOutputs(
+  outputs: string[],
+  before: ExistingOutputSnapshot,
+): ExistingOutputReplacement[] {
+  return outputs.flatMap((output) => {
+    const previous = before.get(output);
+    if (!previous?.length) return [];
+    let current: string[];
+    try {
+      current = primarySourceUrls(readFileSync(output, "utf8"));
+    } catch {
+      current = [];
+    }
+    const currentSet = new Set(current);
+    const removedPrimarySources = previous.filter(
+      (source) => !currentSet.has(source),
+    );
+    return removedPrimarySources.length > 0
+      ? [
+          {
+            kind: "existing-output-replaced" as const,
+            output,
+            removedPrimarySources,
+            currentPrimarySources: current,
+          },
+        ]
+      : [];
+  });
+}
+
+type DuplicateSourceReference =
+  | {
+      kind: "existing-file";
+      output: string;
+      sourceUrl: string;
+      existingFiles: string[];
+    }
+  | {
+      kind: "repeated-primary-source";
+      output: string;
+      sourceUrl: string;
+      sections: string[];
+    };
+
+function repeatedPrimarySourceReferences(
+  output: string,
+  content: string,
+): DuplicateSourceReference[] {
+  const declarations = new Map<
+    string,
+    Map<number, { label: string; level: number; parent: number }>
+  >();
+  let sectionId = 0;
+  let parentSectionId = 0;
+  let currentSection:
+    { id: number; label: string; level: number; parent: number } | undefined;
+
+  for (const line of content.split(/\r?\n/)) {
+    const heading = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
+    if (heading) {
+      const level = heading[1].length;
+      const title = heading[2].trim();
+      sectionId += 1;
+      if (level === 2) parentSectionId = sectionId;
+      currentSection = /^(?:synthesis|references|sources)\b/i.test(title)
+        ? undefined
+        : {
+            id: sectionId,
+            label: `${heading[1]} ${title}`,
+            level,
+            parent: level === 2 ? 0 : parentSectionId,
+          };
+      continue;
+    }
+    if (!currentSection) continue;
+    for (const sourceUrl of declaredPrimarySourceUrls(line)) {
+      const sections = declarations.get(sourceUrl) ?? new Map();
+      sections.set(currentSection.id, currentSection);
+      declarations.set(sourceUrl, sections);
+    }
+  }
+
+  const duplicates: DuplicateSourceReference[] = [];
+  for (const [sourceUrl, declaredSections] of declarations) {
+    const peers = new Map<string, string[]>();
+    for (const section of declaredSections.values()) {
+      const peerKey = `${section.level}:${section.parent}`;
+      const labels = peers.get(peerKey) ?? [];
+      labels.push(section.label);
+      peers.set(peerKey, labels);
+    }
+    for (const sections of peers.values()) {
+      if (sections.length > 1) {
+        duplicates.push({
+          kind: "repeated-primary-source",
+          output,
+          sourceUrl,
+          sections,
+        });
+      }
+    }
+  }
+  return duplicates;
+}
 
 export function duplicateSourceReferences(
   outputs: string[],
@@ -389,7 +531,7 @@ export function duplicateSourceReferences(
     } catch {
       continue;
     }
-    for (const url of sourceUrls(content)) {
+    for (const url of primarySourceUrls(content)) {
       const paths = urlIndex.get(url) ?? new Set<string>();
       paths.add(path);
       urlIndex.set(url, paths);
@@ -412,12 +554,18 @@ export function duplicateSourceReferences(
     } catch {
       continue;
     }
-    for (const sourceUrl of sourceUrls(content)) {
+    duplicates.push(...repeatedPrimarySourceReferences(output, content));
+    for (const sourceUrl of primarySourceUrls(content)) {
       const existingFiles = [...(urlIndex.get(sourceUrl) ?? [])]
         .filter((path) => path !== output)
         .sort();
       if (existingFiles.length > 0) {
-        duplicates.push({ output, sourceUrl, existingFiles });
+        duplicates.push({
+          kind: "existing-file",
+          output,
+          sourceUrl,
+          existingFiles,
+        });
       }
     }
   }
@@ -503,8 +651,16 @@ export async function executeScoutExplore(
   const task =
     ctx.task || "Explore sources and update the Scout knowledge library.";
   const agentTask = buildExploreTask(task, { appDir, projectDir }, xhsPacket);
+  const existingOutputSources = snapshotExistingOutputPrimarySources({
+    appDir,
+    projectDir,
+  });
+  const knowledgeRoot = realpathSync(resolve(projectDir, "knowledge"));
   const existingKnowledgeFiles = new Set(
-    realMarkdownFiles(resolve(projectDir, "knowledge")),
+    [...existingOutputSources.keys()].filter(
+      (path) =>
+        path === knowledgeRoot || path.startsWith(`${knowledgeRoot}${sep}`),
+    ),
   );
 
   const result = await ctx.runAgent(agent, agentTask, {
@@ -556,6 +712,16 @@ export async function executeScoutExplore(
       { outputs: structured.outputs },
     );
   }
+  const replacements = replacedExistingOutputs(outputs, existingOutputSources);
+  if (replacements.length > 0) {
+    return ctx.blocked(
+      "Scout exploration removed primary sources from an existing output",
+      {
+        replacements,
+        sessionId: result.sessionId,
+      },
+    );
+  }
   const duplicateReferences = duplicateSourceReferences(
     outputs,
     existingKnowledgeFiles,
@@ -563,7 +729,7 @@ export async function executeScoutExplore(
   );
   if (duplicateReferences.length > 0) {
     return ctx.blocked(
-      "Scout exploration created a new finding with source URLs already present in the knowledge library",
+      "Scout exploration created a finding with duplicate source references",
       {
         duplicates: duplicateReferences,
         sessionId: result.sessionId,

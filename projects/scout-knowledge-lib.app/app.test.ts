@@ -62,6 +62,11 @@ describe("Scout task reconciliation", () => {
       id: "library-maintenance",
       parentId: "library-operations",
       mode: "maintain",
+      outputs: [
+        "/app/projects/scout-knowledge-lib/knowledge",
+        "/app/projects/scout-knowledge-lib/reports",
+        "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
+      ],
     });
     expect(
       resolveScoutTask({
@@ -100,6 +105,10 @@ describe("Scout task reconciliation", () => {
         type: "project.owner.requested",
         project: "scout-knowledge-lib",
       },
+      {
+        type: "project.comment.created",
+        project: "scout-knowledge-lib",
+      },
     ]);
     expect(app.tasks?.resolve).toBe(resolveScoutTask);
     expect(app.owner).toBe("scout");
@@ -131,6 +140,7 @@ describe("Scout task reconciliation", () => {
     expect(intervals["scout-explore-hn"]).toBe(7_200_000);
     expect(intervals["scout-explore-xhs"]).toBe(14_400_000);
     expect(intervals["scout-explore-github"]).toBe(7_200_000);
+    expect(app.budget?.maxConcurrent).toBe(1);
   });
 
   it("uses one daily combined owner review", () => {

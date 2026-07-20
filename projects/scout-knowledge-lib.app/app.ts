@@ -1,6 +1,7 @@
 import {
   defineProjectApp,
   eventDetails,
+  Type,
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
@@ -10,6 +11,7 @@ import { observeXhsCredential } from "./watchers/xhs-credential.js";
 const projectId = "scout-knowledge-lib";
 const appDir = "/app/projects/scout-knowledge-lib.app";
 const projectDir = "/app/projects/scout-knowledge-lib";
+const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
 function eventParams(params: unknown): Record<string, unknown> {
   return params && typeof params === "object" && !Array.isArray(params)
@@ -90,9 +92,14 @@ export function resolveScoutTask(
         outputs: [`${appDir}/.state/library-health-packets.jsonl`],
         priority: "P1",
       };
+    case "project.comment.created":
     case "project.owner.requested": {
       const reason = String(details.reason ?? "");
-      if (!ownerReviewReasons.has(reason)) return null;
+      if (
+        event.type === "project.owner.requested" &&
+        !ownerReviewReasons.has(reason)
+      )
+        return null;
       return {
         id: "library-maintenance",
         parentId: "library-operations",
@@ -103,7 +110,11 @@ export function resolveScoutTask(
         ],
         mode: "maintain",
         workflow: "knowledge-planner",
-        outputs: [`${projectDir}/knowledge`, `${projectDir}/reports`],
+        outputs: [
+          `${projectDir}/knowledge`,
+          `${projectDir}/reports`,
+          `${appDir}/agents/scout/workspace/digest/today.md`,
+        ],
         priority: "P1",
       };
     }
@@ -116,10 +127,6 @@ async function routeScoutEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  if (event.type === "project.comment.created") {
-    return ctx.emit(ownerRequested("project-comment", eventDetails(event)));
-  }
-
   if (event.type === "project.xhs_credential.check") {
     return observeXhsCredential(ctx);
   }
@@ -141,7 +148,8 @@ export default defineProjectApp({
   budget: {
     sessionsPerDay: 50,
     tokensPerDay: 800_000,
-    maxConcurrent: 2,
+    // All source lanes share one knowledge tree and one digest accumulator.
+    maxConcurrent: 1,
   },
 
   schedules: [
@@ -252,20 +260,19 @@ export default defineProjectApp({
       { type: "scout.digest", project: projectId },
       { type: "project.library_health.tick", project: projectId },
       { type: "project.owner.requested", project: projectId },
+      { type: "project.comment.created", project: projectId },
     ],
     resolve: resolveScoutTask,
   },
 
-  events: [
-    { type: "project.xhs_credential.check", project: projectId },
-    { type: "project.comment.created", project: projectId },
-  ],
+  events: [{ type: "project.xhs_credential.check", project: projectId }],
 
   actions: {
     "review-library": {
       type: "async",
       description:
         "Ask Scout to review the knowledge library and update it if useful.",
+      inputSchema: actionInputSchema,
       event(params) {
         return ownerRequested("manual-library-review", params);
       },
@@ -274,6 +281,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask Scout to repair knowledge/INDEX.md and related navigation.",
+      inputSchema: actionInputSchema,
       event(params) {
         return ownerRequested("repair-index", params);
       },
@@ -282,6 +290,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Run the deterministic library-health observer and wake Scout if maintenance signals are found.",
+      inputSchema: actionInputSchema,
       event(params) {
         return {
           type: "project.library_health.tick",
@@ -294,6 +303,19 @@ export default defineProjectApp({
       type: "async",
       description:
         "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github).",
+      inputSchema: Type.Object(
+        {
+          source: Type.Optional(
+            Type.Union([
+              Type.Literal("arxiv"),
+              Type.Literal("hn"),
+              Type.Literal("xhs"),
+              Type.Literal("github"),
+            ]),
+          ),
+        },
+        { additionalProperties: false },
+      ),
       event(params) {
         const source =
           params && typeof params === "object" && "source" in params

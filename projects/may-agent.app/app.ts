@@ -1,8 +1,8 @@
-import { appendFileSync, mkdirSync } from "node:fs";
 import {
   defineProjectApp,
   eventDetails,
   eventString,
+  Type,
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
@@ -10,6 +10,7 @@ import {
 
 const projectId = "may-agent";
 const projectOwnerAgent = "tech-lead";
+const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
 function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   return {
@@ -53,6 +54,7 @@ export function resolveMayAgentTask(
         workflow: "ops-health-review",
         priority: "P1",
       };
+    case "project.comment.created":
     case "project.owner.requested":
       return {
         id: "runtime/platform-owner-review",
@@ -71,45 +73,10 @@ export function resolveMayAgentTask(
   }
 }
 
-function appendDiscussionRecord(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): string | null {
-  const text =
-    eventString(event, "comment") ||
-    eventString(event, "commentText") ||
-    eventString(event, "text");
-  if (!text.trim()) return null;
-
-  const now = new Date().toISOString();
-  const id =
-    eventString(event, "id") ||
-    `c_${now.replace(/\D/g, "").slice(0, 14)}_${Math.random().toString(36).slice(2, 8)}`;
-  mkdirSync(ctx.appPath(".state"), { recursive: true });
-  appendFileSync(
-    ctx.appPath(".state/discussion.jsonl"),
-    `${JSON.stringify({
-      id,
-      ts: now,
-      author: eventString(event, "author") || "human",
-      kind: "comment",
-      status: "unread",
-      source: typeof event.source === "string" ? event.source : "event",
-      text: text.trim(),
-    })}\n`,
-  );
-  return id;
-}
-
 async function routePlatformEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
-  if (event.type === "project.comment.created") {
-    const commentId = appendDiscussionRecord(ctx, event);
-    return ctx.emit(ownerRequested("project-comment", { commentId }));
-  }
-
   if (event.type === "project.tick") {
     return ctx.emit(
       ownerRequested("scheduled-project-review", eventDetails(event)),
@@ -341,12 +308,12 @@ export default defineProjectApp({
       { type: "project.ops_digest.tick", project: projectId },
       { type: "project.ops_health.tick", project: projectId },
       { type: "project.owner.requested", project: projectId },
+      { type: "project.comment.created", project: projectId },
     ],
     resolve: resolveMayAgentTask,
   },
 
   events: [
-    { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "metric.breach" },
     { type: "metric.stalled" },
@@ -358,6 +325,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Ask tech-lead to review and advance the May-agent platform project.",
+      inputSchema: actionInputSchema,
       event(params) {
         return ownerRequested("manual-advance", params);
       },

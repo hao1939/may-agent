@@ -2,12 +2,14 @@ import { createHash } from "node:crypto";
 import {
   defineProjectApp,
   eventDetails,
+  Type,
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 
 const projectId = "gym";
+const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
 function params(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -93,6 +95,20 @@ export function resolveGymTask(
   if (!eventId) return null;
 
   switch (event.type) {
+    case "project.comment.created":
+    case "project.owner.requested":
+      return {
+        id: "runtime/owner-review",
+        parentId: "review-proposals",
+        outcome:
+          "Keep the Gym project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
+        acceptance: [
+          "The owner answers, records an evidence-backed no-op, or proposes bounded durable follow-up without changing benchmark truth.",
+        ],
+        mode: "maintain",
+        owner: "gym",
+        priority: "P1",
+      };
     case "gym.incident.detected": {
       const evaluation = params(details.evaluation);
       const incidentIdentity =
@@ -237,6 +253,8 @@ export default defineProjectApp({
       "gym.incident.detected",
       "gym.regression.requested",
       "gym.review.requested",
+      { type: "project.comment.created", project: projectId },
+      { type: "project.owner.requested", project: projectId },
     ],
     resolve: resolveGymTask,
   },
@@ -248,6 +266,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Run May alignment regression now, optionally for one scenario.",
+      inputSchema: actionInputSchema,
       event(input) {
         return regressionRequested(input);
       },
@@ -256,6 +275,7 @@ export default defineProjectApp({
       type: "async",
       description:
         "Submit a concrete May failure or human correction for benchmark review.",
+      inputSchema: actionInputSchema,
       event(input) {
         return incidentDetected({ reason: "manual", ...params(input) });
       },
