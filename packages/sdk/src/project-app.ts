@@ -142,24 +142,32 @@ export type ProjectAppTaskAction =
       kind: "create-task";
       id: string;
       parentId: string;
-      goal: string;
+      outcome: string;
       mode: ProjectAppTaskMode;
       outputs: string[];
       acceptance: string[];
-      priority?: "P0" | "P1" | "P2" | "P3";
+      priority: "P0" | "P1" | "P2" | "P3";
       owner?: string;
       workflow?: string;
       input?: Record<string, unknown>;
       dependsOn?: string[];
+      category?: string;
     }
   | {
       kind: "update-task";
       taskId: string;
       expectedGeneration: number;
-      goal?: string;
+      parentId?: string;
+      outcome?: string;
       mode?: ProjectAppTaskMode;
       outputs?: string[];
       acceptance?: string[];
+      priority?: "P0" | "P1" | "P2" | "P3";
+      owner?: string | null;
+      workflow?: string | null;
+      input?: Record<string, unknown>;
+      dependsOn?: string[];
+      category?: string | null;
     }
   | {
       kind: "close-task";
@@ -179,6 +187,15 @@ export type ProjectAppTaskHandlerResult = {
   summary: string;
   evidence: string[];
   actions?: ProjectAppTaskAction[];
+  conditions?: ProjectAppConditionSpec[];
+};
+
+/** Model/authoring input before task-action convention defaults are applied. */
+export type ProjectAppTaskHandlerInput = {
+  state: ProjectAppTaskHandlerState;
+  summary: string;
+  evidence: string[];
+  actions?: unknown[];
   conditions?: ProjectAppConditionSpec[];
 };
 

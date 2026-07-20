@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { Type } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
@@ -11,8 +10,10 @@ import { runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflo
 import { getDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
 import {
+  admitProjectAppTaskHandlerResult,
   loadProjectReadModel,
   matchesEventSelector,
+  projectAppTaskOwnerResultSchema,
   projectRuntimePaths,
   readTaskTree,
   type ProjectApp,
@@ -25,8 +26,8 @@ import {
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskController } from "../project-app-task-controller.js";
-import { isTypedProjectAppConditionSubject, trackProjectAppConditionEvent } from "../project-app-condition-tracker.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type EventBus } from "../event-bus.js";
+import { trackProjectAppConditionEvent } from "../project-app-condition-tracker.js";
+import { childEventTrace, EVENT_ROW_ID, type AgentEvent, type DeliveryResult, type EventBus } from "../event-bus.js";
 import {
   acknowledgeProjectAppTaskRecoveryAttention,
   claimProjectAppTask,
@@ -538,247 +539,34 @@ type NormalizedTaskHandlerResult = {
   conditions?: ProjectAppConditionSpec[];
 };
 
-const taskStates = new Set(["converged", "waiting", "needs-owner"]);
-const taskModes = new Set(["achieve", "maintain"]);
-const taskPriorities = new Set(["P0", "P1", "P2", "P3"]);
-const ownerTaskActionSchema = Type.Union([
-  Type.Object({
-    kind: Type.Literal("create-task"),
-    id: Type.String(),
-    parentId: Type.String(),
-    goal: Type.String(),
-    mode: Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]),
-    outputs: Type.Array(Type.String()),
-    acceptance: Type.Array(Type.String()),
-    priority: Type.Optional(
-      Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]),
-    ),
-    owner: Type.Optional(Type.String()),
-    workflow: Type.Optional(Type.String()),
-    input: Type.Optional(Type.Any()),
-    dependsOn: Type.Optional(Type.Array(Type.String())),
-  }),
-  Type.Object({
-    kind: Type.Literal("update-task"),
-    taskId: Type.String(),
-    expectedGeneration: Type.Number(),
-    goal: Type.Optional(Type.String()),
-    mode: Type.Optional(Type.Union([Type.Literal("achieve"), Type.Literal("maintain")])),
-    outputs: Type.Optional(Type.Array(Type.String())),
-    acceptance: Type.Optional(Type.Array(Type.String())),
-  }),
-  Type.Object({
-    kind: Type.Literal("close-task"),
-    taskId: Type.String(),
-    expectedGeneration: Type.Number(),
-    summary: Type.String(),
-  }),
-  Type.Object({
-    kind: Type.Literal("unblock-task"),
-    taskId: Type.String(),
-    expectedGeneration: Type.Number(),
-    reason: Type.String(),
-  }),
-]);
-const ownerTaskConditionSchema = Type.Object({
-  id: Type.String(),
-  type: Type.String(),
-  subject: Type.String(),
-  expected: Type.Any(),
-  owner: Type.Optional(Type.String()),
-});
-const ownerTaskResultSchema = Type.Object({
-  state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
-  summary: Type.String(),
-  evidence: Type.Array(Type.String()),
-  actions: Type.Optional(Type.Array(ownerTaskActionSchema)),
-  conditions: Type.Optional(Type.Array(ownerTaskConditionSchema)),
-});
-
-function validProjectAppConditionSpec(value: unknown): value is ProjectAppConditionSpec {
-  if (!isRecord(value)) return false;
-  if (typeof value.id !== "string" || !value.id.trim()) return false;
-  if (typeof value.type !== "string" || !value.type.trim()) return false;
-  if (typeof value.subject !== "string" || !isTypedProjectAppConditionSubject(value.subject.trim())) return false;
-  if (!("expected" in value)) return false;
-  if (value.owner !== undefined && (typeof value.owner !== "string" || !value.owner.trim())) {
-    return false;
-  }
-  return true;
-}
-
-function normalizedConditions(conditions: unknown[] | undefined): ProjectAppConditionSpec[] {
-  return (conditions ?? []).filter(validProjectAppConditionSpec).map((condition) => ({
-    ...condition,
-    id: condition.id.trim(),
-    type: condition.type.trim(),
-    subject: condition.subject.trim(),
-    ...(condition.owner !== undefined ? { owner: condition.owner.trim() } : {}),
-  }));
-}
-
-function nonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function stringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
-}
-
-function validExpectedGeneration(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0;
-}
-
-function invalidProjectAppTaskActionReason(value: unknown, index: number): string | null {
-  if (!isRecord(value)) return `actions[${index}] must be an object`;
-  const kind = value.kind;
-  if (!["create-task", "update-task", "close-task", "unblock-task"].includes(String(kind))) {
-    return `actions[${index}].kind must be one of create-task, update-task, close-task, unblock-task`;
-  }
-
-  if (kind === "create-task") {
-    if (!nonEmptyString(value.id)) return `actions[${index}].id must be a non-empty string`;
-    if (!nonEmptyString(value.parentId)) return `actions[${index}].parentId must be a non-empty string`;
-    if (!nonEmptyString(value.goal)) return `actions[${index}].goal must be a non-empty string`;
-    if (!taskModes.has(String(value.mode))) return `actions[${index}].mode must be achieve or maintain`;
-    if (!stringArray(value.outputs)) return `actions[${index}].outputs must be a string array`;
-    if (!stringArray(value.acceptance) || value.acceptance.length === 0) {
-      return `actions[${index}].acceptance must be a non-empty string array`;
-    }
-    if (value.priority !== undefined && !taskPriorities.has(String(value.priority))) {
-      return `actions[${index}].priority must be P0, P1, P2, or P3`;
-    }
-    if (value.owner !== undefined && !nonEmptyString(value.owner)) {
-      return `actions[${index}].owner must be a non-empty string when present`;
-    }
-    if (value.workflow !== undefined && !nonEmptyString(value.workflow)) {
-      return `actions[${index}].workflow must be a non-empty string when present`;
-    }
-    if (typeof value.workflow === "string" && value.workflow.trim() === "project") {
-      return `actions[${index}].workflow must name a real workflow; omit workflow for owner-handled project work`;
-    }
-    if (value.dependsOn !== undefined && !stringArray(value.dependsOn)) {
-      return `actions[${index}].dependsOn must be a string array when present`;
-    }
-    return null;
-  }
-
-  if (!nonEmptyString(value.taskId)) return `actions[${index}].taskId must be a non-empty string`;
-  if (!validExpectedGeneration(value.expectedGeneration)) {
-    return `actions[${index}].expectedGeneration must be a positive integer`;
-  }
-  if (kind === "update-task") {
-    if (value.goal !== undefined && !nonEmptyString(value.goal)) {
-      return `actions[${index}].goal must be a non-empty string when present`;
-    }
-    if (value.mode !== undefined && !taskModes.has(String(value.mode))) {
-      return `actions[${index}].mode must be achieve or maintain when present`;
-    }
-    if (value.outputs !== undefined && !stringArray(value.outputs)) {
-      return `actions[${index}].outputs must be a string array when present`;
-    }
-    if (value.acceptance !== undefined && !stringArray(value.acceptance)) {
-      return `actions[${index}].acceptance must be a string array when present`;
-    }
-    return null;
-  }
-  if (kind === "close-task" && !nonEmptyString(value.summary)) {
-    return `actions[${index}].summary must be a non-empty string`;
-  }
-  if (kind === "unblock-task" && !nonEmptyString(value.reason)) {
-    return `actions[${index}].reason must be a non-empty string`;
-  }
-  return null;
-}
-
 export function normalizeTaskHandlerResult(
   output: unknown,
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
+  options: { allowNeedsOwner?: boolean; defaultParentId?: string } = {},
 ): NormalizedTaskHandlerResult {
-  if (!isRecord(output)) {
+  if (output === undefined && fallback.type === "blocked") {
     return {
       state: "error",
-      summary:
-        fallback.type === "blocked"
-          ? fallback.summary
-          : "Workflow returned an invalid task handler result: expected an object",
+      summary: fallback.summary,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
-  const state = output.state;
-  const summary = output.summary;
-  const evidence = output.evidence;
-  const actions = output.actions;
-  const conditions = output.conditions;
-  if (
-    typeof state !== "string" ||
-    !taskStates.has(state) ||
-    typeof summary !== "string" ||
-    !summary.trim() ||
-    !Array.isArray(evidence) ||
-    !evidence.every((entry) => typeof entry === "string") ||
-    (actions !== undefined && !Array.isArray(actions)) ||
-    (conditions !== undefined && !Array.isArray(conditions))
-  ) {
+  const admission = admitProjectAppTaskHandlerResult(output, {
+    allowNeedsOwner: options.allowNeedsOwner ?? true,
+    defaultParentId: options.defaultParentId ?? "project",
+  });
+  if (!admission.ok) {
     return {
       state: "error",
-      summary: "Workflow returned an invalid task handler result envelope",
+      summary: `Handler result was rejected: ${admission.error}`,
       evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
-
-  const conditionList = conditions ?? [];
-  const invalidConditionIndex = conditionList.findIndex((condition) => !validProjectAppConditionSpec(condition));
-  if (invalidConditionIndex >= 0) {
-    return {
-      state: "error",
-      summary: `Workflow returned an invalid Condition at conditions[${invalidConditionIndex}]`,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
-      actions: [],
-    };
-  }
-  const exactConditions = normalizedConditions(conditionList);
-  const normalizedState = state as NormalizedTaskHandlerResult["state"];
-  const normalizedSummary = summary.trim();
-  const actionList = actions ?? [];
-  for (let index = 0; index < actionList.length; index += 1) {
-    const reason = invalidProjectAppTaskActionReason(actionList[index], index);
-    if (reason) {
-      return {
-        state: "error",
-        summary: `Workflow returned an invalid task action: ${reason}`,
-        evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
-        actions: [],
-      };
-    }
-  }
-  const normalizedActions = actionList as ProjectAppTaskAction[];
-
-  if (normalizedState === "waiting" && exactConditions.length === 0) {
-    return {
-      state: "error",
-      summary: "Workflow returned waiting without an exact Condition",
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
-      actions: [],
-    };
-  }
-  if (normalizedState !== "waiting" && exactConditions.length > 0) {
-    return {
-      state: "error",
-      summary: `Workflow returned Conditions with non-waiting state ${normalizedState}`,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
-      actions: [],
-    };
-  }
-
   return {
-    state: normalizedState,
-    summary: normalizedSummary,
-    evidence: [...evidence],
-    actions: normalizedActions,
-    conditions: exactConditions,
+    ...admission.result,
+    actions: admission.result.actions ?? [],
   };
 }
 
@@ -788,6 +576,7 @@ async function runTaskCapability(input: {
   capability: WorkflowCapability;
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
+  defaultParentId: string;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -868,11 +657,15 @@ async function runTaskCapability(input: {
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
-    const handlerResult = normalizeTaskHandlerResult(done ? result.output : undefined, {
-      type: done ? "done" : "blocked",
-      summary,
-      runId,
-    });
+    const handlerResult = normalizeTaskHandlerResult(
+      done ? result.output : undefined,
+      {
+        type: done ? "done" : "blocked",
+        summary,
+        runId,
+      },
+      { allowNeedsOwner: true, defaultParentId: input.defaultParentId },
+    );
     opts.bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -932,6 +725,7 @@ async function runTaskOwner(input: {
   descriptor: ProjectAppDescriptor;
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
+  defaultParentId: string;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -952,8 +746,10 @@ async function runTaskOwner(input: {
     "Use actions only for supported task-tree mutations.",
     "",
     "Allowed actions:",
-    '- create a task: { kind: "create-task", id, parentId, goal, mode, outputs, acceptance, priority?, owner?, workflow?, input?, dependsOn? }',
-    '- update a task: { kind: "update-task", taskId, expectedGeneration, goal?, mode?, outputs?, acceptance? }',
+    '- create a task: { kind: "create-task", id, outcome, acceptance, parentId?, mode?, outputs?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
+    '  Defaults: parentId is the app root, mode is "achieve", outputs is [], and priority is "P2".',
+    '- update a task: { kind: "update-task", taskId, expectedGeneration, parentId?, outcome?, mode?, outputs?, acceptance?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
+    "  Set owner, workflow, or category to null to clear that explicit binding.",
     '- close a task: { kind: "close-task", taskId, expectedGeneration, summary }',
     '- unblock a task: { kind: "unblock-task", taskId, expectedGeneration, reason }',
     'For ordinary owner-handled project/domain work, omit workflow. Do not use workflow: "project"; workflow may only name a real app-local workflow.',
@@ -989,19 +785,23 @@ async function runTaskOwner(input: {
     recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    outputSchema: ownerTaskResultSchema,
+    outputSchema: projectAppTaskOwnerResultSchema,
     toolPolicy: "full",
     timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
   });
-  const handlerResult = normalizeTaskHandlerResult(result.structuredResult, {
-    type: result.status === "done" ? "done" : "blocked",
-    summary:
-      result.finishResult?.summary ??
-      result.lastAssistantText ??
-      result.error ??
-      `Owner session ${result.sessionId || "unknown"} returned no result`,
-    runId: result.sessionId || null,
-  });
+  const handlerResult = normalizeTaskHandlerResult(
+    result.structuredResult,
+    {
+      type: result.status === "done" ? "done" : "blocked",
+      summary:
+        result.finishResult?.summary ??
+        result.lastAssistantText ??
+        result.error ??
+        `Owner session ${result.sessionId || "unknown"} returned no result`,
+      runId: result.sessionId || null,
+    },
+    { allowNeedsOwner: false, defaultParentId: input.defaultParentId },
+  );
   return { handlerResult, runId: result.sessionId || null };
 }
 
@@ -1055,6 +855,10 @@ async function reconcileTaskIntent(input: {
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
+  const defaultParentId = readTaskTree(config).root_task_id;
+  if (!defaultParentId) {
+    throw new Error(`Project app ${descriptor.id} has no root task group for convention defaults`);
+  }
   const primary = claimProjectAppTask(config, {
     intent,
     appOwner: descriptor.owner,
@@ -1100,6 +904,7 @@ async function reconcileTaskIntent(input: {
       },
       intent,
       claim: primary,
+      defaultParentId,
       event,
     });
   } else {
@@ -1108,6 +913,7 @@ async function reconcileTaskIntent(input: {
       descriptor,
       intent,
       claim: primary,
+      defaultParentId,
       event,
       ...(intent.workflow ? { fallbackReason: "The bound workflow handed this task to its accountable owner." } : {}),
     });
@@ -1252,6 +1058,15 @@ function isTaskWakeEvent(event: Record<string, unknown>): boolean {
     "project.task.reconcile.skipped",
     "project.task.reconciled",
   ].includes(type);
+}
+
+function projectAppTaskDelivery(descriptor: ProjectAppDescriptor, taskId: string, note: string): DeliveryResult {
+  return {
+    accepted: true,
+    by: `project-app:${descriptor.id}:task-reconciler`,
+    route: "direct",
+    note: `${note}: ${taskId}`,
+  };
 }
 
 function installConventionTaskControllers(
@@ -1436,7 +1251,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.subscribe((rawEvent): void => {
+  opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
@@ -1488,12 +1303,23 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               trigger: event,
             });
             taskController.enqueue(targetedTaskId);
+            return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
           }
-          // An explicit task target is the complete routing decision. Running
-          // the app resolver as well can turn one event into unrelated work
-          // (for example, a targeted domain wake plus a broad owner-review
-          // task). Condition correlation above remains independent because it
-          // is an explicit durable relationship rather than implicit routing.
+          if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
+            const resolved = descriptor.app.tasks.resolve(event);
+            if (resolved?.id === targetedTaskId) {
+              const observation = observeProjectAppTaskIntent(config, {
+                intent: resolved,
+                appOwner: descriptor.owner,
+                trigger: event,
+              });
+              if (observation.kind === "observed") taskController.enqueue(observation.taskId);
+              return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
+            }
+          }
+          // An explicit task target is the complete routing decision. The app
+          // resolver may materialize exactly that target, but must not turn a
+          // targeted wake into unrelated broad work.
           continue;
         }
         if (descriptor.app.tasks.accepts.some((selector) => matchesEventSelector(selector, event))) {
@@ -1509,6 +1335,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               { intent, appOwner: descriptor.owner, trigger: event },
             );
             if (observation.kind === "observed") taskController.enqueue(observation.taskId);
+            return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
           }
           continue;
         }
