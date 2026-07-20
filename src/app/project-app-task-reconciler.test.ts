@@ -1100,6 +1100,42 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("does not supersede a previous-runtime attempt during ordinary resync", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      trigger: {
+        type: "session.end",
+        data: { project: "sample", sessionId: "session-1" },
+      },
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+
+    const interrupted = readTaskState(config);
+    interrupted.attempts![first.attemptId].runtimeId = "previous-runtime";
+    saveTaskState(config, interrupted);
+
+    const resync = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "task-controller",
+    });
+    expect(resync).toEqual({ kind: "busy", taskId: first.taskId, attemptId: first.attemptId });
+
+    const tree = readTaskState(config);
+    expect(tree.attempts?.[first.attemptId]).toMatchObject({
+      runtimeId: "previous-runtime",
+      state: "running",
+    });
+    expect(tree.resources?.[first.taskId].status).toMatchObject({
+      phase: "running",
+      currentAttemptId: first.attemptId,
+    });
+  });
+
   it("requeues a manually orphaned previous-runtime attempt when no trigger was persisted", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -1236,7 +1272,7 @@ describe("project app task reconciler state", () => {
       intent: intent(),
       appOwner: "app-owner",
       handler: "workflow:known-workflow",
-      reason: "task-controller",
+      reason: `attempt-recovery:${claim.taskId}`,
     });
     expect(reclaimed).toMatchObject({
       kind: "claimed",
@@ -1260,7 +1296,7 @@ describe("project app task reconciler state", () => {
     });
     expect(released.attempts?.[reclaimed.attemptId]).toMatchObject({
       state: "running",
-      reason: "task-controller",
+      reason: `attempt-recovery:${claim.taskId}`,
       trigger: {
         type: "project.task.tick",
         source: "project-app:sample:task-controller",

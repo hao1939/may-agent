@@ -1098,7 +1098,11 @@ export function claimObservedProjectAppTask(
       refreshActiveTaskProjection(tree);
       pruneTaskAttempts(tree);
     }
-    const canRecoverPreviousRuntime = Boolean(previousAttempt && previousAttempt.runtimeId !== reconcilerRuntimeId);
+    const canRecoverPreviousRuntime = Boolean(
+      previousAttempt &&
+        previousAttempt.runtimeId !== reconcilerRuntimeId &&
+        input.reason === `attempt-recovery:${task.id}`,
+    );
     const pendingTrigger = tree.taskTriggers?.[task.id];
     const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
     if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
