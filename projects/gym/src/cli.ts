@@ -36,7 +36,11 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
-import { runDirectAgent } from "../../may-agent/src/app/direct-agent.js";
+import {
+  runDirectAgent,
+  type AgentExecutionManifest,
+  type ToolDenial,
+} from "../../may-agent/src/app/direct-agent.js";
 import { createModelRegistry } from "../../may-agent/src/app/model-registry.js";
 
 import {
@@ -97,12 +101,14 @@ interface RunResult {
   categories: string[];
   tags: string[];
   tier: string | null;
+  execution_manifest: AgentExecutionManifest | null;
 }
 
 interface AdapterResult {
   sessionId: string;
   status: string;
   sessionPath: string;
+  executionManifest?: AgentExecutionManifest;
 }
 
 interface Adapter {
@@ -154,6 +160,29 @@ const SCENARIOS_DIR = resolve(
       ? join(REPO_ROOT, "projects/gym/scenarios")
       : join(LEGACY_APP_ROOT, "gym/scenarios")),
 );
+
+const GYM_TOOL_DENIAL_REASONS: Readonly<Record<string, string>> = {
+  agents: "isolated Gym scenarios do not dispatch supporting agents",
+  workflow: "the direct Gym adapter does not provide hosted workflow dispatch",
+  message: "isolated Gym scenarios must not notify real users or agents",
+  cron: "isolated Gym scenarios must not change autonomous schedules",
+  checkpoint: "the direct Gym adapter has no hosted durable checkpoint service",
+  "cli-delegation": "isolated Gym scenarios do not delegate to external agent CLIs",
+  "system-status": "isolated Gym scenarios do not expose production system state",
+  system_status: "isolated Gym scenarios do not expose production system state",
+  query_db: "isolated Gym scenarios do not expose the production database",
+  "query-db": "isolated Gym scenarios do not expose the production database",
+};
+
+function gymToolDenials(agentDir: string): ToolDenial[] {
+  const config = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf8")) as { tools?: unknown };
+  if (!Array.isArray(config.tools)) return [];
+  return config.tools.flatMap((name) => {
+    if (typeof name !== "string") return [];
+    const reason = GYM_TOOL_DENIAL_REASONS[name];
+    return reason ? [{ name, reason }] : [];
+  });
+}
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
 
@@ -260,13 +289,23 @@ function createMayAgentAdapter(): Adapter {
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: gymState,
           models: createModelRegistry().models,
+          toolDenials: gymToolDenials(agentDir),
           timeoutMs: timeoutMin * 60 * 1000,
           onNotice: (message) => console.error(`  [may-direct] ${message}`),
         });
+        console.error(
+          `  tools: configured ${result.executionManifest.configuredTools.length}, ` +
+            `denied ${result.executionManifest.deniedTools.length}, ` +
+            `effective ${result.executionManifest.effectiveTools.length}`,
+        );
+        if (result.executionManifest.deniedTools.length > 0) {
+          console.error(`  denied: ${result.executionManifest.deniedTools.map((item) => item.name).join(", ")}`);
+        }
         return {
           sessionId: result.sessionId,
           status: result.status === "done" ? "success" : "error",
           sessionPath: result.sessionPath,
+          executionManifest: result.executionManifest,
         };
       } catch (error) {
         console.error(
@@ -629,6 +668,7 @@ async function judgeScenario(
       projectsRoot: join(REPO_ROOT, "projects"),
       outputRoot: judgeState,
       models: createModelRegistry().models,
+      toolDenials: gymToolDenials(join(agentsRoot, "judge")),
       timeoutMs: 3 * 60 * 1000,
       onNotice: (message) => console.error(`  [judge-direct] ${message}`),
     });
@@ -890,6 +930,7 @@ async function runMultiSessionScenario(
         categories: meta.categories ?? [],
         tags: meta.tags ?? [],
         tier: meta.tier ?? null,
+        execution_manifest: lastResult.executionManifest ?? null,
       };
     }
 
@@ -1041,6 +1082,7 @@ async function runMultiSessionScenario(
     categories: meta.categories ?? [],
     tags: meta.tags ?? [],
     tier: meta.tier ?? null,
+    execution_manifest: lastResult.executionManifest ?? null,
   };
 }
 
@@ -1174,6 +1216,7 @@ async function runScenario(
           categories: meta?.categories ?? [],
           tags: meta?.tags ?? [],
           tier: meta?.tier ?? null,
+          execution_manifest: lastResult.executionManifest ?? null,
         };
       }
 
@@ -1280,6 +1323,7 @@ async function runScenario(
       categories: meta?.categories ?? [],
       tags: meta?.tags ?? [],
       tier: meta?.tier ?? null,
+      execution_manifest: lastResult.executionManifest ?? null,
     };
   }
 
@@ -1348,6 +1392,7 @@ async function runScenario(
     categories: meta?.categories ?? [],
     tags: meta?.tags ?? [],
     tier: meta?.tier ?? null,
+    execution_manifest: lastResult.executionManifest ?? null,
   };
 }
 
@@ -1609,6 +1654,7 @@ async function main() {
           categories: [],
           tags: [],
           tier: null,
+          execution_manifest: null,
         });
       }
     }
@@ -1686,6 +1732,7 @@ async function main() {
       categories: [],
       tags: [],
       tier: null,
+      execution_manifest: null,
     };
   }
   console.log(JSON.stringify(result, null, 2));

@@ -9,6 +9,7 @@
   ],
   "tools": [
     "coding",
+    "query_db",
     "agents",
     "message",
     "cron",

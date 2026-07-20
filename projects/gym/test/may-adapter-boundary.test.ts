@@ -8,6 +8,9 @@ describe("May Gym adapter boundary", () => {
       "utf8",
     );
     expect(source).toContain("runDirectAgent");
+    expect(source).toContain("toolDenials: gymToolDenials(agentDir)");
+    expect(source).toContain("execution_manifest");
+    expect(source).toContain("tools: configured");
     for (const forbidden of [
       "--oneshot",
       "MAY_BIN",
