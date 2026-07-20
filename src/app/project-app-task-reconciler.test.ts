@@ -18,6 +18,7 @@ import {
   recordProjectAppTaskTrigger,
   pendingProjectAppTaskRecoveryAttention,
   repairPreviousRuntimeRecoveryAttention,
+  repairRunningProjectAppTasksWithoutAttempt,
   recoverableProjectAppTaskAttempts,
   releaseHandlerUnavailableProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
@@ -1132,6 +1133,70 @@ describe("project app task reconciler state", () => {
     expect(released.active_task_ids).not.toContain(claim.taskId);
     expect(pendingProjectAppTaskRecoveryAttention(config)).toEqual([]);
     expect(acknowledgeProjectAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
+  });
+
+  it("requeues running tasks whose current attempt record is missing", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const orphaned = readTaskState(config);
+    delete orphaned.attempts![claim.attemptId];
+    saveTaskState(config, orphaned);
+
+    expect(listRunnableProjectAppTaskIds(config)).toContain(claim.taskId);
+    expect(repairRunningProjectAppTasksWithoutAttempt(config)).toEqual([
+      expect.objectContaining({
+        taskId: claim.taskId,
+        disposition: "requeued",
+      }),
+    ]);
+
+    const released = readTaskState(config);
+    expect(released.resources?.[claim.taskId]).toMatchObject({
+      status: {
+        phase: "pending",
+      },
+    });
+    expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
+    expect(released.active_task_ids).not.toContain(claim.taskId);
+    expect(listRunnableProjectAppTaskIds(config)).toContain(claim.taskId);
+  });
+
+  it("claims running tasks whose current attempt record is missing", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const orphaned = readTaskState(config);
+    delete orphaned.attempts![claim.attemptId];
+    saveTaskState(config, orphaned);
+
+    const reclaimed = claimObservedProjectAppTask(config, {
+      taskId: claim.taskId,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: "test-reclaim",
+    });
+    expect(reclaimed).toMatchObject({
+      kind: "claimed",
+      taskId: claim.taskId,
+      generation: claim.generation,
+    });
+    if (reclaimed.kind !== "claimed") throw new Error("expected reclaimed claim");
+    expect(reclaimed.attemptId).not.toBe(claim.attemptId);
+    expect(readTaskState(config).attempts?.[reclaimed.attemptId]).toMatchObject({
+      state: "running",
+      reason: "test-reclaim",
+    });
   });
 
   it("persists a synthetic controller trigger so task-controller attempts survive restart", () => {
