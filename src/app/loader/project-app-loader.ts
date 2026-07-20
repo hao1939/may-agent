@@ -60,6 +60,7 @@ import {
   recordProjectAppTaskTrigger,
   releaseHandlerUnavailableProjectAppTask,
   repairPreviousRuntimeRecoveryAttention,
+  repairRunningProjectAppTasksWithoutAttempt,
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
@@ -1646,6 +1647,10 @@ function recoverInterruptedProjectAppTasks(
         recovery.taskId,
         `Interrupted reconciliation ${recovery.taskId} cannot resume because its previous runtime did not persist the trigger packet`,
       );
+    }
+    const missingAttemptRepairs = repairRunningProjectAppTasksWithoutAttempt(config);
+    for (const repair of missingAttemptRepairs) {
+      if (controller && !descriptor.reconciliationPaused) controller.enqueue(repair.taskId);
     }
     const repairs = repairPreviousRuntimeRecoveryAttention(config);
     if (repairs.length > 0) {
