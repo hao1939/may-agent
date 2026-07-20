@@ -9,10 +9,9 @@ import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
  * Evidence: EXP-188 confirmed +100pp (0% → 100%) adoption with this guard.
  * Without it, agents read the instruction, work inline, and skip the workflow.
  *
- * Detection heuristic:
- * - Task contains "project:" pointing to a directory with project.md → required
- * - Task explicitly mentions persistent-task workflow → required
- * - Result messages contain workflow.run("persistent-task") call → satisfied
+ * Detection contract:
+ * - Task explicitly requests the persistent-task workflow → required
+ * - Result messages contain a workflow.run("persistent-task") call → satisfied
  *
  * Fail-open: only blocks finish(success). Other statuses pass through.
  */
@@ -24,30 +23,12 @@ function isPersistentTaskRequired(taskText: string): boolean {
   if (!taskText) return false;
   const lower = taskText.toLowerCase();
 
-  // Explicit opt-out: project-app planning sessions and other workflows
-  // that review/plan rather than implement. Respects "persistent-task: skip"
-  // or "persistent-task: false" in the task text.
-  if (/^persistent-task:\s*(?:skip|false|no|off|not-required)/m.test(lower)) {
-    return false;
-  }
+  if (/workflow\.run\(\s*["']persistent-task["']/.test(lower)) return true;
 
-  // Explicit workflow mention
-  if (lower.includes('workflow.run("persistent-task"') ||
-      lower.includes("workflow.run('persistent-task'") ||
-      lower.includes('run the persistent-task workflow') ||
-      lower.includes('use persistent-task workflow') ||
-      lower.includes('must use persistent-task')) {
-    return true;
-  }
-
-  // Task has a project: field pointing to a directory — indicates a
-  // persistent-task ask. (Single-file `.md` project format is gone, so the
-  // legacy `.endsWith('.md')` exclusion was removed; see
-  // projects/may-agent.app/docs/archive/implementation/2026-05-20-legacy-cleanup-resume-path.md L1.)
-  const projectMatch = taskText.match(/^project:\s*(.+)$/m);
-  if (projectMatch) {
-    const projectPath = projectMatch[1].trim();
-    if (projectPath.includes('/projects/') || projectPath.includes('/project.md') === false) {
+  const request = /\b(?:run|use|invoke|start)\s+(?:the\s+)?persistent-task(?:\s+workflow)?\b/g;
+  for (const match of lower.matchAll(request)) {
+    const prefix = lower.slice(Math.max(0, match.index - 16), match.index);
+    if (!/(?:do not|don't|must not|should not|need not|never)\s*$/.test(prefix)) {
       return true;
     }
   }
@@ -79,15 +60,6 @@ function wasPersistentTaskRun(result: any): boolean {
         }
       }
     }
-  }
-
-  // Check the result text for evidence of persistent-task execution
-  const text = result?.lastAssistantText ?? "";
-  if (text.includes("persistent-task") && (
-    text.includes("workflow.run") ||
-    text.includes("workflow completed") ||
-    text.includes("iterations"))) {
-    return true;
   }
 
   return false;
