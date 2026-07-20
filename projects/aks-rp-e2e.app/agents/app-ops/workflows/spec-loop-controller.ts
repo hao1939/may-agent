@@ -150,7 +150,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       kind: "create-task",
       id: workId(specId, spec),
       parentId: loopTaskId,
-      goal: `Reconcile ${specId} from its current ${spec.status} evidence to a passing live result, an exact wait, or a reviewed terminal disposition.`,
+      outcome: `Reconcile ${specId} from its current ${spec.status} evidence to a passing live result, an exact wait, or a reviewed terminal disposition.`,
       mode: "achieve",
       owner: "aks-explorer",
       input: {

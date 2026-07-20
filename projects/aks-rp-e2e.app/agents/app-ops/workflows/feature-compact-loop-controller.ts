@@ -141,7 +141,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       kind: "create-task",
       id: workId(featureKey, item),
       parentId: loopTaskId,
-      goal: `Reconcile feature compact package ${featureKey} from ${item.status} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
+      outcome: `Reconcile feature compact package ${featureKey} from ${item.status} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
       mode: "achieve",
       owner: "aks-explorer",
       input: {

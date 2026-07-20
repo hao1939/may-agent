@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
+  projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
-  Type,
   type ProjectAppTaskHandlerResult,
   type WorkflowContext,
   type WorkflowResult,
@@ -12,74 +12,6 @@ export const description = "evaluation app owner review.";
 
 const APP_DIR = "/app/projects/evaluation.app";
 const TASK_TREE_PATH = resolveTaskTreePath(APP_DIR);
-
-const ownerResultSchema = Type.Object({
-  state: Type.Union([
-    Type.Literal("converged"),
-    Type.Literal("waiting"),
-  ]),
-  summary: Type.String({ minLength: 1 }),
-  evidence: Type.Array(Type.String(), { maxItems: 12 }),
-  actions: Type.Array(
-    Type.Union([
-      Type.Object({
-        kind: Type.Literal("create-task"),
-        id: Type.String({ minLength: 1 }),
-        parentId: Type.String({ minLength: 1 }),
-        goal: Type.String({ minLength: 1 }),
-        mode: Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]),
-        outputs: Type.Array(Type.String(), { minItems: 1 }),
-        acceptance: Type.Array(Type.String(), { minItems: 1 }),
-        priority: Type.Optional(
-          Type.Union([
-            Type.Literal("P0"),
-            Type.Literal("P1"),
-            Type.Literal("P2"),
-            Type.Literal("P3"),
-          ]),
-        ),
-        owner: Type.Optional(Type.String()),
-        workflow: Type.Optional(Type.String()),
-      }),
-      Type.Object({
-        kind: Type.Literal("update-task"),
-        taskId: Type.String({ minLength: 1 }),
-        expectedGeneration: Type.Integer({ minimum: 1 }),
-        goal: Type.Optional(Type.String({ minLength: 1 })),
-        mode: Type.Optional(
-          Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]),
-        ),
-        outputs: Type.Optional(Type.Array(Type.String(), { minItems: 1 })),
-        acceptance: Type.Optional(Type.Array(Type.String(), { minItems: 1 })),
-      }),
-      Type.Object({
-        kind: Type.Literal("close-task"),
-        taskId: Type.String({ minLength: 1 }),
-        expectedGeneration: Type.Integer({ minimum: 1 }),
-        summary: Type.String({ minLength: 1 }),
-      }),
-      Type.Object({
-        kind: Type.Literal("unblock-task"),
-        taskId: Type.String({ minLength: 1 }),
-        expectedGeneration: Type.Integer({ minimum: 1 }),
-        reason: Type.String({ minLength: 1 }),
-      }),
-    ]),
-    { maxItems: 3 },
-  ),
-  conditions: Type.Optional(
-    Type.Array(
-      Type.Object({
-        id: Type.String({ minLength: 1 }),
-        type: Type.String({ minLength: 1 }),
-        subject: Type.String({ minLength: 1 }),
-        expected: Type.Unsafe<unknown>({}),
-        owner: Type.Optional(Type.String({ minLength: 1 })),
-      }),
-      { maxItems: 5 },
-    ),
-  ),
-});
 
 type OwnerResult = Exclude<
   ProjectAppTaskHandlerResult,
@@ -383,7 +315,7 @@ ${JSON.stringify(packet, null, 2)}
   const result = await ctx.runAgent("evaluator", prompt, {
     timeoutMs: 900_000,
     tools: "readonly",
-    schema: ownerResultSchema,
+    schema: projectAppTaskOwnerResultSchema,
   });
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Evaluation owner review session failed", {
