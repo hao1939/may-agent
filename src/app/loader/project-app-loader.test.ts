@@ -171,7 +171,7 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
+      state: "error",
       summary: "Workflow returned an invalid Condition at conditions[0]",
       actions: [],
     });
@@ -189,13 +189,13 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
+      state: "error",
       summary: "Workflow returned waiting without an exact Condition",
       actions: [],
     });
   });
 
-  it("accepts failed owner results as attention-worthy evidence", () => {
+  it("rejects failed as a removed handler decision state", () => {
     expect(
       normalizeTaskHandlerResult(
         {
@@ -207,14 +207,13 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
-      summary: "no exact machine-observable wait exists",
-      evidence: ["owner inspected current facts and found no event source"],
+      state: "error",
+      summary: "Workflow returned an invalid task handler result envelope",
       actions: [],
     });
   });
 
-  it("does not apply task actions from a failed result", () => {
+  it("does not apply task actions from the removed failed result state", () => {
     expect(
       normalizeTaskHandlerResult(
         {
@@ -236,9 +235,8 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
-      summary: "the attempt could not complete; failed results cannot apply task actions",
-      evidence: ["command exited 1"],
+      state: "error",
+      summary: "Workflow returned an invalid task handler result envelope",
       actions: [],
     });
   });
@@ -255,7 +253,7 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
+      state: "error",
       summary: "Workflow returned an invalid task handler result envelope",
       actions: [],
     });
@@ -279,7 +277,7 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
+      state: "error",
       summary:
         "Workflow returned an invalid task action: actions[0].kind must be one of create-task, update-task, close-task, unblock-task",
       actions: [],
@@ -310,7 +308,7 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "failed",
+      state: "error",
       summary:
         "Workflow returned an invalid task action: actions[0].workflow must name a real workflow; omit workflow for owner-handled project work",
       actions: [],
