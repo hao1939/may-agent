@@ -6,6 +6,7 @@ import {
   normalizeStringArray,
   projectRuntimePaths,
   readTaskTree,
+  resolveProjectAppOutputPaths,
   saveTaskTree,
   taskState,
   withTreeLock,
@@ -614,6 +615,8 @@ export function claimProjectAppTask(
     handler: string;
     reason?: string;
     trigger?: Record<string, unknown>;
+    isOwnerRunnable?: (owner: string) => boolean;
+    preclaimError?: string;
   },
 ): ProjectAppTaskClaimResult {
   const observation = observeProjectAppTaskIntent(config, {
@@ -627,6 +630,8 @@ export function claimProjectAppTask(
     appOwner: input.appOwner,
     handler: input.handler,
     reason: input.reason,
+    isOwnerRunnable: input.isOwnerRunnable,
+    preclaimError: input.preclaimError,
   });
 }
 
@@ -803,6 +808,8 @@ export function claimObservedProjectAppTask(
     appOwner: string;
     handler: string;
     reason?: string;
+    isOwnerRunnable?: (owner: string) => boolean;
+    preclaimError?: string;
   },
 ): ProjectAppTaskClaimResult {
   return withTreeLock(config, () => {
@@ -813,6 +820,33 @@ export function claimObservedProjectAppTask(
     if (!resource) throw new Error(`Observed reconciliation task has no valid resource: ${input.taskId}`);
     const intent = resourceIntent(resource);
     const owner = resolvedOwner(tree, intent, input.appOwner);
+    const admissionError =
+      input.preclaimError ??
+      (input.isOwnerRunnable && !input.isOwnerRunnable(owner)
+        ? `Resolved owner ${owner} is not a runnable agent`
+        : undefined);
+    if (admissionError) {
+      const summary = admissionError;
+      if (resource.status.currentAttemptId) {
+        finishAttempt(tree, resource, "interrupted", summary, new Date().toISOString());
+      }
+      touchResource(resource, {
+        phase: "attention",
+        observedGeneration: resource.metadata.generation,
+        currentAttemptId: undefined,
+        summary,
+        conditionIds: [],
+      });
+      syncTaskProjection(task, resource, owner);
+      refreshActiveTaskProjection(tree);
+      saveTaskTree(config, tree);
+      return {
+        kind: "attention",
+        taskId: task.id,
+        generation: resource.metadata.generation,
+        summary,
+      };
+    }
     const handler =
       input.handler === "auto"
         ? needsOwnerHandoff(tree, resource)
@@ -1047,7 +1081,11 @@ function actionTargetAlreadyReceipted(
   return Boolean(!tree.tasks[action.taskId] && !tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
 }
 
-function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): void {
+function validateTaskActions(
+  tree: TaskTree,
+  actions: ProjectAppTaskAction[],
+  paths: { appDir: string; projectDir: string },
+): void {
   if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
   const identities = new Set<string>();
   for (const rawAction of actions as unknown[]) {
@@ -1072,6 +1110,7 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
         throw new Error(`Handler create action ${action.id} requires mode achieve or maintain`);
       }
       requireStringList(action.outputs, `Handler create action ${action.id} outputs`, true);
+      resolveProjectAppOutputPaths(action.outputs, paths);
       requireStringList(action.acceptance, `Handler create action ${action.id} acceptance`);
       if (action.priority !== undefined && !["P0", "P1", "P2", "P3"].includes(action.priority)) {
         throw new Error(`Handler create action ${action.id} has an invalid priority`);
@@ -1114,6 +1153,7 @@ function validateTaskActions(tree: TaskTree, actions: ProjectAppTaskAction[]): v
     }
     if (action.kind === "update-task" && action.outputs !== undefined) {
       requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`, true);
+      resolveProjectAppOutputPaths(action.outputs, paths);
     }
     if (action.kind === "update-task" && action.acceptance !== undefined) {
       requireStringList(action.acceptance, `Handler update for ${action.taskId} acceptance`);
@@ -1223,10 +1263,10 @@ function applyTaskActions(
   claim: ProjectAppTaskClaim,
   actions: ProjectAppTaskAction[],
   evidence: string[],
-  appOwner: string,
+  config: TaskTreeConfig,
   verification: ProjectAppTaskAcceptance,
 ): string[] {
-  validateTaskActions(tree, actions);
+  validateTaskActions(tree, actions, config);
   const now = new Date().toISOString();
   const applied: string[] = [];
 
@@ -1304,8 +1344,8 @@ function applyTaskActions(
           if (action.category === null) delete nextIntent.category;
           else nextIntent.category = action.category;
         }
-        const currentOwner = resolvedOwner(tree, current, appOwner);
-        const nextOwner = resolvedOwner(tree, nextIntent, appOwner);
+        const currentOwner = resolvedOwner(tree, current, config.worker);
+        const nextOwner = resolvedOwner(tree, nextIntent, config.worker);
         const executionChanged =
           projectAppTaskSpecHash(current, currentOwner) !== projectAppTaskSpecHash(nextIntent, nextOwner);
         const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
@@ -1428,7 +1468,7 @@ export function completeProjectAppTask(
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
     const verification = input.verification ?? defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker, verification);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, verification);
     const liveChildren = liveChildTaskIds(tree, task);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
@@ -1533,7 +1573,7 @@ export function deferProjectAppTask(
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
     const verification = defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config.worker, verification);
+    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, verification);
     const now = new Date().toISOString();
     finishAttempt(tree, resource, "completed", input.summary, now);
     if (input.conditions?.length) {

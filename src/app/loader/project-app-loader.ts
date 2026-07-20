@@ -14,8 +14,10 @@ import {
   admitProjectAppTaskVerificationResult,
   loadProjectReadModel,
   matchesEventSelector,
+  projectAppExecutionPaths,
   projectAppTaskOwnerResultSchema,
   projectRuntimePaths,
+  resolveProjectAppOutputPaths,
   readTaskTree,
   type ProjectApp,
   type ProjectAppContext,
@@ -27,6 +29,7 @@ import {
   type ProjectAppTaskHandlerResult,
   type ProjectAppTaskIntent,
   type ProjectAppTaskVerifier,
+  type ProjectAppExecutionPaths,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskController } from "../project-app-task-controller.js";
@@ -582,6 +585,8 @@ async function runTaskCapability(input: {
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
   defaultParentId: string;
+  executionPaths: ProjectAppExecutionPaths;
+  declaredOutputPaths: string[];
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -609,6 +614,8 @@ async function runTaskCapability(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
+        paths: input.executionPaths,
+        declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
       },
       null,
@@ -659,6 +666,7 @@ async function runTaskCapability(input: {
       sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
       trace,
+      executionPaths: input.executionPaths,
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
@@ -742,6 +750,8 @@ async function runTaskOwner(input: {
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
   defaultParentId: string;
+  executionPaths: ProjectAppExecutionPaths;
+  declaredOutputPaths: string[];
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -786,6 +796,8 @@ async function runTaskOwner(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
+        paths: input.executionPaths,
+        declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
       },
       null,
@@ -950,12 +962,22 @@ async function reconcileTaskIntent(input: {
   if (!defaultParentId) {
     throw new Error(`Project app ${descriptor.id} has no root task group for convention defaults`);
   }
+  const executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
+  let declaredOutputPaths: string[] = [];
+  let preclaimError: string | undefined;
+  try {
+    declaredOutputPaths = resolveProjectAppOutputPaths(intent.outputs ?? [], executionPaths);
+  } catch (error) {
+    preclaimError = `Task output admission failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
   const primary = claimProjectAppTask(config, {
     intent,
     appOwner: descriptor.owner,
     handler: "auto",
     reason: input.reason ?? event?.type ?? "task-controller",
     trigger: event ? flattened : undefined,
+    isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
+    preclaimError,
   });
   if (primary.kind !== "claimed") {
     const skip =
@@ -996,6 +1018,8 @@ async function reconcileTaskIntent(input: {
       intent,
       claim: primary,
       defaultParentId,
+      executionPaths,
+      declaredOutputPaths,
       event,
     });
   } else {
@@ -1005,6 +1029,8 @@ async function reconcileTaskIntent(input: {
       intent,
       claim: primary,
       defaultParentId,
+      executionPaths,
+      declaredOutputPaths,
       event,
       ...(intent.workflow ? { fallbackReason: "The bound workflow handed this task to its accountable owner." } : {}),
     });

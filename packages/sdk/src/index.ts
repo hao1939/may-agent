@@ -838,6 +838,9 @@ export interface WorkflowContext {
   notify(msg: string): void;
   metrics: MetricService;
   persistDir: string;
+  appDir?: string;
+  projectDir?: string;
+  workspaceDir?: string;
   projectRoot: string;
   agentsRoot: string;
   sharedRoot: string;
@@ -987,6 +990,9 @@ export {
   saveProjectRuntimeState,
 } from "./project-runtime-state.js";
 export type { EnsureTaskTreeStateResult, ProjectRuntimePaths } from "./project-runtime-state.js";
+
+export { projectAppExecutionPaths, resolveProjectAppOutputPaths } from "./project-output-paths.js";
+export type { ProjectAppExecutionPaths } from "./project-output-paths.js";
 
 export {
   field,
