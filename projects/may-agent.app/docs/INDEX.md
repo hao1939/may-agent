@@ -90,6 +90,7 @@ Proposals under consideration and historical docs preserved for context.
 
 | Doc | Status | What |
 |-----|--------|------|
+| [task-reconciliation-integrity-refinement.md](3-proposals/task-reconciliation-integrity-refinement.md) | Revised / recommended | Tighten generic reconciler authority, executable shared admission, honest acceptance provenance, runnable ownership, workspace paths, and final compatibility removal using Scout as a validation case. |
 | [agent-app-boundary-refinement.md](3-proposals/agent-app-boundary-refinement.md) | Draft | Make agent execution independently runnable, move workflows under agents, and treat Kubernetes-style task reconciliation as optional autonomy; identity renaming is explicitly deferred. |
 | [implementation-simplification.md](3-proposals/implementation-simplification.md) | Accepted / preparation parity remaining | Explicit Gym tool denials, strict effective-tool construction, and execution manifests are implemented; direct/hosted preparation parity tests remain. |
 | [agent-app-scenario-audit-2026-07-16.md](3-proposals/agent-app-scenario-audit-2026-07-16.md) | Design review | Exercise the Agent App proposal against idle, production, Gym, live-diagnostic, parallel, multi-app, and recovery scenarios |
